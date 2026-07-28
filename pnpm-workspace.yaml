@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - packages/*
+  - e2e
+
+# Never install anything published within the last 7 days (value in minutes).
+# A grace window against hijacked publisher accounts and versions pulled right after release.
+minimumReleaseAge: 10080
+
+# Versions from the engines field are required, not advisory.
+engineStrict: true
+
+allowBuilds:
+  lefthook: true

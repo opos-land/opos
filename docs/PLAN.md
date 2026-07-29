@@ -3,6 +3,10 @@
 How we build what [PRODUCT.md](PRODUCT.md) describes. The domain model, roles, MVP scope and
 product decisions live there — this document is implementation only.
 
+This document covers the **core**: what every module rests on. A module's own tables, endpoints and
+screens are described end to end in its document in [docs/modules](modules/README.md), and are not
+repeated here.
+
 ## Table of contents
 
 1. [Architecture](#1-architecture)
@@ -138,6 +142,14 @@ opos/
   docs/
     PRODUCT.md
     PLAN.md
+    modules/                  # one document per module, product and implementation together
+      README.md
+      program-schedule.md
+      program-submissions.md
+      volunteer-signups.md
+      volunteer-shifts.md
+      tickets.md
+      website.md
   apps/
     api/
       src/
@@ -155,15 +167,20 @@ opos/
           decorators/require-edition.decorator.ts
           decorators/current-account.decorator.ts
           filters/http-exception.filter.ts
-        modules/
+        modules/         # NestJS modules; one per product module plus the core ones
           auth/          # local, jwt, google, refresh rotation, authCode exchange
           accounts/      # MeModule
           superadmin/    # tenants, first head, custom domain
-          tenants/       # tenant + tenant_memberships + invitations
-          editions/      # editions + edition_memberships
-          events/        # programme
-          public/        # unauthenticated endpoints for the CMS and the portal
+          tenants/       # tenant + tenant_memberships + tenant_permissions + invitations
+          editions/      # editions + edition_permissions
+          public/        # unauthenticated core endpoints for the CMS and the portal
           mail/          # nodemailer + text templates
+          program-schedule/  # product modules, one Nest module each, named as in docs/modules
+          program-submissions/
+          volunteer-signups/
+          volunteer-shifts/
+          tickets/
+          website/
       test/              # integration tests
       .env.example
       Dockerfile
@@ -175,14 +192,19 @@ opos/
         features/
           auth/
           tenants/
-          editions/
-          program/
+          editions/      # edition CRUD, activation, publication
+          program-schedule/  # one feature per product module, named as in docs/modules
             api/         # ts-rest hooks + query keys
             components/
             hooks/
             pages/
             model/       # types, zod schemas, mappings
             index.ts     # the feature's public API
+          program-submissions/
+          volunteer-signups/
+          volunteer-shifts/
+          tickets/
+          website/
           team/
           account/
         shared/{ui,lib,config}/
@@ -233,9 +255,15 @@ opos/
         me.ts
         tenants.ts
         editions.ts
-        events.ts
-        public.ts
+        public.ts        # core public endpoints: tenant and edition lookup
         admin.ts
+        modules.ts       # MODULES, the module identifier schema, the permission resource schema
+        program-schedule.ts  # one file per product module, panel and public endpoints together
+        program-submissions.ts
+        volunteer-signups.ts
+        volunteer-shifts.ts
+        tickets.ts
+        website.ts
       package.json       # main + types -> src/index.ts
     db/
       src/
@@ -250,10 +278,17 @@ opos/
           password-reset-tokens.ts
           tenants.ts
           tenant-memberships.ts
+          tenant-permissions.ts
           editions.ts
-          edition-memberships.ts
-          events.ts
+          edition-permissions.ts
           attendees.ts
+          modules/           # module tables, one file per product module
+            program-schedule.ts
+            program-submissions.ts
+            volunteer-signups.ts
+            volunteer-shifts.ts
+            tickets.ts
+            website.ts
         seed.ts
       drizzle/           # drizzle-kit migrations + the hand-written RLS migration
       drizzle.config.ts
@@ -351,17 +386,27 @@ feature's `api/`, built on the client from `shared/lib`.
 PostgreSQL 16. Every table has `id uuid primary key default gen_random_uuid()`,
 `createdAt timestamptz not null default now()`, `updatedAt timestamptz not null default now()`.
 
+**Core tables only.** A module's tables are described in its own document
+([docs/modules](modules/README.md)) and follow the same conventions: `tenantId` on everything below
+tenant level, an index starting with `tenantId`, RLS ([4.6](#46-tenant-isolation--rls-in-postgres)).
+
 The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 
 | Term | Carrier |
 |---|---|
 | admin | `accounts.isPlatformAdmin = true` |
-| org, head | `tenant_memberships` (+ optionally `edition_memberships`) |
+| org, head | `tenant_memberships` + rows in `tenant_permissions` and `edition_permissions` |
 | user | `accounts` + rows in `attendees` |
 | tenant | `tenants` |
 | edition | `editions` |
-| event | `events` |
+| module | no table of its own — a permission resource plus the tables listed in its document |
+| programme card | `program_cards` — [program-submissions](modules/program-submissions.md) |
+| volunteer profile | `volunteer_profiles` — [volunteer-signups](modules/volunteer-signups.md) |
+| event | `events` — [program-schedule](modules/program-schedule.md) |
 | attendee | `attendees` |
+| volunteer | an `accepted` row in `volunteer_signups` — [volunteer-signups](modules/volunteer-signups.md) |
+| ticket | `tickets` — [tickets](modules/tickets.md) |
+| submission | `program_submissions`, `volunteer_signups` |
 
 ### 4.1 Enums
 
@@ -374,6 +419,13 @@ tokenPurpose    = pgEnum('token_purpose',    ['portal', 'panel', 'mobile'])
 
 `locale` is not an enum — the list of supported languages lives in `packages/i18n` and in
 `SUPPORTED_LOCALES`, validated by zod. Adding a language requires no migration.
+
+**Module identifiers and permission resources are not enums either**, for the same reason: the list
+of modules is open, and a new one must not require a migration. `packages/contract/src/modules.ts`
+holds `MODULES` (the six identifiers from [docs/modules](modules/README.md)) and
+`TENANT_RESOURCES` (`settings`, `branding`, `shop`), both as zod schemas. In the database the
+columns are `text`, validated at the contract boundary — the same trade-off already accepted for
+`locale`.
 
 ### 4.2 Global tables
 
@@ -399,34 +451,62 @@ Indexes on `(accountId, purpose)` and `tokenHash`.
 **`password_reset_tokens`** — `accountId` (FK cascade), `tokenHash` (sha256 of the raw token),
 `expiresAt`, `usedAt` (nullable). Indexes on `accountId` and `tokenHash`.
 
+**Account-owned module tables.** A module may own global tables too, when what they hold belongs to
+the user rather than to a convention — `program_cards` and `volunteer_profiles` today. The rules
+are the same as for the tables above and are not negotiable per module:
+
+- an `accountId` with `on delete cascade`, and no `tenantId`;
+- outside RLS, because there is no tenant to scope them to;
+- reachable only through `/me` endpoints, always filtered by the account in the JWT;
+- never read by a tenant-scoped query — what an organizer sees is the copy taken when the user sent
+  it, never the source.
+
 ### 4.3 Tenant-level tables
 
 **`tenants`** — `slug` (unique, lowercase, `^[a-z0-9-]{3,40}$`), `name`,
 `customDomain` (unique, nullable), `defaultLocale` (text, default `pl`),
 `timezone` (IANA text, default `Europe/Warsaw`).
 
-**`tenant_memberships`** — `accountId` (FK cascade), `tenantId` (FK cascade), `role`,
-`settingsAccess`, `brandingAccess`, `shopConfigAccess` (default `none`).
+**`tenant_memberships`** — `accountId` (FK cascade), `tenantId` (FK cascade), `role`.
 Unique `(accountId, tenantId)` and `(id, tenantId)`. Index on `tenantId`.
+
+**`tenant_permissions`** — `tenantId`, `tenantMembershipId` (FK cascade), `resource` (text, one of
+`TENANT_RESOURCES`), `level`. Unique `(tenantMembershipId, resource)`. Composite foreign key
+`(tenantMembershipId, tenantId)`. Index `(tenantId, tenantMembershipId)`.
+
+**A permission is a row, not a column.** An absent row means `none`, and `none` is never stored —
+revoking a permission deletes the row. The `permission_level` enum keeps its three values because
+the contract returns `none` when reporting effective permissions; storage only ever holds `read` or
+`write`. A new module therefore adds no column and needs no migration.
 
 ### 4.4 Edition-level tables
 
 **`editions`** — `tenantId` (FK cascade), `slug`, `name`, `startsAt`, `endsAt`,
-`isActive` (default `false`), `isPublished` (default `false`).
+`venueName` (text, nullable, up to 200 characters), `venueAddress` (text, nullable, up to 300
+characters — the whole postal address in one field), `isActive` (default `false`),
+`isPublished` (default `false`).
 Unique `(tenantId, slug)` and `(id, tenantId)`. Partial unique index `(tenantId) WHERE isActive`.
 
-**`edition_memberships`** — `tenantId`, `tenantMembershipId`, `editionId` (FK cascade),
-`programAccess`, `websiteContentAccess`, `ticketsAccess` (default `none`).
-Unique `(tenantMembershipId, editionId)`. Composite foreign keys `(tenantMembershipId, tenantId)`
-and `(editionId, tenantId)`.
+`startsAt` and `endsAt` are the window every module measures against: a programme item's times and
+the unavailability a submitter declares both have to fall inside them
+([docs/modules](modules/README.md)). The venue is the answer to "where is this happening" — the
+public website reads it from here and keeps no copy of its own
+([website](modules/website.md)).
 
-**`events`** — `tenantId`, `editionId` (FK cascade), `title`, `description` (nullable),
-`startsAt`, `endsAt`. Index `(tenantId, editionId, startsAt)`.
+**`edition_permissions`** — `tenantId`, `tenantMembershipId`, `editionId` (FK cascade), `resource`
+(text, one of `MODULES` — the module and its permission share an identifier), `level`. Unique
+`(tenantMembershipId, editionId, resource)`. Composite foreign keys `(tenantMembershipId, tenantId)`
+and `(editionId, tenantId)`. Index `(tenantId, editionId)`.
+
+There is no `edition_memberships` table: a permission row **is** the membership, and having access
+to an edition means holding at least one row here.
 
 **`attendees`** — `accountId`, `tenantId`, `editionId` (FK cascade), `firstName`, `lastName`.
 Unique `(accountId, editionId)`. Indexes `(tenantId, editionId)` and `(accountId)`.
 
-Every RLS-covered table has an index starting with `tenantId`.
+Module tables — `events`, `rooms`, `ticket_types`, `volunteer_shifts` and the rest — live in the
+module documents ([docs/modules](modules/README.md)). Every RLS-covered table, core or module, has
+an index starting with `tenantId`.
 
 ### 4.5 Invariants
 
@@ -434,10 +514,11 @@ Every RLS-covered table has an index starting with `tenantId`.
    unique index.
 2. **At least one `head` per tenant** — checked in the service and by an
    `AFTER DELETE OR UPDATE` trigger on `tenant_memberships`.
-3. **An edition in `edition_memberships` belongs to the same tenant as the `tenant_membership`** —
-   enforced by composite foreign keys.
+3. **A permission row's edition and membership belong to the same tenant** — enforced by composite
+   foreign keys on `edition_permissions` and `tenant_permissions`.
 4. **Writes to tenant-level tables always carry the `tenantId` from ALS** — `scopedDb()` throws on
    an empty context, and `WITH CHECK` in the RLS policies closes it on the database side.
+5. **`none` is never stored** — a permission row exists only for `read` or `write`.
 
 ### 4.6 Tenant isolation — RLS in Postgres
 
@@ -453,10 +534,16 @@ Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
 #### Covered tables
 
-`tenants`, `tenant_memberships`, `editions`, `edition_memberships`, `events`, `attendees`.
+**The rule: every table carrying a `tenantId` is covered** — core and module alike. `pnpm db:verify`
+enforces it, so a module that ships a table without a policy fails the build rather than leaking.
 
-The global tables (`accounts`, `oauth_identities`, `refresh_tokens`, `password_reset_tokens`)
-stay outside RLS — they are protected by filtering on the `accountId` from the JWT.
+The core set: `tenants`, `tenant_memberships`, `tenant_permissions`, `editions`,
+`edition_permissions`, `attendees`. Each module adds its own tables to it.
+
+The global tables (`accounts`, `oauth_identities`, `refresh_tokens`, `password_reset_tokens`) and
+the account-owned module tables ([4.2](#42-global-tables)) stay outside RLS — they are protected by
+filtering on the `accountId` from the JWT. They carry no `tenantId`, so `db:verify` does not flag
+them; that is the point, not an oversight.
 
 #### Tenant context
 
@@ -493,11 +580,16 @@ Only through `GlobalDbService` on the `opos_app_global` role. The complete list:
 | tenant lookup by slug or host | returns only `id`, `slug`, `name`, `customDomain`, `defaultLocale`, `timezone` |
 | `GET /me/memberships` | `where account_id = <account from the JWT>` |
 | `GET /me/attendances` | `where account_id = <account from the JWT>` |
+| `GET /me/<module>` — a user's own submissions across conventions | `where account_id = <account from the JWT>` |
+| `GET /editions/:id/<module>/:id/history` | only when that submission's `sharesHistory` is `true`; keyed by the submitter's `accountId`; returns only `accepted` rows of published editions, and only the fields listed in [the history pattern](modules/README.md#shared-pattern-history-across-conventions) |
+| `GET /public/calls` | published editions with an open call; returns only the convention name and slug, the edition name and slug, its dates, and the closing time where that module's call has one |
 | `GET /admin/tenants` | `PlatformAdminGuard` |
 
-Every query in `GlobalDbService` carries either an `accountId` condition or the admin guard; adding
-another one requires an entry in this table. The rest of the system, including `PublicModule`,
-resolves the tenant first and then works on `opos_app`.
+Every query in `GlobalDbService` carries an `accountId` condition, the admin guard, or returns
+nothing but public data of published editions; adding another one requires an entry in this table.
+The history query is the only one that hands one convention data produced at another, it is gated
+by the submitter's consent, and it is the reason that column exists. The rest of the system,
+including `PublicModule`, resolves the tenant first and then works on `opos_app`.
 
 #### Migrations and verification
 
@@ -564,6 +656,11 @@ Outside the ts-rest contract (these return `302`):
 | POST | `/me/attendances` | `{ tenantSlug, editionSlug, firstName, lastName }`; `409` on a repeat sign-up, `404` for an unpublished edition |
 | DELETE | `/me/attendances/:attendeeId` | withdraw |
 
+Modules add their own resources under `/me` — the user's programme cards, their volunteer profile,
+their submissions across conventions. They are listed in the module documents
+([5.5](#55-modules-in-the-contract)) and all obey the same rule: filtered by the account in the
+JWT, never by a tenant.
+
 ### 5.3 `tenants` — JWT + `X-Tenant-Slug`
 
 | Method | Path | Required permission |
@@ -580,7 +677,7 @@ Invitations — without the tenant header:
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/invitations/preview?token=` | none | convention name and the invitee's email |
-| POST | `/invitations/accept` | JWT | creates `tenant_membership` + `edition_memberships` from the token |
+| POST | `/invitations/accept` | JWT | creates the `tenant_membership` and the permission rows from the token |
 
 ### 5.4 `editions` — JWT + `X-Tenant-Slug`
 
@@ -596,16 +693,33 @@ Invitations — without the tenant header:
 | PUT | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation |
 | DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` |
 
-### 5.5 `events` — JWT + `X-Tenant-Slug` + edition permission
+`PUT /editions/:editionId/members/:tenantMembershipId` takes the whole permission map for that
+edition — `{ 'program-schedule': 'write', tickets: 'read' }` — and replaces the member's rows in
+`edition_permissions` with it. A resource left out of the map means `none`, and its row is deleted.
 
-| Method | Path | Required permission |
+### 5.5 Modules in the contract
+
+One contract file per module, holding both its panel endpoints and its public ones. The endpoint
+list, the payloads and the required permissions are in the module's document — this table is the
+map, not a copy of it.
+
+| Module | Contract file | Document |
 |---|---|---|
-| GET | `/editions/:editionId/events` | `program>=read` |
-| POST | `/editions/:editionId/events` | `program=write` |
-| PATCH | `/editions/:editionId/events/:eventId` | `program=write` |
-| DELETE | `/editions/:editionId/events/:eventId` | `program=write` |
+| `program-schedule` | `program-schedule.ts` | [program-schedule.md](modules/program-schedule.md) |
+| `program-submissions` | `program-submissions.ts` | [program-submissions.md](modules/program-submissions.md) |
+| `volunteer-signups` | `volunteer-signups.ts` | [volunteer-signups.md](modules/volunteer-signups.md) |
+| `volunteer-shifts` | `volunteer-shifts.ts` | [volunteer-shifts.md](modules/volunteer-shifts.md) |
+| `tickets` | `tickets.ts` | [tickets.md](modules/tickets.md) |
+| `website` | `website.ts` | [website.md](modules/website.md) |
 
-Validation: `endsAt > startsAt`, `title` 3–200 characters, `description` up to 5000 characters.
+Conventions every module follows:
+
+- Panel endpoints live under `/editions/:editionId/<resource>` and carry `X-Tenant-Slug`.
+- Endpoints a user calls for their own data live under `/me/<resource>` and take
+  `{ tenantSlug, editionSlug }` in the body, like `/me/attendances`.
+- Public endpoints live under `/public/tenants/:slug/editions/:editionSlug/<resource>` and return
+  published content of published editions only. A module with nothing published returns an empty
+  list, and the CMS renders no page and no menu entry for it ([10](#10-appscms)).
 
 ### 5.6 `admin` — JWT + `isPlatformAdmin`
 
@@ -620,13 +734,16 @@ Validation: `endsAt > startsAt`, `title` 3–200 characters, `description` up to
 | Method | Path | Description |
 |---|---|---|
 | GET | `/public/tenant?host=` | tenant by `Host`; `404` when unknown |
+| GET | `/public/calls` | across every convention: published editions with an open call, filterable by module |
 | GET | `/public/tenants/:slug/editions` | published editions, descending by `startsAt` |
 | GET | `/public/tenants/:slug/editions/active` | the active and published edition |
 | GET | `/public/tenants/:slug/editions/:editionSlug` | a single published edition |
-| GET | `/public/tenants/:slug/editions/:editionSlug/events` | programme, ascending by `startsAt` |
-| GET | `/public/tenants/:slug/editions/:editionSlug/events/:eventId` | programme item details |
+| GET | `/public/tenants/:slug/editions/:editionSlug/menu` | which module pages have content — what the CMS renders a menu from |
 
 The `isPublished = true` filter lives in the repository, not in the controller.
+
+Public endpoints belonging to modules — the programme, ticket types, page content — are listed in
+those modules' documents ([5.5](#55-modules-in-the-contract)).
 
 ---
 
@@ -719,11 +836,16 @@ Names, programme item descriptions and CMS content are single-language — in th
 | `AuthModule` | registration, sign-in, refresh rotation, password reset, Google OAuth, `authCode` exchange; `local`, `jwt`, `google` strategies |
 | `MeModule` | profile, memberships, edition sign-ups, account deletion |
 | `SuperadminModule` | tenants, first `head`, custom domain; `PlatformAdminGuard` |
-| `TenantsModule` | tenant data, `tenant_memberships`, invitations |
-| `EditionsModule` | edition CRUD, activation, `edition_memberships` |
-| `EventsModule` | programme item CRUD |
-| `PublicModule` | unauthenticated endpoints for the CMS and the portal |
+| `TenantsModule` | tenant data, `tenant_memberships`, `tenant_permissions`, invitations |
+| `EditionsModule` | edition CRUD, activation, `edition_permissions` |
+| `PublicModule` | unauthenticated core endpoints for the CMS and the portal |
 | `MailModule` | nodemailer + text templates per locale ([6](#6-localization)) |
+
+Plus one Nest module per product module — `ProgramModule`, `ProgramSubmissionsModule`,
+`VolunteerSignupsModule`, `VolunteerShiftsModule`, `TicketsModule`, `WebsiteModule` — each owning
+its own tables, controllers and public endpoints ([docs/modules](modules/README.md)). All of them
+are always registered — every convention has every module, so there is nothing conditional about
+the application graph.
 
 ### 7.2 Tenant context
 
@@ -731,8 +853,9 @@ Names, programme item descriptions and CMS content are single-language — in th
 
 1. Reads `X-Tenant-Slug`. No header -> empty context.
 2. Loads the tenant by slug through `GlobalDbService`; an unknown slug -> `404`.
-3. Loads the current account's `tenant_membership`.
-4. Opens ALS with `{ tenantId, tenantSlug, membership, account }`.
+3. Loads the current account's `tenant_membership` together with its `tenant_permissions` rows,
+   collapsed into a `{ resource: level }` map.
+4. Opens ALS with `{ tenantId, tenantSlug, membership, tenantPermissions, account }`.
 
 `TenantTransactionInterceptor` — for requests carrying a tenant context:
 
@@ -747,31 +870,37 @@ Outbound I/O (SMTP, HTTP to the OAuth provider) happens outside the transaction.
 
 ### 7.3 Permissions — guards
 
-The permission model is described in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions).
+The permission model is described in [PRODUCT.md](PRODUCT.md#6-roles-and-permissions).
 Implementation:
+
+Permissions are rows, so both guards work on a `{ resource: level }` map collapsed from them; a
+resource missing from the map is `none`.
 
 ```
 rank: none=0, read=1, write=2
+level(map, resource) = map[resource] ?? 'none'
 
 checkTenant(resource, required):
-  if account.isPlatformAdmin              -> allow
+  if account.isPlatformAdmin                        -> allow
   m = ALS.tenantMembership
-  if !m                                   -> 403
-  if m.role == 'head'                     -> allow
-  if rank(m[resource]) >= rank(required)  -> allow
+  if !m                                             -> 403
+  if m.role == 'head'                               -> allow
+  if rank(level(ALS.tenantPermissions, resource)) >= rank(required) -> allow
   -> 403
 
-checkEdition(editionId, resource, required):
+checkEdition(editionId, module, required):
   edition = load(editionId)
-  if edition.tenantId != ALS.tenantId     -> 404
-  if account.isPlatformAdmin              -> allow
-  m = ALS.tenantMembership; if !m         -> 403
-  if m.role == 'head'                     -> allow
-  em = editionMembership(m.id, editionId)
-  if !em                                  -> 403
-  if rank(em[resource]) >= rank(required) -> allow
+  if edition.tenantId != ALS.tenantId               -> 404
+  if account.isPlatformAdmin                        -> allow
+  m = ALS.tenantMembership; if !m                   -> 403
+  if m.role == 'head'                               -> allow
+  perms = editionPermissions(m.id, editionId)
+  if rank(level(perms, module)) >= rank(required)   -> allow
   -> 403
 ```
+
+Because a module and its edition-level permission share an identifier, the module needs no check of
+its own: every convention has every module, and the permission is the only gate.
 
 ```ts
 @UseGuards(JwtAuthGuard, TenantPermissionGuard)
@@ -779,7 +908,7 @@ checkEdition(editionId, resource, required):
 async updateTenant() { ... }
 
 @UseGuards(JwtAuthGuard, EditionPermissionGuard)
-@RequireEdition('program', 'write')   // editionId taken from the route param
+@RequireEdition('program-schedule', 'write')   // the module identifier is the permission resource
 async createEvent() { ... }
 
 @UseGuards(JwtAuthGuard, PlatformAdminGuard)
@@ -787,7 +916,8 @@ async createTenant() { ... }
 ```
 
 `EditionPermissionGuard` first checks that the edition belongs to the tenant from ALS and returns
-`404` on a mismatch.
+`404` on a mismatch. It loads the edition and the caller's `edition_permissions` rows in one query
+per request.
 
 ### 7.4 Authorization
 
@@ -905,9 +1035,13 @@ SPA (Vite + React), `@ts-rest/react-query`, auth state in `zustand`, forms with
 | `auth` | sign-in, invitation acceptance, session refresh |
 | `tenants` | convention picker, dashboard, settings, language and time zone |
 | `editions` | edition list, creation, activation, publication |
-| `program` | the edition's programme items |
 | `team` | convention team and edition permissions |
 | `account` | account menu, language switcher |
+
+Plus one feature per product module, named as in [docs/modules](modules/README.md):
+`program-schedule`, `program-submissions`, `volunteer-signups`, `volunteer-shifts`, `tickets`,
+`website`. A module's feature owns its own routes, and nothing outside it imports its internals
+([3.2](#32-frontend-application-layout)).
 
 | Path | Screen |
 |---|---|
@@ -917,7 +1051,7 @@ SPA (Vite + React), `@ts-rest/react-query`, auth state in `zustand`, forms with
 | `/:tenantSlug` | tenant dashboard |
 | `/:tenantSlug/editions` | edition list + creation |
 | `/:tenantSlug/editions/:editionSlug` | edition data, activation, publication |
-| `/:tenantSlug/editions/:editionSlug/program` | programme items |
+| `/:tenantSlug/editions/:editionSlug/program-schedule` | programme items — one route per module, named after it |
 | `/:tenantSlug/editions/:editionSlug/access` | team members' edition permissions |
 | `/:tenantSlug/team` | `tenant_memberships` — list, invitations, permissions |
 | `/:tenantSlug/settings` | name, slug, public website language, time zone; custom domain read-only |
@@ -926,8 +1060,12 @@ SPA (Vite + React), `@ts-rest/react-query`, auth state in `zustand`, forms with
 - Language switcher in the account menu; the choice goes to `PATCH /me` and stays on the account.
 - The compiled Lingui catalog is loaded through a dynamic import when the locale changes.
 - `GET /me/memberships` after sign-in populates the permission store.
-- The sidebar hides sections with a `none` permission; at `read` the save buttons are `disabled`.
+- The sidebar shows a module's section when the permission for it is at least `read`; at `read` the
+  save buttons are `disabled`. A section with no rows behind it still appears — that is where the
+  first one gets created — and opens on an empty state that says what to do, not on a blank table.
 - A `403` from the API -> a "no permissions" screen.
+- The team permission form lists every module, in the order of
+  [docs/modules](modules/README.md#the-modules).
 - Application start begins with `/auth/refresh` (the access token lives in memory only) — until the
   response arrives the user sees a loading view, not the sign-in screen.
 - `401` -> an attempt at `/auth/refresh` with `credentials: 'include'`; on failure, sign-out.
@@ -944,6 +1082,14 @@ Feature-based layout ([3](#3-monorepo-structure)).
 | `auth` | registration, sign-in, password reset, OAuth return |
 | `account` | account settings, language, account deletion |
 | `attendances` | "my conventions", edition sign-up, withdrawal |
+
+Modules that speak to users bring their own features here as they are built. Two of them are
+account-level rather than convention-level and behave unlike anything in the MVP portal: "my
+programme items" (the card library) and the volunteer profile are written once, kept on the
+account, and only then offered to a convention — so their screens start from the user's own list,
+not from a convention. Alongside them come "where can I send this" (the open calls list), "my
+submissions", "my shifts" and "my tickets". In the MVP there are none: the four features above are
+the whole portal.
 
 | Path | Screen |
 |---|---|
@@ -984,9 +1130,20 @@ Feature-based layout ([3](#3-monorepo-structure)): `tenant` (resolution and layo
 `program` (list and item details), `archive` (past editions). Files in `src/pages/` are nothing but
 the routing Astro requires — the logic sits in features.
 
+The CMS feature and the public path stay `/program`, not `program-schedule`: they are what a
+visitor reads, and the module identifier governs permissions, tables and the panel, not the
+convention's public addresses.
+
+The site is the [`website`](modules/website.md) module's surface, and its navigation is assembled
+from what the edition actually has, fetched once with the tenant through
+`GET /public/tenants/:slug/editions/:editionSlug/menu`: `/program` when there are published
+programme items, `/tickets` when a type is on sale, a submission form when a call is open. A route
+with nothing behind it answers `404` — there are no dead menu entries and no pages that exist but
+say nothing.
+
 | Path | Content |
 |---|---|
-| `/` | the active edition's home page + a "Sign up" button |
+| `/` | the active edition's home page: its dates, its venue and the hero, plus a "Sign up" button |
 | `/program` | the active edition's programme, grouped by day |
 | `/program/:eventId` | programme item details |
 | `/archive` | published editions, descending by date |
@@ -1000,7 +1157,7 @@ An unpublished edition under a direct URL -> `404`.
 ## 11. `apps/mobile`
 
 Expo (React Native) + expo-router. In the MVP a deliberate stub of the portal's scope
-([PRODUCT.md 7](PRODUCT.md#7-mobile-application)): the same contract, the same translation
+([PRODUCT.md 8](PRODUCT.md#8-mobile-application)): the same contract, the same translation
 catalogs, the same account.
 
 Feature-based layout ([3](#3-monorepo-structure)) — the same three features as the portal minus the
@@ -1301,9 +1458,13 @@ redirect — the operating systems fetch them directly and do not follow redirec
 | Account | Role | Tenant level | Edition level |
 |---|---|---|---|
 | `head@convention-a.test` | `head` | bypass | bypass |
-| `program@convention-a.test` | `org` | everything `none` | 2026: `program=write`; 2025: no membership |
-| `settings@convention-a.test` | `org` | `settings=write` | none |
-| `viewer@convention-a.test` | `org` | `settings=read` | 2026: `program=read` |
+| `program@convention-a.test` | `org` | no rows | 2026: `program-schedule=write`; 2025: no rows |
+| `settings@convention-a.test` | `org` | `settings=write` | no rows |
+| `viewer@convention-a.test` | `org` | `settings=read` | 2026: `program-schedule=read`, `tickets=read` |
+
+- The `tickets=read` row is deliberate: `viewer@convention-a.test` can reach a module with no rows
+  in it, which is what the empty-state tests run against
+  ([16.1](#161-api-integration-tests)).
 
 - **Attendee:** `attendee@example.com` signed up for `convention-a/2025`, not for `2026`.
 
@@ -1317,11 +1478,16 @@ Supertest + Postgres in a container, no database mocks, in `apps/api/test`:
 
 | Area | What we check |
 |---|---|
-| permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere |
+| permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere. An absent row behaves exactly like `none` |
+| permission rows | a map that omits a resource deletes its row; `none` is never written; an absent row behaves exactly like `none` |
+| empty modules | a module with no rows answers `200` with an empty list, never `404`; the public menu endpoint omits it; a public page for it answers `404` |
+| snapshots | editing a card after sending changes no submission; editing a submission changes no card; deleting a card leaves its submissions with an empty `sourceId`; a second live submission from one card to one edition -> `409`, while one sent after a withdrawal or a rejection goes through |
+| account-owned tables | `program_cards` and `volunteer_profiles` are unreachable outside `/me`; a request with another account's card id -> `404`; no tenant-scoped endpoint ever returns them |
+| submission history | `sharesHistory=false` -> `403 submission.history-not-shared`; with consent, only `accepted` rows of published editions appear, and rejected, withdrawn, undecided and unpublished ones never do; withdrawing consent hides it on the next request; deleting the account empties it |
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation |
 | anti-escalation | an org cannot grant permissions above their own, edit themselves or touch a `head` |
-| invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition |
+| invariants | a second active edition, removing the last `head`, an `edition_permissions` row pointing at another tenant's edition |
 | auth | refresh rotation, the three OAuth linking cases from [7.5](#75-google-oauth), rate limit -> `429` |
 | password reset | `204` and no message for an unknown address; the token is single-use and expires; a completed reset revokes every refresh token and sets `emailVerifiedAt` |
 | i18n | `lingui extract --check` reports no drift between code and catalogs; every error `code` from the contract has a descriptor in `errors.ts`; programme time formatting returns the tenant's zone, not the server's |
@@ -1358,6 +1524,7 @@ and the Maestro helpers are its dependencies, not the root's.
 | 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request |
 | 9 | An attendee signs up for an edition from the CMS, sees it under "my conventions", deletes the account |
 | 10 | Password reset: request from the sign-in screen, the link from Mailpit sets a new password, the old session stops working |
+| 11 | A module with nothing in it: the section is in the panel with an empty state, and the convention website shows neither a menu entry nor a page for it |
 
 Tests share no data: every scenario that creates a tenant works on its own slug, and scenarios
 using seeded data only read it.
@@ -1409,8 +1576,8 @@ real TLS, real Google and real email delivery.
    holds exactly one active Convention A edition.
 6. **The programme reaches the website.** An item added in the panel shows up on
    `convention-a.localhost/program` (allowing for the 60 s tenant cache TTL).
-7. **Organizer invitation.** A head invites an email with `program=write` for 2026 -> the message
-   lands in Mailpit -> acceptance -> the invitee sees the 2026 programme and nothing else.
+7. **Organizer invitation.** A head invites an email with `program-schedule=write` for 2026 -> the
+   message lands in Mailpit -> acceptance -> the invitee sees the 2026 programme and nothing else.
 8. **Permissions in the UI and on the server.** `viewer@convention-a.test` has no team management
    in the sidebar, and a direct URL ends with the "no permissions" screen and a `403` from the API.
 9. **Tenant isolation.** A Convention A org with `X-Tenant-Slug: convention-b` -> `403`;
@@ -1421,7 +1588,10 @@ real TLS, real Google and real email delivery.
    archive shows 2025, an unknown host -> the "we couldn't find that convention" page.
    `convention-b.localhost` renders in English with `lang="en"` regardless of `Accept-Language`,
    and the programme times match the tenant's zone.
-11. **Mobile application on a test release.** A build from TestFlight or Google Play's internal
+11. **An empty module shows nothing publicly.** `convention-a.localhost` has no tickets entry in the
+   menu and `convention-a.localhost/tickets` answers `404`, while `viewer@convention-a.test` sees
+   the tickets section in the panel on an empty state.
+12. **Mobile application on a test release.** A build from TestFlight or Google Play's internal
    channel signs in with an account created in the portal, Google sign-in returns through a deep
    link, an edition sign-up made in the application is visible in the portal, and
    `https://opos.land/join/...` opens the application instead of the browser.
@@ -1451,3 +1621,8 @@ real TLS, real Google and real email delivery.
    question of which feature it belongs to; if none, a new feature is created rather than an
    application-level `components/` directory. Shared things go to `shared/`, never through an
    import from inside another feature.
+9. **A module starts with its document.** Before the first table or endpoint of a new module, its
+   file in [docs/modules](modules/README.md) exists and carries all seven sections. The identifier
+   in `MODULES`, the permission resource, the Nest module, the contract file, the panel feature and
+   the document all share one name. Core documents get a pointer to it, never a copy of it. Every
+   convention has every module, so a module ships with an empty state rather than a switch.

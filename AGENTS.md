@@ -13,47 +13,72 @@ Write responses in the language the user writes in.
 ## Repository
 
 OPOS — a multitenant SaaS for running fantasy conventions. The project is at the planning stage:
-there is no application code yet, only tooling configuration and two documents.
+there is no application code yet, only tooling configuration and the documents.
+
+The product is a **core plus modules**. The two core documents describe what every module rests on;
+each module is described end to end — product behaviour and implementation together — in one file
+of its own.
 
 Everything in this repository is written in English.
 
 | File | Contains |
 |---|---|
-| [docs/PRODUCT.md](docs/PRODUCT.md) | what we build and for whom: domain model, glossary, roles and permissions, addresses, languages and markets, personal data, MVP scope |
-| [docs/PLAN.md](docs/PLAN.md) | how to build it: architecture, stack, database schema, API contract, applications, environments, deployment, tests |
+| [docs/PRODUCT.md](docs/PRODUCT.md) | the core, what we build and for whom: domain model, glossary, modules, roles and permissions, addresses, languages and markets, personal data, MVP scope |
+| [docs/PLAN.md](docs/PLAN.md) | the core, how to build it: architecture, stack, core database schema, contract conventions, applications, environments, deployment, tests |
+| [docs/modules/README.md](docs/modules/README.md) | what a module is, the module list, dependencies, shared patterns, and the template every module document follows |
+| `docs/modules/<module>.md` | one module: behaviour, terms, flows, permissions, data, endpoints, and what it deliberately does not do |
 
-## Prime rule: update both documents together
+## Prime rule: leave no document behind
 
-**Every change agreed in a conversation lands in both documents within the same turn.** Never end
-a turn with one file updated and the other not — even when the change "only concerns engineering"
-or "only concerns the product". The other file almost always contains a statement that just
-stopped being true.
+**Every change agreed in a conversation lands in every document it touches, within the same turn.**
+Never end a turn with one file updated and another not — even when the change "only concerns
+engineering" or "only concerns the product". The other files almost always contain a statement that
+just stopped being true.
+
+A change belongs to one of two places, and the answer decides what else has to be read:
+
+- **A module** — its file in `docs/modules/` is the one place its behaviour, data and endpoints are
+  written down. Product and engineering live there together, so there is nothing to synchronise
+  inside a module.
+- **The core** — PRODUCT.md and PLAN.md, which still travel as a pair, because they split the same
+  subject into what and how.
 
 Procedure for every substantive change:
 
-1. Decide which side the change belongs to (table below).
+1. Decide whether it belongs to a module or to the core (table below).
 2. Apply it there.
-3. Read the other file looking for sentences the change invalidates — and fix them.
-4. Check terminology against the [glossary](docs/PRODUCT.md#3-glossary).
-5. Check that links and chapter numbers on both sides still point where they should.
+3. Read what is left looking for sentences the change invalidates — and fix them. A module change
+   almost always touches the module list, the glossary or the MVP scope; a core change almost
+   always touches something a module document assumed.
+4. Check terminology against the [glossary](docs/PRODUCT.md#3-glossary). Product-wide terms belong
+   there; a term only one module uses stays in that module's file.
+5. Check that links and chapter numbers on every side still point where they should.
 6. In the response to the user, state what changed in each file.
+
+A fact has exactly one home. The core never repeats what a module document says — it points at it.
+A module document never repeats what the core says — it assumes it.
 
 ### What goes where
 
-| Change concerns | PRODUCT.md | PLAN.md |
-|---|---|---|
-| new feature or a change in MVP scope | yes | yes — contract, apps, tests |
-| name of a domain concept | yes — glossary | yes — mapping to tables |
-| permission rule, who can do what | yes | yes — guards, contract |
-| new endpoint | only when it changes product behaviour | yes |
-| database column, index, migration | no | yes |
-| library choice, version, configuration | no | yes |
-| language, market, time zone | yes | yes — schema, i18n |
-| personal data, retention, GDPR | yes | yes — schema, backups |
-| address, domain, who sets it | yes | yes — routing, Traefik |
+| Change concerns | Module file | PRODUCT.md | PLAN.md |
+|---|---|---|---|
+| a new module | yes — the whole file | yes — module list, glossary, MVP scope | yes — `MODULES`, tree, seed, tests |
+| behaviour, flow or screen inside one module | yes | no | no |
+| a module's table, column, index or endpoint | yes | no | no |
+| what `read` and `write` mean for a module | yes | no | no |
+| data flowing between two modules | yes — both files | no | no |
+| the permission model itself, the levels, anti-escalation | no | yes | yes — guards, contract |
+| a name in the product-wide vocabulary | mention it | yes — glossary | yes — mapping to tables |
+| a change in MVP scope | no | yes | yes — seed, tests |
+| a core table, the contract conventions, RLS | no | no | yes |
+| library choice, version, configuration | no | no | yes |
+| language, market, time zone | no | yes | yes — schema, i18n |
+| personal data, retention, GDPR | yes — what the module stores | yes | yes — schema, backups |
+| address, domain, who sets it | no | yes | yes — routing, Traefik |
 
-A change that lands only in PLAN.md still requires reviewing PRODUCT.md — step 3 of the procedure
-always applies.
+A change that lands in one file only still requires reading the others — step 3 of the procedure
+always applies. In particular: a module that starts storing a new kind of personal data always
+reaches PRODUCT.md, and a module that adds a table always obeys the RLS rule in PLAN.md.
 
 ## Document style
 
@@ -120,7 +145,7 @@ Rules commitlint will not check, but which still apply:
 ```
 feat(db): add tenant and edition schema
 feat(api): add tenant and edition permission guards
-fix(api): reject edition membership pointing at another tenant
+fix(api): reject an edition permission pointing at another tenant
 test(e2e): cover organizer invitation flow
 chore(repo): pin node and pnpm versions
 ```
@@ -139,5 +164,5 @@ rejected by `minimumReleaseAge` — that is policy, not a failure.
 
 The plan does not prescribe an order of work — it follows from dependencies between packages:
 `packages/db` and `packages/contract` before the apps, the contract before the frontends. The
-scope to cover is set by [MVP scope](docs/PRODUCT.md#10-mvp-scope-vs-beyond-mvp), and the readiness
+scope to cover is set by [MVP scope](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp), and the readiness
 criteria by [tests](docs/PLAN.md#16-tests) and the [smoke test](docs/PLAN.md#17-smoke-test).

@@ -12,15 +12,29 @@ Write responses in the language the user writes in.
 
 ## Repository
 
-OPOS — a multitenant SaaS for running fantasy conventions. The project is at the planning stage:
-there is no application code yet, only tooling configuration and two documents.
+OPOS — a multitenant platform for running fantasy conventions, free for conventions. The project is
+at the planning stage: there is no application code yet, only tooling configuration and two
+documents.
 
 Everything in this repository is written in English.
 
 | File | Contains |
 |---|---|
-| [docs/PRODUCT.md](docs/PRODUCT.md) | what we build and for whom: domain model, glossary, roles and permissions, addresses, languages and markets, personal data, MVP scope |
-| [docs/PLAN.md](docs/PLAN.md) | how to build it: architecture, stack, database schema, API contract, applications, environments, deployment, tests |
+| [docs/PRODUCT.md](docs/PRODUCT.md) | what we build and for whom: domain model, glossary, roles and permissions, addresses, modules, design, languages and markets, personal data, MVP scope |
+| [docs/PLAN.md](docs/PLAN.md) | how to build it: architecture, stack, database schema, API contract, applications, Supabase, environments, deployment, tests |
+
+## Meeting decisions take precedence
+
+Decisions from team meetings override what the repository says — the documents, this file and the
+tooling configuration. When the user brings a meeting note:
+
+1. Carry every decision into the repository following the prime rule below: both documents, this
+   file and the configuration it affects.
+2. Where the note contradicts the repository, the note wins.
+3. Where the note is ambiguous, or a decision forces a choice the note does not make, ask before
+   writing. Never settle a contradiction silently.
+4. The note itself does not enter the repository — only its decisions, written as the target state.
+5. No personal names in the documents; describe roles instead.
 
 ## Prime rule: update both documents together
 
@@ -72,7 +86,8 @@ always applies.
 - Tables instead of paragraphs wherever the content has structure.
 - Specifics instead of generalities: column names, status codes, paths, limits.
 - Tables of contents and anchors updated together with headings.
-- Terminology strictly from the glossary: tenant, edition, event, attendee, admin, org, head, user.
+- Terminology strictly from the glossary: tenant, edition, event, attendee, admin, org, head, user,
+  core, module, booth.
 
 ## Commits
 
@@ -98,13 +113,13 @@ Subject in the imperative mood (`add`, not `added`), lowercase, no trailing peri
 | `test` | integration tests, e2e, fixtures |
 | `docs` | project documents, README |
 | `chore` | dependencies, configuration, tooling |
-| `build` | Dockerfile, compose, EAS, bundlers |
+| `build` | Dockerfile, compose, bundlers |
 | `ci` | GitHub Actions workflows |
 | `revert` | reverting a commit |
 
-Scopes: `api`, `panel`, `portal`, `cms`, `mobile`, `db`, `contract`, `i18n`, `e2e`, `infra`,
-`repo`. The scope is optional, but when present it must come from this list — otherwise commitlint
-rejects the message. A new scope goes into `commitlint.config.mjs` and into this table.
+Scopes: `api`, `panel`, `portal`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra`, `repo`.
+`infra` covers Traefik, compose and `infra/supabase`. The scope is optional, but when present it
+must come from this list — otherwise commitlint rejects the message. A new scope goes into `commitlint.config.mjs` and into this table.
 
 Rules commitlint will not check, but which still apply:
 
@@ -137,7 +152,14 @@ tests before every PR.
 `pnpm install` installs dependencies and wires up the hooks. Dependencies younger than 7 days are
 rejected by `minimumReleaseAge` — that is policy, not a failure.
 
+**No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
+them to the repository. UI follows the designer's designs; where none exists yet, use plain blocks
+and real copy ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)). Do not ship
+component-library defaults as a finished look.
+
 The plan does not prescribe an order of work — it follows from dependencies between packages:
-`packages/db` and `packages/contract` before the apps, the contract before the frontends. The
-scope to cover is set by [MVP scope](docs/PRODUCT.md#10-mvp-scope-vs-beyond-mvp), and the readiness
-criteria by [tests](docs/PLAN.md#16-tests) and the [smoke test](docs/PLAN.md#17-smoke-test).
+the Supabase services (`infra/supabase`) before `packages/db`, because the schema references
+`auth.users`; `packages/db` and `packages/contract` before the apps, the contract before the
+frontends. The scope to cover is set by [MVP scope](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp),
+and the readiness criteria by [tests](docs/PLAN.md#16-tests) and the
+[smoke test](docs/PLAN.md#17-smoke-test).

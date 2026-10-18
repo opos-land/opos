@@ -15,7 +15,7 @@ product decisions live there — this document is implementation only.
 8. [apps/panel](#8-appspanel)
 9. [apps/portal](#9-appsportal)
 10. [apps/cms](#10-appscms)
-11. [apps/mobile](#11-appsmobile)
+11. [Supabase](#11-supabase)
 12. [Environment variables](#12-environment-variables)
 13. [Local development](#13-local-development)
 14. [Deployment](#14-deployment)
@@ -28,7 +28,8 @@ product decisions live there — this document is implementation only.
 
 ## 1. Architecture
 
-Five applications, three shared packages, one backend.
+Four applications, three shared packages, one backend, and self-hosted Supabase for the database
+and authentication.
 
 ```mermaid
 graph TB
@@ -37,40 +38,45 @@ graph TB
     panel["apps/panel<br>Vite + React"]
     api["apps/api<br>NestJS + Drizzle"]
     cms["apps/cms<br>Astro SSR"]
-    mobile["apps/mobile<br>Expo / RN"]
+    auth["Supabase Auth<br>GoTrue"]
     packages["packages/contract · packages/db · packages/i18n"]
-    pg[("PostgreSQL 16")]
+    pg[("Supabase Postgres 17")]
 
     traefik -->|"opos.land"| portal
     traefik -->|"panel.opos.land"| panel
     traefik -->|"api.opos.land"| api
+    traefik -->|"auth.opos.land"| auth
     traefik -->|"&lt;slug&gt;.opos.land + custom domains"| cms
-    mobile --> api
+    portal -.->|"sign-in"| auth
+    panel -.->|"sign-in"| auth
+    auth -.->|"send-email hook"| api
     portal --> packages
     panel --> packages
     api --> packages
     cms --> packages
     packages --> pg
+    auth --> pg
 ```
 
 | App | Stack | Role | Host |
 |---|---|---|---|
-| `apps/api` | NestJS + Drizzle + ts-rest | the only backend for every frontend | `api.opos.land` |
+| `apps/api` | NestJS + Drizzle + ts-rest | the only application backend; verifies Supabase Auth sessions | `api.opos.land` |
 | `apps/panel` | Vite + React + Tailwind + shadcn/ui | organizer panel (SPA) | `panel.opos.land` |
-| `apps/portal` | Vite + React + Tailwind + shadcn/ui | landing page, registration, "my conventions" | `opos.land` |
+| `apps/portal` | Vite + React + Tailwind + shadcn/ui | landing page, registration, "my conventions" (SPA, mobile-first) | `opos.land` |
 | `apps/cms` | Astro SSR (Node adapter) | public convention website, Host -> tenant mapping | `<slug>.opos.land` + custom domains |
-| `apps/mobile` | Expo (React Native) | a stub of the portal's scope on iOS and Android | stores / TestFlight |
+| `auth` | Supabase Auth (`supabase/gotrue`) | registration, sign-in, sessions, password reset, Google OAuth | `auth.opos.land` |
+| `db` | Supabase Postgres (`supabase/postgres`) | the only database: `public` (OPOS tables) and `auth` (Supabase Auth) | internal network only |
 
 **`packages/contract`** — ts-rest + zod, the single source of truth for the API. No build step,
 apps infer types from the TS source.
 
-**`packages/db`** — Drizzle ORM: schema, migrations, connection factories. Row-level multi-tenancy
-through `tenantId` + `editionId` columns, enforced by RLS
+**`packages/db`** — Drizzle ORM: the `public` schema, migrations, connection factories. Row-level
+multi-tenancy through `tenantId` + `editionId` columns, enforced by RLS
 ([4.6](#46-tenant-isolation--rls-in-postgres)).
 
 **`packages/i18n`** — Lingui configuration, the list of supported locales, locale detection, `Intl`
-formatters and message descriptors for API error codes. Application catalogs live next to the
-applications ([6](#6-localization)).
+formatters and message descriptors for API and Supabase Auth error codes. Application catalogs
+live next to the applications ([6](#6-localization)).
 
 ---
 
@@ -85,36 +91,40 @@ instead of printing a warning.
 
 **Repository tooling:** lefthook (git hooks), commitlint with `config-conventional`, prettier.
 
-**Backend:** NestJS, Drizzle ORM + postgres-js, `@ts-rest/nest`, Passport (JWT, local, Google),
-argon2, nodemailer, `@nestjs/throttler`, `cookie-parser`.
+**Backend:** NestJS, Drizzle ORM + postgres-js, `@ts-rest/nest`, `jose` (Supabase JWT
+verification), `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (admin API),
+nodemailer, `@nestjs/throttler`.
+
+**Authentication:** Supabase Auth (GoTrue), self-hosted ([11](#11-supabase)). Clients use
+`@supabase/auth-js` directly against `auth.opos.land`.
 
 **Frontend SPA:** Vite + React + TypeScript, Tailwind CSS + shadcn/ui, `@ts-rest/react-query`,
-react-router, react-hook-form + zod, zustand, `@lingui/react`.
+`@supabase/auth-js`, react-router, react-hook-form + zod, zustand, `@lingui/react`.
 
 **Frontend SSR:** Astro (Node adapter), `@ts-rest/core`, Tailwind CSS, Host -> tenant middleware,
 LRU lookup cache, `@lingui/core` (in `.astro`, without the React layer).
 
-**Mobile:** Expo (React Native) + expo-router, NativeWind, `@ts-rest/react-query`,
-`expo-secure-store` (tokens), `expo-auth-session` + `expo-web-browser` (OAuth),
-`expo-localization` (device language), `@lingui/react`. Builds through EAS.
-
 **i18n:** Lingui — `@lingui/core`, `@lingui/react`, `@lingui/macro` macros, `@lingui/cli`.
 `Intl` for dates, numbers and currencies.
 
-**Tests:** supertest (integration), Playwright (web e2e), Maestro (mobile e2e).
+**Tests:** supertest (integration), Playwright (web e2e, desktop and mobile viewports).
 
-**Infrastructure:** Docker Compose, Traefik v3 (wildcard TLS via DNS-01), PostgreSQL 16,
-Mailpit (dev).
+**Infrastructure:** Docker Compose, Traefik v3 (wildcard TLS via DNS-01), self-hosted Supabase —
+`supabase/postgres` (PostgreSQL 17) and `supabase/gotrue`, Supabase Studio (dev), Mailpit (dev).
 
 **Design principles:**
 
 - ts-rest contracts with no build step.
+- Supabase Auth owns identities and sessions; the API owns everything else.
+- Clients never reach the database: no PostgREST, no Realtime, no Storage.
 - Row-level multi-tenancy, not schema-per-tenant.
 - Isolation enforced by RLS, not only by a `where` clause in code.
 - AsyncLocalStorage carries the `tenantContext`.
 - Fail fast on a missing `tenantId` — both in ALS and in the RLS policies.
 - No user-facing strings outside Lingui macros in application code.
-- Every frontend and the mobile app use a feature-based layout, with boundaries enforced by eslint.
+- No AI-generated graphics; screens follow the designer's designs
+  ([PRODUCT.md 8](PRODUCT.md#8-design-and-public-image)).
+- Every frontend uses a feature-based layout, with boundaries enforced by eslint.
 
 ---
 
@@ -127,8 +137,8 @@ opos/
   turbo.json                  # task pipeline (3.1)
   .nvmrc                      # 24.15.0
   .prettierrc
-  docker-compose.yml          # dev: postgres + mailpit
-  docker-compose.prod.yml     # prod: traefik + apps + postgres
+  docker-compose.yml          # dev: supabase db + auth + studio, mailpit
+  docker-compose.prod.yml     # prod: traefik + apps + supabase db + auth
   lefthook.yml                # hooks: prettier on staged files, commitlint on the message
   commitlint.config.mjs       # types, scopes, header length
   .prettierignore
@@ -138,6 +148,10 @@ opos/
   docs/
     PRODUCT.md
     PLAN.md
+  infra/
+    supabase/
+      db/                # init SQL: Supabase's self-hosting scripts + opos-roles.sql
+      .env.example       # dev configuration of the Supabase services
   apps/
     api/
       src/
@@ -156,14 +170,14 @@ opos/
           decorators/current-account.decorator.ts
           filters/http-exception.filter.ts
         modules/
-          auth/          # local, jwt, google, refresh rotation, authCode exchange
+          auth/          # Supabase JWT verification, send-email hook, GoTrue admin client
           accounts/      # MeModule
           superadmin/    # tenants, first head, custom domain
           tenants/       # tenant + tenant_memberships + invitations
           editions/      # editions + edition_memberships
           events/        # programme
           public/        # unauthenticated endpoints for the CMS and the portal
-          mail/          # nodemailer + text templates
+          mail/          # nodemailer + Lingui templates
       test/              # integration tests
       .env.example
       Dockerfile
@@ -186,7 +200,7 @@ opos/
           team/
           account/
         shared/{ui,lib,config}/
-      .env.example       # VITE_API_URL
+      .env.example       # VITE_API_URL, VITE_AUTH_URL
       Dockerfile
     portal/
       lingui.config.ts
@@ -195,7 +209,7 @@ opos/
         app/
         features/{landing,auth,account,attendances}/
         shared/{ui,lib,config}/
-      .env.example       # VITE_API_URL
+      .env.example       # VITE_API_URL, VITE_AUTH_URL
       Dockerfile
     cms/
       lingui.config.ts
@@ -207,29 +221,16 @@ opos/
         shared/{ui,lib}/
       .env.example       # API_URL
       Dockerfile
-    mobile/
-      lingui.config.ts
-      app/               # thin expo-router routes, delegate to features
-      src/
-        locales/{en,pl}.po
-        features/{auth,account,attendances}/
-        shared/{ui,lib,config}/
-      app.json           # opos:// scheme, universal links, identifiers
-      eas.json
-      metro.config.js    # watchFolders + pnpm symlink resolver
-      .env.example       # EXPO_PUBLIC_API_URL
   e2e/                   # a workspace package: playwright and the test helpers
     package.json
     playwright.config.ts
     specs/
-    fixtures/            # OAuth stub, Mailpit client, sign-in as a seeded account
-    maestro/             # mobile flows
+    fixtures/            # Mailpit client, sign-in as a seeded account
   packages/
     contract/
       src/
         index.ts
         common.ts        # error schemas, pagination, identifiers
-        auth.ts
         me.ts
         tenants.ts
         editions.ts
@@ -244,10 +245,7 @@ opos/
         rls.ts           # set_config + the policy verification query
         schema/
           enums.ts
-          accounts.ts
-          oauth-identities.ts
-          refresh-tokens.ts
-          password-reset-tokens.ts
+          accounts.ts    # references auth.users through drizzle-orm/supabase
           tenants.ts
           tenant-memberships.ts
           editions.ts
@@ -255,13 +253,13 @@ opos/
           events.ts
           attendees.ts
         seed.ts
-      drizzle/           # drizzle-kit migrations + the hand-written RLS migration
-      drizzle.config.ts
+      drizzle/           # drizzle-kit migrations + the hand-written RLS and trigger migrations
+      drizzle.config.ts  # schemaFilter: ['public']
       package.json       # main + types -> src/index.ts
     i18n/
       src/
         index.ts         # locale list, detection, catalog activation, Intl formatters
-        errors.ts        # API code -> MessageDescriptor mapping
+        errors.ts        # API and Supabase Auth code -> MessageDescriptor mapping
       locales/{en,pl}.po        # shared messages: API errors, emails
       lingui.config.base.ts
       package.json       # main + types -> src/index.ts, catalogs compiled separately
@@ -298,32 +296,30 @@ tasks still run in parallel.
 | `db:studio` | — | — | no; `persistent: true` |
 
 - The `db:*` tasks exist only in `packages/db`, `test:e2e` only in `e2e`.
-- `apps/mobile` defines no `build` script — it is built through EAS ([11](#11-appsmobile));
-  `typecheck`, `lint` and `test` cover it like every other package.
-- Frontend build-time variables (`VITE_*`, `EXPO_PUBLIC_*`) enter task hashes through turbo's
-  framework inference. The API's variables are read at runtime and stay out of the hash
+- Frontend build-time variables (`VITE_*`) enter task hashes through turbo's framework inference.
+  The API's variables are read at runtime and stay out of the hash
   ([12](#12-environment-variables)).
 
 ### 3.2 Frontend application layout
 
-The panel, the portal, the CMS and the mobile application share one layout: **feature based**.
-No directory for a technical layer (`components/`, `hooks/`) exists at application level — those
-directories live inside a feature.
+The panel, the portal and the CMS share one layout: **feature based**. No directory for a
+technical layer (`components/`, `hooks/`) exists at application level — those directories live
+inside a feature.
 
 ```
 src/
-  app/                  # bootstrap: router, providers, layout (in mobile that role belongs to expo-router's app/)
+  app/                  # bootstrap: router, providers, layout
   features/
     <feature>/
       api/              # ts-rest hooks, query keys, mutations
       components/       # components belonging to this feature only
       hooks/
-      pages/            # views mounted into the router (in mobile: screens/)
+      pages/            # views mounted into the router
       model/            # types, zod schemas, mappings
       index.ts          # the feature's public API — the only thing others can see
   shared/
     ui/                 # shadcn/ui and components with no domain knowledge
-    lib/                # API client, i18n, formatters, storage
+    lib/                # API client, auth client, i18n, formatters, storage
     config/
 ```
 
@@ -337,19 +333,28 @@ Import rules, enforced by the `no-restricted-paths` rule in `packages/eslint-con
 | `shared/` | `features/` | **no** |
 | `app/` | anywhere | yes |
 
-Routes stay thin: a file in Astro's `pages/` or in expo-router's `app/` holds no logic, it only
-mounts a view from the right feature. In mobile the view directory is called `screens/` instead of
-`pages/` — the rest of the layout is identical.
+Routes stay thin: a file in Astro's `pages/` holds no logic, it only mounts a view from the right
+feature.
 
 A feature never reaches the database or `fetch` directly: all network traffic goes through that
-feature's `api/`, built on the client from `shared/lib`.
+feature's `api/`, built on the API client and the auth client from `shared/lib`.
+
+`shared/ui` starts from shadcn/ui, restyled to the designer's tokens (colours, typography,
+spacing, radii). No image or illustration in `shared/ui` or in a feature is AI-generated
+([18](#18-execution-rules)).
 
 ---
 
 ## 4. Database schema
 
-PostgreSQL 16. Every table has `id uuid primary key default gen_random_uuid()`,
-`createdAt timestamptz not null default now()`, `updatedAt timestamptz not null default now()`.
+PostgreSQL 17 from the `supabase/postgres` image. Every OPOS table lives in the `public` schema and
+has `id uuid primary key default gen_random_uuid()`, `createdAt timestamptz not null default
+now()`, `updatedAt timestamptz not null default now()` — `accounts.id` being the one exception
+([4.2](#42-global-tables)).
+
+The `auth` schema belongs to Supabase Auth: it creates and migrates it on start. Our migrations
+never write to it; `drizzle.config.ts` sets `schemaFilter: ['public']`, and `accounts` references
+`auth.users` through `authUsers` from `drizzle-orm/supabase`.
 
 The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 
@@ -357,7 +362,7 @@ The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 |---|---|
 | admin | `accounts.isPlatformAdmin = true` |
 | org, head | `tenant_memberships` (+ optionally `edition_memberships`) |
-| user | `accounts` + rows in `attendees` |
+| user | `auth.users` + `accounts` + rows in `attendees` |
 | tenant | `tenants` |
 | edition | `editions` |
 | event | `events` |
@@ -368,8 +373,6 @@ The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 ```ts
 permissionLevel = pgEnum('permission_level', ['none', 'read', 'write'])
 tenantRole      = pgEnum('tenant_role',      ['head', 'org'])
-oauthProvider   = pgEnum('oauth_provider',   ['google'])
-tokenPurpose    = pgEnum('token_purpose',    ['portal', 'panel', 'mobile'])
 ```
 
 `locale` is not an enum — the list of supported languages lives in `packages/i18n` and in
@@ -377,27 +380,30 @@ tokenPurpose    = pgEnum('token_purpose',    ['portal', 'panel', 'mobile'])
 
 ### 4.2 Global tables
 
+Identities, passwords, sessions, refresh tokens and confirmation and recovery tokens live in
+Supabase Auth's tables (`auth.users`, `auth.identities`, `auth.sessions`, `auth.refresh_tokens`).
+OPOS keeps the profile only.
+
 **`accounts`**
 
 | column | type | notes |
 |---|---|---|
-| `email` | text | unique, stored lowercase |
-| `passwordHash` | text | nullable — an OAuth-only account has no password |
-| `firstName` | text | |
-| `lastName` | text | |
+| `id` | uuid | primary key, `references auth.users(id) on delete cascade`; equals the JWT `sub` |
+| `email` | text | unique, lowercase; mirrored from `auth.users.email` |
+| `firstName` | text | nullable |
+| `lastName` | text | nullable |
 | `isPlatformAdmin` | boolean | default `false` |
-| `emailVerifiedAt` | timestamptz | nullable; set by OAuth sign-in and by a completed password reset |
 | `locale` | text | nullable; the user's choice, `null` = detect from `Accept-Language` |
 
-**`oauth_identities`** — `accountId` (FK cascade), `provider`, `providerId`.
-Unique `(provider, providerId)`. Index on `accountId`.
+Triggers on `auth.users`, in a hand-written migration, as `security definer` functions owned by
+`opos_migrator`:
 
-**`refresh_tokens`** — `accountId` (FK cascade), `tokenHash` (sha256 of the raw token), `purpose`
-(`portal` / `panel` / `mobile`), `expiresAt`, `revokedAt` (nullable).
-Indexes on `(accountId, purpose)` and `tokenHash`.
+| Trigger | Effect |
+|---|---|
+| `after insert` | inserts `accounts`: `email`; `firstName`, `lastName`, `locale` from `raw_user_meta_data` (`first_name`, `last_name`, `locale` sent by the portal on sign-up; for Google `full_name` split on the first space) |
+| `after update of email` | updates `accounts.email` |
 
-**`password_reset_tokens`** — `accountId` (FK cascade), `tokenHash` (sha256 of the raw token),
-`expiresAt`, `usedAt` (nullable). Indexes on `accountId` and `tokenHash`.
+Deleting a user in Supabase Auth removes `accounts`, and with it every row that references it.
 
 ### 4.3 Tenant-level tables
 
@@ -438,6 +444,8 @@ Every RLS-covered table has an index starting with `tenantId`.
    enforced by composite foreign keys.
 4. **Writes to tenant-level tables always carry the `tenantId` from ALS** — `scopedDb()` throws on
    an empty context, and `WITH CHECK` in the RLS policies closes it on the database side.
+5. **Every `auth.users` row has exactly one `accounts` row** — the insert trigger and the cascading
+   foreign key.
 
 ### 4.6 Tenant isolation — RLS in Postgres
 
@@ -445,9 +453,14 @@ Every RLS-covered table has an index starting with `tenantId`.
 
 | Role | Attributes | Used by |
 |---|---|---|
-| `opos_migrator` | table owner, `BYPASSRLS` | `pnpm db:migrate`, `pnpm db:seed` |
+| `opos_migrator` | owner of the `public` tables, `BYPASSRLS` | `pnpm db:migrate`, `pnpm db:seed` |
 | `opos_app` | DML only, no `BYPASSRLS` | runtime API inside a tenant context |
 | `opos_app_global` | DML only, `BYPASSRLS` | `GlobalDbService` exclusively |
+
+The three roles are created by `infra/supabase/db/opos-roles.sql`, which the `db` container runs
+as `supabase_admin` when it initializes an empty data directory. Supabase's own roles
+(`supabase_auth_admin`, `authenticator`, `anon`, `authenticated`, `service_role`) come from the
+image; `anon` and `authenticated` hold no privileges on the `public` schema.
 
 Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
@@ -455,8 +468,8 @@ Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
 `tenants`, `tenant_memberships`, `editions`, `edition_memberships`, `events`, `attendees`.
 
-The global tables (`accounts`, `oauth_identities`, `refresh_tokens`, `password_reset_tokens`)
-stay outside RLS — they are protected by filtering on the `accountId` from the JWT.
+The global table `accounts` stays outside RLS — it is protected by filtering on the `accountId`
+from the JWT. The `auth` schema is accessed only by Supabase Auth.
 
 #### Tenant context
 
@@ -501,8 +514,8 @@ resolves the tenant first and then works on `opos_app`.
 
 #### Migrations and verification
 
-RLS policies go into a hand-written migration (`drizzle-kit generate --custom`).
-`pnpm db:verify` runs:
+RLS policies and the `auth.users` triggers go into hand-written migrations
+(`drizzle-kit generate --custom`). `pnpm db:verify` runs:
 
 ```sql
 select c.relname from pg_class c
@@ -527,30 +540,27 @@ and debugging — **it never reaches the UI**.
 Statuses: `400` validation, `401` missing or stale token, `403` insufficient permissions,
 `404` does not exist **or belongs to another tenant**, `409` invariant conflict.
 
-### 5.1 `auth` — unauthenticated
+### 5.1 `auth` — Supabase Auth
 
-| Method | Path | Body / Query | Response |
-|---|---|---|---|
-| POST | `/auth/register` | `email, password, firstName, lastName` | `201 { account, accessToken }` |
-| POST | `/auth/login` | `email, password, purpose` | `200 { account, accessToken }` |
-| POST | `/auth/refresh` | — (cookie) | `200 { accessToken }` (rotation) |
-| POST | `/auth/logout` | — (cookie) | `204` + cookie cleared |
-| POST | `/auth/oauth/exchange` | `authCode` | `200 { account, accessToken }` |
-| POST | `/auth/password-reset/request` | `email` | `204` — always, an unknown address included |
-| POST | `/auth/password-reset/confirm` | `token, password` | `204`; every refresh token revoked |
+Registration, sign-in, sessions and password reset are not part of the OPOS contract. The portal
+and the panel call Supabase Auth at `auth.opos.land` through `@supabase/auth-js`:
 
-For `purpose` = `portal` / `panel` the refresh token appears in no body — only in an `HttpOnly`
-cookie, and the client calls these endpoints with `credentials: 'include'`.
+| Operation | `auth-js` call | Notes |
+|---|---|---|
+| registration | `signUp({ email, password, options: { data: { first_name, last_name, locale }, emailRedirectTo } })` | the account works after the confirmation link |
+| sign-in | `signInWithPassword({ email, password })` | `email_not_confirmed` until confirmed |
+| Google | `signInWithOAuth({ provider: 'google', options: { redirectTo } })` | PKCE; return through `/auth/callback` ([7.5](#75-google-oauth)) |
+| code exchange | `exchangeCodeForSession(code)` | Google return, email confirmation, recovery link |
+| refresh | `autoRefreshToken: true` | rotation on the Supabase Auth side |
+| sign-out | `signOut()` / `signOut({ scope: 'others' })` | |
+| password reset | `resetPasswordForEmail(email, { redirectTo })`, then `updateUser({ password })` | [7.6](#76-password-reset) |
 
-For `purpose = mobile` it is the other way round: the API sets no cookie and returns `refreshToken`
-in the body, and `/auth/refresh` and `/auth/logout` accept it in the body. A native client has no
-origin and no sensible cookie store — it keeps the token in the system keychain
-([7.4](#74-authorization)). Rotation, TTL and revocation are identical in both variants.
+Supabase Auth errors carry an `error_code` (`invalid_credentials`, `email_not_confirmed`,
+`user_already_exists`, `weak_password`, `over_email_send_rate_limit`, ...); the client translates
+them the same way as API codes ([6](#6-localization)).
 
-Outside the ts-rest contract (these return `302`):
-
-- `GET /auth/oauth/:provider/start?purpose=portal`
-- `GET /auth/oauth/:provider/callback`
+Outside the ts-rest contract: `POST /hooks/send-email` — called by Supabase Auth only, verified by
+a Standard Webhooks signature ([11](#11-supabase)).
 
 ### 5.2 `me` — requires JWT
 
@@ -558,7 +568,7 @@ Outside the ts-rest contract (these return `302`):
 |---|---|---|
 | GET | `/me` | account profile |
 | PATCH | `/me` | change `firstName`, `lastName`, `locale` |
-| DELETE | `/me` | delete the account; `409` when it is some tenant's last `head` |
+| DELETE | `/me` | delete the account; `409` when it is some tenant's last `head`; `401` without a sign-in from the last 5 minutes |
 | GET | `/me/memberships` | tenants with role and permissions, edition-level included |
 | GET | `/me/attendances` | "my conventions" |
 | POST | `/me/attendances` | `{ tenantSlug, editionSlug, firstName, lastName }`; `409` on a repeat sign-up, `404` for an unpublished edition |
@@ -661,7 +671,7 @@ One catalog per application plus a shared one:
 | Catalog | Contains | Extracted from |
 |---|---|---|
 | `apps/<app>/src/locales/*.po` | that application's messages | `apps/<app>/src` |
-| `packages/i18n/locales/*.po` | API errors and email content | `packages/i18n/src` |
+| `packages/i18n/locales/*.po` | API and Supabase Auth errors, email content | `packages/i18n/src` |
 
 The per-application split keeps the CMS from pulling in the panel's messages. Compiled catalogs are
 loaded through a dynamic import per locale.
@@ -683,19 +693,20 @@ otherwise the application starts with stale messages.
 |---|---|
 | panel, portal — signed in | `accounts.locale` -> `Accept-Language` -> `DEFAULT_LOCALE` |
 | portal — signed out | `Accept-Language` -> `DEFAULT_LOCALE` |
-| mobile | `accounts.locale` -> device language (`expo-localization`) -> `DEFAULT_LOCALE` |
 | CMS | `tenants.defaultLocale`, regardless of the browser |
-| emails | the recipient's `accounts.locale`; for an unknown address the inviting `tenants.defaultLocale` |
+| emails | the recipient's `accounts.locale` -> `locale` from the sign-up metadata -> for an unknown address the inviting `tenants.defaultLocale` -> `DEFAULT_LOCALE` |
 
 ### API errors
 
 The API returns a `code`, never a sentence. `packages/i18n/src/errors.ts` maps a `code` onto a
 descriptor from the `msg` macro, and the client renders it through `i18n._(descriptor, params)`.
-A new `code` in the contract without an entry in that map fails a test
-([16.1](#161-api-integration-tests)).
+Supabase Auth's `error_code` values are mapped in the same file under `auth.<error_code>`; an
+unmapped one renders a generic "Something went wrong" message. A new `code` in the contract
+without an entry in that map fails a test ([16.1](#161-api-integration-tests)).
 
 Emails are rendered by the API — it activates the recipient's catalog and composes the content
-through `@lingui/core`.
+through `@lingui/core`. That includes Supabase Auth's confirmation, recovery and email change
+messages, which reach the API through the send-email hook ([11](#11-supabase)).
 
 ### Formatting
 
@@ -716,14 +727,14 @@ Names, programme item descriptions and CMS content are single-language — in th
 
 | Module | Contents |
 |---|---|
-| `AuthModule` | registration, sign-in, refresh rotation, password reset, Google OAuth, `authCode` exchange; `local`, `jwt`, `google` strategies |
+| `AuthModule` | `JwtAuthGuard` (Supabase JWT verification), the `POST /hooks/send-email` controller, the GoTrue admin client |
 | `MeModule` | profile, memberships, edition sign-ups, account deletion |
 | `SuperadminModule` | tenants, first `head`, custom domain; `PlatformAdminGuard` |
 | `TenantsModule` | tenant data, `tenant_memberships`, invitations |
 | `EditionsModule` | edition CRUD, activation, `edition_memberships` |
 | `EventsModule` | programme item CRUD |
 | `PublicModule` | unauthenticated endpoints for the CMS and the portal |
-| `MailModule` | nodemailer + text templates per locale ([6](#6-localization)) |
+| `MailModule` | nodemailer + Lingui templates per locale: Supabase Auth emails and invitations ([6](#6-localization)) |
 
 ### 7.2 Tenant context
 
@@ -741,7 +752,7 @@ Names, programme item descriptions and CMS content are single-language — in th
 3. Puts the transaction handle into ALS; repositories take it from there.
 4. Commit on `2xx`, rollback on an exception.
 
-Outbound I/O (SMTP, HTTP to the OAuth provider) happens outside the transaction.
+Outbound I/O (SMTP, the GoTrue admin API) happens outside the transaction.
 
 `packages/db` exports `appDb()`, `globalDb()` and `migrationDb()`.
 
@@ -791,86 +802,90 @@ async createTenant() { ... }
 
 ### 7.4 Authorization
 
-- Access token: **15 minutes**, refresh: **30 days**.
-- Rotating refresh — every `/auth/refresh` invalidates the old one (`revokedAt`) and issues a new
-  one; using an invalidated token -> `401`.
-- Passwords: **argon2id**.
-- `refresh_tokens` carry a `purpose`, revocable separately.
-- The JWT holds no `tenantId`. Payload: `{ sub, email, isPlatformAdmin }`.
+Sessions are issued by Supabase Auth ([11](#11-supabase)):
 
-**Access token** — in SPA memory only (zustand), sent in the `Authorization: Bearer` header.
+- Access token: a JWT signed HS256 with `JWT_SECRET`, shared by Supabase Auth and the API; TTL
+  **15 minutes** (`GOTRUE_JWT_EXP=900`).
+- Refresh token: single-use, rotated on every refresh
+  (`GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED=true`, reuse interval 10 s); reusing a spent
+  token outside that interval revokes the whole session.
+- Passwords: hashed by Supabase Auth; minimum length 8 (`GOTRUE_PASSWORD_MIN_LENGTH`).
+- Email confirmation is required (`GOTRUE_MAILER_AUTOCONFIRM=false`); an unconfirmed account gets
+  `email_not_confirmed` on sign-in.
 
-**Refresh token on the web** — an `HttpOnly; Secure; SameSite=Lax; Domain=.opos.land; Path=/auth`
-cookie, separate for the portal and the panel (`opos_rt_portal`, `opos_rt_panel`).
-`/auth/refresh` requires the `X-Requested-With: opos` header. In dev: `Domain=.localhost`, without
-`Secure` (`COOKIE_SECURE=false`).
+**`JwtAuthGuard`** verifies the `Authorization: Bearer` token with `jose`: signature, `exp`,
+`aud = authenticated`, `iss = <AUTH_URL>`. `sub` is `accounts.id`; the guard loads that row and
+puts it into the request — `isPlatformAdmin` and `locale` come from the database, not from the
+token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
 
-**Refresh token in the mobile application** — `expo-secure-store`, that is the Keychain on iOS and
-EncryptedSharedPreferences on Android. The token travels in the request body, not in a cookie;
-responses for `purpose = mobile` set no cookie at all. The access token, as on the web, lives only
-in the application process memory.
+**Session in the browser** — `@supabase/auth-js` with `flowType: 'pkce'`, `persistSession: true`,
+`autoRefreshToken: true`, stored in the `localStorage` of the application's own origin under a
+separate key (`opos-portal-auth`, `opos-panel-auth`). The portal and the panel never share a
+session.
 
-The variant is decided by the `purpose` from sign-in, not by a client header — `purpose = mobile`
-issues the token into the body, everything else into a cookie. Everything else (rotation,
-`revokedAt`, TTL, limits) is shared.
+Because the session is readable by scripts on that origin, the portal and the panel are served
+with a strict Content Security Policy: `script-src 'self'`, no inline scripts,
+`connect-src 'self' <API_URL> <AUTH_URL>`, `frame-ancestors 'none'`.
+
+**Recent sign-in** — `DELETE /me` requires an `amr` entry in the JWT with a timestamp younger than
+5 minutes; the client gets one by confirming the password (`signInWithPassword`) or by signing in
+with Google again.
 
 ### 7.5 Google OAuth
 
-1. The portal redirects to `/auth/oauth/google/start`.
-2. The API redirects to Google; Google comes back to `/auth/oauth/google/callback`.
-3. The API exchanges the code, creates or links the account and issues a one-time `authCode`
-   (TTL 60 s, in process memory).
-4. Redirect to the portal with `authCode` in the URL.
-5. The portal calls `/auth/oauth/exchange` and receives an access token plus the refresh cookie.
+Supabase Auth's Google provider, PKCE flow:
 
-On mobile the same flow with two differences: step 1 opens the system browser
-(`ASWebAuthenticationSession` / Custom Tabs), and step 4 comes back through the
-`opos://oauth/callback?authCode=...` deep link.
+1. The portal or the panel calls `signInWithOAuth({ provider: 'google', options: { redirectTo } })`
+   with `redirectTo = <app URL>/auth/callback`.
+2. Supabase Auth redirects to Google; Google comes back to `https://auth.opos.land/callback`.
+3. Supabase Auth creates or links the user and redirects to `redirectTo` with `?code=`.
+4. `/auth/callback` calls `exchangeCodeForSession(code)` and receives the session.
 
-The return address is picked from an **allowlist** in the API configuration (`PORTAL_URL`,
-`PANEL_URL`, `MOBILE_REDIRECT_SCHEME`) based on `purpose`. The API never redirects to an address
-supplied in the request.
+`redirectTo` must match `GOTRUE_URI_ALLOW_LIST` exactly ([11](#11-supabase)); anything else falls
+back to `GOTRUE_SITE_URL`. Supabase Auth never redirects to an arbitrary address from the request.
 
-Linking by email:
+Required behaviour when the email already exists, checked in the smoke test
+([17](#17-smoke-test)):
 
 | State of the account with that email | Behaviour |
 |---|---|
-| does not exist | create the account: `passwordHash = null`, `emailVerifiedAt = now()`, attach the identity |
-| exists, `emailVerifiedAt` set | attach the identity, leave the password untouched |
-| exists, `emailVerifiedAt` empty | `passwordHash = null`, `emailVerifiedAt = now()`, revoke all the account's `refresh_tokens`, attach the identity |
+| does not exist | a new user, confirmed; the trigger creates `accounts` |
+| exists, confirmed | the Google identity is attached to the same `auth.users.id`; the password keeps working |
+| exists, unconfirmed | the Google sign-in takes the account over: the unconfirmed password does not let anyone in |
 
 ### 7.6 Password reset
 
-1. `POST /auth/password-reset/request` always answers `204` — for an unknown address too, so the
-   endpoint reveals nothing about registered emails. For a known address the API generates a
-   random token, stores its sha256 in `password_reset_tokens` with a `PASSWORD_RESET_TTL` (1 h)
-   expiry, invalidates the account's earlier unused tokens and sends a
-   `<PORTAL_URL>/reset-password?token=...` link in the recipient's locale.
-2. `POST /auth/password-reset/confirm` checks the token (known hash, unexpired, `usedAt` empty),
-   sets the new argon2id `passwordHash`, marks the token used, sets `emailVerifiedAt` — the reset
-   proved control of the mailbox — and revokes all the account's `refresh_tokens`.
-3. The flow works for an OAuth-only account as well (`passwordHash = null`): completing it adds
-   password sign-in next to Google.
+1. The portal calls `resetPasswordForEmail(email, { redirectTo: <PORTAL_URL>/reset-password })`.
+   Supabase Auth answers the same way for an unknown address, so the form reveals nothing about
+   registered emails. For a known address it calls the send-email hook with
+   `email_action_type = recovery`; the API sends the link in the recipient's locale. The link is
+   valid for 1 hour (`GOTRUE_MAILER_OTP_EXP=3600`) and works once.
+2. `/reset-password` exchanges the `code` for a session, sets the new password with
+   `updateUser({ password })` and calls `signOut({ scope: 'others' })` — every other session ends.
+3. The flow works for a Google-only account as well: completing it adds password sign-in next to
+   Google.
 
 ### 7.7 Organizer invitations
 
 An invitation is a signed JWT (`INVITE_SECRET`, TTL 7 days) with the payload
 `{ tenantId, email, role, tenantPermissions, editionPermissions }`.
 
-- Email of a known account -> the membership is created immediately, the email is a notification.
+- Email of a known account (`accounts.email`) -> the membership is created immediately, the email
+  is a notification.
 - Unknown email -> an email with a `panel.opos.land/invitation?token=...` link; after registering
   or signing in, `POST /invitations/accept` creates the membership.
 - Permissions from the token go through the anti-escalation check.
+
+Invitation emails are sent by `MailModule`, not by Supabase Auth.
 
 ### 7.8 CORS
 
 Allowed `Origin`: `opos.land` and `panel.opos.land` — an explicit list, never `*` and never a
 reflected header. Allowed headers: `Authorization`, `Content-Type`, `X-Tenant-Slug`,
-`X-Requested-With`. `credentials: true`.
+`Accept-Language`. `credentials: false` — the API sets and reads no cookies.
 
-Requests with no `Origin` header — that is everything from the mobile application — pass normally.
-CORS is a browser mechanism and does not apply to a native client; the security of those requests
-rests on the token, not on the origin.
+`POST /hooks/send-email` is called server to server and needs no CORS; it rejects every request
+without a valid signature.
 
 ### 7.9 Rate limiting
 
@@ -878,31 +893,27 @@ rests on the token, not on the origin.
 
 | Scope | Limit |
 |---|---|
-| `POST /auth/login`, `/auth/register` | 10 / 15 min per IP **and** 5 / 15 min per email address |
-| `POST /auth/refresh` | 60 / hour per IP |
-| `POST /auth/oauth/exchange`, `GET /invitations/preview` | 30 / hour per IP |
-| `POST /auth/password-reset/request` | 5 / 15 min per email **and** 10 / hour per IP |
+| `GET /invitations/preview` | 30 / hour per IP |
 | `POST /tenants/current/members` | 20 / hour per tenant |
 | the rest of the API | 300 / min per account |
 
 A `429` response with `Retry-After`. The API runs with `trust proxy` — the client address comes
 from `X-Forwarded-For`.
 
-Mobile traffic goes through carrier NAT, so many users share one IP. Per-IP limits apply to the
-auth endpoints only and sit next to a per-email limit; the general limit counts per account, not
-per IP.
+Sign-up, sign-in, refresh and recovery are limited by Supabase Auth and by Traefik in front of it
+([11](#11-supabase)).
 
 ---
 
 ## 8. `apps/panel`
 
-SPA (Vite + React), `@ts-rest/react-query`, auth state in `zustand`, forms with
-`react-hook-form` + zod using schemas from `packages/contract`. Feature-based layout
-([3](#3-monorepo-structure)).
+SPA (Vite + React), `@ts-rest/react-query`, `@supabase/auth-js` for the session, UI state in
+`zustand`, forms with `react-hook-form` + zod using schemas from `packages/contract`.
+Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a tablet.
 
 | Feature | Scope |
 |---|---|
-| `auth` | sign-in, invitation acceptance, session refresh |
+| `auth` | sign-in, Google return, invitation acceptance |
 | `tenants` | convention picker, dashboard, settings, language and time zone |
 | `editions` | edition list, creation, activation, publication |
 | `program` | the edition's programme items |
@@ -911,7 +922,8 @@ SPA (Vite + React), `@ts-rest/react-query`, auth state in `zustand`, forms with
 
 | Path | Screen |
 |---|---|
-| `/login` | organizer sign-in |
+| `/login` | organizer sign-in: email + password, Google button |
+| `/auth/callback` | receives `code` from Supabase Auth, calls `exchangeCodeForSession` |
 | `/invitation` | invitation acceptance (`?token=`) |
 | `/` | convention picker; redirect when there is a single membership |
 | `/:tenantSlug` | tenant dashboard |
@@ -922,26 +934,29 @@ SPA (Vite + React), `@ts-rest/react-query`, auth state in `zustand`, forms with
 | `/:tenantSlug/team` | `tenant_memberships` — list, invitations, permissions |
 | `/:tenantSlug/settings` | name, slug, public website language, time zone; custom domain read-only |
 
-- An interceptor attaches `X-Tenant-Slug` and `Accept-Language` based on the active locale.
+- An interceptor attaches `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug` and
+  `Accept-Language` based on the active locale.
 - Language switcher in the account menu; the choice goes to `PATCH /me` and stays on the account.
 - The compiled Lingui catalog is loaded through a dynamic import when the locale changes.
 - `GET /me/memberships` after sign-in populates the permission store.
 - The sidebar hides sections with a `none` permission; at `read` the save buttons are `disabled`.
 - A `403` from the API -> a "no permissions" screen.
-- Application start begins with `/auth/refresh` (the access token lives in memory only) — until the
-  response arrives the user sees a loading view, not the sign-in screen.
-- `401` -> an attempt at `/auth/refresh` with `credentials: 'include'`; on failure, sign-out.
+- Application start restores the session with `getSession()`, refreshing it when it has expired —
+  until that resolves the user sees a loading view, not the sign-in screen.
+- `401` from the API -> one `refreshSession()` and a retry; on failure, sign-out.
 
 ---
 
 ## 9. `apps/portal`
 
-Feature-based layout ([3](#3-monorepo-structure)).
+Feature-based layout ([3](#3-monorepo-structure)). **Mobile-first:** it is the attendees' only way
+into OPOS on a phone, so every screen is designed for a 360 px wide viewport first and works up to
+desktop.
 
 | Feature | Scope |
 |---|---|
 | `landing` | the platform's home page, the privacy policy |
-| `auth` | registration, sign-in, password reset, OAuth return |
+| `auth` | registration, email confirmation, sign-in, password reset, Google return |
 | `account` | account settings, language, account deletion |
 | `attendances` | "my conventions", edition sign-up, withdrawal |
 
@@ -949,20 +964,22 @@ Feature-based layout ([3](#3-monorepo-structure)).
 |---|---|
 | `/` | OPOS platform landing page |
 | `/privacy` | the privacy policy; linked from the registration form and the footer |
-| `/register` | email + password + first and last name, Google button |
-| `/login` | the same without the profile fields |
+| `/register` | email + password + first and last name, Google button; after submitting — "check your inbox" |
+| `/login` | the same without the profile fields; `email_not_confirmed` offers to resend the link |
+| `/auth/callback` | receives `code` (Google return, email confirmation), calls `exchangeCodeForSession` |
 | `/forgot-password` | password reset request; always confirms that the message was sent |
-| `/reset-password` | new password form (`?token=`) |
-| `/oauth/callback` | receives `authCode`, calls `/auth/oauth/exchange` |
+| `/reset-password` | new password form, opened from the recovery link (`?code=`) |
 | `/account` | account settings, interface language, account deletion |
 | `/my-conventions` | the list of editions the account is signed up for |
 | `/join/:tenantSlug/:editionSlug` | edition sign-up; unauthenticated -> sign-in and back here |
 
 `/join/...` is reached from the "Sign up" button on the public convention website.
 
-**Account deletion:** `DELETE /me` after confirming with a password or a repeated OAuth sign-in.
-It removes `accounts`; `oauth_identities`, `refresh_tokens` and `attendees` cascade. `409` when the
-account is some tenant's last `head`.
+**Account deletion:** `DELETE /me` after confirming with a password or a repeated Google sign-in
+([7.4](#74-authorization)). The API deletes the user through the GoTrue admin API
+(`DELETE /admin/users/:id`); `accounts` cascades from `auth.users`, and `tenant_memberships`,
+`edition_memberships` and `attendees` cascade from `accounts`. `409` when the account is some
+tenant's last `head`.
 
 ---
 
@@ -995,73 +1012,94 @@ the routing Astro requires — the logic sits in features.
 No active published edition -> a "Preparations under way" message and a link to the archive.
 An unpublished edition under a direct URL -> `404`.
 
+The "Sign up" button links to `https://opos.land/join/<tenant>/<edition>`.
+
 ---
 
-## 11. `apps/mobile`
+## 11. Supabase
 
-Expo (React Native) + expo-router. In the MVP a deliberate stub of the portal's scope
-([PRODUCT.md 7](PRODUCT.md#7-mobile-application)): the same contract, the same translation
-catalogs, the same account.
+Self-hosted on the VPS, reduced to the services OPOS uses:
 
-Feature-based layout ([3](#3-monorepo-structure)) — the same three features as the portal minus the
-landing page: `auth`, `account`, `attendances`. The `app/` directory holds expo-router routes only;
-views live in `features/<feature>/screens/`.
+| Service | Image | Role | Reachable |
+|---|---|---|---|
+| `db` | `supabase/postgres` (17.x) | the only Postgres: `public` and `auth` schemas | internal network; `:5432` on `localhost` in dev |
+| `auth` | `supabase/gotrue` (v2.x) | Supabase Auth | `auth.opos.land`; `localhost:9999` in dev |
+| `studio`, `meta` | `supabase/studio`, `supabase/postgres-meta` | database browser | dev only, `localhost:54323` |
 
-| Route | Screen |
+Not deployed: Kong, PostgREST, Realtime, Storage, Edge Functions, Analytics, Supavisor. Traefik
+routes `auth.opos.land` straight to GoTrue, and clients use `@supabase/auth-js` with
+`url: AUTH_URL` — not `supabase-js`, which expects Kong's `/auth/v1` prefix.
+
+Image tags are pinned exactly in both compose files, to the versions from Supabase's
+self-hosting compose. An upgrade bumps `db` and `auth` together, after a `pg_dump`. GoTrue
+migrates the `auth` schema itself on start.
+
+`infra/supabase/db/` holds the init SQL from Supabase's self-hosting setup (roles, JWT settings),
+pinned to the same image version, plus `opos-roles.sql` ([4.6](#46-tenant-isolation--rls-in-postgres)).
+
+### Supabase Auth configuration
+
+| Variable | Value |
 |---|---|
-| `/(auth)/login` | email + password, Google button |
-| `/(auth)/register` | email + password + first and last name, Google button |
-| `/(tabs)/conventions` | "my conventions" — the list of editions the account is signed up for |
-| `/(tabs)/account` | account settings, language, account deletion |
-| `/join/[tenantSlug]/[editionSlug]` | edition sign-up; signed out -> sign-in and back here |
+| `API_EXTERNAL_URL`, `GOTRUE_JWT_ISSUER` | `AUTH_URL` (`https://auth.opos.land`) |
+| `GOTRUE_DB_DATABASE_URL` | `postgres://supabase_auth_admin:...@db:5432/postgres` |
+| `GOTRUE_SITE_URL` | `PORTAL_URL` |
+| `GOTRUE_URI_ALLOW_LIST` | `<PORTAL_URL>/auth/callback,<PORTAL_URL>/reset-password,<PANEL_URL>/auth/callback` |
+| `GOTRUE_JWT_SECRET` | `JWT_SECRET`, the same value as in the API |
+| `GOTRUE_JWT_AUD`, `GOTRUE_JWT_DEFAULT_GROUP_NAME` | `authenticated` |
+| `GOTRUE_JWT_ADMIN_ROLES` | `service_role` |
+| `GOTRUE_JWT_EXP` | `900` |
+| `GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED` | `true` |
+| `GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL` | `10` |
+| `GOTRUE_PASSWORD_MIN_LENGTH` | `8` |
+| `GOTRUE_DISABLE_SIGNUP` | `false` |
+| `GOTRUE_EXTERNAL_EMAIL_ENABLED` | `true` |
+| `GOTRUE_MAILER_AUTOCONFIRM` | `false` |
+| `GOTRUE_MAILER_OTP_EXP` | `3600` |
+| `GOTRUE_EXTERNAL_PHONE_ENABLED`, `GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED` | `false` |
+| `GOTRUE_EXTERNAL_GOOGLE_ENABLED` | `true` |
+| `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`, `GOTRUE_EXTERNAL_GOOGLE_SECRET` | the Google OAuth client |
+| `GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI` | `<AUTH_URL>/callback` |
+| `GOTRUE_HOOK_SEND_EMAIL_ENABLED` | `true` |
+| `GOTRUE_HOOK_SEND_EMAIL_URI` | prod `https://api.opos.land/hooks/send-email`; dev `http://host.docker.internal:3001/hooks/send-email` |
+| `GOTRUE_HOOK_SEND_EMAIL_SECRETS` | `v1,whsec_<base64>`, the same value as the API's `SEND_EMAIL_HOOK_SECRET` |
+| `GOTRUE_RATE_LIMIT_HEADER` | `X-Forwarded-For` |
 
-The application contains no organizer panel and no public convention websites. The sign-in screen
-links "Forgot password" and the registration screen links the privacy policy — both open the
-portal's page in the system browser; the stub has no native flow for either.
+GoTrue accepts plain `http` hook URLs only for `localhost` and `host.docker.internal`, so in
+production the hook goes through Traefik over HTTPS. In dev the `auth` container needs
+`extra_hosts: ["host.docker.internal:host-gateway"]`, because the API runs natively.
 
-### Session
+### Send-email hook
 
-- Sign-in with `purpose = mobile`; access token in memory, refresh in `expo-secure-store`.
-- Application start: read the refresh token from the keychain -> `/auth/refresh` -> home screen or
-  sign-in. Until the response arrives, the splash screen, not the sign-in screen.
-- Sign-out clears the keychain and calls `/auth/logout` with the token in the body.
-- `401` -> one `/auth/refresh` attempt; on failure, clear the keychain and go to sign-in.
+Supabase Auth sends no email itself. For every message it calls `POST /hooks/send-email` with
+`{ user, email_data: { token_hash, redirect_to, email_action_type, ... } }`, signed according to
+Standard Webhooks.
 
-### Deep links
+1. The API verifies the signature with `SEND_EMAIL_HOOK_SECRET`; a missing or invalid one -> `401`.
+2. It picks the locale: `accounts.locale` -> `user.user_metadata.locale` -> `DEFAULT_LOCALE`.
+3. It builds the link `<AUTH_URL>/verify?token=<token_hash>&type=<email_action_type>&redirect_to=<redirect_to>`
+   and renders the template through Lingui.
+4. It sends the message through `MailModule` and answers `200 {}`. An SMTP failure -> `500`, which
+   Supabase Auth reports to the client as a failed send.
 
-The `opos://` scheme plus universal links / app links on `opos.land`:
-
-| Link | Effect |
+| `email_action_type` | Template |
 |---|---|
-| `https://opos.land/join/<tenant>/<edition>` | opens the application on the sign-up screen; without the application — the portal |
-| `opos://oauth/callback?authCode=...` | return from Google sign-in |
+| `signup` | address confirmation |
+| `recovery` | password reset |
+| `email_change` | confirmation of the new address |
+| anything else | `400` — those flows are disabled |
 
-The `apple-app-site-association` and `assetlinks.json` files are served by `opos.land`
-([14](#14-deployment)).
+### Admin API
 
-### Localization
+The API holds `SUPABASE_SERVICE_ROLE_KEY` — a JWT with `role = service_role`, signed with
+`JWT_SECRET` — and uses it only for `DELETE /admin/users/:id` (account deletion) and in the seed
+for `POST /admin/users` ([15](#15-demo-data-seed)). The key never reaches a frontend.
 
-`expo-localization` provides the device language; the detection order is the one in
-[6](#6-localization). The catalogs are the same as on the web — `packages/i18n` contains nothing
-DOM-dependent.
+### Rate limits
 
-### Monorepo
-
-Lingui macros run at compile time, so the application's `babel.config.js` must include
-`@lingui/babel-plugin-lingui-macro`, and `pnpm i18n:compile` must pass before Metro starts.
-
-Metro does not understand pnpm symlinks out of the box, so `apps/mobile` needs `watchFolders`
-pointing at the repository root and a symlink resolver in `metro.config.js`. Shared packages are
-consumed as TypeScript source, exactly as in the web applications.
-
-`apps/mobile` is part of neither `docker-compose.prod.yml` nor the turbo `build` pipeline — it is
-built through EAS.
-
-### Releases
-
-Builds through EAS: the `development` profile (development client), `preview` (internal
-distribution), `production` (a signed artifact). In the MVP we release to TestFlight and Google
-Play's internal channel; store publication is beyond the MVP.
+GoTrue's built-in limits stay at their defaults, keyed by the client IP from `X-Forwarded-For`.
+Traefik adds a `rateLimit` middleware on the `auth.opos.land` router: an average of 30 requests per
+minute per IP, burst 10, a `429` above that.
 
 ---
 
@@ -1075,22 +1113,19 @@ turns every change into a cache invalidation for all of them. Each application k
 
 ```bash
 # Database - three roles
-DATABASE_URL=postgres://opos_app:opos@localhost:5432/opos
-DATABASE_GLOBAL_URL=postgres://opos_app_global:opos@localhost:5432/opos
-DATABASE_MIGRATION_URL=postgres://opos_migrator:opos@localhost:5432/opos
+DATABASE_URL=postgres://opos_app:opos@localhost:5432/postgres
+DATABASE_GLOBAL_URL=postgres://opos_app_global:opos@localhost:5432/postgres
+DATABASE_MIGRATION_URL=postgres://opos_migrator:opos@localhost:5432/postgres
 
-# Cookies
-COOKIE_DOMAIN=.localhost
-COOKIE_SECURE=false
+# Supabase Auth
+AUTH_URL=http://localhost:9999
+JWT_SECRET=dev-jwt-secret-at-least-32-characters-long
+SUPABASE_SERVICE_ROLE_KEY=
+SEND_EMAIL_HOOK_SECRET=v1,whsec_ZGV2LXNlbmQtZW1haWwtaG9vay1zZWNyZXQ=
 
-# JWT
-JWT_ACCESS_SECRET=dev-access-secret-change-in-production
-JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production
-JWT_ACCESS_TTL=15m
-JWT_REFRESH_TTL=30d
+# Invitations
 INVITE_SECRET=dev-invite-secret
 INVITE_TTL=7d
-PASSWORD_RESET_TTL=1h
 
 # i18n
 DEFAULT_LOCALE=pl
@@ -1101,11 +1136,6 @@ ROOT_DOMAIN=localhost
 API_URL=http://api.localhost:3001
 PANEL_URL=http://panel.localhost:5173
 PORTAL_URL=http://opos.localhost:5174
-MOBILE_REDIRECT_SCHEME=opos://
-
-# OAuth
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
 
 # SMTP (Mailpit in dev)
 SMTP_HOST=localhost
@@ -1117,25 +1147,31 @@ MAIL_FROM=OPOS <noreply@opos.land>
 # API
 PORT=3001
 NODE_ENV=development
-OAUTH_STUB=false        # true only in e2e
 ```
+
+`SUPABASE_SERVICE_ROLE_KEY` in dev is generated from `JWT_SECRET` by `pnpm --filter api
+auth:service-key`.
+
+**`infra/supabase/.env`** — the dev configuration of `db`, `auth` and `studio`: `POSTGRES_PASSWORD`,
+`JWT_SECRET` (the same as the API's), the Google client, `SEND_EMAIL_HOOK_SECRET` (the same as the
+API's) and the dev addresses. The full list of the `auth` variables is in [11](#11-supabase).
 
 **The other applications:**
 
 | File | Variables |
 |---|---|
-| `apps/panel/.env` | `VITE_API_URL` |
-| `apps/portal/.env` | `VITE_API_URL` |
+| `apps/panel/.env` | `VITE_API_URL`, `VITE_AUTH_URL` |
+| `apps/portal/.env` | `VITE_API_URL`, `VITE_AUTH_URL` |
 | `apps/cms/.env` | `API_URL` — read at SSR runtime, not baked into the build |
-| `apps/mobile/.env` | `EXPO_PUBLIC_API_URL` — in dev the machine's address on the local network (`http://192.168.x.x:3001`), because `localhost` from a device means that device |
 
-`VITE_*` and `EXPO_PUBLIC_*` values are baked into the bundle at build time; turbo hashes them
-through framework inference, so a changed value rebuilds exactly the applications that read it.
+`VITE_*` values are baked into the bundle at build time; turbo hashes them through framework
+inference, so a changed value rebuilds exactly the applications that read it.
 
 Production configuration lives in a `.env` next to `docker-compose.prod.yml` on the VPS — compose
 injects it into the containers. It adds `POSTGRES_PASSWORD`, `ACME_EMAIL`, `CF_DNS_API_TOKEN` and
-overrides `COOKIE_DOMAIN=.opos.land`, `COOKIE_SECURE=true`, `ROOT_DOMAIN=opos.land` and the
-`https://` addresses.
+the Supabase Auth variables, and overrides `ROOT_DOMAIN=opos.land` and the `https://` addresses.
+`JWT_SECRET` and `SEND_EMAIL_HOOK_SECRET` are generated once per environment and are never reused
+between dev and production.
 
 ---
 
@@ -1146,7 +1182,8 @@ Applications run natively through pnpm, infrastructure runs in Docker.
 ```bash
 # 1. Infrastructure
 docker compose up -d
-# -> postgres on :5432, mailpit on :1025 (SMTP) + :8025 (UI)
+# -> supabase db on :5432, auth on :9999, studio on :54323
+# -> mailpit on :1025 (SMTP) + :8025 (UI)
 
 # 2. Migrations and seed
 pnpm db:migrate
@@ -1171,9 +1208,12 @@ Root scripts: `dev`, `build`, `typecheck`, `lint`, `format`, `test`, `test:e2e`,
 Apart from `format`, each of them is a `turbo run <task>` delegate ([3.1](#31-turbo-tasks)).
 
 `db:migrate` and `db:seed` connect as `opos_migrator`; the API runs as `opos_app`. The roles are
-created by the first migration.
+created by `infra/supabase/db/opos-roles.sql` when the `db` container starts on an empty volume —
+`docker compose down -v` resets them together with the data.
 
-Mailpit catches all dev email — UI at http://localhost:8025.
+Mailpit catches all dev email — UI at http://localhost:8025. Supabase Auth's messages land there
+too, because they go through the API's send-email hook. Supabase Studio at http://localhost:54323
+browses both the `public` and the `auth` schema.
 
 ### Versions and dependencies
 
@@ -1194,19 +1234,6 @@ and pre-push jobs wait commented out in `lefthook.yml` for the first packages.
 
 Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
-### Mobile application
-
-```bash
-pnpm --filter mobile start          # Expo dev server
-pnpm --filter mobile ios            # iOS simulator
-pnpm --filter mobile android        # Android emulator
-```
-
-The API must listen on `0.0.0.0`, and `EXPO_PUBLIC_API_URL` must point at the machine's address on
-the local network. Google sign-in on a device requires the `opos://` scheme registered in
-`app.json` — in the Expo development client that works only after building the `development`
-profile, not in Expo Go.
-
 ---
 
 ## 14. Deployment
@@ -1215,12 +1242,13 @@ VPS + Docker Compose behind Traefik v3.
 
 ### Images
 
-| Service | Dockerfile |
+| Service | Dockerfile / image |
 |---|---|
 | `api` | multi-stage on `node:24-alpine`: prune -> `turbo run build` -> `node dist/main.js` |
-| `panel`, `portal` | multi-stage: prune -> Vite build -> `nginx:alpine` with an SPA fallback |
+| `panel`, `portal` | multi-stage: prune -> Vite build -> `nginx:alpine` with an SPA fallback and the CSP header ([7.4](#74-authorization)) |
 | `cms` | multi-stage: prune -> Astro build -> `node ./dist/server/entry.mjs` |
-| `postgres` | `postgres:16-alpine` with a `pgdata` volume |
+| `db` | `supabase/postgres`, exact tag, with a `pgdata` volume and `infra/supabase/db` as init scripts |
+| `auth` | `supabase/gotrue`, exact tag |
 | `traefik` | `traefik:v3`, docker provider + ACME resolvers |
 
 Every application Dockerfile starts with `turbo prune <app> --docker`: the build context holds
@@ -1233,9 +1261,12 @@ application does not invalidate the image layers of another.
 opos.land                    -> portal
 panel.opos.land              -> panel
 api.opos.land                -> api
+auth.opos.land               -> auth     # + rateLimit middleware (11)
 HostRegexp(^.+\.opos\.land$) -> cms      # lower priority than the routers named above
 <custom domains>             -> cms      # Traefik dynamic file
 ```
+
+`db` has no router and publishes no port.
 
 ### TLS
 
@@ -1250,35 +1281,26 @@ A custom domain needs its own HTTP-01 certificate. Order of operations:
 
 Step 3 before step 1 ends in a failed ACME challenge and a Let's Encrypt rate limit.
 
-### Universal links
-
-`opos.land` serves two files verifying the association with the application:
-
-| Path | For |
-|---|---|
-| `/.well-known/apple-app-site-association` | iOS; `Content-Type: application/json`, no file extension |
-| `/.well-known/assetlinks.json` | Android |
-
-Both are served by the `portal` container, and both must answer `200` over HTTPS without a
-redirect — the operating systems fetch them directly and do not follow redirects.
-
 ### Backups
 
-- `pg_dump -Fc` every 6 hours, into a volume outside `pgdata`.
+- `pg_dump -Fc` of the whole database — `public` and `auth` together — every 6 hours, into a
+  volume outside `pgdata`. A dump without `auth` leaves accounts nobody can sign in to.
 - Retention: 7 daily, 4 weekly, 3 monthly.
 - Off-server copy: `restic` or `rclone` to S3/R2, encrypted, with a separate key.
-- Once a month, restore a dump into a clean database and run `pnpm db:verify`.
-- Dumps are encrypted at rest — they contain attendees' personal data.
+- Once a month, restore a dump into a clean `supabase/postgres` container of the same tag, start
+  `auth` against it and run `pnpm db:verify` plus a test sign-in.
+- Dumps are encrypted at rest — they contain attendees' personal data and password hashes.
 
 ### Deployment procedure
 
 1. `git pull` on the VPS.
-2. `docker compose -f docker-compose.prod.yml build`.
-3. `pg_dump` before the migration.
-4. `docker compose -f docker-compose.prod.yml run --rm api pnpm db:migrate`.
-5. `docker compose -f docker-compose.prod.yml run --rm api pnpm db:verify`.
-6. `docker compose -f docker-compose.prod.yml up -d`.
-7. The smoke test from chapter [17](#17-smoke-test).
+2. `docker compose -f docker-compose.prod.yml pull db auth traefik`.
+3. `docker compose -f docker-compose.prod.yml build`.
+4. `pg_dump` before the migration.
+5. `docker compose -f docker-compose.prod.yml run --rm api pnpm db:migrate`.
+6. `docker compose -f docker-compose.prod.yml run --rm api pnpm db:verify`.
+7. `docker compose -f docker-compose.prod.yml up -d`.
+8. The smoke test from chapter [17](#17-smoke-test).
 
 ---
 
@@ -1286,6 +1308,11 @@ redirect — the operating systems fetch them directly and do not follow redirec
 
 `packages/db/src/seed.ts`, idempotent. With `NODE_ENV=production` it fails unless
 `--i-know-what-i-am-doing` is passed.
+
+Accounts are created through the Supabase Auth admin API (`POST /admin/users` with
+`email_confirm: true` and the dev password); an existing user is skipped. The trigger fills
+`accounts`, and the seed then sets `isPlatformAdmin`, `locale` and the names. Everything else is
+written directly as `opos_migrator`.
 
 - **Accounts:** `admin@opos.land` (`isPlatformAdmin`), `head@convention-a.test`, three organizer
   accounts, `attendee@example.com`. Dev password: `password123`. One organizer account has
@@ -1313,17 +1340,21 @@ redirect — the operating systems fetch them directly and do not follow redirec
 
 ### 16.1 API integration tests
 
-Supertest + Postgres in a container, no database mocks, in `apps/api/test`:
+Supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
+`supabase/gotrue`, the production tags), no database or auth mocks, in `apps/api/test`. Test
+accounts are created through the admin API and signed in with `signInWithPassword`.
 
 | Area | What we check |
 |---|---|
 | permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere |
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
-| RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation |
+| RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
 | anti-escalation | an org cannot grant permissions above their own, edit themselves or touch a `head` |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition |
-| auth | refresh rotation, the three OAuth linking cases from [7.5](#75-google-oauth), rate limit -> `429` |
-| password reset | `204` and no message for an unknown address; the token is single-use and expires; a completed reset revokes every refresh token and sets `emailVerifiedAt` |
+| JWT | an expired token, a token signed with another secret, `aud != authenticated` and a foreign `iss` -> `401`; a valid token without an `accounts` row -> `401` |
+| account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
+| send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` -> `400` |
+| rate limit | `GET /invitations/preview` above the limit -> `429` with `Retry-After` |
 | i18n | `lingui extract --check` reports no drift between code and catalogs; every error `code` from the contract has a descriptor in `errors.ts`; programme time formatting returns the tenant's zone, not the server's |
 
 ### 16.2 E2E tests
@@ -1331,26 +1362,23 @@ Supertest + Postgres in a container, no database mocks, in `apps/api/test`:
 Playwright in `e2e/`, through the UI of all three web applications, against the full stack on a
 fresh database.
 
-**Environment:** `docker compose up -d` (Postgres + Mailpit), `pnpm db:migrate && pnpm db:seed`,
-applications started through `webServer` in the Playwright configuration. Chromium; a browser
-matrix is beyond the MVP. The `e2e` directory is a workspace package — Playwright, the fixtures
-and the Maestro helpers are its dependencies, not the root's.
+**Environment:** `docker compose up -d` (Supabase `db` + `auth`, Mailpit),
+`pnpm db:migrate && pnpm db:seed`, applications started through `webServer` in the Playwright
+configuration. Chromium in two projects: desktop, and a mobile viewport (Pixel 7) for the portal;
+a browser matrix is beyond the MVP. The `e2e` directory is a workspace package — Playwright and
+the fixtures are its dependencies, not the root's.
 
-**Two crutches, without which e2e would be brittle:**
-
-- `OAUTH_STUB=true` replaces the Google strategy with a local stub returning a fixed profile. The
-  whole flow (`/start` -> `/callback` -> `authCode` -> `/exchange`) stays real, only Google
-  disappears. We never sign in to a real Google account from e2e.
-- Emails are read through Mailpit's HTTP API (`:8025/api/v1`) — that is where the test picks the
-  invitation link from.
+Emails — address confirmation, password reset, invitations — are read through Mailpit's HTTP API
+(`:8025/api/v1`). Google sign-in is not covered by e2e: Supabase Auth talks to the real Google,
+and the smoke test checks that flow ([17](#17-smoke-test)).
 
 **Scenarios:**
 
 | # | Scenario |
 |---|---|
-| 1 | Registration with a password, sign-out, sign-in again; the language switch survives the session |
-| 2 | OAuth through the stub: a new account, linking to a verified account, taking over an account with an empty `emailVerifiedAt` |
-| 3 | Refresh rotation: the session survives a page reload, the cookie disappears after sign-out |
+| 1 | Registration with a password: sign-in before confirming -> `email_not_confirmed`; the link from Mailpit confirms; sign-out, sign-in again; the language switch survives the session |
+| 2 | Resending the confirmation link from the sign-in screen delivers a new message |
+| 3 | The session survives a page reload; after sign-out the stored session is gone and the API answers `401` |
 | 4 | A head creates an edition, activates it, publishes it and adds programme items |
 | 5 | The programme shows up in the CMS of both tenants, each in its own language and time zone |
 | 6 | Organizer invitation: email from Mailpit -> acceptance -> the invitee sees only their edition |
@@ -1359,18 +1387,10 @@ and the Maestro helpers are its dependencies, not the root's.
 | 9 | An attendee signs up for an edition from the CMS, sees it under "my conventions", deletes the account |
 | 10 | Password reset: request from the sign-in screen, the link from Mailpit sets a new password, the old session stops working |
 
+Scenarios 1, 9 and 10 run in both the desktop and the mobile project.
+
 Tests share no data: every scenario that creates a tenant works on its own slug, and scenarios
 using seeded data only read it.
-
-**Mobile — Maestro**, `e2e/maestro`, on the iOS simulator and the Android emulator, against the
-same stack and the same OAuth stub. Three flows, because the remaining guarantees are already
-covered by the API integration tests:
-
-| # | Flow |
-|---|---|
-| 1 | Registration, sign-out, sign-in again; the session survives an application restart |
-| 2 | Sign-in through the OAuth stub with a deep-link return |
-| 3 | Edition sign-up and "my conventions"; the same sign-up visible after signing in to the portal |
 
 ### 16.3 CI
 
@@ -1379,12 +1399,9 @@ against `main` and their dependents; the turbo cache is persisted between runs w
 `actions/cache`, so an unchanged task inside an affected package is still a cache hit.
 `pnpm i18n:extract -- --check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.
 
-The Maestro flows run in a separate job on a macOS runner, because that runner is slow and
-expensive. The job is gated by `turbo-ignore mobile`: the dependency graph decides whether
-`apps/mobile` is affected — directly or through `packages/contract` and `packages/i18n` — instead
-of a hand-maintained path list. The runner receives `/etc/hosts` entries for `api.localhost`,
-`panel.localhost`, `opos.localhost`, `convention-a.localhost` and `convention-b.localhost`.
-Artifacts from failed runs (traces, video, screenshots) are kept for 7 days.
+The e2e job receives `/etc/hosts` entries for `api.localhost`, `panel.localhost`,
+`opos.localhost`, `convention-a.localhost` and `convention-b.localhost`. Artifacts from failed runs
+(traces, video, screenshots) are kept for 7 days.
 
 ---
 
@@ -1392,25 +1409,27 @@ Artifacts from failed runs (traces, video, screenshots) are kept for 7 days.
 
 Run by hand after every deployment, on the production environment. The same flows run automatically
 in e2e ([16.2](#162-e2e-tests)) — the smoke test exists to check them where e2e cannot reach: with
-real TLS, real Google and real email delivery.
+real TLS, real Google, real email delivery and a real phone.
 
-1. **Attendee registration.** `opos.land` -> registration by email -> "my conventions" with a
-   signed-in session. With `Accept-Language: en` the portal is in English before sign-in; after
-   changing the language in settings the choice survives sign-out and a fresh visit.
+1. **Attendee registration.** `opos.land` -> registration by email -> the confirmation message
+   arrives in the recipient's language -> the link signs in and lands on "my conventions". With
+   `Accept-Language: en` the portal is in English before sign-in; after changing the language in
+   settings the choice survives sign-out and a fresh visit.
 2. **Password reset.** The forgot-password form sends a real email; the link sets a new password,
    the previous password stops working and the earlier session is signed out.
-3. **OAuth cannot take over an account.** An account created with a password on an address
-   available in Google: after signing in with Google, `accounts.id` is unchanged, the password
-   stops working and earlier sessions are revoked. For an account with `emailVerifiedAt` set, the
-   password stays untouched.
-4. **Refresh token rotation.** The old refresh -> `401`, the new one works; the cookie carries
-   `HttpOnly` and is absent from `localStorage`.
+3. **Google cannot take over an account.** An unconfirmed account created with a password on an
+   address available in Google: after signing in with Google, the password does not let anyone in.
+   For a confirmed account, Google sign-in keeps the same `auth.users.id` and the password keeps
+   working.
+4. **Refresh token rotation.** A refresh token used a second time, more than 10 s after the first
+   use, is rejected and ends the session. `panel.opos.land` and `opos.land` answer with the CSP
+   header from [7.4](#74-authorization).
 5. **Edition activation.** A new 2027 edition activated -> 2026 loses `isActive`, and the database
    holds exactly one active Convention A edition.
 6. **The programme reaches the website.** An item added in the panel shows up on
    `convention-a.localhost/program` (allowing for the 60 s tenant cache TTL).
 7. **Organizer invitation.** A head invites an email with `program=write` for 2026 -> the message
-   lands in Mailpit -> acceptance -> the invitee sees the 2026 programme and nothing else.
+   arrives -> acceptance -> the invitee sees the 2026 programme and nothing else.
 8. **Permissions in the UI and on the server.** `viewer@convention-a.test` has no team management
    in the sidebar, and a direct URL ends with the "no permissions" screen and a `403` from the API.
 9. **Tenant isolation.** A Convention A org with `X-Tenant-Slug: convention-b` -> `403`;
@@ -1421,24 +1440,27 @@ real TLS, real Google and real email delivery.
    archive shows 2025, an unknown host -> the "we couldn't find that convention" page.
    `convention-b.localhost` renders in English with `lang="en"` regardless of `Accept-Language`,
    and the programme times match the tenant's zone.
-11. **Mobile application on a test release.** A build from TestFlight or Google Play's internal
-   channel signs in with an account created in the portal, Google sign-in returns through a deep
-   link, an edition sign-up made in the application is visible in the portal, and
-   `https://opos.land/join/...` opens the application instead of the browser.
+11. **The portal on a phone.** On a real phone browser (iOS Safari and Android Chrome): registration,
+   the "Sign up" button on a convention website, edition sign-up and "my conventions" work without
+   horizontal scrolling.
+12. **Supabase stays internal.** `auth.opos.land` answers only GoTrue's paths, nothing listens on
+   `:5432` from outside, and `https://api.opos.land/hooks/send-email` without a signature -> `401`.
 
 ---
 
 ## 18. Execution rules
 
 1. **Pinned versions** — Node `24.15.0` and pnpm `11.17.0`, enforced by `engineStrict`.
-   Dependencies no younger than 7 days (`minimumReleaseAge`).
+   Dependencies no younger than 7 days (`minimumReleaseAge`). Supabase images pinned to exact
+   tags.
 2. **No build step for the contracts** — `packages/contract`, `packages/db` and `packages/i18n`
    point `main`/`types` at `src/index.ts`. The only exception is the translation catalogs: they
    need `pnpm i18n:compile`, wired in as a dependency of `dev` and `build` ([3.1](#31-turbo-tasks)).
 3. **Atomic commits**, Conventional Commits in English — the convention and the scopes live in
    [AGENTS.md](../AGENTS.md#commits), enforced by commitlint.
 4. **Green before every PR** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:verify`.
-   A change visible in the UI is additionally clicked through or checked with `curl`.
+   A change visible in the UI is additionally clicked through or checked with `curl`; a portal
+   change also in a mobile viewport.
 5. **No emoji in code or commit messages.**
 6. **Every user-facing string inside a Lingui macro** — `<Trans>`, `t`, `plural`, `msg`. A bare
    literal in a prop or in JSX is a review error. The API returns a `code`, not a sentence. After
@@ -1447,7 +1469,12 @@ real TLS, real Google and real email delivery.
 7. **English across the repository.** Code, table and column names, endpoints, route paths,
    comments in code and configuration, branch names, commits and all documentation — English.
    The only Polish in the repository is the `pl` translation catalog.
-8. **Feature based in every frontend and in the mobile application.** A new screen starts with the
-   question of which feature it belongs to; if none, a new feature is created rather than an
-   application-level `components/` directory. Shared things go to `shared/`, never through an
-   import from inside another feature.
+8. **Feature based in every frontend.** A new screen starts with the question of which feature it
+   belongs to; if none, a new feature is created rather than an application-level `components/`
+   directory. Shared things go to `shared/`, never through an import from inside another feature.
+9. **No AI-generated graphics.** Illustrations, logos, images and icons come from the designer or
+   from the licensed icon set; screens follow the designer's designs. A screen without a design
+   uses plain blocks and real copy, not generated artwork. A generated image in a PR is a review
+   error.
+10. **Only the API and Supabase Auth touch the database.** No frontend gets a database URL, a
+    service role key or a PostgREST endpoint.

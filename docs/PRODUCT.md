@@ -10,21 +10,27 @@ What we build and for whom. The way it gets built is described in [PLAN.md](PLAN
 4. [Business model — tenant and edition](#4-business-model--tenant-and-edition)
 5. [Roles and permissions](#5-roles-and-permissions)
 6. [Addresses and domains](#6-addresses-and-domains)
-7. [Mobile application](#7-mobile-application)
-8. [Languages, markets and time zones](#8-languages-markets-and-time-zones)
-9. [Personal data and privacy](#9-personal-data-and-privacy)
-10. [MVP scope vs beyond MVP](#10-mvp-scope-vs-beyond-mvp)
+7. [Modules](#7-modules)
+8. [Design and public image](#8-design-and-public-image)
+9. [Languages, markets and time zones](#9-languages-markets-and-time-zones)
+10. [Personal data and privacy](#10-personal-data-and-privacy)
+11. [MVP scope vs beyond MVP](#11-mvp-scope-vs-beyond-mvp)
 
 ---
 
 ## 1. What OPOS is
 
-A multitenant SaaS for running fantasy conventions: programme, tickets, attendee registrations and
-a public convention website. One installation serves many conventions with full data isolation
+A multitenant platform for running fantasy conventions: programme, tickets, attendee registrations
+and a public convention website. One installation serves many conventions with full data isolation
 between them.
 
-An attendee can use either the platform website or the mobile application — both do the same thing
-([chapter 7](#7-mobile-application)). Organizers work in the panel, in a browser.
+**OPOS is free for conventions.** The platform charges conventions nothing and is not built to
+earn from the convention scene. Convention OPOS is the starting point: the attendee accounts it
+gathers are the base for later attendee-facing products, such as virtual booths and an OPOS shop
+([chapter 11](#11-mvp-scope-vs-beyond-mvp)).
+
+Attendees use the platform website, which works on a phone as well as on a desktop. There is no
+native mobile application. Organizers work in the panel, in a browser.
 
 The MVP targets a single market: Poland. The next ones are neighbouring — Czechia and Slovakia
 have a nearly identical convention scene — and the product is multilingual from the first commit,
@@ -36,8 +42,8 @@ The platform is self-hosted: our own VPS, with no lock-in to any particular clou
 
 ## 2. MVP goal and end-to-end flow
 
-The MVP is a skeleton with one complete vertical feature — the convention programme. Further
-modules (tickets, payments, speakers, rooms) are added onto a finished skeleton.
+The MVP is the core — accounts, conventions, editions and permissions — plus one complete module,
+the programme. Further modules ([chapter 7](#7-modules)) are added onto a finished core.
 
 The MVP is closed once the flow below works without touching the database by hand:
 
@@ -48,9 +54,9 @@ The MVP is closed once the flow below works without touching the database by han
 4. The public convention website shows that programme: home page, programme, item details.
 5. The head organizer emails an invitation granting programme write access to the 2026 edition
    only. The invitee accepts the link and sees nothing in the panel but that edition's programme.
-6. An attendee registers (email/password or Google) — in the portal or in the mobile application —
-   follows a link on the convention website, signs up for the 2026 edition and sees it under
-   "my conventions". The same account works in both places.
+6. An attendee registers in the portal — with email and password, confirmed through a link sent
+   to that address, or with Google — follows a link on the convention website, signs up for the
+   2026 edition and sees it under "my conventions". All of it works in a phone browser.
 7. An organizer of Convention A can neither read nor change anything in Convention B.
 
 ---
@@ -68,7 +74,10 @@ The names are consistent across code, API and interface. We introduce no synonym
 | **admin** | the person running the whole platform: creates conventions, appoints the first head organizers |
 | **org** | a member of a convention's organizing team, works in the panel |
 | **head** | the head organizer of a convention — an org with no permission limits |
-| **user** | a convention attendee, works in the portal or the mobile application |
+| **user** | a convention attendee, works in the portal |
+| **core** | accounts, conventions, editions and permissions — what every module builds on |
+| **module** | one functional area built on the core: programme, CMS, profile, accreditation, booths, friends ([chapter 7](#7-modules)) |
+| **booth** | an exhibitor's stand at an edition; a virtual booth is its online counterpart |
 | **locale** | interface or website language in BCP 47 form (`pl`, `en`) |
 
 The roles are not mutually exclusive. A single account can be the platform admin, head organizer
@@ -86,12 +95,12 @@ That split gives us:
 
 - The organizing team, branding and configuration carry over from edition to edition.
 - The convention address stays the same between editions, so SEO does not suffer.
-- Billing is handled at convention level, not edition level.
 - An attendee sees the history of their visits to a given convention across the years.
 
-**OPOS does not touch the conventions' money.** The shop configuration points at a payment
-provider account owned by the convention, and ticket revenue flows directly to the organizer.
-The platform neither processes nor holds attendee payments — it only stores the configuration.
+**OPOS does not touch the conventions' money.** It charges conventions no fees, and the shop
+configuration points at a payment provider account owned by the convention, so ticket revenue
+flows directly to the organizer. The platform neither processes nor holds attendee payments — it
+only stores the configuration.
 
 ### What belongs to the convention, and what to the edition
 
@@ -180,12 +189,13 @@ In the panel Jan switches convention context in the top bar.
 | `opos.land` | platform website: landing page, registration and attendee account |
 | `panel.opos.land` | organizer panel |
 | `api.opos.land` | API |
+| `auth.opos.land` | sign-in service: registration, sign-in, sessions, password reset, Google |
 | `<convention>.opos.land` | public convention website |
 | customer's own domain | the same public convention website |
 | `admin.opos.land` | reserved for a future platform admin panel |
 
-The mobile application has no address of its own — it uses the same API. "Sign up" links on the
-convention website open the application when it is installed, and the portal otherwise.
+"Sign up" links on the convention website lead to the portal, landing straight on the right
+edition.
 
 **Only the platform admin sets a custom domain.** The field is unique platform-wide and
 unverified, so self-service would let someone claim another party's domain and intercept its
@@ -194,38 +204,43 @@ Self-service returns together with domain ownership verification.
 
 ---
 
-## 7. Mobile application
+## 7. Modules
 
-**In the MVP the application is a stub** — a second entrance to the portal's features, kept
-deliberately minimal. It exists to prove that one account, one API contract, sign-in and the
-release pipeline work end to end on iOS and Android. The attendee-facing value — the programme,
-a personal schedule, push notifications — arrives beyond the MVP, on top of a proven skeleton.
-The stub contains:
+OPOS is a core plus modules. The core — accounts, conventions, editions and permissions
+([chapter 5](#5-roles-and-permissions)) — is shared by every module. A module adds one functional
+area on top of it; a module that organizers manage brings its own permission on the convention or
+edition level.
 
-- registration and sign-in (email with password, and Google),
-- password reset — a link out to the portal's form,
-- "my conventions" — the list of editions the attendee is signed up for,
-- signing up for an edition and withdrawing,
-- account settings, language change, account deletion.
+| Module | Covers | Permission | In the MVP |
+|---|---|---|---|
+| programme | an edition's programme items and the public programme on the convention website | programme (edition) | yes |
+| CMS | the public convention website: home page, programme pages, archive, per-edition content | branding (convention), website content (edition) | home page, programme and archive |
+| profile | the user's account: name, language, "my conventions", account deletion | — (the user's own data) | account settings and "my conventions" |
+| accreditation | admitting attendees, staff and guests to an edition | to be added | no |
+| booths | exhibitor booths at an edition, and virtual booths online | to be added | no |
+| friends | connections between users across conventions | — (the user's own data) | no |
+| tickets | an edition's tickets, types and sales limits | tickets (edition) | no |
 
-What it does not contain: the organizer panel or the public convention websites. Organizers work
-in a browser, and a convention website is public and indexed, so it stays on the web.
-
-**One account, two entrances.** The same account, the same data, the same permissions. An attendee
-can create an account in the application and sign in with it in the portal, and the other way
-round.
-
-**Entry from a link.** The "Sign up" button on a convention website and links from emails open the
-application when it is installed, landing straight on the right edition. Without the application
-the same link opens the portal.
-
-**Distribution in the MVP:** test releases through TestFlight and Google Play's internal channel.
-Store publication is beyond the MVP — the review process, developer accounts and store
-requirements are a separate track, independent of whether the code is ready.
+Modules beyond the MVP are built only after the core and the programme are finished.
 
 ---
 
-## 8. Languages, markets and time zones
+## 8. Design and public image
+
+OPOS is user-facing: attendees and organizers meet it directly, and its public image matters as
+much as its features.
+
+- **No AI-generated graphics.** Illustrations, logos, images and icons in the product and in its
+  public materials are made by a human designer or come from a licensed icon set — never from an
+  image generator.
+- **No generic template look.** Screens follow the designer's designs. A UI component library is a
+  starting point for the code, not the final appearance.
+- **Placeholders are honest.** Until a design exists, a screen uses plain blocks and real copy,
+  not stand-in artwork.
+
+---
+
+## 9. Languages, markets and time zones
 
 Supported languages in the MVP: **Polish and English**. The default interface language is Polish.
 Texts are authored in code in English, and English is the fallback — a missing Polish translation
@@ -235,7 +250,6 @@ arrive together with their markets, beyond the MVP.
 | Where | Which language |
 |---|---|
 | panel and portal | the user's choice stored on the account; browser language by default |
-| mobile application | the user's choice stored on the account; device language by default |
 | public convention website | the language the organizer set for the convention, regardless of the visitor's browser |
 | emails | the recipient's language; for an unknown address, the inviting convention's language |
 
@@ -250,9 +264,12 @@ Adding another language is a translation file — it requires no changes to code
 
 ---
 
-## 9. Personal data and privacy
+## 10. Personal data and privacy
 
 We store attendees' personal data: first name, last name, email address.
+
+**Registration with a password requires a confirmed email address.** The account starts working
+once its owner clicks the link sent to that address. A Google sign-in counts as confirmed.
 
 **Account deletion is self-service.** The user deletes the account from settings; their sign-in
 identities, sessions and edition registrations go with it. The single exception: an account that
@@ -263,42 +280,42 @@ Database backups contain personal data, so they are encrypted and share the rete
 production data.
 
 **The privacy policy ships with the MVP.** It is published on the platform website and linked
-from every registration form — in the portal and in the mobile application. The remaining
-obligations stay beyond the MVP: record of processing activities, data export and log retention.
+from the registration form. The remaining obligations stay beyond the MVP: record of processing
+activities, data export and log retention.
 
 ---
 
-## 10. MVP scope vs beyond MVP
+## 11. MVP scope vs beyond MVP
 
 ### In the MVP
 
+- The core: accounts, conventions, editions, permissions on two levels
 - Multilingual interface (Polish, English) in the panel, portal, convention website and emails
 - Language and time zone per convention
-- Accounts: email with password, and Google sign-in
+- Accounts: email with password, confirmed by email, and Google sign-in
 - Password reset by email
-- Mobile application for iOS and Android — a stub of the portal's scope, as test releases
-- Conventions and editions
+- Portal that works in a phone browser
 - Edition programme
 - Public convention website with programme and archive
-- Permissions on two levels
 - Organizer invitations by email
 - Full data isolation between conventions
 - Account deletion by the user
-- Privacy policy, linked from every registration form
+- Privacy policy, linked from the registration form
+- Interface following the designer's designs, with no AI-generated graphics
 - Demo data
 - Deployment to our own VPS with backups
 
 ### Beyond the MVP
 
-- Email verification — first in the queue
-- Mobile application release in the App Store and Google Play
+- Modules: accreditation, booths (including virtual booths), friends, tickets ([chapter 7](#7-modules))
+- OPOS shop for attendees
 - Push notifications
-- Programme and personal schedule in the mobile application
+- Personal schedule in the portal
 - Localized public website paths (today the paths are English regardless of convention language)
 - Convention content translations and a language switcher on the public website
 - Further markets and languages: Czech, Slovak, German, currencies other than the złoty, local
   payment methods
-- Ticketing and payments
+- Payments
 - Further sign-in providers
 - Attendee comments
 - Convention catalogue in the portal

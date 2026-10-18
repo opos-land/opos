@@ -9,7 +9,7 @@ export default {
     'scope-enum': [
       2,
       'always',
-      ['api', 'panel', 'portal', 'cms', 'mobile', 'db', 'contract', 'i18n', 'e2e', 'infra', 'repo'],
+      ['api', 'panel', 'portal', 'cms', 'db', 'contract', 'i18n', 'e2e', 'infra', 'repo'],
     ],
     'header-max-length': [2, 'always', 72],
     'subject-full-stop': [2, 'never', '.'],

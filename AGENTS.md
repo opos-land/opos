@@ -119,7 +119,8 @@ Subject in the imperative mood (`add`, not `added`), lowercase, no trailing peri
 
 Scopes: `api`, `panel`, `portal`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra`, `repo`.
 `infra` covers Traefik, compose and `infra/supabase`. The scope is optional, but when present it
-must come from this list — otherwise commitlint rejects the message. A new scope goes into `commitlint.config.mjs` and into this table.
+must come from this list — otherwise commitlint rejects the message. A new scope goes into
+`commitlint.config.mjs` and into this table.
 
 Rules commitlint will not check, but which still apply:
 

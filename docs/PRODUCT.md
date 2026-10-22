@@ -229,6 +229,7 @@ In the panel Jan switches convention context in the top bar.
 | `panel.opos.land` | organizer panel | yes |
 | `panel.opos.land/scanner` | the ticket scanner on a paired phone, without signing in | yes |
 | `api.opos.land` | API | yes |
+| `api.opos.land/docs` | public API documentation (Swagger UI), no sign-in | yes |
 | `auth.opos.land` | sign-in service: registration, sign-in, sessions, password reset, Google | yes |
 | `<convention>.opos.land` | public convention website (CMS module) | no |
 | customer's own domain | the same public convention website | no |

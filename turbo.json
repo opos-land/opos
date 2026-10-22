@@ -1,0 +1,58 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "build": {
+      "dependsOn": ["^build", "i18n:compile"],
+      "outputs": ["dist/**"]
+    },
+    "dev": {
+      "dependsOn": ["i18n:compile"],
+      "cache": false,
+      "persistent": true
+    },
+    "typecheck": {
+      "dependsOn": ["transit"]
+    },
+    "lint": {
+      "dependsOn": ["transit"]
+    },
+    "test": {
+      "dependsOn": ["transit"]
+    },
+    "test:e2e": {
+      "cache": false
+    },
+    "i18n:extract": {
+      "cache": false
+    },
+    "i18n:compile": {
+      "dependsOn": ["^i18n:compile"],
+      "outputs": ["src/locales/*.mjs", "locales/*.mjs"]
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:push": {
+      "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    },
+    "db:verify": {
+      "cache": false
+    },
+    "db:tenant:create": {
+      "cache": false
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

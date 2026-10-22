@@ -1625,9 +1625,13 @@ using seeded data only read it.
 
 GitHub Actions on every PR and every push to `main` (`.github/workflows/ci.yml`). Tool versions
 come from `mise.toml` through `jdx/mise-action`, the same source as local machines; then
-`pnpm install --frozen-lockfile` and `pnpm format:check`. `turbo run typecheck lint test --affected` covers the packages changed
-against `main` and their dependents; the turbo cache is persisted between runs with
-`actions/cache`, so an unchanged task inside an affected package is still a cache hit.
+`pnpm install --frozen-lockfile` and `pnpm format:check`. On a PR,
+`turbo run typecheck lint test --affected` covers the packages changed against `main` and their
+dependents (the checkout uses `fetch-depth: 0`, which `--affected` needs); a push to `main` runs
+the same tasks on every package. The turbo cache (`.turbo/cache`) is persisted between runs with
+`actions/cache`, keyed by commit with a fallback to the newest entry; the full runs on `main`
+fill the cache that PRs restore, so an unchanged task inside an affected package is still a cache
+hit.
 `pnpm i18n:extract -- --check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.
 
 The e2e job receives `/etc/hosts` entries for `api.localhost`, `panel.localhost` and

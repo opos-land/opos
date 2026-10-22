@@ -145,6 +145,8 @@ opos/
   .gitignore
   AGENTS.md
   CLAUDE.md
+  .github/
+    workflows/ci.yml          # CI (15.3)
   docs/
     PRODUCT.md
     PLAN.md
@@ -1621,7 +1623,9 @@ using seeded data only read it.
 
 ### 15.3 CI
 
-GitHub Actions on every PR. `turbo run typecheck lint test --affected` covers the packages changed
+GitHub Actions on every PR and every push to `main` (`.github/workflows/ci.yml`). Tool versions
+come from `mise.toml` through `jdx/mise-action`, the same source as local machines; then
+`pnpm install --frozen-lockfile` and `pnpm format:check`. `turbo run typecheck lint test --affected` covers the packages changed
 against `main` and their dependents; the turbo cache is persisted between runs with
 `actions/cache`, so an unchanged task inside an affected package is still a cache hit.
 `pnpm i18n:extract -- --check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.

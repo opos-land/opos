@@ -1514,7 +1514,7 @@ below the newest — that is intended. An urgent security fix requires a deliber
 |---|---|
 | `pre-commit` | prettier and `eslint --fix` on staged files; ESLint picks the `eslint.config.js` nearest to each file |
 | `commit-msg` | commitlint |
-| `pre-push` | `turbo run typecheck test` on packages changed against `origin/main` and their dependents; the API tests need `pnpm infra:up` |
+| `pre-push` | `turbo run typecheck test` on packages changed against `origin/develop` and their dependents; the API tests need `pnpm infra:up` |
 
 Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
@@ -1565,7 +1565,7 @@ Wildcard `*.opos.land` + `opos.land` through DNS-01 (`CF_DNS_API_TOKEN`).
 
 ### Deployment procedure
 
-1. `git pull` on the VPS.
+1. `git pull` of `main` on the VPS.
 2. `docker compose -f docker-compose.prod.yml pull db auth traefik`.
 3. `docker compose -f docker-compose.prod.yml build`.
 4. `pg_dump` before the migration.
@@ -1706,17 +1706,24 @@ using seeded data only read it.
 
 ### 15.3 CI
 
-GitHub Actions on every PR and every push to `main` (`.github/workflows/ci.yml`). Tool versions
+GitHub Actions on every PR and every push to `develop` and `main` (`.github/workflows/ci.yml`). Tool versions
 come from `mise.toml` through `jdx/mise-action`, the same source as local machines; then
 `pnpm install --frozen-lockfile`, `pnpm format:check` and `docker compose up -d --wait db` for
 the API integration tests. On a PR,
-`turbo run typecheck lint test --affected` covers the packages changed against `main` and their
-dependents (the checkout uses `fetch-depth: 0`, which `--affected` needs); a push to `main` runs
-the same tasks on every package. The turbo cache (`.turbo/cache`) is persisted between runs with
-`actions/cache`, keyed by commit with a fallback to the newest entry; the full runs on `main`
+`turbo run typecheck lint test --affected` covers the packages changed against the PR base branch
+(`TURBO_SCM_BASE=origin/<base_ref>`) and their dependents (the checkout uses `fetch-depth: 0`,
+which `--affected` needs); a push to `develop` or `main` runs the same tasks on every package. The turbo cache (`.turbo/cache`) is persisted between runs with
+`actions/cache`, keyed by commit with a fallback to the newest entry; the full runs on `develop` and `main`
 fill the cache that PRs restore, so an unchanged task inside an affected package is still a cache
 hit.
 `pnpm i18n:extract -- --check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.
+
+Branches:
+
+| Branch | Role | Protection |
+|---|---|---|
+| `develop` | default branch; every feature and fix PR targets it | none |
+| `main` | released state; changes only through a PR from `develop` | ruleset `protect-main`: PR required (0 approvals), job `check` must pass, no force push, no deletion |
 
 The e2e job receives `/etc/hosts` entries for `api.localhost`, `panel.localhost` and
 `opos.localhost`. Artifacts from failed runs

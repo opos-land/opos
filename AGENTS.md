@@ -150,7 +150,8 @@ Once code exists, the [execution rules](docs/PLAN.md#17-execution-rules) from PL
 Node and pnpm versions, every user-facing string inside a Lingui macro, green typecheck, lint and
 tests before every PR.
 
-`pnpm install` installs dependencies and wires up the hooks. Dependencies younger than 7 days are
+`mise install` installs Node and enables corepack for pnpm ([versions](docs/PLAN.md#versions-and-dependencies));
+then `pnpm install` installs dependencies and wires up the hooks. Dependencies younger than 7 days are
 rejected by `minimumReleaseAge` — that is policy, not a failure.
 
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add

@@ -83,11 +83,12 @@ live next to the applications ([6](#6-localization)).
 **Monorepo:** turborepo, pnpm workspaces, TypeScript strict, shared `packages/tsconfig` and
 `packages/eslint-config` (including the feature boundary rules).
 
-**Hard-pinned versions:** Node `24.15.0` (`.nvmrc` + `engines.node`), pnpm `11.17.0`
-(`packageManager` + corepack). `engineStrict: true` makes a mismatched version abort the install
-instead of printing a warning.
+**Hard-pinned versions:** Node `24.15.0` (`mise.toml` + `engines.node`), pnpm `11.17.0`
+(`packageManager` + corepack, enabled by mise). `engineStrict: true` makes a mismatched
+version abort the install instead of printing a warning.
 
-**Repository tooling:** lefthook (git hooks), commitlint with `config-conventional`, prettier.
+**Repository tooling:** mise (tool versions), lefthook (git hooks), commitlint with
+`config-conventional`, prettier.
 
 **Backend:** NestJS, Drizzle ORM + postgres-js, `@ts-rest/nest`, `jose` (Supabase JWT
 verification), `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (admin API),
@@ -134,7 +135,7 @@ opos/
   package.json                # root scripts delegating to turbo run
   pnpm-workspace.yaml         # apps/*, packages/*, e2e
   turbo.json                  # task pipeline (3.1)
-  .nvmrc                      # 24.15.0
+  mise.toml                   # node 24.15.0, corepack for pnpm
   .prettierrc
   docker-compose.yml          # dev: supabase db + auth + studio, mailpit
   docker-compose.prod.yml     # prod: traefik + apps + supabase db + auth
@@ -144,6 +145,8 @@ opos/
   .gitignore
   AGENTS.md
   CLAUDE.md
+  .github/
+    workflows/ci.yml          # CI (15.3)
   docs/
     PRODUCT.md
     PLAN.md
@@ -1411,8 +1414,13 @@ browses both the `public` and the `auth` schema.
 
 ### Versions and dependencies
 
-`corepack enable pnpm` once per machine; from then on the `packageManager` field pins the pnpm
-version. Node comes from `.nvmrc` — run `nvm use` before starting work.
+Tool versions come from `mise.toml`: `mise install` in the repository root installs Node and,
+through `node.corepack = true`, enables corepack, which then provides the pnpm version pinned by
+the `packageManager` field. pnpm is pinned only there, never in `mise.toml`. Activated mise
+(`mise activate`) switches versions on entering the directory. A version bump changes `mise.toml`
+and `engines` together (Node) or `packageManager` and `engines` together (pnpm).
+
+`mise.toml` holds no tasks: task logic lives in turbo and root scripts ([3.1](#31-turbo-tasks)).
 
 `pnpm-workspace.yaml` sets `minimumReleaseAge: 10080` (minutes, that is 7 days): pnpm will not
 install a version published within the last week. It is a grace window against a hijacked publisher
@@ -1615,7 +1623,9 @@ using seeded data only read it.
 
 ### 15.3 CI
 
-GitHub Actions on every PR. `turbo run typecheck lint test --affected` covers the packages changed
+GitHub Actions on every PR and every push to `main` (`.github/workflows/ci.yml`). Tool versions
+come from `mise.toml` through `jdx/mise-action`, the same source as local machines; then
+`pnpm install --frozen-lockfile` and `pnpm format:check`. `turbo run typecheck lint test --affected` covers the packages changed
 against `main` and their dependents; the turbo cache is persisted between runs with
 `actions/cache`, so an unchanged task inside an affected package is still a cache hit.
 `pnpm i18n:extract -- --check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.
@@ -1679,7 +1689,8 @@ real TLS, real Google, real email delivery and a real phone.
 
 ## 17. Execution rules
 
-1. **Pinned versions** — Node `24.15.0` and pnpm `11.17.0`, enforced by `engineStrict`.
+1. **Pinned versions** — Node `24.15.0` (`mise.toml`) and pnpm `11.17.0` (`packageManager`),
+   enforced by `engineStrict`.
    Dependencies no younger than 7 days (`minimumReleaseAge`). Supabase images pinned to exact
    tags.
 2. **No build step for the contracts** — `packages/contract`, `packages/db` and `packages/i18n`

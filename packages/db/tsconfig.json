@@ -1,0 +1,4 @@
+{
+  "extends": "@opos/tsconfig/node.json",
+  "include": ["src", "eslint.config.js"]
+}

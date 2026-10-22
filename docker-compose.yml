@@ -40,7 +40,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    env_file: ./infra/supabase/.env
+    # .env.example holds the dev defaults; an optional .env overrides them per developer.
+    env_file:
+      - ./infra/supabase/.env.example
+      - path: ./infra/supabase/.env
+        required: false
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999

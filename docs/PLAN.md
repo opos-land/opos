@@ -1395,8 +1395,10 @@ NODE_ENV=development
 `SUPABASE_SERVICE_ROLE_KEY` in dev is generated from `JWT_SECRET` by `pnpm --filter api
 auth:service-key`.
 
-**`infra/supabase/.env`** — read by `docker-compose.yml` as the `auth` service's `env_file`; it holds
-only what differs between developers or is a secret:
+**`infra/supabase/.env.example`** and **`infra/supabase/.env`** — read by `docker-compose.yml` as
+the `auth` service's `env_file`s, in that order. `.env.example` is committed and holds working dev
+values; the optional, ignored `.env` overrides any of them for one developer and is created by hand
+only when needed. Together they hold only what differs between developers or is a secret:
 
 | Variable | Value |
 |---|---|
@@ -1431,7 +1433,7 @@ between dev and production.
 Applications run natively through pnpm, infrastructure runs in Docker.
 
 ```bash
-# 1. Infrastructure; creates infra/supabase/.env from .env.example on the first run
+# 1. Infrastructure
 pnpm infra:up
 # -> supabase db on :5432, auth on :9999, studio on :54323
 # -> mailpit on :1025 (SMTP) + :8025 (UI)
@@ -1461,7 +1463,7 @@ Apart from `format` and `infra:*`, each of them is a `turbo run <task>` delegate
 
 | Script | Runs |
 |---|---|
-| `infra:up` | copies `infra/supabase/.env.example` to `infra/supabase/.env` when missing, then `docker compose up -d --wait` |
+| `infra:up` | `docker compose up -d --wait` |
 | `infra:down` | `docker compose down` |
 | `infra:reset` | `docker compose down -v`, then `infra:up` — wipes the database and reruns the init SQL |
 

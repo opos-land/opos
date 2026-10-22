@@ -39,6 +39,10 @@ so entering them is a matter of adding translation catalogs.
 
 The platform is self-hosted: our own VPS, with no lock-in to any particular cloud.
 
+The source code is available, not open source: it is licensed under the PolyForm Internal Use
+License 1.0.0. An organization may run and modify OPOS for its own internal operations; distributing
+the code or modified versions is not permitted.
+
 ---
 
 ## 2. MVP goal and end-to-end flow

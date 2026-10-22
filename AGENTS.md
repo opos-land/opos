@@ -86,8 +86,8 @@ always applies.
 - Tables instead of paragraphs wherever the content has structure.
 - Specifics instead of generalities: column names, status codes, paths, limits.
 - Tables of contents and anchors updated together with headings.
-- Terminology strictly from the glossary: tenant, edition, event, attendee, admin, org, head, user,
-  core, module, booth.
+- Terminology strictly from the glossary: tenant, edition, programme item, speaker, like, review,
+  attendee, admin, org, head, user, core, module, booth.
 
 ## Commits
 
@@ -146,7 +146,7 @@ Branches follow the same scheme: `feat/tenant-rls`, `fix/refresh-rotation`.
 ## Working with code
 
 There is no application code yet — the repository holds tooling configuration and the documents.
-Once code exists, the [execution rules](docs/PLAN.md#18-execution-rules) from PLAN.md apply: pinned
+Once code exists, the [execution rules](docs/PLAN.md#17-execution-rules) from PLAN.md apply: pinned
 Node and pnpm versions, every user-facing string inside a Lingui macro, green typecheck, lint and
 tests before every PR.
 
@@ -162,5 +162,5 @@ The plan does not prescribe an order of work — it follows from dependencies be
 the Supabase services (`infra/supabase`) before `packages/db`, because the schema references
 `auth.users`; `packages/db` and `packages/contract` before the apps, the contract before the
 frontends. The scope to cover is set by [MVP scope](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp),
-and the readiness criteria by [tests](docs/PLAN.md#16-tests) and the
-[smoke test](docs/PLAN.md#17-smoke-test).
+and the readiness criteria by [tests](docs/PLAN.md#15-tests) and the
+[smoke test](docs/PLAN.md#16-smoke-test).

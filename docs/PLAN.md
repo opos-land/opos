@@ -173,13 +173,11 @@ opos/
         common/
           database/database.module.ts   # APP_DB and GLOBAL_DB providers, pools closed on shutdown
           docs/setup-docs.ts            # OpenAPI from packages/contract, Swagger UI at /docs
-          als/tenant-context.service.ts
-          als/tenant-resolver.middleware.ts
-          als/tenant-transaction.interceptor.ts
+          als/tenant-context.service.ts         # request store, tx(), afterCommit(), withTenant()
+          als/tenant-context.middleware.ts      # opens an empty store for every request
+          als/tenant-transaction.interceptor.ts # tenant, transaction, permissions, commit
           guards/jwt-auth.guard.ts
           guards/scanner-device.guard.ts
-          guards/tenant-permission.guard.ts
-          guards/edition-permission.guard.ts
           decorators/require-tenant.decorator.ts
           decorators/require-edition.decorator.ts
           decorators/current-account.decorator.ts
@@ -503,8 +501,9 @@ tenant's currency), `quantity` (integer, nullable = no limit), `salesStartAt`, `
 **`orders`** — `tenantId`, `editionId` (FK restrict), `email` (lowercase), `firstName`, `lastName`,
 `locale`, `status` (`order_status`, default `pending`), `totalMinor`, `currency`,
 `holdExpiresAt`, `providerPaymentRef` (unique, nullable), `paidAt`, `cancelledAt`,
-`accessTokenHash` (sha256 of the token in the order link). Unique `(id, tenantId)`. Indexes
-`(tenantId, editionId, status)` and `(email)`.
+`ticketEmailSentAt` (nullable; set once the ticket email has gone out), `accessTokenHash` (sha256
+of the token in the order link). Unique `(id, tenantId)`. Indexes `(tenantId, editionId, status)`
+and `(email)`; partial index `(paidAt) where status = 'paid' and ticketEmailSentAt is null`.
 
 **`tickets`** — `tenantId`, `orderId` (FK cascade), `ticketTypeId` (FK restrict), `code` (unique,
 22 characters base62, 128 random bits), `redeemedAt` (nullable), `redeemedByDeviceId` (nullable).
@@ -528,8 +527,9 @@ Every RLS-covered table has an index starting with `tenantId`.
    `AFTER DELETE OR UPDATE` trigger on `tenant_memberships`.
 3. **An edition in `edition_memberships` belongs to the same tenant as the `tenant_membership`** —
    enforced by composite foreign keys.
-4. **Writes to tenant-level tables always carry the `tenantId` from ALS** — `scopedDb()` throws on
-   an empty context, and `WITH CHECK` in the RLS policies closes it on the database side.
+4. **Writes to tenant-level tables always carry the `tenantId` from ALS** —
+   `TenantContextService.tx()` throws when no tenant transaction is open
+   ([7.2](#72-tenant-context)), and `WITH CHECK` in the RLS policies closes it on the database side.
 5. **Every `auth.users` row has exactly one `accounts` row** — the insert trigger and the cascading
    foreign key.
 6. **A `head` membership never expires** — the check constraint on `tenant_memberships`.
@@ -624,11 +624,13 @@ Only through `GlobalDbService` on the `opos_app_global` role. The complete list:
 | payment webhook | order lookup by the `orderId` from a verified webhook; returns only `id`, `tenantId` |
 | order status link | order lookup by `id` and `accessTokenHash`; returns only `id`, `tenantId` |
 | scanner request | device lookup by `tokenHash`, not revoked, not expired; returns only `id`, `tenantId`, `editionId` |
+| order jobs ([7.10](#710-payments)) | `pending` orders past `holdExpiresAt`, and `paid` orders older than 5 minutes with no `ticketEmailSentAt`; returns only `id`, `tenantId` |
 
-Every query in `GlobalDbService` carries an `accountId` or `email` condition from the JWT, or a
-secret the caller proved it holds (a webhook signature, an order token, a device token); adding
-another one requires an entry in this table. The rest of the system, including `PublicModule`,
-resolves the tenant first and then works on `opos_app`.
+Every query in `GlobalDbService` carries an `accountId` or `email` condition from the JWT, a
+secret the caller proved it holds (a webhook signature, an order token, a device token), or comes
+from the API's own scheduled jobs; adding another one requires an entry in this table. The rest of
+the system, including `PublicModule`, resolves the tenant first and then works on `opos_app` inside
+`withTenant` ([7.2](#72-tenant-context)).
 
 #### Migrations and verification
 
@@ -805,7 +807,7 @@ the ticket email; the token is 32 random bytes, stored hashed.
 ### 5.10 `scanner` — device token
 
 `Authorization: Bearer <device token>` instead of a JWT; `ScannerDeviceGuard` resolves the device
-and opens the tenant context ([7.11](#711-scanner)).
+and the tenant context opens from it ([7.11](#711-scanner)).
 
 | Method | Path | Description |
 |---|---|---|
@@ -927,25 +929,46 @@ it is data, not interface messages.
 
 ### 7.2 Tenant context
 
-`TenantResolverMiddleware` (global, ahead of the guards):
+`TenantContextMiddleware` (global) opens an empty request store in ALS. Nothing reads the
+database before the guards have run; the guards and the interceptor fill the store:
 
-1. Reads `X-Tenant-Slug`. No header -> empty context.
-2. Loads the tenant by slug through `GlobalDbService`; an unknown slug -> `404`.
-3. Loads the current account's `tenant_membership`, skipping an expired one.
-4. Opens ALS with `{ tenantId, tenantSlug, membership, account }`.
+| Order | Component | Puts into the store |
+|---|---|---|
+| 1 | `JwtAuthGuard` ([7.4](#74-authorization)) | the verified account |
+| 1 | `ScannerDeviceGuard` ([7.11](#711-scanner)) | the paired device with its `tenantId` and `editionId` |
+| 2 | `TenantTransactionInterceptor` (global) | `{ tenantId, tenantSlug, membership }` and the transaction handle |
 
-`TenantTransactionInterceptor` — for requests carrying a tenant context:
+`TenantTransactionInterceptor`, for a request carrying `X-Tenant-Slug` or a scanner device:
 
-1. Opens a transaction on the `opos_app` pool.
-2. `select set_config('app.tenant_id', <tenantId>, true)`.
-3. Puts the transaction handle into ALS; repositories take it from there.
-4. Commit on `2xx`, rollback on an exception.
+1. Loads the tenant by slug through `GlobalDbService`; an unknown slug -> `404`. A scanner request
+   takes the tenant from its device.
+2. Opens a transaction on the `opos_app` pool and runs
+   `select set_config('app.tenant_id', <tenantId>, true)`.
+3. Loads the account's `tenant_membership` inside that transaction, skipping an expired one.
+4. Checks `@RequireTenant` and `@RequireEdition` inside the same transaction
+   ([7.3](#73-permissions)).
+5. Runs the handler, then commits when `res.statusCode` is below `300` and rolls back on any other
+   status or an exception. ts-rest sets the status before the interceptor sees the body, and it turns
+   both a returned `{ status: 4xx }` and a thrown `TsRestResponseError` into a response rather than
+   an exception, so the status is the signal.
+6. After a commit, runs the store's after-commit queue.
 
-Outbound I/O (SMTP, the GoTrue admin API) happens outside the transaction.
+Repositories take the transaction from `TenantContextService.tx()`, which throws when no tenant
+transaction is open; they never query the pool directly.
+
+Outbound I/O — SMTP, the GoTrue admin API — never runs inside the transaction. Code inside it
+registers the call with `TenantContextService.afterCommit(fn)`; the queue runs after the commit and
+is dropped on a rollback. The ticket email also has an outbox ([7.10](#710-payments)).
+
+Requests that act inside one tenant without the header — `PublicModule` and checkout (slug in the
+path), the payment webhook, the order link, the invitation endpoints, the scheduled jobs — open the
+same context with `TenantContextService.withTenant(tenantId, fn)`: transaction, `set_config`,
+`fn`, commit or rollback, after-commit queue. The `tenantId` comes from a lookup in
+[4.6](#46-tenant-isolation--rls-in-postgres) or from a verified token.
 
 `packages/db` exports `appDb()`, `globalDb()` and `migrationDb()`.
 
-### 7.3 Permissions — guards
+### 7.3 Permissions
 
 The permission model is described in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions).
 Implementation:
@@ -972,17 +995,19 @@ checkEdition(editionId, resource, required):
 ```
 
 ```ts
-@UseGuards(JwtAuthGuard, TenantPermissionGuard)
+@UseGuards(JwtAuthGuard)
 @RequireTenant('settings', 'write')
 async updateTenant() { ... }
 
-@UseGuards(JwtAuthGuard, EditionPermissionGuard)
+@UseGuards(JwtAuthGuard)
 @RequireEdition('program', 'write')   // editionId taken from the route param
 async createProgramItem() { ... }
 ```
 
-`EditionPermissionGuard` first checks that the edition belongs to the tenant from ALS and returns
-`404` on a mismatch.
+`TenantTransactionInterceptor` reads both decorators through the `Reflector` and runs
+`checkTenant` or `checkEdition` inside the tenant transaction ([7.2](#72-tenant-context)).
+`checkEdition` returns `404` for an edition of another tenant and for an `:editionId` that is not a
+uuid: the check runs before ts-rest validates the request.
 
 ### 7.4 Authorization
 
@@ -999,7 +1024,7 @@ Sessions are issued by Supabase Auth ([10](#10-supabase)):
 
 **`JwtAuthGuard`** verifies the `Authorization: Bearer` token with `jose`: signature, `exp`,
 `aud = authenticated`, `iss = <AUTH_URL>`. `sub` is `accounts.id`; the guard loads that row and
-puts it into the request — `locale` comes from the database, not from the token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
+puts it into the request store ([7.2](#72-tenant-context)) — `locale` comes from the database, not from the token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
 
 **Session in the browser** — `@supabase/auth-js` with `flowType: 'pkce'`, `persistSession: true`,
 `autoRefreshToken: true`, stored in the `localStorage` of the application's own origin under a
@@ -1111,13 +1136,17 @@ type PaymentEvent = { orderId: string; paymentRef: string; status: 'paid' | 'fai
   and "Fail" buttons that calls the webhook with a valid signature. The fake adapter does not load
   when `NODE_ENV=production`.
 - Webhook: verify the signature -> look up the order ([4.6](#46-tenant-isolation--rls-in-postgres))
-  -> open its tenant context -> compare amount and currency with the order (a mismatch is logged
-  and the order stays `pending`) -> `pending` becomes `paid`, `paidAt` is set, the ticket email
-  goes out. An order already `paid` answers `200` without a second email.
+  -> `withTenant` ([7.2](#72-tenant-context)) -> compare amount and currency with the order (a
+  mismatch is logged and the order stays `pending`) -> `pending` becomes `paid` and `paidAt` is
+  set. After the commit the ticket email goes out and sets `ticketEmailSentAt`. An order already
+  `paid` answers `200` and sends nothing.
 - A payment that arrives after the hold expired still marks the order `paid`: the money is taken.
   The panel flags a ticket type sold above its `quantity`.
-- A job every minute flips `pending` orders past `holdExpiresAt` to `expired`; availability counts
-  already ignore them.
+- A job every minute flips `pending` orders past `holdExpiresAt` to `expired` (availability counts
+  already ignore them) and sends the ticket email for every `paid` order older than 5 minutes whose
+  `ticketEmailSentAt` is still empty — the outbox for an SMTP failure after the commit; the 5
+  minutes keep it from racing the send after the commit. Each order is handled in its own
+  `withTenant`.
 - Ticket email: `MailModule`, the order's locale, one QR code per ticket as an inline PNG
   (`qrcode`), the payload `OPOS1:<code>`, and the order link.
 
@@ -1131,8 +1160,9 @@ type PaymentEvent = { orderId: string; paymentRef: string; status: 'paid' | 'fai
 3. The phone keeps the device token in `localStorage` (`opos-scanner-device`) and sends it on every
    request. No sign-in, no Supabase session.
 4. `ScannerDeviceGuard` hashes the token, finds a device that is neither revoked nor past
-   `expiresAt` through `GlobalDbService`, then opens the tenant transaction exactly like
-   `TenantTransactionInterceptor`; anything else -> `401` and the phone returns to pairing.
+   `expiresAt` through `GlobalDbService` and puts it into the request store;
+   `TenantTransactionInterceptor` then opens that device's tenant transaction
+   ([7.2](#72-tenant-context)). Anything else -> `401` and the phone returns to pairing.
 
 The scanner is online only: no local ticket list, no queue of offline redemptions.
 
@@ -1679,13 +1709,14 @@ accounts are created through the admin API and signed in with `signInWithPasswor
 | permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere |
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
+| transactions | a handler that writes and then returns a `4xx` leaves no row behind; an `afterCommit` call registered before a rollback never runs; a repository call outside a tenant transaction throws |
 | anti-escalation | an org cannot grant permissions above their own, edit themselves or touch a `head` |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access; an org cannot set an expiry later than their own |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
 | likes | idempotent `PUT`; `likeCount` changes; no endpoint returns who liked an item; `GET /me/schedule` spans tenants |
 | checkout | 20 concurrent orders against `quantity=5` -> exactly 5 hold tickets, the rest `409`; an expired hold releases its tickets; outside the sales window -> `409`; no payment config -> `409`; more than 10 tickets -> `400` |
-| payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid` |
+| payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid`; an SMTP failure after the payment leaves `ticketEmailSentAt` empty and the job sends the email later |
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
 | scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
 | JWT | an expired token, a token signed with another secret, `aud != authenticated` and a foreign `iss` -> `401`; a valid token without an `accounts` row -> `401` |

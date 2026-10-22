@@ -291,8 +291,9 @@ opos/
 ### 3.1 Turbo tasks
 
 Root scripts in `package.json` only delegate — `"build": "turbo run build"` — and task logic lives
-in the packages' own scripts. The exceptions are `prepare` (lefthook) and `format`/`format:check`
-(prettier over the whole repository); those do not go through turbo.
+in the packages' own scripts. The exceptions are `prepare` (lefthook), `format`/`format:check`
+(prettier over the whole repository) and `infra:up`/`infra:down`/`infra:reset` (`docker compose`,
+[12](#12-local-development)); those do not go through turbo.
 
 `packages/contract`, `packages/db` and `packages/i18n` have no build step, so `^build` gives the
 task graph no edges towards them. The `transit` task supplies those edges: declared only in
@@ -1409,11 +1410,8 @@ between dev and production.
 Applications run natively through pnpm, infrastructure runs in Docker.
 
 ```bash
-# 0. Once: dev secrets of the auth service
-cp infra/supabase/.env.example infra/supabase/.env
-
-# 1. Infrastructure
-docker compose up -d
+# 1. Infrastructure; creates infra/supabase/.env from .env.example on the first run
+pnpm infra:up
 # -> supabase db on :5432, auth on :9999, studio on :54323
 # -> mailpit on :1025 (SMTP) + :8025 (UI)
 
@@ -1436,15 +1434,23 @@ pnpm dev
 
 Root scripts: `dev`, `build`, `typecheck`, `lint`, `format`, `test`, `test:e2e`, `i18n:extract`,
 `i18n:compile`, `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:studio`, `db:verify`,
-`db:tenant:create`.
-Apart from `format`, each of them is a `turbo run <task>` delegate ([3.1](#31-turbo-tasks)).
+`db:tenant:create`, `infra:up`, `infra:down`, `infra:reset`.
+Apart from `format` and `infra:*`, each of them is a `turbo run <task>` delegate
+([3.1](#31-turbo-tasks)).
+
+| Script | Runs |
+|---|---|
+| `infra:up` | copies `infra/supabase/.env.example` to `infra/supabase/.env` when missing, then `docker compose up -d --wait` |
+| `infra:down` | `docker compose down` |
+| `infra:reset` | `docker compose down -v`, then `infra:up` — wipes the database and reruns the init SQL |
 
 `db:migrate` and `db:seed` connect as `opos_migrator`; the API runs as `opos_app`. The roles are
 created by `infra/supabase/db/opos-roles.sql` when the `db` container starts on an empty volume —
-`docker compose down -v` resets them together with the data. A change in `infra/supabase/db/` takes
+`pnpm infra:reset` resets them together with the data. A change in `infra/supabase/db/` takes
 effect only after such a reset.
 
-Podman works too (`podman compose`, rootless): the init SQL mounts carry the `z` SELinux label,
+Podman works too, rootless: `podman-docker` provides the `docker` command and `docker compose`
+runs through `podman compose`. The init SQL mounts carry the `z` SELinux label,
 and `host.docker.internal:host-gateway` needs Podman 5.3 or newer. Port `5432` must be free — stop
 a locally installed Postgres first.
 
@@ -1626,7 +1632,7 @@ accounts are created through the admin API and signed in with `signInWithPasswor
 Playwright in `e2e/`, through the UI of both web applications, against the full stack on a fresh
 database.
 
-**Environment:** `docker compose up -d` (Supabase `db` + `auth`, Mailpit),
+**Environment:** `pnpm infra:up` (Supabase `db` + `auth`, Mailpit),
 `pnpm db:migrate && pnpm db:seed`, applications started through `webServer` in the Playwright
 configuration. Chromium in two projects: desktop, and a mobile viewport (Pixel 7) for the portal;
 a browser matrix is beyond the MVP. The `e2e` directory is a workspace package — Playwright and

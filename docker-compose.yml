@@ -92,6 +92,18 @@ services:
       PG_META_DB_USER: postgres
       PG_META_DB_PASSWORD: postgres
       CRYPTO_KEY: dev-pg-meta-crypto-key-32-characters
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:8080/health').then((r) => { if (r.status !== 200) throw new Error(r.status) })",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
 
   studio:
     image: supabase/studio:2026.10.12-sha-3699278
@@ -110,6 +122,18 @@ services:
       DEFAULT_ORGANIZATION_NAME: OPOS
       DEFAULT_PROJECT_NAME: opos-dev
       ENABLED_FEATURES_LOGS_ALL: 'false'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/api/platform/profile').then((r) => { if (r.status !== 200) throw new Error(r.status) })",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     ports:
       - 127.0.0.1:54323:3000
 

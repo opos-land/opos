@@ -26,7 +26,10 @@
     "db:verify": "turbo run db:verify",
     "db:tenant:create": "turbo run db:tenant:create",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "infra:up": "test -f infra/supabase/.env || cp infra/supabase/.env.example infra/supabase/.env && docker compose up -d --wait",
+    "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v && pnpm infra:up"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

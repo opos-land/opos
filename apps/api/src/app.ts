@@ -10,6 +10,6 @@ export function configureApp(app: NestExpressApplication, env: Env) {
     credentials: false,
   })
   app.enableShutdownHooks()
-  if (env.NODE_ENV !== 'production') setupDocs(app)
+  setupDocs(app)
   return app
 }

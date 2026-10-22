@@ -17,19 +17,13 @@ async function createApp(nodeEnv: 'test' | 'production') {
 }
 
 describe('API docs', () => {
-  it('serves the OpenAPI document generated from the contract', async () => {
-    const app = await createApp('test')
+  it.each(['test', 'production'] as const)('serves the OpenAPI document in %s', async (nodeEnv) => {
+    const app = await createApp(nodeEnv)
     const res = await request(app.getHttpServer()).get('/docs/json').expect(200)
     const doc = res.body as OpenAPIObject
     expect(doc.openapi).toMatch(/^3\./)
     expect(doc.paths['/health']?.get?.operationId).toBe('health.check')
     await request(app.getHttpServer()).get('/docs').expect(200)
-    await app.close()
-  })
-
-  it('is not served in production', async () => {
-    const app = await createApp('production')
-    await request(app.getHttpServer()).get('/docs/json').expect(404)
     await app.close()
   })
 })

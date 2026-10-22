@@ -9,6 +9,21 @@
   },
   "scripts": {
     "prepare": "lefthook install",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "i18n:extract": "turbo run i18n:extract",
+    "i18n:compile": "turbo run i18n:compile",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "turbo run db:migrate",
+    "db:push": "turbo run db:push",
+    "db:seed": "turbo run db:seed",
+    "db:studio": "turbo run db:studio",
+    "db:verify": "turbo run db:verify",
+    "db:tenant:create": "turbo run db:tenant:create",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -16,6 +31,7 @@
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
     "lefthook": "^1.10.10",
-    "prettier": "^3.4.2"
+    "prettier": "^3.4.2",
+    "turbo": "^2.11.8"
   }
 }

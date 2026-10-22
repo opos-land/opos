@@ -32,6 +32,7 @@
       "dependsOn": ["^i18n:compile"],
       "outputs": ["src/locales/*.mjs", "locales/*.mjs"]
     },
+    "i18n:check": {},
     "db:generate": {
       "cache": false
     },

@@ -321,8 +321,9 @@ much as its features.
 ## 9. Languages, markets and time zones
 
 Supported languages in the MVP: **Polish and English**. The default interface language is Polish.
-Texts are authored in code in English, and English is the fallback — a missing Polish translation
-shows the English original, never an empty label or a technical identifier. Czech and Slovak
+Texts are authored in code in English and ship together with their Polish translation. English is
+the fallback — a missing Polish translation shows the English original, never an empty label or a
+technical identifier. Czech and Slovak
 arrive together with their markets, beyond the MVP.
 
 | Where | Which language |

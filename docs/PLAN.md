@@ -106,7 +106,8 @@ QR codes in emails).
 `@supabase/auth-js`, react-router, react-hook-form + zod, zustand, `@lingui/react`; in the
 scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
 
-**i18n:** Lingui — `@lingui/core`, `@lingui/react`, `@lingui/macro` macros, `@lingui/cli`.
+**i18n:** Lingui 6 — `@lingui/core`, `@lingui/react`, the `@lingui/core/macro` and
+`@lingui/react/macro` macros, `@lingui/cli`.
 `Intl` for dates, numbers and currencies.
 
 **Tests:** vitest + supertest (integration), Playwright (web e2e, desktop and mobile viewports).
@@ -322,6 +323,7 @@ tasks still run in parallel.
 | `test:e2e` | — | — | no; runs against the full stack |
 | `i18n:extract` | — | — | no; appends messages to the `.po` files |
 | `i18n:compile` | `^i18n:compile` | compiled catalogs (`src/locales/*.mjs`, `locales/*.mjs`) | yes |
+| `i18n:check` | — | — | yes |
 | `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:verify`, `db:tenant:create` | — | — | no; the database and generated migrations are side effects |
 | `db:studio` | — | — | no; `persistent: true` |
 
@@ -871,7 +873,10 @@ interface.
 |---|---|
 | `pnpm i18n:extract` | scans the sources, appends new messages to the `.po` of every locale |
 | `pnpm i18n:compile` | turns `.po` files into runtime catalogs |
-| `pnpm i18n:extract -- --check` | in CI: code out of sync with the catalogs fails the run |
+| `pnpm i18n:check` | `lingui check sync` fails when the catalogs are out of sync with the code; `lingui check missing --mode catalog --locale pl` fails on a message without its `pl` translation |
+
+A new message gets its `pl` translation in the same commit as the code that introduces it.
+`lingui check` needs `@lingui/cli` 6.8 or newer.
 
 `i18n:compile` is a dependency of the `dev` and `build` tasks in turbo ([3.1](#31-turbo-tasks)) —
 otherwise the application starts with stale messages.
@@ -1497,7 +1502,7 @@ pnpm dev
 ```
 
 Root scripts: `dev`, `build`, `typecheck`, `lint`, `format`, `test`, `test:e2e`, `i18n:extract`,
-`i18n:compile`, `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:studio`, `db:verify`,
+`i18n:compile`, `i18n:check`, `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:studio`, `db:verify`,
 `db:tenant:create`, `infra:up`, `infra:down`, `infra:reset`.
 Apart from `format` and `infra:*`, each of them is a `turbo run <task>` delegate
 ([3.1](#31-turbo-tasks)).
@@ -1729,7 +1734,7 @@ accounts are created through the admin API and signed in with `signInWithPasswor
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` -> `400` |
 | rate limit | `GET /invitations/preview` above the limit -> `429` with `Retry-After` |
-| i18n | `lingui extract --check` reports no drift between code and catalogs; every error `code` from the contract has a descriptor in `errors.ts`; programme time formatting returns the tenant's zone, not the server's |
+| i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts`; programme time formatting returns the tenant's zone, not the server's |
 
 ### 15.2 E2E tests
 
@@ -1784,7 +1789,7 @@ which `--affected` needs); a push to `develop` or `main` runs the same tasks on 
 `actions/cache`, keyed by commit with a fallback to the newest entry; the full runs on `develop` and `main`
 fill the cache that PRs restore, so an unchanged task inside an affected package is still a cache
 hit.
-`pnpm i18n:extract -- --check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.
+`pnpm i18n:check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.
 
 Branches:
 
@@ -1867,8 +1872,9 @@ real TLS, real Google, real email delivery and a real phone.
 5. **No emoji in code or commit messages.**
 6. **Every user-facing string inside a Lingui macro** — `<Trans>`, `t`, `plural`, `msg`. A bare
    literal in a prop or in JSX is a review error. The API returns a `code`, not a sentence. After
-   adding a string, run `pnpm i18n:extract`; the `pl` translations may arrive later, the
-   fallback to the English original covers them.
+   adding a string, run `pnpm i18n:extract` and translate it into `pl` in the same commit,
+   reusing the glossary renderings ([6](#6-localization)); `pnpm i18n:check` fails on a missing
+   translation.
 7. **English across the repository.** Code, table and column names, endpoints, route paths,
    comments in code and configuration, branch names, commits and all documentation — English.
    The only Polish in the repository is the `pl` translation catalog.

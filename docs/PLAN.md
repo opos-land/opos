@@ -94,7 +94,7 @@ version abort the install instead of printing a warning.
 **Backend:** NestJS 11, Drizzle ORM + postgres-js, `@ts-rest/nest` (with zod 3, which ts-rest
 requires), tsdown (bundles `src/main.ts` together with the workspace packages into
 `dist/main.js`), `@ts-rest/open-api` + `@nestjs/swagger` (OpenAPI document generated from the
-contract, Swagger UI outside production), `jose` (Supabase JWT
+contract, Swagger UI), `jose` (Supabase JWT
 verification), `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (admin API),
 nodemailer, `@nestjs/throttler`, `@nestjs/schedule` (expiring unpaid orders), `qrcode` (ticket
 QR codes in emails).
@@ -650,7 +650,8 @@ The result must be empty.
 
 `packages/contract`, ts-rest + zod. The API serves the OpenAPI document generated from the
 contract (`@ts-rest/open-api`, `operationId` = the router path, e.g. `health.check`) at
-`/docs/json` and Swagger UI at `/docs` when `NODE_ENV` is not `production`. Error schema:
+`/docs/json` and Swagger UI at `/docs`, in every environment (`https://api.opos.land/docs` in
+production). Error schema:
 `{ code: string, params?: Record<string, string | number>, message: string }`.
 
 `code` is a stable identifier (for example `edition.already-active`) the client uses to pick a

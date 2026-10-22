@@ -10,6 +10,6 @@ export function configureApp(app: NestExpressApplication, env: Env) {
     credentials: false,
   })
   app.enableShutdownHooks()
-  setupDocs(app, env.NODE_ENV)
+  setupDocs(app)
   return app
 }

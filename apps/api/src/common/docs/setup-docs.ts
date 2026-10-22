@@ -11,12 +11,7 @@ export function createOpenApiDocument(): OpenAPIObject {
   )
 }
 
-export function setupDocs(app: INestApplication, nodeEnv: string) {
-  const logger = new Logger('ApiDocs')
-  if (nodeEnv === 'production') {
-    logger.log(`API docs disabled (NODE_ENV=${nodeEnv})`)
-    return
-  }
+export function setupDocs(app: INestApplication) {
   SwaggerModule.setup('docs', app, createOpenApiDocument(), { jsonDocumentUrl: 'docs/json' })
-  logger.log('API docs at /docs, OpenAPI document at /docs/json')
+  new Logger('ApiDocs').log('API docs at /docs, OpenAPI document at /docs/json')
 }

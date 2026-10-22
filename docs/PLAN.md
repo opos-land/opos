@@ -80,8 +80,9 @@ live next to the applications ([6](#6-localization)).
 
 ## 2. Technology stack
 
-**Monorepo:** turborepo, pnpm workspaces, TypeScript strict, shared `packages/tsconfig` and
-`packages/eslint-config` (including the feature boundary rules).
+**Monorepo:** turborepo, pnpm workspaces with a `catalog:` for versions shared by more than one
+package, TypeScript 6 strict, shared `packages/tsconfig` and `packages/eslint-config` (flat config
+with typed `typescript-eslint` rules, including the feature boundary rules).
 
 **Hard-pinned versions:** Node `24.15.0` (`mise.toml` + `engines.node`), pnpm `11.17.0`
 (`packageManager` + corepack, enabled by mise). `engineStrict: true` makes a mismatched
@@ -90,7 +91,9 @@ version abort the install instead of printing a warning.
 **Repository tooling:** mise (tool versions), lefthook (git hooks), commitlint with
 `config-conventional`, prettier.
 
-**Backend:** NestJS, Drizzle ORM + postgres-js, `@ts-rest/nest`, `jose` (Supabase JWT
+**Backend:** NestJS 11, Drizzle ORM + postgres-js, `@ts-rest/nest` (with zod 3, which ts-rest
+requires), tsdown (bundles `src/main.ts` together with the workspace packages into
+`dist/main.js`), `jose` (Supabase JWT
 verification), `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (admin API),
 nodemailer, `@nestjs/throttler`, `@nestjs/schedule` (expiring unpaid orders), `qrcode` (ticket
 QR codes in emails).
@@ -105,7 +108,7 @@ scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
 **i18n:** Lingui — `@lingui/core`, `@lingui/react`, `@lingui/macro` macros, `@lingui/cli`.
 `Intl` for dates, numbers and currencies.
 
-**Tests:** supertest (integration), Playwright (web e2e, desktop and mobile viewports).
+**Tests:** vitest + supertest (integration), Playwright (web e2e, desktop and mobile viewports).
 
 **Infrastructure:** Docker Compose, Traefik v3 (wildcard TLS via DNS-01), self-hosted Supabase —
 `supabase/postgres` (PostgreSQL 17) and `supabase/gotrue`, Supabase Studio (dev), Mailpit (dev).
@@ -163,8 +166,11 @@ opos/
     api/
       src/
         main.ts
-        app.module.ts
+        app.ts           # configureApp: CORS, trust proxy, shutdown hooks; shared by main.ts and tests
+        app.module.ts    # AppModule.register(env)
+        config/env.ts    # zod schema of the environment, loadEnv()
         common/
+          database/database.module.ts   # APP_DB and GLOBAL_DB providers, pools closed on shutdown
           als/tenant-context.service.ts
           als/tenant-resolver.middleware.ts
           als/tenant-transaction.interceptor.ts
@@ -190,8 +196,11 @@ opos/
           scanner/       # ticket lookup and redemption for paired devices
           public/        # unauthenticated endpoints for the portal
           mail/          # nodemailer + Lingui templates
+          health/        # GET /health
       test/              # integration tests
       .env.example
+      tsdown.config.ts   # bundles @opos/* packages, leaves node_modules external
+      vitest.config.ts   # env from .env.example, overridden by .env
       Dockerfile
     panel/
       lingui.config.ts
@@ -236,6 +245,7 @@ opos/
       src/
         index.ts
         common.ts        # error schemas, pagination, identifiers
+        health.ts
         me.ts
         tenants.ts
         editions.ts
@@ -283,7 +293,7 @@ opos/
       lingui.config.base.ts
       package.json       # main + types -> src/index.ts, catalogs compiled separately
     tsconfig/
-      base.json, node.json, react.json
+      base.json, node.json, react.json   # node.json and react.json extend base.json
     eslint-config/
       index.js
 ```
@@ -316,6 +326,9 @@ tasks still run in parallel.
 | `db:studio` | — | — | no; `persistent: true` |
 
 - The `db:*` tasks exist only in `packages/db`, `test:e2e` only in `e2e`.
+- Only `apps/*` have a `build` script. `apps/api` builds with tsdown, which inlines the
+  `@opos/*` packages (their `src/index.ts`) into `dist/main.js` and keeps the rest of
+  `node_modules` external.
 - Frontend build-time variables (`VITE_*`) enter task hashes through turbo's framework inference.
   The API's variables are read at runtime and stay out of the hash
   ([11](#11-environment-variables)).
@@ -795,6 +808,12 @@ and opens the tenant context ([7.11](#711-scanner)).
 | GET | `/scanner/tickets/:code` | the ticket's order: buyer name, every ticket with type and `redeemedAt`, whether the order is valid; another edition's ticket -> `404` |
 | POST | `/scanner/tickets/redeem` | `{ codes }`; redeems each; per code `redeemed`, `already-redeemed` (with the first `redeemedAt`) or `invalid` |
 
+### 5.11 `health` — unauthenticated
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | `200 { status: 'ok', database: 'up' }` when `select 1` succeeds on the `opos_app` pool, otherwise `503 { status: 'unavailable', database: 'down' }`; used by the container healthcheck and Traefik |
+
 ---
 
 ## 6. Localization
@@ -898,6 +917,8 @@ it is data, not interface messages.
 | `PaymentsModule` | the `PaymentProvider` port and its adapters ([7.10](#710-payments)) |
 | `ScannerModule` | `ScannerDeviceGuard`, ticket lookup and redemption |
 | `MailModule` | nodemailer + Lingui templates per locale: Supabase Auth emails and invitations ([6](#6-localization)) |
+| `HealthModule` | `GET /health` ([5.11](#511-health--unauthenticated)) |
+| `DatabaseModule` | global; `APP_DB` (`appDb()`, `opos_app`) and `GLOBAL_DB` (`globalDb()`, `opos_app_global`) providers, pools closed on application shutdown |
 
 ### 7.2 Tenant context
 
@@ -1477,9 +1498,13 @@ below the newest — that is intended. An urgent security fix requires a deliber
 
 ### Git hooks
 
-`lefthook install` runs from `prepare`, so `pnpm install` is enough. Two hooks are active today:
-prettier on staged files (`pre-commit`) and commitlint on the message (`commit-msg`). The eslint
-and pre-push jobs wait commented out in `lefthook.yml` for the first packages.
+`lefthook install` runs from `prepare`, so `pnpm install` is enough.
+
+| Hook | Jobs |
+|---|---|
+| `pre-commit` | prettier and `eslint --fix` on staged files; ESLint picks the `eslint.config.js` nearest to each file |
+| `commit-msg` | commitlint |
+| `pre-push` | `turbo run typecheck test` on packages changed against `origin/main` and their dependents; the API tests need `pnpm infra:up` |
 
 Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
@@ -1603,8 +1628,9 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
 
 ### 15.1 API integration tests
 
-Supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
-`supabase/gotrue`, the production tags), no database or auth mocks, in `apps/api/test`. Test
+Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
+`supabase/gotrue`, the production tags), no database or auth mocks, in `apps/api/test/*.test.ts`.
+The tests read `apps/api/.env.example`, overridden by `apps/api/.env` when present. Test
 accounts are created through the admin API and signed in with `signInWithPassword`.
 
 | Area | What we check |
@@ -1672,7 +1698,8 @@ using seeded data only read it.
 
 GitHub Actions on every PR and every push to `main` (`.github/workflows/ci.yml`). Tool versions
 come from `mise.toml` through `jdx/mise-action`, the same source as local machines; then
-`pnpm install --frozen-lockfile` and `pnpm format:check`. On a PR,
+`pnpm install --frozen-lockfile`, `pnpm format:check` and `docker compose up -d --wait db` for
+the API integration tests. On a PR,
 `turbo run typecheck lint test --affected` covers the packages changed against `main` and their
 dependents (the checkout uses `fetch-depth: 0`, which `--affected` needs); a push to `main` runs
 the same tasks on every package. The turbo cache (`.turbo/cache`) is persisted between runs with

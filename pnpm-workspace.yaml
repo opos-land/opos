@@ -12,3 +12,21 @@ engineStrict: true
 
 allowBuilds:
   lefthook: true
+
+# Versions shared by more than one workspace package.
+catalog:
+  '@eslint/js': ^10.0.1
+  '@nestjs/common': ^11.2.7
+  '@nestjs/core': ^11.2.7
+  '@nestjs/platform-express': ^11.2.7
+  '@nestjs/testing': ^11.2.7
+  '@ts-rest/core': ^3.52.1
+  '@ts-rest/nest': ^3.52.1
+  '@types/node': ^24.0.0
+  drizzle-orm: ^0.45.4
+  eslint: ^10.0.0
+  globals: ^17.13.0
+  postgres: ^3.4.9
+  typescript: ~6.0.3
+  typescript-eslint: ^8.60.0
+  zod: ^3.25.76

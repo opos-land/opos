@@ -93,7 +93,8 @@ version abort the install instead of printing a warning.
 
 **Backend:** NestJS 11, Drizzle ORM + postgres-js, `@ts-rest/nest` (with zod 3, which ts-rest
 requires), tsdown (bundles `src/main.ts` together with the workspace packages into
-`dist/main.js`), `jose` (Supabase JWT
+`dist/main.js`), `@ts-rest/open-api` + `@nestjs/swagger` (OpenAPI document generated from the
+contract, Swagger UI outside production), `jose` (Supabase JWT
 verification), `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (admin API),
 nodemailer, `@nestjs/throttler`, `@nestjs/schedule` (expiring unpaid orders), `qrcode` (ticket
 QR codes in emails).
@@ -171,6 +172,7 @@ opos/
         config/env.ts    # zod schema of the environment, loadEnv()
         common/
           database/database.module.ts   # APP_DB and GLOBAL_DB providers, pools closed on shutdown
+          docs/setup-docs.ts            # OpenAPI from packages/contract, Swagger UI at /docs
           als/tenant-context.service.ts
           als/tenant-resolver.middleware.ts
           als/tenant-transaction.interceptor.ts
@@ -646,7 +648,9 @@ The result must be empty.
 
 ## 5. API contract
 
-`packages/contract`, ts-rest + zod. Error schema:
+`packages/contract`, ts-rest + zod. The API serves the OpenAPI document generated from the
+contract (`@ts-rest/open-api`, `operationId` = the router path, e.g. `health.check`) at
+`/docs/json` and Swagger UI at `/docs` when `NODE_ENV` is not `production`. Error schema:
 `{ code: string, params?: Record<string, string | number>, message: string }`.
 
 `code` is a stable identifier (for example `edition.already-active`) the client uses to pick a
@@ -1476,6 +1480,9 @@ Podman works too, rootless: `podman-docker` provides the `docker` command and `d
 runs through `podman compose`. The init SQL mounts carry the `z` SELinux label,
 and `host.docker.internal:host-gateway` needs Podman 5.3 or newer. Port `5432` must be free — stop
 a locally installed Postgres first.
+
+Swagger UI of the API at http://api.localhost:3001/docs, the OpenAPI document at
+http://api.localhost:3001/docs/json.
 
 Mailpit catches all dev email — UI at http://localhost:8025. Supabase Auth's messages land there
 too, because they go through the API's send-email hook. Payments go through the fake provider

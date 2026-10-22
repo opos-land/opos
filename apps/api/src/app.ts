@@ -1,4 +1,5 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
+import { setupDocs } from './common/docs/setup-docs'
 import { type Env } from './config/env'
 
 export function configureApp(app: NestExpressApplication, env: Env) {
@@ -9,5 +10,6 @@ export function configureApp(app: NestExpressApplication, env: Env) {
     credentials: false,
   })
   app.enableShutdownHooks()
+  if (env.NODE_ENV !== 'production') setupDocs(app)
   return app
 }

@@ -141,7 +141,9 @@ test(e2e): cover organizer invitation flow
 chore(repo): pin node and pnpm versions
 ```
 
-Branches follow the same scheme: `feat/tenant-rls`, `fix/refresh-rotation`.
+Branches follow the same scheme: `feat/tenant-rls`, `fix/refresh-rotation`. They start from
+`develop` and their PRs target `develop`; `main` changes only through a PR from `develop`
+([branches](docs/PLAN.md#153-ci)). Never push to `main` directly.
 
 ## Working with code
 

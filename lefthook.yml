@@ -21,4 +21,4 @@ pre-commit:
 pre-push:
   jobs:
     - name: typecheck and test
-      run: pnpm turbo run typecheck test --filter=...[origin/main]
+      run: pnpm turbo run typecheck test --filter=...[origin/develop]

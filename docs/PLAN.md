@@ -859,6 +859,12 @@ One catalog per application plus a shared one:
 The per-application split keeps the portal from pulling in the panel's messages. Compiled catalogs are
 loaded through a dynamic import per locale.
 
+Every glossary term ([PRODUCT.md 3](PRODUCT.md#3-glossary)) has one rendering per locale.
+`packages/i18n/src/glossary.ts` declares each term as a `msg` descriptor with the comment
+`Glossary term`; its translation in `packages/i18n/locales/pl.po` is the term's Polish rendering,
+which every other message reuses. A new term enters that file before its first use in the
+interface.
+
 ### Workflow
 
 | Command | Effect |

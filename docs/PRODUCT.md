@@ -81,7 +81,8 @@ The MVP is closed once the flow below works with no manual database edits beyond
 
 ## 3. Glossary
 
-The names are consistent across code, API and interface. We introduce no synonyms.
+The names are consistent across code, API and interface. We introduce no synonyms, and each term
+has exactly one rendering in every interface language.
 
 | Term | Meaning |
 |---|---|

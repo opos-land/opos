@@ -12,6 +12,8 @@ engineStrict: true
 
 allowBuilds:
   lefthook: true
+  # swagger-ui-dist telemetry
+  '@scarf/scarf': false
 
 # Versions shared by more than one workspace package.
 catalog:

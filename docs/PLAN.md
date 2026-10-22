@@ -143,6 +143,8 @@ opos/
   commitlint.config.mjs       # types, scopes, header length
   .prettierignore
   .gitignore
+  README.md
+  LICENSE.md                  # PolyForm Internal Use 1.0.0
   AGENTS.md
   CLAUDE.md
   .github/

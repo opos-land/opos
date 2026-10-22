@@ -39,6 +39,7 @@ graph TB
     auth["Supabase Auth<br>GoTrue"]
     packages["packages/contract · packages/db · packages/i18n"]
     pg[("Supabase Postgres 17")]
+    pay["payment provider<br>(the convention's account)"]
 
     traefik -->|"opos.land"| portal
     traefik -->|"panel.opos.land"| panel
@@ -47,6 +48,8 @@ graph TB
     portal -.->|"sign-in"| auth
     panel -.->|"sign-in"| auth
     auth -.->|"send-email hook"| api
+    portal -.->|"checkout redirect"| pay
+    pay -.->|"payment webhook"| api
     portal --> packages
     panel --> packages
     api --> packages
@@ -57,8 +60,8 @@ graph TB
 | App | Stack | Role | Host |
 |---|---|---|---|
 | `apps/api` | NestJS + Drizzle + ts-rest | the only application backend; verifies Supabase Auth sessions | `api.opos.land` |
-| `apps/panel` | Vite + React + Tailwind + shadcn/ui | organizer panel (SPA) | `panel.opos.land` |
-| `apps/portal` | Vite + React + Tailwind + shadcn/ui | landing page, registration, convention pages with the programme, likes, personal schedule, reviews, "my conventions" (SPA, mobile-first) | `opos.land` |
+| `apps/panel` | Vite + React + Tailwind + shadcn/ui | organizer panel (SPA) and the ticket scanner under `/scanner` | `panel.opos.land` |
+| `apps/portal` | Vite + React + Tailwind + shadcn/ui | landing page, registration, convention pages with the programme, likes, personal schedule, reviews, ticket checkout, "my tickets", "my conventions" (SPA, mobile-first) | `opos.land` |
 | `auth` | Supabase Auth (`supabase/gotrue`) | registration, sign-in, sessions, password reset, Google OAuth | `auth.opos.land` |
 | `db` | Supabase Postgres (`supabase/postgres`) | the only database: `public` (OPOS tables) and `auth` (Supabase Auth) | internal network only |
 
@@ -88,13 +91,15 @@ instead of printing a warning.
 
 **Backend:** NestJS, Drizzle ORM + postgres-js, `@ts-rest/nest`, `jose` (Supabase JWT
 verification), `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (admin API),
-nodemailer, `@nestjs/throttler`.
+nodemailer, `@nestjs/throttler`, `@nestjs/schedule` (expiring unpaid orders), `qrcode` (ticket
+QR codes in emails).
 
 **Authentication:** Supabase Auth (GoTrue), self-hosted ([10](#10-supabase)). Clients use
 `@supabase/auth-js` directly against `auth.opos.land`.
 
 **Frontend SPA:** Vite + React + TypeScript, Tailwind CSS + shadcn/ui, `@ts-rest/react-query`,
-`@supabase/auth-js`, react-router, react-hook-form + zod, zustand, `@lingui/react`.
+`@supabase/auth-js`, react-router, react-hook-form + zod, zustand, `@lingui/react`; in the
+scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
 
 **i18n:** Lingui — `@lingui/core`, `@lingui/react`, `@lingui/macro` macros, `@lingui/cli`.
 `Intl` for dates, numbers and currencies.
@@ -109,6 +114,8 @@ nodemailer, `@nestjs/throttler`.
 - ts-rest contracts with no build step.
 - Supabase Auth owns identities and sessions; the API owns everything else.
 - Clients never reach the database: no PostgREST, no Realtime, no Storage.
+- OPOS never holds attendee money: payments go to the convention's own provider account, and the
+  API keeps only the provider's payment reference.
 - Row-level multi-tenancy, not schema-per-tenant.
 - Isolation enforced by RLS, not only by a `where` clause in code.
 - AsyncLocalStorage carries the `tenantContext`.
@@ -154,6 +161,7 @@ opos/
           als/tenant-resolver.middleware.ts
           als/tenant-transaction.interceptor.ts
           guards/jwt-auth.guard.ts
+          guards/scanner-device.guard.ts
           guards/tenant-permission.guard.ts
           guards/edition-permission.guard.ts
           decorators/require-tenant.decorator.ts
@@ -167,6 +175,11 @@ opos/
           editions/      # editions + edition_memberships
           program/       # programme items, speakers, review moderation
           engagement/    # likes, personal schedule, reviews
+          shop/          # the tenant's payment provider configuration
+          tickets/       # ticket types, orders in the panel, scanner pairing
+          checkout/      # orders from the portal, payment webhooks
+          payments/      # PaymentProvider port + one adapter per provider + the fake one
+          scanner/       # ticket lookup and redemption for paired devices
           public/        # unauthenticated endpoints for the portal
           mail/          # nodemailer + Lingui templates
       test/              # integration tests
@@ -188,6 +201,9 @@ opos/
             pages/
             model/       # types, zod schemas, mappings
             index.ts     # the feature's public API
+          shop/
+          tickets/
+          scanner/
           team/
           account/
         shared/{ui,lib,config}/
@@ -198,7 +214,7 @@ opos/
       src/
         locales/{en,pl}.po
         app/
-        features/{landing,auth,account,attendances,conventions,schedule,speaking}/
+        features/{landing,auth,account,attendances,conventions,schedule,speaking,tickets}/
         shared/{ui,lib,config}/
       .env.example       # VITE_API_URL, VITE_AUTH_URL
       Dockerfile
@@ -217,6 +233,10 @@ opos/
         editions.ts
         program.ts
         engagement.ts
+        shop.ts
+        tickets.ts
+        checkout.ts
+        scanner.ts
         public.ts
       package.json       # main + types -> src/index.ts
     db/
@@ -235,6 +255,11 @@ opos/
           program-item-speakers.ts
           program-item-likes.ts
           program-item-reviews.ts
+          tenant-payment-configs.ts
+          ticket-types.ts
+          orders.ts
+          tickets.ts
+          scanner-devices.ts
           attendees.ts
         seed.ts
         scripts/
@@ -355,6 +380,10 @@ The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 | speaker | `program_item_speakers` |
 | like | `program_item_likes` |
 | review | `program_item_reviews` |
+| ticket type | `ticket_types` |
+| order | `orders` |
+| ticket | `tickets` |
+| scanner | `scanner_devices` |
 | attendee | `attendees` |
 
 ### 4.1 Enums
@@ -363,6 +392,7 @@ The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 permissionLevel  = pgEnum('permission_level',  ['none', 'read', 'write'])
 tenantRole       = pgEnum('tenant_role',       ['head', 'org'])
 reviewVisibility = pgEnum('review_visibility', ['public', 'speakers'])
+orderStatus      = pgEnum('order_status',      ['pending', 'paid', 'expired', 'cancelled'])
 ```
 
 `locale` is not an enum — the list of supported languages lives in `packages/i18n` and in
@@ -404,6 +434,11 @@ Deleting a user in Supabase Auth removes `accounts`, and with it every row that 
 `expiresAt` (timestamptz, nullable). Check `role = 'org' or expiresAt is null`.
 Unique `(accountId, tenantId)` and `(id, tenantId)`. Index on `tenantId`.
 
+**`tenant_payment_configs`** — `tenantId` (FK cascade, unique), `provider` (text, the adapter
+name), `accountRef` (text, the convention's account identifier at the provider),
+`credentialsEncrypted` (bytea, nullable; AES-256-GCM with `PAYMENT_CONFIG_KEY`), `currency`
+(char(3), default `PLN`). Credentials are write-only: no endpoint returns them.
+
 A membership with `expiresAt <= now()` is **expired**: every read that grants access filters it
 out, so the account behaves as if it were not in the team. The row stays until someone removes it
 or extends it.
@@ -437,6 +472,25 @@ Unique `(programItemId, accountId)`. Composite foreign key `(programItemId, tena
 Unique `(programItemId, accountId)`. Composite foreign key `(programItemId, tenantId)`. Indexes
 `(tenantId, programItemId)` and `(accountId)`.
 
+**`ticket_types`** — `tenantId`, `editionId` (FK cascade), `name`, `priceMinor` (integer, in the
+tenant's currency), `quantity` (integer, nullable = no limit), `salesStartAt`, `salesEndAt`,
+`isActive` (default `true`). Unique `(id, tenantId)`. Index `(tenantId, editionId)`.
+
+**`orders`** — `tenantId`, `editionId` (FK restrict), `email` (lowercase), `firstName`, `lastName`,
+`locale`, `status` (`order_status`, default `pending`), `totalMinor`, `currency`,
+`holdExpiresAt`, `providerPaymentRef` (unique, nullable), `paidAt`, `cancelledAt`,
+`accessTokenHash` (sha256 of the token in the order link). Unique `(id, tenantId)`. Indexes
+`(tenantId, editionId, status)` and `(email)`.
+
+**`tickets`** — `tenantId`, `orderId` (FK cascade), `ticketTypeId` (FK restrict), `code` (unique,
+22 characters base62, 128 random bits), `redeemedAt` (nullable), `redeemedByDeviceId` (nullable).
+Composite foreign keys `(orderId, tenantId)` and `(ticketTypeId, tenantId)`. Index
+`(tenantId, orderId)`. A ticket is valid when its order is `paid`.
+
+**`scanner_devices`** — `tenantId`, `editionId` (FK cascade), `name`, `tokenHash` (unique, sha256),
+`pairingJti` (unique), `createdByMembershipId`, `expiresAt` (the edition's `endsAt` + 1 day),
+`revokedAt` (nullable). Index `(tenantId, editionId)`.
+
 **`attendees`** — `accountId`, `tenantId`, `editionId` (FK cascade), `firstName`, `lastName`.
 Unique `(accountId, editionId)`. Indexes `(tenantId, editionId)` and `(accountId)`.
 
@@ -457,10 +511,18 @@ Every RLS-covered table has an index starting with `tenantId`.
 6. **A `head` membership never expires** — the check constraint on `tenant_memberships`.
 7. **A review exists only for an item that has started, written by an eligible account** —
    checked in `EngagementModule` on every write: `program_items.startsAt <= now()`, and the author
-   is an attendee of the item's edition, a non-expired `head`, or a non-expired `org` with an
-   `edition_memberships` row for that edition.
+   holds a valid ticket for the item's edition (a `paid` order placed with the account's email), is
+   a non-expired `head`, or is a non-expired `org` with an `edition_memberships` row for that
+   edition.
 8. **Speakers, likes and reviews belong to the tenant of their programme item** — enforced by
    composite foreign keys.
+9. **No ticket type sells beyond its `quantity`** — checkout locks the ticket type rows
+   (`select ... for update`) and counts tickets in `paid` orders plus `pending` orders whose
+   `holdExpiresAt` is in the future.
+10. **A ticket is redeemed once** — `update tickets set redeemedAt = now() ... where redeemedAt is
+    null`; zero updated rows means it was already used.
+11. **A scanner works only inside its edition** — every scanner query filters on the device's
+    `editionId`; a ticket from another edition is `404`.
 
 ### 4.6 Tenant isolation — RLS in Postgres
 
@@ -482,7 +544,8 @@ Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 #### Covered tables
 
 `tenants`, `tenant_memberships`, `editions`, `edition_memberships`, `program_items`,
-`program_item_speakers`, `program_item_likes`, `program_item_reviews`, `attendees`.
+`program_item_speakers`, `program_item_likes`, `program_item_reviews`, `tenant_payment_configs`,
+`ticket_types`, `orders`, `tickets`, `scanner_devices`, `attendees`.
 
 The global table `accounts` stays outside RLS — it is protected by filtering on the `accountId`
 from the JWT. The `auth` schema is accessed only by Supabase Auth.
@@ -524,9 +587,14 @@ Only through `GlobalDbService` on the `opos_app_global` role. The complete list:
 | `GET /me/attendances` | `where account_id = <account from the JWT>` |
 | `GET /me/schedule` | `where account_id = <account from the JWT>` on `program_item_likes` |
 | `GET /me/program-items` | `where account_id = <account from the JWT>` on `program_item_speakers` |
+| `GET /me/tickets` | `where email = <confirmed email of the account from the JWT>` on `orders` |
+| payment webhook | order lookup by the `orderId` from a verified webhook; returns only `id`, `tenantId` |
+| order status link | order lookup by `id` and `accessTokenHash`; returns only `id`, `tenantId` |
+| scanner request | device lookup by `tokenHash`, not revoked, not expired; returns only `id`, `tenantId`, `editionId` |
 
-Every query in `GlobalDbService` carries an `accountId` condition; adding another one requires an
-entry in this table. The rest of the system, including `PublicModule`,
+Every query in `GlobalDbService` carries an `accountId` or `email` condition from the JWT, or a
+secret the caller proved it holds (a webhook signature, an order token, a device token); adding
+another one requires an entry in this table. The rest of the system, including `PublicModule`,
 resolves the tenant first and then works on `opos_app`.
 
 #### Migrations and verification
@@ -577,7 +645,8 @@ Supabase Auth errors carry an `error_code` (`invalid_credentials`, `email_not_co
 them the same way as API codes ([6](#6-localization)).
 
 Outside the ts-rest contract: `POST /hooks/send-email` — called by Supabase Auth only, verified by
-a Standard Webhooks signature ([10](#10-supabase)).
+a Standard Webhooks signature ([10](#10-supabase)) — and `POST /hooks/payments/:provider`, called
+by the payment provider only ([7.10](#710-payments)).
 
 ### 5.2 `me` — requires JWT
 
@@ -590,6 +659,7 @@ a Standard Webhooks signature ([10](#10-supabase)).
 | GET | `/me/attendances` | "my conventions" |
 | GET | `/me/schedule` | liked programme items across all tenants, ascending by `startsAt` |
 | GET | `/me/program-items` | programme items where the account is a speaker, with their non-hidden reviews |
+| GET | `/me/tickets` | tickets from `paid` orders placed with the account's email, across all tenants, with their codes |
 | POST | `/me/attendances` | `{ tenantSlug, editionSlug, firstName, lastName }`; `409` on a repeat sign-up, `404` for an unpublished edition |
 | DELETE | `/me/attendances/:attendeeId` | withdraw |
 
@@ -603,6 +673,8 @@ a Standard Webhooks signature ([10](#10-supabase)).
 | POST | `/tenants/current/members` | `settings=write` |
 | PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (permissions, `expiresAt`) |
 | DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation |
+| GET | `/tenants/current/payment-config` | `shop>=read`; provider, `accountRef`, currency, whether credentials are set |
+| PUT | `/tenants/current/payment-config` | `shop=write`; `{ provider, accountRef, credentials?, currency }` |
 
 Invitations — without the tenant header:
 
@@ -667,6 +739,44 @@ Eligibility and start time are checked as invariant 7 in [4.5](#45-invariants) d
 The `isPublished = true` filter lives in the repository, not in the controller. Counters and
 averages count non-hidden reviews only. Who liked an item is never returned.
 
+### 5.8 `tickets` — JWT + `X-Tenant-Slug` + edition permission
+
+| Method | Path | Required permission |
+|---|---|---|
+| GET | `/editions/:editionId/ticket-types` | `tickets>=read`; with sold and held counts |
+| POST | `/editions/:editionId/ticket-types` | `tickets=write` |
+| PATCH | `/editions/:editionId/ticket-types/:ticketTypeId` | `tickets=write`; `quantity` cannot drop below the sold count -> `409` `tickets.quantity-below-sold` |
+| GET | `/editions/:editionId/orders` | `tickets>=read`; filters `status`, `email`; paginated |
+| GET | `/editions/:editionId/orders/:orderId` | `tickets>=read`; with tickets and redemption state |
+| POST | `/editions/:editionId/orders/:orderId/cancel` | `tickets=write`; only a `paid` order; the refund itself happens at the provider |
+| POST | `/editions/:editionId/scanner-devices/pairing` | `tickets=write`; returns a pairing token (JWT, `SCANNER_PAIRING_SECRET`, TTL 10 minutes) for the QR code |
+| GET | `/editions/:editionId/scanner-devices` | `tickets>=read` |
+| DELETE | `/editions/:editionId/scanner-devices/:deviceId` | `tickets=write`; sets `revokedAt` |
+
+Validation: `priceMinor >= 0`, `salesEndAt > salesStartAt`, `name` 2–100 characters.
+
+### 5.9 `checkout` — unauthenticated, JWT optional
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/public/tenants/:slug/editions/:editionSlug/ticket-types` | types on sale now, with price and availability (`available`, `sold-out`) |
+| POST | `/public/tenants/:slug/editions/:editionSlug/orders` | `{ email, firstName, lastName, items: [{ ticketTypeId, quantity }] }`; up to 10 tickets; creates a `pending` order holding the tickets for `ORDER_HOLD_MINUTES` and returns the provider's checkout URL; `409` `tickets.sold-out`, `409` `tickets.not-on-sale`, `409` `shop.not-configured` |
+| GET | `/public/orders/:orderId?token=` | order status; for a `paid` order the tickets with their codes |
+
+The order link (`<PORTAL_URL>/orders/:orderId?token=`) is the provider's return URL and goes into
+the ticket email; the token is 32 random bytes, stored hashed.
+
+### 5.10 `scanner` — device token
+
+`Authorization: Bearer <device token>` instead of a JWT; `ScannerDeviceGuard` resolves the device
+and opens the tenant context ([7.11](#711-scanner)).
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/scanner/pair` | `{ pairingToken, name }`, no auth; returns the device token and the edition name; a reused pairing token -> `409` |
+| GET | `/scanner/tickets/:code` | the ticket's order: buyer name, every ticket with type and `redeemedAt`, whether the order is valid; another edition's ticket -> `404` |
+| POST | `/scanner/tickets/redeem` | `{ codes }`; redeems each; per code `redeemed`, `already-redeemed` (with the first `redeemedAt`) or `invalid` |
+
 ---
 
 ## 6. Localization
@@ -723,6 +833,7 @@ otherwise the application starts with stale messages.
 | panel, portal — signed in | `accounts.locale` -> `Accept-Language` -> `DEFAULT_LOCALE` |
 | portal — signed out | `Accept-Language` -> `DEFAULT_LOCALE` |
 | emails | the recipient's `accounts.locale` -> `locale` from the sign-up metadata -> for an unknown address the inviting `tenants.defaultLocale` -> `DEFAULT_LOCALE` |
+| ticket emails | `orders.locale`, taken from the portal's active locale at checkout |
 
 ### API errors
 
@@ -763,6 +874,11 @@ it is data, not interface messages.
 | `ProgramModule` | programme item CRUD, speakers, review moderation |
 | `EngagementModule` | likes and reviews, with the review eligibility check |
 | `PublicModule` | unauthenticated endpoints for the portal's convention pages |
+| `ShopModule` | `tenant_payment_configs`, credential encryption |
+| `TicketsModule` | ticket types, orders in the panel, cancellation, scanner pairing and revocation |
+| `CheckoutModule` | orders from the portal, the payment webhook, the job expiring unpaid orders, the ticket email |
+| `PaymentsModule` | the `PaymentProvider` port and its adapters ([7.10](#710-payments)) |
+| `ScannerModule` | `ScannerDeviceGuard`, ticket lookup and redemption |
 | `MailModule` | nodemailer + Lingui templates per locale: Supabase Auth emails and invitations ([6](#6-localization)) |
 
 ### 7.2 Tenant context
@@ -903,12 +1019,12 @@ Invitation emails are sent by `MailModule`, not by Supabase Auth.
 
 ### 7.8 CORS
 
-Allowed `Origin`: `opos.land` and `panel.opos.land` — an explicit list, never `*` and never a
-reflected header. Allowed headers: `Authorization`, `Content-Type`, `X-Tenant-Slug`,
+Allowed `Origin`: `opos.land` and `panel.opos.land` (the scanner included) — an explicit list,
+never `*` and never a reflected header. Allowed headers: `Authorization`, `Content-Type`, `X-Tenant-Slug`,
 `Accept-Language`. `credentials: false` — the API sets and reads no cookies.
 
-`POST /hooks/send-email` is called server to server and needs no CORS; it rejects every request
-without a valid signature.
+`POST /hooks/send-email` and `POST /hooks/payments/:provider` are called server to server and need
+no CORS; they reject every request without a valid signature.
 
 ### 7.9 Rate limiting
 
@@ -919,6 +1035,10 @@ without a valid signature.
 | `GET /invitations/preview` | 30 / hour per IP |
 | `POST /tenants/current/members` | 20 / hour per tenant |
 | `PUT .../review` | 30 / hour per account |
+| `POST /public/.../orders` | 10 / 10 min per IP |
+| `GET /public/orders/:orderId` | 60 / min per IP |
+| `POST /scanner/pair` | 10 / hour per IP |
+| `/scanner/*` | 600 / min per device |
 | the rest of the API | 300 / min per account |
 
 A `429` response with `Retry-After`. The API runs with `trust proxy` — the client address comes
@@ -926,6 +1046,51 @@ from `X-Forwarded-For`.
 
 Sign-up, sign-in, refresh and recovery are limited by Supabase Auth and by Traefik in front of it
 ([10](#10-supabase)).
+
+### 7.10 Payments
+
+One provider in the MVP, chosen when the module is implemented. Requirements: payments land in an
+account owned by the convention, BLIK, Przelewy24 and cards, a hosted payment page, signed
+webhooks, a payment session that expires with the order's hold.
+
+```ts
+interface PaymentProvider {
+  name: string
+  createCheckout(config: PaymentConfig, order: Order, returnUrl: string): Promise<{ url: string; paymentRef: string }>
+  verifyWebhook(headers: Headers, rawBody: Buffer): Promise<PaymentEvent>   // throws on a bad signature
+}
+
+type PaymentEvent = { orderId: string; paymentRef: string; status: 'paid' | 'failed'; amountMinor: number; currency: string }
+```
+
+- `PAYMENT_PROVIDER=fake` in dev and tests: a page at `<API_URL>/dev/payments/:orderId` with "Pay"
+  and "Fail" buttons that calls the webhook with a valid signature. The fake adapter does not load
+  when `NODE_ENV=production`.
+- Webhook: verify the signature -> look up the order ([4.6](#46-tenant-isolation--rls-in-postgres))
+  -> open its tenant context -> compare amount and currency with the order (a mismatch is logged
+  and the order stays `pending`) -> `pending` becomes `paid`, `paidAt` is set, the ticket email
+  goes out. An order already `paid` answers `200` without a second email.
+- A payment that arrives after the hold expired still marks the order `paid`: the money is taken.
+  The panel flags a ticket type sold above its `quantity`.
+- A job every minute flips `pending` orders past `holdExpiresAt` to `expired`; availability counts
+  already ignore them.
+- Ticket email: `MailModule`, the order's locale, one QR code per ticket as an inline PNG
+  (`qrcode`), the payload `OPOS1:<code>`, and the order link.
+
+### 7.11 Scanner
+
+1. An org with `tickets=write` opens the scanner screen in the panel; the panel requests a pairing
+   token and shows it as a QR code.
+2. The phone opens `panel.opos.land/scanner`, scans that code and calls `POST /scanner/pair`. The
+   API checks the token, records its `jti` in `scanner_devices.pairingJti` and returns a device
+   token: 32 random bytes, stored as sha256.
+3. The phone keeps the device token in `localStorage` (`opos-scanner-device`) and sends it on every
+   request. No sign-in, no Supabase session.
+4. `ScannerDeviceGuard` hashes the token, finds a device that is neither revoked nor past
+   `expiresAt` through `GlobalDbService`, then opens the tenant transaction exactly like
+   `TenantTransactionInterceptor`; anything else -> `401` and the phone returns to pairing.
+
+The scanner is online only: no local ticket list, no queue of offline redemptions.
 
 ---
 
@@ -941,6 +1106,9 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 | `tenants` | convention picker, dashboard, settings, language and time zone |
 | `editions` | edition list, creation, activation, publication |
 | `program` | the edition's programme items, their speakers, review moderation |
+| `shop` | the payment provider account and currency |
+| `tickets` | ticket types, orders, cancellation, paired scanners |
+| `scanner` | the scanner itself: pairing, camera, manual code entry, redemption |
 | `team` | convention team, edition permissions, membership expiry |
 | `account` | account menu, language switcher |
 
@@ -958,6 +1126,11 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 | `/:tenantSlug/editions/:editionSlug/access` | team members' edition permissions |
 | `/:tenantSlug/team` | `tenant_memberships` — list, invitations, permissions, expiry date |
 | `/:tenantSlug/settings` | name, slug, convention language, time zone |
+| `/:tenantSlug/shop` | payment provider account, currency; credentials write-only |
+| `/:tenantSlug/editions/:editionSlug/tickets` | ticket types with sold and held counts |
+| `/:tenantSlug/editions/:editionSlug/tickets/orders` | orders, search by email, order details, cancellation |
+| `/:tenantSlug/editions/:editionSlug/tickets/scanners` | pairing QR code, paired devices, revocation |
+| `/scanner` | the scanner on a phone: pairing, then scan -> order view -> tick tickets handed in |
 
 - An interceptor attaches `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug` and
   `Accept-Language` based on the active locale.
@@ -969,6 +1142,10 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 - Application start restores the session with `getSession()`, refreshing it when it has expired —
   until that resolves the user sees a loading view, not the sign-in screen.
 - `401` from the API -> one `refreshSession()` and a retry; on failure, sign-out.
+- `/scanner` is the one mobile-first screen of the panel and the only one that works without a
+  sign-in. Camera access through `getUserMedia`; the panel is served with
+  `Permissions-Policy: camera=(self)`. A text field accepts the code when the camera cannot read
+  it.
 
 ---
 
@@ -987,6 +1164,7 @@ desktop.
 | `conventions` | a convention's page: the active edition's programme, past editions, item details, likes, reviews |
 | `schedule` | the personal schedule built from likes |
 | `speaking` | the speaker's programme items and the reviews they received |
+| `tickets` | ticket checkout, order status, "my tickets" |
 
 | Path | Screen |
 |---|---|
@@ -1005,6 +1183,9 @@ desktop.
 | `/conventions/:tenantSlug/:editionSlug/program/:programItemId` | item details: speakers, like button, rating, public comments, review form once the item has started |
 | `/schedule` | liked items across conventions, grouped by day |
 | `/my-program-items` | the speaker's items with every non-hidden review |
+| `/conventions/:tenantSlug/:editionSlug/tickets` | ticket types on sale, quantities, buyer's email and name (prefilled when signed in), redirect to the payment provider |
+| `/orders/:orderId` | order status from the link (`?token=`); after payment the tickets with QR codes |
+| `/my-tickets` | tickets bought with the account's email, grouped by edition, with QR codes |
 
 Convention pages work without signing in. Liking or reviewing while signed out leads to sign-in
 and back to the same item. Programme times are formatted in the tenant's time zone. No active
@@ -1017,7 +1198,8 @@ unpublished edition under a direct URL or an unknown tenant -> `404`.
 ([7.4](#74-authorization)). The API deletes the user through the GoTrue admin API
 (`DELETE /admin/users/:id`); `accounts` cascades from `auth.users`, and `tenant_memberships`,
 `edition_memberships`, `attendees`, `program_item_speakers`, `program_item_likes` and
-`program_item_reviews` cascade from `accounts`. `409` when the account is some
+`program_item_reviews` cascade from `accounts`. Orders are linked by email, not by account, and
+stay. `409` when the account is some
 tenant's last `head`.
 
 ---
@@ -1133,6 +1315,12 @@ SEND_EMAIL_HOOK_SECRET=v1,whsec_ZGV2LXNlbmQtZW1haWwtaG9vay1zZWNyZXQ=
 INVITE_SECRET=dev-invite-secret
 INVITE_TTL=7d
 
+# Tickets
+PAYMENT_PROVIDER=fake
+PAYMENT_CONFIG_KEY=ZGV2LXBheW1lbnQtY29uZmlnLWtleS0zMi1ieXRlcyE=
+ORDER_HOLD_MINUTES=15
+SCANNER_PAIRING_SECRET=dev-scanner-pairing-secret
+
 # i18n
 DEFAULT_LOCALE=pl
 SUPPORTED_LOCALES=en,pl
@@ -1217,7 +1405,8 @@ created by `infra/supabase/db/opos-roles.sql` when the `db` container starts on 
 `docker compose down -v` resets them together with the data.
 
 Mailpit catches all dev email — UI at http://localhost:8025. Supabase Auth's messages land there
-too, because they go through the API's send-email hook. Supabase Studio at http://localhost:54323
+too, because they go through the API's send-email hook. Payments go through the fake provider
+page at http://api.localhost:3001/dev/payments/:orderId ([7.10](#710-payments)). Supabase Studio at http://localhost:54323
 browses both the `public` and the `auth` schema.
 
 ### Versions and dependencies
@@ -1307,7 +1496,7 @@ Accounts are created through the Supabase Auth admin API (`POST /admin/users` wi
 `accounts`, and the seed then sets `locale` and the names. Everything else is written directly as
 `opos_migrator`.
 
-- **Accounts:** `head@convention-a.test`, four organizer accounts, `speaker@example.com`,
+- **Accounts:** `head@convention-a.test`, five organizer accounts, `speaker@example.com`,
   `attendee@example.com`. Dev password: `password123`. One organizer account has `locale=en`.
 - **Tenant `convention-a`** — "Convention A", `defaultLocale=pl`, `timezone=Europe/Warsaw`.
   - Edition `2025` — `isPublished=true`, `isActive=false`, 8 programme items, all in the past.
@@ -1315,8 +1504,15 @@ Accounts are created through the Supabase Auth admin API (`POST /admin/users` wi
     anonymous review from `attendee@example.com`, plus one hidden review.
   - Edition `2026` — `isPublished=true`, `isActive=true`, 12 programme items, all in the future;
     `attendee@example.com` likes three of them.
+  - Payment config: provider `fake`, currency `PLN`.
+  - Tickets 2025: type "Weekend" (90 PLN, 300); a `paid` order of `attendee@example.com` with two
+    tickets, one of them redeemed.
+  - Tickets 2026: types "Weekend" (120 PLN, 500) and "Saturday" (70 PLN, no limit, sales ending
+    the day before the edition); a `paid` order of `guest@example.com`, who has no account, one
+    `expired` order and one `cancelled` order.
 - **Tenant `convention-b`** — "Convention B", `defaultLocale=en`, `timezone=Europe/Prague`,
-  a single `2026` edition with an English programme.
+  a single `2026` edition with an English programme and one "Day pass" ticket type (provider
+  `fake`, currency `PLN`).
 - **Convention A team:**
 
 | Account | Role | Tenant level | Edition level |
@@ -1326,6 +1522,7 @@ Accounts are created through the Supabase Auth admin API (`POST /admin/users` wi
 | `settings@convention-a.test` | `org` | `settings=write` | none |
 | `viewer@convention-a.test` | `org` | `settings=read` | 2026: `program=read` |
 | `expired@convention-a.test` | `org`, `expiresAt` in the past | `settings=write` | 2026: `program=write` |
+| `gate@convention-a.test` | `org` | everything `none` | 2026: `tickets=write` |
 
 - **Attendee:** `attendee@example.com` signed up for `convention-a/2025`, not for `2026`.
 
@@ -1363,8 +1560,12 @@ accounts are created through the admin API and signed in with `signInWithPasswor
 | anti-escalation | an org cannot grant permissions above their own, edit themselves or touch a `head` |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access; an org cannot set an expiry later than their own |
-| reviews | before `startsAt` -> `409`; an account that is neither an attendee nor a team member with access to the edition -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
+| reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
 | likes | idempotent `PUT`; `likeCount` changes; no endpoint returns who liked an item; `GET /me/schedule` spans tenants |
+| checkout | 20 concurrent orders against `quantity=5` -> exactly 5 hold tickets, the rest `409`; an expired hold releases its tickets; outside the sales window -> `409`; no payment config -> `409`; more than 10 tickets -> `400` |
+| payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid` |
+| orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
+| scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
 | JWT | an expired token, a token signed with another secret, `aud != authenticated` and a foreign `iss` -> `401`; a valid token without an `accounts` row -> `401` |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` -> `400` |
@@ -1382,7 +1583,8 @@ configuration. Chromium in two projects: desktop, and a mobile viewport (Pixel 7
 a browser matrix is beyond the MVP. The `e2e` directory is a workspace package — Playwright and
 the fixtures are its dependencies, not the root's.
 
-Emails — address confirmation, password reset, invitations — are read through Mailpit's HTTP API
+Emails — address confirmation, password reset, invitations, tickets — are read through Mailpit's
+HTTP API
 (`:8025/api/v1`). Google sign-in is not covered by e2e: Supabase Auth talks to the real Google,
 and the smoke test checks that flow ([16](#16-smoke-test)).
 
@@ -1402,8 +1604,11 @@ and the smoke test checks that flow ([16](#16-smoke-test)).
 | 10 | Password reset: request from the sign-in screen, the link from Mailpit sets a new password, the old session stops working |
 | 11 | An attendee likes items, finds them in the personal schedule, reviews a past item anonymously with a speakers-only comment; the speaker sees it under "my programme items"; an org hides another review in the panel and the public rating changes |
 | 12 | An org whose membership has expired signs in to the panel and sees no convention |
+| 13 | A visitor without an account buys two tickets through the fake provider; the email in Mailpit has two QR codes; registering with the same address shows both under "my tickets" |
+| 14 | An org pairs the scanner from the panel, enters a ticket code by hand, sees the whole order, redeems one ticket; the next lookup shows it as used |
+| 15 | An org cancels a paid order in the panel; the scanner shows its tickets as invalid |
 
-Scenarios 1, 9, 10 and 11 run in both the desktop and the mobile project.
+Scenarios 1, 9, 10, 11, 13 and 14 run in both the desktop and the mobile project.
 
 Tests share no data: every scenario that creates a tenant works on its own slug, and scenarios
 using seeded data only read it.
@@ -1458,9 +1663,17 @@ real TLS, real Google, real email delivery and a real phone.
    `Europe/Prague` regardless of the browser's zone.
 11. **The portal on a phone.** On a real phone browser (iOS Safari and Android Chrome): registration,
    the "Sign up" button on a convention's page, edition sign-up, liking, the personal schedule, a
-   review and "my conventions" work without horizontal scrolling.
+   review, ticket checkout and "my conventions" work without horizontal scrolling.
 12. **Supabase stays internal.** `auth.opos.land` answers only GoTrue's paths, nothing listens on
    `:5432` from outside, and `https://api.opos.land/hooks/send-email` without a signature -> `401`.
+13. **A real payment.** On a test edition, a BLIK payment of the cheapest ticket through the
+   convention's real provider account: the money shows up in that account, not in any OPOS
+   account, the ticket email arrives, the order turns `paid`. Refund in the provider's dashboard,
+   cancel in the panel. `https://api.opos.land/hooks/payments/<provider>` without a signature ->
+   `401`.
+14. **The scanner on a real phone.** Pairing by camera from the panel, scanning a ticket QR code
+   from another phone's screen, redemption, a second scan showing "already used", revocation
+   sending the phone back to pairing.
 
 ---
 

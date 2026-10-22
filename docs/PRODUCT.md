@@ -43,8 +43,9 @@ The platform is self-hosted: our own VPS, with no lock-in to any particular clou
 
 ## 2. MVP goal and end-to-end flow
 
-The MVP is the core — accounts, conventions, editions and permissions — plus one complete module,
-the programme. Further modules ([chapter 7](#7-modules)) are added onto a finished core.
+The MVP is the core — accounts, conventions, editions and permissions — plus two complete
+modules: the programme and tickets. Further modules ([chapter 7](#7-modules)) are added onto a
+finished core.
 
 The MVP is closed once the flow below works with no manual database edits beyond step 1:
 
@@ -53,17 +54,24 @@ The MVP is closed once the flow below works with no manual database edits beyond
 2. The head organizer signs in to the panel, creates the "Convention A 2026" edition, marks it
    active and publishes it.
 3. They add a few programme items and assign a speaker account to one of them.
-4. The portal shows that programme on the convention's page — list and item details — to anyone,
+4. They connect the convention's own payment provider account and create a ticket type with a
+   price, a quantity limit and a sales window.
+5. The portal shows that programme on the convention's page — list and item details — to anyone,
    signed in or not.
-5. The head organizer emails an invitation granting programme write access to the 2026 edition
+6. A visitor without an account buys two tickets with only an email address. The payment goes to
+   the convention's account, and the tickets arrive by email with QR codes.
+7. The head organizer emails an invitation granting programme write access to the 2026 edition
    only. The invitee accepts the link and sees nothing in the panel but that edition's programme.
-6. An attendee registers in the portal — with email and password, confirmed through a link sent
-   to that address, or with Google — opens the convention's page from a link the convention
-   shared, signs up for the 2026 edition and sees it under "my conventions". All of it works in a
-   phone browser.
-7. The attendee likes a few programme items and finds them in their personal schedule. After an
-   item starts, they review it; the speaker reads the review in the portal.
-8. An organizer of Convention A can neither read nor change anything in Convention B.
+8. The visitor later registers in the portal on the same address — with a password, confirmed
+   through a link sent to that address, or with Google — and finds both tickets under "my
+   tickets". They open the convention's page from a link the convention shared, sign up for the
+   2026 edition and see it under "my conventions". All of it works in a phone browser.
+9. They like a few programme items and find them in their personal schedule. After an item
+   starts, they review it; the speaker reads the review in the portal.
+10. At the gate, an org pairs a phone with the edition by scanning a QR code from the panel. The
+    phone scans a ticket, shows everything in that order, and the org ticks the tickets handed
+    in; a second scan of the same ticket shows it as already used.
+11. An organizer of Convention A can neither read nor change anything in Convention B.
 
 ---
 
@@ -79,13 +87,17 @@ The names are consistent across code, API and interface. We introduce no synonym
 | **speaker** | an account an org assigns to a programme item; reads the reviews of that item |
 | **like** | a user's mark on a programme item; it adds the item to their personal schedule |
 | **review** | a user's rating of a programme item, with an optional comment |
+| **ticket type** | a kind of ticket an edition sells: name, price, quantity limit, sales window |
+| **order** | one purchase: the buyer's email and name, the tickets bought, the payment state |
+| **ticket** | admission to an edition, with its own QR code; belongs to the email address the order was placed with |
+| **scanner** | a phone paired with an edition that checks and redeems tickets at the venue |
 | **attendee** | an account's registration for a specific edition |
 | **admin** | the person running the whole platform: creates conventions, appoints the first head organizers |
 | **org** | a member of a convention's organizing team, works in the panel |
 | **head** | the head organizer of a convention — an org with no permission limits |
 | **user** | a convention attendee, works in the portal |
 | **core** | accounts, conventions, editions and permissions — what every module builds on |
-| **module** | one functional area built on the core: programme, CMS, profile, accreditation, booths, friends ([chapter 7](#7-modules)) |
+| **module** | one functional area built on the core: programme, tickets, CMS, profile, accreditation, booths, friends ([chapter 7](#7-modules)) |
 | **booth** | an exhibitor's stand at an edition; a virtual booth is its online counterpart |
 | **locale** | interface or website language in BCP 47 form (`pl`, `en`) |
 
@@ -124,9 +136,9 @@ terms come with the booths module.
 | eventually: speaker profiles with a history of appearances | likes and reviews of programme items |
 | | rooms, block schedule |
 
-In the MVP these work: name, address, language, time zone, team, programme with speakers, likes,
-reviews and attendee registrations. The remaining items already have their place in the
-permission model but no functionality behind them yet.
+In the MVP these work: name, address, language, time zone, team, shop configuration, programme
+with speakers, likes, reviews, tickets and attendee registrations. The remaining items already
+have their place in the permission model but no functionality behind them yet.
 
 ---
 
@@ -159,8 +171,14 @@ edition:
 Every permission takes one of three values: **none / read / write**. The default is none — a new
 team member starts with no access at all and receives it explicitly.
 
-In the MVP, **settings** and **programme** are the ones that actually do something. The remaining
-permissions exist in the model but have no resource to govern yet and do not appear in the panel.
+In the MVP, **settings**, **shop**, **programme** and **tickets** are the ones that actually do
+something. The remaining permissions exist in the model but have no resource to govern yet and do
+not appear in the panel.
+
+| Permission | read | write |
+|---|---|---|
+| shop | sees which payment provider account is connected | connects or replaces it |
+| tickets | sees ticket types, orders and paired scanners | manages ticket types, cancels orders, pairs and revokes scanners |
 
 ### 5.4 Roles
 
@@ -171,8 +189,8 @@ other person first.
 **`org` — organizer.** Permissions assigned item by item, separately for the convention and for
 each edition, optionally until an expiry date.
 
-Speakers and attendees are not team members: they hold no permissions in the panel and act only
-in the portal, on their own programme items and their own registrations.
+Speakers, attendees and ticket buyers are not team members: they hold no permissions in the
+panel and act only in the portal, on their own programme items, registrations and tickets.
 
 ### 5.5 Example
 
@@ -205,6 +223,7 @@ In the panel Jan switches convention context in the top bar.
 | `opos.land` | the portal: landing page, registration, attendee account, convention pages with the programme | yes |
 | `opos.land/conventions/<convention>` | a convention's page: the active edition's programme and past editions | yes |
 | `panel.opos.land` | organizer panel | yes |
+| `panel.opos.land/scanner` | the ticket scanner on a paired phone, without signing in | yes |
 | `api.opos.land` | API | yes |
 | `auth.opos.land` | sign-in service: registration, sign-in, sessions, password reset, Google | yes |
 | `<convention>.opos.land` | public convention website (CMS module) | no |
@@ -231,14 +250,14 @@ edition level.
 | Module | Covers | Permission | In the MVP |
 |---|---|---|---|
 | programme | an edition's programme items and their speakers, the public programme on the convention's page in the portal, likes, personal schedule, reviews | programme (edition) | yes |
+| tickets | an edition's ticket types, sales without an account, emailed QR tickets, scanning at the venue | shop (convention), tickets (edition) | yes |
 | CMS | the public convention website: home page, programme pages, archive, per-edition content | branding (convention), website content (edition) | no |
 | profile | the user's account: name, language, "my conventions", account deletion | — (the user's own data) | account settings and "my conventions" |
 | accreditation | admitting attendees, staff and guests to an edition | to be added | no |
 | booths | exhibitor booths at an edition, and virtual booths online | to be added | no |
 | friends | connections between users across conventions | — (the user's own data) | no |
-| tickets | an edition's tickets, types and sales limits | tickets (edition) | no |
 
-Modules beyond the MVP are built only after the core and the programme are finished.
+Modules beyond the MVP are built only after the core, the programme and tickets are finished.
 
 ### 7.1 Likes and personal schedule
 
@@ -250,7 +269,7 @@ Modules beyond the MVP are built only after the core and the programme are finis
 
 | Rule | Value |
 |---|---|
-| Who reviews | an attendee of the edition, or a team member with access to that edition |
+| Who reviews | a holder of a valid ticket for the edition, or a team member with access to that edition |
 | When | from the item's start time on |
 | How many | one review per account per item; the author edits or deletes it |
 | Content | rating 1–5 and an optional comment up to 2000 characters |
@@ -259,6 +278,22 @@ Modules beyond the MVP are built only after the core and the programme are finis
 | Public view | the average rating, the number of reviews and the public comments |
 | Speaker view | every comment on their own items, public and speakers-only |
 | Moderation | an org with programme write access hides a review; a hidden review disappears from every view except the panel |
+
+### 7.3 Tickets
+
+| Rule | Value |
+|---|---|
+| What is sold | tickets only; one edition per order, up to 10 tickets |
+| Ticket type | name, price in the convention's currency, optional quantity limit, sales start and end |
+| Buyer | email address, first and last name; no account needed |
+| Payment | through the convention's own payment provider account; the money never passes through OPOS. One provider in the MVP, supporting BLIK, Przelewy24 and cards |
+| Unpaid order | holds its tickets for 15 minutes, then expires and releases them |
+| Delivery | an email in the buyer's language with one QR code per ticket |
+| Account | tickets belong to the order's email address; an account with that address sees them under "my tickets" |
+| Refund | done by the convention in its payment provider's dashboard; an org then cancels the order in the panel and its tickets stop being valid |
+| Invoices | issued by the convention outside OPOS |
+| Scanner | an org with tickets write access shows a pairing QR code in the panel; a phone that scans it works for that edition only, until the edition ends or someone revokes it. No sign-in on the phone |
+| At the gate | a scan shows every ticket in the order with its state; the org ticks the ones handed in. Each ticket is redeemed once; the scanner works online only, and network coverage at the gate is the convention's responsibility |
 
 ---
 
@@ -307,6 +342,10 @@ Adding another language is a translation file — it requires no changes to code
 We store attendees' personal data: first name, last name, email address, and what they do on the
 platform: likes and reviews. Account deletion removes their likes and reviews too.
 
+Orders store the buyer's email address, first and last name. They are the convention's sales
+records, so deleting an account does not delete orders placed with its address. Payment details
+stay with the payment provider; OPOS stores only the provider's payment reference.
+
 **Registration with a password requires a confirmed email address.** The account starts working
 once its owner clicks the link sent to that address. A Google sign-in counts as confirmed.
 
@@ -338,6 +377,8 @@ activities, data export and log retention.
 - Edition programme with speakers
 - Convention pages in the portal: the active edition's programme, past editions, item details
 - Likes, personal schedule and reviews of programme items
+- Tickets: ticket types, purchase without an account through the convention's payment provider
+  account, emailed QR tickets, "my tickets", order cancellation, scanning at the venue
 - Organizer invitations by email
 - Full data isolation between conventions
 - Account deletion by the user
@@ -348,8 +389,10 @@ activities, data export and log retention.
 
 ### Beyond the MVP
 
-- Modules: CMS, accreditation, booths (including virtual booths), friends, tickets
-  ([chapter 7](#7-modules))
+- Modules: CMS, accreditation, booths (including virtual booths), friends ([chapter 7](#7-modules))
+- Merchandise, passes and other products besides tickets; refunds triggered from the panel
+- Ticket sales embedded on the convention's own website (white label, iframe, public sales API)
+- Offline scanning
 - Public convention website on `<convention>.opos.land` and on custom domains
 - Platform admin panel at `admin.opos.land`
 - Fees for commercial exhibitors
@@ -359,7 +402,7 @@ activities, data export and log retention.
 - Convention content translations and a language switcher on the public website
 - Further markets and languages: Czech, Slovak, German, currencies other than the złoty, local
   payment methods
-- Payments
+- Further payment providers
 - Further sign-in providers
 - Convention catalogue in the portal
 - Speaker profiles, rooms, block schedule

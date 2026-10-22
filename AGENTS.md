@@ -87,7 +87,7 @@ always applies.
 - Specifics instead of generalities: column names, status codes, paths, limits.
 - Tables of contents and anchors updated together with headings.
 - Terminology strictly from the glossary: tenant, edition, programme item, speaker, like, review,
-  attendee, admin, org, head, user, core, module, booth.
+  ticket type, order, ticket, scanner, attendee, admin, org, head, user, core, module, booth.
 
 ## Commits
 

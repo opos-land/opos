@@ -1,4 +1,4 @@
-# Git hooks. Jobs land gradually, together with the code they cover.
+# Git hooks.
 # Skip for a single call: LEFTHOOK=0 git commit ...
 
 commit-msg:
@@ -7,24 +7,18 @@ commit-msg:
       run: pnpm commitlint --edit {1}
 
 pre-commit:
-  parallel: true
   jobs:
     - name: prettier
       glob: '*.{ts,tsx,js,jsx,mjs,cjs,json,yml,yaml,astro,css}'
       run: pnpm prettier --write --ignore-unknown {staged_files}
       stage_fixed: true
+    - name: eslint
+      glob: '*.{ts,tsx,astro}'
+      run: pnpm eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
 
-# Enable once packages/eslint-config exists:
-#     - name: eslint
-#       glob: "*.{ts,tsx,astro}"
-#       run: pnpm eslint --fix --max-warnings 0 {staged_files}
-#       stage_fixed: true
-#
-# Enable once turbo.json and the first packages exist:
-# pre-push:
-#   parallel: true
-#   jobs:
-#     - name: typecheck
-#       run: pnpm turbo run typecheck --filter=...[origin/main]
-#     - name: test
-#       run: pnpm turbo run test --filter=...[origin/main]
+# The API tests need the database: pnpm infra:up
+pre-push:
+  jobs:
+    - name: typecheck and test
+      run: pnpm turbo run typecheck test --filter=...[origin/main]

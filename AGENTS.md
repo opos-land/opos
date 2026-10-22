@@ -12,9 +12,9 @@ Write responses in the language the user writes in.
 
 ## Repository
 
-OPOS — a multitenant platform for running fantasy conventions, free for conventions. The project is
-at the planning stage: there is no application code yet, only tooling configuration and two
-documents.
+OPOS — a multitenant platform for running fantasy conventions, free for conventions. The code
+follows two documents; `apps/api` and the shared packages it needs exist, the rest of
+[the monorepo structure](docs/PLAN.md#3-monorepo-structure) is still to be built.
 
 Everything in this repository is written in English.
 
@@ -145,10 +145,9 @@ Branches follow the same scheme: `feat/tenant-rls`, `fix/refresh-rotation`.
 
 ## Working with code
 
-There is no application code yet — the repository holds tooling configuration and the documents.
-Once code exists, the [execution rules](docs/PLAN.md#17-execution-rules) from PLAN.md apply: pinned
-Node and pnpm versions, every user-facing string inside a Lingui macro, green typecheck, lint and
-tests before every PR.
+The [execution rules](docs/PLAN.md#17-execution-rules) from PLAN.md apply: pinned Node and pnpm
+versions, every user-facing string inside a Lingui macro, green typecheck, lint and tests before
+every PR. The API tests need the database: `pnpm infra:up` first.
 
 `mise install` installs Node and enables corepack for pnpm ([versions](docs/PLAN.md#versions-and-dependencies));
 then `pnpm install` installs dependencies and wires up the hooks. Dependencies younger than 7 days are

@@ -1,0 +1,9 @@
+{
+  "extends": "@opos/tsconfig/node.json",
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false
+  },
+  "include": ["src", "test", "*.config.ts", "eslint.config.js"]
+}

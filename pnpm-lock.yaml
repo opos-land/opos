@@ -9,15 +9,24 @@ catalogs:
     '@eslint/js':
       specifier: ^10.0.1
       version: 10.0.1
+    '@ts-rest/core':
+      specifier: ^3.52.1
+      version: 3.52.1
     eslint:
       specifier: ^10.0.0
       version: 10.12.0
     globals:
       specifier: ^17.13.0
       version: 17.13.0
+    typescript:
+      specifier: ~6.0.3
+      version: 6.0.3
     typescript-eslint:
       specifier: ^8.60.0
       version: 8.71.2
+    zod:
+      specifier: ^3.25.76
+      version: 3.25.76
 
 importers:
 
@@ -41,6 +50,28 @@ importers:
       turbo:
         specifier: ^2.11.8
         version: 2.11.8
+
+  packages/contract:
+    dependencies:
+      '@ts-rest/core':
+        specifier: 'catalog:'
+        version: 3.52.1(@types/node@26.1.1)(zod@3.25.76)
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+    devDependencies:
+      '@opos/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@opos/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0(jiti@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/eslint-config:
     dependencies:
@@ -211,6 +242,17 @@ packages:
 
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
+
+  '@ts-rest/core@3.52.1':
+    resolution: {integrity: sha512-tAjz7Kxq/grJodcTA1Anop4AVRDlD40fkksEV5Mmal88VoZeRKAG8oMHsDwdwPZz+B/zgnz0q2sF+cm5M7Bc7g==}
+    peerDependencies:
+      '@types/node': ^18.18.7 || >=20.8.4
+      zod: ^3.22.3
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      zod:
+        optional: true
 
   '@turbo/darwin-64@2.11.8':
     resolution: {integrity: sha512-u+6s4C2hskRYx6MkW2uT7BCW6sESCL/+5bjHDDWUfQfQliCSJ7lAHAL6RQaw0an9WU6nJvwYgT786mEWul2kDw==}
@@ -1073,6 +1115,9 @@ packages:
     resolution: {integrity: sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ==}
     engines: {node: '>=12.20'}
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
 snapshots:
 
   '@babel/code-frame@7.29.7':
@@ -1262,6 +1307,11 @@ snapshots:
       keyv: 5.6.0
 
   '@keyv/serialize@1.1.1': {}
+
+  '@ts-rest/core@3.52.1(@types/node@26.1.1)(zod@3.25.76)':
+    optionalDependencies:
+      '@types/node': 26.1.1
+      zod: 3.25.76
 
   '@turbo/darwin-64@2.11.8':
     optional: true
@@ -2032,3 +2082,5 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yocto-queue@1.2.2: {}
+
+  zod@3.25.76: {}

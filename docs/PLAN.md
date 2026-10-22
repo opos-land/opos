@@ -14,21 +14,20 @@ product decisions live there — this document is implementation only.
 7. [apps/api](#7-appsapi)
 8. [apps/panel](#8-appspanel)
 9. [apps/portal](#9-appsportal)
-10. [apps/cms](#10-appscms)
-11. [Supabase](#11-supabase)
-12. [Environment variables](#12-environment-variables)
-13. [Local development](#13-local-development)
-14. [Deployment](#14-deployment)
-15. [Demo data (seed)](#15-demo-data-seed)
-16. [Tests](#16-tests)
-17. [Smoke test](#17-smoke-test)
-18. [Execution rules](#18-execution-rules)
+10. [Supabase](#10-supabase)
+11. [Environment variables](#11-environment-variables)
+12. [Local development](#12-local-development)
+13. [Deployment](#13-deployment)
+14. [Demo data (seed)](#14-demo-data-seed)
+15. [Tests](#15-tests)
+16. [Smoke test](#16-smoke-test)
+17. [Execution rules](#17-execution-rules)
 
 ---
 
 ## 1. Architecture
 
-Four applications, three shared packages, one backend, and self-hosted Supabase for the database
+Three applications, three shared packages, one backend, and self-hosted Supabase for the database
 and authentication.
 
 ```mermaid
@@ -37,7 +36,6 @@ graph TB
     portal["apps/portal<br>Vite + React"]
     panel["apps/panel<br>Vite + React"]
     api["apps/api<br>NestJS + Drizzle"]
-    cms["apps/cms<br>Astro SSR"]
     auth["Supabase Auth<br>GoTrue"]
     packages["packages/contract · packages/db · packages/i18n"]
     pg[("Supabase Postgres 17")]
@@ -46,14 +44,12 @@ graph TB
     traefik -->|"panel.opos.land"| panel
     traefik -->|"api.opos.land"| api
     traefik -->|"auth.opos.land"| auth
-    traefik -->|"&lt;slug&gt;.opos.land + custom domains"| cms
     portal -.->|"sign-in"| auth
     panel -.->|"sign-in"| auth
     auth -.->|"send-email hook"| api
     portal --> packages
     panel --> packages
     api --> packages
-    cms --> packages
     packages --> pg
     auth --> pg
 ```
@@ -62,8 +58,7 @@ graph TB
 |---|---|---|---|
 | `apps/api` | NestJS + Drizzle + ts-rest | the only application backend; verifies Supabase Auth sessions | `api.opos.land` |
 | `apps/panel` | Vite + React + Tailwind + shadcn/ui | organizer panel (SPA) | `panel.opos.land` |
-| `apps/portal` | Vite + React + Tailwind + shadcn/ui | landing page, registration, "my conventions" (SPA, mobile-first) | `opos.land` |
-| `apps/cms` | Astro SSR (Node adapter) | public convention website, Host -> tenant mapping | `<slug>.opos.land` + custom domains |
+| `apps/portal` | Vite + React + Tailwind + shadcn/ui | landing page, registration, convention pages with the programme, likes, personal schedule, reviews, "my conventions" (SPA, mobile-first) | `opos.land` |
 | `auth` | Supabase Auth (`supabase/gotrue`) | registration, sign-in, sessions, password reset, Google OAuth | `auth.opos.land` |
 | `db` | Supabase Postgres (`supabase/postgres`) | the only database: `public` (OPOS tables) and `auth` (Supabase Auth) | internal network only |
 
@@ -95,14 +90,11 @@ instead of printing a warning.
 verification), `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (admin API),
 nodemailer, `@nestjs/throttler`.
 
-**Authentication:** Supabase Auth (GoTrue), self-hosted ([11](#11-supabase)). Clients use
+**Authentication:** Supabase Auth (GoTrue), self-hosted ([10](#10-supabase)). Clients use
 `@supabase/auth-js` directly against `auth.opos.land`.
 
 **Frontend SPA:** Vite + React + TypeScript, Tailwind CSS + shadcn/ui, `@ts-rest/react-query`,
 `@supabase/auth-js`, react-router, react-hook-form + zod, zustand, `@lingui/react`.
-
-**Frontend SSR:** Astro (Node adapter), `@ts-rest/core`, Tailwind CSS, Host -> tenant middleware,
-LRU lookup cache, `@lingui/core` (in `.astro`, without the React layer).
 
 **i18n:** Lingui — `@lingui/core`, `@lingui/react`, `@lingui/macro` macros, `@lingui/cli`.
 `Intl` for dates, numbers and currencies.
@@ -162,7 +154,6 @@ opos/
           als/tenant-resolver.middleware.ts
           als/tenant-transaction.interceptor.ts
           guards/jwt-auth.guard.ts
-          guards/platform-admin.guard.ts
           guards/tenant-permission.guard.ts
           guards/edition-permission.guard.ts
           decorators/require-tenant.decorator.ts
@@ -172,11 +163,11 @@ opos/
         modules/
           auth/          # Supabase JWT verification, send-email hook, GoTrue admin client
           accounts/      # MeModule
-          superadmin/    # tenants, first head, custom domain
           tenants/       # tenant + tenant_memberships + invitations
           editions/      # editions + edition_memberships
-          events/        # programme
-          public/        # unauthenticated endpoints for the CMS and the portal
+          program/       # programme items, speakers, review moderation
+          engagement/    # likes, personal schedule, reviews
+          public/        # unauthenticated endpoints for the portal
           mail/          # nodemailer + Lingui templates
       test/              # integration tests
       .env.example
@@ -207,19 +198,9 @@ opos/
       src/
         locales/{en,pl}.po
         app/
-        features/{landing,auth,account,attendances}/
+        features/{landing,auth,account,attendances,conventions,schedule,speaking}/
         shared/{ui,lib,config}/
       .env.example       # VITE_API_URL, VITE_AUTH_URL
-      Dockerfile
-    cms/
-      lingui.config.ts
-      src/
-        locales/{en,pl}.po
-        middleware.ts
-        pages/           # thin Astro routes, delegate to features
-        features/{tenant,program,archive}/
-        shared/{ui,lib}/
-      .env.example       # API_URL
       Dockerfile
   e2e/                   # a workspace package: playwright and the test helpers
     package.json
@@ -234,9 +215,9 @@ opos/
         me.ts
         tenants.ts
         editions.ts
-        events.ts
+        program.ts
+        engagement.ts
         public.ts
-        admin.ts
       package.json       # main + types -> src/index.ts
     db/
       src/
@@ -250,9 +231,14 @@ opos/
           tenant-memberships.ts
           editions.ts
           edition-memberships.ts
-          events.ts
+          program-items.ts
+          program-item-speakers.ts
+          program-item-likes.ts
+          program-item-reviews.ts
           attendees.ts
         seed.ts
+        scripts/
+          create-tenant.ts   # db:tenant:create
       drizzle/           # drizzle-kit migrations + the hand-written RLS and trigger migrations
       drizzle.config.ts  # schemaFilter: ['public']
       package.json       # main + types -> src/index.ts
@@ -264,7 +250,7 @@ opos/
       lingui.config.base.ts
       package.json       # main + types -> src/index.ts, catalogs compiled separately
     tsconfig/
-      base.json, node.json, react.json, astro.json
+      base.json, node.json, react.json
     eslint-config/
       index.js
 ```
@@ -292,17 +278,17 @@ tasks still run in parallel.
 | `test:e2e` | — | — | no; runs against the full stack |
 | `i18n:extract` | — | — | no; appends messages to the `.po` files |
 | `i18n:compile` | `^i18n:compile` | compiled catalogs (`src/locales/*.mjs`, `locales/*.mjs`) | yes |
-| `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:verify` | — | — | no; the database and generated migrations are side effects |
+| `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:verify`, `db:tenant:create` | — | — | no; the database and generated migrations are side effects |
 | `db:studio` | — | — | no; `persistent: true` |
 
 - The `db:*` tasks exist only in `packages/db`, `test:e2e` only in `e2e`.
 - Frontend build-time variables (`VITE_*`) enter task hashes through turbo's framework inference.
   The API's variables are read at runtime and stay out of the hash
-  ([12](#12-environment-variables)).
+  ([11](#11-environment-variables)).
 
 ### 3.2 Frontend application layout
 
-The panel, the portal and the CMS share one layout: **feature based**. No directory for a
+The panel and the portal share one layout: **feature based**. No directory for a
 technical layer (`components/`, `hooks/`) exists at application level — those directories live
 inside a feature.
 
@@ -333,7 +319,7 @@ Import rules, enforced by the `no-restricted-paths` rule in `packages/eslint-con
 | `shared/` | `features/` | **no** |
 | `app/` | anywhere | yes |
 
-Routes stay thin: a file in Astro's `pages/` holds no logic, it only mounts a view from the right
+Routes stay thin: a route definition holds no logic, it only mounts a view from the right
 feature.
 
 A feature never reaches the database or `fetch` directly: all network traffic goes through that
@@ -341,7 +327,7 @@ feature's `api/`, built on the API client and the auth client from `shared/lib`.
 
 `shared/ui` starts from shadcn/ui, restyled to the designer's tokens (colours, typography,
 spacing, radii). No image or illustration in `shared/ui` or in a feature is AI-generated
-([18](#18-execution-rules)).
+([17](#17-execution-rules)).
 
 ---
 
@@ -360,19 +346,23 @@ The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 
 | Term | Carrier |
 |---|---|
-| admin | `accounts.isPlatformAdmin = true` |
+| admin | no table: works on the database directly, through `pnpm db:tenant:create` |
 | org, head | `tenant_memberships` (+ optionally `edition_memberships`) |
 | user | `auth.users` + `accounts` + rows in `attendees` |
 | tenant | `tenants` |
 | edition | `editions` |
-| event | `events` |
+| programme item | `program_items` |
+| speaker | `program_item_speakers` |
+| like | `program_item_likes` |
+| review | `program_item_reviews` |
 | attendee | `attendees` |
 
 ### 4.1 Enums
 
 ```ts
-permissionLevel = pgEnum('permission_level', ['none', 'read', 'write'])
-tenantRole      = pgEnum('tenant_role',      ['head', 'org'])
+permissionLevel  = pgEnum('permission_level',  ['none', 'read', 'write'])
+tenantRole       = pgEnum('tenant_role',       ['head', 'org'])
+reviewVisibility = pgEnum('review_visibility', ['public', 'speakers'])
 ```
 
 `locale` is not an enum — the list of supported languages lives in `packages/i18n` and in
@@ -392,7 +382,6 @@ OPOS keeps the profile only.
 | `email` | text | unique, lowercase; mirrored from `auth.users.email` |
 | `firstName` | text | nullable |
 | `lastName` | text | nullable |
-| `isPlatformAdmin` | boolean | default `false` |
 | `locale` | text | nullable; the user's choice, `null` = detect from `Accept-Language` |
 
 Triggers on `auth.users`, in a hand-written migration, as `security definer` functions owned by
@@ -408,12 +397,16 @@ Deleting a user in Supabase Auth removes `accounts`, and with it every row that 
 ### 4.3 Tenant-level tables
 
 **`tenants`** — `slug` (unique, lowercase, `^[a-z0-9-]{3,40}$`), `name`,
-`customDomain` (unique, nullable), `defaultLocale` (text, default `pl`),
-`timezone` (IANA text, default `Europe/Warsaw`).
+`defaultLocale` (text, default `pl`), `timezone` (IANA text, default `Europe/Warsaw`).
 
 **`tenant_memberships`** — `accountId` (FK cascade), `tenantId` (FK cascade), `role`,
-`settingsAccess`, `brandingAccess`, `shopConfigAccess` (default `none`).
+`settingsAccess`, `brandingAccess`, `shopConfigAccess` (default `none`),
+`expiresAt` (timestamptz, nullable). Check `role = 'org' or expiresAt is null`.
 Unique `(accountId, tenantId)` and `(id, tenantId)`. Index on `tenantId`.
+
+A membership with `expiresAt <= now()` is **expired**: every read that grants access filters it
+out, so the account behaves as if it were not in the team. The row stays until someone removes it
+or extends it.
 
 ### 4.4 Edition-level tables
 
@@ -426,8 +419,23 @@ Unique `(tenantId, slug)` and `(id, tenantId)`. Partial unique index `(tenantId)
 Unique `(tenantMembershipId, editionId)`. Composite foreign keys `(tenantMembershipId, tenantId)`
 and `(editionId, tenantId)`.
 
-**`events`** — `tenantId`, `editionId` (FK cascade), `title`, `description` (nullable),
-`startsAt`, `endsAt`. Index `(tenantId, editionId, startsAt)`.
+**`program_items`** — `tenantId`, `editionId` (FK cascade), `title`, `description` (nullable),
+`startsAt`, `endsAt`. Unique `(id, tenantId)`. Index `(tenantId, editionId, startsAt)`.
+
+**`program_item_speakers`** — `tenantId`, `programItemId` (FK cascade), `accountId` (FK cascade).
+Unique `(programItemId, accountId)`. Composite foreign key `(programItemId, tenantId)`. Index
+`(accountId)`.
+
+**`program_item_likes`** — `tenantId`, `programItemId` (FK cascade), `accountId` (FK cascade).
+Unique `(programItemId, accountId)`. Composite foreign key `(programItemId, tenantId)`. Indexes
+`(tenantId, programItemId)` and `(accountId)`.
+
+**`program_item_reviews`** — `tenantId`, `programItemId` (FK cascade), `accountId` (FK cascade),
+`rating` (smallint, check 1–5), `comment` (text, nullable, up to 2000 characters),
+`isAnonymous` (default `false`), `visibility` (`review_visibility`, default `public`),
+`hiddenAt` (timestamptz, nullable), `hiddenByAccountId` (nullable, FK set null).
+Unique `(programItemId, accountId)`. Composite foreign key `(programItemId, tenantId)`. Indexes
+`(tenantId, programItemId)` and `(accountId)`.
 
 **`attendees`** — `accountId`, `tenantId`, `editionId` (FK cascade), `firstName`, `lastName`.
 Unique `(accountId, editionId)`. Indexes `(tenantId, editionId)` and `(accountId)`.
@@ -446,6 +454,13 @@ Every RLS-covered table has an index starting with `tenantId`.
    an empty context, and `WITH CHECK` in the RLS policies closes it on the database side.
 5. **Every `auth.users` row has exactly one `accounts` row** — the insert trigger and the cascading
    foreign key.
+6. **A `head` membership never expires** — the check constraint on `tenant_memberships`.
+7. **A review exists only for an item that has started, written by an eligible account** —
+   checked in `EngagementModule` on every write: `program_items.startsAt <= now()`, and the author
+   is an attendee of the item's edition, a non-expired `head`, or a non-expired `org` with an
+   `edition_memberships` row for that edition.
+8. **Speakers, likes and reviews belong to the tenant of their programme item** — enforced by
+   composite foreign keys.
 
 ### 4.6 Tenant isolation — RLS in Postgres
 
@@ -466,7 +481,8 @@ Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
 #### Covered tables
 
-`tenants`, `tenant_memberships`, `editions`, `edition_memberships`, `events`, `attendees`.
+`tenants`, `tenant_memberships`, `editions`, `edition_memberships`, `program_items`,
+`program_item_speakers`, `program_item_likes`, `program_item_reviews`, `attendees`.
 
 The global table `accounts` stays outside RLS — it is protected by filtering on the `accountId`
 from the JWT. The `auth` schema is accessed only by Supabase Auth.
@@ -483,14 +499,14 @@ transaction.
 #### Policy shape
 
 ```sql
-alter table events enable row level security;
-alter table events force  row level security;
+alter table program_items enable row level security;
+alter table program_items force  row level security;
 
-create policy tenant_isolation on events
+create policy tenant_isolation on program_items
   using      (tenant_id = current_setting('app.tenant_id')::uuid)
   with check (tenant_id = current_setting('app.tenant_id')::uuid);
 
-grant select, insert, update, delete on events to opos_app;
+grant select, insert, update, delete on program_items to opos_app;
 ```
 
 The same for the remaining tables; for `tenants` the condition is `id = current_setting(...)`.
@@ -503,13 +519,14 @@ Only through `GlobalDbService` on the `opos_app_global` role. The complete list:
 
 | Query | Constraint |
 |---|---|
-| tenant lookup by slug or host | returns only `id`, `slug`, `name`, `customDomain`, `defaultLocale`, `timezone` |
-| `GET /me/memberships` | `where account_id = <account from the JWT>` |
+| tenant lookup by slug | returns only `id`, `slug`, `name`, `defaultLocale`, `timezone` |
+| `GET /me/memberships` | `where account_id = <account from the JWT>`, expired memberships excluded |
 | `GET /me/attendances` | `where account_id = <account from the JWT>` |
-| `GET /admin/tenants` | `PlatformAdminGuard` |
+| `GET /me/schedule` | `where account_id = <account from the JWT>` on `program_item_likes` |
+| `GET /me/program-items` | `where account_id = <account from the JWT>` on `program_item_speakers` |
 
-Every query in `GlobalDbService` carries either an `accountId` condition or the admin guard; adding
-another one requires an entry in this table. The rest of the system, including `PublicModule`,
+Every query in `GlobalDbService` carries an `accountId` condition; adding another one requires an
+entry in this table. The rest of the system, including `PublicModule`,
 resolves the tenant first and then works on `opos_app`.
 
 #### Migrations and verification
@@ -560,7 +577,7 @@ Supabase Auth errors carry an `error_code` (`invalid_credentials`, `email_not_co
 them the same way as API codes ([6](#6-localization)).
 
 Outside the ts-rest contract: `POST /hooks/send-email` — called by Supabase Auth only, verified by
-a Standard Webhooks signature ([11](#11-supabase)).
+a Standard Webhooks signature ([10](#10-supabase)).
 
 ### 5.2 `me` — requires JWT
 
@@ -569,8 +586,10 @@ a Standard Webhooks signature ([11](#11-supabase)).
 | GET | `/me` | account profile |
 | PATCH | `/me` | change `firstName`, `lastName`, `locale` |
 | DELETE | `/me` | delete the account; `409` when it is some tenant's last `head`; `401` without a sign-in from the last 5 minutes |
-| GET | `/me/memberships` | tenants with role and permissions, edition-level included |
+| GET | `/me/memberships` | tenants with role and permissions, edition-level included; expired memberships left out |
 | GET | `/me/attendances` | "my conventions" |
+| GET | `/me/schedule` | liked programme items across all tenants, ascending by `startsAt` |
+| GET | `/me/program-items` | programme items where the account is a speaker, with their non-hidden reviews |
 | POST | `/me/attendances` | `{ tenantSlug, editionSlug, firstName, lastName }`; `409` on a repeat sign-up, `404` for an unpublished edition |
 | DELETE | `/me/attendances/:attendeeId` | withdraw |
 
@@ -582,7 +601,7 @@ a Standard Webhooks signature ([11](#11-supabase)).
 | PATCH | `/tenants/current` | `settings=write` (`name`, `slug`, `defaultLocale`, `timezone`) |
 | GET | `/tenants/current/members` | `settings>=read` |
 | POST | `/tenants/current/members` | `settings=write` |
-| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation |
+| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (permissions, `expiresAt`) |
 | DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation |
 
 Invitations — without the tenant header:
@@ -606,37 +625,47 @@ Invitations — without the tenant header:
 | PUT | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation |
 | DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` |
 
-### 5.5 `events` — JWT + `X-Tenant-Slug` + edition permission
+### 5.5 `program` — JWT + `X-Tenant-Slug` + edition permission
 
 | Method | Path | Required permission |
 |---|---|---|
-| GET | `/editions/:editionId/events` | `program>=read` |
-| POST | `/editions/:editionId/events` | `program=write` |
-| PATCH | `/editions/:editionId/events/:eventId` | `program=write` |
-| DELETE | `/editions/:editionId/events/:eventId` | `program=write` |
+| GET | `/editions/:editionId/program-items` | `program>=read` |
+| POST | `/editions/:editionId/program-items` | `program=write` |
+| PATCH | `/editions/:editionId/program-items/:programItemId` | `program=write` |
+| DELETE | `/editions/:editionId/program-items/:programItemId` | `program=write` |
+| PUT | `/editions/:editionId/program-items/:programItemId/speakers` | `program=write`; `{ emails }` replaces the list; an email without an account -> `404` `speaker.account-not-found` |
+| GET | `/editions/:editionId/program-items/:programItemId/reviews` | `program>=read`; hidden reviews included, anonymous authors without a name |
+| PUT | `/editions/:editionId/program-items/:programItemId/reviews/:reviewId/hidden` | `program=write`; hides the review |
+| DELETE | `/editions/:editionId/program-items/:programItemId/reviews/:reviewId/hidden` | `program=write`; shows it again |
 
-Validation: `endsAt > startsAt`, `title` 3–200 characters, `description` up to 5000 characters.
+Validation: `endsAt > startsAt`, `title` 3–200 characters, `description` up to 5000 characters,
+up to 10 speakers per item.
 
-### 5.6 `admin` — JWT + `isPlatformAdmin`
+### 5.6 `engagement` — JWT + `X-Tenant-Slug`, no membership required
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/admin/tenants` | list of all tenants |
-| POST | `/admin/tenants` | `{ slug, name, headEmail }` — creates a tenant and appoints its first `head` |
-| PUT | `/admin/tenants/:tenantId/domain` | sets or clears `customDomain` |
+| PUT | `/editions/:editionId/program-items/:programItemId/like` | like; idempotent; `404` for an unpublished edition |
+| DELETE | `/editions/:editionId/program-items/:programItemId/like` | remove the like |
+| PUT | `/editions/:editionId/program-items/:programItemId/review` | `{ rating, comment?, isAnonymous, visibility }`; creates or replaces the account's review; `403` `review.not-eligible`, `409` `review.not-started` |
+| DELETE | `/editions/:editionId/program-items/:programItemId/review` | delete the account's review |
+
+Eligibility and start time are checked as invariant 7 in [4.5](#45-invariants) describes.
 
 ### 5.7 `public` — unauthenticated
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/public/tenant?host=` | tenant by `Host`; `404` when unknown |
+| GET | `/public/tenants/:slug` | tenant name, `defaultLocale`, `timezone`; `404` when unknown |
 | GET | `/public/tenants/:slug/editions` | published editions, descending by `startsAt` |
 | GET | `/public/tenants/:slug/editions/active` | the active and published edition |
 | GET | `/public/tenants/:slug/editions/:editionSlug` | a single published edition |
-| GET | `/public/tenants/:slug/editions/:editionSlug/events` | programme, ascending by `startsAt` |
-| GET | `/public/tenants/:slug/editions/:editionSlug/events/:eventId` | programme item details |
+| GET | `/public/tenants/:slug/editions/:editionSlug/program-items` | programme, ascending by `startsAt`, with speaker names, `likeCount`, `ratingAverage`, `reviewCount` |
+| GET | `/public/tenants/:slug/editions/:editionSlug/program-items/:programItemId` | programme item details with the same counters |
+| GET | `/public/tenants/:slug/editions/:editionSlug/program-items/:programItemId/reviews` | public, non-hidden reviews; anonymous authors without a name |
 
-The `isPublished = true` filter lives in the repository, not in the controller.
+The `isPublished = true` filter lives in the repository, not in the controller. Counters and
+averages count non-hidden reviews only. Who liked an item is never returned.
 
 ---
 
@@ -673,7 +702,7 @@ One catalog per application plus a shared one:
 | `apps/<app>/src/locales/*.po` | that application's messages | `apps/<app>/src` |
 | `packages/i18n/locales/*.po` | API and Supabase Auth errors, email content | `packages/i18n/src` |
 
-The per-application split keeps the CMS from pulling in the panel's messages. Compiled catalogs are
+The per-application split keeps the portal from pulling in the panel's messages. Compiled catalogs are
 loaded through a dynamic import per locale.
 
 ### Workflow
@@ -693,7 +722,6 @@ otherwise the application starts with stale messages.
 |---|---|
 | panel, portal — signed in | `accounts.locale` -> `Accept-Language` -> `DEFAULT_LOCALE` |
 | portal — signed out | `Accept-Language` -> `DEFAULT_LOCALE` |
-| CMS | `tenants.defaultLocale`, regardless of the browser |
 | emails | the recipient's `accounts.locale` -> `locale` from the sign-up metadata -> for an unknown address the inviting `tenants.defaultLocale` -> `DEFAULT_LOCALE` |
 
 ### API errors
@@ -702,11 +730,11 @@ The API returns a `code`, never a sentence. `packages/i18n/src/errors.ts` maps a
 descriptor from the `msg` macro, and the client renders it through `i18n._(descriptor, params)`.
 Supabase Auth's `error_code` values are mapped in the same file under `auth.<error_code>`; an
 unmapped one renders a generic "Something went wrong" message. A new `code` in the contract
-without an entry in that map fails a test ([16.1](#161-api-integration-tests)).
+without an entry in that map fails a test ([15.1](#151-api-integration-tests)).
 
 Emails are rendered by the API — it activates the recipient's catalog and composes the content
 through `@lingui/core`. That includes Supabase Auth's confirmation, recovery and email change
-messages, which reach the API through the send-email hook ([11](#11-supabase)).
+messages, which reach the API through the send-email hook ([10](#10-supabase)).
 
 ### Formatting
 
@@ -716,8 +744,9 @@ messages, which reach the API through the send-email hook ([11](#11-supabase)).
 
 ### Tenant content
 
-Names, programme item descriptions and CMS content are single-language — in the tenant's
-`defaultLocale`. They do not pass through Lingui: they are data, not interface messages.
+Names and programme item descriptions are single-language — in the tenant's `defaultLocale`.
+Review comments stay in whatever language their author wrote. None of it passes through Lingui:
+it is data, not interface messages.
 
 ---
 
@@ -728,12 +757,12 @@ Names, programme item descriptions and CMS content are single-language — in th
 | Module | Contents |
 |---|---|
 | `AuthModule` | `JwtAuthGuard` (Supabase JWT verification), the `POST /hooks/send-email` controller, the GoTrue admin client |
-| `MeModule` | profile, memberships, edition sign-ups, account deletion |
-| `SuperadminModule` | tenants, first `head`, custom domain; `PlatformAdminGuard` |
-| `TenantsModule` | tenant data, `tenant_memberships`, invitations |
+| `MeModule` | profile, memberships, edition sign-ups, personal schedule, speaker's items, account deletion |
+| `TenantsModule` | tenant data, `tenant_memberships` with expiry, invitations |
 | `EditionsModule` | edition CRUD, activation, `edition_memberships` |
-| `EventsModule` | programme item CRUD |
-| `PublicModule` | unauthenticated endpoints for the CMS and the portal |
+| `ProgramModule` | programme item CRUD, speakers, review moderation |
+| `EngagementModule` | likes and reviews, with the review eligibility check |
+| `PublicModule` | unauthenticated endpoints for the portal's convention pages |
 | `MailModule` | nodemailer + Lingui templates per locale: Supabase Auth emails and invitations ([6](#6-localization)) |
 
 ### 7.2 Tenant context
@@ -742,7 +771,7 @@ Names, programme item descriptions and CMS content are single-language — in th
 
 1. Reads `X-Tenant-Slug`. No header -> empty context.
 2. Loads the tenant by slug through `GlobalDbService`; an unknown slug -> `404`.
-3. Loads the current account's `tenant_membership`.
+3. Loads the current account's `tenant_membership`, skipping an expired one.
 4. Opens ALS with `{ tenantId, tenantSlug, membership, account }`.
 
 `TenantTransactionInterceptor` — for requests carrying a tenant context:
@@ -765,8 +794,7 @@ Implementation:
 rank: none=0, read=1, write=2
 
 checkTenant(resource, required):
-  if account.isPlatformAdmin              -> allow
-  m = ALS.tenantMembership
+  m = ALS.tenantMembership                # never an expired one
   if !m                                   -> 403
   if m.role == 'head'                     -> allow
   if rank(m[resource]) >= rank(required)  -> allow
@@ -775,7 +803,6 @@ checkTenant(resource, required):
 checkEdition(editionId, resource, required):
   edition = load(editionId)
   if edition.tenantId != ALS.tenantId     -> 404
-  if account.isPlatformAdmin              -> allow
   m = ALS.tenantMembership; if !m         -> 403
   if m.role == 'head'                     -> allow
   em = editionMembership(m.id, editionId)
@@ -791,10 +818,7 @@ async updateTenant() { ... }
 
 @UseGuards(JwtAuthGuard, EditionPermissionGuard)
 @RequireEdition('program', 'write')   // editionId taken from the route param
-async createEvent() { ... }
-
-@UseGuards(JwtAuthGuard, PlatformAdminGuard)
-async createTenant() { ... }
+async createProgramItem() { ... }
 ```
 
 `EditionPermissionGuard` first checks that the edition belongs to the tenant from ALS and returns
@@ -802,7 +826,7 @@ async createTenant() { ... }
 
 ### 7.4 Authorization
 
-Sessions are issued by Supabase Auth ([11](#11-supabase)):
+Sessions are issued by Supabase Auth ([10](#10-supabase)):
 
 - Access token: a JWT signed HS256 with `JWT_SECRET`, shared by Supabase Auth and the API; TTL
   **15 minutes** (`GOTRUE_JWT_EXP=900`).
@@ -815,8 +839,7 @@ Sessions are issued by Supabase Auth ([11](#11-supabase)):
 
 **`JwtAuthGuard`** verifies the `Authorization: Bearer` token with `jose`: signature, `exp`,
 `aud = authenticated`, `iss = <AUTH_URL>`. `sub` is `accounts.id`; the guard loads that row and
-puts it into the request — `isPlatformAdmin` and `locale` come from the database, not from the
-token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
+puts it into the request — `locale` comes from the database, not from the token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
 
 **Session in the browser** — `@supabase/auth-js` with `flowType: 'pkce'`, `persistSession: true`,
 `autoRefreshToken: true`, stored in the `localStorage` of the application's own origin under a
@@ -841,11 +864,11 @@ Supabase Auth's Google provider, PKCE flow:
 3. Supabase Auth creates or links the user and redirects to `redirectTo` with `?code=`.
 4. `/auth/callback` calls `exchangeCodeForSession(code)` and receives the session.
 
-`redirectTo` must match `GOTRUE_URI_ALLOW_LIST` exactly ([11](#11-supabase)); anything else falls
+`redirectTo` must match `GOTRUE_URI_ALLOW_LIST` exactly ([10](#10-supabase)); anything else falls
 back to `GOTRUE_SITE_URL`. Supabase Auth never redirects to an arbitrary address from the request.
 
 Required behaviour when the email already exists, checked in the smoke test
-([17](#17-smoke-test)):
+([16](#16-smoke-test)):
 
 | State of the account with that email | Behaviour |
 |---|---|
@@ -868,7 +891,7 @@ Required behaviour when the email already exists, checked in the smoke test
 ### 7.7 Organizer invitations
 
 An invitation is a signed JWT (`INVITE_SECRET`, TTL 7 days) with the payload
-`{ tenantId, email, role, tenantPermissions, editionPermissions }`.
+`{ tenantId, email, role, tenantPermissions, editionPermissions, expiresAt }`.
 
 - Email of a known account (`accounts.email`) -> the membership is created immediately, the email
   is a notification.
@@ -895,13 +918,14 @@ without a valid signature.
 |---|---|
 | `GET /invitations/preview` | 30 / hour per IP |
 | `POST /tenants/current/members` | 20 / hour per tenant |
+| `PUT .../review` | 30 / hour per account |
 | the rest of the API | 300 / min per account |
 
 A `429` response with `Retry-After`. The API runs with `trust proxy` — the client address comes
 from `X-Forwarded-For`.
 
 Sign-up, sign-in, refresh and recovery are limited by Supabase Auth and by Traefik in front of it
-([11](#11-supabase)).
+([10](#10-supabase)).
 
 ---
 
@@ -916,8 +940,8 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 | `auth` | sign-in, Google return, invitation acceptance |
 | `tenants` | convention picker, dashboard, settings, language and time zone |
 | `editions` | edition list, creation, activation, publication |
-| `program` | the edition's programme items |
-| `team` | convention team and edition permissions |
+| `program` | the edition's programme items, their speakers, review moderation |
+| `team` | convention team, edition permissions, membership expiry |
 | `account` | account menu, language switcher |
 
 | Path | Screen |
@@ -930,9 +954,10 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 | `/:tenantSlug/editions` | edition list + creation |
 | `/:tenantSlug/editions/:editionSlug` | edition data, activation, publication |
 | `/:tenantSlug/editions/:editionSlug/program` | programme items |
+| `/:tenantSlug/editions/:editionSlug/program/:programItemId` | item form, speakers, reviews with hide and show |
 | `/:tenantSlug/editions/:editionSlug/access` | team members' edition permissions |
-| `/:tenantSlug/team` | `tenant_memberships` — list, invitations, permissions |
-| `/:tenantSlug/settings` | name, slug, public website language, time zone; custom domain read-only |
+| `/:tenantSlug/team` | `tenant_memberships` — list, invitations, permissions, expiry date |
+| `/:tenantSlug/settings` | name, slug, convention language, time zone |
 
 - An interceptor attaches `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug` and
   `Accept-Language` based on the active locale.
@@ -959,6 +984,9 @@ desktop.
 | `auth` | registration, email confirmation, sign-in, password reset, Google return |
 | `account` | account settings, language, account deletion |
 | `attendances` | "my conventions", edition sign-up, withdrawal |
+| `conventions` | a convention's page: the active edition's programme, past editions, item details, likes, reviews |
+| `schedule` | the personal schedule built from likes |
+| `speaking` | the speaker's programme items and the reviews they received |
 
 | Path | Screen |
 |---|---|
@@ -972,51 +1000,29 @@ desktop.
 | `/account` | account settings, interface language, account deletion |
 | `/my-conventions` | the list of editions the account is signed up for |
 | `/join/:tenantSlug/:editionSlug` | edition sign-up; unauthenticated -> sign-in and back here |
+| `/conventions/:tenantSlug` | the active edition's programme grouped by day, a "Sign up" button, past editions |
+| `/conventions/:tenantSlug/:editionSlug` | a past or active edition's programme |
+| `/conventions/:tenantSlug/:editionSlug/program/:programItemId` | item details: speakers, like button, rating, public comments, review form once the item has started |
+| `/schedule` | liked items across conventions, grouped by day |
+| `/my-program-items` | the speaker's items with every non-hidden review |
 
-`/join/...` is reached from the "Sign up" button on the public convention website.
+Convention pages work without signing in. Liking or reviewing while signed out leads to sign-in
+and back to the same item. Programme times are formatted in the tenant's time zone. No active
+published edition -> a "Preparations under way" message and the list of past editions; an
+unpublished edition under a direct URL or an unknown tenant -> `404`.
+
+`/join/...` is reached from the "Sign up" button on the convention's page.
 
 **Account deletion:** `DELETE /me` after confirming with a password or a repeated Google sign-in
 ([7.4](#74-authorization)). The API deletes the user through the GoTrue admin API
 (`DELETE /admin/users/:id`); `accounts` cascades from `auth.users`, and `tenant_memberships`,
-`edition_memberships` and `attendees` cascade from `accounts`. `409` when the account is some
+`edition_memberships`, `attendees`, `program_item_speakers`, `program_item_likes` and
+`program_item_reviews` cascade from `accounts`. `409` when the account is some
 tenant's last `head`.
 
 ---
 
-## 10. `apps/cms`
-
-Astro SSR (Node adapter).
-
-**Middleware** (`src/middleware.ts`): reads `Host`, queries `GET /public/tenant?host=`, keeps the
-result in an LRU cache (500 entries, TTL 60 s) and puts the tenant into `Astro.locals` along with
-its `defaultLocale` and `timezone`. An unknown host -> `404`.
-
-The page renders in the tenant's language: `<html lang="{tenant.defaultLocale}">`, texts from the
-`cms` catalog, programme times formatted in `tenant.timezone`. No language switcher.
-
-In `.astro` files we use `@lingui/core` without the React layer; the catalog is activated in the
-middleware, right after the tenant is resolved.
-
-Feature-based layout ([3](#3-monorepo-structure)): `tenant` (resolution and layout),
-`program` (list and item details), `archive` (past editions). Files in `src/pages/` are nothing but
-the routing Astro requires — the logic sits in features.
-
-| Path | Content |
-|---|---|
-| `/` | the active edition's home page + a "Sign up" button |
-| `/program` | the active edition's programme, grouped by day |
-| `/program/:eventId` | programme item details |
-| `/archive` | published editions, descending by date |
-| `/archive/:editionSlug` | a past edition's programme |
-
-No active published edition -> a "Preparations under way" message and a link to the archive.
-An unpublished edition under a direct URL -> `404`.
-
-The "Sign up" button links to `https://opos.land/join/<tenant>/<edition>`.
-
----
-
-## 11. Supabase
+## 10. Supabase
 
 Self-hosted on the VPS, reduced to the services OPOS uses:
 
@@ -1093,7 +1099,7 @@ Standard Webhooks.
 
 The API holds `SUPABASE_SERVICE_ROLE_KEY` — a JWT with `role = service_role`, signed with
 `JWT_SECRET` — and uses it only for `DELETE /admin/users/:id` (account deletion) and in the seed
-for `POST /admin/users` ([15](#15-demo-data-seed)). The key never reaches a frontend.
+for `POST /admin/users` ([14](#14-demo-data-seed)). The key never reaches a frontend.
 
 ### Rate limits
 
@@ -1103,7 +1109,7 @@ minute per IP, burst 10, a `429` above that.
 
 ---
 
-## 12. Environment variables
+## 11. Environment variables
 
 No `.env` at the repository root: a root file hides which application consumes which variable and
 turns every change into a cache invalidation for all of them. Each application keeps its own
@@ -1154,7 +1160,7 @@ auth:service-key`.
 
 **`infra/supabase/.env`** — the dev configuration of `db`, `auth` and `studio`: `POSTGRES_PASSWORD`,
 `JWT_SECRET` (the same as the API's), the Google client, `SEND_EMAIL_HOOK_SECRET` (the same as the
-API's) and the dev addresses. The full list of the `auth` variables is in [11](#11-supabase).
+API's) and the dev addresses. The full list of the `auth` variables is in [10](#10-supabase).
 
 **The other applications:**
 
@@ -1162,7 +1168,6 @@ API's) and the dev addresses. The full list of the `auth` variables is in [11](#
 |---|---|
 | `apps/panel/.env` | `VITE_API_URL`, `VITE_AUTH_URL` |
 | `apps/portal/.env` | `VITE_API_URL`, `VITE_AUTH_URL` |
-| `apps/cms/.env` | `API_URL` — read at SSR runtime, not baked into the build |
 
 `VITE_*` values are baked into the bundle at build time; turbo hashes them through framework
 inference, so a changed value rebuilds exactly the applications that read it.
@@ -1175,7 +1180,7 @@ between dev and production.
 
 ---
 
-## 13. Local development
+## 12. Local development
 
 Applications run natively through pnpm, infrastructure runs in Docker.
 
@@ -1194,17 +1199,17 @@ pnpm dev
 # -> api    on api.localhost:3001
 # -> panel  on panel.localhost:5173
 # -> portal on opos.localhost:5174
-# -> cms    on convention-a.localhost:4321
 ```
 
 `/etc/hosts`:
 
 ```
-127.0.0.1 api.localhost panel.localhost opos.localhost convention-a.localhost convention-b.localhost
+127.0.0.1 api.localhost panel.localhost opos.localhost
 ```
 
 Root scripts: `dev`, `build`, `typecheck`, `lint`, `format`, `test`, `test:e2e`, `i18n:extract`,
-`i18n:compile`, `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:studio`, `db:verify`.
+`i18n:compile`, `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:studio`, `db:verify`,
+`db:tenant:create`.
 Apart from `format`, each of them is a `turbo run <task>` delegate ([3.1](#31-turbo-tasks)).
 
 `db:migrate` and `db:seed` connect as `opos_migrator`; the API runs as `opos_app`. The roles are
@@ -1236,7 +1241,7 @@ Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
 ---
 
-## 14. Deployment
+## 13. Deployment
 
 VPS + Docker Compose behind Traefik v3.
 
@@ -1246,7 +1251,6 @@ VPS + Docker Compose behind Traefik v3.
 |---|---|
 | `api` | multi-stage on `node:24-alpine`: prune -> `turbo run build` -> `node dist/main.js` |
 | `panel`, `portal` | multi-stage: prune -> Vite build -> `nginx:alpine` with an SPA fallback and the CSP header ([7.4](#74-authorization)) |
-| `cms` | multi-stage: prune -> Astro build -> `node ./dist/server/entry.mjs` |
 | `db` | `supabase/postgres`, exact tag, with a `pgdata` volume and `infra/supabase/db` as init scripts |
 | `auth` | `supabase/gotrue`, exact tag |
 | `traefik` | `traefik:v3`, docker provider + ACME resolvers |
@@ -1261,9 +1265,7 @@ application does not invalidate the image layers of another.
 opos.land                    -> portal
 panel.opos.land              -> panel
 api.opos.land                -> api
-auth.opos.land               -> auth     # + rateLimit middleware (11)
-HostRegexp(^.+\.opos\.land$) -> cms      # lower priority than the routers named above
-<custom domains>             -> cms      # Traefik dynamic file
+auth.opos.land               -> auth     # + rateLimit middleware (10)
 ```
 
 `db` has no router and publishes no port.
@@ -1271,15 +1273,6 @@ HostRegexp(^.+\.opos\.land$) -> cms      # lower priority than the routers named
 ### TLS
 
 Wildcard `*.opos.land` + `opos.land` through DNS-01 (`CF_DNS_API_TOKEN`).
-
-A custom domain needs its own HTTP-01 certificate. Order of operations:
-
-1. The customer points the domain's A record at the server IP.
-2. The admin sets the domain through `PUT /admin/tenants/:tenantId/domain`.
-3. The admin adds a router to Traefik's dynamic file with the HTTP-01 resolver.
-4. Verification: `curl -I https://<domain>`.
-
-Step 3 before step 1 ends in a failed ACME challenge and a Let's Encrypt rate limit.
 
 ### Backups
 
@@ -1300,27 +1293,28 @@ Step 3 before step 1 ends in a failed ACME challenge and a Let's Encrypt rate li
 5. `docker compose -f docker-compose.prod.yml run --rm api pnpm db:migrate`.
 6. `docker compose -f docker-compose.prod.yml run --rm api pnpm db:verify`.
 7. `docker compose -f docker-compose.prod.yml up -d`.
-8. The smoke test from chapter [17](#17-smoke-test).
+8. The smoke test from chapter [16](#16-smoke-test).
 
 ---
 
-## 15. Demo data (seed)
+## 14. Demo data (seed)
 
 `packages/db/src/seed.ts`, idempotent. With `NODE_ENV=production` it fails unless
 `--i-know-what-i-am-doing` is passed.
 
 Accounts are created through the Supabase Auth admin API (`POST /admin/users` with
 `email_confirm: true` and the dev password); an existing user is skipped. The trigger fills
-`accounts`, and the seed then sets `isPlatformAdmin`, `locale` and the names. Everything else is
-written directly as `opos_migrator`.
+`accounts`, and the seed then sets `locale` and the names. Everything else is written directly as
+`opos_migrator`.
 
-- **Accounts:** `admin@opos.land` (`isPlatformAdmin`), `head@convention-a.test`, three organizer
-  accounts, `attendee@example.com`. Dev password: `password123`. One organizer account has
-  `locale=en`.
-- **Tenant `convention-a`** — "Convention A", `defaultLocale=pl`, `timezone=Europe/Warsaw`,
-  no custom domain.
-  - Edition `2025` — `isPublished=true`, `isActive=false`, 8 programme items.
-  - Edition `2026` — `isPublished=true`, `isActive=true`, 12 programme items.
+- **Accounts:** `head@convention-a.test`, four organizer accounts, `speaker@example.com`,
+  `attendee@example.com`. Dev password: `password123`. One organizer account has `locale=en`.
+- **Tenant `convention-a`** — "Convention A", `defaultLocale=pl`, `timezone=Europe/Warsaw`.
+  - Edition `2025` — `isPublished=true`, `isActive=false`, 8 programme items, all in the past.
+    `speaker@example.com` speaks at two of them; one has a public review and a speakers-only
+    anonymous review from `attendee@example.com`, plus one hidden review.
+  - Edition `2026` — `isPublished=true`, `isActive=true`, 12 programme items, all in the future;
+    `attendee@example.com` likes three of them.
 - **Tenant `convention-b`** — "Convention B", `defaultLocale=en`, `timezone=Europe/Prague`,
   a single `2026` edition with an English programme.
 - **Convention A team:**
@@ -1331,14 +1325,31 @@ written directly as `opos_migrator`.
 | `program@convention-a.test` | `org` | everything `none` | 2026: `program=write`; 2025: no membership |
 | `settings@convention-a.test` | `org` | `settings=write` | none |
 | `viewer@convention-a.test` | `org` | `settings=read` | 2026: `program=read` |
+| `expired@convention-a.test` | `org`, `expiresAt` in the past | `settings=write` | 2026: `program=write` |
 
 - **Attendee:** `attendee@example.com` signed up for `convention-a/2025`, not for `2026`.
 
+### Creating a tenant
+
+There is no admin interface or endpoint in the MVP. A new convention is created on the server with
+`packages/db/src/scripts/create-tenant.ts`:
+
+```bash
+pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email head@example.com \
+  [--locale pl] [--timezone Europe/Warsaw]
+```
+
+- Runs as `opos_migrator`, in a single transaction: inserts `tenants` and a `head`
+  `tenant_memberships` row.
+- The head's account must already exist — the person registers in the portal first. An unknown
+  email or a taken slug aborts with a non-zero exit code and changes nothing.
+- In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
+
 ---
 
-## 16. Tests
+## 15. Tests
 
-### 16.1 API integration tests
+### 15.1 API integration tests
 
 Supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
 `supabase/gotrue`, the production tags), no database or auth mocks, in `apps/api/test`. Test
@@ -1350,17 +1361,20 @@ accounts are created through the admin API and signed in with `signInWithPasswor
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
 | anti-escalation | an org cannot grant permissions above their own, edit themselves or touch a `head` |
-| invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition |
+| invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
+| membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access; an org cannot set an expiry later than their own |
+| reviews | before `startsAt` -> `409`; an account that is neither an attendee nor a team member with access to the edition -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
+| likes | idempotent `PUT`; `likeCount` changes; no endpoint returns who liked an item; `GET /me/schedule` spans tenants |
 | JWT | an expired token, a token signed with another secret, `aud != authenticated` and a foreign `iss` -> `401`; a valid token without an `accounts` row -> `401` |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` -> `400` |
 | rate limit | `GET /invitations/preview` above the limit -> `429` with `Retry-After` |
 | i18n | `lingui extract --check` reports no drift between code and catalogs; every error `code` from the contract has a descriptor in `errors.ts`; programme time formatting returns the tenant's zone, not the server's |
 
-### 16.2 E2E tests
+### 15.2 E2E tests
 
-Playwright in `e2e/`, through the UI of all three web applications, against the full stack on a
-fresh database.
+Playwright in `e2e/`, through the UI of both web applications, against the full stack on a fresh
+database.
 
 **Environment:** `docker compose up -d` (Supabase `db` + `auth`, Mailpit),
 `pnpm db:migrate && pnpm db:seed`, applications started through `webServer` in the Playwright
@@ -1370,7 +1384,7 @@ the fixtures are its dependencies, not the root's.
 
 Emails — address confirmation, password reset, invitations — are read through Mailpit's HTTP API
 (`:8025/api/v1`). Google sign-in is not covered by e2e: Supabase Auth talks to the real Google,
-and the smoke test checks that flow ([17](#17-smoke-test)).
+and the smoke test checks that flow ([16](#16-smoke-test)).
 
 **Scenarios:**
 
@@ -1380,35 +1394,37 @@ and the smoke test checks that flow ([17](#17-smoke-test)).
 | 2 | Resending the confirmation link from the sign-in screen delivers a new message |
 | 3 | The session survives a page reload; after sign-out the stored session is gone and the API answers `401` |
 | 4 | A head creates an edition, activates it, publishes it and adds programme items |
-| 5 | The programme shows up in the CMS of both tenants, each in its own language and time zone |
+| 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone |
 | 6 | Organizer invitation: email from Mailpit -> acceptance -> the invitee sees only their edition |
 | 7 | An org with `read`: no sidebar section, entering by URL -> the "no permissions" screen |
 | 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request |
-| 9 | An attendee signs up for an edition from the CMS, sees it under "my conventions", deletes the account |
+| 9 | An attendee signs up for an edition from the convention's page, sees it under "my conventions", deletes the account |
 | 10 | Password reset: request from the sign-in screen, the link from Mailpit sets a new password, the old session stops working |
+| 11 | An attendee likes items, finds them in the personal schedule, reviews a past item anonymously with a speakers-only comment; the speaker sees it under "my programme items"; an org hides another review in the panel and the public rating changes |
+| 12 | An org whose membership has expired signs in to the panel and sees no convention |
 
-Scenarios 1, 9 and 10 run in both the desktop and the mobile project.
+Scenarios 1, 9, 10 and 11 run in both the desktop and the mobile project.
 
 Tests share no data: every scenario that creates a tenant works on its own slug, and scenarios
 using seeded data only read it.
 
-### 16.3 CI
+### 15.3 CI
 
 GitHub Actions on every PR. `turbo run typecheck lint test --affected` covers the packages changed
 against `main` and their dependents; the turbo cache is persisted between runs with
 `actions/cache`, so an unchanged task inside an affected package is still a cache hit.
 `pnpm i18n:extract -- --check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.
 
-The e2e job receives `/etc/hosts` entries for `api.localhost`, `panel.localhost`,
-`opos.localhost`, `convention-a.localhost` and `convention-b.localhost`. Artifacts from failed runs
+The e2e job receives `/etc/hosts` entries for `api.localhost`, `panel.localhost` and
+`opos.localhost`. Artifacts from failed runs
 (traces, video, screenshots) are kept for 7 days.
 
 ---
 
-## 17. Smoke test
+## 16. Smoke test
 
 Run by hand after every deployment, on the production environment. The same flows run automatically
-in e2e ([16.2](#162-e2e-tests)) — the smoke test exists to check them where e2e cannot reach: with
+in e2e ([15.2](#152-e2e-tests)) — the smoke test exists to check them where e2e cannot reach: with
 real TLS, real Google, real email delivery and a real phone.
 
 1. **Attendee registration.** `opos.land` -> registration by email -> the confirmation message
@@ -1426,29 +1442,29 @@ real TLS, real Google, real email delivery and a real phone.
    header from [7.4](#74-authorization).
 5. **Edition activation.** A new 2027 edition activated -> 2026 loses `isActive`, and the database
    holds exactly one active Convention A edition.
-6. **The programme reaches the website.** An item added in the panel shows up on
-   `convention-a.localhost/program` (allowing for the 60 s tenant cache TTL).
+6. **The programme reaches the portal.** An item added in the panel shows up on
+   `opos.land/conventions/convention-a`, signed out, with its time in the tenant's zone.
 7. **Organizer invitation.** A head invites an email with `program=write` for 2026 -> the message
    arrives -> acceptance -> the invitee sees the 2026 programme and nothing else.
 8. **Permissions in the UI and on the server.** `viewer@convention-a.test` has no team management
    in the sidebar, and a direct URL ends with the "no permissions" screen and a `403` from the API.
 9. **Tenant isolation.** A Convention A org with `X-Tenant-Slug: convention-b` -> `403`;
    `GET /editions/:id` with a Convention B edition -> `404`. In `psql` on `opos_app` with
-   Convention B's `app.tenant_id`: `select count(*) from events` returns only Convention B items,
+   Convention B's `app.tenant_id`: `select count(*) from program_items` returns only Convention B items,
    and an `insert` with a foreign `tenant_id` hits `WITH CHECK`.
-10. **The CMS respects publication and tenant language.** An unpublished edition -> `404`, the
-   archive shows 2025, an unknown host -> the "we couldn't find that convention" page.
-   `convention-b.localhost` renders in English with `lang="en"` regardless of `Accept-Language`,
-   and the programme times match the tenant's zone.
+10. **The portal respects publication and tenant time zone.** An unpublished edition -> `404`,
+   the convention page lists 2025 among past editions, an unknown slug -> the "we couldn't find
+   that convention" page. `opos.land/conventions/convention-b` shows programme times in
+   `Europe/Prague` regardless of the browser's zone.
 11. **The portal on a phone.** On a real phone browser (iOS Safari and Android Chrome): registration,
-   the "Sign up" button on a convention website, edition sign-up and "my conventions" work without
-   horizontal scrolling.
+   the "Sign up" button on a convention's page, edition sign-up, liking, the personal schedule, a
+   review and "my conventions" work without horizontal scrolling.
 12. **Supabase stays internal.** `auth.opos.land` answers only GoTrue's paths, nothing listens on
    `:5432` from outside, and `https://api.opos.land/hooks/send-email` without a signature -> `401`.
 
 ---
 
-## 18. Execution rules
+## 17. Execution rules
 
 1. **Pinned versions** — Node `24.15.0` and pnpm `11.17.0`, enforced by `engineStrict`.
    Dependencies no younger than 7 days (`minimumReleaseAge`). Supabase images pinned to exact

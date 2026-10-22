@@ -27,7 +27,8 @@ between them.
 **OPOS is free for conventions.** The platform charges conventions nothing and is not built to
 earn from the convention scene. Convention OPOS is the starting point: the attendee accounts it
 gathers are the base for later attendee-facing products, such as virtual booths and an OPOS shop
-([chapter 11](#11-mvp-scope-vs-beyond-mvp)).
+([chapter 11](#11-mvp-scope-vs-beyond-mvp)). Commercial exhibitors are a separate matter: booth
+terms, including any fee, are set by the booths module.
 
 Attendees use the platform website, which works on a phone as well as on a desktop. There is no
 native mobile application. Organizers work in the panel, in a browser.
@@ -45,19 +46,24 @@ The platform is self-hosted: our own VPS, with no lock-in to any particular clou
 The MVP is the core — accounts, conventions, editions and permissions — plus one complete module,
 the programme. Further modules ([chapter 7](#7-modules)) are added onto a finished core.
 
-The MVP is closed once the flow below works without touching the database by hand:
+The MVP is closed once the flow below works with no manual database edits beyond step 1:
 
-1. The platform admin creates the `convention-a` convention and appoints its first head organizer.
+1. The admin creates the `convention-a` convention and its first head organizer with a database
+   script. There is no admin interface in the MVP.
 2. The head organizer signs in to the panel, creates the "Convention A 2026" edition, marks it
    active and publishes it.
-3. They add a few programme items.
-4. The public convention website shows that programme: home page, programme, item details.
+3. They add a few programme items and assign a speaker account to one of them.
+4. The portal shows that programme on the convention's page — list and item details — to anyone,
+   signed in or not.
 5. The head organizer emails an invitation granting programme write access to the 2026 edition
    only. The invitee accepts the link and sees nothing in the panel but that edition's programme.
 6. An attendee registers in the portal — with email and password, confirmed through a link sent
-   to that address, or with Google — follows a link on the convention website, signs up for the
-   2026 edition and sees it under "my conventions". All of it works in a phone browser.
-7. An organizer of Convention A can neither read nor change anything in Convention B.
+   to that address, or with Google — opens the convention's page from a link the convention
+   shared, signs up for the 2026 edition and sees it under "my conventions". All of it works in a
+   phone browser.
+7. The attendee likes a few programme items and finds them in their personal schedule. After an
+   item starts, they review it; the speaker reads the review in the portal.
+8. An organizer of Convention A can neither read nor change anything in Convention B.
 
 ---
 
@@ -69,7 +75,10 @@ The names are consistent across code, API and interface. We introduce no synonym
 |---|---|
 | **tenant** | the convention brand as a continuous entity, e.g. "Convention A" |
 | **edition** | a specific annual instance, e.g. "Convention A 2026" |
-| **event / programme item** | an entry in an edition's programme |
+| **programme item** | an entry in an edition's programme; `ProgramItem` in code |
+| **speaker** | an account an org assigns to a programme item; reads the reviews of that item |
+| **like** | a user's mark on a programme item; it adds the item to their personal schedule |
+| **review** | a user's rating of a programme item, with an optional comment |
 | **attendee** | an account's registration for a specific edition |
 | **admin** | the person running the whole platform: creates conventions, appoints the first head organizers |
 | **org** | a member of a convention's organizing team, works in the panel |
@@ -80,9 +89,9 @@ The names are consistent across code, API and interface. We introduce no synonym
 | **booth** | an exhibitor's stand at an edition; a virtual booth is its online counterpart |
 | **locale** | interface or website language in BCP 47 form (`pl`, `en`) |
 
-The roles are not mutually exclusive. A single account can be the platform admin, head organizer
-of one convention, an org in another and an attendee of a third — under one password and one
-sign-in.
+The roles are not mutually exclusive. A single account can be the head organizer of one
+convention, an org in another, an attendee of a third and a speaker at a fourth — under one
+password and one sign-in.
 
 ---
 
@@ -100,22 +109,24 @@ That split gives us:
 **OPOS does not touch the conventions' money.** It charges conventions no fees, and the shop
 configuration points at a payment provider account owned by the convention, so ticket revenue
 flows directly to the organizer. The platform neither processes nor holds attendee payments — it
-only stores the configuration.
+only stores the configuration. The rule covers conventions, not commercial exhibitors: their
+terms come with the booths module.
 
 ### What belongs to the convention, and what to the edition
 
 | Convention level | Edition level |
 |---|---|
-| name, address (slug), custom domain | programme — programme items |
-| public website language and time zone | programme hours computed in the convention's time zone |
+| name, address (slug), custom domain | programme — programme items, their speakers |
+| convention language and time zone | programme hours computed in the convention's time zone |
 | website branding (logo, colours, fonts) | per-edition website content (hero, news) |
 | organizing team | tickets, types, sales limits |
 | shop configuration (payment provider, currency) | attendee registrations |
-| eventually: speakers with a history of appearances | rooms, block schedule |
+| eventually: speaker profiles with a history of appearances | likes and reviews of programme items |
+| | rooms, block schedule |
 
-In the MVP these work: name, address, custom domain, language, time zone, team, programme and
-attendee registrations. The remaining items already have their place in the permission model but
-no functionality behind them yet.
+In the MVP these work: name, address, language, time zone, team, programme with speakers, likes,
+reviews and attendee registrations. The remaining items already have their place in the
+permission model but no functionality behind them yet.
 
 ---
 
@@ -126,7 +137,9 @@ Organizers hold permissions **per resource**, on two levels: convention and edit
 ### 5.1 Convention level
 
 Membership in a convention's team grants a role (`head` / `org`) plus permissions to resources
-shared across all editions:
+shared across all editions. An `org` membership may carry an expiry date: from that moment the
+person has no access to the convention at all, as if removed from the team. A `head` membership
+never expires.
 
 - **settings** — convention data and team composition
 - **branding** — logo, colours, website appearance
@@ -156,7 +169,10 @@ at least one. Granted when the convention is created; handing the role over requ
 other person first.
 
 **`org` — organizer.** Permissions assigned item by item, separately for the convention and for
-each edition.
+each edition, optionally until an expiry date.
+
+Speakers and attendees are not team members: they hold no permissions in the panel and act only
+in the portal, on their own programme items and their own registrations.
 
 ### 5.5 Example
 
@@ -176,7 +192,7 @@ In the panel Jan switches convention context in the top bar.
 
 - Only a head organizer edits or removes another head organizer.
 - An org with write access to settings manages other orgs, but cannot grant anyone a permission
-  higher than their own — on either level.
+  higher than their own — on either level — nor set an expiry later than their own.
 - Nobody edits their own membership.
 - A convention's last head organizer cannot be removed.
 
@@ -184,23 +200,24 @@ In the panel Jan switches convention context in the top bar.
 
 ## 6. Addresses and domains
 
-| Address | What is there |
-|---|---|
-| `opos.land` | platform website: landing page, registration and attendee account |
-| `panel.opos.land` | organizer panel |
-| `api.opos.land` | API |
-| `auth.opos.land` | sign-in service: registration, sign-in, sessions, password reset, Google |
-| `<convention>.opos.land` | public convention website |
-| customer's own domain | the same public convention website |
-| `admin.opos.land` | reserved for a future platform admin panel |
+| Address | What is there | In the MVP |
+|---|---|---|
+| `opos.land` | the portal: landing page, registration, attendee account, convention pages with the programme | yes |
+| `opos.land/conventions/<convention>` | a convention's page: the active edition's programme and past editions | yes |
+| `panel.opos.land` | organizer panel | yes |
+| `api.opos.land` | API | yes |
+| `auth.opos.land` | sign-in service: registration, sign-in, sessions, password reset, Google | yes |
+| `<convention>.opos.land` | public convention website (CMS module) | no |
+| customer's own domain | the same public convention website | no |
+| `admin.opos.land` | platform admin panel | no |
 
-"Sign up" links on the convention website lead to the portal, landing straight on the right
-edition.
+A convention links to its page in the portal from its own website and social media; the page has
+the "Sign up" button for the active edition.
 
-**Only the platform admin sets a custom domain.** The field is unique platform-wide and
-unverified, so self-service would let someone claim another party's domain and intercept its
-traffic. Wiring up a domain requires manual configuration on the platform side anyway.
-Self-service returns together with domain ownership verification.
+**Only the admin sets a custom domain.** The field is unique platform-wide and unverified, so
+self-service would let someone claim another party's domain and intercept its traffic. Wiring up a
+domain requires manual configuration on the platform side anyway. Self-service returns together
+with domain ownership verification.
 
 ---
 
@@ -213,8 +230,8 @@ edition level.
 
 | Module | Covers | Permission | In the MVP |
 |---|---|---|---|
-| programme | an edition's programme items and the public programme on the convention website | programme (edition) | yes |
-| CMS | the public convention website: home page, programme pages, archive, per-edition content | branding (convention), website content (edition) | home page, programme and archive |
+| programme | an edition's programme items and their speakers, the public programme on the convention's page in the portal, likes, personal schedule, reviews | programme (edition) | yes |
+| CMS | the public convention website: home page, programme pages, archive, per-edition content | branding (convention), website content (edition) | no |
 | profile | the user's account: name, language, "my conventions", account deletion | — (the user's own data) | account settings and "my conventions" |
 | accreditation | admitting attendees, staff and guests to an edition | to be added | no |
 | booths | exhibitor booths at an edition, and virtual booths online | to be added | no |
@@ -222,6 +239,26 @@ edition level.
 | tickets | an edition's tickets, types and sales limits | tickets (edition) | no |
 
 Modules beyond the MVP are built only after the core and the programme are finished.
+
+### 7.1 Likes and personal schedule
+
+- Any signed-in user likes programme items of a published edition, before or during the edition.
+  A like puts the item into the user's personal schedule in the portal.
+- The like count of an item is public. Who liked an item is not shown to anyone.
+
+### 7.2 Reviews
+
+| Rule | Value |
+|---|---|
+| Who reviews | an attendee of the edition, or a team member with access to that edition |
+| When | from the item's start time on |
+| How many | one review per account per item; the author edits or deletes it |
+| Content | rating 1–5 and an optional comment up to 2000 characters |
+| Author shown | the author's name, or "anonymous" when the author chooses so; anonymity holds towards everyone, organizers included |
+| Comment visibility | public, or the item's speakers only — the author's choice |
+| Public view | the average rating, the number of reviews and the public comments |
+| Speaker view | every comment on their own items, public and speakers-only |
+| Moderation | an org with programme write access hides a review; a hidden review disappears from every view except the panel |
 
 ---
 
@@ -250,11 +287,12 @@ arrive together with their markets, beyond the MVP.
 | Where | Which language |
 |---|---|
 | panel and portal | the user's choice stored on the account; browser language by default |
-| public convention website | the language the organizer set for the convention, regardless of the visitor's browser |
+| convention pages in the portal | the interface in the user's language; programme content as the organizer wrote it |
 | emails | the recipient's language; for an unknown address, the inviting convention's language |
 
-**One convention = one public website language.** Content translations — the same programme item
-in Czech and in English — are beyond the MVP.
+**One convention = one content language.** Programme items are written in the convention's
+language. Content translations — the same programme item in Czech and in English — are beyond the
+MVP.
 
 **The time zone is set per convention.** Programme hours are always shown in the convention's time
 zone, not the browser's: "Saturday 14:00" has to mean the same thing to an attendee in Prague and
@@ -266,7 +304,8 @@ Adding another language is a translation file — it requires no changes to code
 
 ## 10. Personal data and privacy
 
-We store attendees' personal data: first name, last name, email address.
+We store attendees' personal data: first name, last name, email address, and what they do on the
+platform: likes and reviews. Account deletion removes their likes and reviews too.
 
 **Registration with a password requires a confirmed email address.** The account starts working
 once its owner clicks the link sent to that address. A Google sign-in counts as confirmed.
@@ -289,14 +328,16 @@ activities, data export and log retention.
 
 ### In the MVP
 
-- The core: accounts, conventions, editions, permissions on two levels
-- Multilingual interface (Polish, English) in the panel, portal, convention website and emails
+- The core: accounts, conventions, editions, permissions on two levels, membership expiry
+- Creating conventions and their first head organizers with a database script
+- Multilingual interface (Polish, English) in the panel, portal and emails
 - Language and time zone per convention
 - Accounts: email with password, confirmed by email, and Google sign-in
 - Password reset by email
 - Portal that works in a phone browser
-- Edition programme
-- Public convention website with programme and archive
+- Edition programme with speakers
+- Convention pages in the portal: the active edition's programme, past editions, item details
+- Likes, personal schedule and reviews of programme items
 - Organizer invitations by email
 - Full data isolation between conventions
 - Account deletion by the user
@@ -307,19 +348,21 @@ activities, data export and log retention.
 
 ### Beyond the MVP
 
-- Modules: accreditation, booths (including virtual booths), friends, tickets ([chapter 7](#7-modules))
+- Modules: CMS, accreditation, booths (including virtual booths), friends, tickets
+  ([chapter 7](#7-modules))
+- Public convention website on `<convention>.opos.land` and on custom domains
+- Platform admin panel at `admin.opos.land`
+- Fees for commercial exhibitors
 - OPOS shop for attendees
 - Push notifications
-- Personal schedule in the portal
-- Localized public website paths (today the paths are English regardless of convention language)
+- Localized portal paths (today the paths are English regardless of convention language)
 - Convention content translations and a language switcher on the public website
 - Further markets and languages: Czech, Slovak, German, currencies other than the złoty, local
   payment methods
 - Payments
 - Further sign-in providers
-- Attendee comments
 - Convention catalogue in the portal
-- Speakers, rooms, block schedule
+- Speaker profiles, rooms, block schedule
 - File uploads (logos, avatars)
 - Domain ownership verification and self-service for that field
 - Professional email templates

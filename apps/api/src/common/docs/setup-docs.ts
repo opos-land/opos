@@ -1,4 +1,4 @@
-import { type INestApplication } from '@nestjs/common'
+import { type INestApplication, Logger } from '@nestjs/common'
 import { type OpenAPIObject, SwaggerModule } from '@nestjs/swagger'
 import { contract } from '@opos/contract'
 import { generateOpenApi } from '@ts-rest/open-api'
@@ -11,6 +11,12 @@ export function createOpenApiDocument(): OpenAPIObject {
   )
 }
 
-export function setupDocs(app: INestApplication) {
+export function setupDocs(app: INestApplication, nodeEnv: string) {
+  const logger = new Logger('ApiDocs')
+  if (nodeEnv === 'production') {
+    logger.log(`API docs disabled (NODE_ENV=${nodeEnv})`)
+    return
+  }
   SwaggerModule.setup('docs', app, createOpenApiDocument(), { jsonDocumentUrl: 'docs/json' })
+  logger.log('API docs at /docs, OpenAPI document at /docs/json')
 }

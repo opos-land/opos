@@ -125,8 +125,8 @@ must come from this list — otherwise commitlint rejects the message. A new sco
 Rules commitlint will not check, but which still apply:
 
 - A Drizzle migration goes in the same commit as the schema change that produced it.
-- `.po` catalogs go in the same commit as the code introducing the messages; compiled catalogs
-  are build artifacts and never enter the repository.
+- `.po` catalogs, with the `pl` translations filled in, go in the same commit as the code
+  introducing the messages; compiled catalogs are build artifacts and never enter the repository.
 - A change in `packages/contract` that breaks consumers: `!` after the scope and a
   `BREAKING CHANGE:` footer.
 - Every commit leaves the repository green — not just the end of the branch.
@@ -148,8 +148,9 @@ Branches follow the same scheme: `feat/tenant-rls`, `fix/refresh-rotation`. They
 ## Working with code
 
 The [execution rules](docs/PLAN.md#17-execution-rules) from PLAN.md apply: pinned Node and pnpm
-versions, every user-facing string inside a Lingui macro, green typecheck, lint and tests before
-every PR. The API tests need the database: `pnpm infra:up` first.
+versions, every user-facing string inside a Lingui macro and translated into `pl` in the same
+commit, reusing the glossary renderings ([localization](docs/PLAN.md#6-localization)), green
+typecheck, lint and tests before every PR. The API tests need the database: `pnpm infra:up` first.
 
 `mise install` installs Node and enables corepack for pnpm ([versions](docs/PLAN.md#versions-and-dependencies));
 then `pnpm install` installs dependencies and wires up the hooks. Dependencies younger than 7 days are

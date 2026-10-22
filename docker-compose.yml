@@ -1,0 +1,125 @@
+# Dev infrastructure: Supabase Postgres + Auth, Studio, Mailpit. Applications run natively.
+# Image tags follow Supabase's self-hosting compose; bump db and auth together.
+
+name: opos
+
+services:
+  db:
+    image: supabase/postgres:17.6.1.136
+    restart: unless-stopped
+    command: ['postgres', '-c', 'config_file=/etc/postgresql/postgresql.conf']
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PORT: 5432
+      PGPORT: 5432
+      POSTGRES_DB: postgres
+      PGDATABASE: postgres
+      POSTGRES_PASSWORD: postgres
+      PGPASSWORD: postgres
+      JWT_EXP: 900
+      OPOS_MIGRATOR_PASSWORD: opos
+      OPOS_APP_PASSWORD: opos
+      OPOS_APP_GLOBAL_PASSWORD: opos
+    volumes:
+      - ./infra/supabase/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro,z
+      - ./infra/supabase/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:ro,z
+      - ./infra/supabase/db/opos-roles.sql:/docker-entrypoint-initdb.d/migrations/99-opos-roles.sql:ro,z
+      - pgdata:/var/lib/postgresql/data
+      - db-config:/etc/postgresql-custom
+    ports:
+      - 127.0.0.1:5432:5432
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', 'localhost']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  auth:
+    image: supabase/gotrue:v2.197.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: ./infra/supabase/.env
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://localhost:9999
+      GOTRUE_JWT_ISSUER: http://localhost:9999
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:postgres@db:5432/postgres
+      GOTRUE_SITE_URL: http://opos.localhost:5174
+      GOTRUE_URI_ALLOW_LIST: http://opos.localhost:5174/auth/callback,http://opos.localhost:5174/reset-password,http://panel.localhost:5173/auth/callback
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_EXP: 900
+      GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: 'true'
+      GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: 10
+      GOTRUE_PASSWORD_MIN_LENGTH: 8
+      GOTRUE_DISABLE_SIGNUP: 'false'
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: 'true'
+      GOTRUE_MAILER_AUTOCONFIRM: 'false'
+      GOTRUE_MAILER_OTP_EXP: 3600
+      GOTRUE_EXTERNAL_PHONE_ENABLED: 'false'
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: 'false'
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED: 'true'
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9999/callback
+      GOTRUE_HOOK_SEND_EMAIL_ENABLED: 'true'
+      GOTRUE_HOOK_SEND_EMAIL_URI: http://host.docker.internal:3001/hooks/send-email
+      GOTRUE_RATE_LIMIT_HEADER: X-Forwarded-For
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - 127.0.0.1:9999:9999
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:9999/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  meta:
+    image: supabase/postgres-meta:v0.100.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: postgres
+      PG_META_DB_PASSWORD: postgres
+      CRYPTO_KEY: dev-pg-meta-crypto-key-32-characters
+
+  studio:
+    image: supabase/studio:2026.10.12-sha-3699278
+    restart: unless-stopped
+    depends_on:
+      - meta
+    environment:
+      HOSTNAME: 0.0.0.0
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      STUDIO_PG_META_URL: http://meta:8080
+      PG_META_CRYPTO_KEY: dev-pg-meta-crypto-key-32-characters
+      POSTGRES_USER_READ_WRITE: postgres
+      DEFAULT_ORGANIZATION_NAME: OPOS
+      DEFAULT_PROJECT_NAME: opos-dev
+      ENABLED_FEATURES_LOGS_ALL: 'false'
+    ports:
+      - 127.0.0.1:54323:3000
+
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:1025:1025
+      - 127.0.0.1:8025:8025
+
+volumes:
+  pgdata:
+  db-config:

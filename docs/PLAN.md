@@ -154,8 +154,11 @@ opos/
     PLAN.md
   infra/
     supabase/
-      db/                # init SQL: Supabase's self-hosting scripts + opos-roles.sql
-      .env.example       # dev configuration of the Supabase services
+      db/
+        roles.sql        # Supabase self-hosting: supabase_auth_admin password
+        jwt.sql          # Supabase self-hosting: app.settings.jwt_exp
+        opos-roles.sql   # opos_migrator, opos_app, opos_app_global (4.6)
+      .env.example       # dev secrets of the auth service
   apps/
     api/
       src/
@@ -542,7 +545,16 @@ Every RLS-covered table has an index starting with `tenantId`.
 The three roles are created by `infra/supabase/db/opos-roles.sql`, which the `db` container runs
 as `supabase_admin` when it initializes an empty data directory. Supabase's own roles
 (`supabase_auth_admin`, `authenticator`, `anon`, `authenticated`, `service_role`) come from the
-image; `anon` and `authenticated` hold no privileges on the `public` schema.
+image; `anon` and `authenticated` hold no privileges on the `public` schema — the script revokes
+the `usage` they get directly and through `PUBLIC`.
+
+| Role | Privileges granted by `opos-roles.sql` |
+|---|---|
+| `opos_migrator` | `create` on the database (the `drizzle` journal schema), `usage, create` on `public`, `usage` on `auth`, `select, references, trigger` on `auth.users` |
+| `opos_app`, `opos_app_global` | `usage` on `public`; table privileges come from the migrations |
+
+Passwords come from `OPOS_MIGRATOR_PASSWORD`, `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`
+in the `db` container's environment; in dev all three are `opos`.
 
 Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
@@ -1229,6 +1241,16 @@ migrates the `auth` schema itself on start.
 
 `infra/supabase/db/` holds the init SQL from Supabase's self-hosting setup (roles, JWT settings),
 pinned to the same image version, plus `opos-roles.sql` ([4.6](#46-tenant-isolation--rls-in-postgres)).
+They are mounted read-only into the image's init directories and run once, on an empty data
+directory:
+
+| File | Mounted as | Runs as |
+|---|---|---|
+| `roles.sql` | `/docker-entrypoint-initdb.d/init-scripts/99-roles.sql` | `postgres` |
+| `jwt.sql` | `/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql` | `postgres` |
+| `opos-roles.sql` | `/docker-entrypoint-initdb.d/migrations/99-opos-roles.sql` | `supabase_admin`, after the image's own migrations |
+
+Studio reaches Postgres through `meta` only; it is used for its table and SQL editors.
 
 ### Supabase Auth configuration
 
@@ -1351,9 +1373,18 @@ NODE_ENV=development
 `SUPABASE_SERVICE_ROLE_KEY` in dev is generated from `JWT_SECRET` by `pnpm --filter api
 auth:service-key`.
 
-**`infra/supabase/.env`** — the dev configuration of `db`, `auth` and `studio`: `POSTGRES_PASSWORD`,
-`JWT_SECRET` (the same as the API's), the Google client, `SEND_EMAIL_HOOK_SECRET` (the same as the
-API's) and the dev addresses. The full list of the `auth` variables is in [10](#10-supabase).
+**`infra/supabase/.env`** — read by `docker-compose.yml` as the `auth` service's `env_file`; it holds
+only what differs between developers or is a secret:
+
+| Variable | Value |
+|---|---|
+| `GOTRUE_JWT_SECRET` | the same as the API's `JWT_SECRET` |
+| `GOTRUE_HOOK_SEND_EMAIL_SECRETS` | the same as the API's `SEND_EMAIL_HOOK_SECRET` |
+| `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`, `GOTRUE_EXTERNAL_GOOGLE_SECRET` | a personal Google OAuth client; empty unless working on Google sign-in |
+
+The remaining `auth` variables from [10](#10-supabase), the dev addresses and the dev database
+passwords (`postgres` for Supabase's roles, `opos` for the OPOS roles) are fixed in
+`docker-compose.yml`. Every published port binds to `127.0.0.1`.
 
 **The other applications:**
 
@@ -1378,6 +1409,9 @@ between dev and production.
 Applications run natively through pnpm, infrastructure runs in Docker.
 
 ```bash
+# 0. Once: dev secrets of the auth service
+cp infra/supabase/.env.example infra/supabase/.env
+
 # 1. Infrastructure
 docker compose up -d
 # -> supabase db on :5432, auth on :9999, studio on :54323
@@ -1407,7 +1441,12 @@ Apart from `format`, each of them is a `turbo run <task>` delegate ([3.1](#31-tu
 
 `db:migrate` and `db:seed` connect as `opos_migrator`; the API runs as `opos_app`. The roles are
 created by `infra/supabase/db/opos-roles.sql` when the `db` container starts on an empty volume —
-`docker compose down -v` resets them together with the data.
+`docker compose down -v` resets them together with the data. A change in `infra/supabase/db/` takes
+effect only after such a reset.
+
+Podman works too (`podman compose`, rootless): the init SQL mounts carry the `z` SELinux label,
+and `host.docker.internal:host-gateway` needs Podman 5.3 or newer. Port `5432` must be free — stop
+a locally installed Postgres first.
 
 Mailpit catches all dev email — UI at http://localhost:8025. Supabase Auth's messages land there
 too, because they go through the API's send-email hook. Payments go through the fake provider

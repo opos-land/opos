@@ -1,5 +1,7 @@
 # Dev infrastructure: Supabase Postgres + Auth, Studio, Mailpit. Applications run natively.
 # Image tags follow Supabase's self-hosting compose; bump db and auth together.
+# Host ports come from OPOS_*_PORT in the shell environment, standard ports by default
+# (docs/PLAN.md, 12. Local development).
 
 name: opos
 
@@ -27,7 +29,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - db-config:/etc/postgresql-custom
     ports:
-      - 127.0.0.1:5432:5432
+      - 127.0.0.1:${OPOS_DB_PORT:-5432}:5432
     healthcheck:
       test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', 'localhost']
       interval: 5s
@@ -48,12 +50,12 @@ services:
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
-      API_EXTERNAL_URL: http://localhost:9999
-      GOTRUE_JWT_ISSUER: http://localhost:9999
+      API_EXTERNAL_URL: http://localhost:${OPOS_AUTH_PORT:-9999}
+      GOTRUE_JWT_ISSUER: http://localhost:${OPOS_AUTH_PORT:-9999}
       GOTRUE_DB_DRIVER: postgres
       GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:postgres@db:5432/postgres
-      GOTRUE_SITE_URL: http://opos.localhost:5174
-      GOTRUE_URI_ALLOW_LIST: http://opos.localhost:5174/auth/callback,http://opos.localhost:5174/reset-password,http://panel.localhost:5173/auth/callback
+      GOTRUE_SITE_URL: http://opos.localhost:${OPOS_PORTAL_PORT:-5174}
+      GOTRUE_URI_ALLOW_LIST: http://opos.localhost:${OPOS_PORTAL_PORT:-5174}/auth/callback,http://opos.localhost:${OPOS_PORTAL_PORT:-5174}/reset-password,http://panel.localhost:${OPOS_PANEL_PORT:-5173}/auth/callback
       GOTRUE_JWT_AUD: authenticated
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       GOTRUE_JWT_ADMIN_ROLES: service_role
@@ -68,14 +70,14 @@ services:
       GOTRUE_EXTERNAL_PHONE_ENABLED: 'false'
       GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: 'false'
       GOTRUE_EXTERNAL_GOOGLE_ENABLED: 'true'
-      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9999/callback
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:${OPOS_AUTH_PORT:-9999}/callback
       GOTRUE_HOOK_SEND_EMAIL_ENABLED: 'true'
-      GOTRUE_HOOK_SEND_EMAIL_URI: http://host.docker.internal:3001/hooks/send-email
+      GOTRUE_HOOK_SEND_EMAIL_URI: http://host.docker.internal:${OPOS_API_PORT:-3001}/hooks/send-email
       GOTRUE_RATE_LIMIT_HEADER: X-Forwarded-For
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:
-      - 127.0.0.1:9999:9999
+      - 127.0.0.1:${OPOS_AUTH_PORT:-9999}:9999
     healthcheck:
       test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:9999/health']
       interval: 5s
@@ -139,14 +141,14 @@ services:
       retries: 3
       start_period: 60s
     ports:
-      - 127.0.0.1:54323:3000
+      - 127.0.0.1:${OPOS_STUDIO_PORT:-54323}:3000
 
   mailpit:
     image: axllent/mailpit:v1.31.6
     restart: unless-stopped
     ports:
-      - 127.0.0.1:1025:1025
-      - 127.0.0.1:8025:8025
+      - 127.0.0.1:${OPOS_SMTP_PORT:-1025}:1025
+      - 127.0.0.1:${OPOS_MAILPIT_PORT:-8025}:8025
 
 volumes:
   pgdata:

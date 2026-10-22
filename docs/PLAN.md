@@ -1479,8 +1479,7 @@ effect only after such a reset.
 
 Podman works too, rootless: `podman-docker` provides the `docker` command and `docker compose`
 runs through `podman compose`. The init SQL mounts carry the `z` SELinux label,
-and `host.docker.internal:host-gateway` needs Podman 5.3 or newer. Port `5432` must be free — stop
-a locally installed Postgres first.
+and `host.docker.internal:host-gateway` needs Podman 5.3 or newer.
 
 Swagger UI of the API at http://api.localhost:3001/docs, the OpenAPI document at
 http://api.localhost:3001/docs/json.
@@ -1489,6 +1488,38 @@ Mailpit catches all dev email — UI at http://localhost:8025. Supabase Auth's m
 too, because they go through the API's send-email hook. Payments go through the fake provider
 page at http://api.localhost:3001/dev/payments/:orderId ([7.10](#710-payments)). Supabase Studio at http://localhost:54323
 browses both the `public` and the `auth` schema.
+
+### Ports
+
+The ports above are the defaults. `docker-compose.yml` publishes every host port through a
+variable, so a developer whose machine already holds one moves it without touching the
+repository:
+
+| Variable | Default | Service | Also set in `apps/api/.env` |
+|---|---|---|---|
+| `OPOS_DB_PORT` | `5432` | `db` | the port in the three `DATABASE_*_URL` |
+| `OPOS_AUTH_PORT` | `9999` | `auth`, also in `API_EXTERNAL_URL`, `GOTRUE_JWT_ISSUER` and the Google redirect URI | `AUTH_URL` |
+| `OPOS_STUDIO_PORT` | `54323` | `studio` | — |
+| `OPOS_SMTP_PORT` | `1025` | `mailpit` SMTP | `SMTP_PORT` |
+| `OPOS_MAILPIT_PORT` | `8025` | `mailpit` UI and HTTP API | — |
+| `OPOS_API_PORT` | `3001` | target of the send-email hook | `PORT`, `API_URL` |
+| `OPOS_PANEL_PORT` | `5173` | panel addresses in `GOTRUE_URI_ALLOW_LIST` | `PANEL_URL` |
+| `OPOS_PORTAL_PORT` | `5174` | `GOTRUE_SITE_URL` and portal addresses in `GOTRUE_URI_ALLOW_LIST` | `PORTAL_URL` |
+
+The variables live in the shell environment, set per developer in `mise.local.toml` (git-ignored,
+loaded by activated mise on entering the directory; a new file needs `mise trust` once):
+
+```toml
+[env]
+OPOS_DB_PORT = "25432"
+OPOS_SMTP_PORT = "21025"
+OPOS_MAILPIT_PORT = "28025"
+```
+
+Never in a `.env` at the repository root ([11](#11-environment-variables)). The panel and portal dev
+servers read `OPOS_PANEL_PORT` and `OPOS_PORTAL_PORT` themselves. After a change, `pnpm infra:up`
+recreates the affected containers. A moved `OPOS_AUTH_PORT` also changes the authorized redirect URI
+of the Google OAuth client.
 
 ### Versions and dependencies
 
@@ -1676,7 +1707,7 @@ the fixtures are its dependencies, not the root's.
 
 Emails — address confirmation, password reset, invitations, tickets — are read through Mailpit's
 HTTP API
-(`:8025/api/v1`). Google sign-in is not covered by e2e: Supabase Auth talks to the real Google,
+(`localhost:<OPOS_MAILPIT_PORT>/api/v1`). Google sign-in is not covered by e2e: Supabase Auth talks to the real Google,
 and the smoke test checks that flow ([16](#16-smoke-test)).
 
 **Scenarios:**

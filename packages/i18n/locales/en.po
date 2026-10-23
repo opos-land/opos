@@ -11,6 +11,10 @@ msgstr ""
 msgid "A convention must keep at least one head organizer. Make someone else a head organizer first."
 msgstr "A convention must keep at least one head organizer. Make someone else a head organizer first."
 
+#: src/errors.ts
+msgid "A head organizer already has access to every edition."
+msgstr "A head organizer already has access to every edition."
+
 #. Glossary term: admin
 #: src/glossary.ts
 msgctxt "glossary"
@@ -99,6 +103,10 @@ msgstr "module"
 msgid "No account uses this email address."
 msgstr "No account uses this email address."
 
+#: src/errors.ts
+msgid "Only a head organizer can change another head organizer."
+msgstr "Only a head organizer can change another head organizer."
+
 #. Glossary term: order
 #: src/glossary.ts
 msgctxt "glossary"
@@ -164,6 +172,10 @@ msgid "This address is already taken by another convention."
 msgstr "This address is already taken by another convention."
 
 #: src/errors.ts
+msgid "This convention already has an edition with this address."
+msgstr "This convention already has an edition with this address."
+
+#: src/errors.ts
 msgid "This language is not supported."
 msgstr "This language is not supported."
 
@@ -204,6 +216,22 @@ msgstr "We could not find what you are looking for."
 #: src/errors.ts
 msgid "Wrong email or password."
 msgstr "Wrong email or password."
+
+#: src/errors.ts
+msgid "You cannot change your own role or permissions."
+msgstr "You cannot change your own role or permissions."
+
+#: src/errors.ts
+msgid "You cannot delete the active edition. Activate another edition first."
+msgstr "You cannot delete the active edition. Activate another edition first."
+
+#: src/errors.ts
+msgid "You cannot grant permissions higher than your own."
+msgstr "You cannot grant permissions higher than your own."
+
+#: src/errors.ts
+msgid "You cannot set an access end date later than your own."
+msgstr "You cannot set an access end date later than your own."
 
 #: src/errors.ts
 msgid "You do not have permission to do this."

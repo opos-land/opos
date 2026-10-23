@@ -152,7 +152,7 @@ opos/
     api/                 # built: bootstrap, env, database providers, GlobalDbService, OpenAPI docs,
                          #   error filter, request store and tenant transaction, JwtAuthGuard,
                          #   permission decorators, MeModule (profile, memberships),
-                         #   TenantsModule (current tenant), tests
+                         #   TenantsModule (tenant, team), EditionsModule, tests
       src/
         common/
           guards/scanner-device.guard.ts
@@ -183,9 +183,8 @@ opos/
     fixtures/            # Mailpit client, sign-in as a seeded account
   packages/
     contract/            # built: common schemas, error codes, health, me (profile, memberships),
-                         #   tenants (current)
+                         #   tenants (without members POST and payment config), editions
       src/
-        editions.ts
         program.ts
         engagement.ts
         shop.ts
@@ -602,7 +601,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 |---|---|---|
 | `400` | validation; `params.field` names the first invalid field, an unknown one included | `request.invalid` |
 | `401` | missing, expired or foreign token, or no `accounts` row for it | `session.invalid` |
-| `403` | insufficient permissions | `permission.denied` |
+| `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
 | `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`) | always a specific code |
 | `429` | rate limit | `request.rate-limited` |
@@ -654,13 +653,20 @@ by the payment provider only ([7.10](#710-payments)).
 | Method | Path | Required permission |
 |---|---|---|
 | GET | `/tenants/current` | membership; returns `id`, `slug`, `name`, `defaultLocale`, `timezone` |
-| PATCH | `/tenants/current` | `settings=write` (`name`, `slug`, `defaultLocale`, `timezone`) |
-| GET | `/tenants/current/members` | `settings>=read` |
-| POST | `/tenants/current/members` | `settings=write` |
-| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (permissions, `expiresAt`) |
-| DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation |
+| PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `slug`, `defaultLocale`, `timezone` as an IANA zone); a taken slug -> `409` `tenant.slug-taken` |
+| GET | `/tenants/current/members` | `settings>=read`; every member with the account's email and names, expired ones included and flagged `expired` |
+| POST | `/tenants/current/members` | `settings=write`; an invitation ([7.7](#77-organizer-invitations)) |
+| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry |
+| DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation; `204`; the last head -> `409` `membership.last-head` |
 | GET | `/tenants/current/payment-config` | `shop>=read`; provider, `accountRef`, currency, whether credentials are set |
 | PUT | `/tenants/current/payment-config` | `shop=write`; `{ provider, accountRef, credentials?, currency }` |
+
+Anti-escalation ([PRODUCT.md 5.6](PRODUCT.md#56-anti-escalation-policy),
+[anti-escalation.ts](../apps/api/src/modules/tenants/anti-escalation.ts)) answers `403` with a code
+of its own: `member.self` (the own membership, heads included), `member.head-only` (an org touching
+a head), `member.above-own` (a permission above the actor's own, on either level, or an org
+appointing a head), `member.expiry-after-own` (an expiry later than the actor's own, or none when
+the actor has one).
 
 Invitations — without the tenant header:
 
@@ -673,15 +679,19 @@ Invitations — without the tenant header:
 
 | Method | Path | Required permission |
 |---|---|---|
-| GET | `/editions` | membership |
-| POST | `/editions` | `settings=write` |
+| GET | `/editions` | membership; newest `startsAt` first |
+| POST | `/editions` | `settings=write`; `{ slug, name, startsAt, endsAt }`, created inactive and unpublished; a taken slug -> `409` `edition.slug-taken` |
 | GET | `/editions/:editionId` | membership |
-| PATCH | `/editions/:editionId` | `settings=write` |
-| DELETE | `/editions/:editionId` | `settings=write`; `409` when the edition is active |
-| POST | `/editions/:editionId/activate` | `settings=write` |
+| PATCH | `/editions/:editionId` | `settings=write`; the same fields plus `isPublished` |
+| DELETE | `/editions/:editionId` | `settings=write`; `204`; `409` `edition.active` when the edition is active |
+| POST | `/editions/:editionId/activate` | `settings=write`; deactivates the previous active edition in the same transaction |
 | GET | `/editions/:editionId/members` | `settings>=read` |
-| PUT | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation |
-| DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` |
+| PUT | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation; `{ programAccess, websiteContentAccess, ticketsAccess }`; a head -> `409` `member.is-head` |
+| DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation (`member.self`); `204` |
+
+An edition `slug` is 1–40 lowercase letters, digits and hyphens, unique within the tenant;
+`endsAt` is after `startsAt`, also after a `PATCH` of only one of them. Another tenant's edition is
+`404` on every route.
 
 ### 5.5 `program` — JWT + `X-Tenant-Slug` + edition permission
 

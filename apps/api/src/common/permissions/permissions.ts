@@ -2,7 +2,7 @@ import { type Level, type TenantMembership } from '../als/tenant-context.service
 
 // The permission model of PRODUCT.md 5, implemented as PLAN.md 7.3 describes.
 
-const rank: Record<Level, number> = { none: 0, read: 1, write: 2 }
+export const rank: Record<Level, number> = { none: 0, read: 1, write: 2 }
 
 export const tenantResources = {
   settings: 'settingsAccess',

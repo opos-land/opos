@@ -10,6 +10,14 @@ export const errorCodes = [
   'permission.denied',
   'server.error',
   'membership.last-head',
+  'member.self',
+  'member.head-only',
+  'member.above-own',
+  'member.expiry-after-own',
+  'member.is-head',
+  'tenant.slug-taken',
+  'edition.slug-taken',
+  'edition.active',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

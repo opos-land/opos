@@ -11,6 +11,10 @@ msgstr ""
 msgid "A convention must keep at least one head organizer. Make someone else a head organizer first."
 msgstr "Konwent musi mieć co najmniej jednego głównego organizatora. Najpierw nadaj tę rolę komuś innemu."
 
+#: src/errors.ts
+msgid "A head organizer already has access to every edition."
+msgstr "Główny organizator ma już dostęp do każdej edycji."
+
 #. Glossary term: admin
 #: src/glossary.ts
 msgctxt "glossary"
@@ -99,6 +103,10 @@ msgstr "moduł"
 msgid "No account uses this email address."
 msgstr "Żadne konto nie używa tego adresu e-mail."
 
+#: src/errors.ts
+msgid "Only a head organizer can change another head organizer."
+msgstr "Tylko główny organizator może zmienić innego głównego organizatora."
+
 #. Glossary term: order
 #: src/glossary.ts
 msgctxt "glossary"
@@ -164,6 +172,10 @@ msgid "This address is already taken by another convention."
 msgstr "Ten adres jest już zajęty przez inny konwent."
 
 #: src/errors.ts
+msgid "This convention already has an edition with this address."
+msgstr "Ten konwent ma już edycję o tym adresie."
+
+#: src/errors.ts
 msgid "This language is not supported."
 msgstr "Ten język nie jest obsługiwany."
 
@@ -204,6 +216,22 @@ msgstr "Nie znaleziono tego, czego szukasz."
 #: src/errors.ts
 msgid "Wrong email or password."
 msgstr "Nieprawidłowy e-mail lub hasło."
+
+#: src/errors.ts
+msgid "You cannot change your own role or permissions."
+msgstr "Nie możesz zmienić własnej roli ani uprawnień."
+
+#: src/errors.ts
+msgid "You cannot delete the active edition. Activate another edition first."
+msgstr "Nie możesz usunąć aktywnej edycji. Najpierw aktywuj inną edycję."
+
+#: src/errors.ts
+msgid "You cannot grant permissions higher than your own."
+msgstr "Nie możesz nadać uprawnień wyższych niż własne."
+
+#: src/errors.ts
+msgid "You cannot set an access end date later than your own."
+msgstr "Nie możesz ustawić daty końca dostępu późniejszej niż własna."
 
 #: src/errors.ts
 msgid "You do not have permission to do this."

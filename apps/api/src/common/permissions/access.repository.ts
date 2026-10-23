@@ -19,6 +19,7 @@ export class AccessRepository {
         settingsAccess: tenantMemberships.settingsAccess,
         brandingAccess: tenantMemberships.brandingAccess,
         shopConfigAccess: tenantMemberships.shopConfigAccess,
+        expiresAt: tenantMemberships.expiresAt,
       })
       .from(tenantMemberships)
       .where(

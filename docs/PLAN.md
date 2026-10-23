@@ -261,9 +261,11 @@ opos/
     db/
       src/
         index.ts
-        client.ts        # appDb / globalDb / migrationDb
-        rls.ts           # set_config + the policy verification query
+        client.ts        # appDb / globalDb / migrationDb, snake_case casing
+        migration-url.ts # DATABASE_MIGRATION_URL with the dev default
+        rls.ts           # set_config of app.tenant_id for the tenant transaction
         schema/
+          columns.ts     # id and createdAt/updatedAt shared by every table
           enums.ts
           accounts.ts    # references auth.users through drizzle-orm/supabase
           tenants.ts
@@ -283,8 +285,11 @@ opos/
         seed.ts
         scripts/
           create-tenant.ts   # db:tenant:create
+          verify.ts          # db:verify
+      test/              # schema tests: RLS, invariants, the auth.users triggers
       drizzle/           # drizzle-kit migrations + the hand-written RLS and trigger migrations
-      drizzle.config.ts  # schemaFilter: ['public']
+      drizzle.config.ts  # schemaFilter: ['public'], casing: 'snake_case'
+      vitest.config.ts   # global setup applies the migrations
       package.json       # main + types -> src/index.ts
     i18n/
       src/
@@ -334,6 +339,9 @@ tasks still run in parallel.
 - Frontend build-time variables (`VITE_*`) enter task hashes through turbo's framework inference.
   The API's variables are read at runtime and stay out of the hash
   ([11](#11-environment-variables)).
+- turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
+  every `db:*` task list `DATABASE_URL`, `DATABASE_GLOBAL_URL`, `DATABASE_MIGRATION_URL` and
+  `OPOS_DB_PORT` in `passThroughEnv`: they reach the scripts and stay out of the hash.
 
 ### 3.2 Frontend application layout
 
@@ -385,7 +393,17 @@ spacing, radii). No image or illustration in `shared/ui` or in a feature is AI-g
 PostgreSQL 17 from the `supabase/postgres` image. Every OPOS table lives in the `public` schema and
 has `id uuid primary key default gen_random_uuid()`, `createdAt timestamptz not null default
 now()`, `updatedAt timestamptz not null default now()` — `accounts.id` being the one exception
-([4.2](#42-global-tables)).
+([4.2](#42-global-tables)). `updatedAt` is kept by the database, not by Drizzle: every table has a
+`before update` trigger `<table>_set_updated_at` calling `public.set_updated_at()`, so raw SQL,
+scripts and the studio move it too.
+
+Names in this chapter are the TypeScript ones. Drizzle maps them with `casing: 'snake_case'`, set in
+both `drizzle.config.ts` and the client: `tenantId` is the column `tenant_id`. Constraints and
+indexes carry explicit names, so Postgres never truncates them past 63 characters: unique
+constraints and unique indexes `<table>_<purpose>_unique`, other indexes `<table>_<purpose>_idx`,
+foreign keys `<table>_<target>_fk` (`tenant_memberships_tenant_fk`), checks and constraint
+triggers `<table>_<rule>` (`editions_ends_after_start`). Foreign keys are declared with
+`foreignKey({ name })`, never with `.references()`, which generates the name.
 
 The `auth` schema belongs to Supabase Auth: it creates and migrates it on start. Our migrations
 never write to it; `drizzle.config.ts` sets `schemaFilter: ['public']`, and `accounts` references
@@ -472,11 +490,12 @@ or extends it.
 **`editions`** — `tenantId` (FK cascade), `slug`, `name`, `startsAt`, `endsAt`,
 `isActive` (default `false`), `isPublished` (default `false`).
 Unique `(tenantId, slug)` and `(id, tenantId)`. Partial unique index `(tenantId) WHERE isActive`.
+Check `endsAt > startsAt`.
 
 **`edition_memberships`** — `tenantId`, `tenantMembershipId`, `editionId` (FK cascade),
 `programAccess`, `websiteContentAccess`, `ticketsAccess` (default `none`).
 Unique `(tenantMembershipId, editionId)`. Composite foreign keys `(tenantMembershipId, tenantId)`
-and `(editionId, tenantId)`.
+and `(editionId, tenantId)`. Index `(tenantId, editionId)`.
 
 **`program_items`** — `tenantId`, `editionId` (FK cascade), `title`, `description` (nullable),
 `startsAt`, `endsAt`. Unique `(id, tenantId)`. Index `(tenantId, editionId, startsAt)`.
@@ -525,8 +544,16 @@ Every RLS-covered table has an index starting with `tenantId`.
 
 1. **Exactly one `isActive=true` edition per tenant** — a transactional switch plus a partial
    unique index.
-2. **At least one `head` per tenant** — checked in the service and by an
-   `AFTER DELETE OR UPDATE` trigger on `tenant_memberships`.
+2. **At least one `head` per tenant** — checked in the service and by two constraint triggers,
+   both `DEFERRABLE INITIALLY DEFERRED`, so they fire at commit:
+   `tenant_memberships_at_least_one_head` (`AFTER UPDATE OF role, tenantId OR DELETE`, only for a
+   row whose old `role` is `head`) and `tenants_at_least_one_head` (`AFTER INSERT` on `tenants`).
+   A head can be handed over in either order inside one transaction, a tenant is created together
+   with its first head in one transaction, and a deleted tenant takes its memberships along. The
+   membership check locks the tenant row (`for no key update`) before counting heads, so two
+   transactions demoting different heads of one tenant cannot both commit. A violation raises
+   `check_violation` with the trigger's name; it also blocks deleting the account of a tenant's
+   last head.
 3. **An edition in `edition_memberships` belongs to the same tenant as the `tenant_membership`** —
    enforced by composite foreign keys.
 4. **Writes to tenant-level tables always carry the `tenantId` from ALS** —
@@ -601,13 +628,14 @@ alter table program_items enable row level security;
 alter table program_items force  row level security;
 
 create policy tenant_isolation on program_items
-  using      (tenant_id = current_setting('app.tenant_id')::uuid)
-  with check (tenant_id = current_setting('app.tenant_id')::uuid);
+  using      (tenant_id = (select current_setting('app.tenant_id')::uuid))
+  with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 
 grant select, insert, update, delete on program_items to opos_app;
 ```
 
-The same for the remaining tables; for `tenants` the condition is `id = current_setting(...)`.
+The same for the remaining tables; for `tenants` the condition is `id = (select current_setting(...))`.
+The scalar subquery makes Postgres evaluate the setting once per query instead of once per row.
 `current_setting` without the `missing_ok` argument — a missing context has to raise an error, not
 return zero rows.
 
@@ -637,16 +665,39 @@ the system, including `PublicModule`, resolves the tenant first and then works o
 #### Migrations and verification
 
 RLS policies and the `auth.users` triggers go into hand-written migrations
-(`drizzle-kit generate --custom`). `pnpm db:verify` runs:
+(`drizzle-kit generate --custom`). The same migration grants `select, insert, update, delete` on
+the new tables to `opos_app` and `opos_app_global`, revokes everything from `anon` and
+`authenticated`, and adds each table's `<table>_set_updated_at` trigger ([4](#4-database-schema)). Trigger functions are `security definer` with `set search_path = ''` and
+schema-qualified names, because Supabase Auth runs with `search_path = auth`.
+
+| Script | Runs |
+|---|---|
+| `db:generate` | `drizzle-kit generate` |
+| `db:migrate` | `drizzle-kit migrate`; the journal lives in the `drizzle` schema |
+| `db:push` | `drizzle-kit push`, local experiments only |
+| `db:studio` | `drizzle-kit studio` |
+| `db:verify` | `tsx src/scripts/verify.ts`: the query below, a non-zero exit code when it returns rows |
+
+All of them connect as `opos_migrator` through `DATABASE_MIGRATION_URL`
+([11](#11-environment-variables)). `pnpm db:verify` runs:
 
 ```sql
 select c.relname from pg_class c
 join pg_namespace n on n.oid = c.relnamespace
-join pg_attribute a on a.attrelid = c.oid and a.attname = 'tenant_id'
-where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;
+where n.nspname = 'public' and c.relkind = 'r'
+  and (c.relname = 'tenants' or exists (
+    select 1 from pg_attribute a
+    where a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped
+  ))
+  and not (c.relrowsecurity and c.relforcerowsecurity and exists (
+    select 1 from pg_policy p
+    where p.polrelid = c.oid and p.polname = 'tenant_isolation' and p.polcmd = '*'
+  ));
 ```
 
-The result must be empty.
+It lists every covered table — `tenants` and every `public` table with a `tenant_id` column —
+that lacks enabled RLS, forced RLS or a `tenant_isolation` policy for all commands. The result must
+be empty.
 
 ---
 
@@ -1441,6 +1492,12 @@ NODE_ENV=development
 `SUPABASE_SERVICE_ROLE_KEY` in dev is generated from `JWT_SECRET` by `pnpm --filter api
 auth:service-key`.
 
+**`packages/db`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL` from
+the environment. Without it they use
+`postgres://opos_migrator:opos@localhost:<OPOS_DB_PORT or 5432>/postgres`, so dev needs no file;
+in production the variable comes from the API container's environment. turbo passes these variables
+through to the tasks ([3.1](#31-turbo-tasks)).
+
 **`infra/supabase/.env.example`** and **`infra/supabase/.env`** — read by `docker-compose.yml` as
 the `auth` service's `env_file`s, in that order. `.env.example` is committed and holds working dev
 values; the optional, ignored `.env` overrides any of them for one developer and is created by hand
@@ -1699,7 +1756,8 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
 ```
 
 - Runs as `opos_migrator`, in a single transaction: inserts `tenants` and a `head`
-  `tenant_memberships` row.
+  `tenant_memberships` row. The database rejects a tenant committed without a head
+  ([4.5](#45-invariants)).
 - The head's account must already exist — the person registers in the portal first. An unknown
   email or a taken slug aborts with a non-zero exit code and changes nothing.
 - In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
@@ -1709,6 +1767,15 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
 ## 15. Tests
 
 ### 15.1 API integration tests
+
+The schema itself is tested in `packages/db/test` with Vitest on the `db` container alone, before
+any API code: the global setup applies the migrations, the tests connect as `opos_migrator`,
+`opos_app`, `supabase_auth_admin` (writes to `auth.users`) and `postgres` (`set role anon`), and
+remove the tenants and users they created. They cover the RLS row of the table below, the
+database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
+concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
+foreign edition) and the `accounts` triggers. The API tests repeat
+these checks through the endpoints.
 
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
 `supabase/gotrue`, the production tags), no database or auth mocks, in `apps/api/test/*.test.ts`.
@@ -1781,15 +1848,15 @@ using seeded data only read it.
 
 GitHub Actions on every PR and every push to `develop` and `main` (`.github/workflows/ci.yml`). Tool versions
 come from `mise.toml` through `jdx/mise-action`, the same source as local machines; then
-`pnpm install --frozen-lockfile`, `pnpm format:check` and `docker compose up -d --wait db` for
-the API integration tests. On a PR,
+`pnpm install --frozen-lockfile`, `pnpm format:check`, `docker compose up -d --wait db` for
+the schema and API tests, then `pnpm db:migrate` and `pnpm db:verify`. On a PR,
 `turbo run typecheck lint test --affected` covers the packages changed against the PR base branch
 (`TURBO_SCM_BASE=origin/<base_ref>`) and their dependents (the checkout uses `fetch-depth: 0`,
 which `--affected` needs); a push to `develop` or `main` runs the same tasks on every package. The turbo cache (`.turbo/cache`) is persisted between runs with
 `actions/cache`, keyed by commit with a fallback to the newest entry; the full runs on `develop` and `main`
 fill the cache that PRs restore, so an unchanged task inside an affected package is still a cache
 hit.
-`pnpm i18n:check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.
+`pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
 
 Branches:
 

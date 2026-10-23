@@ -20,7 +20,13 @@
       "dependsOn": ["transit"]
     },
     "test": {
-      "dependsOn": ["transit"]
+      "dependsOn": ["transit"],
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
     },
     "test:e2e": {
       "cache": false
@@ -34,26 +40,68 @@
     },
     "i18n:check": {},
     "db:generate": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
     },
     "db:migrate": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
     },
     "db:push": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
     },
     "db:seed": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
     },
     "db:verify": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
     },
     "db:tenant:create": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
     },
     "db:studio": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
     }
   }
 }

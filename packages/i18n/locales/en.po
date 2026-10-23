@@ -1,0 +1,190 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-10-23 23:14+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+
+#. Glossary term: admin
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "administrator"
+msgstr "administrator"
+
+#: src/errors.ts
+msgid "An account with this email address already exists."
+msgstr "An account with this email address already exists."
+
+#. Glossary term: attendee
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "attendee"
+msgstr "attendee"
+
+#. Glossary term: booth
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "booth"
+msgstr "booth"
+
+#: src/errors.ts
+msgid "Choose a time zone from the list."
+msgstr "Choose a time zone from the list."
+
+#: src/errors.ts
+msgid "Confirm your email address first. Check your inbox for the link."
+msgstr "Confirm your email address first. Check your inbox for the link."
+
+#. Glossary term: tenant
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "convention"
+msgstr "convention"
+
+#. Glossary term: core
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "core"
+msgstr "core"
+
+#. Glossary term: edition
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "edition"
+msgstr "edition"
+
+#: src/errors.ts
+msgid "Enter a valid email address."
+msgstr "Enter a valid email address."
+
+#: src/errors.ts
+msgid "Enter the convention name."
+msgstr "Enter the convention name."
+
+#. Glossary term: head
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "head organizer"
+msgstr "head organizer"
+
+#. Glossary term: locale
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "language"
+msgstr "language"
+
+#. Glossary term: like (noun)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "like"
+msgstr "like"
+
+#. Glossary term: module
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "module"
+msgstr "module"
+
+#: src/errors.ts
+msgid "No account uses this email address."
+msgstr "No account uses this email address."
+
+#. Glossary term: order
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "order"
+msgstr "order"
+
+#. Glossary term: org
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "organizer"
+msgstr "organizer"
+
+#. Glossary term: programme item
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "programme item"
+msgstr "programme item"
+
+#. Glossary term: review
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "review"
+msgstr "review"
+
+#. Glossary term: scanner
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "scanner"
+msgstr "scanner"
+
+#: src/errors.ts
+msgid "Sign-up is closed at the moment."
+msgstr "Sign-up is closed at the moment."
+
+#: src/errors.ts
+msgid "Something went wrong. Try again."
+msgstr "Something went wrong. Try again."
+
+#. Glossary term: speaker
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "speaker"
+msgstr "speaker"
+
+#: src/errors.ts
+msgid "The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters."
+msgstr "The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters."
+
+#: src/errors.ts
+msgid "The link has expired. Ask for a new one."
+msgstr "The link has expired. Ask for a new one."
+
+#: src/errors.ts
+msgid "The new password must differ from the current one."
+msgstr "The new password must differ from the current one."
+
+#: src/errors.ts
+msgid "The password is too weak. Use at least 8 characters."
+msgstr "The password is too weak. Use at least 8 characters."
+
+#: src/errors.ts
+msgid "This address is already taken by another convention."
+msgstr "This address is already taken by another convention."
+
+#: src/errors.ts
+msgid "This language is not supported."
+msgstr "This language is not supported."
+
+#. Glossary term: ticket
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "ticket"
+msgstr "ticket"
+
+#. Glossary term: ticket type
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "ticket type"
+msgstr "ticket type"
+
+#: src/errors.ts
+msgid "Too many attempts. Try again in a few minutes."
+msgstr "Too many attempts. Try again in a few minutes."
+
+#: src/errors.ts
+msgid "Too many emails sent. Try again in a few minutes."
+msgstr "Too many emails sent. Try again in a few minutes."
+
+#. Glossary term: user
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "user"
+msgstr "user"
+
+#: src/errors.ts
+msgid "Wrong email or password."
+msgstr "Wrong email or password."

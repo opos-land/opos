@@ -1,0 +1,11 @@
+{
+  "extends": "@opos/tsconfig/node.json",
+  "include": [
+    "src",
+    "test",
+    "lingui.config.ts",
+    "lingui.config.base.ts",
+    "vitest.config.ts",
+    "eslint.config.js"
+  ]
+}

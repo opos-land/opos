@@ -20,7 +20,7 @@
       "dependsOn": ["transit"]
     },
     "test": {
-      "dependsOn": ["transit"],
+      "dependsOn": ["transit", "i18n:compile", "^i18n:compile"],
       "passThroughEnv": [
         "DATABASE_URL",
         "DATABASE_GLOBAL_URL",

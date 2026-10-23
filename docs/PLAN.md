@@ -245,13 +245,7 @@ opos/
           tickets.ts
           scanner-devices.ts
           attendees.ts
-    i18n/
-      src/
-        index.ts         # locale list, detection, catalog activation, Intl formatters
-        errors.ts        # API and Supabase Auth code -> MessageDescriptor mapping
-      locales/{en,pl}.po        # shared messages: API errors, emails
-      lingui.config.base.ts
-      package.json       # main + types -> src/index.ts, catalogs compiled separately
+    i18n/                # built: locales, detection, catalogs, formatters, glossary, error messages
     tsconfig/            # built: base.json, node.json
       react.json         # extends base.json
     eslint-config/       # built
@@ -273,7 +267,8 @@ tasks still run in parallel.
 The tasks with their `dependsOn`, `outputs`, cache and environment settings are in
 [turbo.json](../turbo.json). The rules behind them:
 
-- `build` and `dev` depend on `i18n:compile`, so no application starts with stale catalogs.
+- `build`, `dev` and `test` depend on `i18n:compile` (`test` also on `^i18n:compile`), so nothing
+  runs with stale or missing catalogs.
 - A task with side effects is not cached: `test:e2e`, `i18n:extract` and every `db:*` task.
   Persistent tasks (`dev`, `db:studio`) set `persistent: true`.
 - The `db:*` tasks exist only in `packages/db`, `test:e2e` only in `e2e`.
@@ -831,24 +826,33 @@ The per-application split keeps the portal from pulling in the panel's messages.
 loaded through a dynamic import per locale.
 
 Every glossary term ([PRODUCT.md 3](PRODUCT.md#3-glossary)) has one rendering per locale.
-`packages/i18n/src/glossary.ts` declares each term as a `msg` descriptor with the comment
-`Glossary term`; its translation in `packages/i18n/locales/pl.po` is the term's Polish rendering,
-which every other message reuses. A new term enters that file before its first use in the
-interface.
+[glossary.ts](../packages/i18n/src/glossary.ts) declares each term as a `msg` descriptor with the
+context `glossary` and the comment `Glossary term: <term>`; its translation in
+`packages/i18n/locales/pl.po` is the term's Polish rendering, which every other message reuses. The
+context keeps a term apart from the same English word elsewhere (the noun "like" from the verb). A
+new term enters that file before its first use in the interface.
+
+`@opos/i18n` has entry points with and without macros:
+
+| Import | Contains | Needs the macro transform |
+|---|---|---|
+| `@opos/i18n` | `SUPPORTED_LOCALES`, `DEFAULT_LOCALE`, `detectLocale`, `activateLocale`, formatters | no — scripts and `packages/db` use it as is |
+| `@opos/i18n/glossary`, `@opos/i18n/errors` | the glossary and the error messages | yes |
+| `@opos/i18n/lingui.config.base` | `linguiConfig()`, which every `lingui.config.ts` calls with its catalogs | — |
+
+The macro transform is `@lingui/vite-plugin` with `macroTransform: true`, in the frontends' Vite
+config and in every `vitest.config.ts` that loads messages. `activateLocale(i18n, locale,
+appMessages)` merges this package's compiled catalog with the application's own.
 
 ### Workflow
 
-| Command | Effect |
-|---|---|
-| `pnpm i18n:extract` | scans the sources, appends new messages to the `.po` of every locale |
-| `pnpm i18n:compile` | turns `.po` files into runtime catalogs |
-| `pnpm i18n:check` | `lingui check sync` fails when the catalogs are out of sync with the code; `lingui check missing --mode catalog --locale pl` fails on a message without its `pl` translation |
+`pnpm i18n:extract` appends new messages to the `.po` of every locale, `pnpm i18n:compile` turns
+them into `locales/*.mjs` (build output, ignored by git), and `pnpm i18n:check` fails when the
+catalogs are out of sync with the code or a message has no `pl` translation. A new message gets its
+`pl` translation in the same commit as the code that introduces it.
 
-A new message gets its `pl` translation in the same commit as the code that introduces it.
-`lingui check` needs `@lingui/cli` 6.8 or newer.
-
-`i18n:compile` is a dependency of the `dev` and `build` tasks in turbo ([3.1](#31-turbo-tasks)) —
-otherwise the application starts with stale messages.
+`i18n:compile` is a dependency of the `dev`, `build` and `test` tasks in turbo
+([3.1](#31-turbo-tasks)) — otherwise the application starts with stale messages.
 
 ### Locale detection
 
@@ -861,10 +865,10 @@ otherwise the application starts with stale messages.
 
 ### API errors
 
-The API returns a `code`, never a sentence. `packages/i18n/src/errors.ts` maps a `code` onto a
-descriptor from the `msg` macro, and the client renders it through `i18n._(descriptor, params)`.
-Supabase Auth's `error_code` values are mapped in the same file under `auth.<error_code>`; an
-unmapped one renders a generic "Something went wrong" message. A new `code` in the contract
+The API returns a `code`, never a sentence. [errors.ts](../packages/i18n/src/errors.ts) maps a
+`code` onto a descriptor from the `msg` macro, and the client renders it through
+`i18n._(errorMessage(code), params)`. Supabase Auth's `error_code` values are mapped in the same
+file under `auth.<error_code>`; an unmapped code renders the generic `unknownError`. A new `code` in the contract
 without an entry in that map fails a test ([15.1](#151-api-integration-tests)).
 
 Emails are rendered by the API — it activates the recipient's catalog and composes the content
@@ -1851,7 +1855,8 @@ real TLS, real Google, real email delivery and a real phone.
    tags.
 2. **No build step for the contracts** — `packages/contract`, `packages/db` and `packages/i18n`
    point `main`/`types` at `src/index.ts`. The only exception is the translation catalogs: they
-   need `pnpm i18n:compile`, wired in as a dependency of `dev` and `build` ([3.1](#31-turbo-tasks)).
+   need `pnpm i18n:compile`, wired in as a dependency of `dev`, `build` and `test`
+   ([3.1](#31-turbo-tasks)).
 3. **Atomic commits**, Conventional Commits in English — the convention and the scopes live in
    [AGENTS.md](../AGENTS.md#commits), enforced by commitlint.
 4. **Green before every PR** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:verify`.

@@ -10,32 +10,32 @@ alter table tenants enable row level security;
 alter table tenants force row level security;
 --> statement-breakpoint
 create policy tenant_isolation on tenants
-  using (id = current_setting('app.tenant_id')::uuid)
-  with check (id = current_setting('app.tenant_id')::uuid);
+  using (id = (select current_setting('app.tenant_id')::uuid))
+  with check (id = (select current_setting('app.tenant_id')::uuid));
 --> statement-breakpoint
 alter table tenant_memberships enable row level security;
 --> statement-breakpoint
 alter table tenant_memberships force row level security;
 --> statement-breakpoint
 create policy tenant_isolation on tenant_memberships
-  using (tenant_id = current_setting('app.tenant_id')::uuid)
-  with check (tenant_id = current_setting('app.tenant_id')::uuid);
+  using (tenant_id = (select current_setting('app.tenant_id')::uuid))
+  with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 --> statement-breakpoint
 alter table editions enable row level security;
 --> statement-breakpoint
 alter table editions force row level security;
 --> statement-breakpoint
 create policy tenant_isolation on editions
-  using (tenant_id = current_setting('app.tenant_id')::uuid)
-  with check (tenant_id = current_setting('app.tenant_id')::uuid);
+  using (tenant_id = (select current_setting('app.tenant_id')::uuid))
+  with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 --> statement-breakpoint
 alter table edition_memberships enable row level security;
 --> statement-breakpoint
 alter table edition_memberships force row level security;
 --> statement-breakpoint
 create policy tenant_isolation on edition_memberships
-  using (tenant_id = current_setting('app.tenant_id')::uuid)
-  with check (tenant_id = current_setting('app.tenant_id')::uuid);
+  using (tenant_id = (select current_setting('app.tenant_id')::uuid))
+  with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 --> statement-breakpoint
 
 -- updated_at follows every update, whatever client issues it (PLAN.md 4).

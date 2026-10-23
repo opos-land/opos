@@ -628,13 +628,14 @@ alter table program_items enable row level security;
 alter table program_items force  row level security;
 
 create policy tenant_isolation on program_items
-  using      (tenant_id = current_setting('app.tenant_id')::uuid)
-  with check (tenant_id = current_setting('app.tenant_id')::uuid);
+  using      (tenant_id = (select current_setting('app.tenant_id')::uuid))
+  with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 
 grant select, insert, update, delete on program_items to opos_app;
 ```
 
-The same for the remaining tables; for `tenants` the condition is `id = current_setting(...)`.
+The same for the remaining tables; for `tenants` the condition is `id = (select current_setting(...))`.
+The scalar subquery makes Postgres evaluate the setting once per query instead of once per row.
 `current_setting` without the `missing_ok` argument — a missing context has to raise an error, not
 return zero rows.
 

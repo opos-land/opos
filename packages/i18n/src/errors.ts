@@ -13,6 +13,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'session.invalid': msg`Your session has ended. Sign in again.`,
   'permission.denied': msg`You do not have permission to do this.`,
   'server.error': unknownError,
+  'membership.last-head': msg`A convention must keep at least one head organizer. Make someone else a head organizer first.`,
 
   'tenant.slug-invalid': msg`The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters.`,
   'tenant.slug-taken': msg`This address is already taken by another convention.`,

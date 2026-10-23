@@ -149,15 +149,13 @@ opos/
   infra/
     supabase/            # built: init SQL and the auth service's dev env (10)
   apps/
-    api/                 # built: bootstrap, env, database providers, OpenAPI docs, error filter,
-                         #   request store, JwtAuthGuard, MeModule (GET and PATCH /me), tests
+    api/                 # built: bootstrap, env, database providers, GlobalDbService, OpenAPI docs,
+                         #   error filter, request store and tenant transaction, JwtAuthGuard,
+                         #   permission decorators, MeModule (profile, memberships),
+                         #   TenantsModule (current tenant), tests
       src/
         common/
-          als/tenant-context.service.ts         # built with the account; tx(), afterCommit(), withTenant() to come
-          als/tenant-transaction.interceptor.ts # tenant, transaction, permissions, commit
           guards/scanner-device.guard.ts
-          decorators/require-tenant.decorator.ts
-          decorators/require-edition.decorator.ts
         modules/         # one directory per module (7.1)
       Dockerfile
     panel/
@@ -184,9 +182,9 @@ opos/
     specs/
     fixtures/            # Mailpit client, sign-in as a seeded account
   packages/
-    contract/            # built: common schemas, error codes, health, me (profile)
+    contract/            # built: common schemas, error codes, health, me (profile, memberships),
+                         #   tenants (current)
       src/
-        tenants.ts
         editions.ts
         program.ts
         engagement.ts
@@ -195,9 +193,8 @@ opos/
         checkout.ts
         scanner.ts
         public.ts
-    db/                  # built: clients, core schema, migrations, createTenant, seed, scripts, tests
+    db/                  # built: clients, rls, core schema, migrations, createTenant, seed, scripts, tests
       src/
-        rls.ts           # set_config of app.tenant_id for the tenant transaction
         schema/          # one file per table (4); still to come:
           program-items.ts
           program-item-speakers.ts
@@ -539,7 +536,9 @@ return zero rows.
 
 #### Cross-tenant queries
 
-Only through `GlobalDbService` on the `opos_app_global` role. The complete list:
+Only through [GlobalDbService](../apps/api/src/common/database/global-db.service.ts) on the
+`opos_app_global` role; `DatabaseModule` exports the service, never the `GLOBAL_DB` pool itself.
+The complete list:
 
 | Query | Constraint |
 |---|---|
@@ -554,7 +553,8 @@ Only through `GlobalDbService` on the `opos_app_global` role. The complete list:
 | scanner request | device lookup by `tokenHash`, not revoked, not expired; returns only `id`, `tenantId`, `editionId` |
 | order jobs ([7.10](#710-payments)) | `pending` orders past `holdExpiresAt`, and `paid` orders older than 5 minutes with no `ticketEmailSentAt`; returns only `id`, `tenantId` |
 
-Every query in `GlobalDbService` carries an `accountId` or `email` condition from the JWT, a
+Apart from the tenant lookup by slug, which returns only public columns, every query in
+`GlobalDbService` carries an `accountId` or `email` condition from the JWT, a
 secret the caller proved it holds (a webhook signature, an order token, a device token), or comes
 from the API's own scheduled jobs; adding another one requires an entry in this table. The rest of
 the system, including `PublicModule`, resolves the tenant first and then works on `opos_app` inside
@@ -597,7 +597,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | `401` | missing, expired or foreign token, or no `accounts` row for it | `session.invalid` |
 | `403` | insufficient permissions | `permission.denied` |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
-| `409` | invariant conflict | always a module's own code |
+| `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`) | always a specific code |
 | `429` | rate limit | `request.rate-limited` |
 | `500` | anything unexpected; the body carries no details, the log does | `server.error` |
 
@@ -634,7 +634,7 @@ by the payment provider only ([7.10](#710-payments)).
 | GET | `/me` | account profile: `id`, `email`, `firstName`, `lastName`, `locale` |
 | PATCH | `/me` | change `firstName` and `lastName` (1–100 characters after trimming, or `null`) and `locale` (one of `SUPPORTED_LOCALES`, or `null` for detection); any other field -> `400` |
 | DELETE | `/me` | delete the account; `409` when it is some tenant's last `head`; `401` without a sign-in from the last 5 minutes |
-| GET | `/me/memberships` | tenants with role and permissions, edition-level included; expired memberships left out |
+| GET | `/me/memberships` | tenants (`id`, `slug`, `name`) with role, tenant-level permissions, `expiresAt` and edition-level permissions (`editionId`, `editionSlug`, the three levels); expired memberships left out |
 | GET | `/me/attendances` | "my conventions" |
 | GET | `/me/schedule` | liked programme items across all tenants, ascending by `startsAt` |
 | GET | `/me/program-items` | programme items where the account is a speaker, with their non-hidden reviews |
@@ -646,7 +646,7 @@ by the payment provider only ([7.10](#710-payments)).
 
 | Method | Path | Required permission |
 |---|---|---|
-| GET | `/tenants/current` | membership |
+| GET | `/tenants/current` | membership; returns `id`, `slug`, `name`, `defaultLocale`, `timezone` |
 | PATCH | `/tenants/current` | `settings=write` (`name`, `slug`, `defaultLocale`, `timezone`) |
 | GET | `/tenants/current/members` | `settings>=read` |
 | POST | `/tenants/current/members` | `settings=write` |
@@ -900,22 +900,29 @@ database before the guards have run; the guards and the interceptor fill the sto
 |---|---|---|
 | 1 | `JwtAuthGuard` ([7.4](#74-authorization)) | the verified account |
 | 1 | `ScannerDeviceGuard` ([7.11](#711-scanner)) | the paired device with its `tenantId` and `editionId` |
-| 2 | `TenantTransactionInterceptor` (global) | `{ tenantId, tenantSlug, membership }` and the transaction handle |
+| 2 | `TenantTransactionInterceptor` (global) | the tenant, the membership and the transaction handle |
 
-`TenantTransactionInterceptor`, for a request carrying `X-Tenant-Slug` or a scanner device:
+[TenantContextService](../apps/api/src/common/als/tenant-context.service.ts) holds the store;
+[TenantTransactionInterceptor](../apps/api/src/common/als/tenant-transaction.interceptor.ts) runs
+for a **tenant route**, one marked with `@RequireTenant` or `@RequireEdition` ([7.3](#73-permissions)),
+or a scanner request. Every other route ignores `X-Tenant-Slug`, so a client may send the header
+everywhere. For a tenant route it:
 
-1. Loads the tenant by slug through `GlobalDbService`; an unknown slug -> `404`. A scanner request
-   takes the tenant from its device.
+1. Reads `X-Tenant-Slug`: missing -> `400` with `params.field = 'x-tenant-slug'`. Loads the tenant
+   by slug through `GlobalDbService`; an unknown slug -> `404`. A scanner request takes the tenant
+   from its device.
 2. Opens a transaction on the `opos_app` pool and runs
    `select set_config('app.tenant_id', <tenantId>, true)`.
-3. Loads the account's `tenant_membership` inside that transaction, skipping an expired one.
-4. Checks `@RequireTenant` and `@RequireEdition` inside the same transaction
+3. Loads the account's `tenant_membership` inside that transaction, skipping an expired one. A
+   tenant the account has no membership in, an expired membership included, -> `403`.
+4. Checks the route's `@RequireTenant` or `@RequireEdition` inside the same transaction
    ([7.3](#73-permissions)).
 5. Runs the handler, then commits when `res.statusCode` is below `300` and rolls back on any other
    status or an exception. ts-rest sets the status before the interceptor sees the body, and it turns
    both a returned `{ status: 4xx }` and a thrown `TsRestResponseError` into a response rather than
    an exception, so the status is the signal.
-6. After a commit, runs the store's after-commit queue.
+6. After a commit, runs the store's after-commit queue, in order, before the response is sent; a
+   failing entry is logged and the response stands.
 
 Repositories take the transaction from `TenantContextService.tx()`, which throws when no tenant
 transaction is open; they never query the pool directly. The one exception is
@@ -932,50 +939,50 @@ Requests that act inside one tenant without the header — `PublicModule` and ch
 path), the payment webhook, the order link, the invitation endpoints, the scheduled jobs — open the
 same context with `TenantContextService.withTenant(tenantId, fn)`: transaction, `set_config`,
 `fn`, commit or rollback, after-commit queue. The `tenantId` comes from a lookup in
-[4.6](#46-tenant-isolation--rls-in-postgres) or from a verified token.
+[4.6](#46-tenant-isolation--rls-in-postgres) or from a verified token. A tenant transaction never
+nests: `withTenant` inside an open one throws.
 
-`packages/db` exports `appDb()`, `globalDb()` and `migrationDb()`.
+`packages/db` exports `appDb()`, `globalDb()`, `migrationDb()` and `setTenantContext(tx, tenantId)`
+([rls.ts](../packages/db/src/rls.ts)).
 
 ### 7.3 Permissions
 
-The permission model is described in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions).
-Implementation:
+The permission model is described in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions) and
+implemented in [permissions.ts](../apps/api/src/common/permissions/permissions.ts). The rules:
 
-```
-rank: none=0, read=1, write=2
-
-checkTenant(resource, required):
-  m = ALS.tenantMembership                # never an expired one
-  if !m                                   -> 403
-  if m.role == 'head'                     -> allow
-  if rank(m[resource]) >= rank(required)  -> allow
-  -> 403
-
-checkEdition(editionId, resource, required):
-  edition = load(editionId)
-  if edition.tenantId != ALS.tenantId     -> 404
-  m = ALS.tenantMembership; if !m         -> 403
-  if m.role == 'head'                     -> allow
-  em = editionMembership(m.id, editionId)
-  if !em                                  -> 403
-  if rank(em[resource]) >= rank(required) -> allow
-  -> 403
-```
+- Levels rank `none < read < write`; a required level passes with that level or a higher one.
+- A `head` passes every check, on both levels. An expired membership counts as none.
+- Tenant-level permissions (`settings`, `branding`, `shop`) never grant edition-level access
+  (`program`, `websiteContent`, `tickets`); an org needs an `edition_memberships` row for the
+  edition.
+- An account without a membership in the tenant gets `403` before the edition is looked up, so it
+  cannot tell existing edition ids from absent ones. For a member, the edition check answers `404`
+  before any `403`: for an edition of another tenant (RLS hides it) and for an `:editionId` that is
+  not a uuid, because the check runs before ts-rest validates the request.
 
 ```ts
-@UseGuards(JwtAuthGuard)
-@RequireTenant('settings', 'write')
-async updateTenant() { ... }
+@TsRestHandler(contract.tenants.current)
+@RequireTenant()                       // any membership
+current() { ... }
 
-@UseGuards(JwtAuthGuard)
-@RequireEdition('program', 'write')   // editionId taken from the route param
-async createProgramItem() { ... }
+@TsRestHandler(contract.tenants.update)
+@RequireTenant('settings', 'write')
+update() { ... }
+
+@TsRestHandler(contract.program.create)
+@RequireEdition('program', 'write')    // editionId taken from the route param
+create() { ... }
 ```
 
-`TenantTransactionInterceptor` reads both decorators through the `Reflector` and runs
-`checkTenant` or `checkEdition` inside the tenant transaction ([7.2](#72-tenant-context)).
-`checkEdition` returns `404` for an edition of another tenant and for an `:editionId` that is not a
-uuid: the check runs before ts-rest validates the request.
+`@RequireTenant` and `@RequireEdition` apply `JwtAuthGuard` themselves, so a tenant route is never
+unauthenticated. A route takes one of the two (`@RequireEdition` already requires a membership); a
+second one on the same handler throws when the module loads. Every tenant route has its own single-route `@TsRestHandler(contract.<router>.<route>)`
+method with the decorator below it: for a router-level `@TsRestHandler(contract.<router>)`, ts-rest
+copies only the metadata already on the method, and a decorator above it is silently dropped.
+[tenant-routes.test.ts](../apps/api/test/tenant-routes.test.ts) sends every contract route with
+an `x-tenant-slug` header an unknown slug and expects the interceptor's `404`.
+`TenantTransactionInterceptor` reads the decorator through the `Reflector` and runs the check
+inside the tenant transaction ([7.2](#72-tenant-context)).
 
 ### 7.4 Authorization
 

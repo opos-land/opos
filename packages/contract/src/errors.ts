@@ -9,6 +9,7 @@ export const errorCodes = [
   'session.invalid',
   'permission.denied',
   'server.error',
+  'membership.last-head',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

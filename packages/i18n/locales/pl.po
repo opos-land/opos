@@ -7,6 +7,10 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: pl\n"
 
+#: src/errors.ts
+msgid "A convention must keep at least one head organizer. Make someone else a head organizer first."
+msgstr "Konwent musi mieć co najmniej jednego głównego organizatora. Najpierw nadaj tę rolę komuś innemu."
+
 #. Glossary term: admin
 #: src/glossary.ts
 msgctxt "glossary"

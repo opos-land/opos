@@ -39,10 +39,11 @@ describe('accounts mirror auth.users', () => {
     await authAdmin`update auth.users set email = ${email} where id = ${user.id}`
 
     expect(await account(user.id)).toMatchObject({ email: email.toLowerCase() })
-    const [row] = await migrator<{ created_at: Date; updated_at: Date }[]>`
-      select created_at, updated_at from accounts where id = ${user.id}
+    // Compared in Postgres: a JS Date drops the microseconds, and both can share a millisecond.
+    const [row] = await migrator<{ moved: boolean }[]>`
+      select updated_at > created_at as moved from accounts where id = ${user.id}
     `
-    expect(row!.updated_at.getTime()).toBeGreaterThan(row!.created_at.getTime())
+    expect(row!.moved).toBe(true)
   })
 
   it('disappears with the user', async () => {

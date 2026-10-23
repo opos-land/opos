@@ -183,6 +183,12 @@ permission or a role, or a data state the tests rely on updates
 [packages/db/src/seed.ts](packages/db/src/seed.ts) and the [demo data](docs/PLAN.md#14-demo-data-seed)
 in the same PR. Run `pnpm db:seed` twice before the PR: the second run proves it is idempotent.
 
+**Tests sit by what they need** ([tests](docs/PLAN.md#15-tests)). A unit test, which needs nothing
+outside the process, goes next to the file it tests as `<name>.test.ts`; an integration test, which
+needs Postgres, Supabase Auth or HTTP, goes into the `test/` directory of its package or
+application; an e2e test goes into the `e2e` package. New code with logic of its own gets a unit
+test in the same commit.
+
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
 them to the repository. UI follows the designer's designs; where none exists yet, use plain blocks
 and real copy ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)). Do not ship

@@ -1,4 +1,4 @@
 {
   "extends": "@opos/tsconfig/base.json",
-  "include": ["src", "eslint.config.js"]
+  "include": ["src", "vitest.config.ts", "eslint.config.js"]
 }

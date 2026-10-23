@@ -26,7 +26,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm i18n:check
-      - run: docker compose up -d --wait db
+      - run: docker compose up -d --wait db auth
       - run: pnpm db:migrate
       - run: pnpm db:verify
       - run: pnpm turbo run typecheck lint test ${{ github.event_name == 'pull_request' && '--affected' || '' }}

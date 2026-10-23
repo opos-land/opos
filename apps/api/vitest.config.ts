@@ -6,7 +6,7 @@ const readEnv = (file: string) => (existsSync(file) ? parseEnv(readFileSync(file
 
 export default defineConfig({
   test: {
-    include: ['test/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
     env: { ...readEnv('.env.example'), ...readEnv('.env'), NODE_ENV: 'test' },
   },
 })

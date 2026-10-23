@@ -149,18 +149,15 @@ opos/
   infra/
     supabase/            # built: init SQL and the auth service's dev env (10)
   apps/
-    api/                 # built: bootstrap, env, database providers, OpenAPI docs, health, tests
+    api/                 # built: bootstrap, env, database providers, OpenAPI docs, error filter,
+                         #   request store, JwtAuthGuard, MeModule (GET and PATCH /me), tests
       src/
         common/
-          als/tenant-context.service.ts         # request store, tx(), afterCommit(), withTenant()
-          als/tenant-context.middleware.ts      # opens an empty store for every request
+          als/tenant-context.service.ts         # built with the account; tx(), afterCommit(), withTenant() to come
           als/tenant-transaction.interceptor.ts # tenant, transaction, permissions, commit
-          guards/jwt-auth.guard.ts
           guards/scanner-device.guard.ts
           decorators/require-tenant.decorator.ts
           decorators/require-edition.decorator.ts
-          decorators/current-account.decorator.ts
-          filters/http-exception.filter.ts
         modules/         # one directory per module (7.1)
       Dockerfile
     panel/
@@ -187,9 +184,8 @@ opos/
     specs/
     fixtures/            # Mailpit client, sign-in as a seeded account
   packages/
-    contract/            # built: common schemas and health
+    contract/            # built: common schemas, error codes, health, me (profile)
       src/
-        me.ts
         tenants.ts
         editions.ts
         program.ts
@@ -592,10 +588,22 @@ production). Error schema:
 
 `code` is a stable identifier (for example `edition.already-active`) the client uses to pick a
 translation from the catalog; `params` feed the interpolation. `message` is English, meant for logs
-and debugging — **it never reaches the UI**.
+and debugging — **it never reaches the UI**. Every code is listed in
+[errors.ts](../packages/contract/src/errors.ts) of the contract; a module adds its own codes there.
 
-Statuses: `400` validation, `401` missing or stale token, `403` insufficient permissions,
-`404` does not exist **or belongs to another tenant**, `409` invariant conflict.
+| Status | Meaning | Code when nothing more specific applies |
+|---|---|---|
+| `400` | validation; `params.field` names the first invalid field, an unknown one included | `request.invalid` |
+| `401` | missing, expired or foreign token, or no `accounts` row for it | `session.invalid` |
+| `403` | insufficient permissions | `permission.denied` |
+| `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
+| `409` | invariant conflict | always a module's own code |
+| `429` | rate limit | `request.rate-limited` |
+| `500` | anything unexpected; the body carries no details, the log does | `server.error` |
+
+`HttpExceptionFilter` ([http-exception.filter.ts](../apps/api/src/common/filters/http-exception.filter.ts))
+turns everything thrown during a request into this shape; code that has a specific code throws
+`ApiError(status, code, message, params)`.
 
 ### 5.1 `auth` — Supabase Auth
 
@@ -623,8 +631,8 @@ by the payment provider only ([7.10](#710-payments)).
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/me` | account profile |
-| PATCH | `/me` | change `firstName`, `lastName`, `locale` |
+| GET | `/me` | account profile: `id`, `email`, `firstName`, `lastName`, `locale` |
+| PATCH | `/me` | change `firstName` and `lastName` (1–100 characters after trimming, or `null`) and `locale` (one of `SUPPORTED_LOCALES`, or `null` for detection); any other field -> `400` |
 | DELETE | `/me` | delete the account; `409` when it is some tenant's last `head`; `401` without a sign-in from the last 5 minutes |
 | GET | `/me/memberships` | tenants with role and permissions, edition-level included; expired memberships left out |
 | GET | `/me/attendances` | "my conventions" |
@@ -808,7 +816,8 @@ new term enters that file before its first use in the interface.
 | `@opos/i18n/lingui.config.base` | `linguiConfig()`, which every `lingui.config.ts` calls with its catalogs; it excludes `*.test.ts(x)` from extraction | — |
 
 The macro transform is `@lingui/vite-plugin` with `macroTransform: true`, in the frontends' Vite
-config and in every `vitest.config.ts` that loads messages. `activateLocale(i18n, locale,
+config and in every `vitest.config.ts` that loads messages; a package without its own catalog
+points the plugin at `@opos/i18n/lingui.config` (`configPath`). `activateLocale(i18n, locale,
 appMessages)` merges this package's compiled catalog with the application's own.
 
 ### Workflow
@@ -835,8 +844,9 @@ catalogs are out of sync with the code or a message has no `pl` translation. A n
 The API returns a `code`, never a sentence. [errors.ts](../packages/i18n/src/errors.ts) maps a
 `code` onto a descriptor from the `msg` macro, and the client renders it through
 `i18n._(errorMessage(code), params)`. Supabase Auth's `error_code` values are mapped in the same
-file under `auth.<error_code>`; an unmapped code renders the generic `unknownError`. A new `code` in the contract
-without an entry in that map fails a test ([15.1](#151-api-integration-tests)).
+file under `auth.<error_code>`; an unmapped code renders the generic `unknownError`. A `code` in
+the contract without an entry in that map fails
+[errors.test.ts](../packages/contract/src/errors.test.ts) in `packages/contract`.
 
 Emails are rendered by the API — it activates the recipient's catalog and composes the content
 through `@lingui/core`. That includes Supabase Auth's confirmation, recovery and email change
@@ -865,8 +875,8 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 
 | Module | Contents |
 |---|---|
-| `AuthModule` | `JwtAuthGuard` (Supabase JWT verification), the `POST /hooks/send-email` controller, the GoTrue admin client |
-| `MeModule` | profile, memberships, edition sign-ups, personal schedule, speaker's items, account deletion |
+| `AuthModule` | the `POST /hooks/send-email` controller, the GoTrue admin client |
+| `MeModule` | profile, memberships, edition sign-ups, personal schedule, speaker's items, account deletion; global, because it provides `AccountsRepository` to `JwtAuthGuard` |
 | `TenantsModule` | tenant data, `tenant_memberships` with expiry, invitations |
 | `EditionsModule` | edition CRUD, activation, `edition_memberships` |
 | `ProgramModule` | programme item CRUD, speakers, review moderation |
@@ -908,7 +918,11 @@ database before the guards have run; the guards and the interceptor fill the sto
 6. After a commit, runs the store's after-commit queue.
 
 Repositories take the transaction from `TenantContextService.tx()`, which throws when no tenant
-transaction is open; they never query the pool directly.
+transaction is open; they never query the pool directly. The one exception is
+`AccountsRepository`: `accounts` has no RLS ([4.6](#46-tenant-isolation--rls-in-postgres)), so it
+runs on the `opos_app` pool outside a tenant transaction. Only `findForToken(sub)`, which
+`JwtAuthGuard` calls, takes an id; every other method works on the account in the request store, so
+no caller can pass another account's id.
 
 Outbound I/O — SMTP, the GoTrue admin API — never runs inside the transaction. Code inside it
 registers the call with `TenantContextService.afterCommit(fn)`; the queue runs after the commit and
@@ -976,8 +990,10 @@ Sessions are issued by Supabase Auth ([10](#10-supabase)):
 - Email confirmation is required (`GOTRUE_MAILER_AUTOCONFIRM=false`); an unconfirmed account gets
   `email_not_confirmed` on sign-in.
 
-**`JwtAuthGuard`** verifies the `Authorization: Bearer` token with `jose`: signature, `exp`,
-`aud = authenticated`, `iss = <AUTH_URL>`. `sub` is `accounts.id`; the guard loads that row and
+**`JwtAuthGuard`** ([jwt-auth.guard.ts](../apps/api/src/common/guards/jwt-auth.guard.ts)) verifies
+the `Authorization: Bearer` token with `jose`: signature, `exp` and `sub` required (a token without
+`exp` never expires), `aud = authenticated`, `iss = <AUTH_URL>`, `alg = HS256` only. `sub` is `accounts.id` (a uuid); the
+guard loads that row and
 puts it into the request store ([7.2](#72-tenant-context)) — `locale` comes from the database, not from the token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
 
 **Session in the browser** — `@supabase/auth-js` with `flowType: 'pkce'`, `persistSession: true`,
@@ -1632,7 +1648,9 @@ these checks through the endpoints.
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
 `supabase/gotrue`, the production tags), no database or auth mocks, in `apps/api/test/*.test.ts`.
 The tests read `apps/api/.env.example`, overridden by `apps/api/.env` when present. Test
-accounts are created through the admin API and signed in with `signInWithPassword`.
+accounts are created through the admin API (`POST /admin/users`) and signed in with the password
+grant (`POST /token?grant_type=password`), so the API checks real Supabase Auth tokens; tokens
+with a wrong signature, audience, issuer or expiry are signed in the test with `jose`.
 
 | Area | What we check |
 |---|---|
@@ -1649,11 +1667,11 @@ accounts are created through the admin API and signed in with `signInWithPasswor
 | payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid`; an SMTP failure after the payment leaves `ticketEmailSentAt` empty and the job sends the email later |
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
 | scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
-| JWT | an expired token, a token signed with another secret, `aud != authenticated` and a foreign `iss` -> `401`; a valid token without an `accounts` row -> `401` |
+| JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` -> `400` |
 | rate limit | `GET /invitations/preview` above the limit -> `429` with `Retry-After` |
-| i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts`; programme time formatting returns the tenant's zone, not the server's |
+| i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
 
 ### 15.2 E2E tests
 
@@ -1699,8 +1717,8 @@ using seeded data only read it.
 ### 15.3 CI
 
 GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every push to `develop` and
-`main`, with tool versions from `mise.toml`, the same source as local machines. The `db` container
-runs for the schema and API tests, behind `pnpm db:migrate` and `pnpm db:verify`. On a PR,
+`main`, with tool versions from `mise.toml`, the same source as local machines. The `db` and `auth`
+containers run for the schema and API tests, behind `pnpm db:migrate` and `pnpm db:verify`. On a PR,
 `typecheck`, `lint` and `test` run with `--affected` against the PR base branch; a push to `develop`
 or `main` runs them on every package and fills the turbo cache that PRs restore. `pnpm format:check`,
 `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.

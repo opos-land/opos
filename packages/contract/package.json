@@ -10,16 +10,21 @@
   },
   "scripts": {
     "typecheck": "tsc",
-    "lint": "eslint --max-warnings 0 ."
+    "lint": "eslint --max-warnings 0 .",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@opos/i18n": "workspace:*",
     "@ts-rest/core": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@lingui/core": "catalog:",
+    "@lingui/vite-plugin": "catalog:",
     "@opos/eslint-config": "workspace:*",
     "@opos/tsconfig": "workspace:*",
     "eslint": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

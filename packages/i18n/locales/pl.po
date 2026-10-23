@@ -30,6 +30,10 @@ msgid "booth"
 msgstr "stoisko"
 
 #: src/errors.ts
+msgid "Check the data you entered."
+msgstr "Sprawdź wprowadzone dane."
+
+#: src/errors.ts
 msgid "Choose a time zone from the list."
 msgstr "Wybierz strefę czasową z listy."
 
@@ -176,6 +180,10 @@ msgid "Too many attempts. Try again in a few minutes."
 msgstr "Zbyt wiele prób. Spróbuj ponownie za kilka minut."
 
 #: src/errors.ts
+msgid "Too many attempts. Try again in a moment."
+msgstr "Zbyt wiele prób. Spróbuj ponownie za chwilę."
+
+#: src/errors.ts
 msgid "Too many emails sent. Try again in a few minutes."
 msgstr "Wysłano zbyt wiele wiadomości. Spróbuj ponownie za kilka minut."
 
@@ -186,5 +194,17 @@ msgid "user"
 msgstr "użytkownik"
 
 #: src/errors.ts
+msgid "We could not find what you are looking for."
+msgstr "Nie znaleziono tego, czego szukasz."
+
+#: src/errors.ts
 msgid "Wrong email or password."
 msgstr "Nieprawidłowy e-mail lub hasło."
+
+#: src/errors.ts
+msgid "You do not have permission to do this."
+msgstr "Nie masz uprawnień, żeby to zrobić."
+
+#: src/errors.ts
+msgid "Your session has ended. Sign in again."
+msgstr "Twoja sesja wygasła. Zaloguj się ponownie."

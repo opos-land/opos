@@ -4,7 +4,16 @@ import { msg } from '@lingui/core/macro'
 // API error codes and Supabase Auth error codes (as `auth.<error_code>`) mapped onto messages
 // (PLAN.md 6, API errors). The client renders them with i18n._(errorMessage(code), params).
 
+export const unknownError = msg`Something went wrong. Try again.`
+
 export const errorMessages: Record<string, MessageDescriptor> = {
+  'request.invalid': msg`Check the data you entered.`,
+  'request.not-found': msg`We could not find what you are looking for.`,
+  'request.rate-limited': msg`Too many attempts. Try again in a moment.`,
+  'session.invalid': msg`Your session has ended. Sign in again.`,
+  'permission.denied': msg`You do not have permission to do this.`,
+  'server.error': unknownError,
+
   'tenant.slug-invalid': msg`The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters.`,
   'tenant.slug-taken': msg`This address is already taken by another convention.`,
   'tenant.name-empty': msg`Enter the convention name.`,
@@ -24,8 +33,6 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'auth.over_request_rate_limit': msg`Too many attempts. Try again in a few minutes.`,
   'auth.signup_disabled': msg`Sign-up is closed at the moment.`,
 }
-
-export const unknownError = msg`Something went wrong. Try again.`
 
 /** The message for an error code; an unmapped code renders the generic message. */
 export const errorMessage = (code: string): MessageDescriptor => errorMessages[code] ?? unknownError

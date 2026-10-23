@@ -29,7 +29,30 @@ export const updateAccountSchema = z
 
 export type UpdateAccount = z.infer<typeof updateAccountSchema>
 
-const bearer = z.object({ authorization: z.string() })
+const level = z.enum(['none', 'read', 'write'])
+
+/** One of the account's memberships, edition-level permissions included; never an expired one. */
+export const membershipSchema = z.object({
+  tenant: z.object({ id: z.string().uuid(), slug: z.string(), name: z.string() }),
+  role: z.enum(['head', 'org']),
+  settingsAccess: level,
+  brandingAccess: level,
+  shopConfigAccess: level,
+  expiresAt: z.string().datetime().nullable(),
+  editions: z.array(
+    z.object({
+      editionId: z.string().uuid(),
+      editionSlug: z.string(),
+      programAccess: level,
+      websiteContentAccess: level,
+      ticketsAccess: level,
+    }),
+  ),
+})
+
+export type Membership = z.infer<typeof membershipSchema>
+
+export const bearer = z.object({ authorization: z.string() })
 
 export const meContract = c.router({
   get: {
@@ -46,5 +69,12 @@ export const meContract = c.router({
     body: updateAccountSchema,
     responses: { 200: accountSchema, 400: errorSchema, 401: errorSchema },
     summary: 'Change the name or the interface language of the signed-in account',
+  },
+  memberships: {
+    method: 'GET',
+    path: '/me/memberships',
+    headers: bearer,
+    responses: { 200: z.array(membershipSchema), 401: errorSchema },
+    summary: "The account's memberships in every tenant",
   },
 })

@@ -3,7 +3,7 @@ import { contract } from '@opos/contract'
 import { type Database } from '@opos/db'
 import { tsRestHandler, TsRestHandler } from '@ts-rest/nest'
 import { sql } from 'drizzle-orm'
-import { APP_DB } from '../../common/database/database.module'
+import { APP_DB } from '../../common/database/tokens'
 
 @Controller()
 export class HealthController {

@@ -4,7 +4,7 @@ import { accounts, type Database } from '@opos/db'
 import { isLocale } from '@opos/i18n'
 import { eq } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
-import { APP_DB } from '../../common/database/database.module'
+import { APP_DB } from '../../common/database/tokens'
 import { unauthenticated } from '../../common/errors/api-error'
 
 const columns = {

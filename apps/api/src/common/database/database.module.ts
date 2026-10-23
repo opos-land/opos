@@ -1,9 +1,8 @@
 import { Global, Inject, Module, type OnApplicationShutdown } from '@nestjs/common'
 import { appDb, globalDb, type Database } from '@opos/db'
 import { ENV, type Env } from '../../config/env'
-
-export const APP_DB = Symbol('APP_DB')
-export const GLOBAL_DB = Symbol('GLOBAL_DB')
+import { GlobalDbService } from './global-db.service'
+import { APP_DB, GLOBAL_DB } from './tokens'
 
 @Global()
 @Module({
@@ -14,8 +13,10 @@ export const GLOBAL_DB = Symbol('GLOBAL_DB')
       inject: [ENV],
       useFactory: (env: Env) => globalDb(env.DATABASE_GLOBAL_URL),
     },
+    GlobalDbService,
   ],
-  exports: [APP_DB, GLOBAL_DB],
+  // GLOBAL_DB stays inside this module: cross-tenant reads go through GlobalDbService only.
+  exports: [APP_DB, GlobalDbService],
 })
 export class DatabaseModule implements OnApplicationShutdown {
   constructor(

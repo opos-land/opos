@@ -29,6 +29,13 @@
       "when": 1792797165483,
       "tag": "0003_accounts_column_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792797650297,
+      "tag": "0004_revoke_accounts_from_global",
+      "breakpoints": true
     }
   ]
 }

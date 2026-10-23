@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { app, createEdition, createTenant, inTenant, migrator, superuser } from './db'
+import { createEdition, createTenant, freshApp, inTenant, migrator, superuser } from './db'
 
 // Every covered table (PLAN.md 4.6) and the column that holds its tenant.
 const covered = [
@@ -28,10 +28,17 @@ beforeAll(async () => {
 })
 
 describe('tenant isolation', () => {
+  // On a session that never set app.tenant_id, only a policy without missing_ok raises this. A
+  // reused session would hold '' and fail with a uuid error even under missing_ok.
   it.each(covered)('rejects a query on %s without a tenant context', async (table) => {
-    await expect(app.unsafe(`select 1 from ${table}`)).rejects.toThrow(
-      /app\.tenant_id|invalid input syntax for type uuid/,
-    )
+    const sql = freshApp()
+    try {
+      await expect(sql.unsafe(`select 1 from ${table}`)).rejects.toThrow(
+        /unrecognized configuration parameter "app\.tenant_id"/,
+      )
+    } finally {
+      await sql.end()
+    }
   })
 
   it.each(covered)('shows only the rows of the tenant in context on %s', async (table, column) => {
@@ -53,6 +60,15 @@ describe('tenant isolation', () => {
       ).rejects.toThrow(/row-level security/)
     },
   )
+
+  it('refuses a tenant other than the one in context (tenants WITH CHECK)', async () => {
+    await expect(
+      inTenant(
+        b.id,
+        (sql) => sql`insert into tenants (slug, name) values ('rls-foreign', 'Foreign')`,
+      ),
+    ).rejects.toThrow(/row-level security/)
+  })
 
   it('rejects an insert with another tenant id', async () => {
     const a = await createTenant()

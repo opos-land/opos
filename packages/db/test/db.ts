@@ -14,7 +14,12 @@ const url = (user: string, password: string) => {
 const connect = (connectionUrl: string) => postgres(connectionUrl, { max: 2, onnotice: () => {} })
 
 export const migrator = connect(migrationUrl())
-export const app = connect(process.env.DATABASE_URL ?? url('opos_app', 'opos'))
+const appUrl = process.env.DATABASE_URL ?? url('opos_app', 'opos')
+export const app = connect(appUrl)
+export const global = connect(url('opos_app_global', 'opos'))
+
+/** A connection that has never run set_config, for checks that need a clean session. */
+export const freshApp = () => postgres(appUrl, { max: 1, onnotice: () => {} })
 export const authAdmin = connect(url('supabase_auth_admin', 'postgres'))
 export const superuser = connect(url('postgres', 'postgres'))
 
@@ -26,7 +31,7 @@ const userIds: string[] = []
 afterAll(async () => {
   await migrator`delete from tenants where id = any(${tenantIds}::uuid[])`
   await authAdmin`delete from auth.users where id = any(${userIds}::uuid[])`
-  await Promise.all([migrator, app, authAdmin, superuser].map((sql) => sql.end()))
+  await Promise.all([migrator, app, global, authAdmin, superuser].map((sql) => sql.end()))
 })
 
 export const unique = () => randomUUID().slice(0, 8)

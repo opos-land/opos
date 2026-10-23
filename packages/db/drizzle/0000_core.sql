@@ -71,9 +71,9 @@ CREATE TABLE "tenants" (
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_auth_user_fk" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "edition_memberships" ADD CONSTRAINT "edition_memberships_membership_fk" FOREIGN KEY ("tenant_membership_id","tenant_id") REFERENCES "public"."tenant_memberships"("id","tenant_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "edition_memberships" ADD CONSTRAINT "edition_memberships_edition_fk" FOREIGN KEY ("edition_id","tenant_id") REFERENCES "public"."editions"("id","tenant_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "editions" ADD CONSTRAINT "editions_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "tenant_memberships" ADD CONSTRAINT "tenant_memberships_account_id_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "tenant_memberships" ADD CONSTRAINT "tenant_memberships_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "editions" ADD CONSTRAINT "editions_tenant_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "tenant_memberships" ADD CONSTRAINT "tenant_memberships_account_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "tenant_memberships" ADD CONSTRAINT "tenant_memberships_tenant_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "edition_memberships_tenant_edition_idx" ON "edition_memberships" USING btree ("tenant_id","edition_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "editions_one_active_per_tenant" ON "editions" USING btree ("tenant_id") WHERE "editions"."is_active";--> statement-breakpoint
+CREATE UNIQUE INDEX "editions_one_active_unique" ON "editions" USING btree ("tenant_id") WHERE "editions"."is_active";--> statement-breakpoint
 CREATE INDEX "tenant_memberships_tenant_idx" ON "tenant_memberships" USING btree ("tenant_id");

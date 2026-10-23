@@ -397,8 +397,11 @@ now()`, `updatedAt timestamptz not null default now()` — `accounts.id` being t
 
 Names in this chapter are the TypeScript ones. Drizzle maps them with `casing: 'snake_case'`, set in
 both `drizzle.config.ts` and the client: `tenantId` is the column `tenant_id`. Constraints and
-indexes carry explicit names (`<table>_<purpose>_unique`, `_idx`, `_fk`), so Postgres never
-truncates them past 63 characters.
+indexes carry explicit names, so Postgres never truncates them past 63 characters: unique
+constraints and unique indexes `<table>_<purpose>_unique`, other indexes `<table>_<purpose>_idx`,
+foreign keys `<table>_<target>_fk` (`tenant_memberships_tenant_fk`), checks and constraint
+triggers `<table>_<rule>` (`editions_ends_after_start`). Foreign keys are declared with
+`foreignKey({ name })`, never with `.references()`, which generates the name.
 
 The `auth` schema belongs to Supabase Auth: it creates and migrates it on start. Our migrations
 never write to it; `drizzle.config.ts` sets `schemaFilter: ['public']`, and `accounts` references

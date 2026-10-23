@@ -6,7 +6,7 @@ export const tenants = pgTable(
   'tenants',
   {
     id: id(),
-    slug: text().notNull().unique(),
+    slug: text().notNull().unique('tenants_slug_unique'),
     name: text().notNull(),
     defaultLocale: text().notNull().default('pl'),
     timezone: text().notNull().default('Europe/Warsaw'),

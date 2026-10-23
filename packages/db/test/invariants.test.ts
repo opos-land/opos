@@ -8,7 +8,7 @@ describe('invariants', () => {
     await createEdition(tenant.id, { isActive: true })
 
     await expect(createEdition(tenant.id, { isActive: true })).rejects.toThrow(
-      /editions_one_active_per_tenant/,
+      /editions_one_active_unique/,
     )
   })
 

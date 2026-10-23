@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import {
   boolean,
   check,
+  foreignKey,
   pgTable,
   text,
   timestamp,
@@ -16,9 +17,7 @@ export const editions = pgTable(
   'editions',
   {
     id: id(),
-    tenantId: uuid()
-      .notNull()
-      .references(() => tenants.id, { onDelete: 'cascade' }),
+    tenantId: uuid().notNull(),
     slug: text().notNull(),
     name: text().notNull(),
     startsAt: timestamp({ withTimezone: true }).notNull(),
@@ -30,9 +29,14 @@ export const editions = pgTable(
   (t) => [
     unique('editions_tenant_slug_unique').on(t.tenantId, t.slug),
     unique('editions_id_tenant_unique').on(t.id, t.tenantId),
-    uniqueIndex('editions_one_active_per_tenant')
+    uniqueIndex('editions_one_active_unique')
       .on(t.tenantId)
       .where(sql`${t.isActive}`),
+    foreignKey({
+      name: 'editions_tenant_fk',
+      columns: [t.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
     check('editions_ends_after_start', sql`${t.endsAt} > ${t.startsAt}`),
   ],
 )

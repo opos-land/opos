@@ -6,7 +6,7 @@ export const accounts = pgTable(
   'accounts',
   {
     id: uuid().primaryKey(),
-    email: text().notNull().unique(),
+    email: text().notNull().unique('accounts_email_unique'),
     firstName: text(),
     lastName: text(),
     locale: text(),

@@ -1,6 +1,6 @@
 {
-  "id": "21b788de-25fc-43c3-a824-8f80d30e52e4",
-  "prevId": "ffeeac43-7547-43f0-bb8f-266160ca4c6d",
+  "id": "e2c2a40b-fdf2-4af8-aba3-107912526ee6",
+  "prevId": "dd513ba6-7723-4f5e-9a74-28434d376e76",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -293,8 +293,8 @@
         }
       },
       "indexes": {
-        "editions_one_active_per_tenant": {
-          "name": "editions_one_active_per_tenant",
+        "editions_one_active_unique": {
+          "name": "editions_one_active_unique",
           "columns": [
             {
               "expression": "tenant_id",
@@ -311,8 +311,8 @@
         }
       },
       "foreignKeys": {
-        "editions_tenant_id_tenants_id_fk": {
-          "name": "editions_tenant_id_tenants_id_fk",
+        "editions_tenant_fk": {
+          "name": "editions_tenant_fk",
           "tableFrom": "editions",
           "columnsFrom": [
             "tenant_id"
@@ -446,8 +446,8 @@
         }
       },
       "foreignKeys": {
-        "tenant_memberships_account_id_accounts_id_fk": {
-          "name": "tenant_memberships_account_id_accounts_id_fk",
+        "tenant_memberships_account_fk": {
+          "name": "tenant_memberships_account_fk",
           "tableFrom": "tenant_memberships",
           "columnsFrom": [
             "account_id"
@@ -459,8 +459,8 @@
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
-        "tenant_memberships_tenant_id_tenants_id_fk": {
-          "name": "tenant_memberships_tenant_id_tenants_id_fk",
+        "tenant_memberships_tenant_fk": {
+          "name": "tenant_memberships_tenant_fk",
           "tableFrom": "tenant_memberships",
           "columnsFrom": [
             "tenant_id"

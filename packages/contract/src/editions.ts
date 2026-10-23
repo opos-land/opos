@@ -137,7 +137,7 @@ export const editionsContract = c.router({
       headers: tenantHeaders,
       pathParams: editionMember,
 
-      responses: { 204: c.noBody(), ...errors },
+      responses: { 204: c.noBody(), ...errors, 409: errorSchema },
       summary: "Remove an org's access to the edition; needs settings=write",
     },
   },

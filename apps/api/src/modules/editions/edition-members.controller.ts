@@ -20,12 +20,6 @@ export class EditionMembersController {
     private readonly access: AccessRepository,
   ) {}
 
-  private async edition(editionId: string) {
-    const edition = await this.editions.find(editionId)
-    if (!edition) throw notFound('edition')
-    return edition
-  }
-
   /** The org whose edition access changes; heads hold every edition already. */
   private async target(tenantMembershipId: string) {
     const target = await this.members.find(tenantMembershipId)
@@ -41,7 +35,7 @@ export class EditionMembersController {
   @RequireTenant('settings', 'read')
   list() {
     return tsRestHandler(contract.editions.members.list, async ({ params }) => {
-      const edition = await this.edition(params.editionId)
+      const edition = await this.editions.get(params.editionId)
       return { status: 200, body: await this.editionMembers.list(edition.id) }
     })
   }
@@ -50,12 +44,14 @@ export class EditionMembersController {
   @RequireTenant('settings', 'write')
   put() {
     return tsRestHandler(contract.editions.members.put, async ({ params, body }) => {
-      const edition = await this.edition(params.editionId)
+      const edition = await this.editions.get(params.editionId)
       const target = await this.target(params.tenantMembershipId)
       const actor = this.context.membership()!
-      const actorAccess =
-        actor.role === 'head' ? null : await this.access.editionAccess(actor.id, edition.id)
-      assertMayGrantEdition(actor, actorAccess ?? null, body)
+      const [actorAccess, current] = await Promise.all([
+        this.access.editionAccess(actor.id, edition.id),
+        this.access.editionAccess(target.id, edition.id),
+      ])
+      assertMayGrantEdition(actor, actorAccess, body, current)
       return { status: 200, body: await this.editionMembers.put(edition.id, target.id, body) }
     })
   }
@@ -64,7 +60,7 @@ export class EditionMembersController {
   @RequireTenant('settings', 'write')
   remove() {
     return tsRestHandler(contract.editions.members.remove, async ({ params }) => {
-      const edition = await this.edition(params.editionId)
+      const edition = await this.editions.get(params.editionId)
       const target = await this.target(params.tenantMembershipId)
       await this.editionMembers.remove(edition.id, target.id)
       return { status: 204, body: undefined }

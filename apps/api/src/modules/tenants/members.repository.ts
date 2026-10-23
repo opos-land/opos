@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { type Member, type UpdateMember } from '@opos/contract'
-import { accounts, tenantMemberships } from '@opos/db'
+import { accounts, editionMemberships, tenantMemberships } from '@opos/db'
 import { asc, eq, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
@@ -57,14 +57,22 @@ export class MembersRepository {
     return row && toMember(row)
   }
 
+  /**
+   * An expiry on a head violates tenant_memberships_head_never_expires, which the filter answers
+   * with 400. Promoting to head clears the expiry and drops the edition-level rows: a head holds
+   * every edition, and stale rows would come back as access after a demotion.
+   */
   async update(id: string, changes: UpdateMember): Promise<Member> {
+    if (Object.keys(changes).length === 0) return (await this.find(id))!
     const { expiresAt, ...rest } = changes
-    await this.context
-      .tx()
+    const tx = this.context.tx()
+    if (changes.role === 'head') {
+      await tx.delete(editionMemberships).where(eq(editionMemberships.tenantMembershipId, id))
+    }
+    await tx
       .update(tenantMemberships)
       .set({
         ...rest,
-        // A head never expires: promoting clears the expiry.
         ...(changes.role === 'head'
           ? { expiresAt: null }
           : expiresAt !== undefined && { expiresAt: expiresAt ? new Date(expiresAt) : null }),

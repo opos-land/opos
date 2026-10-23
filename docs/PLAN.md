@@ -599,7 +599,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 
 | Status | Meaning | Code when nothing more specific applies |
 |---|---|---|
-| `400` | validation; `params.field` names the first invalid field, an unknown one included | `request.invalid` |
+| `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
 | `401` | missing, expired or foreign token, or no `accounts` row for it | `session.invalid` |
 | `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
@@ -656,7 +656,7 @@ by the payment provider only ([7.10](#710-payments)).
 | PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `slug`, `defaultLocale`, `timezone` as an IANA zone); a taken slug -> `409` `tenant.slug-taken` |
 | GET | `/tenants/current/members` | `settings>=read`; every member with the account's email and names, expired ones included and flagged `expired` |
 | POST | `/tenants/current/members` | `settings=write`; an invitation ([7.7](#77-organizer-invitations)) |
-| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry |
+| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry and drops the member's edition-level rows; an expiry on a head -> `400` |
 | DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation; `204`; the last head -> `409` `membership.last-head` |
 | GET | `/tenants/current/payment-config` | `shop>=read`; provider, `accountRef`, currency, whether credentials are set |
 | PUT | `/tenants/current/payment-config` | `shop=write`; `{ provider, accountRef, credentials?, currency }` |
@@ -666,7 +666,8 @@ Anti-escalation ([PRODUCT.md 5.6](PRODUCT.md#56-anti-escalation-policy),
 of its own: `member.self` (the own membership, heads included), `member.head-only` (an org touching
 a head), `member.above-own` (a permission above the actor's own, on either level, or an org
 appointing a head), `member.expiry-after-own` (an expiry later than the actor's own, or none when
-the actor has one).
+the actor has one). A value the member already holds is no grant: an org may change one field of a
+member who holds more than the org in another.
 
 Invitations — without the tenant header:
 
@@ -683,11 +684,11 @@ Invitations — without the tenant header:
 | POST | `/editions` | `settings=write`; `{ slug, name, startsAt, endsAt }`, created inactive and unpublished; a taken slug -> `409` `edition.slug-taken` |
 | GET | `/editions/:editionId` | membership |
 | PATCH | `/editions/:editionId` | `settings=write`; the same fields plus `isPublished` |
-| DELETE | `/editions/:editionId` | `settings=write`; `204`; `409` `edition.active` when the edition is active |
-| POST | `/editions/:editionId/activate` | `settings=write`; deactivates the previous active edition in the same transaction |
+| DELETE | `/editions/:editionId` | `settings=write`; `204`; `409` `edition.active` when the edition is active, checked in the delete statement itself |
+| POST | `/editions/:editionId/activate` | `settings=write`; locks the tenant row, then deactivates the previous active edition in the same transaction, so two activations run one after the other |
 | GET | `/editions/:editionId/members` | `settings>=read` |
 | PUT | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation; `{ programAccess, websiteContentAccess, ticketsAccess }`; a head -> `409` `member.is-head` |
-| DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation (`member.self`); `204` |
+| DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation (`member.self`, `member.head-only`); a head -> `409` `member.is-head`; `204` |
 
 An edition `slug` is 1–40 lowercase letters, digits and hyphens, unique within the tenant;
 `endsAt` is after `startsAt`, also after a `PATCH` of only one of them. Another tenant's edition is

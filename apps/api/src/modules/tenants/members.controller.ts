@@ -35,7 +35,7 @@ export class MembersController {
   update() {
     return tsRestHandler(contract.tenants.members.update, async ({ params, body }) => {
       const target = await this.target(params.membershipId)
-      assertMayGrant(this.context.membership()!, body)
+      assertMayGrant(this.context.membership()!, body, target)
       return { status: 200, body: await this.members.update(target.id, body) }
     })
   }

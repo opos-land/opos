@@ -20,7 +20,22 @@ const codeByStatus = (status: number): ErrorCode => {
 }
 
 /** Database constraints whose violation is the client's business, by constraint name. */
-const constraintErrors: Record<string, { status: number; code: ErrorCode; message: string }> = {
+const constraintErrors: Record<
+  string,
+  { status: number; code: ErrorCode; message: string; params?: ApiErrorBody['params'] }
+> = {
+  editions_ends_after_start: {
+    status: 400,
+    code: 'request.invalid',
+    message: 'endsAt must be after startsAt',
+    params: { field: 'endsAt' },
+  },
+  tenant_memberships_head_never_expires: {
+    status: 400,
+    code: 'request.invalid',
+    message: 'A head membership never expires',
+    params: { field: 'expiresAt' },
+  },
   tenant_memberships_at_least_one_head: {
     status: 409,
     code: 'membership.last-head',
@@ -59,7 +74,10 @@ export function toErrorResponse(exception: unknown): { status: number; body: Api
   // Deferred constraint triggers fire at COMMIT, after the handler already chose a 2xx.
   const constraint = postgresConstraint(exception)
   const known = constraint ? constraintErrors[constraint] : undefined
-  if (known) return { status: known.status, body: { code: known.code, message: known.message } }
+  if (known) {
+    const { status, code, message, params } = known
+    return { status, body: { code, params, message } }
+  }
 
   if (exception instanceof ApiError) {
     const { code, params, message } = exception

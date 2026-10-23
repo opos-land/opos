@@ -227,6 +227,66 @@ describe('anti-escalation', () => {
   })
 })
 
+describe('review fixes', () => {
+  const none = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
+
+  it('answers 400 when a head sets an expiry on another head, and 200 to an empty PATCH', async () => {
+    const t = await tenantWithHead()
+    const other = await member()
+    const otherId = await addOrg(t.id, other)
+    const path = `/tenants/current/members/${otherId}`
+    await call(t.head, 'patch', path, { role: 'head' }, t.slug).expect(200)
+
+    const res = await call(t.head, 'patch', path, { expiresAt: later.toISOString() }, t.slug)
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'expiresAt' } })
+    await call(t.head, 'patch', path, {}, t.slug).expect(200)
+  })
+
+  it('drops edition access on promotion, so a later demotion does not restore it', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const promoted = await member()
+    const id = await addOrg(t.id, promoted)
+    await addEditionAccess(t.id, id, edition, { program: 'write' })
+    const path = `/tenants/current/members/${id}`
+
+    await call(t.head, 'patch', path, { role: 'head' }, t.slug).expect(200)
+    await call(t.head, 'patch', path, { role: 'org' }, t.slug).expect(200)
+
+    const list = (await call(t.head, 'get', `/editions/${edition}/members`, undefined, t.slug))
+      .body as { tenantMembershipId: string }[]
+    expect(list.map((m) => m.tenantMembershipId)).not.toContain(id)
+  })
+
+  it('lets an org change one edition permission of a member who holds more elsewhere', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const [actor, held] = await Promise.all([member(), member()])
+    const actorId = await addOrg(t.id, actor, { settings: 'write' })
+    await addEditionAccess(t.id, actorId, edition, { program: 'write' })
+    const heldId = await addOrg(t.id, held)
+    await addEditionAccess(t.id, heldId, edition, { tickets: 'write' })
+
+    const body = { ...none, programAccess: 'write', ticketsAccess: 'write' }
+    await call(actor, 'put', `/editions/${edition}/members/${heldId}`, body, t.slug).expect(200)
+  })
+
+  it('serialises two concurrent activations, leaving exactly one active edition', async () => {
+    const t = await tenantWithHead()
+    const [x, y] = await Promise.all([addEdition(t.id), addEdition(t.id)])
+
+    const results = await Promise.all(
+      [x, y].map((id) => call(t.head, 'post', `/editions/${id}/activate`, undefined, t.slug)),
+    )
+    expect(results.map((r) => r.status)).toEqual([200, 200])
+    const all = (await call(t.head, 'get', '/editions', undefined, t.slug)).body as {
+      isActive: boolean
+    }[]
+    expect(all.filter((e) => e.isActive)).toHaveLength(1)
+  })
+})
+
 describe('tenant settings', () => {
   it('changes the name and refuses a taken slug and an unknown time zone', async () => {
     const res = await call(a.head, 'patch', '/tenants/current', { name: 'Renamed' }).expect(200)

@@ -13,6 +13,7 @@ const org = (overrides: Partial<TenantMembership> = {}): TenantMembership => ({
 })
 const head = org({ role: 'head' })
 const none = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' } as const
+const plain = { settingsAccess: 'none', brandingAccess: 'none', shopConfigAccess: 'none' } as const
 
 const code = (fn: () => void) => {
   try {
@@ -37,27 +38,60 @@ describe('assertMayManage', () => {
 
 describe('assertMayGrant', () => {
   it('lets a head grant anything', () => {
-    expect(code(() => assertMayGrant(head, { role: 'head', shopConfigAccess: 'write' }))).toBe(
-      'allowed',
-    )
+    expect(
+      code(() => assertMayGrant(head, { role: 'head', shopConfigAccess: 'write' }, plain)),
+    ).toBe('allowed')
   })
 
   it('caps an org at their own permissions', () => {
-    expect(code(() => assertMayGrant(org(), { brandingAccess: 'read' }))).toBe('allowed')
-    expect(code(() => assertMayGrant(org(), { brandingAccess: 'write' }))).toBe('member.above-own')
-    expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'read' }))).toBe('member.above-own')
-    expect(code(() => assertMayGrant(org(), { role: 'head' }))).toBe('member.above-own')
+    expect(code(() => assertMayGrant(org(), { brandingAccess: 'read' }, plain))).toBe('allowed')
+    expect(code(() => assertMayGrant(org(), { brandingAccess: 'write' }, plain))).toBe(
+      'member.above-own',
+    )
+    expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'read' }, plain))).toBe(
+      'member.above-own',
+    )
+    expect(code(() => assertMayGrant(org(), { role: 'head' }, plain))).toBe('member.above-own')
   })
 
   it("caps the expiry at the org's own", () => {
     const actor = org({ expiresAt: new Date('2027-01-01T00:00:00Z') })
 
-    expect(code(() => assertMayGrant(actor, { expiresAt: '2026-12-31T00:00:00Z' }))).toBe('allowed')
-    expect(code(() => assertMayGrant(actor, { expiresAt: '2027-02-01T00:00:00Z' }))).toBe(
+    expect(code(() => assertMayGrant(actor, { expiresAt: '2026-12-31T00:00:00Z' }, plain))).toBe(
+      'allowed',
+    )
+    expect(code(() => assertMayGrant(actor, { expiresAt: '2027-02-01T00:00:00Z' }, plain))).toBe(
       'member.expiry-after-own',
     )
-    expect(code(() => assertMayGrant(actor, { expiresAt: null }))).toBe('member.expiry-after-own')
-    expect(code(() => assertMayGrant(org(), { expiresAt: null }))).toBe('allowed')
+    expect(code(() => assertMayGrant(actor, { expiresAt: null }, plain))).toBe(
+      'member.expiry-after-own',
+    )
+    expect(code(() => assertMayGrant(org(), { expiresAt: null }, plain))).toBe('allowed')
+  })
+
+  it('treats a value the member already holds as no grant', () => {
+    const held = { ...plain, shopConfigAccess: 'write' } as const
+
+    expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'write' }, held))).toBe('allowed')
+    expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'none' }, held))).toBe('allowed')
+  })
+})
+
+describe('assertMayGrantEdition, keeping access the target already holds', () => {
+  it('lets an org change one field while keeping a higher one the target holds', () => {
+    const own = { ...none, programAccess: 'write' } as const
+    const current = { ...none, ticketsAccess: 'write' } as const
+
+    expect(
+      code(() =>
+        assertMayGrantEdition(
+          org(),
+          own,
+          { ...none, programAccess: 'write', ticketsAccess: 'write' },
+          current,
+        ),
+      ),
+    ).toBe('allowed')
   })
 })
 
@@ -65,17 +99,17 @@ describe('assertMayGrantEdition', () => {
   it('caps an org at their own access to the edition', () => {
     const own = { ...none, programAccess: 'write' } as const
 
-    expect(code(() => assertMayGrantEdition(org(), own, { ...none, programAccess: 'write' }))).toBe(
-      'allowed',
-    )
-    expect(code(() => assertMayGrantEdition(org(), own, { ...none, ticketsAccess: 'read' }))).toBe(
-      'member.above-own',
-    )
-    expect(code(() => assertMayGrantEdition(org(), null, { ...none, programAccess: 'read' }))).toBe(
-      'member.above-own',
-    )
-    expect(code(() => assertMayGrantEdition(head, null, { ...none, ticketsAccess: 'write' }))).toBe(
-      'allowed',
-    )
+    expect(
+      code(() => assertMayGrantEdition(org(), own, { ...none, programAccess: 'write' }, null)),
+    ).toBe('allowed')
+    expect(
+      code(() => assertMayGrantEdition(org(), own, { ...none, ticketsAccess: 'read' }, null)),
+    ).toBe('member.above-own')
+    expect(
+      code(() => assertMayGrantEdition(org(), null, { ...none, programAccess: 'read' }, null)),
+    ).toBe('member.above-own')
+    expect(
+      code(() => assertMayGrantEdition(head, null, { ...none, ticketsAccess: 'write' }, null)),
+    ).toBe('allowed')
   })
 })

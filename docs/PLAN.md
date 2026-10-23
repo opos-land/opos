@@ -339,6 +339,9 @@ tasks still run in parallel.
 - Frontend build-time variables (`VITE_*`) enter task hashes through turbo's framework inference.
   The API's variables are read at runtime and stay out of the hash
   ([11](#11-environment-variables)).
+- turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
+  every `db:*` task list `DATABASE_URL`, `DATABASE_GLOBAL_URL`, `DATABASE_MIGRATION_URL` and
+  `OPOS_DB_PORT` in `passThroughEnv`: they reach the scripts and stay out of the hash.
 
 ### 3.2 Frontend application layout
 
@@ -1473,7 +1476,8 @@ auth:service-key`.
 **`packages/db`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL` from
 the environment. Without it they use
 `postgres://opos_migrator:opos@localhost:<OPOS_DB_PORT or 5432>/postgres`, so dev needs no file;
-in production the variable comes from the API container's environment.
+in production the variable comes from the API container's environment. turbo passes these variables
+through to the tasks ([3.1](#31-turbo-tasks)).
 
 **`infra/supabase/.env.example`** and **`infra/supabase/.env`** — read by `docker-compose.yml` as
 the `auth` service's `env_file`s, in that order. `.env.example` is committed and holds working dev

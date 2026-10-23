@@ -15,6 +15,20 @@
       "when": 1792778432386,
       "tag": "0001_rls_and_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792797164786,
+      "tag": "0002_harden_accounts_and_names",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792797165483,
+      "tag": "0003_accounts_column_grants",
+      "breakpoints": true
     }
   ]
 }

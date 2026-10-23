@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { authAdmin, createUser, migrator } from './db'
+import { app, authAdmin, createUser, migrator } from './db'
 
 const account = async (id: string) => {
   const [row] = await migrator`
@@ -52,5 +52,31 @@ describe('accounts mirror auth.users', () => {
     await authAdmin`delete from auth.users where id = ${user.id}`
 
     expect(await account(user.id)).toBeUndefined()
+  })
+})
+
+describe('accounts on the runtime role', () => {
+  it('refuses an email that is not lowercase', async () => {
+    const user = await createUser()
+
+    await expect(
+      migrator`update accounts set email = 'Mixed@Example.test' where id = ${user.id}`,
+    ).rejects.toThrow(/accounts_email_lowercase/)
+  })
+
+  it('lets opos_app change only the names and the locale', async () => {
+    const user = await createUser()
+
+    await app`update accounts set first_name = 'Ola', locale = 'en' where id = ${user.id}`
+    expect(await account(user.id)).toMatchObject({ first_name: 'Ola', locale: 'en' })
+    await expect(
+      app`update accounts set email = 'other@example.test' where id = ${user.id}`,
+    ).rejects.toThrow(/permission denied/)
+    await expect(app`delete from accounts where id = ${user.id}`).rejects.toThrow(
+      /permission denied/,
+    )
+    await expect(
+      app`insert into accounts (id, email) values (gen_random_uuid(), 'x@example.test')`,
+    ).rejects.toThrow(/permission denied/)
   })
 })

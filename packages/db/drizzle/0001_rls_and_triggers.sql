@@ -84,15 +84,16 @@ create trigger opos_on_auth_user_email_updated
 --> statement-breakpoint
 
 -- At least one head per tenant (PLAN.md 4.5). Deferred to commit, so a head can be handed over
--- in either order inside one transaction; deleting the tenant itself is allowed.
+-- in either order inside one transaction, and a tenant is created together with its first head;
+-- deleting the tenant itself is allowed. The check locks the tenant row first, so two
+-- transactions demoting different heads of one tenant run it one after the other.
 create function public.ensure_tenant_keeps_head() returns trigger
   language plpgsql security definer set search_path = '' as $$
 begin
-  if old.role = 'head'
-    and exists (select 1 from public.tenants where id = old.tenant_id)
-    and not exists (
-      select 1 from public.tenant_memberships where tenant_id = old.tenant_id and role = 'head'
-    )
+  perform 1 from public.tenants where id = old.tenant_id for no key update;
+  if found and not exists (
+    select 1 from public.tenant_memberships where tenant_id = old.tenant_id and role = 'head'
+  )
   then
     raise exception 'tenant % must keep at least one head', old.tenant_id
       using errcode = 'check_violation', constraint = 'tenant_memberships_at_least_one_head';
@@ -102,8 +103,29 @@ end;
 $$;
 --> statement-breakpoint
 create constraint trigger tenant_memberships_at_least_one_head
-  after update or delete on tenant_memberships
+  after update of role, tenant_id or delete on tenant_memberships
   deferrable initially deferred
-  for each row execute function public.ensure_tenant_keeps_head();
+  for each row when (old.role = 'head')
+  execute function public.ensure_tenant_keeps_head();
 --> statement-breakpoint
-revoke execute on function public.handle_auth_user_created(), public.handle_auth_user_email_updated(), public.ensure_tenant_keeps_head() from public;
+create function public.ensure_tenant_has_head() returns trigger
+  language plpgsql security definer set search_path = '' as $$
+begin
+  if exists (select 1 from public.tenants where id = new.id)
+    and not exists (
+      select 1 from public.tenant_memberships where tenant_id = new.id and role = 'head'
+    )
+  then
+    raise exception 'tenant % must be created with a head', new.id
+      using errcode = 'check_violation', constraint = 'tenants_at_least_one_head';
+  end if;
+  return null;
+end;
+$$;
+--> statement-breakpoint
+create constraint trigger tenants_at_least_one_head
+  after insert on tenants
+  deferrable initially deferred
+  for each row execute function public.ensure_tenant_has_head();
+--> statement-breakpoint
+revoke execute on function public.handle_auth_user_created(), public.handle_auth_user_email_updated(), public.ensure_tenant_keeps_head(), public.ensure_tenant_has_head() from public;

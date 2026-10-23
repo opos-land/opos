@@ -42,14 +42,17 @@ export async function createUser(meta: Record<string, string> = {}) {
 export async function createTenant() {
   const slug = `tenant-${unique()}`
   const head = await createUser()
-  const [tenant] = await migrator<{ id: string }[]>`
-    insert into tenants (slug, name) values (${slug}, ${slug}) returning id
-  `
-  tenantIds.push(tenant!.id)
-  await migrator`
-    insert into tenant_memberships (account_id, tenant_id, role) values (${head.id}, ${tenant!.id}, 'head')
-  `
-  return { id: tenant!.id, slug, headId: head.id }
+  const id = await migrator.begin(async (sql) => {
+    const [tenant] = await sql<{ id: string }[]>`
+      insert into tenants (slug, name) values (${slug}, ${slug}) returning id
+    `
+    await sql`
+      insert into tenant_memberships (account_id, tenant_id, role) values (${head.id}, ${tenant!.id}, 'head')
+    `
+    return tenant!.id
+  })
+  tenantIds.push(id)
+  return { id, slug, headId: head.id }
 }
 
 export async function createEdition(tenantId: string, values: { isActive?: boolean } = {}) {

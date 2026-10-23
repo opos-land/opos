@@ -542,11 +542,15 @@ Every RLS-covered table has an index starting with `tenantId`.
 
 1. **Exactly one `isActive=true` edition per tenant** — a transactional switch plus a partial
    unique index.
-2. **At least one `head` per tenant** — checked in the service and by the constraint trigger
-   `tenant_memberships_at_least_one_head` (`AFTER DELETE OR UPDATE`, `DEFERRABLE INITIALLY
-   DEFERRED`): it fires at commit, so a head can be handed over in either order inside one
-   transaction, and it lets a deleted tenant take its memberships along. A violation raises
-   `check_violation` with that constraint name; it also blocks deleting the account of a tenant's
+2. **At least one `head` per tenant** — checked in the service and by two constraint triggers,
+   both `DEFERRABLE INITIALLY DEFERRED`, so they fire at commit:
+   `tenant_memberships_at_least_one_head` (`AFTER UPDATE OF role, tenantId OR DELETE`, only for a
+   row whose old `role` is `head`) and `tenants_at_least_one_head` (`AFTER INSERT` on `tenants`).
+   A head can be handed over in either order inside one transaction, a tenant is created together
+   with its first head in one transaction, and a deleted tenant takes its memberships along. The
+   membership check locks the tenant row (`for no key update`) before counting heads, so two
+   transactions demoting different heads of one tenant cannot both commit. A violation raises
+   `check_violation` with the trigger's name; it also blocks deleting the account of a tenant's
    last head.
 3. **An edition in `edition_memberships` belongs to the same tenant as the `tenant_membership`** —
    enforced by composite foreign keys.
@@ -1740,7 +1744,8 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
 ```
 
 - Runs as `opos_migrator`, in a single transaction: inserts `tenants` and a `head`
-  `tenant_memberships` row.
+  `tenant_memberships` row. The database rejects a tenant committed without a head
+  ([4.5](#45-invariants)).
 - The head's account must already exist — the person registers in the portal first. An unknown
   email or a taken slug aborts with a non-zero exit code and changes nothing.
 - In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
@@ -1755,8 +1760,9 @@ The schema itself is tested in `packages/db/test` with Vitest on the `db` contai
 any API code: the global setup applies the migrations, the tests connect as `opos_migrator`,
 `opos_app`, `supabase_auth_admin` (writes to `auth.users`) and `postgres` (`set role anon`), and
 remove the tenants and users they created. They cover the RLS row of the table below, the
-database-side invariants (one active edition, the last `head`, a head expiry, an
-`edition_membership` with a foreign edition) and the `accounts` triggers. The API tests repeat
+database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
+concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
+foreign edition) and the `accounts` triggers. The API tests repeat
 these checks through the endpoints.
 
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and

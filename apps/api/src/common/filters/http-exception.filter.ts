@@ -47,7 +47,9 @@ export function toErrorResponse(exception: unknown): { status: number; body: Api
   }
   if (exception instanceof HttpException) {
     const status = exception.getStatus()
-    return { status, body: { code: codeByStatus(status), message: exception.message } }
+    // A 5xx message may carry internals (ts-rest puts the zod error there); only the log gets it.
+    const message = status >= 500 ? 'Internal server error' : exception.message
+    return { status, body: { code: codeByStatus(status), message } }
   }
   // Errors from Express itself, e.g. a body that is not valid JSON, carry their own 4xx status.
   const status = (exception as { status?: unknown } | null)?.status

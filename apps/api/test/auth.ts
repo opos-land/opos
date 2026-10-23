@@ -11,17 +11,33 @@ export const TEST_PASSWORD = 'test-password-123'
 
 /** A JWT shaped like Supabase Auth's, with any claim overridden. */
 export async function mintToken(
-  claims: { sub?: string; aud?: string; iss?: string; role?: string; expiresIn?: string } = {},
+  claims: {
+    sub?: string
+    aud?: string
+    iss?: string
+    role?: string
+    /** `null` leaves the exp claim out. */
+    expiresIn?: string | null
+    alg?: 'HS256' | 'HS512'
+  } = {},
   key: Uint8Array = secret,
 ) {
-  return new SignJWT({ role: claims.role ?? 'authenticated' })
-    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+  const jwt = new SignJWT({ role: claims.role ?? 'authenticated' })
+    .setProtectedHeader({ alg: claims.alg ?? 'HS256', typ: 'JWT' })
     .setSubject(claims.sub ?? randomUUID())
     .setAudience(claims.aud ?? 'authenticated')
     .setIssuer(claims.iss ?? env.AUTH_URL)
     .setIssuedAt()
-    .setExpirationTime(claims.expiresIn ?? '5m')
-    .sign(key)
+  if (claims.expiresIn !== null) jwt.setExpirationTime(claims.expiresIn ?? '5m')
+  return jwt.sign(key)
+}
+
+/** An unsigned token (`alg: none`) with the right claims. */
+export function unsignedToken(sub: string) {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url')
+  const now = Math.floor(Date.now() / 1000)
+  const claims = { sub, aud: 'authenticated', iss: env.AUTH_URL, iat: now, exp: now + 300 }
+  return `${encode({ alg: 'none', typ: 'JWT' })}.${encode(claims)}.`
 }
 
 const admin = async (path: string, init: RequestInit = {}) => {

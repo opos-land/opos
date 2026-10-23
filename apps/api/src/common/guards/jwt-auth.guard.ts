@@ -35,6 +35,8 @@ export class JwtAuthGuard implements CanActivate {
         algorithms: ['HS256'],
         audience: 'authenticated',
         issuer: this.env.AUTH_URL,
+        // jose checks exp only when the claim is present; a token without one never expires.
+        requiredClaims: ['exp', 'sub'],
       })
       sub = payload.sub
     } catch {
@@ -42,7 +44,7 @@ export class JwtAuthGuard implements CanActivate {
     }
     if (!sub || !UUID.test(sub)) throw unauthenticated('Token without an account id')
 
-    const account = await this.accounts.findById(sub)
+    const account = await this.accounts.findForToken(sub)
     if (!account) throw unauthenticated('No account for this token')
     this.context.setAccount(account)
     return true

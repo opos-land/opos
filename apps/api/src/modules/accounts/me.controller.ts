@@ -16,7 +16,7 @@ export class MeController {
       get: () => Promise.resolve({ status: 200 as const, body: account }),
       update: async ({ body }) => ({
         status: 200,
-        body: await this.accounts.update(account.id, body),
+        body: await this.accounts.updateCurrent(body),
       }),
     })
   }

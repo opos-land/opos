@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common'
+import { ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 import { RequestValidationError } from '@ts-rest/nest'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
@@ -29,6 +29,15 @@ describe('toErrorResponse', () => {
     [Object.assign(new Error('bad json'), { status: 400 }), 400, 'request.invalid'],
   ])('maps %s by its status', (exception, status, code) => {
     expect(toErrorResponse(exception)).toMatchObject({ status, body: { code } })
+  })
+
+  it('hides the message of a 5xx HttpException', () => {
+    expect(
+      toErrorResponse(new InternalServerErrorException('password=secret at 10.0.0.5')),
+    ).toEqual({
+      status: 500,
+      body: { code: 'server.error', message: 'Internal server error' },
+    })
   })
 
   it('hides the details of an unexpected error', () => {

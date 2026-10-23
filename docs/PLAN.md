@@ -875,8 +875,8 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 
 | Module | Contents |
 |---|---|
-| `AuthModule` | `JwtAuthGuard` (Supabase JWT verification), the `POST /hooks/send-email` controller, the GoTrue admin client |
-| `MeModule` | profile, memberships, edition sign-ups, personal schedule, speaker's items, account deletion |
+| `AuthModule` | the `POST /hooks/send-email` controller, the GoTrue admin client |
+| `MeModule` | profile, memberships, edition sign-ups, personal schedule, speaker's items, account deletion; global, because it provides `AccountsRepository` to `JwtAuthGuard` |
 | `TenantsModule` | tenant data, `tenant_memberships` with expiry, invitations |
 | `EditionsModule` | edition CRUD, activation, `edition_memberships` |
 | `ProgramModule` | programme item CRUD, speakers, review moderation |
@@ -920,8 +920,9 @@ database before the guards have run; the guards and the interceptor fill the sto
 Repositories take the transaction from `TenantContextService.tx()`, which throws when no tenant
 transaction is open; they never query the pool directly. The one exception is
 `AccountsRepository`: `accounts` has no RLS ([4.6](#46-tenant-isolation--rls-in-postgres)), so it
-runs on the `opos_app` pool outside a tenant transaction, and every query filters on the account id
-from the JWT.
+runs on the `opos_app` pool outside a tenant transaction. Only `findForToken(sub)`, which
+`JwtAuthGuard` calls, takes an id; every other method works on the account in the request store, so
+no caller can pass another account's id.
 
 Outbound I/O — SMTP, the GoTrue admin API — never runs inside the transaction. Code inside it
 registers the call with `TenantContextService.afterCommit(fn)`; the queue runs after the commit and
@@ -989,8 +990,9 @@ Sessions are issued by Supabase Auth ([10](#10-supabase)):
 - Email confirmation is required (`GOTRUE_MAILER_AUTOCONFIRM=false`); an unconfirmed account gets
   `email_not_confirmed` on sign-in.
 
-**`JwtAuthGuard`** verifies the `Authorization: Bearer` token with `jose`: signature, `exp`,
-`aud = authenticated`, `iss = <AUTH_URL>`, `alg = HS256` only. `sub` is `accounts.id` (a uuid); the
+**`JwtAuthGuard`** ([jwt-auth.guard.ts](../apps/api/src/common/guards/jwt-auth.guard.ts)) verifies
+the `Authorization: Bearer` token with `jose`: signature, `exp` and `sub` required (a token without
+`exp` never expires), `aud = authenticated`, `iss = <AUTH_URL>`, `alg = HS256` only. `sub` is `accounts.id` (a uuid); the
 guard loads that row and
 puts it into the request store ([7.2](#72-tenant-context)) — `locale` comes from the database, not from the token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
 
@@ -1665,12 +1667,11 @@ with a wrong signature, audience, issuer or expiry are signed in the test with `
 | payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid`; an SMTP failure after the payment leaves `ticketEmailSentAt` empty and the job sends the email later |
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
 | scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
-| JWT | an expired token, a token signed with another secret, `aud != authenticated` and a foreign `iss` -> `401`; a valid token without an `accounts` row -> `401` |
+| JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` -> `400` |
 | rate limit | `GET /invitations/preview` above the limit -> `429` with `Retry-After` |
-| i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in
-`packages/contract`); programme time formatting returns the tenant's zone, not the server's |
+| i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
 
 ### 15.2 E2E tests
 

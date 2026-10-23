@@ -2,7 +2,7 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { createAccount, deleteCreatedAccounts, mintToken, signIn } from './auth'
+import { createAccount, deleteCreatedAccounts, mintToken, signIn, unsignedToken } from './auth'
 
 let app: NestExpressApplication
 let token: string
@@ -10,6 +10,8 @@ let accountId: string
 
 beforeAll(async () => {
   app = await createApp()
+  // One listening server for the whole file: concurrent supertest calls then share it.
+  await app.listen(0, '127.0.0.1')
   const account = await createAccount({ first_name: 'Anna', last_name: 'Nowak' })
   accountId = account.id
   token = await signIn(account.email)
@@ -51,6 +53,10 @@ describe('JwtAuthGuard', () => {
     ['a token for another audience', () => mintToken({ sub: accountId, aud: 'anon' })],
     ['a token from another issuer', () => mintToken({ sub: accountId, iss: 'https://evil.test' })],
     ['a valid token without an accounts row', () => mintToken()],
+    ['a token without exp', () => mintToken({ sub: accountId, expiresIn: null })],
+    ['a token signed with HS512', () => mintToken({ sub: accountId, alg: 'HS512' })],
+    ['an unsigned token', () => Promise.resolve(unsignedToken(accountId))],
+    ['a sub that is not a uuid', () => mintToken({ sub: 'not-a-uuid' })],
   ])('rejects %s', async (_, makeToken) => {
     const res = await me()
       .set('Authorization', `Bearer ${await makeToken()}`)
@@ -87,6 +93,37 @@ describe('PATCH /me', () => {
     const res = await patch(body).expect(400)
 
     expect(res.body).toMatchObject({ code: 'request.invalid', params: { field } })
+  })
+})
+
+describe('two accounts', () => {
+  it('keeps every request on its own account', async () => {
+    const other = await createAccount({ first_name: 'Jan' })
+    const otherToken = await signIn(other.email)
+
+    const responses = await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        me().set('Authorization', `Bearer ${i % 2 ? otherToken : token}`),
+      ),
+    )
+
+    responses.forEach((res, i) => {
+      expect((res.body as { id: string }).id).toBe(i % 2 ? other.id : accountId)
+    })
+  })
+
+  it('leaves another account alone on PATCH /me', async () => {
+    const other = await createAccount({ first_name: 'Jan' })
+    const otherToken = await signIn(other.email)
+
+    await request(app.getHttpServer())
+      .patch('/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ firstName: 'Changed' })
+      .expect(200)
+
+    const res = await me().set('Authorization', `Bearer ${otherToken}`).expect(200)
+    expect(res.body).toMatchObject({ firstName: 'Jan' })
   })
 })
 

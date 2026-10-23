@@ -104,8 +104,8 @@ msgid "No account uses this email address."
 msgstr "No account uses this email address."
 
 #: src/errors.ts
-msgid "Only a head organizer can change another head organizer."
-msgstr "Only a head organizer can change another head organizer."
+msgid "Only a head organizer can edit or remove another head organizer."
+msgstr "Only a head organizer can edit or remove another head organizer."
 
 #. Glossary term: order
 #: src/glossary.ts
@@ -218,8 +218,8 @@ msgid "Wrong email or password."
 msgstr "Wrong email or password."
 
 #: src/errors.ts
-msgid "You cannot change your own role or permissions."
-msgstr "You cannot change your own role or permissions."
+msgid "You cannot change your own role or permissions, or remove yourself from the team."
+msgstr "You cannot change your own role or permissions, or remove yourself from the team."
 
 #: src/errors.ts
 msgid "You cannot delete the active edition. Activate another edition first."
@@ -230,8 +230,8 @@ msgid "You cannot grant permissions higher than your own."
 msgstr "You cannot grant permissions higher than your own."
 
 #: src/errors.ts
-msgid "You cannot set an access end date later than your own."
-msgstr "You cannot set an access end date later than your own."
+msgid "You cannot set an access end date later than your own, or remove it."
+msgstr "You cannot set an access end date later than your own, or remove it."
 
 #: src/errors.ts
 msgid "You do not have permission to do this."

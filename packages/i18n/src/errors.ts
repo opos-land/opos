@@ -8,8 +8,8 @@ export const unknownError = msg`Something went wrong. Try again.`
 
 export const errorMessages: Record<string, MessageDescriptor> = {
   'request.invalid': msg`Check the data you entered.`,
-  'request.not-found': msg`This page or item does not exist.`,
-  'request.rate-limited': msg`Too many requests. Try again in a moment.`,
+  'request.not-found': msg`We could not find what you are looking for.`,
+  'request.rate-limited': msg`Too many attempts. Try again in a moment.`,
   'session.invalid': msg`Your session has ended. Sign in again.`,
   'permission.denied': msg`You do not have permission to do this.`,
   'server.error': unknownError,

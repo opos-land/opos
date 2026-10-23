@@ -163,10 +163,6 @@ msgstr "Ten adres jest już zajęty przez inny konwent."
 msgid "This language is not supported."
 msgstr "Ten język nie jest obsługiwany."
 
-#: src/errors.ts
-msgid "This page or item does not exist."
-msgstr "Ta strona lub pozycja nie istnieje."
-
 #. Glossary term: ticket
 #: src/glossary.ts
 msgctxt "glossary"
@@ -184,12 +180,12 @@ msgid "Too many attempts. Try again in a few minutes."
 msgstr "Zbyt wiele prób. Spróbuj ponownie za kilka minut."
 
 #: src/errors.ts
-msgid "Too many emails sent. Try again in a few minutes."
-msgstr "Wysłano zbyt wiele wiadomości. Spróbuj ponownie za kilka minut."
+msgid "Too many attempts. Try again in a moment."
+msgstr "Zbyt wiele prób. Spróbuj ponownie za chwilę."
 
 #: src/errors.ts
-msgid "Too many requests. Try again in a moment."
-msgstr "Zbyt wiele żądań. Spróbuj ponownie za chwilę."
+msgid "Too many emails sent. Try again in a few minutes."
+msgstr "Wysłano zbyt wiele wiadomości. Spróbuj ponownie za kilka minut."
 
 #. Glossary term: user
 #: src/glossary.ts
@@ -198,12 +194,16 @@ msgid "user"
 msgstr "użytkownik"
 
 #: src/errors.ts
+msgid "We could not find what you are looking for."
+msgstr "Nie znaleziono tego, czego szukasz."
+
+#: src/errors.ts
 msgid "Wrong email or password."
 msgstr "Nieprawidłowy e-mail lub hasło."
 
 #: src/errors.ts
 msgid "You do not have permission to do this."
-msgstr "Nie masz uprawnień do tej operacji."
+msgstr "Nie masz uprawnień, żeby to zrobić."
 
 #: src/errors.ts
 msgid "Your session has ended. Sign in again."

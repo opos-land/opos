@@ -1,19 +1,8 @@
-import 'reflect-metadata'
 import { type NestExpressApplication } from '@nestjs/platform-express'
-import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { configureApp } from '../src/app'
-import { AppModule } from '../src/app.module'
 import { loadEnv } from '../src/config/env'
-
-async function createApp(overrides: Record<string, string> = {}) {
-  const env = loadEnv({ ...process.env, ...overrides })
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule.register(env)] }).compile()
-  const app = configureApp(moduleRef.createNestApplication<NestExpressApplication>(), env)
-  await app.init()
-  return app
-}
+import { createApp } from './app'
 
 describe('GET /health', () => {
   let app: NestExpressApplication

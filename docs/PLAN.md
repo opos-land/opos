@@ -141,6 +141,7 @@ the repository; their purpose is stated in the files themselves, not here.
 opos/
   package.json, pnpm-workspace.yaml, turbo.json, mise.toml, lefthook.yml,
   commitlint.config.mjs, docker-compose.yml, .prettierrc, .github/   # built: root tooling (3.1, 12, 15.3)
+  .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers (AGENTS.md)
   docker-compose.prod.yml     # prod: traefik + apps + supabase db + auth
   docs/
     PRODUCT.md

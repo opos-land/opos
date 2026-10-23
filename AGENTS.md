@@ -189,6 +189,12 @@ needs Postgres, Supabase Auth or HTTP, goes into the `test/` directory of its pa
 application; an e2e test goes into the `e2e` package. New code with logic of its own gets a unit
 test in the same commit.
 
+**Project skill and reviewers** in `.claude/`. The `docs-sync` skill is the procedure for every
+change to PRODUCT.md or PLAN.md, link and anchor check included. Before a PR, run the
+`tenant-isolation-reviewer` agent when the change touches `packages/db` or `apps/api`, and the
+`i18n-reviewer` agent when it touches user-facing text, a `.po` catalog or `packages/i18n`. Both
+only report; fix what they find before opening the PR.
+
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
 them to the repository. UI follows the designer's designs; where none exists yet, use plain blocks
 and real copy ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)). Do not ship

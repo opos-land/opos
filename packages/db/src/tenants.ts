@@ -1,4 +1,4 @@
-import { isLocale } from '@opos/i18n'
+import { isLocale, isTimeZone } from '@opos/i18n'
 import { eq } from 'drizzle-orm'
 import type { Database } from './client'
 import { accounts, tenantMemberships, tenants } from './schema'
@@ -30,15 +30,6 @@ export class CreateTenantError extends Error {
 }
 
 const SLUG = /^[a-z0-9-]{3,40}$/
-
-const isTimeZone = (timezone: string) => {
-  try {
-    new Intl.DateTimeFormat('en', { timeZone: timezone })
-    return true
-  } catch {
-    return false
-  }
-}
 
 /**
  * Creates a tenant and its first head in one transaction (PLAN.md 14). The head's account must

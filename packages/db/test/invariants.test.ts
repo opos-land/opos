@@ -175,10 +175,12 @@ describe('invariants', () => {
   it('moves updated_at on every update', async () => {
     const tenant = await createTenant()
 
-    const [row] = await migrator<{ created_at: Date; updated_at: Date }[]>`
-      update tenants set name = 'Renamed' where id = ${tenant.id} returning created_at, updated_at
+    // Compared in Postgres: a JS Date drops the microseconds, and both can share a millisecond.
+    const [row] = await migrator<{ moved: boolean }[]>`
+      update tenants set name = 'Renamed' where id = ${tenant.id}
+      returning updated_at > created_at as moved
     `
-    expect(row!.updated_at.getTime()).toBeGreaterThan(row!.created_at.getTime())
+    expect(row!.moved).toBe(true)
   })
 
   it('refuses a slug outside the allowed format', async () => {

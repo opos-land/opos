@@ -20,7 +20,7 @@ export const editionMemberships = pgTable(
     unique('edition_memberships_membership_edition_unique').on(t.tenantMembershipId, t.editionId),
     index('edition_memberships_tenant_edition_idx').on(t.tenantId, t.editionId),
     foreignKey({
-      name: 'edition_memberships_membership_fk',
+      name: 'edition_memberships_tenant_membership_fk',
       columns: [t.tenantMembershipId, t.tenantId],
       foreignColumns: [tenantMemberships.id, tenantMemberships.tenantId],
     }).onDelete('cascade'),

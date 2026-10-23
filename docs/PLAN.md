@@ -354,14 +354,19 @@ Supabase Auth's tables (`auth.users`, `auth.identities`, `auth.sessions`, `auth.
 OPOS keeps the profile only.
 
 **`accounts`** ([accounts.ts](../packages/db/src/schema/accounts.ts)) — `id` equals the JWT `sub`
-and `auth.users.id`; `email` is unique and lowercase; `locale` is the user's choice, `null` means
-detect from `Accept-Language`.
+and `auth.users.id`; `email` is unique and lowercase (check `accounts_email_lowercase`); `locale` is
+the user's choice, `null` means detect from `Accept-Language`.
 
 Two triggers on `auth.users`, `security definer` functions owned by `opos_migrator`, keep it in step
 with Supabase Auth: an insert creates the `accounts` row with `firstName`, `lastName` and `locale`
 from `raw_user_meta_data` (sent by the portal on sign-up; for Google `full_name` split on the first
-space), and an email change updates `accounts.email`. Deleting a user in Supabase Auth removes
-`accounts`, and with it every row that references it.
+space), and an email change updates `accounts.email`. Every `auth.users` row has an email, because
+only email and Google sign-in are enabled ([10](#10-supabase)). Deleting a user in Supabase Auth
+removes `accounts`, and with it every row that references it.
+
+`accounts` has no RLS, so its privileges are the database-side limit: `opos_app` may select and
+update only `firstName`, `lastName` and `locale`; `opos_app_global` may only select. Rows are
+inserted and deleted by the triggers and the cascade alone, both running as `opos_migrator`.
 
 ### 4.3 Tenant-level tables
 
@@ -564,7 +569,8 @@ the system, including `PublicModule`, resolves the tenant first and then works o
 
 RLS policies and the `auth.users` triggers go into hand-written migrations
 (`drizzle-kit generate --custom`). The same migration grants `select, insert, update, delete` on
-the new tables to `opos_app` and `opos_app_global`, revokes everything from `anon` and
+the new tables to `opos_app` and `opos_app_global` (`accounts` excepted, [4.2](#42-global-tables)),
+revokes everything from `anon` and
 `authenticated`, and adds each table's `<table>_set_updated_at` trigger ([4](#4-database-schema)).
 Trigger functions are `security definer` with `set search_path = ''` and schema-qualified names,
 because Supabase Auth runs with `search_path = auth`. `db:push` is for local experiments only;
@@ -1646,7 +1652,9 @@ entry point) and never contribute messages (`linguiConfig()` excludes them).
 The schema itself is tested in `packages/db/test` with Vitest on the `db` container alone, before
 any API code: the global setup applies the migrations, the tests connect as `opos_migrator`,
 `opos_app`, `supabase_auth_admin` (writes to `auth.users`) and `postgres` (`set role anon`), and
-remove the tenants and users they created. They cover the RLS row of the table below, the
+remove the tenants and users they created. They cover the RLS row of the table below for every
+covered table (no context, another tenant's context, a row moved to another tenant), the
+`accounts` privileges, the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
 foreign edition), `createTenant` and each of its refusals, and the `accounts` triggers. The API tests repeat

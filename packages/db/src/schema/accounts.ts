@@ -1,4 +1,5 @@
-import { foreignKey, pgTable, text, uuid } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { check, foreignKey, pgTable, text, uuid } from 'drizzle-orm/pg-core'
 import { authUsers } from 'drizzle-orm/supabase'
 import { timestamps } from './columns'
 
@@ -18,5 +19,6 @@ export const accounts = pgTable(
       columns: [t.id],
       foreignColumns: [authUsers.id],
     }).onDelete('cascade'),
+    check('accounts_email_lowercase', sql`${t.email} = lower(${t.email})`),
   ],
 )

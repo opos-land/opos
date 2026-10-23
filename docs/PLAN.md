@@ -364,9 +364,10 @@ space), and an email change updates `accounts.email`. Every `auth.users` row has
 only email and Google sign-in are enabled ([10](#10-supabase)). Deleting a user in Supabase Auth
 removes `accounts`, and with it every row that references it.
 
-`accounts` has no RLS, so its privileges are the database-side limit: `opos_app` may select and
-update only `firstName`, `lastName` and `locale`; `opos_app_global` may only select. Rows are
-inserted and deleted by the triggers and the cascade alone, both running as `opos_migrator`.
+`accounts` has no RLS, so its privileges are the database-side limit: `opos_app` may select every
+column and update only `firstName`, `lastName` and `locale`; `opos_app_global` has no access, as no
+cross-tenant query ([4.6](#46-tenant-isolation--rls-in-postgres)) reads it. Rows are inserted and
+deleted by the triggers and the cascade alone, both running as `opos_migrator`.
 
 ### 4.3 Tenant-level tables
 

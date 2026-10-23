@@ -6,10 +6,26 @@ import { type EditionAccess, rank, tenantResources } from '../../common/permissi
 // The anti-escalation policy of PRODUCT.md 5.6. A head passes every rule except editing their own
 // membership; an org with settings=write manages other orgs within their own limits.
 
-const refuse = (
-  code: 'member.self' | 'member.head-only' | 'member.above-own' | 'member.expiry-after-own',
-  message: string,
-) => new ApiError(403, code, message)
+type RefusalCode =
+  | 'member.self'
+  | 'member.head-only'
+  | 'member.above-own'
+  | 'member.expiry-after-own'
+  | 'member.outlives-own'
+
+const refuse = (code: RefusalCode, message: string) => new ApiError(403, code, message)
+
+/**
+ * An org whose access expires changes the permissions only of members whose access ends no later
+ * than their own, so nothing they grant outlives them. `resultingExpiry` is the member's expiry
+ * after the change.
+ */
+export function assertWithinOwnExpiry(actor: TenantMembership, resultingExpiry: Date | null) {
+  if (actor.role === 'head' || !actor.expiresAt) return
+  if (!resultingExpiry || resultingExpiry > actor.expiresAt) {
+    throw refuse('member.outlives-own', "The member's access would outlast the actor's own")
+  }
+}
 
 export interface ManagedMember {
   id: string

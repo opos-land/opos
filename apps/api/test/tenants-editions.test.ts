@@ -264,6 +264,23 @@ describe('anti-escalation', () => {
     ).toMatchObject({ code: 'member.self' })
   })
 
+  it("keeps an expiring org's grants within their own access", async () => {
+    const res = await patch(limited, targetId, { settingsAccess: 'read' })
+    expect(res.body).toMatchObject({ code: 'member.outlives-own' })
+    const edition = await call(limited, 'put', `/editions/${editionA}/members/${targetId}`, {
+      programAccess: 'none',
+      websiteContentAccess: 'none',
+      ticketsAccess: 'none',
+    })
+    expect(edition.body).toMatchObject({ code: 'member.outlives-own' })
+
+    const bounded = await member()
+    const boundedId = await addOrg(a.id, bounded, {
+      expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
+    })
+    await patch(limited, boundedId, { settingsAccess: 'read' }).expect(200)
+  })
+
   it('refuses lifting the expiry for an org that has one', async () => {
     const res = await patch(limited, targetId, { expiresAt: null })
     expect(res.body).toMatchObject({ code: 'member.expiry-after-own' })

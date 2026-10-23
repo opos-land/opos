@@ -218,6 +218,10 @@ msgid "Wrong email or password."
 msgstr "Nieprawidłowy e-mail lub hasło."
 
 #: src/errors.ts
+msgid "You cannot change the permissions of someone whose access lasts longer than yours."
+msgstr "Nie możesz zmieniać uprawnień osoby, której dostęp trwa dłużej niż twój."
+
+#: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
 msgstr "Nie możesz zmienić własnej roli ani uprawnień, ani usunąć siebie z zespołu."
 

@@ -18,6 +18,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'member.head-only': msg`Only a head organizer can edit or remove another head organizer.`,
   'member.above-own': msg`You cannot grant permissions higher than your own.`,
   'member.expiry-after-own': msg`You cannot set an access end date later than your own, or remove it.`,
+  'member.outlives-own': msg`You cannot change the permissions of someone whose access lasts longer than yours.`,
   'member.is-head': msg`A head organizer already has access to every edition.`,
   'edition.slug-taken': msg`This convention already has an edition with this address.`,
   'edition.active': msg`You cannot delete the active edition. Activate another edition first.`,

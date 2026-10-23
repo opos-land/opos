@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { type TenantMembership } from '../../common/als/tenant-context.service'
-import { assertMayGrant, assertMayGrantEdition, assertMayManage } from './anti-escalation'
+import {
+  assertMayGrant,
+  assertMayGrantEdition,
+  assertMayManage,
+  assertWithinOwnExpiry,
+} from './anti-escalation'
 
 const org = (overrides: Partial<TenantMembership> = {}): TenantMembership => ({
   id: 'actor',
@@ -111,5 +116,27 @@ describe('assertMayGrantEdition', () => {
     expect(
       code(() => assertMayGrantEdition(head, null, { ...none, ticketsAccess: 'write' }, null)),
     ).toBe('allowed')
+  })
+})
+
+describe('assertWithinOwnExpiry', () => {
+  const own = new Date('2027-01-01T00:00:00Z')
+
+  it('keeps what an org with an expiry grants within their own access', () => {
+    const actor = org({ expiresAt: own })
+
+    expect(code(() => assertWithinOwnExpiry(actor, new Date('2026-12-01T00:00:00Z')))).toBe(
+      'allowed',
+    )
+    expect(code(() => assertWithinOwnExpiry(actor, own))).toBe('allowed')
+    expect(code(() => assertWithinOwnExpiry(actor, null))).toBe('member.outlives-own')
+    expect(code(() => assertWithinOwnExpiry(actor, new Date('2027-02-01T00:00:00Z')))).toBe(
+      'member.outlives-own',
+    )
+  })
+
+  it('leaves heads and orgs without an expiry alone', () => {
+    expect(code(() => assertWithinOwnExpiry(head, null))).toBe('allowed')
+    expect(code(() => assertWithinOwnExpiry(org(), null))).toBe('allowed')
   })
 })

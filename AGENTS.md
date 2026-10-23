@@ -178,6 +178,11 @@ typecheck, lint and tests before every PR. The API tests need the database: `pnp
 then `pnpm install` installs dependencies and wires up the hooks. Dependencies younger than 7 days are
 rejected by `minimumReleaseAge` — that is policy, not a failure.
 
+**The seed follows the schema.** A change that adds a table, a column without a default, a
+permission or a role, or a data state the tests rely on updates
+[packages/db/src/seed.ts](packages/db/src/seed.ts) and the [demo data](docs/PLAN.md#14-demo-data-seed)
+in the same PR. Run `pnpm db:seed` twice before the PR: the second run proves it is idempotent.
+
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
 them to the repository. UI follows the designer's designs; where none exists yet, use plain blocks
 and real copy ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)). Do not ship

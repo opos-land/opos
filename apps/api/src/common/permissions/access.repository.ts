@@ -62,4 +62,19 @@ export class AccessRepository {
     if (!rowId || !programAccess || !websiteContentAccess || !ticketsAccess) return null
     return { programAccess, websiteContentAccess, ticketsAccess }
   }
+
+  /** Every edition-level row of a membership, by edition id. */
+  async editionRows(membershipId: string): Promise<Map<string, EditionAccess>> {
+    const rows = await this.context
+      .tx()
+      .select({
+        editionId: editionMemberships.editionId,
+        programAccess: editionMemberships.programAccess,
+        websiteContentAccess: editionMemberships.websiteContentAccess,
+        ticketsAccess: editionMemberships.ticketsAccess,
+      })
+      .from(editionMemberships)
+      .where(eq(editionMemberships.tenantMembershipId, membershipId))
+    return new Map(rows.map(({ editionId, ...access }) => [editionId, access]))
+  }
 }

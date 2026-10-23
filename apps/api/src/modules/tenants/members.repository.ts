@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { type Member, type UpdateMember } from '@opos/contract'
 import { accounts, editionMemberships, tenantMemberships } from '@opos/db'
-import { asc, eq, sql } from 'drizzle-orm'
+import { asc, eq, inArray, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
 
@@ -55,6 +55,25 @@ export class MembersRepository {
     if (!isUuid(id)) return undefined
     const [row] = await this.select().where(eq(tenantMemberships.id, id))
     return row && toMember(row)
+  }
+
+  /**
+   * Locks the actor's and the target's rows for the rest of the transaction and returns them
+   * fresh. Ordered by id, so two requests locking the same pair never deadlock; a concurrent
+   * promotion or permission change waits, and the checks then run on what it committed.
+   */
+  async lockPair(actorId: string, targetId: string) {
+    if (!isUuid(targetId)) return { actor: undefined, target: undefined }
+    const rows = (
+      await this.select()
+        .where(inArray(tenantMemberships.id, [actorId, targetId]))
+        .orderBy(asc(tenantMemberships.id))
+        .for('update', { of: tenantMemberships })
+    ).map(toMember)
+    return {
+      actor: rows.find((row) => row.id === actorId),
+      target: rows.find((row) => row.id === targetId),
+    }
   }
 
   /**

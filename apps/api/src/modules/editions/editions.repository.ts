@@ -95,7 +95,9 @@ export class EditionsRepository {
       .set(dates(changes))
       .where(eq(editions.id, id))
       .returning(columns)
-    return toEdition(row!)
+    // Deleted by a concurrent request after get(): the edition no longer exists.
+    if (!row) throw notFound('edition')
+    return toEdition(row)
   }
 
   /**
@@ -133,6 +135,7 @@ export class EditionsRepository {
       .set({ isActive: true })
       .where(eq(editions.id, id))
       .returning(columns)
-    return toEdition(row!)
+    if (!row) throw notFound('edition')
+    return toEdition(row)
   }
 }

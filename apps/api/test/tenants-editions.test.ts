@@ -9,8 +9,11 @@ import {
   addEditionAccess,
   addOrg,
   closeTenantDb,
+  countHeads,
   deleteCreatedTenants,
+  holdOpen,
   member,
+  sleep,
   type Member,
   tenantWithHead,
 } from './tenants'
@@ -27,6 +30,8 @@ let targetId: string
 let writerId: string
 let editionA: string
 let editionB: string
+let lapsed: Member
+let foreignMemberId: string
 
 const later = new Date(Date.now() + 30 * 24 * 3600 * 1000)
 
@@ -47,6 +52,9 @@ beforeAll(async () => {
   await addOrg(a.id, limited, { settings: 'write', expiresAt: later })
   targetId = await addOrg(a.id, target)
   ;[editionA, editionB] = await Promise.all([addEdition(a.id), addEdition(b.id)])
+  lapsed = await member()
+  await addOrg(a.id, lapsed, { settings: 'write', expired: true })
+  foreignMemberId = await addOrg(b.id, await member())
 })
 
 afterAll(async () => {
@@ -70,70 +78,82 @@ const slug = () => randomUUID().slice(0, 8)
 const window = { startsAt: '2027-06-01T09:00:00Z', endsAt: '2027-06-03T18:00:00Z' }
 
 describe('permission matrix (settings)', () => {
-  // Each allowed call is harmless to the shared fixtures; a 404 still proves the check passed.
-  const endpoints: { name: string; needs: 'read' | 'write'; run: (who: Member) => request.Test }[] =
-    [
-      {
-        name: 'GET members',
-        needs: 'read',
-        run: (w) => call(w, 'get', '/tenants/current/members'),
-      },
-      {
-        name: 'GET edition members',
-        needs: 'read',
-        run: (w) => call(w, 'get', `/editions/${editionA}/members`),
-      },
-      {
-        name: 'PATCH tenant',
-        needs: 'write',
-        run: (w) => call(w, 'patch', '/tenants/current', {}),
-      },
-      {
-        name: 'PATCH member',
-        needs: 'write',
-        run: (w) => call(w, 'patch', `/tenants/current/members/${targetId}`, {}),
-      },
-      {
-        name: 'DELETE member',
-        needs: 'write',
-        run: (w) => call(w, 'delete', `/tenants/current/members/${randomUUID()}`),
-      },
-      {
-        name: 'POST edition',
-        needs: 'write',
-        run: (w) => call(w, 'post', '/editions', { slug: slug(), name: 'Matrix', ...window }),
-      },
-      {
-        name: 'PATCH edition',
-        needs: 'write',
-        run: (w) => call(w, 'patch', `/editions/${editionA}`, {}),
-      },
-      {
-        name: 'DELETE edition',
-        needs: 'write',
-        run: (w) => call(w, 'delete', `/editions/${randomUUID()}`),
-      },
-      {
-        name: 'POST activate',
-        needs: 'write',
-        run: (w) => call(w, 'post', `/editions/${randomUUID()}/activate`),
-      },
-      {
-        name: 'PUT edition member',
-        needs: 'write',
-        run: (w) =>
-          call(w, 'put', `/editions/${editionA}/members/${targetId}`, {
-            programAccess: 'none',
-            websiteContentAccess: 'none',
-            ticketsAccess: 'none',
-          }),
-      },
-      {
-        name: 'DELETE edition member',
-        needs: 'write',
-        run: (w) => call(w, 'delete', `/editions/${editionA}/members/${randomUUID()}`),
-      },
-    ]
+  const none = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
+  // Each allowed call is harmless to the shared fixtures and answers exactly `allowed`.
+  const endpoints: {
+    name: string
+    needs: 'read' | 'write'
+    allowed: number
+    run: (who: Member, slug?: string) => request.Test
+  }[] = [
+    {
+      name: 'GET members',
+      needs: 'read',
+      allowed: 200,
+      run: (w, t) => call(w, 'get', '/tenants/current/members', undefined, t),
+    },
+    {
+      name: 'GET edition members',
+      needs: 'read',
+      allowed: 200,
+      run: (w, t) => call(w, 'get', `/editions/${editionA}/members`, undefined, t),
+    },
+    {
+      name: 'PATCH tenant',
+      needs: 'write',
+      allowed: 200,
+      run: (w, t) => call(w, 'patch', '/tenants/current', {}, t),
+    },
+    {
+      name: 'PATCH member',
+      needs: 'write',
+      allowed: 200,
+      run: (w, t) => call(w, 'patch', `/tenants/current/members/${targetId}`, {}, t),
+    },
+    {
+      name: 'DELETE member',
+      needs: 'write',
+      allowed: 404,
+      run: (w, t) => call(w, 'delete', `/tenants/current/members/${randomUUID()}`, undefined, t),
+    },
+    {
+      name: 'POST edition',
+      needs: 'write',
+      allowed: 201,
+      run: (w, t) => call(w, 'post', '/editions', { slug: slug(), name: 'Matrix', ...window }, t),
+    },
+    {
+      name: 'PATCH edition',
+      needs: 'write',
+      allowed: 200,
+      run: (w, t) => call(w, 'patch', `/editions/${editionA}`, {}, t),
+    },
+    {
+      name: 'DELETE edition',
+      needs: 'write',
+      allowed: 404,
+      run: (w, t) => call(w, 'delete', `/editions/${randomUUID()}`, undefined, t),
+    },
+    {
+      name: 'POST activate',
+      needs: 'write',
+      allowed: 404,
+      run: (w, t) => call(w, 'post', `/editions/${randomUUID()}/activate`, undefined, t),
+    },
+    {
+      name: 'PUT edition member',
+      needs: 'write',
+      allowed: 200,
+      run: (w, t) => call(w, 'put', `/editions/${editionA}/members/${targetId}`, none, t),
+    },
+    {
+      name: 'DELETE edition member',
+      needs: 'write',
+      allowed: 404,
+      run: (w, t) =>
+        call(w, 'delete', `/editions/${editionA}/members/${randomUUID()}`, undefined, t),
+    },
+  ]
 
   const holders = () =>
     [
@@ -143,19 +163,50 @@ describe('permission matrix (settings)', () => {
       ['head', a.head],
     ] as const
 
-  it.each(endpoints)('$name needs settings=$needs', async ({ needs, run }) => {
+  it.each(endpoints)('$name needs settings=$needs', async ({ needs, allowed, run }) => {
     for (const [held, who] of holders()) {
-      const allowed = held === 'head' || held === 'write' || (held === 'read' && needs === 'read')
+      const ok = held === 'head' || held === 'write' || (held === 'read' && needs === 'read')
       const res = await run(who)
-      if (allowed) expect(res.status, `${held}`).not.toBe(403)
-      else expect(res.body, `${held}`).toMatchObject({ code: 'permission.denied' })
+      if (ok) expect(res.status, held).toBe(allowed)
+      else expect(res.body, held).toMatchObject({ code: 'permission.denied' })
     }
   })
+
+  it.each(endpoints)(
+    '$name refuses an expired org and a head of another tenant',
+    async ({ run }) => {
+      expect((await run(lapsed)).status).toBe(403)
+      expect((await run(b.head, a.slug)).status).toBe(403)
+    },
+  )
 
   it('lets any member read the tenant and its editions', async () => {
     await call(nobody, 'get', '/tenants/current').expect(200)
     await call(nobody, 'get', '/editions').expect(200)
     await call(nobody, 'get', `/editions/${editionA}`).expect(200)
+  })
+})
+
+describe('tenant isolation by path id', () => {
+  const none = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
+
+  it("answers 404 for another tenant's member and edition on every route", async () => {
+    const calls = [
+      call(a.head, 'patch', `/tenants/current/members/${foreignMemberId}`, {
+        settingsAccess: 'read',
+      }),
+      call(a.head, 'delete', `/tenants/current/members/${foreignMemberId}`),
+      call(a.head, 'get', `/editions/${editionB}`),
+      call(a.head, 'patch', `/editions/${editionB}`, { name: 'Taken over' }),
+      call(a.head, 'delete', `/editions/${editionB}`),
+      call(a.head, 'post', `/editions/${editionB}/activate`),
+      call(a.head, 'get', `/editions/${editionB}/members`),
+      call(a.head, 'put', `/editions/${editionB}/members/${targetId}`, none),
+      call(a.head, 'put', `/editions/${editionA}/members/${foreignMemberId}`, none),
+      call(a.head, 'delete', `/editions/${editionB}/members/${targetId}`),
+    ]
+    const statuses = (await Promise.all(calls)).map((res) => res.status)
+    expect(statuses).toEqual(calls.map(() => 404))
   })
 })
 
@@ -190,6 +241,52 @@ describe('anti-escalation', () => {
       code: 'member.expiry-after-own',
     })
     await patch(writer, targetId, { settingsAccess: 'read' }).expect(200)
+  })
+
+  it('refuses removing oneself and an org removing a head', async () => {
+    expect(
+      (await call(writer, 'delete', `/tenants/current/members/${writerId}`)).body,
+    ).toMatchObject({
+      code: 'member.self',
+    })
+    const members = (await call(a.head, 'get', '/tenants/current/members')).body as {
+      id: string
+      role: string
+    }[]
+    const head = members.find((m) => m.role === 'head')!
+    expect(
+      (await call(writer, 'delete', `/tenants/current/members/${head.id}`)).body,
+    ).toMatchObject({
+      code: 'member.head-only',
+    })
+    expect(
+      (await call(writer, 'delete', `/editions/${editionA}/members/${writerId}`)).body,
+    ).toMatchObject({ code: 'member.self' })
+  })
+
+  it('refuses lifting the expiry for an org that has one', async () => {
+    const res = await patch(limited, targetId, { expiresAt: null })
+    expect(res.body).toMatchObject({ code: 'member.expiry-after-own' })
+  })
+
+  it('refuses an org reviving or extending a member who holds more than the org', async () => {
+    const strong = await member()
+    const strongId = await addOrg(a.id, strong, { settings: 'write', expired: true })
+    await call(a.head, 'patch', `/tenants/current/members/${strongId}`, {}).expect(200)
+    // The writer holds settings=write but branding=none; give the lapsed member branding=read.
+    const t = a.head
+    await call(t, 'patch', `/tenants/current/members/${strongId}`, {
+      brandingAccess: 'read',
+    }).expect(200)
+
+    const revive = await patch(writer, strongId, { expiresAt: null })
+    expect(revive.body).toMatchObject({ code: 'member.above-own' })
+    await call(strong, 'get', '/tenants/current').expect(403)
+
+    await patch(a.head, strongId, { expiresAt: null }).expect(200)
+    await call(strong, 'get', '/tenants/current').expect(200)
+    const extend = await patch(writer, strongId, { expiresAt: later.toISOString() })
+    expect(extend.body).toMatchObject({ code: 'member.above-own' })
   })
 
   it('restores access when a head extends an expired membership', async () => {
@@ -271,19 +368,74 @@ describe('review fixes', () => {
     const body = { ...none, programAccess: 'write', ticketsAccess: 'write' }
     await call(actor, 'put', `/editions/${edition}/members/${heldId}`, body, t.slug).expect(200)
   })
+})
 
-  it('serialises two concurrent activations, leaving exactly one active edition', async () => {
+// Each test holds a row lock from outside, so the requests really overlap (PLAN.md 15.1).
+describe('concurrency', () => {
+  it('re-checks the target after waiting: an org cannot delete a member promoted meanwhile', async () => {
+    const t = await tenantWithHead()
+    const [org, promoted] = await Promise.all([member(), member()])
+    await addOrg(t.id, org, { settings: 'write' })
+    const promotedId = await addOrg(t.id, promoted)
+    const commit = await holdOpen(
+      (sql) => sql`update tenant_memberships set role = 'head' where id = ${promotedId}`,
+    )
+
+    const pending = call(
+      org,
+      'delete',
+      `/tenants/current/members/${promotedId}`,
+      undefined,
+      t.slug,
+    ).then((res) => res)
+    await sleep(300)
+    await commit()
+
+    expect((await pending).body).toMatchObject({ code: 'member.head-only' })
+    const members = (await call(t.head, 'get', '/tenants/current/members', undefined, t.slug))
+      .body as { id: string }[]
+    expect(members.map((m) => m.id)).toContain(promotedId)
+  })
+
+  it('serialises two activations, leaving exactly one active edition', async () => {
     const t = await tenantWithHead()
     const [x, y] = await Promise.all([addEdition(t.id), addEdition(t.id)])
+    const commit = await holdOpen((sql) => sql`select 1 from editions where id = ${y} for update`)
 
-    const results = await Promise.all(
-      [x, y].map((id) => call(t.head, 'post', `/editions/${id}/activate`, undefined, t.slug)),
-    )
-    expect(results.map((r) => r.status)).toEqual([200, 200])
+    const first = call(t.head, 'post', `/editions/${y}/activate`, undefined, t.slug).then((r) => r)
+    await sleep(300)
+    const second = call(t.head, 'post', `/editions/${x}/activate`, undefined, t.slug).then((r) => r)
+    await sleep(300)
+    await commit()
+
+    expect([(await first).status, (await second).status]).toEqual([200, 200])
     const all = (await call(t.head, 'get', '/editions', undefined, t.slug)).body as {
       isActive: boolean
     }[]
     expect(all.filter((e) => e.isActive)).toHaveLength(1)
+  })
+
+  it('keeps a head when two heads demote each other at once', async () => {
+    const t = await tenantWithHead()
+    const second = await member()
+    const secondId = await addOrg(t.id, second)
+    await call(
+      t.head,
+      'patch',
+      `/tenants/current/members/${secondId}`,
+      { role: 'head' },
+      t.slug,
+    ).expect(200)
+    const members = (await call(t.head, 'get', '/tenants/current/members', undefined, t.slug))
+      .body as { id: string; role: string }[]
+    const firstId = members.find((m) => m.role === 'head' && m.id !== secondId)!.id
+
+    const results = await Promise.all([
+      call(t.head, 'patch', `/tenants/current/members/${secondId}`, { role: 'org' }, t.slug),
+      call(second, 'patch', `/tenants/current/members/${firstId}`, { role: 'org' }, t.slug),
+    ])
+    expect(results.map((r) => r.status).sort()).toEqual([200, 403])
+    expect(await countHeads(t.id)).toBe(1)
   })
 })
 

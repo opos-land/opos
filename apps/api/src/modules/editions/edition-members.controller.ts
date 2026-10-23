@@ -3,9 +3,10 @@ import { contract } from '@opos/contract'
 import { tsRestHandler, TsRestHandler } from '@ts-rest/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
-import { ApiError, notFound } from '../../common/errors/api-error'
+import { ApiError } from '../../common/errors/api-error'
 import { AccessRepository } from '../../common/permissions/access.repository'
 import { assertMayGrantEdition, assertMayManage } from '../tenants/anti-escalation'
+import { lockActorAndTarget } from '../tenants/member-lock'
 import { MembersRepository } from '../tenants/members.repository'
 import { EditionsRepository } from './editions.repository'
 import { EditionMembersRepository } from './edition-members.repository'
@@ -20,15 +21,18 @@ export class EditionMembersController {
     private readonly access: AccessRepository,
   ) {}
 
-  /** The org whose edition access changes; heads hold every edition already. */
-  private async target(tenantMembershipId: string) {
-    const target = await this.members.find(tenantMembershipId)
-    if (!target) throw notFound('member')
-    assertMayManage(this.context.membership()!, target)
-    if (target.role === 'head') {
+  /** Locks actor and target; the target is an org, since a head holds every edition already. */
+  private async lock(tenantMembershipId: string) {
+    const locked = await lockActorAndTarget(
+      this.members,
+      this.context.membership()!.id,
+      tenantMembershipId,
+    )
+    assertMayManage(locked.actor, locked.target)
+    if (locked.target.role === 'head') {
       throw new ApiError(409, 'member.is-head', 'A head has access to every edition')
     }
-    return target
+    return locked
   }
 
   @TsRestHandler(contract.editions.members.list)
@@ -45,8 +49,7 @@ export class EditionMembersController {
   put() {
     return tsRestHandler(contract.editions.members.put, async ({ params, body }) => {
       const edition = await this.editions.get(params.editionId)
-      const target = await this.target(params.tenantMembershipId)
-      const actor = this.context.membership()!
+      const { actor, target } = await this.lock(params.tenantMembershipId)
       const [actorAccess, current] = await Promise.all([
         this.access.editionAccess(actor.id, edition.id),
         this.access.editionAccess(target.id, edition.id),
@@ -61,7 +64,7 @@ export class EditionMembersController {
   remove() {
     return tsRestHandler(contract.editions.members.remove, async ({ params }) => {
       const edition = await this.editions.get(params.editionId)
-      const target = await this.target(params.tenantMembershipId)
+      const { target } = await this.lock(params.tenantMembershipId)
       await this.editionMembers.remove(edition.id, target.id)
       return { status: 204, body: undefined }
     })

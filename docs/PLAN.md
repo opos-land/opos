@@ -667,7 +667,14 @@ of its own: `member.self` (the own membership, heads included), `member.head-onl
 a head), `member.above-own` (a permission above the actor's own, on either level, or an org
 appointing a head), `member.expiry-after-own` (an expiry later than the actor's own, or none when
 the actor has one). A value the member already holds is no grant: an org may change one field of a
-member who holds more than the org in another.
+member who holds more than the org in another. An org that sets or lifts `expiresAt` hands back
+everything the row holds, so the member's resulting tenant-level permissions and every edition row
+must be no higher than the org's own (`member.above-own`).
+
+A change to a member locks the actor's and the target's `tenant_memberships` rows (`for update`,
+in id order, so two requests never deadlock) and runs every check on the locked rows, the actor's
+own `settings=write` included: a promotion, demotion or permission change committed meanwhile is
+seen, not raced.
 
 Invitations — without the tenant header:
 
@@ -691,8 +698,9 @@ Invitations — without the tenant header:
 | DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation (`member.self`, `member.head-only`); a head -> `409` `member.is-head`; `204` |
 
 An edition `slug` is 1–40 lowercase letters, digits and hyphens, unique within the tenant;
-`endsAt` is after `startsAt`, also after a `PATCH` of only one of them. Another tenant's edition is
-`404` on every route.
+`endsAt` is after `startsAt`, also after a `PATCH` of only one of them. For a member who passes the
+permission check, another tenant's edition is `404` on every route; an edition deleted while a
+request waits is `404` too.
 
 ### 5.5 `program` — JWT + `X-Tenant-Slug` + edition permission
 
@@ -1685,7 +1693,7 @@ with a wrong signature, audience, issuer or expiry are signed in the test with `
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
 | transactions | a handler that writes and then returns a `4xx` leaves no row behind; an `afterCommit` call registered before a rollback never runs; a repository call outside a tenant transaction throws |
-| anti-escalation | an org cannot grant permissions above their own, edit themselves or touch a `head` |
+| anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift or extend the expiry of a member who holds more; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access; an org cannot set an expiry later than their own |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |

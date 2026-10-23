@@ -16,7 +16,10 @@ export interface ManagedMember {
   role: TenantMembership['role']
 }
 
-type TenantLevels = Pick<TenantMembership, (typeof tenantResources)[keyof typeof tenantResources]>
+export type TenantLevels = Pick<
+  TenantMembership,
+  (typeof tenantResources)[keyof typeof tenantResources]
+>
 
 /** Nobody edits their own membership; only a head edits or removes another head. */
 export function assertMayManage(actor: TenantMembership, target: ManagedMember) {
@@ -70,6 +73,35 @@ export function assertMayGrantEdition(
     if (granted === (current?.[field] ?? 'none')) continue
     if (rank[granted] > rank[actorAccess?.[field] ?? 'none']) {
       throw refuse('member.above-own', `${field} above the actor's own`)
+    }
+  }
+}
+
+/**
+ * Lifting or moving an expiry hands the member every permission the row holds, so an org may do it
+ * only for a member who holds no more than the org, on the tenant level and in every edition.
+ */
+export function assertMayExtend(
+  actor: TenantMembership,
+  actorEditions: Map<string, EditionAccess>,
+  resulting: TenantLevels,
+  targetEditions: Map<string, EditionAccess>,
+) {
+  if (actor.role === 'head') return
+  for (const field of Object.values(tenantResources)) {
+    if (rank[resulting[field]] > rank[actor[field]]) {
+      throw refuse('member.above-own', `Extends a member holding ${field} above the actor's own`)
+    }
+  }
+  for (const [editionId, access] of targetEditions) {
+    const own = actorEditions.get(editionId)
+    for (const [field, held] of Object.entries(access) as [
+      keyof EditionAccess,
+      EditionAccess[keyof EditionAccess],
+    ][]) {
+      if (rank[held] > rank[own?.[field] ?? 'none']) {
+        throw refuse('member.above-own', `Extends a member holding ${field} above the actor's own`)
+      }
     }
   }
 }

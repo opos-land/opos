@@ -218,7 +218,9 @@ In the panel Jan switches convention context in the top bar.
 
 - Only a head organizer edits or removes another head organizer.
 - An org with write access to settings manages other orgs, but cannot grant anyone a permission
-  higher than their own — on either level — nor set an expiry later than their own.
+  higher than their own — on either level — nor set an expiry later than their own. Lifting or
+  extending someone's expiry grants back everything they hold, so an org does it only for a member
+  who holds no more than the org.
 - Nobody edits their own membership.
 - A convention's last head organizer cannot be removed.
 

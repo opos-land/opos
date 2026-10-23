@@ -72,7 +72,12 @@
         "DATABASE_URL",
         "DATABASE_GLOBAL_URL",
         "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT"
+        "OPOS_DB_PORT",
+        "AUTH_URL",
+        "JWT_SECRET",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "OPOS_AUTH_PORT",
+        "NODE_ENV"
       ]
     },
     "db:verify": {

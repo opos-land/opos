@@ -19,6 +19,8 @@ export const authAdmin = connect(url('supabase_auth_admin', 'postgres'))
 export const superuser = connect(url('postgres', 'postgres'))
 
 const tenantIds: string[] = []
+/** Removes the tenant after the test file, like the tenants created by createTenant(). */
+export const trackTenant = (id: string) => tenantIds.push(id)
 const userIds: string[] = []
 
 afterAll(async () => {

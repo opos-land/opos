@@ -231,7 +231,7 @@ opos/
         checkout.ts
         scanner.ts
         public.ts
-    db/                  # built: clients, core schema, migrations, db:verify, schema tests
+    db/                  # built: clients, core schema, migrations, createTenant, seed, scripts, tests
       src/
         rls.ts           # set_config of app.tenant_id for the tenant transaction
         schema/          # one file per table (4); still to come:
@@ -245,9 +245,6 @@ opos/
           tickets.ts
           scanner-devices.ts
           attendees.ts
-        seed.ts
-        scripts/
-          create-tenant.ts   # db:tenant:create
     i18n/
       src/
         index.ts         # locale list, detection, catalog activation, Intl formatters
@@ -287,8 +284,11 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   The API's variables are read at runtime and stay out of the hash
   ([11](#11-environment-variables)).
 - turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
-  every `db:*` task pass the database variables through (`passThroughEnv`), so they reach the
-  scripts and stay out of the hash.
+  every `db:*` task pass the database variables through (`passThroughEnv`), `db:seed` also the
+  Supabase Auth ones and `NODE_ENV` ([11](#11-environment-variables)), so they reach the scripts and
+  stay out of the hash.
+- The root scripts that take arguments, `db:seed` and `db:tenant:create`, end with `--`, so pnpm
+  hands the arguments through turbo to the package script.
 
 ### 3.2 Frontend application layout
 
@@ -1339,8 +1339,9 @@ Standard Webhooks.
 ### Admin API
 
 The API holds `SUPABASE_SERVICE_ROLE_KEY` — a JWT with `role = service_role`, signed with
-`JWT_SECRET` — and uses it only for `DELETE /admin/users/:id` (account deletion) and in the seed
-for `POST /admin/users` ([14](#14-demo-data-seed)). The key never reaches a frontend.
+`JWT_SECRET` — and uses it only for `DELETE /admin/users/:id` (account deletion). The seed calls
+`POST /admin/users` with the same key, or, when it is not set, with a 10-minute `service_role` JWT
+it signs with `JWT_SECRET` itself ([14](#14-demo-data-seed)). The key never reaches a frontend.
 
 ### Rate limits
 
@@ -1408,8 +1409,11 @@ auth:service-key`.
 **`packages/db`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL` from
 the environment. Without it they use
 `postgres://opos_migrator:opos@localhost:<OPOS_DB_PORT or 5432>/postgres`, so dev needs no file;
-in production the variable comes from the API container's environment. turbo passes these variables
-through to the tasks ([3.1](#31-turbo-tasks)).
+in production the variable comes from the API container's environment. `db:seed` also reads
+`AUTH_URL` (default `http://localhost:<OPOS_AUTH_PORT or 9999>`) and `SUPABASE_SERVICE_ROLE_KEY`
+or `JWT_SECRET`; outside production `JWT_SECRET` defaults to the dev value from
+`apps/api/.env.example`. turbo passes these variables through to the tasks
+([3.1](#31-turbo-tasks)).
 
 **`infra/supabase/.env.example`** and **`infra/supabase/.env`** — read by `docker-compose.yml` as
 the `auth` service's `env_file`s, in that order. `.env.example` is committed and holds working dev
@@ -1612,16 +1616,22 @@ Wildcard `*.opos.land` + `opos.land` through DNS-01 (`CF_DNS_API_TOKEN`).
 
 ## 14. Demo data (seed)
 
-`packages/db/src/seed.ts`, idempotent. With `NODE_ENV=production` it fails unless
-`--i-know-what-i-am-doing` is passed.
+[packages/db/src/seed.ts](../packages/db/src/seed.ts), idempotent: every run converges on the
+data below. With `NODE_ENV=production` it fails unless `--i-know-what-i-am-doing` is passed. The
+seed covers the built tables; the rows of a table still to be built (programme items, reviews,
+likes, payment config, ticket types, orders, attendees) join the seed in the PR that builds the
+table.
 
 Accounts are created through the Supabase Auth admin API (`POST /admin/users` with
-`email_confirm: true` and the dev password); an existing user is skipped. The trigger fills
+`email_confirm: true` and the dev password); an existing account is skipped. The trigger fills
 `accounts`, and the seed then sets `locale` and the names. Everything else is written directly as
-`opos_migrator`.
+`opos_migrator`; a missing tenant is created through `createTenant` ([Creating a
+tenant](#creating-a-tenant)). The active editions start 60 days after the run, so their programme
+stays in the future.
 
-- **Accounts:** `head@convention-a.test`, five organizer accounts, `speaker@example.com`,
-  `attendee@example.com`. Dev password: `password123`. One organizer account has `locale=en`.
+- **Accounts:** `head@convention-a.test`, five organizer accounts, `head@convention-b.test`,
+  `speaker@example.com`, `attendee@example.com`. Dev password: `password123`. One organizer
+  account has `locale=en`.
 - **Tenant `convention-a`** — "Convention A", `defaultLocale=pl`, `timezone=Europe/Warsaw`.
   - Edition `2025` — `isPublished=true`, `isActive=false`, 8 programme items, all in the past.
     `speaker@example.com` speaks at two of them; one has a public review and a speakers-only
@@ -1634,7 +1644,8 @@ Accounts are created through the Supabase Auth admin API (`POST /admin/users` wi
   - Tickets 2026: types "Weekend" (120 PLN, 500) and "Saturday" (70 PLN, no limit, sales ending
     the day before the edition); a `paid` order of `guest@example.com`, who has no account, one
     `expired` order and one `cancelled` order.
-- **Tenant `convention-b`** — "Convention B", `defaultLocale=en`, `timezone=Europe/Prague`,
+- **Tenant `convention-b`** — "Convention B", `defaultLocale=en`, `timezone=Europe/Prague`, head
+  `head@convention-b.test`,
   a single `2026` edition with an English programme and one "Day pass" ticket type (provider
   `fake`, currency `PLN`).
 - **Convention A team:**
@@ -1653,7 +1664,9 @@ Accounts are created through the Supabase Auth admin API (`POST /admin/users` wi
 ### Creating a tenant
 
 There is no admin interface or endpoint in the MVP. A new convention is created on the server with
-`packages/db/src/scripts/create-tenant.ts`:
+[create-tenant.ts](../packages/db/src/scripts/create-tenant.ts), a command-line wrapper around
+`createTenant` from [packages/db/src/tenants.ts](../packages/db/src/tenants.ts); the seed and a
+future admin endpoint call the same function:
 
 ```bash
 pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email head@example.com \
@@ -1663,8 +1676,11 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
 - Runs as `opos_migrator`, in a single transaction: inserts `tenants` and a `head`
   `tenant_memberships` row. The database rejects a tenant committed without a head
   ([4.5](#45-invariants)).
-- The head's account must already exist — the person registers in the portal first. An unknown
-  email or a taken slug aborts with a non-zero exit code and changes nothing.
+- The head's account must already exist — the person registers in the portal first. The email is
+  matched case-insensitively.
+- Any refusal changes nothing and exits non-zero with a `CreateTenantError` code:
+  `tenant.slug-invalid`, `tenant.slug-taken`, `tenant.name-empty`, `tenant.locale-invalid`,
+  `tenant.timezone-invalid` (not an IANA zone), `account.not-found`.
 - In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
 
 ---
@@ -1679,7 +1695,7 @@ any API code: the global setup applies the migrations, the tests connect as `opo
 remove the tenants and users they created. They cover the RLS row of the table below, the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
-foreign edition) and the `accounts` triggers. The API tests repeat
+foreign edition), `createTenant` and each of its refusals, and the `accounts` triggers. The API tests repeat
 these checks through the endpoints.
 
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and

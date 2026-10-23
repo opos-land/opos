@@ -3,9 +3,13 @@ import postgres from 'postgres'
 import { afterAll } from 'vitest'
 import { migrationUrl } from '../src/migration-url'
 
-const port = process.env.OPOS_DB_PORT ?? '5432'
-const url = (user: string, password: string) =>
-  `postgres://${user}:${password}@localhost:${port}/postgres`
+// Every role connects to the host and database of DATABASE_MIGRATION_URL.
+const url = (user: string, password: string) => {
+  const target = new URL(migrationUrl())
+  target.username = user
+  target.password = password
+  return target.toString()
+}
 
 const connect = (connectionUrl: string) => postgres(connectionUrl, { max: 2, onnotice: () => {} })
 

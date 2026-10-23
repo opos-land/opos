@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./glossary": "./src/glossary.ts",
     "./errors": "./src/errors.ts",
-    "./lingui.config.base": "./lingui.config.base.ts"
+    "./lingui.config.base": "./lingui.config.base.ts",
+    "./lingui.config": "./lingui.config.ts"
   },
   "scripts": {
     "typecheck": "tsc",
@@ -20,13 +21,13 @@
     "i18n:check": "lingui check sync && lingui check missing --mode catalog --locale pl"
   },
   "dependencies": {
-    "@lingui/core": "^6.10.0"
+    "@lingui/core": "catalog:"
   },
   "devDependencies": {
     "@lingui/cli": "^6.10.0",
     "@lingui/conf": "^6.10.0",
     "@lingui/format-po": "^6.10.0",
-    "@lingui/vite-plugin": "^6.10.0",
+    "@lingui/vite-plugin": "catalog:",
     "@opos/eslint-config": "workspace:*",
     "@opos/tsconfig": "workspace:*",
     "@types/node": "catalog:",

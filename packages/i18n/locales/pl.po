@@ -30,6 +30,10 @@ msgid "booth"
 msgstr "stoisko"
 
 #: src/errors.ts
+msgid "Check the data you entered."
+msgstr "Sprawdź wprowadzone dane."
+
+#: src/errors.ts
 msgid "Choose a time zone from the list."
 msgstr "Wybierz strefę czasową z listy."
 
@@ -159,6 +163,10 @@ msgstr "Ten adres jest już zajęty przez inny konwent."
 msgid "This language is not supported."
 msgstr "Ten język nie jest obsługiwany."
 
+#: src/errors.ts
+msgid "This page or item does not exist."
+msgstr "Ta strona lub pozycja nie istnieje."
+
 #. Glossary term: ticket
 #: src/glossary.ts
 msgctxt "glossary"
@@ -179,6 +187,10 @@ msgstr "Zbyt wiele prób. Spróbuj ponownie za kilka minut."
 msgid "Too many emails sent. Try again in a few minutes."
 msgstr "Wysłano zbyt wiele wiadomości. Spróbuj ponownie za kilka minut."
 
+#: src/errors.ts
+msgid "Too many requests. Try again in a moment."
+msgstr "Zbyt wiele żądań. Spróbuj ponownie za chwilę."
+
 #. Glossary term: user
 #: src/glossary.ts
 msgctxt "glossary"
@@ -188,3 +200,11 @@ msgstr "użytkownik"
 #: src/errors.ts
 msgid "Wrong email or password."
 msgstr "Nieprawidłowy e-mail lub hasło."
+
+#: src/errors.ts
+msgid "You do not have permission to do this."
+msgstr "Nie masz uprawnień do tej operacji."
+
+#: src/errors.ts
+msgid "Your session has ended. Sign in again."
+msgstr "Twoja sesja wygasła. Zaloguj się ponownie."

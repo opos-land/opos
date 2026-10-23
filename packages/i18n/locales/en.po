@@ -30,6 +30,10 @@ msgid "booth"
 msgstr "booth"
 
 #: src/errors.ts
+msgid "Check the data you entered."
+msgstr "Check the data you entered."
+
+#: src/errors.ts
 msgid "Choose a time zone from the list."
 msgstr "Choose a time zone from the list."
 
@@ -159,6 +163,10 @@ msgstr "This address is already taken by another convention."
 msgid "This language is not supported."
 msgstr "This language is not supported."
 
+#: src/errors.ts
+msgid "This page or item does not exist."
+msgstr "This page or item does not exist."
+
 #. Glossary term: ticket
 #: src/glossary.ts
 msgctxt "glossary"
@@ -179,6 +187,10 @@ msgstr "Too many attempts. Try again in a few minutes."
 msgid "Too many emails sent. Try again in a few minutes."
 msgstr "Too many emails sent. Try again in a few minutes."
 
+#: src/errors.ts
+msgid "Too many requests. Try again in a moment."
+msgstr "Too many requests. Try again in a moment."
+
 #. Glossary term: user
 #: src/glossary.ts
 msgctxt "glossary"
@@ -188,3 +200,11 @@ msgstr "user"
 #: src/errors.ts
 msgid "Wrong email or password."
 msgstr "Wrong email or password."
+
+#: src/errors.ts
+msgid "You do not have permission to do this."
+msgstr "You do not have permission to do this."
+
+#: src/errors.ts
+msgid "Your session has ended. Sign in again."
+msgstr "Your session has ended. Sign in again."

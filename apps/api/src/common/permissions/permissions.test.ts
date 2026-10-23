@@ -8,6 +8,7 @@ const membership = (overrides: Partial<TenantMembership> = {}): TenantMembership
   settingsAccess: 'none',
   brandingAccess: 'none',
   shopConfigAccess: 'none',
+  expiresAt: null,
   ...overrides,
 })
 

@@ -43,12 +43,16 @@ export async function addEdition(tenantId: string) {
 export async function addOrg(
   tenantId: string,
   account: { id: string },
-  access: { settings?: Level; expired?: boolean } = {},
+  access: { settings?: Level; expired?: boolean; expiresAt?: Date } = {},
 ) {
+  const expiresAt = access.expired
+    ? sql`now() - interval '1 day'`
+    : access.expiresAt
+      ? sql`${access.expiresAt.toISOString()}::timestamptz`
+      : null
   const rows = await db.execute<{ id: string }>(sql`
     insert into tenant_memberships (account_id, tenant_id, role, settings_access, expires_at)
-    values (${account.id}, ${tenantId}, 'org', ${access.settings ?? 'none'},
-      ${access.expired ? sql`now() - interval '1 day'` : null})
+    values (${account.id}, ${tenantId}, 'org', ${access.settings ?? 'none'}, ${expiresAt})
     returning id
   `)
   return rows[0]!.id
@@ -80,3 +84,28 @@ export async function deleteCreatedTenants() {
 }
 
 export const closeTenantDb = () => db.$client.end()
+
+/**
+ * Runs `statement` in a transaction of its own and keeps it open, holding the locks it took,
+ * until `commit` is called: lets a test interleave a request with a concurrent write.
+ */
+export async function holdOpen(
+  statement: (sql: Awaited<ReturnType<typeof db.$client.reserve>>) => Promise<unknown>,
+) {
+  const sql = await db.$client.reserve()
+  await sql`begin`
+  await statement(sql)
+  return async () => {
+    await sql`commit`
+    sql.release()
+  }
+}
+
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export const countHeads = async (tenantId: string) =>
+  (
+    await db.execute<{ count: number }>(
+      sql`select count(*)::int as count from tenant_memberships where tenant_id = ${tenantId} and role = 'head'`,
+    )
+  )[0]!.count

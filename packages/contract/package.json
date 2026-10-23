@@ -23,6 +23,7 @@
     "@lingui/vite-plugin": "catalog:",
     "@opos/eslint-config": "workspace:*",
     "@opos/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -19,6 +19,7 @@ export interface TenantMembership {
   settingsAccess: Level
   brandingAccess: Level
   shopConfigAccess: Level
+  expiresAt: Date | null
 }
 
 export type TenantInContext = Tenant

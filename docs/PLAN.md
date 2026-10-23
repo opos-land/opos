@@ -152,7 +152,7 @@ opos/
     api/                 # built: bootstrap, env, database providers, GlobalDbService, OpenAPI docs,
                          #   error filter, request store and tenant transaction, JwtAuthGuard,
                          #   permission decorators, MeModule (profile, memberships),
-                         #   TenantsModule (current tenant), tests
+                         #   TenantsModule (tenant, team), EditionsModule, tests
       src/
         common/
           guards/scanner-device.guard.ts
@@ -183,9 +183,8 @@ opos/
     fixtures/            # Mailpit client, sign-in as a seeded account
   packages/
     contract/            # built: common schemas, error codes, health, me (profile, memberships),
-                         #   tenants (current)
+                         #   tenants (without members POST and payment config), editions
       src/
-        editions.ts
         program.ts
         engagement.ts
         shop.ts
@@ -600,9 +599,9 @@ and debugging — **it never reaches the UI**. Every code is listed in
 
 | Status | Meaning | Code when nothing more specific applies |
 |---|---|---|
-| `400` | validation; `params.field` names the first invalid field, an unknown one included | `request.invalid` |
+| `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
 | `401` | missing, expired or foreign token, or no `accounts` row for it | `session.invalid` |
-| `403` | insufficient permissions | `permission.denied` |
+| `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
 | `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`) | always a specific code |
 | `429` | rate limit | `request.rate-limited` |
@@ -654,13 +653,29 @@ by the payment provider only ([7.10](#710-payments)).
 | Method | Path | Required permission |
 |---|---|---|
 | GET | `/tenants/current` | membership; returns `id`, `slug`, `name`, `defaultLocale`, `timezone` |
-| PATCH | `/tenants/current` | `settings=write` (`name`, `slug`, `defaultLocale`, `timezone`) |
-| GET | `/tenants/current/members` | `settings>=read` |
-| POST | `/tenants/current/members` | `settings=write` |
-| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (permissions, `expiresAt`) |
-| DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation |
+| PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `slug`, `defaultLocale`, `timezone` as an IANA zone); a taken slug -> `409` `tenant.slug-taken` |
+| GET | `/tenants/current/members` | `settings>=read`; every member with the account's email and names, expired ones included and flagged `expired` |
+| POST | `/tenants/current/members` | `settings=write`; an invitation ([7.7](#77-organizer-invitations)) |
+| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry and drops the member's edition-level rows; an expiry on a head -> `400` |
+| DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation; `204`; the last head -> `409` `membership.last-head` |
 | GET | `/tenants/current/payment-config` | `shop>=read`; provider, `accountRef`, currency, whether credentials are set |
 | PUT | `/tenants/current/payment-config` | `shop=write`; `{ provider, accountRef, credentials?, currency }` |
+
+Anti-escalation ([PRODUCT.md 5.6](PRODUCT.md#56-anti-escalation-policy),
+[anti-escalation.ts](../apps/api/src/modules/tenants/anti-escalation.ts)) answers `403` with a code
+of its own: `member.self` (the own membership, heads included), `member.head-only` (an org touching
+a head), `member.above-own` (a permission above the actor's own, on either level, or an org
+appointing a head), `member.expiry-after-own` (an expiry later than the actor's own, or none when
+the actor has one), `member.outlives-own` (an org whose access expires changing the permissions,
+on either level, of a member whose access would end later than theirs or never). A value the member already holds is no grant: an org may change one field of a
+member who holds more than the org in another. An org that sets or lifts `expiresAt` hands back
+everything the row holds, so the member's resulting tenant-level permissions and every edition row
+must be no higher than the org's own (`member.above-own`).
+
+A change to a member locks the actor's and the target's `tenant_memberships` rows (`for update`,
+in id order, so two requests never deadlock) and runs every check on the locked rows, the actor's
+own `settings=write` included: a promotion, demotion or permission change committed meanwhile is
+seen, not raced.
 
 Invitations — without the tenant header:
 
@@ -673,15 +688,20 @@ Invitations — without the tenant header:
 
 | Method | Path | Required permission |
 |---|---|---|
-| GET | `/editions` | membership |
-| POST | `/editions` | `settings=write` |
+| GET | `/editions` | membership; newest `startsAt` first |
+| POST | `/editions` | `settings=write`; `{ slug, name, startsAt, endsAt }`, created inactive and unpublished; a taken slug -> `409` `edition.slug-taken` |
 | GET | `/editions/:editionId` | membership |
-| PATCH | `/editions/:editionId` | `settings=write` |
-| DELETE | `/editions/:editionId` | `settings=write`; `409` when the edition is active |
-| POST | `/editions/:editionId/activate` | `settings=write` |
+| PATCH | `/editions/:editionId` | `settings=write`; the same fields plus `isPublished` |
+| DELETE | `/editions/:editionId` | `settings=write`; `204`; `409` `edition.active` when the edition is active, checked in the delete statement itself |
+| POST | `/editions/:editionId/activate` | `settings=write`; locks the tenant row, then deactivates the previous active edition in the same transaction, so two activations run one after the other |
 | GET | `/editions/:editionId/members` | `settings>=read` |
-| PUT | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation |
-| DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` |
+| PUT | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation; `{ programAccess, websiteContentAccess, ticketsAccess }`; a head -> `409` `member.is-head` |
+| DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation (`member.self`, `member.head-only`); a head -> `409` `member.is-head`; `204` |
+
+An edition `slug` is 1–40 lowercase letters, digits and hyphens, unique within the tenant;
+`endsAt` is after `startsAt`, also after a `PATCH` of only one of them. For a member who passes the
+permission check, another tenant's edition is `404` on every route; an edition deleted while a
+request waits is `404` too.
 
 ### 5.5 `program` — JWT + `X-Tenant-Slug` + edition permission
 
@@ -1674,7 +1694,7 @@ with a wrong signature, audience, issuer or expiry are signed in the test with `
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
 | transactions | a handler that writes and then returns a `4xx` leaves no row behind; an `afterCommit` call registered before a rollback never runs; a repository call outside a tenant transaction throws |
-| anti-escalation | an org cannot grant permissions above their own, edit themselves or touch a `head` |
+| anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, lift or extend the expiry of a member who holds more, or, with an expiry of their own, change the permissions of a member who would outlast them; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access; an org cannot set an expiry later than their own |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |

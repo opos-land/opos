@@ -3,7 +3,8 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export const base = tseslint.config(
-  { ignores: ['dist/**', 'coverage/**'] },
+  // Compiled Lingui catalogs are build output.
+  { ignores: ['dist/**', 'coverage/**', '**/locales/*.mjs'] },
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
   {

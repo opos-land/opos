@@ -63,7 +63,7 @@ describe('createTenant', () => {
   it.each([
     [{ slug: 'Bad_Slug' }, 'tenant.slug-invalid'],
     [{ name: '  ' }, 'tenant.name-empty'],
-    [{ defaultLocale: 'polish' }, 'tenant.locale-invalid'],
+    [{ defaultLocale: 'cs' }, 'tenant.locale-invalid'],
     [{ timezone: 'Mars/Olympus' }, 'tenant.timezone-invalid'],
   ])('refuses %o with %s', async (override, code) => {
     await expect(

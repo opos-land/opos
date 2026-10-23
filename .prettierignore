@@ -3,3 +3,4 @@ pnpm-lock.yaml
 *.md
 *.po
 packages/db/drizzle/meta/
+**/locales/*.mjs

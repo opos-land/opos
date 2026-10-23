@@ -9,3 +9,6 @@ coverage/
 !.env.example
 mise.local.toml
 .DS_Store
+
+# Compiled Lingui catalogs, built by pnpm i18n:compile
+**/locales/*.mjs

@@ -25,6 +25,7 @@ jobs:
           restore-keys: turbo-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
+      - run: pnpm i18n:check
       - run: docker compose up -d --wait db
       - run: pnpm db:migrate
       - run: pnpm db:verify

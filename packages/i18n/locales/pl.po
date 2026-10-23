@@ -1,0 +1,190 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-10-23 23:14+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: pl\n"
+
+#. Glossary term: admin
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "administrator"
+msgstr "administrator"
+
+#: src/errors.ts
+msgid "An account with this email address already exists."
+msgstr "Konto z tym adresem e-mail już istnieje."
+
+#. Glossary term: attendee
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "attendee"
+msgstr "uczestnik"
+
+#. Glossary term: booth
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "booth"
+msgstr "stoisko"
+
+#: src/errors.ts
+msgid "Choose a time zone from the list."
+msgstr "Wybierz strefę czasową z listy."
+
+#: src/errors.ts
+msgid "Confirm your email address first. Check your inbox for the link."
+msgstr "Najpierw potwierdź adres e-mail. Link znajdziesz w swojej skrzynce."
+
+#. Glossary term: tenant
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "convention"
+msgstr "konwent"
+
+#. Glossary term: core
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "core"
+msgstr "rdzeń"
+
+#. Glossary term: edition
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "edition"
+msgstr "edycja"
+
+#: src/errors.ts
+msgid "Enter a valid email address."
+msgstr "Podaj prawidłowy adres e-mail."
+
+#: src/errors.ts
+msgid "Enter the convention name."
+msgstr "Podaj nazwę konwentu."
+
+#. Glossary term: head
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "head organizer"
+msgstr "główny organizator"
+
+#. Glossary term: locale
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "language"
+msgstr "język"
+
+#. Glossary term: like (noun)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "like"
+msgstr "polubienie"
+
+#. Glossary term: module
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "module"
+msgstr "moduł"
+
+#: src/errors.ts
+msgid "No account uses this email address."
+msgstr "Żadne konto nie używa tego adresu e-mail."
+
+#. Glossary term: order
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "order"
+msgstr "zamówienie"
+
+#. Glossary term: org
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "organizer"
+msgstr "organizator"
+
+#. Glossary term: programme item
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "programme item"
+msgstr "punkt programu"
+
+#. Glossary term: review
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "review"
+msgstr "opinia"
+
+#. Glossary term: scanner
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "scanner"
+msgstr "skaner"
+
+#: src/errors.ts
+msgid "Sign-up is closed at the moment."
+msgstr "Rejestracja jest teraz zamknięta."
+
+#: src/errors.ts
+msgid "Something went wrong. Try again."
+msgstr "Coś poszło nie tak. Spróbuj ponownie."
+
+#. Glossary term: speaker
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "speaker"
+msgstr "prelegent"
+
+#: src/errors.ts
+msgid "The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters."
+msgstr "Adres może zawierać tylko małe litery, cyfry i myślniki, od 3 do 40 znaków."
+
+#: src/errors.ts
+msgid "The link has expired. Ask for a new one."
+msgstr "Link wygasł. Poproś o nowy."
+
+#: src/errors.ts
+msgid "The new password must differ from the current one."
+msgstr "Nowe hasło musi różnić się od obecnego."
+
+#: src/errors.ts
+msgid "The password is too weak. Use at least 8 characters."
+msgstr "Hasło jest za słabe. Użyj co najmniej 8 znaków."
+
+#: src/errors.ts
+msgid "This address is already taken by another convention."
+msgstr "Ten adres jest już zajęty przez inny konwent."
+
+#: src/errors.ts
+msgid "This language is not supported."
+msgstr "Ten język nie jest obsługiwany."
+
+#. Glossary term: ticket
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "ticket"
+msgstr "akredytacja"
+
+#. Glossary term: ticket type
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "ticket type"
+msgstr "rodzaj akredytacji"
+
+#: src/errors.ts
+msgid "Too many attempts. Try again in a few minutes."
+msgstr "Zbyt wiele prób. Spróbuj ponownie za kilka minut."
+
+#: src/errors.ts
+msgid "Too many emails sent. Try again in a few minutes."
+msgstr "Wysłano zbyt wiele wiadomości. Spróbuj ponownie za kilka minut."
+
+#. Glossary term: user
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "user"
+msgstr "użytkownik"
+
+#: src/errors.ts
+msgid "Wrong email or password."
+msgstr "Nieprawidłowy e-mail lub hasło."

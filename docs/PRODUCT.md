@@ -82,7 +82,10 @@ The MVP is closed once the flow below works with no manual database edits beyond
 ## 3. Glossary
 
 The names are consistent across code, API and interface. We introduce no synonyms, and each term
-has exactly one rendering in every interface language.
+has exactly one rendering in every interface language. A rendering follows the convention scene's
+own vocabulary rather than a literal translation: in Polish, **ticket** is rendered with the word
+the scene uses for admission to a convention, not with the word for a ticket. What the scene calls
+accreditation is the ticket; there is no separate accreditation module.
 
 | Term | Meaning |
 |---|---|
@@ -102,7 +105,7 @@ has exactly one rendering in every interface language.
 | **head** | the head organizer of a convention — an org with no permission limits |
 | **user** | a convention attendee, works in the portal |
 | **core** | accounts, conventions, editions and permissions — what every module builds on |
-| **module** | one functional area built on the core: programme, tickets, CMS, profile, accreditation, booths, friends ([chapter 7](#7-modules)) |
+| **module** | one functional area built on the core: programme, tickets, CMS, profile, booths, friends ([chapter 7](#7-modules)) |
 | **booth** | an exhibitor's stand at an edition; a virtual booth is its online counterpart |
 | **locale** | interface or website language in BCP 47 form (`pl`, `en`) |
 
@@ -259,7 +262,6 @@ edition level.
 | tickets | an edition's ticket types, sales without an account, emailed QR tickets, scanning at the venue | shop (convention), tickets (edition) | yes |
 | CMS | the public convention website: home page, programme pages, archive, per-edition content | branding (convention), website content (edition) | no |
 | profile | the user's account: name, language, "my conventions", account deletion | — (the user's own data) | account settings and "my conventions" |
-| accreditation | admitting attendees, staff and guests to an edition | to be added | no |
 | booths | exhibitor booths at an edition, and virtual booths online | to be added | no |
 | friends | connections between users across conventions | — (the user's own data) | no |
 
@@ -396,7 +398,8 @@ activities, data export and log retention.
 
 ### Beyond the MVP
 
-- Modules: CMS, accreditation, booths (including virtual booths), friends ([chapter 7](#7-modules))
+- Modules: CMS, booths (including virtual booths), friends ([chapter 7](#7-modules))
+- Tickets issued by the team to staff and guests without a purchase
 - Merchandise, passes and other products besides tickets; refunds triggered from the panel
 - Ticket sales embedded on the convention's own website (white label, iframe, public sales API)
 - Offline scanning

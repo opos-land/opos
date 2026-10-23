@@ -172,6 +172,15 @@ describe('invariants', () => {
     ).rejects.toThrow(/edition_memberships_edition_fk/)
   })
 
+  it('moves updated_at on every update', async () => {
+    const tenant = await createTenant()
+
+    const [row] = await migrator<{ created_at: Date; updated_at: Date }[]>`
+      update tenants set name = 'Renamed' where id = ${tenant.id} returning created_at, updated_at
+    `
+    expect(row!.updated_at.getTime()).toBeGreaterThan(row!.created_at.getTime())
+  })
+
   it('refuses a slug outside the allowed format', async () => {
     await expect(
       migrator`insert into tenants (slug, name) values (${`Bad_${randomUUID().slice(0, 4)}`}, 'Bad')`,

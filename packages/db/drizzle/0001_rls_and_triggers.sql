@@ -38,6 +38,36 @@ create policy tenant_isolation on edition_memberships
   with check (tenant_id = current_setting('app.tenant_id')::uuid);
 --> statement-breakpoint
 
+-- updated_at follows every update, whatever client issues it (PLAN.md 4).
+create function public.set_updated_at() returns trigger
+  language plpgsql set search_path = '' as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+--> statement-breakpoint
+create trigger accounts_set_updated_at
+  before update on accounts
+  for each row execute function public.set_updated_at();
+--> statement-breakpoint
+create trigger tenants_set_updated_at
+  before update on tenants
+  for each row execute function public.set_updated_at();
+--> statement-breakpoint
+create trigger tenant_memberships_set_updated_at
+  before update on tenant_memberships
+  for each row execute function public.set_updated_at();
+--> statement-breakpoint
+create trigger editions_set_updated_at
+  before update on editions
+  for each row execute function public.set_updated_at();
+--> statement-breakpoint
+create trigger edition_memberships_set_updated_at
+  before update on edition_memberships
+  for each row execute function public.set_updated_at();
+--> statement-breakpoint
+
 -- accounts mirrors auth.users (PLAN.md 4.2). Owned by opos_migrator, so the functions write
 -- accounts with its privileges when Supabase Auth inserts or updates a user.
 create function public.handle_auth_user_created() returns trigger
@@ -68,7 +98,7 @@ $$;
 create function public.handle_auth_user_email_updated() returns trigger
   language plpgsql security definer set search_path = '' as $$
 begin
-  update public.accounts set email = lower(new.email), updated_at = now() where id = new.id;
+  update public.accounts set email = lower(new.email) where id = new.id;
   return new;
 end;
 $$;
@@ -128,4 +158,4 @@ create constraint trigger tenants_at_least_one_head
   deferrable initially deferred
   for each row execute function public.ensure_tenant_has_head();
 --> statement-breakpoint
-revoke execute on function public.handle_auth_user_created(), public.handle_auth_user_email_updated(), public.ensure_tenant_keeps_head(), public.ensure_tenant_has_head() from public;
+revoke execute on function public.set_updated_at(), public.handle_auth_user_created(), public.handle_auth_user_email_updated(), public.ensure_tenant_keeps_head(), public.ensure_tenant_has_head() from public;

@@ -393,7 +393,9 @@ spacing, radii). No image or illustration in `shared/ui` or in a feature is AI-g
 PostgreSQL 17 from the `supabase/postgres` image. Every OPOS table lives in the `public` schema and
 has `id uuid primary key default gen_random_uuid()`, `createdAt timestamptz not null default
 now()`, `updatedAt timestamptz not null default now()` — `accounts.id` being the one exception
-([4.2](#42-global-tables)).
+([4.2](#42-global-tables)). `updatedAt` is kept by the database, not by Drizzle: every table has a
+`before update` trigger `<table>_set_updated_at` calling `public.set_updated_at()`, so raw SQL,
+scripts and the studio move it too.
 
 Names in this chapter are the TypeScript ones. Drizzle maps them with `casing: 'snake_case'`, set in
 both `drizzle.config.ts` and the client: `tenantId` is the column `tenant_id`. Constraints and
@@ -663,8 +665,8 @@ the system, including `PublicModule`, resolves the tenant first and then works o
 
 RLS policies and the `auth.users` triggers go into hand-written migrations
 (`drizzle-kit generate --custom`). The same migration grants `select, insert, update, delete` on
-the new tables to `opos_app` and `opos_app_global` and revokes everything from `anon` and
-`authenticated`. Trigger functions are `security definer` with `set search_path = ''` and
+the new tables to `opos_app` and `opos_app_global`, revokes everything from `anon` and
+`authenticated`, and adds each table's `<table>_set_updated_at` trigger ([4](#4-database-schema)). Trigger functions are `security definer` with `set search_path = ''` and
 schema-qualified names, because Supabase Auth runs with `search_path = auth`.
 
 | Script | Runs |

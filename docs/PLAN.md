@@ -684,11 +684,20 @@ All of them connect as `opos_migrator` through `DATABASE_MIGRATION_URL`
 ```sql
 select c.relname from pg_class c
 join pg_namespace n on n.oid = c.relnamespace
-join pg_attribute a on a.attrelid = c.oid and a.attname = 'tenant_id'
-where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;
+where n.nspname = 'public' and c.relkind = 'r'
+  and (c.relname = 'tenants' or exists (
+    select 1 from pg_attribute a
+    where a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped
+  ))
+  and not (c.relrowsecurity and c.relforcerowsecurity and exists (
+    select 1 from pg_policy p
+    where p.polrelid = c.oid and p.polname = 'tenant_isolation' and p.polcmd = '*'
+  ));
 ```
 
-The result must be empty.
+It lists every covered table — `tenants` and every `public` table with a `tenant_id` column —
+that lacks enabled RLS, forced RLS or a `tenant_isolation` policy for all commands. The result must
+be empty.
 
 ---
 

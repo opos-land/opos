@@ -14,6 +14,8 @@ allowBuilds:
   lefthook: true
   # swagger-ui-dist telemetry
   '@scarf/scarf': false
+  # platform binaries come from optional dependencies, the postinstall only verifies them
+  esbuild: false
 
 # Versions shared by more than one workspace package.
 catalog:
@@ -31,4 +33,5 @@ catalog:
   postgres: ^3.4.9
   typescript: ~6.0.3
   typescript-eslint: ^8.60.0
+  vitest: ^4.1.0
   zod: ^3.25.76

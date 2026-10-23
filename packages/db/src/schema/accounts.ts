@@ -1,0 +1,22 @@
+import { foreignKey, pgTable, text, uuid } from 'drizzle-orm/pg-core'
+import { authUsers } from 'drizzle-orm/supabase'
+import { timestamps } from './columns'
+
+export const accounts = pgTable(
+  'accounts',
+  {
+    id: uuid().primaryKey(),
+    email: text().notNull().unique(),
+    firstName: text(),
+    lastName: text(),
+    locale: text(),
+    ...timestamps,
+  },
+  (t) => [
+    foreignKey({
+      name: 'accounts_auth_user_fk',
+      columns: [t.id],
+      foreignColumns: [authUsers.id],
+    }).onDelete('cascade'),
+  ],
+)

@@ -37,6 +37,6 @@
     "supertest": "^7.3.1",
     "tsdown": "^0.23.0",
     "typescript": "catalog:",
-    "vitest": "^4.1.0"
+    "vitest": "catalog:"
   }
 }

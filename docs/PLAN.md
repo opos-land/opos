@@ -261,9 +261,11 @@ opos/
     db/
       src/
         index.ts
-        client.ts        # appDb / globalDb / migrationDb
-        rls.ts           # set_config + the policy verification query
+        client.ts        # appDb / globalDb / migrationDb, snake_case casing
+        migration-url.ts # DATABASE_MIGRATION_URL with the dev default
+        rls.ts           # set_config of app.tenant_id for the tenant transaction
         schema/
+          columns.ts     # id and createdAt/updatedAt shared by every table
           enums.ts
           accounts.ts    # references auth.users through drizzle-orm/supabase
           tenants.ts
@@ -283,8 +285,11 @@ opos/
         seed.ts
         scripts/
           create-tenant.ts   # db:tenant:create
+          verify.ts          # db:verify
+      test/              # schema tests: RLS, invariants, the auth.users triggers
       drizzle/           # drizzle-kit migrations + the hand-written RLS and trigger migrations
-      drizzle.config.ts  # schemaFilter: ['public']
+      drizzle.config.ts  # schemaFilter: ['public'], casing: 'snake_case'
+      vitest.config.ts   # global setup applies the migrations
       package.json       # main + types -> src/index.ts
     i18n/
       src/
@@ -387,6 +392,11 @@ has `id uuid primary key default gen_random_uuid()`, `createdAt timestamptz not 
 now()`, `updatedAt timestamptz not null default now()` — `accounts.id` being the one exception
 ([4.2](#42-global-tables)).
 
+Names in this chapter are the TypeScript ones. Drizzle maps them with `casing: 'snake_case'`, set in
+both `drizzle.config.ts` and the client: `tenantId` is the column `tenant_id`. Constraints and
+indexes carry explicit names (`<table>_<purpose>_unique`, `_idx`, `_fk`), so Postgres never
+truncates them past 63 characters.
+
 The `auth` schema belongs to Supabase Auth: it creates and migrates it on start. Our migrations
 never write to it; `drizzle.config.ts` sets `schemaFilter: ['public']`, and `accounts` references
 `auth.users` through `authUsers` from `drizzle-orm/supabase`.
@@ -472,11 +482,12 @@ or extends it.
 **`editions`** — `tenantId` (FK cascade), `slug`, `name`, `startsAt`, `endsAt`,
 `isActive` (default `false`), `isPublished` (default `false`).
 Unique `(tenantId, slug)` and `(id, tenantId)`. Partial unique index `(tenantId) WHERE isActive`.
+Check `endsAt > startsAt`.
 
 **`edition_memberships`** — `tenantId`, `tenantMembershipId`, `editionId` (FK cascade),
 `programAccess`, `websiteContentAccess`, `ticketsAccess` (default `none`).
 Unique `(tenantMembershipId, editionId)`. Composite foreign keys `(tenantMembershipId, tenantId)`
-and `(editionId, tenantId)`.
+and `(editionId, tenantId)`. Index `(tenantId, editionId)`.
 
 **`program_items`** — `tenantId`, `editionId` (FK cascade), `title`, `description` (nullable),
 `startsAt`, `endsAt`. Unique `(id, tenantId)`. Index `(tenantId, editionId, startsAt)`.
@@ -525,8 +536,12 @@ Every RLS-covered table has an index starting with `tenantId`.
 
 1. **Exactly one `isActive=true` edition per tenant** — a transactional switch plus a partial
    unique index.
-2. **At least one `head` per tenant** — checked in the service and by an
-   `AFTER DELETE OR UPDATE` trigger on `tenant_memberships`.
+2. **At least one `head` per tenant** — checked in the service and by the constraint trigger
+   `tenant_memberships_at_least_one_head` (`AFTER DELETE OR UPDATE`, `DEFERRABLE INITIALLY
+   DEFERRED`): it fires at commit, so a head can be handed over in either order inside one
+   transaction, and it lets a deleted tenant take its memberships along. A violation raises
+   `check_violation` with that constraint name; it also blocks deleting the account of a tenant's
+   last head.
 3. **An edition in `edition_memberships` belongs to the same tenant as the `tenant_membership`** —
    enforced by composite foreign keys.
 4. **Writes to tenant-level tables always carry the `tenantId` from ALS** —
@@ -637,7 +652,21 @@ the system, including `PublicModule`, resolves the tenant first and then works o
 #### Migrations and verification
 
 RLS policies and the `auth.users` triggers go into hand-written migrations
-(`drizzle-kit generate --custom`). `pnpm db:verify` runs:
+(`drizzle-kit generate --custom`). The same migration grants `select, insert, update, delete` on
+the new tables to `opos_app` and `opos_app_global` and revokes everything from `anon` and
+`authenticated`. Trigger functions are `security definer` with `set search_path = ''` and
+schema-qualified names, because Supabase Auth runs with `search_path = auth`.
+
+| Script | Runs |
+|---|---|
+| `db:generate` | `drizzle-kit generate` |
+| `db:migrate` | `drizzle-kit migrate`; the journal lives in the `drizzle` schema |
+| `db:push` | `drizzle-kit push`, local experiments only |
+| `db:studio` | `drizzle-kit studio` |
+| `db:verify` | `tsx src/scripts/verify.ts`: the query below, a non-zero exit code when it returns rows |
+
+All of them connect as `opos_migrator` through `DATABASE_MIGRATION_URL`
+([11](#11-environment-variables)). `pnpm db:verify` runs:
 
 ```sql
 select c.relname from pg_class c
@@ -1441,6 +1470,11 @@ NODE_ENV=development
 `SUPABASE_SERVICE_ROLE_KEY` in dev is generated from `JWT_SECRET` by `pnpm --filter api
 auth:service-key`.
 
+**`packages/db`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL` from
+the environment. Without it they use
+`postgres://opos_migrator:opos@localhost:<OPOS_DB_PORT or 5432>/postgres`, so dev needs no file;
+in production the variable comes from the API container's environment.
+
 **`infra/supabase/.env.example`** and **`infra/supabase/.env`** — read by `docker-compose.yml` as
 the `auth` service's `env_file`s, in that order. `.env.example` is committed and holds working dev
 values; the optional, ignored `.env` overrides any of them for one developer and is created by hand
@@ -1710,6 +1744,14 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
 
 ### 15.1 API integration tests
 
+The schema itself is tested in `packages/db/test` with Vitest on the `db` container alone, before
+any API code: the global setup applies the migrations, the tests connect as `opos_migrator`,
+`opos_app`, `supabase_auth_admin` (writes to `auth.users`) and `postgres` (`set role anon`), and
+remove the tenants and users they created. They cover the RLS row of the table below, the
+database-side invariants (one active edition, the last `head`, a head expiry, an
+`edition_membership` with a foreign edition) and the `accounts` triggers. The API tests repeat
+these checks through the endpoints.
+
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
 `supabase/gotrue`, the production tags), no database or auth mocks, in `apps/api/test/*.test.ts`.
 The tests read `apps/api/.env.example`, overridden by `apps/api/.env` when present. Test
@@ -1781,15 +1823,15 @@ using seeded data only read it.
 
 GitHub Actions on every PR and every push to `develop` and `main` (`.github/workflows/ci.yml`). Tool versions
 come from `mise.toml` through `jdx/mise-action`, the same source as local machines; then
-`pnpm install --frozen-lockfile`, `pnpm format:check` and `docker compose up -d --wait db` for
-the API integration tests. On a PR,
+`pnpm install --frozen-lockfile`, `pnpm format:check`, `docker compose up -d --wait db` for
+the schema and API tests, then `pnpm db:migrate` and `pnpm db:verify`. On a PR,
 `turbo run typecheck lint test --affected` covers the packages changed against the PR base branch
 (`TURBO_SCM_BASE=origin/<base_ref>`) and their dependents (the checkout uses `fetch-depth: 0`,
 which `--affected` needs); a push to `develop` or `main` runs the same tasks on every package. The turbo cache (`.turbo/cache`) is persisted between runs with
 `actions/cache`, keyed by commit with a fallback to the newest entry; the full runs on `develop` and `main`
 fill the cache that PRs restore, so an unchanged task inside an affected package is still a cache
 hit.
-`pnpm i18n:check`, `pnpm db:verify` and `pnpm test:e2e` run in full on every PR.
+`pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
 
 Branches:
 

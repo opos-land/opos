@@ -838,7 +838,7 @@ new term enters that file before its first use in the interface.
 |---|---|---|
 | `@opos/i18n` | `SUPPORTED_LOCALES`, `DEFAULT_LOCALE`, `detectLocale`, `activateLocale`, formatters | no — scripts and `packages/db` use it as is |
 | `@opos/i18n/glossary`, `@opos/i18n/errors` | the glossary and the error messages | yes |
-| `@opos/i18n/lingui.config.base` | `linguiConfig()`, which every `lingui.config.ts` calls with its catalogs | — |
+| `@opos/i18n/lingui.config.base` | `linguiConfig()`, which every `lingui.config.ts` calls with its catalogs; it excludes `*.test.ts(x)` from extraction | — |
 
 The macro transform is `@lingui/vite-plugin` with `macroTransform: true`, in the frontends' Vite
 config and in every `vitest.config.ts` that loads messages. `activateLocale(i18n, locale,
@@ -1691,6 +1691,19 @@ outside `SUPPORTED_LOCALES` from `@opos/i18n`.
 ---
 
 ## 15. Tests
+
+Where a test lives depends on what it needs:
+
+| Kind | Needs | Location | Example |
+|---|---|---|---|
+| unit | nothing outside the process; compiled catalogs at most | next to the file it tests, `<name>.test.ts` | `packages/i18n/src/detect.test.ts` |
+| integration | Postgres, Supabase Auth or HTTP | `test/` of the package or application, with its `globalSetup` | `packages/db/test/rls.test.ts`, `apps/api/test/*.test.ts` |
+| e2e | the full stack in a browser | the `e2e` package | `e2e/specs/` |
+
+A frontend feature keeps the unit tests of its hooks and models inside the feature directory. Each
+`vitest.config.ts` includes the patterns of the kinds its package has (`src/**/*.test.ts`,
+`test/**/*.test.ts`). Test files never reach a bundle (tsdown and Vite follow imports from the
+entry point) and never contribute messages (`linguiConfig()` excludes them).
 
 ### 15.1 API integration tests
 

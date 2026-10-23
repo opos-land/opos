@@ -3,5 +3,6 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [lingui({ macroTransform: true })],
-  test: { include: ['test/**/*.test.ts'] },
+  // Unit tests sit next to the file they test (PLAN.md 15).
+  test: { include: ['src/**/*.test.ts'] },
 })

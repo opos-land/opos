@@ -88,9 +88,8 @@ live next to the applications ([6](#6-localization)).
 package, TypeScript 6 strict, shared `packages/tsconfig` and `packages/eslint-config` (flat config
 with typed `typescript-eslint` rules, including the feature boundary rules).
 
-**Hard-pinned versions:** Node `24.15.0` (`mise.toml` + `engines.node`), pnpm `11.17.0`
-(`packageManager` + corepack, enabled by mise). `engineStrict: true` makes a mismatched
-version abort the install instead of printing a warning.
+**Pinned versions:** Node, pnpm and the age of dependencies, as in
+[12](#versions-and-dependencies).
 
 **Repository tooling:** mise (tool versions), lefthook (git hooks), commitlint with
 `config-conventional`, prettier.
@@ -130,10 +129,6 @@ scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
 - Isolation enforced by RLS, not only by a `where` clause in code.
 - AsyncLocalStorage carries the `tenantContext`.
 - Fail fast on a missing `tenantId` — both in ALS and in the RLS policies.
-- No user-facing strings outside Lingui macros in application code.
-- No AI-generated graphics; screens follow the designer's designs
-  ([PRODUCT.md 8](PRODUCT.md#8-design-and-public-image)).
-- Every frontend uses a feature-based layout, with boundaries enforced by eslint.
 
 ---
 
@@ -165,42 +160,14 @@ opos/
           decorators/require-edition.decorator.ts
           decorators/current-account.decorator.ts
           filters/http-exception.filter.ts
-        modules/
-          auth/          # Supabase JWT verification, send-email hook, GoTrue admin client
-          accounts/      # MeModule
-          tenants/       # tenant + tenant_memberships + invitations
-          editions/      # editions + edition_memberships
-          program/       # programme items, speakers, review moderation
-          engagement/    # likes, personal schedule, reviews
-          shop/          # the tenant's payment provider configuration
-          tickets/       # ticket types, orders in the panel, scanner pairing
-          checkout/      # orders from the portal, payment webhooks
-          payments/      # PaymentProvider port + one adapter per provider + the fake one
-          scanner/       # ticket lookup and redemption for paired devices
-          public/        # unauthenticated endpoints for the portal
-          mail/          # nodemailer + Lingui templates
+        modules/         # one directory per module (7.1)
       Dockerfile
     panel/
       lingui.config.ts
       src/
         locales/{en,pl}.po
         app/             # router, providers, application layout
-        features/
-          auth/
-          tenants/
-          editions/
-          program/
-            api/         # ts-rest hooks + query keys
-            components/
-            hooks/
-            pages/
-            model/       # types, zod schemas, mappings
-            index.ts     # the feature's public API
-          shop/
-          tickets/
-          scanner/
-          team/
-          account/
+        features/        # one directory per feature (8), laid out as in 3.2
         shared/{ui,lib,config}/
       .env.example       # VITE_API_URL, VITE_AUTH_URL
       Dockerfile
@@ -209,7 +176,7 @@ opos/
       src/
         locales/{en,pl}.po
         app/
-        features/{landing,auth,account,attendances,conventions,schedule,speaking,tickets}/
+        features/        # one directory per feature (9)
         shared/{ui,lib,config}/
       .env.example       # VITE_API_URL, VITE_AUTH_URL
       Dockerfile
@@ -326,7 +293,7 @@ feature's `api/`, built on the API client and the auth client from `shared/lib`.
 
 `shared/ui` starts from shadcn/ui, restyled to the designer's tokens (colours, typography,
 spacing, radii). No image or illustration in `shared/ui` or in a feature is AI-generated
-([17](#17-execution-rules)).
+([PRODUCT.md 8](PRODUCT.md#8-design-and-public-image)).
 
 ---
 
@@ -644,9 +611,8 @@ and the panel call Supabase Auth at `auth.opos.land` through `@supabase/auth-js`
 | sign-out | `signOut()` / `signOut({ scope: 'others' })` | |
 | password reset | `resetPasswordForEmail(email, { redirectTo })`, then `updateUser({ password })` | [7.6](#76-password-reset) |
 
-Supabase Auth errors carry an `error_code` (`invalid_credentials`, `email_not_confirmed`,
-`user_already_exists`, `weak_password`, `over_email_send_rate_limit`, ...); the client translates
-them the same way as API codes ([6](#6-localization)).
+Supabase Auth errors carry an `error_code`; the client translates them the same way as API codes,
+through `auth.<error_code>` in [errors.ts](../packages/i18n/src/errors.ts) ([6](#6-localization)).
 
 Outside the ts-rest contract: `POST /hooks/send-email` — called by Supabase Auth only, verified by
 a Standard Webhooks signature ([10](#10-supabase)) — and `POST /hooks/payments/:provider`, called
@@ -892,6 +858,9 @@ it is data, not interface messages.
 ## 7. `apps/api`
 
 ### 7.1 Modules
+
+Each module lives in `apps/api/src/modules/<name>/`, named after the module in lowercase
+(`ProgramModule` in `program/`); `MeModule` lives in `accounts/`.
 
 | Module | Contents |
 |---|---|
@@ -1290,31 +1259,21 @@ Studio reaches Postgres through `meta` only; it is used for its table and SQL ed
 
 ### Supabase Auth configuration
 
-| Variable | Value |
-|---|---|
-| `API_EXTERNAL_URL`, `GOTRUE_JWT_ISSUER` | `AUTH_URL` (`https://auth.opos.land`) |
-| `GOTRUE_DB_DATABASE_URL` | `postgres://supabase_auth_admin:...@db:5432/postgres` |
-| `GOTRUE_SITE_URL` | `PORTAL_URL` |
-| `GOTRUE_URI_ALLOW_LIST` | `<PORTAL_URL>/auth/callback,<PORTAL_URL>/reset-password,<PANEL_URL>/auth/callback` |
-| `GOTRUE_JWT_SECRET` | `JWT_SECRET`, the same value as in the API |
-| `GOTRUE_JWT_AUD`, `GOTRUE_JWT_DEFAULT_GROUP_NAME` | `authenticated` |
-| `GOTRUE_JWT_ADMIN_ROLES` | `service_role` |
-| `GOTRUE_JWT_EXP` | `900` |
-| `GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED` | `true` |
-| `GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL` | `10` |
-| `GOTRUE_PASSWORD_MIN_LENGTH` | `8` |
-| `GOTRUE_DISABLE_SIGNUP` | `false` |
-| `GOTRUE_EXTERNAL_EMAIL_ENABLED` | `true` |
-| `GOTRUE_MAILER_AUTOCONFIRM` | `false` |
-| `GOTRUE_MAILER_OTP_EXP` | `3600` |
-| `GOTRUE_EXTERNAL_PHONE_ENABLED`, `GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED` | `false` |
-| `GOTRUE_EXTERNAL_GOOGLE_ENABLED` | `true` |
-| `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`, `GOTRUE_EXTERNAL_GOOGLE_SECRET` | the Google OAuth client |
-| `GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI` | `<AUTH_URL>/callback` |
-| `GOTRUE_HOOK_SEND_EMAIL_ENABLED` | `true` |
-| `GOTRUE_HOOK_SEND_EMAIL_URI` | prod `https://api.opos.land/hooks/send-email`; dev `http://host.docker.internal:3001/hooks/send-email` |
-| `GOTRUE_HOOK_SEND_EMAIL_SECRETS` | `v1,whsec_<base64>`, the same value as the API's `SEND_EMAIL_HOOK_SECRET` |
-| `GOTRUE_RATE_LIMIT_HEADER` | `X-Forwarded-For` |
+[docker-compose.yml](../docker-compose.yml) sets the `auth` service's variables for dev, and
+`docker-compose.prod.yml` sets the same ones with the production addresses. The rules behind them:
+
+- Sessions and passwords as in [7.4](#74-authorization): HS256 tokens signed with the API's
+  `JWT_SECRET`, 15-minute access tokens, rotated refresh tokens with a 10 s reuse interval,
+  passwords of at least 8 characters, email confirmation required.
+- `API_EXTERNAL_URL` and `GOTRUE_JWT_ISSUER` are `AUTH_URL`; the Google redirect URI is
+  `<AUTH_URL>/callback`.
+- Sign-up is open. Email and Google sign-in only: phone and anonymous sign-in are disabled.
+- `GOTRUE_SITE_URL` is `PORTAL_URL`, and redirects go only to `GOTRUE_URI_ALLOW_LIST`:
+  `<PORTAL_URL>/auth/callback`, `<PORTAL_URL>/reset-password`, `<PANEL_URL>/auth/callback`.
+- Every email goes through the send-email hook ([below](#send-email-hook)) at
+  `https://api.opos.land/hooks/send-email`, signed with the API's `SEND_EMAIL_HOOK_SECRET`;
+  confirmation and recovery links are valid for 1 hour.
+- `service_role` is the only admin role, and the client IP comes from `X-Forwarded-For`.
 
 GoTrue accepts plain `http` hook URLs only for `localhost` and `host.docker.internal`, so in
 production the hook goes through Traefik over HTTPS. In dev the `auth` container needs
@@ -1361,54 +1320,11 @@ No `.env` at the repository root: a root file hides which application consumes w
 turns every change into a cache invalidation for all of them. Each application keeps its own
 `.env` next to a committed `.env.example`.
 
-**`apps/api/.env`** — everything below belongs to the API and is read at runtime:
-
-```bash
-# Database - three roles
-DATABASE_URL=postgres://opos_app:opos@localhost:5432/postgres
-DATABASE_GLOBAL_URL=postgres://opos_app_global:opos@localhost:5432/postgres
-DATABASE_MIGRATION_URL=postgres://opos_migrator:opos@localhost:5432/postgres
-
-# Supabase Auth
-AUTH_URL=http://localhost:9999
-JWT_SECRET=dev-jwt-secret-at-least-32-characters-long
-SUPABASE_SERVICE_ROLE_KEY=
-SEND_EMAIL_HOOK_SECRET=v1,whsec_ZGV2LXNlbmQtZW1haWwtaG9vay1zZWNyZXQ=
-
-# Invitations
-INVITE_SECRET=dev-invite-secret
-INVITE_TTL=7d
-
-# Tickets
-PAYMENT_PROVIDER=fake
-PAYMENT_CONFIG_KEY=ZGV2LXBheW1lbnQtY29uZmlnLWtleS0zMi1ieXRlcyE=
-ORDER_HOLD_MINUTES=15
-SCANNER_PAIRING_SECRET=dev-scanner-pairing-secret
-
-# i18n
-DEFAULT_LOCALE=pl
-SUPPORTED_LOCALES=en,pl
-
-# Addresses
-ROOT_DOMAIN=localhost
-API_URL=http://api.localhost:3001
-PANEL_URL=http://panel.localhost:5173
-PORTAL_URL=http://opos.localhost:5174
-
-# SMTP (Mailpit in dev)
-SMTP_HOST=localhost
-SMTP_PORT=1025
-SMTP_USER=
-SMTP_PASS=
-MAIL_FROM=OPOS <noreply@opos.land>
-
-# API
-PORT=3001
-NODE_ENV=development
-```
-
-`SUPABASE_SERVICE_ROLE_KEY` in dev is generated from `JWT_SECRET` by `pnpm --filter api
-auth:service-key`.
+**`apps/api/.env`** — the API's variables, read at runtime.
+[apps/api/.env.example](../apps/api/.env.example) lists every one of them with a working dev value;
+[env.ts](../apps/api/src/config/env.ts) validates them on start, and a variable joins it in the PR
+that first reads it. `SUPABASE_SERVICE_ROLE_KEY` in dev is generated from `JWT_SECRET` by
+`pnpm --filter api auth:service-key`.
 
 **`packages/db`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL` from
 the environment. Without it they use
@@ -1539,6 +1455,7 @@ through `node.corepack = true`, enables corepack, which then provides the pnpm v
 the `packageManager` field. pnpm is pinned only there, never in `mise.toml`. Activated mise
 (`mise activate`) switches versions on entering the directory. A version bump changes `mise.toml`
 and `engines` together (Node) or `packageManager` and `engines` together (pnpm).
+`engineStrict: true` makes a mismatched version abort the install instead of printing a warning.
 
 `mise.toml` holds no tasks: task logic lives in turbo and root scripts ([3.1](#31-turbo-tasks)).
 
@@ -1550,15 +1467,10 @@ below the newest — that is intended. An urgent security fix requires a deliber
 
 ### Git hooks
 
-`lefthook install` runs from `prepare`, so `pnpm install` is enough.
-
-| Hook | Jobs |
-|---|---|
-| `pre-commit` | prettier and `eslint --fix` on staged files; ESLint picks the `eslint.config.js` nearest to each file |
-| `commit-msg` | commitlint |
-| `pre-push` | `turbo run typecheck test` on packages changed against `origin/develop` and their dependents; the API tests need `pnpm infra:up` |
-
-Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
+[lefthook.yml](../lefthook.yml), installed by `prepare`, so `pnpm install` is enough: prettier and
+`eslint --fix` on staged files before a commit, commitlint on the message, and
+`turbo run typecheck test` on the packages changed against `origin/develop` before a push (the API
+tests need `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
 ---
 
@@ -1785,16 +1697,11 @@ using seeded data only read it.
 
 ### 15.3 CI
 
-GitHub Actions on every PR and every push to `develop` and `main` (`.github/workflows/ci.yml`). Tool versions
-come from `mise.toml` through `jdx/mise-action`, the same source as local machines; then
-`pnpm install --frozen-lockfile`, `pnpm format:check`, `docker compose up -d --wait db` for
-the schema and API tests, then `pnpm db:migrate` and `pnpm db:verify`. On a PR,
-`turbo run typecheck lint test --affected` covers the packages changed against the PR base branch
-(`TURBO_SCM_BASE=origin/<base_ref>`) and their dependents (the checkout uses `fetch-depth: 0`,
-which `--affected` needs); a push to `develop` or `main` runs the same tasks on every package. The turbo cache (`.turbo/cache`) is persisted between runs with
-`actions/cache`, keyed by commit with a fallback to the newest entry; the full runs on `develop` and `main`
-fill the cache that PRs restore, so an unchanged task inside an affected package is still a cache
-hit.
+GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every push to `develop` and
+`main`, with tool versions from `mise.toml`, the same source as local machines. The `db` container
+runs for the schema and API tests, behind `pnpm db:migrate` and `pnpm db:verify`. On a PR,
+`typecheck`, `lint` and `test` run with `--affected` against the PR base branch; a push to `develop`
+or `main` runs them on every package and fills the turbo cache that PRs restore. `pnpm format:check`,
 `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
 
 Branches:
@@ -1863,34 +1770,24 @@ real TLS, real Google, real email delivery and a real phone.
 
 ## 17. Execution rules
 
-1. **Pinned versions** — Node `24.15.0` (`mise.toml`) and pnpm `11.17.0` (`packageManager`),
-   enforced by `engineStrict`.
-   Dependencies no younger than 7 days (`minimumReleaseAge`). Supabase images pinned to exact
-   tags.
+1. **Pinned versions** — Node, pnpm, dependency age and Supabase image tags, as in
+   [12](#versions-and-dependencies) and [10](#10-supabase).
 2. **No build step for the contracts** — `packages/contract`, `packages/db` and `packages/i18n`
    point `main`/`types` at `src/index.ts`. The only exception is the translation catalogs: they
    need `pnpm i18n:compile`, wired in as a dependency of `dev`, `build` and `test`
    ([3.1](#31-turbo-tasks)).
-3. **Atomic commits**, Conventional Commits in English — the convention and the scopes live in
-   [AGENTS.md](../AGENTS.md#commits), enforced by commitlint.
-4. **Green before every PR** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:verify`.
+3. **Green before every PR** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:verify`.
    A change visible in the UI is additionally clicked through or checked with `curl`; a portal
    change also in a mobile viewport.
-5. **No emoji in code or commit messages.**
-6. **Every user-facing string inside a Lingui macro** — `<Trans>`, `t`, `plural`, `msg`. A bare
+4. **Every user-facing string inside a Lingui macro** — `<Trans>`, `t`, `plural`, `msg`. A bare
    literal in a prop or in JSX is a review error. The API returns a `code`, not a sentence. After
    adding a string, run `pnpm i18n:extract` and translate it into `pl` in the same commit,
    reusing the glossary renderings ([6](#6-localization)); `pnpm i18n:check` fails on a missing
    translation.
-7. **English across the repository.** Code, table and column names, endpoints, route paths,
-   comments in code and configuration, branch names, commits and all documentation — English.
-   The only Polish in the repository is the `pl` translation catalog.
-8. **Feature based in every frontend.** A new screen starts with the question of which feature it
+5. **Feature based in every frontend.** A new screen starts with the question of which feature it
    belongs to; if none, a new feature is created rather than an application-level `components/`
    directory. Shared things go to `shared/`, never through an import from inside another feature.
-9. **No AI-generated graphics.** Illustrations, logos, images and icons come from the designer or
-   from the licensed icon set; screens follow the designer's designs. A screen without a design
-   uses plain blocks and real copy, not generated artwork. A generated image in a PR is a review
-   error.
-10. **Only the API and Supabase Auth touch the database.** No frontend gets a database URL, a
-    service role key or a PostgREST endpoint.
+6. **Only the API and Supabase Auth touch the database.** No frontend gets a database URL, a
+   service role key or a PostgREST endpoint.
+7. **Repository conventions** — Conventional Commits, English everywhere except the `pl` catalog,
+   no emoji, no AI-generated graphics — are set in [AGENTS.md](../AGENTS.md).

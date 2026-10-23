@@ -5,9 +5,22 @@ import { type Requirement, type TenantResource } from '../permissions/permission
 
 export const TENANT_REQUIREMENT = Symbol('TENANT_REQUIREMENT')
 
-/** Marks a tenant route and applies JwtAuthGuard, so a tenant route is never unauthenticated. */
-export const tenantRoute = (requirement: Requirement) =>
-  applyDecorators(UseGuards(JwtAuthGuard), SetMetadata(TENANT_REQUIREMENT, requirement))
+/**
+ * Marks a tenant route and applies JwtAuthGuard, so a tenant route is never unauthenticated. A
+ * route takes one requirement: @RequireEdition already implies a membership.
+ */
+export const tenantRoute =
+  (requirement: Requirement): MethodDecorator =>
+  (target, key, descriptor) => {
+    if (Reflect.getMetadata(TENANT_REQUIREMENT, descriptor.value as object)) {
+      throw new Error(`${String(key)}: one @RequireTenant or @RequireEdition per route`)
+    }
+    applyDecorators(UseGuards(JwtAuthGuard), SetMetadata(TENANT_REQUIREMENT, requirement))(
+      target,
+      key,
+      descriptor,
+    )
+  }
 
 /**
  * A tenant route: the request carries X-Tenant-Slug and runs in that tenant's transaction.

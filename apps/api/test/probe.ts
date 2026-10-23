@@ -8,6 +8,7 @@ import { TenantContextService } from '../src/common/als/tenant-context.service'
 import { GlobalDbService } from '../src/common/database/global-db.service'
 import { RequireEdition } from '../src/common/decorators/require-edition.decorator'
 import { RequireTenant } from '../src/common/decorators/require-tenant.decorator'
+import { ApiError } from '../src/common/errors/api-error'
 import { JwtAuthGuard } from '../src/common/guards/jwt-auth.guard'
 
 // Test-only routes that exercise the tenant transaction and the permission decorators before
@@ -21,7 +22,12 @@ export const probeContract = c.router({
   create: {
     method: 'POST',
     path: '/probe/editions',
-    body: z.object({ slug: z.string(), fail: z.boolean() }),
+    body: z.object({
+      slug: z.string(),
+      fail: z.boolean(),
+      throws: z.boolean().optional(),
+      tenantId: z.string().optional(),
+    }),
     responses: { 201: z.object({ id: z.string() }), 409: z.object({ code: z.string() }) },
   },
   read: {
@@ -42,6 +48,7 @@ export const probeContract = c.router({
     body: z.object({}),
     responses: { 200: z.object({}) },
   },
+  nested: { method: 'GET', path: '/probe/nested', responses: { 200: z.object({}) } },
   withTenant: {
     method: 'GET',
     path: '/probe/with-tenant/:slug',
@@ -80,7 +87,7 @@ class ProbeController {
         .tx()
         .insert(editions)
         .values({
-          tenantId: this.context.tenant().id,
+          tenantId: body.tenantId ?? this.context.tenant().id,
           slug: body.slug,
           name: body.slug,
           startsAt: new Date('2027-06-01'),
@@ -88,6 +95,7 @@ class ProbeController {
         })
         .returning({ id: editions.id })
       this.context.afterCommit(() => afterCommitCalls.push(body.slug))
+      if (body.throws) throw new ApiError(409, 'request.invalid', 'Probe failure')
       return body.fail
         ? { status: 409, body: { code: 'probe.failed' } }
         : { status: 201, body: { id: row!.id } }
@@ -120,6 +128,15 @@ class ProbeController {
         .update(tenantMemberships)
         .set({ role: 'org' })
         .where(eq(tenantMemberships.role, 'head'))
+      return { status: 200, body: {} }
+    })
+  }
+
+  @TsRestHandler(probeContract.nested)
+  @RequireTenant()
+  nested() {
+    return tsRestHandler(probeContract.nested, async () => {
+      await this.context.withTenant(this.context.tenant().id, () => this.editions())
       return { status: 200, body: {} }
     })
   }

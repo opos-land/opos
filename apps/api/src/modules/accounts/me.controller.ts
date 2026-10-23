@@ -24,7 +24,7 @@ export class MeController {
       }),
       memberships: async () => ({
         status: 200,
-        body: await this.global.membershipsOf(account.id),
+        body: await this.global.ownMemberships(),
       }),
     })
   }

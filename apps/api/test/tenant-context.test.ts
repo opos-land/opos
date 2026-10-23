@@ -135,6 +135,29 @@ describe('tenant transaction', () => {
     expect(afterCommitCalls).toEqual([])
   })
 
+  it('rolls back a thrown exception and drops the after-commit queue', async () => {
+    const slug = randomUUID().slice(0, 8)
+    await as(settingsWriter, a.slug)
+      .post('/probe/editions', { slug, fail: false, throws: true })
+      .expect(409)
+
+    expect(await countEditions(a.id, slug)).toBe(0)
+    expect(afterCommitCalls).toEqual([])
+  })
+
+  it("refuses a write carrying another tenant's id (WITH CHECK)", async () => {
+    const slug = randomUUID().slice(0, 8)
+    await as(settingsWriter, a.slug)
+      .post('/probe/editions', { slug, fail: false, tenantId: b.id })
+      .expect(500)
+
+    expect(await countEditions(b.id, slug)).toBe(0)
+  })
+
+  it('refuses a tenant transaction nested in another', async () => {
+    await as(a.head, a.slug).get('/probe/nested').expect(500)
+  })
+
   it('checks the tenant permission before the handler runs', async () => {
     const slug = randomUUID().slice(0, 8)
     await as(programReader, a.slug).post('/probe/editions', { slug, fail: false }).expect(403)
@@ -188,6 +211,10 @@ describe('@RequireEdition', () => {
   it("answers 404 for another tenant's edition and for an id that is not a uuid", async () => {
     await as(a.head, a.slug).get(`/probe/editions/${editionB}`).expect(404)
     await as(a.head, a.slug).get('/probe/editions/not-a-uuid').expect(404)
+  })
+
+  it("answers 404 to a member of B asking for A's edition in B", async () => {
+    await as(programReader, b.slug).get(`/probe/editions/${editionA}`).expect(404)
   })
 
   it('answers 403 to an account outside the tenant whether the edition exists or not', async () => {

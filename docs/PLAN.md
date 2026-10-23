@@ -553,7 +553,8 @@ The complete list:
 | scanner request | device lookup by `tokenHash`, not revoked, not expired; returns only `id`, `tenantId`, `editionId` |
 | order jobs ([7.10](#710-payments)) | `pending` orders past `holdExpiresAt`, and `paid` orders older than 5 minutes with no `ticketEmailSentAt`; returns only `id`, `tenantId` |
 
-Every query in `GlobalDbService` carries an `accountId` or `email` condition from the JWT, a
+Apart from the tenant lookup by slug, which returns only public columns, every query in
+`GlobalDbService` carries an `accountId` or `email` condition from the JWT, a
 secret the caller proved it holds (a webhook signature, an order token, a device token), or comes
 from the API's own scheduled jobs; adding another one requires an entry in this table. The rest of
 the system, including `PublicModule`, resolves the tenant first and then works on `opos_app` inside
@@ -914,7 +915,7 @@ everywhere. For a tenant route it:
    `select set_config('app.tenant_id', <tenantId>, true)`.
 3. Loads the account's `tenant_membership` inside that transaction, skipping an expired one. A
    tenant the account has no membership in, an expired membership included, -> `403`.
-4. Checks `@RequireTenant` and `@RequireEdition` inside the same transaction
+4. Checks the route's `@RequireTenant` or `@RequireEdition` inside the same transaction
    ([7.3](#73-permissions)).
 5. Runs the handler, then commits when `res.statusCode` is below `300` and rolls back on any other
    status or an exception. ts-rest sets the status before the interceptor sees the body, and it turns
@@ -955,7 +956,7 @@ implemented in [permissions.ts](../apps/api/src/common/permissions/permissions.t
   (`program`, `websiteContent`, `tickets`); an org needs an `edition_memberships` row for the
   edition.
 - An account without a membership in the tenant gets `403` before the edition is looked up, so it
-  cannot tell existing edition ids from absent ones. For a member, `checkEdition` answers `404`
+  cannot tell existing edition ids from absent ones. For a member, the edition check answers `404`
   before any `403`: for an edition of another tenant (RLS hides it) and for an `:editionId` that is
   not a uuid, because the check runs before ts-rest validates the request.
 
@@ -974,7 +975,8 @@ create() { ... }
 ```
 
 `@RequireTenant` and `@RequireEdition` apply `JwtAuthGuard` themselves, so a tenant route is never
-unauthenticated. Every tenant route has its own single-route `@TsRestHandler(contract.<router>.<route>)`
+unauthenticated. A route takes one of the two (`@RequireEdition` already requires a membership); a
+second one on the same handler throws when the module loads. Every tenant route has its own single-route `@TsRestHandler(contract.<router>.<route>)`
 method with the decorator below it: for a router-level `@TsRestHandler(contract.<router>)`, ts-rest
 copies only the metadata already on the method, and a decorator above it is silently dropped.
 [tenant-routes.test.ts](../apps/api/test/tenant-routes.test.ts) sends every contract route with

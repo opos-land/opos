@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { type Database, editionMemberships, editions, tenantMemberships, tenants } from '@opos/db'
 import { and, asc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
-import { type TenantInContext } from '../als/tenant-context.service'
+import { type TenantInContext, TenantContextService } from '../als/tenant-context.service'
 import { GLOBAL_DB } from './tokens'
 
 /**
@@ -10,7 +10,10 @@ import { GLOBAL_DB } from './tokens'
  */
 @Injectable()
 export class GlobalDbService {
-  constructor(@Inject(GLOBAL_DB) private readonly db: Database) {}
+  constructor(
+    @Inject(GLOBAL_DB) private readonly db: Database,
+    private readonly context: TenantContextService,
+  ) {}
 
   /** Tenant lookup by slug; only the public columns. */
   async tenantBySlug(slug: string): Promise<TenantInContext | undefined> {
@@ -27,8 +30,12 @@ export class GlobalDbService {
     return row
   }
 
-  /** `GET /me/memberships`: the account's own, non-expired memberships in every tenant. */
-  async membershipsOf(accountId: string) {
+  /**
+   * `GET /me/memberships`: the signed-in account's own, non-expired memberships in every tenant.
+   * The id comes from the request store, never from a caller.
+   */
+  async ownMemberships() {
+    const accountId = this.context.account().id
     const memberships = await this.db
       .select({
         id: tenantMemberships.id,

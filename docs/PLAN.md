@@ -3,6 +3,10 @@
 How we build what [PRODUCT.md](PRODUCT.md) describes. The domain model, roles, MVP scope and
 product decisions live there — this document is implementation only.
 
+A part still to be built is specified here in full. A built part keeps only its architecture,
+invariants, security rules and conventions; its details live in the code this document links to
+([AGENTS.md](../AGENTS.md#planmd-shrinks-as-the-code-grows)).
+
 ## Table of contents
 
 1. [Architecture](#1-architecture)
@@ -135,45 +139,23 @@ scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
 
 ## 3. Monorepo structure
 
+The tree lists what is still to be built, file by file. A directory marked *built* has its files in
+the repository; their purpose is stated in the files themselves, not here.
+
 ```
 opos/
-  package.json                # root scripts delegating to turbo run
-  pnpm-workspace.yaml         # apps/*, packages/*, e2e
-  turbo.json                  # task pipeline (3.1)
-  mise.toml                   # node 24.15.0, corepack for pnpm
-  .prettierrc
-  docker-compose.yml          # dev: supabase db + auth + studio, mailpit
+  package.json, pnpm-workspace.yaml, turbo.json, mise.toml, lefthook.yml,
+  commitlint.config.mjs, docker-compose.yml, .prettierrc, .github/   # built: root tooling (3.1, 12, 15.3)
   docker-compose.prod.yml     # prod: traefik + apps + supabase db + auth
-  lefthook.yml                # hooks: prettier on staged files, commitlint on the message
-  commitlint.config.mjs       # types, scopes, header length
-  .prettierignore
-  .gitignore
-  README.md
-  LICENSE.md                  # PolyForm Internal Use 1.0.0
-  AGENTS.md
-  CLAUDE.md
-  .github/
-    workflows/ci.yml          # CI (15.3)
   docs/
     PRODUCT.md
     PLAN.md
   infra/
-    supabase/
-      db/
-        roles.sql        # Supabase self-hosting: supabase_auth_admin password
-        jwt.sql          # Supabase self-hosting: app.settings.jwt_exp
-        opos-roles.sql   # opos_migrator, opos_app, opos_app_global (4.6)
-      .env.example       # dev secrets of the auth service
+    supabase/            # built: init SQL and the auth service's dev env (10)
   apps/
-    api/
+    api/                 # built: bootstrap, env, database providers, OpenAPI docs, health, tests
       src/
-        main.ts
-        app.ts           # configureApp: CORS, trust proxy, shutdown hooks; shared by main.ts and tests
-        app.module.ts    # AppModule.register(env)
-        config/env.ts    # zod schema of the environment, loadEnv()
         common/
-          database/database.module.ts   # APP_DB and GLOBAL_DB providers, pools closed on shutdown
-          docs/setup-docs.ts            # OpenAPI from packages/contract, Swagger UI at /docs
           als/tenant-context.service.ts         # request store, tx(), afterCommit(), withTenant()
           als/tenant-context.middleware.ts      # opens an empty store for every request
           als/tenant-transaction.interceptor.ts # tenant, transaction, permissions, commit
@@ -197,11 +179,6 @@ opos/
           scanner/       # ticket lookup and redemption for paired devices
           public/        # unauthenticated endpoints for the portal
           mail/          # nodemailer + Lingui templates
-          health/        # GET /health
-      test/              # integration tests
-      .env.example
-      tsdown.config.ts   # bundles @opos/* packages, leaves node_modules external
-      vitest.config.ts   # env from .env.example, overridden by .env
       Dockerfile
     panel/
       lingui.config.ts
@@ -242,11 +219,8 @@ opos/
     specs/
     fixtures/            # Mailpit client, sign-in as a seeded account
   packages/
-    contract/
+    contract/            # built: common schemas and health
       src/
-        index.ts
-        common.ts        # error schemas, pagination, identifiers
-        health.ts
         me.ts
         tenants.ts
         editions.ts
@@ -257,21 +231,10 @@ opos/
         checkout.ts
         scanner.ts
         public.ts
-      package.json       # main + types -> src/index.ts
-    db/
+    db/                  # built: clients, core schema, migrations, db:verify, schema tests
       src/
-        index.ts
-        client.ts        # appDb / globalDb / migrationDb, snake_case casing
-        migration-url.ts # DATABASE_MIGRATION_URL with the dev default
         rls.ts           # set_config of app.tenant_id for the tenant transaction
-        schema/
-          columns.ts     # id and createdAt/updatedAt shared by every table
-          enums.ts
-          accounts.ts    # references auth.users through drizzle-orm/supabase
-          tenants.ts
-          tenant-memberships.ts
-          editions.ts
-          edition-memberships.ts
+        schema/          # one file per table (4); still to come:
           program-items.ts
           program-item-speakers.ts
           program-item-likes.ts
@@ -285,12 +248,6 @@ opos/
         seed.ts
         scripts/
           create-tenant.ts   # db:tenant:create
-          verify.ts          # db:verify
-      test/              # schema tests: RLS, invariants, the auth.users triggers
-      drizzle/           # drizzle-kit migrations + the hand-written RLS and trigger migrations
-      drizzle.config.ts  # schemaFilter: ['public'], casing: 'snake_case'
-      vitest.config.ts   # global setup applies the migrations
-      package.json       # main + types -> src/index.ts
     i18n/
       src/
         index.ts         # locale list, detection, catalog activation, Intl formatters
@@ -298,10 +255,9 @@ opos/
       locales/{en,pl}.po        # shared messages: API errors, emails
       lingui.config.base.ts
       package.json       # main + types -> src/index.ts, catalogs compiled separately
-    tsconfig/
-      base.json, node.json, react.json   # node.json and react.json extend base.json
-    eslint-config/
-      index.js
+    tsconfig/            # built: base.json, node.json
+      react.json         # extends base.json
+    eslint-config/       # built
 ```
 
 ### 3.1 Turbo tasks
@@ -317,21 +273,12 @@ task graph no edges towards them. The `transit` task supplies those edges: decla
 it. A change in `packages/contract/src` then invalidates the cache of every consumer, and the
 tasks still run in parallel.
 
-| Task | dependsOn | outputs | cache |
-|---|---|---|---|
-| `transit` | `^transit` | — | — |
-| `build` | `^build`, `i18n:compile` | `dist/**` | yes |
-| `dev` | `i18n:compile` | — | no; `persistent: true` |
-| `typecheck` | `transit` | — | yes |
-| `lint` | `transit` | — | yes |
-| `test` | `transit` | — | yes |
-| `test:e2e` | — | — | no; runs against the full stack |
-| `i18n:extract` | — | — | no; appends messages to the `.po` files |
-| `i18n:compile` | `^i18n:compile` | compiled catalogs (`src/locales/*.mjs`, `locales/*.mjs`) | yes |
-| `i18n:check` | — | — | yes |
-| `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:verify`, `db:tenant:create` | — | — | no; the database and generated migrations are side effects |
-| `db:studio` | — | — | no; `persistent: true` |
+The tasks with their `dependsOn`, `outputs`, cache and environment settings are in
+[turbo.json](../turbo.json). The rules behind them:
 
+- `build` and `dev` depend on `i18n:compile`, so no application starts with stale catalogs.
+- A task with side effects is not cached: `test:e2e`, `i18n:extract` and every `db:*` task.
+  Persistent tasks (`dev`, `db:studio`) set `persistent: true`.
 - The `db:*` tasks exist only in `packages/db`, `test:e2e` only in `e2e`.
 - Only `apps/*` have a `build` script. `apps/api` builds with tsdown, which inlines the
   `@opos/*` packages (their `src/index.ts`) into `dist/main.js` and keeps the rest of
@@ -340,8 +287,8 @@ tasks still run in parallel.
   The API's variables are read at runtime and stay out of the hash
   ([11](#11-environment-variables)).
 - turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
-  every `db:*` task list `DATABASE_URL`, `DATABASE_GLOBAL_URL`, `DATABASE_MIGRATION_URL` and
-  `OPOS_DB_PORT` in `passThroughEnv`: they reach the scripts and stay out of the hash.
+  every `db:*` task pass the database variables through (`passThroughEnv`), so they reach the
+  scripts and stay out of the hash.
 
 ### 3.2 Frontend application layout
 
@@ -394,8 +341,11 @@ PostgreSQL 17 from the `supabase/postgres` image. Every OPOS table lives in the 
 has `id uuid primary key default gen_random_uuid()`, `createdAt timestamptz not null default
 now()`, `updatedAt timestamptz not null default now()` — `accounts.id` being the one exception
 ([4.2](#42-global-tables)). `updatedAt` is kept by the database, not by Drizzle: every table has a
-`before update` trigger `<table>_set_updated_at` calling `public.set_updated_at()`, so raw SQL,
-scripts and the studio move it too.
+`before update` trigger `<table>_set_updated_at`, so raw SQL, scripts and the studio move it too.
+
+The built tables are defined in [packages/db/src/schema](../packages/db/src/schema), their RLS,
+grants and triggers in [packages/db/drizzle](../packages/db/drizzle). This chapter lists their
+rules; the tables still to be built are specified in full.
 
 Names in this chapter are the TypeScript ones. Drizzle maps them with `casing: 'snake_case'`, set in
 both `drizzle.config.ts` and the client: `tenantId` is the column `tenant_id`. Constraints and
@@ -430,9 +380,10 @@ The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 
 ### 4.1 Enums
 
+`permissionLevel` (`none`, `read`, `write`) and `tenantRole` (`head`, `org`) are built
+([enums.ts](../packages/db/src/schema/enums.ts)). Still to come:
+
 ```ts
-permissionLevel  = pgEnum('permission_level',  ['none', 'read', 'write'])
-tenantRole       = pgEnum('tenant_role',       ['head', 'org'])
 reviewVisibility = pgEnum('review_visibility', ['public', 'speakers'])
 orderStatus      = pgEnum('order_status',      ['pending', 'paid', 'expired', 'cancelled'])
 ```
@@ -446,35 +397,26 @@ Identities, passwords, sessions, refresh tokens and confirmation and recovery to
 Supabase Auth's tables (`auth.users`, `auth.identities`, `auth.sessions`, `auth.refresh_tokens`).
 OPOS keeps the profile only.
 
-**`accounts`**
+**`accounts`** ([accounts.ts](../packages/db/src/schema/accounts.ts)) — `id` equals the JWT `sub`
+and `auth.users.id`; `email` is unique and lowercase; `locale` is the user's choice, `null` means
+detect from `Accept-Language`.
 
-| column | type | notes |
-|---|---|---|
-| `id` | uuid | primary key, `references auth.users(id) on delete cascade`; equals the JWT `sub` |
-| `email` | text | unique, lowercase; mirrored from `auth.users.email` |
-| `firstName` | text | nullable |
-| `lastName` | text | nullable |
-| `locale` | text | nullable; the user's choice, `null` = detect from `Accept-Language` |
-
-Triggers on `auth.users`, in a hand-written migration, as `security definer` functions owned by
-`opos_migrator`:
-
-| Trigger | Effect |
-|---|---|
-| `after insert` | inserts `accounts`: `email`; `firstName`, `lastName`, `locale` from `raw_user_meta_data` (`first_name`, `last_name`, `locale` sent by the portal on sign-up; for Google `full_name` split on the first space) |
-| `after update of email` | updates `accounts.email` |
-
-Deleting a user in Supabase Auth removes `accounts`, and with it every row that references it.
+Two triggers on `auth.users`, `security definer` functions owned by `opos_migrator`, keep it in step
+with Supabase Auth: an insert creates the `accounts` row with `firstName`, `lastName` and `locale`
+from `raw_user_meta_data` (sent by the portal on sign-up; for Google `full_name` split on the first
+space), and an email change updates `accounts.email`. Deleting a user in Supabase Auth removes
+`accounts`, and with it every row that references it.
 
 ### 4.3 Tenant-level tables
 
-**`tenants`** — `slug` (unique, lowercase, `^[a-z0-9-]{3,40}$`), `name`,
-`defaultLocale` (text, default `pl`), `timezone` (IANA text, default `Europe/Warsaw`).
+**`tenants`** ([tenants.ts](../packages/db/src/schema/tenants.ts)) — the `slug` is unique and
+matches `^[a-z0-9-]{3,40}$`; `defaultLocale` and the IANA `timezone` default to `pl` and
+`Europe/Warsaw`.
 
-**`tenant_memberships`** — `accountId` (FK cascade), `tenantId` (FK cascade), `role`,
-`settingsAccess`, `brandingAccess`, `shopConfigAccess` (default `none`),
-`expiresAt` (timestamptz, nullable). Check `role = 'org' or expiresAt is null`.
-Unique `(accountId, tenantId)` and `(id, tenantId)`. Index on `tenantId`.
+**`tenant_memberships`** ([tenant-memberships.ts](../packages/db/src/schema/tenant-memberships.ts))
+— one row per account and tenant, holding the `role` and the tenant-level permissions
+(`settingsAccess`, `brandingAccess`, `shopConfigAccess`). Deleting the account or the tenant
+removes it.
 
 **`tenant_payment_configs`** — `tenantId` (FK cascade, unique), `provider` (text, the adapter
 name), `accountRef` (text, the convention's account identifier at the provider),
@@ -487,15 +429,12 @@ or extends it.
 
 ### 4.4 Edition-level tables
 
-**`editions`** — `tenantId` (FK cascade), `slug`, `name`, `startsAt`, `endsAt`,
-`isActive` (default `false`), `isPublished` (default `false`).
-Unique `(tenantId, slug)` and `(id, tenantId)`. Partial unique index `(tenantId) WHERE isActive`.
-Check `endsAt > startsAt`.
+**`editions`** ([editions.ts](../packages/db/src/schema/editions.ts)) — the `slug` is unique within
+the tenant, `endsAt` is after `startsAt`, and `isActive` and `isPublished` start as `false`.
 
-**`edition_memberships`** — `tenantId`, `tenantMembershipId`, `editionId` (FK cascade),
-`programAccess`, `websiteContentAccess`, `ticketsAccess` (default `none`).
-Unique `(tenantMembershipId, editionId)`. Composite foreign keys `(tenantMembershipId, tenantId)`
-and `(editionId, tenantId)`. Index `(tenantId, editionId)`.
+**`edition_memberships`** ([edition-memberships.ts](../packages/db/src/schema/edition-memberships.ts))
+— the edition-level permissions (`programAccess`, `websiteContentAccess`, `ticketsAccess`) of one
+`tenant_membership` in one edition.
 
 **`program_items`** — `tenantId`, `editionId` (FK cascade), `title`, `description` (nullable),
 `startsAt`, `endsAt`. Unique `(id, tenantId)`. Index `(tenantId, editionId, startsAt)`.
@@ -631,7 +570,7 @@ create policy tenant_isolation on program_items
   using      (tenant_id = (select current_setting('app.tenant_id')::uuid))
   with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 
-grant select, insert, update, delete on program_items to opos_app;
+grant select, insert, update, delete on program_items to opos_app, opos_app_global;
 ```
 
 The same for the remaining tables; for `tenants` the condition is `id = (select current_setting(...))`.
@@ -667,37 +606,16 @@ the system, including `PublicModule`, resolves the tenant first and then works o
 RLS policies and the `auth.users` triggers go into hand-written migrations
 (`drizzle-kit generate --custom`). The same migration grants `select, insert, update, delete` on
 the new tables to `opos_app` and `opos_app_global`, revokes everything from `anon` and
-`authenticated`, and adds each table's `<table>_set_updated_at` trigger ([4](#4-database-schema)). Trigger functions are `security definer` with `set search_path = ''` and
-schema-qualified names, because Supabase Auth runs with `search_path = auth`.
+`authenticated`, and adds each table's `<table>_set_updated_at` trigger ([4](#4-database-schema)).
+Trigger functions are `security definer` with `set search_path = ''` and schema-qualified names,
+because Supabase Auth runs with `search_path = auth`. `db:push` is for local experiments only;
+everything else goes through generated migrations.
 
-| Script | Runs |
-|---|---|
-| `db:generate` | `drizzle-kit generate` |
-| `db:migrate` | `drizzle-kit migrate`; the journal lives in the `drizzle` schema |
-| `db:push` | `drizzle-kit push`, local experiments only |
-| `db:studio` | `drizzle-kit studio` |
-| `db:verify` | `tsx src/scripts/verify.ts`: the query below, a non-zero exit code when it returns rows |
-
-All of them connect as `opos_migrator` through `DATABASE_MIGRATION_URL`
-([11](#11-environment-variables)). `pnpm db:verify` runs:
-
-```sql
-select c.relname from pg_class c
-join pg_namespace n on n.oid = c.relnamespace
-where n.nspname = 'public' and c.relkind = 'r'
-  and (c.relname = 'tenants' or exists (
-    select 1 from pg_attribute a
-    where a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped
-  ))
-  and not (c.relrowsecurity and c.relforcerowsecurity and exists (
-    select 1 from pg_policy p
-    where p.polrelid = c.oid and p.polname = 'tenant_isolation' and p.polcmd = '*'
-  ));
-```
-
-It lists every covered table — `tenants` and every `public` table with a `tenant_id` column —
-that lacks enabled RLS, forced RLS or a `tenant_isolation` policy for all commands. The result must
-be empty.
+Every `db:*` script connects as `opos_migrator` through `DATABASE_MIGRATION_URL`
+([11](#11-environment-variables)). `pnpm db:verify`
+([verify.ts](../packages/db/src/scripts/verify.ts)) exits non-zero when a covered table — `tenants`
+or any `public` table with a `tenant_id` column — lacks enabled RLS, forced RLS or a
+`tenant_isolation` policy for all commands.
 
 ---
 
@@ -1358,16 +1276,11 @@ Image tags are pinned exactly in both compose files, to the versions from Supaba
 self-hosting compose. An upgrade bumps `db` and `auth` together, after a `pg_dump`. GoTrue
 migrates the `auth` schema itself on start.
 
-`infra/supabase/db/` holds the init SQL from Supabase's self-hosting setup (roles, JWT settings),
-pinned to the same image version, plus `opos-roles.sql` ([4.6](#46-tenant-isolation--rls-in-postgres)).
-They are mounted read-only into the image's init directories and run once, on an empty data
-directory:
-
-| File | Mounted as | Runs as |
-|---|---|---|
-| `roles.sql` | `/docker-entrypoint-initdb.d/init-scripts/99-roles.sql` | `postgres` |
-| `jwt.sql` | `/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql` | `postgres` |
-| `opos-roles.sql` | `/docker-entrypoint-initdb.d/migrations/99-opos-roles.sql` | `supabase_admin`, after the image's own migrations |
+[infra/supabase/db](../infra/supabase/db) holds the init SQL from Supabase's self-hosting setup
+(roles, JWT settings), pinned to the same image version, plus `opos-roles.sql`
+([4.6](#46-tenant-isolation--rls-in-postgres)). [docker-compose.yml](../docker-compose.yml) mounts
+them read-only into the image's init directories, so they run once, on an empty data directory;
+`opos-roles.sql` runs as `supabase_admin`, after the image's own migrations.
 
 Studio reaches Postgres through `meta` only; it is used for its table and SQL editors.
 
@@ -1558,17 +1471,9 @@ pnpm dev
 127.0.0.1 api.localhost panel.localhost opos.localhost
 ```
 
-Root scripts: `dev`, `build`, `typecheck`, `lint`, `format`, `test`, `test:e2e`, `i18n:extract`,
-`i18n:compile`, `i18n:check`, `db:generate`, `db:migrate`, `db:push`, `db:seed`, `db:studio`, `db:verify`,
-`db:tenant:create`, `infra:up`, `infra:down`, `infra:reset`.
-Apart from `format` and `infra:*`, each of them is a `turbo run <task>` delegate
-([3.1](#31-turbo-tasks)).
-
-| Script | Runs |
-|---|---|
-| `infra:up` | `docker compose up -d --wait` |
-| `infra:down` | `docker compose down` |
-| `infra:reset` | `docker compose down -v`, then `infra:up` — wipes the database and reruns the init SQL |
+The root scripts are in [package.json](../package.json); apart from `format` and `infra:*`, each
+is a `turbo run <task>` delegate ([3.1](#31-turbo-tasks)). `pnpm infra:reset` wipes the database
+volume and reruns the init SQL.
 
 `db:migrate` and `db:seed` connect as `opos_migrator`; the API runs as `opos_app`. The roles are
 created by `infra/supabase/db/opos-roles.sql` when the `db` container starts on an empty volume —

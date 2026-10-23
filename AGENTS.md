@@ -60,7 +60,7 @@ Procedure for every substantive change:
 | name of a domain concept | yes — glossary | yes — mapping to tables |
 | permission rule, who can do what | yes | yes — guards, contract |
 | new endpoint | only when it changes product behaviour | yes |
-| database column, index, migration | no | yes |
+| database column, index, migration | no | yes until built, then only the rules ([above](#planmd-shrinks-as-the-code-grows)) |
 | library choice, version, configuration | no | yes |
 | language, market, time zone | yes | yes — schema, i18n |
 | personal data, retention, GDPR | yes | yes — schema, backups |
@@ -68,6 +68,26 @@ Procedure for every substantive change:
 
 A change that lands only in PLAN.md still requires reviewing PRODUCT.md — step 3 of the procedure
 always applies.
+
+## PLAN.md shrinks as the code grows
+
+PLAN.md specifies a part in full detail only until it is built. From then on the code is the source
+of its details, and PLAN.md keeps what the code cannot say on its own:
+
+| Stays in PLAN.md | Moves to the code; PLAN.md links to the file |
+|---|---|
+| architecture and the boundaries between applications and packages | file listings and per-file descriptions |
+| invariants and what enforces each of them (constraint, trigger, lock, service check) | columns, types, defaults, constraint and index names |
+| security rules: database roles, RLS, the queries allowed to cross tenants | the SQL of policies, triggers, grants and verification queries |
+| conventions every future change must follow (naming, policy shape, migration rules) | values set in configuration files: tasks, scripts, ports, mounts |
+| behaviour of the contract: status codes, error codes, required permissions | request and response schemas once they live in `packages/contract` |
+| what the tests must cover | the tests themselves |
+
+The PR that builds a part of PLAN.md slims that part in the same PR: every detail now present in the
+code is replaced by a relative link to the file or directory that holds it
+(relative to `docs/`: `[packages/db/src/schema](../packages/db/src/schema)`), and the rules from the left column stay.
+Where a rule in PLAN.md and the code disagree, the code has a bug; where a detail does, the detail
+should not have been in PLAN.md.
 
 ## Document style
 
@@ -84,7 +104,9 @@ always applies.
 - Exception: a short operational note is fine when it is an instruction rather than a
   justification ("step 3 before step 1 ends in a Let's Encrypt rate limit").
 - Tables instead of paragraphs wherever the content has structure.
-- Specifics instead of generalities: column names, status codes, paths, limits.
+- Specifics instead of generalities: column names, status codes, paths, limits — for a part that
+  is not built yet. A built part links to the code instead
+  ([PLAN.md shrinks as the code grows](#planmd-shrinks-as-the-code-grows)).
 - Tables of contents and anchors updated together with headings.
 - Terminology strictly from the glossary: tenant, edition, programme item, speaker, like, review,
   ticket type, order, ticket, scanner, attendee, admin, org, head, user, core, module, booth.

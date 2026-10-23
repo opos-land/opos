@@ -1,12 +1,11 @@
-import { Controller, UseGuards } from '@nestjs/common'
+import { Controller } from '@nestjs/common'
 import { contract } from '@opos/contract'
 import { tsRestHandler, TsRestHandler } from '@ts-rest/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 
+// Tenant routes: @RequireTenant applies JwtAuthGuard itself.
 @Controller()
-@UseGuards(JwtAuthGuard)
 export class TenantsController {
   constructor(private readonly context: TenantContextService) {}
 

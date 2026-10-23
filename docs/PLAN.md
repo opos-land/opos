@@ -596,7 +596,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | `401` | missing, expired or foreign token, or no `accounts` row for it | `session.invalid` |
 | `403` | insufficient permissions | `permission.denied` |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
-| `409` | invariant conflict | always a module's own code |
+| `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`) | always a specific code |
 | `429` | rate limit | `request.rate-limited` |
 | `500` | anything unexpected; the body carries no details, the log does | `server.error` |
 
@@ -954,12 +954,12 @@ implemented in [permissions.ts](../apps/api/src/common/permissions/permissions.t
 - Tenant-level permissions (`settings`, `branding`, `shop`) never grant edition-level access
   (`program`, `websiteContent`, `tickets`); an org needs an `edition_memberships` row for the
   edition.
-- `checkEdition` answers `404` before any `403`: for an edition of another tenant (RLS hides it)
-  and for an `:editionId` that is not a uuid, because the check runs before ts-rest validates the
-  request.
+- An account without a membership in the tenant gets `403` before the edition is looked up, so it
+  cannot tell existing edition ids from absent ones. For a member, `checkEdition` answers `404`
+  before any `403`: for an edition of another tenant (RLS hides it) and for an `:editionId` that is
+  not a uuid, because the check runs before ts-rest validates the request.
 
 ```ts
-@UseGuards(JwtAuthGuard)
 @TsRestHandler(contract.tenants.current)
 @RequireTenant()                       // any membership
 current() { ... }
@@ -973,10 +973,14 @@ update() { ... }
 create() { ... }
 ```
 
-A decorator applies to a handler method, so a route whose permission differs from its neighbours'
-gets its own `@TsRestHandler(contract.<router>.<route>)` method. `TenantTransactionInterceptor`
-reads the decorator through the `Reflector` and runs the check inside the tenant transaction
-([7.2](#72-tenant-context)).
+`@RequireTenant` and `@RequireEdition` apply `JwtAuthGuard` themselves, so a tenant route is never
+unauthenticated. Every tenant route has its own single-route `@TsRestHandler(contract.<router>.<route>)`
+method with the decorator below it: for a router-level `@TsRestHandler(contract.<router>)`, ts-rest
+copies only the metadata already on the method, and a decorator above it is silently dropped.
+[tenant-routes.test.ts](../apps/api/test/tenant-routes.test.ts) sends every contract route with
+an `x-tenant-slug` header an unknown slug and expects the interceptor's `404`.
+`TenantTransactionInterceptor` reads the decorator through the `Reflector` and runs the check
+inside the tenant transaction ([7.2](#72-tenant-context)).
 
 ### 7.4 Authorization
 

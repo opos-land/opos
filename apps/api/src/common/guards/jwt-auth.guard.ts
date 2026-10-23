@@ -4,8 +4,7 @@ import { ENV, type Env } from '../../config/env'
 import { AccountsRepository } from '../../modules/accounts/accounts.repository'
 import { TenantContextService } from '../als/tenant-context.service'
 import { unauthenticated } from '../errors/api-error'
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isUuid } from '../uuid'
 
 /**
  * Verifies the Supabase Auth access token (PLAN.md 7.4) and puts its account into the request
@@ -42,7 +41,7 @@ export class JwtAuthGuard implements CanActivate {
     } catch {
       throw unauthenticated('Invalid or expired token')
     }
-    if (!sub || !UUID.test(sub)) throw unauthenticated('Token without an account id')
+    if (!isUuid(sub)) throw unauthenticated('Token without an account id')
 
     const account = await this.accounts.findForToken(sub)
     if (!account) throw unauthenticated('No account for this token')

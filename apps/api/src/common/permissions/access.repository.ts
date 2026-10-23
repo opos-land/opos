@@ -30,31 +30,35 @@ export class AccessRepository {
     return row ?? null
   }
 
-  /** Whether the edition exists; RLS hides another tenant's edition. */
-  async editionExists(editionId: string) {
-    const rows = await this.context
-      .tx()
-      .select({ id: editions.id })
-      .from(editions)
-      .where(eq(editions.id, editionId))
-    return rows.length > 0
-  }
-
-  async editionAccess(membershipId: string, editionId: string): Promise<EditionAccess | null> {
+  /**
+   * The edition-level permissions of a membership in one edition, in one query: `undefined` when
+   * the edition does not exist in this tenant (RLS hides another tenant's), `null` when the
+   * membership has no row for it.
+   */
+  async editionAccess(
+    membershipId: string,
+    editionId: string,
+  ): Promise<EditionAccess | null | undefined> {
     const [row] = await this.context
       .tx()
       .select({
+        membershipId: editionMemberships.id,
         programAccess: editionMemberships.programAccess,
         websiteContentAccess: editionMemberships.websiteContentAccess,
         ticketsAccess: editionMemberships.ticketsAccess,
       })
-      .from(editionMemberships)
-      .where(
+      .from(editions)
+      .leftJoin(
+        editionMemberships,
         and(
+          eq(editionMemberships.editionId, editions.id),
           eq(editionMemberships.tenantMembershipId, membershipId),
-          eq(editionMemberships.editionId, editionId),
         ),
       )
-    return row ?? null
+      .where(eq(editions.id, editionId))
+    if (!row) return undefined
+    const { membershipId: rowId, programAccess, websiteContentAccess, ticketsAccess } = row
+    if (!rowId || !programAccess || !websiteContentAccess || !ticketsAccess) return null
+    return { programAccess, websiteContentAccess, ticketsAccess }
   }
 }

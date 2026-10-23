@@ -150,6 +150,13 @@ describe('tenant transaction', () => {
     expect(rows.every((r) => r.tenantId === a.id)).toBe(true)
   })
 
+  it('answers 409 when COMMIT breaks the last-head invariant, and keeps the head', async () => {
+    const res = await as(a.head, a.slug).post('/probe/demote-heads', {}).expect(409)
+
+    expect(res.body).toMatchObject({ code: 'membership.last-head' })
+    await as(a.head, a.slug).get('/tenants/current').expect(200)
+  })
+
   it('throws when a repository runs outside a tenant transaction', async () => {
     const res = await as(a.head).get('/probe/outside').expect(500)
     expect(res.body).toEqual({ code: 'server.error', message: 'Internal server error' })
@@ -181,5 +188,10 @@ describe('@RequireEdition', () => {
   it("answers 404 for another tenant's edition and for an id that is not a uuid", async () => {
     await as(a.head, a.slug).get(`/probe/editions/${editionB}`).expect(404)
     await as(a.head, a.slug).get('/probe/editions/not-a-uuid').expect(404)
+  })
+
+  it('answers 403 to an account outside the tenant whether the edition exists or not', async () => {
+    await as(outsider, a.slug).get(`/probe/editions/${editionA}`).expect(403)
+    await as(outsider, a.slug).get(`/probe/editions/${randomUUID()}`).expect(403)
   })
 })

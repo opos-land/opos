@@ -1,5 +1,6 @@
 import { Controller, Module, UseGuards } from '@nestjs/common'
-import { editions } from '@opos/db'
+import { editions, tenantMemberships } from '@opos/db'
+import { eq } from 'drizzle-orm'
 import { tsRestHandler, TsRestHandler } from '@ts-rest/nest'
 import { initContract } from '@ts-rest/core'
 import { z } from 'zod'
@@ -35,6 +36,12 @@ export const probeContract = c.router({
     responses: { 200: z.object({ ok: z.boolean() }) },
   },
   outside: { method: 'GET', path: '/probe/outside', responses: { 200: z.object({}) } },
+  demoteHeads: {
+    method: 'POST',
+    path: '/probe/demote-heads',
+    body: z.object({}),
+    responses: { 200: z.object({}) },
+  },
   withTenant: {
     method: 'GET',
     path: '/probe/with-tenant/:slug',
@@ -46,7 +53,6 @@ export const probeContract = c.router({
 export const afterCommitCalls: string[] = []
 
 @Controller()
-@UseGuards(JwtAuthGuard)
 class ProbeController {
   constructor(
     private readonly context: TenantContextService,
@@ -104,7 +110,22 @@ class ProbeController {
     )
   }
 
+  @TsRestHandler(probeContract.demoteHeads)
+  @RequireTenant('settings', 'write')
+  demoteHeads() {
+    // Breaks the last-head invariant: the deferred trigger rejects it at COMMIT, after the 200.
+    return tsRestHandler(probeContract.demoteHeads, async () => {
+      await this.context
+        .tx()
+        .update(tenantMemberships)
+        .set({ role: 'org' })
+        .where(eq(tenantMemberships.role, 'head'))
+      return { status: 200, body: {} }
+    })
+  }
+
   @TsRestHandler(probeContract.outside)
+  @UseGuards(JwtAuthGuard)
   outside() {
     return tsRestHandler(probeContract.outside, async () => {
       await this.editions()
@@ -113,6 +134,7 @@ class ProbeController {
   }
 
   @TsRestHandler(probeContract.withTenant)
+  @UseGuards(JwtAuthGuard)
   withTenant() {
     return tsRestHandler(probeContract.withTenant, async ({ params }) => {
       const tenant = await this.global.tenantBySlug(params.slug)

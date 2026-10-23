@@ -15,3 +15,8 @@ export class ApiError extends HttpException {
 
 export const unauthenticated = (message = 'Missing or invalid session') =>
   new ApiError(401, 'session.invalid', message)
+
+export const forbidden = (message = 'Insufficient permissions') =>
+  new ApiError(403, 'permission.denied', message)
+
+export const notFound = (what: string) => new ApiError(404, 'request.not-found', `Unknown ${what}`)

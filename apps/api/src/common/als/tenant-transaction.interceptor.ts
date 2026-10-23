@@ -8,15 +8,11 @@ import { Reflector } from '@nestjs/core'
 import { from, lastValueFrom, type Observable } from 'rxjs'
 import { GlobalDbService } from '../database/global-db.service'
 import { TENANT_REQUIREMENT } from '../decorators/require-tenant.decorator'
-import { ApiError } from '../errors/api-error'
+import { ApiError, forbidden, notFound, unauthenticated } from '../errors/api-error'
 import { AccessRepository } from '../permissions/access.repository'
 import { decideEdition, decideTenant, type Requirement } from '../permissions/permissions'
+import { isUuid } from '../uuid'
 import { TenantContextService } from './tenant-context.service'
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-const forbidden = () => new ApiError(403, 'permission.denied', 'Insufficient permissions')
-const notFound = (what: string) => new ApiError(404, 'request.not-found', `Unknown ${what}`)
 
 interface HttpRequest {
   headers: Record<string, unknown>
@@ -71,8 +67,9 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       tenant.id,
       async () => {
         const store = TenantContextService.store()
+        if (!store.account) throw unauthenticated()
         store.tenant = tenant
-        store.membership = await this.access.activeMembership(this.context.account().id)
+        store.membership = await this.access.activeMembership(store.account.id)
         await this.check(requirement, request)
         return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
       },
@@ -88,14 +85,15 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       }
       return
     }
-    // Runs before ts-rest validates the path, so a malformed id is a 404 like a foreign one.
+    // No membership answers 403 before the edition is looked up, so an account outside the
+    // tenant cannot tell existing edition ids from absent ones. For a member, another tenant's
+    // edition and a malformed id are a 404; this runs before ts-rest validates the path.
+    if (!membership) throw forbidden()
     const editionId = request.params[requirement.param]
-    if (!editionId || !UUID.test(editionId) || !(await this.access.editionExists(editionId))) {
-      throw notFound('edition')
-    }
-    const editionAccess = membership
+    const editionAccess = isUuid(editionId)
       ? await this.access.editionAccess(membership.id, editionId)
-      : null
+      : undefined
+    if (editionAccess === undefined) throw notFound('edition')
     if (
       decideEdition(membership, editionAccess, requirement.resource, requirement.level) !== 'allow'
     ) {

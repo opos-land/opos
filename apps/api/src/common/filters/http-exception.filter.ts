@@ -19,8 +19,38 @@ const codeByStatus = (status: number): ErrorCode => {
   return 'request.invalid'
 }
 
+/** Database constraints whose violation is the client's business, by constraint name. */
+const constraintErrors: Record<string, { status: number; code: ErrorCode; message: string }> = {
+  tenant_memberships_at_least_one_head: {
+    status: 409,
+    code: 'membership.last-head',
+    message: 'A tenant must keep at least one head',
+  },
+  tenants_at_least_one_head: {
+    status: 409,
+    code: 'membership.last-head',
+    message: 'A tenant must be created with a head',
+  },
+}
+
+/** The Postgres error behind an exception; drizzle wraps query errors in `cause`. */
+function postgresConstraint(exception: unknown): string | undefined {
+  let current: unknown = exception
+  for (let depth = 0; depth < 3 && current && typeof current === 'object'; depth++) {
+    const name = (current as { constraint_name?: unknown }).constraint_name
+    if (typeof name === 'string') return name
+    current = (current as { cause?: unknown }).cause
+  }
+  return undefined
+}
+
 /** Maps anything thrown while handling a request onto the error schema of PLAN.md 5. */
 export function toErrorResponse(exception: unknown): { status: number; body: ApiErrorBody } {
+  // Deferred constraint triggers fire at COMMIT, after the handler already chose a 2xx.
+  const constraint = postgresConstraint(exception)
+  const known = constraint ? constraintErrors[constraint] : undefined
+  if (known) return { status: known.status, body: { code: known.code, message: known.message } }
+
   if (exception instanceof ApiError) {
     const { code, params, message } = exception
     return { status: exception.getStatus(), body: { code, params, message } }

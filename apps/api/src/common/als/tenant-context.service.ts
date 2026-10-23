@@ -1,34 +1,33 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { Inject, Injectable, Logger } from '@nestjs/common'
-import { type Account } from '@opos/contract'
-import { type Database, setTenantContext, type Transaction } from '@opos/db'
+import { type Account, type Tenant } from '@opos/contract'
+import {
+  type Database,
+  permissionLevel,
+  setTenantContext,
+  tenantRole,
+  type Transaction,
+} from '@opos/db'
 import { APP_DB } from '../database/tokens'
 
-export type Level = 'none' | 'read' | 'write'
+export type Level = (typeof permissionLevel.enumValues)[number]
 
 /** The account's membership in the tenant of the request; never an expired one. */
 export interface TenantMembership {
   id: string
-  role: 'head' | 'org'
+  role: (typeof tenantRole.enumValues)[number]
   settingsAccess: Level
   brandingAccess: Level
   shopConfigAccess: Level
 }
 
-export interface TenantInContext {
-  id: string
-  slug: string
-  name: string
-  defaultLocale: string
-  timezone: string
-}
+export type TenantInContext = Tenant
 
 /** What one request knows about itself (PLAN.md 7.2); the guards and the interceptor fill it. */
 export interface RequestStore {
   account?: Account
   tenant?: TenantInContext
   membership?: TenantMembership | null
-  tenantId?: string
   tx?: Transaction
   afterCommit?: (() => unknown)[]
 }
@@ -112,7 +111,7 @@ export class TenantContextService {
   ): Promise<T> {
     const parent = storage.getStore()
     if (parent?.tx) throw new Error('A tenant transaction is already open')
-    const store: RequestStore = { ...parent, tenantId, afterCommit: [] }
+    const store: RequestStore = { ...parent, afterCommit: [] }
 
     let result: T
     try {

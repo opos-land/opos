@@ -21,6 +21,7 @@
     "db:tenant:create": "tsx src/scripts/create-tenant.ts"
   },
   "dependencies": {
+    "@opos/i18n": "workspace:*",
     "drizzle-orm": "catalog:",
     "postgres": "catalog:"
   },

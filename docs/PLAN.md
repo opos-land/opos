@@ -1684,7 +1684,8 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
   matched case-insensitively.
 - Any refusal changes nothing and exits non-zero with a `CreateTenantError` code:
   `tenant.slug-invalid`, `tenant.slug-taken`, `tenant.name-empty`, `tenant.locale-invalid`,
-  `tenant.timezone-invalid` (not an IANA zone), `account.not-found`.
+  `tenant.timezone-invalid` (not an IANA zone), `account.not-found`. `tenant.locale-invalid` means
+outside `SUPPORTED_LOCALES` from `@opos/i18n`.
 - In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
 
 ---

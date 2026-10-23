@@ -1,3 +1,4 @@
+import { isLocale } from '@opos/i18n'
 import { eq } from 'drizzle-orm'
 import type { Database } from './client'
 import { accounts, tenantMemberships, tenants } from './schema'
@@ -29,7 +30,6 @@ export class CreateTenantError extends Error {
 }
 
 const SLUG = /^[a-z0-9-]{3,40}$/
-const LOCALE = /^[a-z]{2}$/
 
 const isTimeZone = (timezone: string) => {
   try {
@@ -54,8 +54,8 @@ export async function createTenant(db: Database, input: CreateTenantInput) {
     throw new CreateTenantError('tenant.slug-invalid', `Slug must match ${SLUG}: ${input.slug}`)
   }
   if (!name) throw new CreateTenantError('tenant.name-empty', 'Name must not be empty')
-  if (!LOCALE.test(defaultLocale)) {
-    throw new CreateTenantError('tenant.locale-invalid', `Unknown locale: ${defaultLocale}`)
+  if (!isLocale(defaultLocale)) {
+    throw new CreateTenantError('tenant.locale-invalid', `Unsupported locale: ${defaultLocale}`)
   }
   if (!isTimeZone(timezone)) {
     throw new CreateTenantError('tenant.timezone-invalid', `Unknown IANA time zone: ${timezone}`)

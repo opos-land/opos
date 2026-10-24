@@ -2133,6 +2133,9 @@ Chromium once (`pnpm --filter @opos/e2e exec playwright install chromium`), then
   scenarios tagged `@mobile`; a browser matrix is beyond the MVP. The browser's language is
   `en-US`.
 - A failed test keeps its trace, video and screenshot.
+- The scenarios hold no Polish: a scenario that checks the `pl` interface finds its text by the
+  English source message in the application's `pl.po` catalog
+  ([fixtures/catalog.ts](../e2e/fixtures/catalog.ts)).
 - The `e2e` directory is a workspace package — Playwright and the fixtures are its dependencies,
   not the root's.
 

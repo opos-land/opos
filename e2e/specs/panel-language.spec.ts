@@ -1,4 +1,5 @@
 import { expect, test } from '../fixtures'
+import { pl } from '../fixtures/catalog'
 import { openPanelAccountMenu, signInToPanel } from '../fixtures/ui'
 
 // The panel's language switcher (PLAN.md 8): the choice is kept on the account through PATCH /me
@@ -19,14 +20,14 @@ test('the language chosen in the account menu stays on the account', async ({
   await openPanelAccountMenu(page, head.email)
   await page.getByLabel('Interface language').selectOption('pl')
   await expect(page.locator('html')).toHaveAttribute('lang', 'pl')
-  await expect(sidebar.getByRole('link', { name: 'Edycje' })).toBeVisible()
+  await expect(sidebar.getByRole('link', { name: pl('panel', 'Editions') })).toBeVisible()
 
   await page.reload()
-  await expect(sidebar.getByRole('link', { name: 'Edycje' })).toBeVisible()
+  await expect(sidebar.getByRole('link', { name: pl('panel', 'Editions') })).toBeVisible()
 
   // The browser's language again.
   await openPanelAccountMenu(page, head.email)
-  await page.getByLabel('Język interfejsu').selectOption('browser')
+  await page.getByLabel(pl('panel', 'Interface language')).selectOption('browser')
   await expect(sidebar.getByRole('link', { name: 'Editions' })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
 })

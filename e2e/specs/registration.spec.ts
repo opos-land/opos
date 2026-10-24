@@ -1,6 +1,7 @@
 import { type Request } from '@playwright/test'
 import { PASSWORD, refreshGrant } from '../fixtures/auth-admin'
 import { expect, test } from '../fixtures'
+import { pl } from '../fixtures/catalog'
 import { verifyLinkIn, waitForMail } from '../fixtures/mailpit'
 import { stack } from '../fixtures/stack'
 import { portalUrl, signInToPortal, storedSession } from '../fixtures/ui'
@@ -48,10 +49,10 @@ test.describe('registration and the session in the portal', () => {
       // The language chosen is kept on the account.
       await page.getByLabel('Interface language').selectOption('pl')
       await expect(page.locator('html')).toHaveAttribute('lang', 'pl')
-      await expect(page.getByRole('heading', { name: 'Twoje konto' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: pl('portal', 'Your account') })).toBeVisible()
 
       // Signed out, the portal follows the browser's language again.
-      await page.getByRole('button', { name: 'Wyloguj się' }).click()
+      await page.getByRole('button', { name: pl('portal', 'Sign out') }).click()
       await expect(page).toHaveURL(/\/login/)
       await expect(page.locator('html')).toHaveAttribute('lang', 'en')
 
@@ -59,7 +60,7 @@ test.describe('registration and the session in the portal', () => {
       await page.getByLabel('Email', { exact: true }).fill(email)
       await page.getByLabel('Password', { exact: true }).fill(PASSWORD)
       await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-      await expect(page.getByRole('heading', { name: 'Twoje konto' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: pl('portal', 'Your account') })).toBeVisible()
       await expect(page.locator('html')).toHaveAttribute('lang', 'pl')
     },
   )

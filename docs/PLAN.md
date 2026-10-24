@@ -153,7 +153,8 @@ opos/
     api/                 # built: bootstrap, env, database providers, GlobalDbService, OpenAPI docs,
                          #   error filter, request store and tenant transaction, JwtAuthGuard,
                          #   permission decorators, MeModule (profile, memberships),
-                         #   TenantsModule (tenant, team), EditionsModule, tests
+                         #   TenantsModule (tenant, team), EditionsModule, AuthModule (send-email
+                         #   hook), MailModule (Supabase Auth emails), tests
       src/
         common/
           guards/scanner-device.guard.ts
@@ -206,7 +207,7 @@ opos/
           tickets.ts
           scanner-devices.ts
           attendees.ts
-    i18n/                # built: locales, detection, catalogs, formatters, glossary, error messages
+    i18n/                # built: locales, detection, catalogs, formatters, glossary, error and email messages
     tsconfig/            # built: base.json, node.json
       react.json         # extends base.json
     eslint-config/       # built
@@ -243,9 +244,9 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   The API's variables are read at runtime and stay out of the hash
   ([11](#11-environment-variables)).
 - turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
-  every `db:*` task pass the database variables through (`passThroughEnv`), `db:seed` also the
-  Supabase Auth ones and `NODE_ENV` ([11](#11-environment-variables)), so they reach the scripts and
-  stay out of the hash.
+  every `db:*` task pass the database variables through (`passThroughEnv`), `test` also
+  `OPOS_MAILPIT_PORT`, `db:seed` also the Supabase Auth ones and `NODE_ENV`
+  ([11](#11-environment-variables)), so they reach the scripts and stay out of the hash.
 - The root scripts that take arguments, `db:seed`, `db:tenant:create` and `db:tenant:rename`, end
   with `--`, so pnpm hands the arguments through turbo to the package script.
 
@@ -347,8 +348,8 @@ reviewVisibility = pgEnum('review_visibility', ['public', 'speakers'])
 orderStatus      = pgEnum('order_status',      ['pending', 'paid', 'expired', 'cancelled'])
 ```
 
-`locale` is not an enum — the list of supported languages lives in `packages/i18n` and in
-`SUPPORTED_LOCALES`, validated by zod. Adding a language requires no migration.
+`locale` is not an enum — the list of supported languages is the `SUPPORTED_LOCALES` constant of
+`packages/i18n`, validated by zod. Adding a language requires no migration.
 
 ### 4.2 Global tables
 
@@ -831,8 +832,8 @@ macros, and they are their own identifiers. There are no separate keys to invent
 
 Supported locales: `en` (source) and `pl`. Czech joins with the Czech market beyond the MVP — a
 new locale is another set of `.po` catalogs plus its entries in `packages/i18n` (below), no
-migration. The default interface language is `pl` (`DEFAULT_LOCALE`) — a different thing from the
-source language. A missing translation falls back
+migration. The default interface language is `pl` (the `DEFAULT_LOCALE` constant of `@opos/i18n`,
+not an environment variable) — a different thing from the source language. A missing translation falls back
 to the source text, that is English; an identifier never appears on screen.
 
 ### Macros
@@ -878,12 +879,14 @@ new term enters that file before its first use in the interface.
 | Import | Contains | Needs the macro transform |
 |---|---|---|
 | `@opos/i18n` | `SUPPORTED_LOCALES`, `DEFAULT_LOCALE`, `detectLocale`, `activateLocale`, formatters | no — scripts and `packages/db` use it as is |
-| `@opos/i18n/glossary`, `@opos/i18n/errors` | the glossary and the error messages | yes |
+| `@opos/i18n/glossary`, `@opos/i18n/errors`, `@opos/i18n/emails` | the glossary, the error messages and the email content | yes |
 | `@opos/i18n/lingui.config.base` | `linguiConfig()`, which every `lingui.config.ts` calls with its catalogs; it excludes `*.test.ts(x)` from extraction | — |
 
 The macro transform is `@lingui/vite-plugin` with `macroTransform: true`, in the frontends' Vite
 config and in every `vitest.config.ts` that loads messages; a package without its own catalog
-points the plugin at `@opos/i18n/lingui.config` (`configPath`). `activateLocale(i18n, locale,
+points the plugin at `@opos/i18n/lingui.config` (`configPath`). The API bundle runs the same native
+transform (`@lingui/native-tools`) as a plugin in [tsdown.config.ts](../apps/api/tsdown.config.ts),
+with that config, keeping only message ids. `activateLocale(i18n, locale,
 appMessages)` merges this package's compiled catalog with the application's own.
 
 ### Workflow
@@ -915,8 +918,9 @@ the contract without an entry in that map fails
 [errors.test.ts](../packages/contract/src/errors.test.ts) in `packages/contract`.
 
 Emails are rendered by the API — it activates the recipient's catalog and composes the content
-through `@lingui/core`. That includes Supabase Auth's confirmation, recovery and email change
-messages, which reach the API through the send-email hook ([10](#10-supabase)).
+through `@lingui/core` ([mail](../apps/api/src/modules/mail)), from the messages in
+[emails.ts](../packages/i18n/src/emails.ts). That includes Supabase Auth's confirmation, recovery
+and email change messages, which reach the API through the send-email hook ([10](#10-supabase)).
 [main.ts](../apps/api/src/main.ts) loads the shared catalog of every locale before the API listens,
 so a bundle without them fails the start in CI ([15.3](#153-ci)), not the first email.
 
@@ -943,7 +947,7 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 
 | Module | Contents |
 |---|---|
-| `AuthModule` | the `POST /hooks/send-email` controller, the GoTrue admin client |
+| `AuthModule` | the `POST /hooks/send-email` controller ([10](#send-email-hook)), the GoTrue admin client |
 | `MeModule` | profile, memberships, edition sign-ups, personal schedule, speaker's items, account deletion; global, because it provides `AccountsRepository` to `JwtAuthGuard` |
 | `TenantsModule` | tenant data, `tenant_memberships` with expiry, invitations |
 | `EditionsModule` | edition CRUD, activation, `edition_memberships` |
@@ -955,7 +959,7 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 | `CheckoutModule` | orders from the portal, the payment webhook, the job expiring unpaid orders, the ticket email |
 | `PaymentsModule` | the `PaymentProvider` port and its adapters ([7.10](#710-payments)) |
 | `ScannerModule` | `ScannerDeviceGuard`, ticket lookup and redemption |
-| `MailModule` | nodemailer + Lingui templates per locale: Supabase Auth emails and invitations ([6](#6-localization)) |
+| `MailModule` | nodemailer + Lingui templates per locale: Supabase Auth emails, invitations and tickets ([6](#6-localization)); a failed send rejects, and the caller decides what it means |
 | `HealthModule` | `GET /health` ([5.11](#511-health--unauthenticated)) |
 | `DatabaseModule` | global; `APP_DB` (`appDb()`, `opos_app`) and `GLOBAL_DB` (`globalDb()`, `opos_app_global`) providers, pools closed on application shutdown |
 
@@ -1005,8 +1009,9 @@ Repositories take the transaction from `TenantContextService.tx()`, which throws
 transaction is open; they never query the pool directly. The one exception is
 `AccountsRepository`: `accounts` has no RLS ([4.6](#46-tenant-isolation--rls-in-postgres)), so it
 runs on the `opos_app` pool outside a tenant transaction. Only `findForToken(sub)`, which
-`JwtAuthGuard` calls, takes an id; every other method works on the account in the request store, so
-no caller can pass another account's id.
+`JwtAuthGuard` calls, and `localeForHook(id)`, which the send-email hook calls with the user of a
+verified payload, take an id; every other method works on the account in the request store, so no
+caller can pass another account's id.
 
 Outbound I/O — SMTP, the GoTrue admin API — never runs inside the transaction. Code inside it
 registers the call with `TenantContextService.afterCommit(fn)`; the queue runs after the commit and
@@ -1395,23 +1400,31 @@ production the hook goes through Traefik over HTTPS. In dev the `auth` container
 
 ### Send-email hook
 
-Supabase Auth sends no email itself. For every message it calls `POST /hooks/send-email` with
-`{ user, email_data: { token_hash, redirect_to, email_action_type, ... } }`, signed according to
-Standard Webhooks.
+Supabase Auth sends no email itself. For every message it calls `POST /hooks/send-email`
+([auth](../apps/api/src/modules/auth)), signed according to Standard Webhooks.
 
-1. The API verifies the signature with `SEND_EMAIL_HOOK_SECRET`; a missing or invalid one -> `401`.
-2. It picks the locale: `accounts.locale` -> `user.user_metadata.locale` -> `DEFAULT_LOCALE`.
+1. The API verifies the signature over the raw request body (the application is created with
+   `rawBody: true`, [app.ts](../apps/api/src/app.ts)) with `SEND_EMAIL_HOOK_SECRET`, in GoTrue's
+   format `v1,whsec_<base64 key>`; a missing, invalid or older than five minutes one -> `401`. A
+   payload without the fields the API reads -> `400`.
+2. It picks the locale: `accounts.locale` -> `user.user_metadata.locale` -> `DEFAULT_LOCALE`. A user
+   Supabase Auth is still creating has no committed `accounts` row yet, so a sign-up takes the
+   locale it was sent with.
 3. It builds the link `<AUTH_URL>/verify?token=<token_hash>&type=<email_action_type>&redirect_to=<redirect_to>`
    and renders the template through Lingui.
 4. It sends the message through `MailModule` and answers `200 {}`. An SMTP failure -> `500`, which
-   Supabase Auth reports to the client as a failed send.
+   Supabase Auth reports to the client as a failed send. Supabase Auth waits only a few seconds for
+   the hook, so the SMTP timeouts stay below that.
 
 | `email_action_type` | Template |
 |---|---|
 | `signup` | address confirmation |
 | `recovery` | password reset |
-| `email_change` | confirmation of the new address |
+| `email_change` | confirmation of the new address, to the new address; with Supabase Auth's secure email change (its default) also a confirmation of the change to the current address, and the change takes effect once both links are opened |
 | anything else | `400` — those flows are disabled |
+
+Under secure email change the payload's token names are swapped: `token_hash_new` belongs to the
+current address and `token_hash` to the new one.
 
 ### Admin API
 
@@ -1422,7 +1435,10 @@ it signs with `JWT_SECRET` itself ([14](#14-demo-data-seed)). The key never reac
 
 ### Rate limits
 
-GoTrue's built-in limits stay at their defaults, keyed by the client IP from `X-Forwarded-For`.
+GoTrue's built-in limits stay at their defaults, keyed by the client IP from `X-Forwarded-For`. The
+one exception is dev: [docker-compose.yml](../docker-compose.yml) raises
+`GOTRUE_RATE_LIMIT_EMAIL_SENT`, a global limit of 30 emails per hour by default, because the tests
+send more.
 Traefik adds a `rateLimit` middleware on the `auth.opos.land` router: an average of 30 requests per
 minute per IP, burst 10, a `429` above that.
 
@@ -1766,7 +1782,10 @@ Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/p
 The tests read `apps/api/.env.example`, overridden by `apps/api/.env` when present. Test
 accounts are created through the admin API (`POST /admin/users`) and signed in with the password
 grant (`POST /token?grant_type=password`), so the API checks real Supabase Auth tokens; tokens
-with a wrong signature, audience, issuer or expiry are signed in the test with `jose`.
+with a wrong signature, audience, issuer or expiry are signed in the test with `jose`. The
+send-email hook test triggers real sign-ups, recoveries and email changes and reads the messages
+from Mailpit's HTTP API; it runs the API on its `PORT`, where Supabase Auth sends the hook, so it
+cannot run beside an API started with `pnpm dev`.
 
 | Area | What we check |
 |---|---|
@@ -1785,7 +1804,7 @@ with a wrong signature, audience, issuer or expiry are signed in the test with `
 | scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; a device paired by an org whose access expires stops with that access; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
 | JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
-| send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` -> `400` |
+| send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500` |
 | rate limit | `GET /invitations/preview` above the limit -> `429` with `Retry-After` |
 | i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
 
@@ -1833,8 +1852,8 @@ using seeded data only read it.
 ### 15.3 CI
 
 GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every push to `develop` and
-`main`, with tool versions from `mise.toml`, the same source as local machines. The `db` and `auth`
-containers run for the schema and API tests, behind `pnpm db:migrate`, `pnpm db:verify` and two runs
+`main`, with tool versions from `mise.toml`, the same source as local machines. The `db`, `auth`
+and `mailpit` containers run for the schema and API tests, behind `pnpm db:migrate`, `pnpm db:verify` and two runs
 of `pnpm db:seed` — the second proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
 run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
 package and fills the turbo cache that PRs restore. `pnpm build` then bundles the API, and the job

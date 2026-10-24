@@ -343,7 +343,7 @@ arrive together with their markets, beyond the MVP.
 |---|---|
 | panel and portal | the user's choice stored on the account; browser language by default |
 | convention pages in the portal | the interface in the user's language; programme content as the organizer wrote it |
-| emails | the recipient's language; for an unknown address, the inviting convention's language |
+| emails | the recipient's language: the choice stored on the account, else the language the account was registered in; for an unknown address, the inviting convention's language; Polish when nothing else decides |
 
 **One convention = one content language.** Programme items are written in the convention's
 language. Content translations — the same programme item in Czech and in English — are beyond the
@@ -368,7 +368,9 @@ records, so deleting an account does not delete orders placed with its address. 
 stay with the payment provider; OPOS stores only the provider's payment reference.
 
 **Registration with a password requires a confirmed email address.** The account starts working
-once its owner clicks the link sent to that address. A Google sign-in counts as confirmed.
+once its owner clicks the link sent to that address. A Google sign-in counts as confirmed. A change
+of the account's email address takes effect once both the current and the new address confirm it
+through the links sent to them.
 
 **Account deletion is self-service.** The user deletes the account from settings; their sign-in
 identities, sessions and edition registrations go with it. The single exception: an account that

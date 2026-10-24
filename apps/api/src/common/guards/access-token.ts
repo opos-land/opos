@@ -38,3 +38,16 @@ export async function verifyAccessToken(
     return undefined
   }
 }
+
+/**
+ * The latest sign-in the token records: the newest timestamp, in seconds, among the `amr` entries
+ * Supabase Auth writes, one per authentication method, kept across refreshes.
+ */
+export function lastSignInAt(payload: JWTPayload): number | undefined {
+  const { amr } = payload
+  if (!Array.isArray(amr)) return undefined
+  const timestamps = amr
+    .map((entry: unknown) => (entry as { timestamp?: unknown } | null)?.timestamp)
+    .filter((timestamp): timestamp is number => Number.isFinite(timestamp))
+  return timestamps.length > 0 ? Math.max(...timestamps) : undefined
+}

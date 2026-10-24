@@ -27,6 +27,8 @@ export type TenantInContext = Tenant
 /** What one request knows about itself (PLAN.md 7.2); the guards and the interceptor fill it. */
 export interface RequestStore {
   account?: Account
+  /** The latest sign-in the access token records, in seconds since the epoch (PLAN.md 7.4). */
+  signedInAt?: number
   tenant?: TenantInContext
   membership?: TenantMembership | null
   tx?: Transaction
@@ -66,8 +68,16 @@ export class TenantContextService {
     return store
   }
 
-  setAccount(account: Account) {
-    TenantContextService.store().account = account
+  setAccount(account: Account, signedInAt?: number) {
+    const store = TenantContextService.store()
+    store.account = account
+    store.signedInAt = signedInAt
+  }
+
+  /** Whether the access token records a sign-in within the last `seconds`; behind JwtAuthGuard. */
+  signedInWithin(seconds: number, now = Date.now()): boolean {
+    const { signedInAt } = TenantContextService.store()
+    return signedInAt !== undefined && now / 1000 - signedInAt < seconds
   }
 
   /** The verified account; only behind JwtAuthGuard. */

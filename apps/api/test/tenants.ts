@@ -117,3 +117,26 @@ export const countHeads = async (tenantId: string) =>
       sql`select count(*)::int as count from tenant_memberships where tenant_id = ${tenantId} and role = 'head'`,
     )
   )[0]!.count
+
+export async function addHead(tenantId: string, account: { id: string }) {
+  await db.execute(sql`
+    insert into tenant_memberships (account_id, tenant_id, role) values (${account.id}, ${tenantId}, 'head')
+  `)
+}
+
+/** The rows that reference an account, by table (PLAN.md 9, account deletion). */
+export const accountRows = async (accountId: string) =>
+  (
+    await db.execute<{
+      accounts: number
+      tenantMemberships: number
+      editionMemberships: number
+    }>(sql`
+      select
+        (select count(*)::int from accounts where id = ${accountId}) as "accounts",
+        (select count(*)::int from tenant_memberships where account_id = ${accountId}) as "tenantMemberships",
+        (select count(*)::int from edition_memberships em
+           join tenant_memberships tm on tm.id = em.tenant_membership_id
+          where tm.account_id = ${accountId}) as "editionMemberships"
+    `)
+  )[0]!

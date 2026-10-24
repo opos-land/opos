@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { SignJWT } from 'jose'
 import { describe, expect, it } from 'vitest'
-import { accessTokenKey, bearerToken, verifyAccessToken } from './access-token'
+import { accessTokenKey, bearerToken, lastSignInAt, verifyAccessToken } from './access-token'
 
 const key = accessTokenKey({ JWT_SECRET: 'x'.repeat(32), AUTH_URL: 'http://auth.test' })
 
@@ -43,5 +43,25 @@ describe('verifyAccessToken', () => {
     ['garbage', () => Promise.resolve('not.a.jwt')],
   ])('refuses %s', async (_, make) => {
     expect(await verifyAccessToken(await make(), key)).toBeUndefined()
+  })
+})
+
+describe('lastSignInAt', () => {
+  it('takes the newest amr timestamp', () => {
+    const amr = [
+      { method: 'password', timestamp: 100 },
+      { method: 'oauth', timestamp: 300 },
+      { method: 'otp', timestamp: 200 },
+    ]
+
+    expect(lastSignInAt({ amr })).toBe(300)
+  })
+
+  it.each([
+    ['no amr', {}],
+    ['an amr that is not a list', { amr: 'password' }],
+    ['entries without a timestamp', { amr: [{ method: 'password' }, null, { timestamp: '5' }] }],
+  ])('finds no sign-in in %s', (_, payload) => {
+    expect(lastSignInAt(payload)).toBeUndefined()
   })
 })

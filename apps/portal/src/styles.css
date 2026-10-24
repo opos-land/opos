@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+/*
+ * Placeholder tokens until the designer's arrive (PRODUCT.md 8): plain blocks, one accent, system
+ * fonts. Components read only these tokens, so the designer's values replace them here. The
+ * portal is mobile-first (PLAN.md 9): every screen is laid out for a 360 px viewport first.
+ */
+@theme {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --color-paper: #f7f6f3;
+  --color-surface: #ffffff;
+  --color-ink: #1d1d1b;
+  --color-muted: #5c5b57;
+  --color-line: #d9d7d0;
+  --color-accent: #2d4a6b;
+  --color-accent-ink: #ffffff;
+  --color-danger: #9b2c2c;
+  --color-success: #2f5d3a;
+  --radius-box: 0.25rem;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}

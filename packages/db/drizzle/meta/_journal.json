@@ -92,6 +92,20 @@
       "when": 1792870750490,
       "tag": "0012_backfill_email_confirmed_at",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792873111421,
+      "tag": "0013_accepted_invitations",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792873112100,
+      "tag": "0014_invitation_privileges",
+      "breakpoints": true
     }
   ]
 }

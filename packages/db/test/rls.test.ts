@@ -1,5 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createEdition, createTenant, freshApp, global, inTenant, migrator, superuser } from './db'
+import {
+  createEdition,
+  createTenant,
+  createUser,
+  freshApp,
+  global,
+  inTenant,
+  migrator,
+  superuser,
+} from './db'
 
 // Every covered table (PLAN.md 4.6) and the column that holds its tenant.
 const covered = [
@@ -7,18 +16,25 @@ const covered = [
   ['tenant_memberships', 'tenant_id'],
   ['editions', 'tenant_id'],
   ['edition_memberships', 'tenant_id'],
+  ['accepted_invitations', 'tenant_id'],
 ] as const
 
 let a: Awaited<ReturnType<typeof createTenant>>
 let b: Awaited<ReturnType<typeof createTenant>>
 
-/** A tenant with a row in every covered table: its head membership, an edition and its access. */
+/**
+ * A tenant with a row in every covered table: its head membership, an edition, its access and an
+ * accepted invitation.
+ */
 async function populated() {
   const tenant = await createTenant()
   const edition = await createEdition(tenant.id)
   await migrator`
     insert into edition_memberships (tenant_id, tenant_membership_id, edition_id)
     select ${tenant.id}, id, ${edition} from tenant_memberships where tenant_id = ${tenant.id}
+  `
+  await migrator`
+    insert into accepted_invitations (tenant_id, jti) values (${tenant.id}, gen_random_uuid())
   `
   return tenant
 }
@@ -70,12 +86,17 @@ describe('tenant isolation', () => {
     const [edition] = await migrator<{ id: string }[]>`
       select id from editions where tenant_id = ${a.id}
     `
+    // An account without a membership in a: only WITH CHECK can refuse it.
+    const outsider = await createUser()
 
     for (const statement of [
+      `insert into tenant_memberships (account_id, tenant_id, role)
+       values ('${outsider.id}', '${a.id}', 'org')`,
       `insert into editions (tenant_id, slug, name, starts_at, ends_at)
        values ('${a.id}', 'foreign', 'Foreign', '2026-06-01', '2026-06-03')`,
       `insert into edition_memberships (tenant_id, tenant_membership_id, edition_id)
        values ('${a.id}', '${membership!.id}', '${edition!.id}')`,
+      `insert into accepted_invitations (tenant_id, jti) values ('${a.id}', gen_random_uuid())`,
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /row-level security/,
@@ -90,6 +111,7 @@ describe('tenant isolation', () => {
       'tenant_memberships',
       'editions',
       'edition_memberships',
+      'accepted_invitations',
     ]) {
       await expect(
         superuser.begin(async (sql) => {
@@ -113,21 +135,29 @@ describe('runtime privileges', () => {
     }
   })
 
-  it('lets opos_app create no tenant and no membership, and delete no tenant', async () => {
-    // An account without a membership in b: only the missing privilege can refuse it.
-    const [outsider] = await migrator<{ account_id: string }[]>`
-      select account_id from tenant_memberships where tenant_id = ${a.id}
-    `
+  it('lets opos_app create and delete no tenant, and change no accepted invitation', async () => {
     for (const statement of [
       `insert into tenants (slug, name) values ('rls-foreign', 'Foreign')`,
-      `insert into tenant_memberships (account_id, tenant_id, role)
-       values ('${outsider!.account_id}', '${b.id}', 'org')`,
       `delete from tenants where id = '${b.id}'`,
+      `update accepted_invitations set jti = jti`,
+      `delete from accepted_invitations`,
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /permission denied/,
       )
     }
+  })
+
+  it('lets opos_app add a member and record an accepted invitation', async () => {
+    const account = await createUser()
+
+    await inTenant(b.id, async (sql) => {
+      await sql`
+        insert into tenant_memberships (account_id, tenant_id, role)
+        values (${account.id}, ${b.id}, 'org')
+      `
+      await sql`insert into accepted_invitations (tenant_id, jti) values (${b.id}, gen_random_uuid())`
+    })
   })
 
   it('lets opos_app update only the columns the API changes', async () => {

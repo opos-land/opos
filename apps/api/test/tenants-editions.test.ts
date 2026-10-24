@@ -314,6 +314,16 @@ describe('anti-escalation', () => {
     await call(strong, 'get', '/tenants/current').expect(200)
   })
 
+  it('refuses an org reviving a member who holds more in an edition', async () => {
+    const holder = await member()
+    const holderId = await addOrg(a.id, holder, { expired: true })
+    await addEditionAccess(a.id, holderId, editionA, { program: 'write' })
+
+    const res = await patch(writer, holderId, { expiresAt: null })
+    expect(res.body).toMatchObject({ code: 'member.above-own' })
+    await call(holder, 'get', '/tenants/current').expect(403)
+  })
+
   it('restores access when a head extends an expired membership', async () => {
     const lapsed = await member()
     const id = await addOrg(a.id, lapsed, { expired: true })

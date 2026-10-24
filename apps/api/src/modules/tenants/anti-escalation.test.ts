@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { type TenantMembership } from '../../common/als/tenant-context.service'
+import { type EditionAccess } from '../../common/permissions/permissions'
 import {
+  assertMayExtend,
   assertMayGrant,
   assertMayGrantEdition,
   assertMayManage,
@@ -124,5 +126,52 @@ describe('extendsAccess', () => {
     expect(extendsAccess(soon, soon)).toBe(false)
     expect(extendsAccess(null, later)).toBe(false)
     expect(extendsAccess(null, null)).toBe(false)
+  })
+})
+
+describe('assertMayExtend', () => {
+  const rows = (entries: [string, Partial<EditionAccess>][]) =>
+    new Map(entries.map(([id, access]) => [id, { ...none, ...access }]))
+  const own = rows([['e1', { programAccess: 'read' }]])
+
+  it('lets an org extend a member who holds no more than the org', () => {
+    expect(
+      code(() =>
+        assertMayExtend(
+          org(),
+          own,
+          { ...plain, settingsAccess: 'read' },
+          rows([['e1', { programAccess: 'read' }]]),
+        ),
+      ),
+    ).toBe('allowed')
+  })
+
+  it('refuses a member who holds more on the tenant level', () => {
+    expect(
+      code(() => assertMayExtend(org(), own, { ...plain, shopConfigAccess: 'read' }, rows([]))),
+    ).toBe('member.above-own')
+  })
+
+  it('refuses a member who holds more in an edition, the org holding less or nothing there', () => {
+    expect(
+      code(() => assertMayExtend(org(), own, plain, rows([['e1', { programAccess: 'write' }]]))),
+    ).toBe('member.above-own')
+    expect(
+      code(() => assertMayExtend(org(), own, plain, rows([['e2', { ticketsAccess: 'read' }]]))),
+    ).toBe('member.above-own')
+  })
+
+  it('lets a head extend anyone', () => {
+    expect(
+      code(() =>
+        assertMayExtend(
+          head,
+          rows([]),
+          { ...plain, shopConfigAccess: 'write' },
+          rows([['e1', { ticketsAccess: 'write' }]]),
+        ),
+      ),
+    ).toBe('allowed')
   })
 })

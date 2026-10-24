@@ -1,3 +1,4 @@
+import { type Request } from '@playwright/test'
 import { PASSWORD, refreshGrant } from '../fixtures/auth-admin'
 import { expect, test } from '../fixtures'
 import { verifyLinkIn, waitForMail } from '../fixtures/mailpit'
@@ -5,6 +6,14 @@ import { stack } from '../fixtures/stack'
 import { portalUrl, signInToPortal, storedSession } from '../fixtures/ui'
 
 // PLAN.md 15.2, scenarios 1-3: registration, confirmation and the session in the portal.
+
+const apiOrigin = new URL(stack.api).origin
+
+/** A call of the portal to the API; a CORS preflight never carries the token. */
+const isApiCall = (request: Request) =>
+  new URL(request.url()).origin === apiOrigin && request.method() !== 'OPTIONS'
+
+const isSigned = (request: Request) => /^Bearer \S+$/.test(request.headers().authorization ?? '')
 
 test.describe('registration and the session in the portal', () => {
   test(
@@ -84,7 +93,13 @@ test.describe('registration and the session in the portal', () => {
     await signInToPortal(page, account.email, account.password)
     await expect(page.getByRole('heading', { name: 'Your account' })).toBeVisible()
 
+    // Signed in, the portal signs its calls to the API with the stored access token.
+    const signedMe = page.waitForRequest(
+      (request) =>
+        isApiCall(request) && new URL(request.url()).pathname === '/me' && isSigned(request),
+    )
     await page.reload()
+    await signedMe
     await expect(page.getByRole('heading', { name: 'Your account' })).toBeVisible()
     const session = await storedSession(page, 'opos-portal-auth')
     expect(session).not.toBeNull()
@@ -93,12 +108,16 @@ test.describe('registration and the session in the portal', () => {
     await expect(page).toHaveURL(/\/login/)
     expect(await storedSession(page, 'opos-portal-auth')).toBeNull()
 
-    // Nothing in the browser signs a request any more, and the session cannot be extended.
-    const me = await page.request.get(new URL('/me', stack.api).toString())
-    expect(me.status()).toBe(401)
-    expect(await refreshGrant(session!.refresh_token)).not.toBe(200)
-
+    // An access token stays valid until its exp (PLAN.md 7.4), so the API refuses the session only
+    // because the portal sends no token any more: none of its calls carries one, and the refresh
+    // token cannot extend the session.
+    const signedAfterSignOut: string[] = []
+    page.on('request', (request) => {
+      if (isApiCall(request) && isSigned(request)) signedAfterSignOut.push(request.url())
+    })
     await page.goto(portalUrl('/account'))
     await expect(page).toHaveURL(portalUrl('/login'))
+    expect(signedAfterSignOut).toEqual([])
+    expect(await refreshGrant(session!.refresh_token)).not.toBe(200)
   })
 })

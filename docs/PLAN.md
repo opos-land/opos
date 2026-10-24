@@ -2153,7 +2153,7 @@ never signs a seeded account out, since a sign-out ends every session of the acc
 |---|---|---|
 | 1 | Registration with a password: sign-in before confirming -> `email_not_confirmed`; the link from Mailpit confirms; sign-out, sign-in again; the language switch survives the session | [registration](../e2e/specs/registration.spec.ts) |
 | 2 | Resending the confirmation link from the sign-in screen delivers a new message | [registration](../e2e/specs/registration.spec.ts) |
-| 3 | The session survives a page reload; after sign-out the stored session is gone and the API answers `401` | [registration](../e2e/specs/registration.spec.ts) |
+| 3 | The session survives a page reload, and the portal's calls to the API carry its access token; after sign-out the stored session is gone, no call of the portal carries a token and the refresh token is refused | [registration](../e2e/specs/registration.spec.ts) |
 | 4 | A head creates an edition, activates it, publishes it and adds programme items | [editions](../e2e/specs/editions.spec.ts); the programme items come with the `program` feature |
 | 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | still to come, with the `conventions` feature |
 | 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee sees only their edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in | [invitation](../e2e/specs/invitation.spec.ts) |

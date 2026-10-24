@@ -1,0 +1,8 @@
+{
+  "extends": "@opos/tsconfig/node.json",
+  "compilerOptions": {
+    // Scenarios run code in the page through page.evaluate.
+    "lib": ["es2024", "dom"]
+  },
+  "include": ["fixtures", "specs", "playwright.config.ts", "vitest.config.ts", "eslint.config.js"]
+}

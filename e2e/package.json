@@ -1,0 +1,23 @@
+{
+  "name": "@opos/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc",
+    "lint": "eslint --max-warnings 0 .",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@opos/db": "workspace:*",
+    "@opos/eslint-config": "workspace:*",
+    "@opos/tsconfig": "workspace:*",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "catalog:",
+    "drizzle-orm": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

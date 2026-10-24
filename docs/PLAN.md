@@ -1299,7 +1299,9 @@ confirmed does not survive ([4.2](#42-global-tables)).
    password returns to `/invitation` and anything else to `/`; a stored entry alone never takes over
    a sign-in that started elsewhere.
 5. Back with an entry waiting for a password, and signed in with the invited address, the page
-   asks for one and sets it with `updateUser({ password })`, then calls `signOut({ scope: 'others' })` and accepts as in step 2.
+   asks for one and sets it with `updateUser({ password })`, then calls
+   `signOut({ scope: 'others' })` and accepts as in step 2. A retry after a failed sign-out repeats
+   only the sign-out, since Supabase Auth refuses the same password twice (`same_password`).
    This replaces a password anyone set on the address before it was confirmed, as a password reset
    does ([7.6](#76-password-reset)). A Google sign-up needs no such step: Google takes an
    unconfirmed account over ([7.5](#75-google-oauth)).

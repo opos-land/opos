@@ -18,6 +18,9 @@ const schema = z
 export function ChoosePasswordForm({ email, onDone }: { email: string; onDone: () => void }) {
   const { t } = useLingui()
   const [error, setError] = useState<unknown>(null)
+  // Set once updateUser has taken it: a retry after a failed signOut does not set it again, which
+  // Supabase Auth would refuse as `same_password`.
+  const [savedPassword, setSavedPassword] = useState<string | null>(null)
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: { password: '', repeat: '' },
@@ -26,8 +29,11 @@ export function ChoosePasswordForm({ email, onDone }: { email: string; onDone: (
 
   const submit = form.handleSubmit(async ({ password }) => {
     setError(null)
-    const updateError = await setPassword(password)
-    if (updateError) return setError(updateError)
+    if (savedPassword !== password) {
+      const updateError = await setPassword(password)
+      if (updateError) return setError(updateError)
+      setSavedPassword(password)
+    }
     const signOutError = await signOutOtherSessions()
     if (signOutError) return setError(signOutError)
     onDone()

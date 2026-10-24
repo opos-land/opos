@@ -26,8 +26,14 @@ catalog:
   '@nestjs/core': ^11.2.7
   '@nestjs/platform-express': ^11.2.7
   '@nestjs/testing': ^11.2.7
-  '@ts-rest/core': ^3.52.1
-  '@ts-rest/nest': ^3.52.1
+  # The @orpc packages require each other at the exact same version.
+  '@orpc/client': ^1.15.7
+  '@orpc/contract': ^1.15.7
+  '@orpc/nest': ^1.15.7
+  '@orpc/openapi': ^1.15.7
+  '@orpc/openapi-client': ^1.15.7
+  '@orpc/server': ^1.15.7
+  '@orpc/zod': ^1.15.7
   '@types/node': ^24.0.0
   drizzle-orm: ^0.45.4
   eslint: ^10.0.0
@@ -36,4 +42,4 @@ catalog:
   typescript: ~6.0.3
   typescript-eslint: ^8.60.0
   vitest: ^4.1.0
-  zod: ^3.25.76
+  zod: ^4.6.7

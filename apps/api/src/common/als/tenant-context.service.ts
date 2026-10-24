@@ -31,6 +31,8 @@ export interface RequestStore {
   membership?: TenantMembership | null
   tx?: Transaction
   afterCommit?: (() => unknown)[]
+  /** The response oRPC is ready to send, held until the tenant transaction ends. */
+  deferredResponse?: { status: number; send: () => unknown }
 }
 
 const storage = new AsyncLocalStorage<RequestStore>()
@@ -51,6 +53,11 @@ export class TenantContextService {
   /** Runs `fn` with a fresh, empty request store. */
   run<T>(fn: () => T): T {
     return storage.run({}, fn)
+  }
+
+  /** The request store, or nothing outside a request. */
+  static peek(): RequestStore | undefined {
+    return storage.getStore()
   }
 
   static store(): RequestStore {
@@ -126,8 +133,9 @@ export class TenantContextService {
         }),
       )
     } catch (error) {
-      if (error instanceof Rollback) return error.value as T
-      throw error
+      if (!(error instanceof Rollback)) throw error
+      await sendDeferred(store)
+      return error.value as T
     } finally {
       store.tx = undefined
     }
@@ -140,6 +148,17 @@ export class TenantContextService {
         this.logger.error(error)
       }
     }
+    await sendDeferred(store)
     return result
   }
+}
+
+/**
+ * The response oRPC held inside the transaction (defer-response.ts) goes out once the transaction
+ * has ended; after a failed COMMIT it never does, and the error answers instead.
+ */
+async function sendDeferred(store: RequestStore) {
+  const deferred = store.deferredResponse
+  store.deferredResponse = undefined
+  if (deferred) await deferred.send()
 }

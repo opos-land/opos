@@ -12,7 +12,7 @@ export async function createApp(overrides: Record<string, string> = {}, modules:
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule.register(env), ...modules],
   }).compile()
-  const app = configureApp(moduleRef.createNestApplication<NestExpressApplication>(), env)
+  const app = await configureApp(moduleRef.createNestApplication<NestExpressApplication>(), env)
   await app.init()
   return app
 }

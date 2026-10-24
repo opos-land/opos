@@ -22,7 +22,8 @@ interface HttpRequest {
 /**
  * For a route marked with @RequireTenant or @RequireEdition (PLAN.md 7.2): resolves the tenant
  * from X-Tenant-Slug, opens its transaction, loads the membership, checks the permission, runs the
- * handler and commits on a status below 300. Other routes ignore the header.
+ * handler and commits unless it failed; TenantContextService then sends oRPC's held response.
+ * Other routes ignore the header.
  */
 @Injectable()
 export class TenantTransactionInterceptor implements NestInterceptor {
@@ -61,9 +62,9 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     const tenant = await this.global.tenantBySlug(slug)
     if (!tenant) throw notFound('tenant')
 
-    // ts-rest sets the status before the body reaches this interceptor, and it turns both a
-    // returned 4xx and a thrown TsRestResponseError into a response, so the status decides.
-    return this.context.transaction<unknown>(
+    // An exception rolls back, and so does a status of 300 or more: the one oRPC holds unsent
+    // (defer-response.ts), or the one a route outside oRPC set on the response.
+    return this.context.transaction(
       tenant.id,
       async () => {
         const store = TenantContextService.store()
@@ -73,7 +74,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
         await this.check(requirement, request)
         return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
       },
-      () => response.statusCode < 300,
+      () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,
     )
   }
 
@@ -87,7 +88,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     }
     // No membership answers 403 before the edition is looked up, so an account outside the
     // tenant cannot tell existing edition ids from absent ones. For a member, another tenant's
-    // edition and a malformed id are a 404; this runs before ts-rest validates the path.
+    // edition and a malformed id are a 404; this runs before oRPC validates the input.
     if (!membership) throw forbidden()
     const editionId = request.params[requirement.param]
     const editionAccess = isUuid(editionId)

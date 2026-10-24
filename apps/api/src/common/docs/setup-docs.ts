@@ -1,17 +1,26 @@
 import { type INestApplication, Logger } from '@nestjs/common'
 import { type OpenAPIObject, SwaggerModule } from '@nestjs/swagger'
 import { contract } from '@opos/contract'
-import { generateOpenApi } from '@ts-rest/open-api'
+import { OpenAPIGenerator } from '@orpc/openapi'
+import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
 
-export function createOpenApiDocument(): OpenAPIObject {
-  return generateOpenApi(
-    contract,
-    { info: { title: 'OPOS API', version: '0.0.0' } },
-    { setOperationId: 'concatenated-path' },
-  )
+/** The OpenAPI document of the contract; `operationId` is the router path, e.g. `health.check`. */
+export async function createOpenApiDocument(): Promise<OpenAPIObject> {
+  const document = await new OpenAPIGenerator({
+    schemaConverters: [new ZodToJsonSchemaConverter()],
+  }).generate(contract, {
+    info: { title: 'OPOS API', version: '0.0.0' },
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: 'http', scheme: 'bearer', description: 'A Supabase Auth access token' },
+      },
+    },
+    security: [{ bearerAuth: [] }],
+  })
+  return document as OpenAPIObject
 }
 
-export function setupDocs(app: INestApplication) {
-  SwaggerModule.setup('docs', app, createOpenApiDocument(), { jsonDocumentUrl: 'docs/json' })
+export async function setupDocs(app: INestApplication) {
+  SwaggerModule.setup('docs', app, await createOpenApiDocument(), { jsonDocumentUrl: 'docs/json' })
   new Logger('ApiDocs').log('API docs at /docs, OpenAPI document at /docs/json')
 }

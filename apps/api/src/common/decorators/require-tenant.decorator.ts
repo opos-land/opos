@@ -24,8 +24,8 @@ export const tenantRoute =
 
 /**
  * A tenant route: the request carries X-Tenant-Slug and runs in that tenant's transaction.
- * Without arguments any membership will do; with them, that tenant-level permission. Put it
- * below a single-route @TsRestHandler (PLAN.md 7.3).
+ * Without arguments any membership will do; with them, that tenant-level permission. It goes on a
+ * method that implements one contract route with @Implement (PLAN.md 7.3).
  */
 export function RequireTenant(): MethodDecorator
 export function RequireTenant(resource: TenantResource, level: Level): MethodDecorator

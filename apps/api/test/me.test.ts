@@ -134,6 +134,19 @@ describe('errors', () => {
     expect(res.body).toMatchObject({ code: 'request.not-found' })
   })
 
+  it('refuses a body of another type before any handler reads it', async () => {
+    for (const type of ['text/plain', 'application/octet-stream']) {
+      const res = await request(app.getHttpServer())
+        .patch('/me')
+        .set('Authorization', `Bearer ${token}`)
+        .set('Content-Type', type)
+        .send('locale=en')
+        .expect(415)
+
+      expect(res.body).toMatchObject({ code: 'request.invalid' })
+    }
+  })
+
   it('answers a body that is not JSON in the error format', async () => {
     const res = await request(app.getHttpServer())
       .patch('/me')

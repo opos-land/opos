@@ -63,14 +63,14 @@ graph TB
 
 | App | Stack | Role | Host |
 |---|---|---|---|
-| `apps/api` | NestJS + Drizzle + ts-rest | the only application backend; verifies Supabase Auth sessions | `api.opos.land` |
+| `apps/api` | NestJS + Drizzle + oRPC | the only application backend; verifies Supabase Auth sessions | `api.opos.land` |
 | `apps/panel` | Vite + React + Tailwind + shadcn/ui | organizer panel (SPA) and the ticket scanner under `/scanner` | `panel.opos.land` |
 | `apps/portal` | Vite + React + Tailwind + shadcn/ui | landing page, registration, convention pages with the programme, likes, personal schedule, reviews, ticket checkout, "my tickets", "my conventions" (SPA, mobile-first) | `opos.land` |
 | `auth` | Supabase Auth (`supabase/gotrue`) | registration, sign-in, sessions, password reset, Google OAuth | `auth.opos.land` |
 | `db` | Supabase Postgres (`supabase/postgres`) | the only database: `public` (OPOS tables) and `auth` (Supabase Auth) | internal network only |
 
-**`packages/contract`** — ts-rest + zod, the single source of truth for the API. No build step,
-apps infer types from the TS source.
+**`packages/contract`** — an oRPC contract with zod schemas, the single source of truth for the
+API. No build step, apps infer types from the TS source.
 
 **`packages/db`** — Drizzle ORM: the `public` schema, migrations, connection factories. Row-level
 multi-tenancy through `tenantId` + `editionId` columns, enforced by RLS
@@ -94,10 +94,10 @@ with typed `typescript-eslint` rules, including the feature boundary rules).
 **Repository tooling:** mise (tool versions), lefthook (git hooks), commitlint with
 `config-conventional`, prettier.
 
-**Backend:** NestJS 11, Drizzle ORM + postgres-js, `@ts-rest/nest` (with zod 3, which ts-rest
-requires), tsdown (bundles `src/main.ts` together with the workspace packages into
-`dist/main.js`), `@ts-rest/open-api` + `@nestjs/swagger` (OpenAPI document generated from the
-contract, Swagger UI), `jose` (Supabase JWT
+**Backend:** NestJS 11, Drizzle ORM + postgres-js, oRPC (`@orpc/nest`, `@orpc/server`) with zod 4,
+tsdown (bundles `src/main.ts` together with the workspace packages into `dist/main.js`),
+`@orpc/openapi` + `@orpc/zod` + `@nestjs/swagger` (OpenAPI document generated from the contract,
+Swagger UI), `jose` (Supabase JWT
 verification), `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (admin API),
 nodemailer, `@nestjs/throttler`, `@nestjs/schedule` (expiring unpaid orders), `qrcode` (ticket
 QR codes in emails).
@@ -105,7 +105,8 @@ QR codes in emails).
 **Authentication:** Supabase Auth (GoTrue), self-hosted ([10](#10-supabase)). Clients use
 `@supabase/auth-js` directly against `auth.opos.land`.
 
-**Frontend SPA:** Vite + React + TypeScript, Tailwind CSS + shadcn/ui, `@ts-rest/react-query`,
+**Frontend SPA:** Vite + React + TypeScript, Tailwind CSS + shadcn/ui, `@orpc/client` +
+`@orpc/tanstack-query`,
 `@supabase/auth-js`, react-router, react-hook-form + zod, zustand, `@lingui/react`; in the
 scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
 
@@ -120,7 +121,7 @@ scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
 
 **Design principles:**
 
-- ts-rest contracts with no build step.
+- oRPC contracts with no build step.
 - Supabase Auth owns identities and sessions; the API owns everything else.
 - Clients never reach the database: no PostgREST, no Realtime, no Storage.
 - OPOS never holds attendee money: payments go to the convention's own provider account, and the
@@ -259,7 +260,7 @@ src/
   app/                  # bootstrap: router, providers, layout
   features/
     <feature>/
-      api/              # ts-rest hooks, query keys, mutations
+      api/              # oRPC query and mutation options, query keys
       components/       # components belonging to this feature only
       hooks/
       pages/            # views mounted into the router
@@ -607,11 +608,17 @@ at all for `anon`, `authenticated` and `service_role`.
 
 ## 5. API contract
 
-`packages/contract`, ts-rest + zod. The API serves the OpenAPI document generated from the
-contract (`@ts-rest/open-api`, `operationId` = the router path, e.g. `health.check`) at
+`packages/contract`, an oRPC contract with zod 4 schemas ([index.ts](../packages/contract/src/index.ts)).
+Every route takes the detailed input — `params`, `query`, `body` — and is built from one of three
+starting points in [common.ts](../packages/contract/src/common.ts): `publicRoute`, `accountRoute`
+or `tenantRoute`. They set the route's OpenAPI security, the `X-Tenant-Slug` parameter and the error
+responses, and `tenantRoute` marks the route `meta.tenant`. `Authorization` and `X-Tenant-Slug` are
+not inputs: a client sets them once on its link. The API serves the OpenAPI 3.1 document generated
+from the contract (`@orpc/openapi`, `operationId` = the router path, e.g. `health.check`) at
 `/docs/json` and Swagger UI at `/docs`, in every environment (`https://api.opos.land/docs` in
 production). Error schema:
-`{ code: string, params?: Record<string, string | number>, message: string }`.
+`{ code: string, params?: Record<string, string | number>, message: string }`; a client reads it
+back as `ORPCError(code)` with the params as its data ([client.test.ts](../apps/api/test/client.test.ts)).
 
 `code` is a stable identifier (for example `edition.already-active`) the client uses to pick a
 translation from the catalog; `params` feed the interpolation. `message` is English, meant for logs
@@ -625,6 +632,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
 | `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`) | always a specific code |
+| `415` | a request body that is not `application/json`, refused from its headers before routing ([json-body.ts](../apps/api/src/common/json-body.ts)): Express parses JSON within its size limit, and oRPC would read any other body itself, with no limit | `request.invalid` |
 | `429` | rate limit | `request.rate-limited` |
 | `500` | anything unexpected; the body carries no details, the log does | `server.error` |
 
@@ -650,7 +658,7 @@ and the panel call Supabase Auth at `auth.opos.land` through `@supabase/auth-js`
 Supabase Auth errors carry an `error_code`; the client translates them the same way as API codes,
 through `auth.<error_code>` in [errors.ts](../packages/i18n/src/errors.ts) ([6](#6-localization)).
 
-Outside the ts-rest contract: `POST /hooks/send-email` — called by Supabase Auth only, verified by
+Outside the contract: `POST /hooks/send-email` — called by Supabase Auth only, verified by
 a Standard Webhooks signature ([10](#10-supabase)) — and `POST /hooks/payments/:provider`, called
 by the payment provider only ([7.10](#710-payments)).
 
@@ -812,7 +820,7 @@ and the tenant context opens from it ([7.11](#711-scanner)).
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/health` | `200 { status: 'ok', database: 'up' }` when `select 1` succeeds on the `opos_app` pool, otherwise `503 { status: 'unavailable', database: 'down' }`; used by the container healthcheck and Traefik |
+| GET | `/health` | `200 { status: 'ok', database: 'up' }` when `select 1` succeeds on the `opos_app` pool, otherwise `503 { status: 'unavailable', database: 'down' }`; used by the container healthcheck and Traefik. A plain Nest route documented by `contract.health.check`: oRPC answers a status outside `2xx` only with an error |
 
 ---
 
@@ -977,12 +985,21 @@ everywhere. For a tenant route it:
    tenant the account has no membership in, an expired membership included, -> `403`.
 4. Checks the route's `@RequireTenant` or `@RequireEdition` inside the same transaction
    ([7.3](#73-permissions)).
-5. Runs the handler, then commits when `res.statusCode` is below `300` and rolls back on any other
-   status or an exception. ts-rest sets the status before the interceptor sees the body, and it turns
-   both a returned `{ status: 4xx }` and a thrown `TsRestResponseError` into a response rather than
-   an exception, so the status is the signal.
-6. After a commit, runs the store's after-commit queue, in order, before the response is sent; a
-   failing entry is logged and the response stands.
+5. Runs the handler and commits. An exception rolls back, and so does a status of `300` or more:
+   the one oRPC holds unsent, or the one a route outside oRPC set on the response. oRPC hands every
+   error to Nest (`RethrowHandlerPlugin`), so a refusal is an exception and reaches
+   `HttpExceptionFilter`.
+6. After a commit, runs the store's after-commit queue, in order, and only then sends the response;
+   a failing entry is logged and the response stands. `@orpc/nest` sends its response from inside
+   its own interceptor, before this one finishes, so inside a tenant transaction
+   [defer-response.ts](../apps/api/src/common/als/defer-response.ts) holds it, and
+   `TenantContextService` sends it when the transaction ends — the same for `withTenant`. A client
+   never sees a `2xx` for a write that did not commit; a COMMIT that fails answers with its error
+   ([5](#5-api-contract)).
+
+Nest replies once more after oRPC has answered, which throws `ERR_HTTP_HEADERS_SENT` on a `204`;
+`HttpExceptionFilter` drops exactly that once the headers are out, logs any other late error and
+closes a response left open.
 
 Repositories take the transaction from `TenantContextService.tx()`, which throws when no tenant
 transaction is open; they never query the pool directly. The one exception is
@@ -1018,29 +1035,29 @@ implemented in [permissions.ts](../apps/api/src/common/permissions/permissions.t
 - An account without a membership in the tenant gets `403` before the edition is looked up, so it
   cannot tell existing edition ids from absent ones. For a member, the edition check answers `404`
   before any `403`: for an edition of another tenant (RLS hides it) and for an `:editionId` that is
-  not a uuid, because the check runs before ts-rest validates the request.
+  not a uuid, because the check runs before oRPC validates the input.
 
 ```ts
-@TsRestHandler(contract.tenants.current)
+@Implement(contract.tenants.current)
 @RequireTenant()                       // any membership
 current() { ... }
 
-@TsRestHandler(contract.tenants.update)
+@Implement(contract.tenants.update)
 @RequireTenant('settings', 'write')
 update() { ... }
 
-@TsRestHandler(contract.program.create)
+@Implement(contract.program.create)
 @RequireEdition('program', 'write')    // editionId taken from the route param
 create() { ... }
 ```
 
 `@RequireTenant` and `@RequireEdition` apply `JwtAuthGuard` themselves, so a tenant route is never
 unauthenticated. A route takes one of the two (`@RequireEdition` already requires a membership); a
-second one on the same handler throws when the module loads. Every tenant route has its own single-route `@TsRestHandler(contract.<router>.<route>)`
-method with the decorator below it: for a router-level `@TsRestHandler(contract.<router>)`, ts-rest
-copies only the metadata already on the method, and a decorator above it is silently dropped.
-[tenant-routes.test.ts](../apps/api/test/tenant-routes.test.ts) sends every contract route with
-an `x-tenant-slug` header an unknown slug and expects the interceptor's `404`.
+second one on the same handler throws when the module loads. Every route has a method of its own
+with `@Implement(contract.<router>.<route>)` and its requirement next to it: a router-level
+`@Implement(contract.<router>)` copies the method's decorators onto every route of the router.
+[tenant-routes.test.ts](../apps/api/test/tenant-routes.test.ts) sends every contract route marked
+`meta.tenant` an unknown slug and expects the interceptor's `404`.
 `TenantTransactionInterceptor` reads the decorator through the `Reflector` and runs the check
 inside the tenant transaction ([7.2](#72-tenant-context)).
 
@@ -1215,8 +1232,9 @@ The scanner is online only: no local ticket list, no queue of offline redemption
 
 ## 8. `apps/panel`
 
-SPA (Vite + React), `@ts-rest/react-query`, `@supabase/auth-js` for the session, UI state in
-`zustand`, forms with `react-hook-form` + zod using schemas from `packages/contract`.
+SPA (Vite + React), `@orpc/tanstack-query` over an oRPC client of the contract, `@supabase/auth-js`
+for the session, UI state in `zustand`, forms with `react-hook-form` + zod using schemas from
+`packages/contract`.
 Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a tablet.
 
 | Feature | Scope |
@@ -1254,8 +1272,9 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 - The fixed top-level paths — `/login`, `/auth/callback`, `/invitation`, `/scanner` — are reserved
   tenant slugs ([4.3](#43-tenant-level-tables)), so `/:tenantSlug` never shadows them; a new
   top-level path joins `RESERVED_TENANT_SLUGS` in the same PR.
-- An interceptor attaches `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug` and
-  `Accept-Language` based on the active locale.
+- The client's link attaches `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug`
+  and `Accept-Language` based on the active locale, and reads errors back as in
+  [5](#5-api-contract).
 - Language switcher in the account menu; the choice goes to `PATCH /me` and stays on the account.
 - The compiled Lingui catalog is loaded through a dynamic import when the locale changes.
 - `GET /me/memberships` after sign-in populates the permission store.
@@ -1754,7 +1773,7 @@ with a wrong signature, audience, issuer or expiry are signed in the test with `
 | permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere |
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
-| transactions | a handler that writes and then returns a `4xx` leaves no row behind; an `afterCommit` call registered before a rollback never runs; a repository call outside a tenant transaction throws |
+| transactions | a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |

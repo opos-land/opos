@@ -1,20 +1,17 @@
-import { initContract } from '@ts-rest/core'
 import { editionsContract } from './editions'
 import { healthContract } from './health'
 import { meContract } from './me'
 import { tenantsContract } from './tenants'
 
-const c = initContract()
+/** The API contract (PLAN.md 5): the API implements it, clients call through it. */
+export const contract = {
+  health: healthContract,
+  me: meContract,
+  tenants: tenantsContract,
+  editions: editionsContract,
+}
 
-export const contract = c.router(
-  {
-    health: healthContract,
-    me: meContract,
-    tenants: tenantsContract,
-    editions: editionsContract,
-  },
-  { strictStatusCodes: true },
-)
+export type Contract = typeof contract
 
 export * from './common'
 export * from './editions'

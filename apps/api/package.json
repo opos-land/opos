@@ -17,6 +17,7 @@
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
     "@nestjs/swagger": "^11.4.7",
+    "@nestjs/throttler": "^6.7.1",
     "@opos/contract": "workspace:*",
     "@opos/db": "workspace:*",
     "@opos/i18n": "workspace:*",

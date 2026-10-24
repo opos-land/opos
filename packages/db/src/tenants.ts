@@ -1,5 +1,5 @@
 import { isLocale, isTimeZone } from '@opos/i18n'
-import { and, eq, ne } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Database } from './client'
 import { accounts, RESERVED_TENANT_SLUGS, tenantMemberships, tenants } from './schema'
 
@@ -91,28 +91,37 @@ export async function createTenant(db: Database, input: CreateTenantInput) {
   })
 }
 
+/** The constraint a Postgres error names; drizzle wraps query errors in `cause`. */
+function violatedConstraint(error: unknown): string | undefined {
+  let current = error
+  for (let depth = 0; depth < 3 && current && typeof current === 'object'; depth++) {
+    const name = (current as { constraint_name?: unknown }).constraint_name
+    if (typeof name === 'string') return name
+    current = (current as { cause?: unknown }).cause
+  }
+  return undefined
+}
+
 /**
  * Moves a tenant to another slug, its public address (PLAN.md 14). No endpoint changes a slug; the
- * admin does it through this function, on a connection that may write tenants.
+ * admin does it through this function, on a connection that may write tenants. A taken slug is left
+ * to tenants_slug_unique, so a rename racing another one still ends in `tenant.slug-taken`.
  */
 export async function renameTenant(db: Database, input: RenameTenantInput) {
   assertSlug(input.newSlug)
 
-  return db.transaction(async (tx) => {
-    const [taken] = await tx
-      .select({ id: tenants.id })
-      .from(tenants)
-      .where(and(eq(tenants.slug, input.newSlug), ne(tenants.slug, input.slug)))
-    if (taken) {
-      throw new TenantError('tenant.slug-taken', `The slug ${input.newSlug} is taken`)
-    }
-
-    const [tenant] = await tx
+  let renamed: { id: string; slug: string }[]
+  try {
+    renamed = await db
       .update(tenants)
       .set({ slug: input.newSlug })
       .where(eq(tenants.slug, input.slug))
       .returning({ id: tenants.id, slug: tenants.slug })
-    if (!tenant) throw new TenantError('tenant.not-found', `No tenant with the slug ${input.slug}`)
-    return tenant
-  })
+  } catch (error) {
+    if (violatedConstraint(error) !== 'tenants_slug_unique') throw error
+    throw new TenantError('tenant.slug-taken', `The slug ${input.newSlug} is taken`)
+  }
+  const [tenant] = renamed
+  if (!tenant) throw new TenantError('tenant.not-found', `No tenant with the slug ${input.slug}`)
+  return tenant
 }

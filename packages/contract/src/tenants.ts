@@ -1,5 +1,5 @@
 import { isTimeZone, SUPPORTED_LOCALES } from '@opos/i18n'
-import { z } from 'zod/v4'
+import { z } from 'zod'
 import { level, tenantRoute, timestamp } from './common'
 
 export const tenantSchema = z.object({

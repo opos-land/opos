@@ -1,4 +1,4 @@
-import { z } from 'zod/v4'
+import { z } from 'zod'
 import { level, tenantRoute, timestamp } from './common'
 import { memberAccountSchema } from './tenants'
 

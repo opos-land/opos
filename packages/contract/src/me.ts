@@ -1,5 +1,5 @@
 import { SUPPORTED_LOCALES } from '@opos/i18n'
-import { z } from 'zod/v4'
+import { z } from 'zod'
 import { accountRoute, level } from './common'
 
 const name = z.string().trim().min(1).max(100)

@@ -1,5 +1,5 @@
 import { oc, type Route } from '@orpc/contract'
-import { z } from 'zod/v4'
+import { z } from 'zod'
 import { errorCodes } from './errors'
 
 export const errorSchema = z.object({

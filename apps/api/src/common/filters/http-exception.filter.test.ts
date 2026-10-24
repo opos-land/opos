@@ -1,7 +1,7 @@
 import { ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 import { ORPCError, ValidationError } from '@orpc/server'
 import { describe, expect, it } from 'vitest'
-import { z } from 'zod/v4'
+import { z } from 'zod'
 import { ApiError } from '../errors/api-error'
 import { toErrorResponse } from './http-exception.filter'
 

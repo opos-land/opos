@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common'
 import { contract } from '@opos/contract'
-import { tsRestHandler, TsRestHandler } from '@ts-rest/nest'
+import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
 import { TenantsRepository } from './tenants.repository'
@@ -13,20 +13,17 @@ export class TenantsController {
     private readonly tenants: TenantsRepository,
   ) {}
 
-  @TsRestHandler(contract.tenants.current)
+  @Implement(contract.tenants.current)
   @RequireTenant()
   current() {
-    return tsRestHandler(contract.tenants.current, () =>
-      Promise.resolve({ status: 200 as const, body: this.context.tenant() }),
-    )
+    return implement(contract.tenants.current).handler(() => this.context.tenant())
   }
 
-  @TsRestHandler(contract.tenants.update)
+  @Implement(contract.tenants.update)
   @RequireTenant('settings', 'write')
   update() {
-    return tsRestHandler(contract.tenants.update, async ({ body }) => ({
-      status: 200,
-      body: await this.tenants.update(body),
-    }))
+    return implement(contract.tenants.update).handler(({ input }) =>
+      this.tenants.update(input.body),
+    )
   }
 }

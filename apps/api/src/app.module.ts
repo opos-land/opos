@@ -6,6 +6,9 @@ import {
   RequestMethod,
 } from '@nestjs/common'
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
+import { ORPCModule } from '@orpc/nest'
+import { experimental_RethrowHandlerPlugin as RethrowHandlerPlugin } from '@orpc/server/plugins'
+import { deferResponseInTenantTransaction } from './common/als/defer-response'
 import { TenantContextMiddleware } from './common/als/tenant-context.middleware'
 import { TenantContextService } from './common/als/tenant-context.service'
 import { TenantTransactionInterceptor } from './common/als/tenant-transaction.interceptor'
@@ -24,7 +27,18 @@ export class AppModule implements NestModule {
     return {
       module: AppModule,
       global: true,
-      imports: [DatabaseModule, HealthModule, MeModule, TenantsModule, EditionsModule],
+      imports: [
+        ORPCModule.forRoot({
+          // Every error reaches HttpExceptionFilter, which renders the error format of PLAN.md 5.
+          plugins: [new RethrowHandlerPlugin({ filter: () => true })],
+          sendResponseInterceptors: [deferResponseInTenantTransaction],
+        }),
+        DatabaseModule,
+        HealthModule,
+        MeModule,
+        TenantsModule,
+        EditionsModule,
+      ],
       providers: [
         { provide: ENV, useValue: env },
         { provide: APP_FILTER, useClass: HttpExceptionFilter },

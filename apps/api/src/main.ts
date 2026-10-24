@@ -10,5 +10,5 @@ const env = loadEnv()
 // A bundle that lost a catalog fails here, not on the first email it renders.
 await loadCatalogs()
 const app = await NestFactory.create<NestExpressApplication>(AppModule.register(env))
-configureApp(app, env)
+await configureApp(app, env)
 await app.listen(env.PORT)

@@ -6,8 +6,7 @@ import {
   Logger,
 } from '@nestjs/common'
 import { type ApiError as ApiErrorBody, type ErrorCode } from '@opos/contract'
-import { RequestValidationError } from '@ts-rest/nest'
-import { type ZodError } from 'zod'
+import { ORPCError, ValidationError } from '@orpc/server'
 import { ApiError } from '../errors/api-error'
 
 const codeByStatus = (status: number): ErrorCode => {
@@ -64,6 +63,28 @@ function postgresConstraint(exception: unknown): string | undefined {
   return undefined
 }
 
+/**
+ * The first invalid field of an input oRPC refused. Every route takes the detailed input, so a path
+ * starts with params, query or body and the field is below it; an unknown key names itself.
+ */
+function validationError(error: ValidationError): ApiErrorBody {
+  const issue = error.issues[0] as
+    { message: string; code?: string; keys?: string[]; path?: readonly unknown[] } | undefined
+  const path = (issue?.path ?? [])
+    .slice(1)
+    .map((segment) =>
+      typeof segment === 'object' && segment !== null && 'key' in segment
+        ? String(segment.key)
+        : String(segment),
+    )
+  const field = issue?.code === 'unrecognized_keys' ? issue.keys?.[0] : path.join('.') || undefined
+  return {
+    code: 'request.invalid',
+    params: field ? { field } : undefined,
+    message: issue?.message ?? 'Invalid request',
+  }
+}
+
 /** Maps anything thrown while handling a request onto the error schema of PLAN.md 5. */
 export function toErrorResponse(exception: unknown): { status: number; body: ApiErrorBody } {
   // Deferred constraint triggers fire at COMMIT, after the handler already chose a 2xx.
@@ -78,29 +99,18 @@ export function toErrorResponse(exception: unknown): { status: number; body: Api
     const { code, params, message } = exception
     return { status: exception.getStatus(), body: { code, params, message } }
   }
-  if (exception instanceof RequestValidationError) {
-    const errors: (ZodError | null)[] = [
-      exception.body,
-      exception.query,
-      exception.pathParams,
-      exception.headers,
-    ]
-    const issue = errors.flatMap((error) => error?.issues ?? [])[0]
-    // An unknown key has an empty path; the key itself is the field.
-    const field =
-      issue?.code === 'unrecognized_keys' ? issue.keys[0] : issue?.path.join('.') || undefined
-    return {
-      status: 400,
-      body: {
-        code: 'request.invalid',
-        params: field ? { field } : undefined,
-        message: issue?.message ?? 'Invalid request',
-      },
+  if (exception instanceof ORPCError) {
+    const cause: unknown = exception.cause
+    if (exception.code === 'BAD_REQUEST' && cause instanceof ValidationError) {
+      return { status: 400, body: validationError(cause) }
     }
+    // A 5xx carries internals (an output that failed its schema, for one); only the log gets them.
+    const status = exception.status
+    const message = status >= 500 ? 'Internal server error' : exception.message
+    return { status, body: { code: codeByStatus(status), message } }
   }
   if (exception instanceof HttpException) {
     const status = exception.getStatus()
-    // A 5xx message may carry internals (ts-rest puts the zod error there); only the log gets it.
     const message = status >= 500 ? 'Internal server error' : exception.message
     return { status, body: { code: codeByStatus(status), message } }
   }
@@ -117,12 +127,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name)
 
   catch(exception: unknown, host: ArgumentsHost) {
+    const response = host.switchToHttp().getResponse<{
+      headersSent: boolean
+      status(code: number): { json(body: unknown): void }
+    }>()
+    // oRPC has answered already: Nest's own reply after it fails on a 204 and lands here.
+    if (response.headersSent) {
+      this.logger.debug(exception)
+      return
+    }
     const { status, body } = toErrorResponse(exception)
     if (status >= 500) this.logger.error(exception)
-    host
-      .switchToHttp()
-      .getResponse<{ status(code: number): { json(body: unknown): void } }>()
-      .status(status)
-      .json(body)
+    response.status(status).json(body)
   }
 }

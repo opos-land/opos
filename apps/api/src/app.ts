@@ -2,7 +2,7 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import { setupDocs } from './common/docs/setup-docs'
 import { type Env } from './config/env'
 
-export function configureApp(app: NestExpressApplication, env: Env) {
+export async function configureApp(app: NestExpressApplication, env: Env) {
   app.set('trust proxy', 1)
   app.enableCors({
     origin: [env.PANEL_URL, env.PORTAL_URL],
@@ -10,6 +10,6 @@ export function configureApp(app: NestExpressApplication, env: Env) {
     credentials: false,
   })
   app.enableShutdownHooks()
-  setupDocs(app)
+  await setupDocs(app)
   return app
 }

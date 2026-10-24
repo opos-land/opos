@@ -31,6 +31,8 @@ export interface RequestStore {
   membership?: TenantMembership | null
   tx?: Transaction
   afterCommit?: (() => unknown)[]
+  /** The response oRPC is ready to send, held until the tenant transaction ends. */
+  deferredResponse?: { status: number; send: () => unknown }
 }
 
 const storage = new AsyncLocalStorage<RequestStore>()
@@ -51,6 +53,11 @@ export class TenantContextService {
   /** Runs `fn` with a fresh, empty request store. */
   run<T>(fn: () => T): T {
     return storage.run({}, fn)
+  }
+
+  /** The request store, or nothing outside a request. */
+  static peek(): RequestStore | undefined {
+    return storage.getStore()
   }
 
   static store(): RequestStore {

@@ -1,18 +1,9 @@
 import { isTimeZone, SUPPORTED_LOCALES } from '@opos/i18n'
-import { initContract } from '@ts-rest/core'
-import { z } from 'zod'
-import { errorSchema, timestamp } from './common'
-import { bearer } from './me'
-
-const c = initContract()
-
-/** Headers of every tenant route: the session and the tenant it acts in (PLAN.md 7.2). */
-export const tenantHeaders = bearer.extend({ 'x-tenant-slug': z.string() })
-
-export const level = z.enum(['none', 'read', 'write'])
+import { z } from 'zod/v4'
+import { level, tenantRoute, timestamp } from './common'
 
 export const tenantSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   slug: z.string(),
   name: z.string(),
   defaultLocale: z.string(),
@@ -34,7 +25,7 @@ export const updateTenantSchema = z
 export type UpdateTenant = z.infer<typeof updateTenantSchema>
 
 export const memberAccountSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   email: z.string(),
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
@@ -42,7 +33,7 @@ export const memberAccountSchema = z.object({
 
 /** A team member as the team screen shows it; expired memberships included and flagged. */
 export const memberSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   account: memberAccountSchema,
   role: z.enum(['head', 'org']),
   settingsAccess: level,
@@ -72,50 +63,47 @@ export const updateMemberSchema = z
 
 export type UpdateMember = z.infer<typeof updateMemberSchema>
 
-const tenantErrors = { 400: errorSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema }
-const membershipId = z.object({ membershipId: z.string() })
+const membership = z.object({ params: z.object({ membershipId: z.string() }) })
 
-export const tenantsContract = c.router({
-  current: {
-    method: 'GET',
-    path: '/tenants/current',
-    headers: tenantHeaders,
-    responses: { 200: tenantSchema, ...tenantErrors },
-    summary: 'The tenant of X-Tenant-Slug; needs a membership',
-  },
-  update: {
-    method: 'PATCH',
-    path: '/tenants/current',
-    headers: tenantHeaders,
-    body: updateTenantSchema,
-    responses: { 200: tenantSchema, ...tenantErrors },
-    summary: 'Change the name, language or time zone of the tenant; needs settings=write',
-  },
-  members: {
-    list: {
+export const tenantsContract = {
+  current: tenantRoute
+    .route({
       method: 'GET',
-      path: '/tenants/current/members',
-      headers: tenantHeaders,
-      responses: { 200: z.array(memberSchema), ...tenantErrors },
-      summary: 'The team; needs settings>=read',
-    },
-    update: {
+      path: '/tenants/current',
+      summary: 'The tenant of X-Tenant-Slug; needs a membership',
+    })
+    .output(tenantSchema),
+  update: tenantRoute
+    .route({
       method: 'PATCH',
-      path: '/tenants/current/members/:membershipId',
-      headers: tenantHeaders,
-      pathParams: membershipId,
-      body: updateMemberSchema,
-      responses: { 200: memberSchema, ...tenantErrors, 409: errorSchema },
-      summary: 'Change a member; needs settings=write and passes anti-escalation',
-    },
-    remove: {
-      method: 'DELETE',
-      path: '/tenants/current/members/:membershipId',
-      headers: tenantHeaders,
-      pathParams: membershipId,
-
-      responses: { 204: c.noBody(), ...tenantErrors, 409: errorSchema },
-      summary: 'Remove a member; needs settings=write and passes anti-escalation',
-    },
+      path: '/tenants/current',
+      summary: 'Change the name, language or time zone of the tenant; needs settings=write',
+    })
+    .input(z.object({ body: updateTenantSchema }))
+    .output(tenantSchema),
+  members: {
+    list: tenantRoute
+      .route({
+        method: 'GET',
+        path: '/tenants/current/members',
+        summary: 'The team; needs settings>=read',
+      })
+      .output(z.array(memberSchema)),
+    update: tenantRoute
+      .route({
+        method: 'PATCH',
+        path: '/tenants/current/members/{membershipId}',
+        summary: 'Change a member; needs settings=write and passes anti-escalation',
+      })
+      .input(membership.extend({ body: updateMemberSchema }))
+      .output(memberSchema),
+    remove: tenantRoute
+      .route({
+        method: 'DELETE',
+        path: '/tenants/current/members/{membershipId}',
+        successStatus: 204,
+        summary: 'Remove a member; needs settings=write and passes anti-escalation',
+      })
+      .input(membership),
   },
-})
+}

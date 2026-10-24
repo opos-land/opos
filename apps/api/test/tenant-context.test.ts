@@ -127,7 +127,16 @@ describe('tenant transaction', () => {
     expect(afterCommitCalls).toEqual([slug])
   })
 
-  it('rolls back a returned 4xx and drops the after-commit queue', async () => {
+  it('holds the response until a slow after-commit queue has run', async () => {
+    const slug = randomUUID().slice(0, 8)
+    await as(settingsWriter, a.slug)
+      .post('/probe/editions', { slug, fail: false, slow: true })
+      .expect(201)
+
+    expect(afterCommitCalls).toEqual([slug])
+  })
+
+  it('rolls back a refused request and drops the after-commit queue', async () => {
     const slug = randomUUID().slice(0, 8)
     await as(settingsWriter, a.slug).post('/probe/editions', { slug, fail: true }).expect(409)
 

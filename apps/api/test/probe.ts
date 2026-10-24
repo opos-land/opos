@@ -1,9 +1,9 @@
 import { Controller, Module, UseGuards } from '@nestjs/common'
 import { editions, tenantMemberships } from '@opos/db'
+import { oc } from '@orpc/contract'
+import { Implement, implement, ORPCError } from '@orpc/nest'
 import { eq } from 'drizzle-orm'
-import { tsRestHandler, TsRestHandler } from '@ts-rest/nest'
-import { initContract } from '@ts-rest/core'
-import { z } from 'zod'
+import { z } from 'zod/v4'
 import { TenantContextService } from '../src/common/als/tenant-context.service'
 import { GlobalDbService } from '../src/common/database/global-db.service'
 import { RequireEdition } from '../src/common/decorators/require-edition.decorator'
@@ -14,47 +14,42 @@ import { JwtAuthGuard } from '../src/common/guards/jwt-auth.guard'
 // Test-only routes that exercise the tenant transaction and the permission decorators before
 // real endpoints use them.
 
-const c = initContract()
 const editionRow = z.object({ id: z.string(), tenantId: z.string() })
+const route = oc.$route({ inputStructure: 'detailed' })
+const editionParams = z.object({ params: z.object({ editionId: z.string() }) })
 
-export const probeContract = c.router({
-  list: { method: 'GET', path: '/probe/editions', responses: { 200: z.array(editionRow) } },
-  create: {
-    method: 'POST',
-    path: '/probe/editions',
-    body: z.object({
-      slug: z.string(),
-      fail: z.boolean(),
-      throws: z.boolean().optional(),
-      tenantId: z.string().optional(),
-    }),
-    responses: { 201: z.object({ id: z.string() }), 409: z.object({ code: z.string() }) },
-  },
-  read: {
-    method: 'GET',
-    path: '/probe/editions/:editionId',
-    responses: { 200: z.object({ ok: z.boolean() }) },
-  },
-  write: {
-    method: 'PUT',
-    path: '/probe/editions/:editionId',
-    body: z.object({}),
-    responses: { 200: z.object({ ok: z.boolean() }) },
-  },
-  outside: { method: 'GET', path: '/probe/outside', responses: { 200: z.object({}) } },
-  demoteHeads: {
-    method: 'POST',
-    path: '/probe/demote-heads',
-    body: z.object({}),
-    responses: { 200: z.object({}) },
-  },
-  nested: { method: 'GET', path: '/probe/nested', responses: { 200: z.object({}) } },
-  withTenant: {
-    method: 'GET',
-    path: '/probe/with-tenant/:slug',
-    responses: { 200: z.array(editionRow) },
-  },
-})
+export const probeContract = {
+  list: route.route({ method: 'GET', path: '/probe/editions' }).output(z.array(editionRow)),
+  create: route
+    .route({ method: 'POST', path: '/probe/editions', successStatus: 201 })
+    .input(
+      z.object({
+        body: z.object({
+          slug: z.string(),
+          fail: z.boolean(),
+          throws: z.boolean().optional(),
+          slow: z.boolean().optional(),
+          tenantId: z.string().optional(),
+        }),
+      }),
+    )
+    .output(z.object({ id: z.string() })),
+  read: route
+    .route({ method: 'GET', path: '/probe/editions/{editionId}' })
+    .input(editionParams)
+    .output(z.object({ ok: z.boolean() })),
+  write: route
+    .route({ method: 'PUT', path: '/probe/editions/{editionId}' })
+    .input(editionParams)
+    .output(z.object({ ok: z.boolean() })),
+  outside: route.route({ method: 'GET', path: '/probe/outside' }).output(z.object({})),
+  demoteHeads: route.route({ method: 'POST', path: '/probe/demote-heads' }).output(z.object({})),
+  nested: route.route({ method: 'GET', path: '/probe/nested' }).output(z.object({})),
+  withTenant: route
+    .route({ method: 'GET', path: '/probe/with-tenant/{slug}' })
+    .input(z.object({ params: z.object({ slug: z.string() }) }))
+    .output(z.array(editionRow)),
+}
 
 /** Calls queued with afterCommit, in order; tests clear it. */
 export const afterCommitCalls: string[] = []
@@ -70,19 +65,16 @@ class ProbeController {
     return this.context.tx().select({ id: editions.id, tenantId: editions.tenantId }).from(editions)
   }
 
-  @TsRestHandler(probeContract.list)
+  @Implement(probeContract.list)
   @RequireTenant()
   list() {
-    return tsRestHandler(probeContract.list, async () => ({
-      status: 200,
-      body: await this.editions(),
-    }))
+    return implement(probeContract.list).handler(() => this.editions())
   }
 
-  @TsRestHandler(probeContract.create)
+  @Implement(probeContract.create)
   @RequireTenant('settings', 'write')
   create() {
-    return tsRestHandler(probeContract.create, async ({ body }) => {
+    return implement(probeContract.create).handler(async ({ input: { body } }) => {
       const [row] = await this.context
         .tx()
         .insert(editions)
@@ -94,69 +86,67 @@ class ProbeController {
           endsAt: new Date('2027-06-03'),
         })
         .returning({ id: editions.id })
-      this.context.afterCommit(() => afterCommitCalls.push(body.slug))
+      // A slow step, like SMTP, keeps the response waiting all the same.
+      this.context.afterCommit(async () => {
+        if (body.slow) await new Promise((resolve) => setTimeout(resolve, 200))
+        afterCommitCalls.push(body.slug)
+      })
       if (body.throws) throw new ApiError(409, 'request.invalid', 'Probe failure')
-      return body.fail
-        ? { status: 409, body: { code: 'probe.failed' } }
-        : { status: 201, body: { id: row!.id } }
+      if (body.fail) throw new ORPCError('CONFLICT', { message: 'Probe failure' })
+      return { id: row!.id }
     })
   }
 
-  @TsRestHandler(probeContract.read)
+  @Implement(probeContract.read)
   @RequireEdition('program', 'read')
   read() {
-    return tsRestHandler(probeContract.read, () =>
-      Promise.resolve({ status: 200 as const, body: { ok: true } }),
-    )
+    return implement(probeContract.read).handler(() => ({ ok: true }))
   }
 
-  @TsRestHandler(probeContract.write)
+  @Implement(probeContract.write)
   @RequireEdition('program', 'write')
   write() {
-    return tsRestHandler(probeContract.write, () =>
-      Promise.resolve({ status: 200 as const, body: { ok: true } }),
-    )
+    return implement(probeContract.write).handler(() => ({ ok: true }))
   }
 
-  @TsRestHandler(probeContract.demoteHeads)
+  @Implement(probeContract.demoteHeads)
   @RequireTenant('settings', 'write')
   demoteHeads() {
-    // Breaks the last-head invariant: the deferred trigger rejects it at COMMIT, after the 200.
-    return tsRestHandler(probeContract.demoteHeads, async () => {
+    // Breaks the last-head invariant: the deferred trigger rejects it at COMMIT, after the handler.
+    return implement(probeContract.demoteHeads).handler(async () => {
       await this.context
         .tx()
         .update(tenantMemberships)
         .set({ role: 'org' })
         .where(eq(tenantMemberships.role, 'head'))
-      return { status: 200, body: {} }
+      return {}
     })
   }
 
-  @TsRestHandler(probeContract.nested)
+  @Implement(probeContract.nested)
   @RequireTenant()
   nested() {
-    return tsRestHandler(probeContract.nested, async () => {
+    return implement(probeContract.nested).handler(async () => {
       await this.context.withTenant(this.context.tenant().id, () => this.editions())
-      return { status: 200, body: {} }
+      return {}
     })
   }
 
-  @TsRestHandler(probeContract.outside)
+  @Implement(probeContract.outside)
   @UseGuards(JwtAuthGuard)
   outside() {
-    return tsRestHandler(probeContract.outside, async () => {
+    return implement(probeContract.outside).handler(async () => {
       await this.editions()
-      return { status: 200, body: {} }
+      return {}
     })
   }
 
-  @TsRestHandler(probeContract.withTenant)
+  @Implement(probeContract.withTenant)
   @UseGuards(JwtAuthGuard)
   withTenant() {
-    return tsRestHandler(probeContract.withTenant, async ({ params }) => {
-      const tenant = await this.global.tenantBySlug(params.slug)
-      const rows = await this.context.withTenant(tenant!.id, () => this.editions())
-      return { status: 200, body: rows }
+    return implement(probeContract.withTenant).handler(async ({ input }) => {
+      const tenant = await this.global.tenantBySlug(input.params.slug)
+      return this.context.withTenant(tenant!.id, () => this.editions())
     })
   }
 }

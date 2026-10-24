@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@opos/i18n": "workspace:*",
-    "@ts-rest/core": "catalog:",
+    "@orpc/contract": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

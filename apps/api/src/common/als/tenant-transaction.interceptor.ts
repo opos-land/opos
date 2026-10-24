@@ -22,7 +22,8 @@ interface HttpRequest {
 /**
  * For a route marked with @RequireTenant or @RequireEdition (PLAN.md 7.2): resolves the tenant
  * from X-Tenant-Slug, opens its transaction, loads the membership, checks the permission, runs the
- * handler and commits on a status below 300. Other routes ignore the header.
+ * handler, commits unless it failed, and only then sends oRPC's response. Other routes ignore the
+ * header.
  */
 @Injectable()
 export class TenantTransactionInterceptor implements NestInterceptor {
@@ -61,9 +62,9 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     const tenant = await this.global.tenantBySlug(slug)
     if (!tenant) throw notFound('tenant')
 
-    // ts-rest sets the status before the body reaches this interceptor, and it turns both a
-    // returned 4xx and a thrown TsRestResponseError into a response, so the status decides.
-    return this.context.transaction<unknown>(
+    // An error thrown by the handler rolls back. oRPC hands its response over unsent
+    // (deferResponseInTenantTransaction); a route outside oRPC has set the status on the response.
+    const outcome = await this.context.transaction(
       tenant.id,
       async () => {
         const store = TenantContextService.store()
@@ -71,10 +72,16 @@ export class TenantTransactionInterceptor implements NestInterceptor {
         store.tenant = tenant
         store.membership = await this.access.activeMembership(store.account.id)
         await this.check(requirement, request)
-        return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
+        const value = await lastValueFrom(next.handle() as Observable<unknown>, {
+          defaultValue: undefined,
+        })
+        return { value, deferred: store.deferredResponse }
       },
-      () => response.statusCode < 300,
+      ({ deferred }) => (deferred?.status ?? response.statusCode) < 300,
     )
+    // After the commit and its after-commit queue; a COMMIT that failed threw instead.
+    if (outcome.deferred) await outcome.deferred.send()
+    return outcome.value
   }
 
   private async check(requirement: Requirement, request: HttpRequest) {
@@ -87,7 +94,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     }
     // No membership answers 403 before the edition is looked up, so an account outside the
     // tenant cannot tell existing edition ids from absent ones. For a member, another tenant's
-    // edition and a malformed id are a 404; this runs before ts-rest validates the path.
+    // edition and a malformed id are a 404; this runs before oRPC validates the input.
     if (!membership) throw forbidden()
     const editionId = request.params[requirement.param]
     const editionAccess = isUuid(editionId)

@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common'
 import { contract } from '@opos/contract'
-import { tsRestHandler, TsRestHandler } from '@ts-rest/nest'
+import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
 import { ApiError } from '../../common/errors/api-error'
@@ -40,19 +40,20 @@ export class EditionMembersController {
     return locked
   }
 
-  @TsRestHandler(contract.editions.members.list)
+  @Implement(contract.editions.members.list)
   @RequireTenant('settings', 'read')
   list() {
-    return tsRestHandler(contract.editions.members.list, async ({ params }) => {
-      const edition = await this.editions.get(params.editionId)
-      return { status: 200, body: await this.editionMembers.list(edition.id) }
+    return implement(contract.editions.members.list).handler(async ({ input }) => {
+      const edition = await this.editions.get(input.params.editionId)
+      return this.editionMembers.list(edition.id)
     })
   }
 
-  @TsRestHandler(contract.editions.members.put)
+  @Implement(contract.editions.members.put)
   @RequireTenant('settings', 'write')
   put() {
-    return tsRestHandler(contract.editions.members.put, async ({ params, body }) => {
+    return implement(contract.editions.members.put).handler(async ({ input }) => {
+      const { params, body } = input
       const edition = await this.editions.get(params.editionId)
       const { actor, target } = await this.lock(params.tenantMembershipId)
       const [actorAccess, current] = await Promise.all([
@@ -66,18 +67,17 @@ export class EditionMembersController {
         next: expiry,
         raises: raisesEditionLevel(body, current),
       })
-      return { status: 200, body: await this.editionMembers.put(edition.id, target.id, body) }
+      return this.editionMembers.put(edition.id, target.id, body)
     })
   }
 
-  @TsRestHandler(contract.editions.members.remove)
+  @Implement(contract.editions.members.remove)
   @RequireTenant('settings', 'write')
   remove() {
-    return tsRestHandler(contract.editions.members.remove, async ({ params }) => {
-      const edition = await this.editions.get(params.editionId)
-      const { target } = await this.lock(params.tenantMembershipId)
+    return implement(contract.editions.members.remove).handler(async ({ input }) => {
+      const edition = await this.editions.get(input.params.editionId)
+      const { target } = await this.lock(input.params.tenantMembershipId)
       await this.editionMembers.remove(edition.id, target.id)
-      return { status: 204, body: undefined }
     })
   }
 }

@@ -237,6 +237,16 @@ describe('anti-escalation', () => {
     expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'expiresAt' } })
   })
 
+  it('removes a member with 204 and no body', async () => {
+    const leaving = await member()
+    const id = await addOrg(a.id, leaving)
+
+    const res = await call(writer, 'delete', `/tenants/current/members/${id}`)
+    expect(res.status).toBe(204)
+    expect(res.text).toBe('')
+    await call(leaving, 'get', '/tenants/current').expect(403)
+  })
+
   it('refuses removing oneself and an org removing a head', async () => {
     expect(
       (await call(writer, 'delete', `/tenants/current/members/${writerId}`)).body,

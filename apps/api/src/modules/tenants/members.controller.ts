@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common'
 import { contract } from '@opos/contract'
-import { tsRestHandler, TsRestHandler } from '@ts-rest/nest'
+import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
 import { AccessRepository } from '../../common/permissions/access.repository'
@@ -33,19 +33,17 @@ export class MembersController {
     return locked
   }
 
-  @TsRestHandler(contract.tenants.members.list)
+  @Implement(contract.tenants.members.list)
   @RequireTenant('settings', 'read')
   list() {
-    return tsRestHandler(contract.tenants.members.list, async () => ({
-      status: 200,
-      body: await this.members.list(),
-    }))
+    return implement(contract.tenants.members.list).handler(() => this.members.list())
   }
 
-  @TsRestHandler(contract.tenants.members.update)
+  @Implement(contract.tenants.members.update)
   @RequireTenant('settings', 'write')
   update() {
-    return tsRestHandler(contract.tenants.members.update, async ({ params, body }) => {
+    return implement(contract.tenants.members.update).handler(async ({ input }) => {
+      const { params, body } = input
       const { actor, target } = await this.lock(params.membershipId)
       assertMayGrant(actor, body, target)
       const current = target.expiresAt ? new Date(target.expiresAt) : null
@@ -64,18 +62,17 @@ export class MembersController {
         }
         assertMayExtend(actor, actorEditions, resulting, targetEditions)
       }
-      return { status: 200, body: await this.members.update(target.id, body) }
+      return this.members.update(target.id, body)
     })
   }
 
   // Removing the last head passes here and fails at COMMIT: 409 membership.last-head.
-  @TsRestHandler(contract.tenants.members.remove)
+  @Implement(contract.tenants.members.remove)
   @RequireTenant('settings', 'write')
   remove() {
-    return tsRestHandler(contract.tenants.members.remove, async ({ params }) => {
-      const { target } = await this.lock(params.membershipId)
+    return implement(contract.tenants.members.remove).handler(async ({ input }) => {
+      const { target } = await this.lock(input.params.membershipId)
       await this.members.remove(target.id)
-      return { status: 204, body: undefined }
     })
   }
 }

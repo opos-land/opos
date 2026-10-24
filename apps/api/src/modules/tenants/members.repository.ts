@@ -60,13 +60,14 @@ export class MembersRepository {
   /**
    * Locks the actor's and the target's rows for the rest of the transaction and returns them
    * fresh. Ordered by id, so two requests locking the same pair never deadlock; a concurrent
-   * promotion or permission change waits, and the checks then run on what it committed.
+   * promotion or permission change waits, and the checks then run on what it committed. A target
+   * id that is not a uuid names no membership: only the actor is locked, and the target is absent.
    */
   async lockPair(actorId: string, targetId: string) {
-    if (!isUuid(targetId)) return { actor: undefined, target: undefined }
+    const ids = isUuid(targetId) ? [actorId, targetId] : [actorId]
     const rows = (
       await this.select()
-        .where(inArray(tenantMemberships.id, [actorId, targetId]))
+        .where(inArray(tenantMemberships.id, ids))
         .orderBy(asc(tenantMemberships.id))
         .for('update', { of: tenantMemberships })
     ).map(toMember)

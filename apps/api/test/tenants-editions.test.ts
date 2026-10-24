@@ -200,6 +200,19 @@ describe('tenant isolation by path id', () => {
     const statuses = (await Promise.all(calls)).map((res) => res.status)
     expect(statuses).toEqual(calls.map(() => 404))
   })
+
+  it('answers 404 for a membership id that is not a uuid', async () => {
+    const calls = [
+      call(a.head, 'patch', '/tenants/current/members/not-a-uuid', { settingsAccess: 'read' }),
+      call(a.head, 'delete', '/tenants/current/members/not-a-uuid'),
+      call(writer, 'delete', '/tenants/current/members/not-a-uuid'),
+      call(a.head, 'put', `/editions/${editionA}/members/not-a-uuid`, none),
+      call(a.head, 'delete', `/editions/${editionA}/members/not-a-uuid`),
+    ]
+    const responses = await Promise.all(calls)
+    expect(responses.map((res) => res.status)).toEqual(calls.map(() => 404))
+    expect(responses[0]!.body).toMatchObject({ code: 'request.not-found' })
+  })
 })
 
 describe('anti-escalation', () => {

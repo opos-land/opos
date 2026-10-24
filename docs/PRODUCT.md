@@ -244,9 +244,15 @@ permissions in each edition and an optional expiry date, within the limits of
 
 The link is valid for 7 days and works once. It opens the invitation page in the panel, which
 shows the convention and the invited address and lets the person sign in or register there — with
-email and password, or with Google. After confirming the address through the link sent to it, they
-come back to the panel and join the team. Only an account whose confirmed address is
-the invited one can accept.
+email and password, or with Google. Registering with email, they confirm the address through the
+link sent to it, come back to the panel, choose their password and join the team; a password
+anyone set on that address before it was confirmed stops working. Only an account whose confirmed
+address is the invited one can accept.
+
+An invitation stands only while the person who sent it could still send it. Once the sender has
+left the team, their access has expired, they have lost write access to settings or they no
+longer hold a permission the invitation grants, the link no longer works. Removing or demoting the
+sender is how a head organizer withdraws an invitation that has gone out.
 
 The platform keeps no list of pending invitations: until it is accepted, an invitation exists only
 in its link. A convention sends at most 20 invitations an hour.

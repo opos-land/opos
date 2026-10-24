@@ -229,6 +229,9 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
 
 - `build`, `dev` and `test` depend on `i18n:compile` (`test` also on `^i18n:compile`), so nothing
   runs with stale or missing catalogs.
+- The files outside every package that shape the environment the tests run in — `docker-compose.yml`,
+  `infra/supabase/` and `.github/workflows/` — are `globalDependencies`: a change to them misses
+  every task's cache, and `--affected` counts every package as affected.
 - A task with side effects is not cached: `test:e2e`, `i18n:extract` and every `db:*` task.
   Persistent tasks (`dev`, `db:studio`) set `persistent: true`.
 - The `db:*` tasks exist only in `packages/db`, `test:e2e` only in `e2e`.

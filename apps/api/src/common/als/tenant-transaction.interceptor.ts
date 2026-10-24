@@ -22,8 +22,8 @@ interface HttpRequest {
 /**
  * For a route marked with @RequireTenant or @RequireEdition (PLAN.md 7.2): resolves the tenant
  * from X-Tenant-Slug, opens its transaction, loads the membership, checks the permission, runs the
- * handler, commits unless it failed, and only then sends oRPC's response. Other routes ignore the
- * header.
+ * handler and commits unless it failed; TenantContextService then sends oRPC's held response.
+ * Other routes ignore the header.
  */
 @Injectable()
 export class TenantTransactionInterceptor implements NestInterceptor {
@@ -62,9 +62,9 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     const tenant = await this.global.tenantBySlug(slug)
     if (!tenant) throw notFound('tenant')
 
-    // An error thrown by the handler rolls back. oRPC hands its response over unsent
-    // (deferResponseInTenantTransaction); a route outside oRPC has set the status on the response.
-    const outcome = await this.context.transaction(
+    // An exception rolls back, and so does a status of 300 or more: the one oRPC holds unsent
+    // (defer-response.ts), or the one a route outside oRPC set on the response.
+    return this.context.transaction(
       tenant.id,
       async () => {
         const store = TenantContextService.store()
@@ -72,16 +72,10 @@ export class TenantTransactionInterceptor implements NestInterceptor {
         store.tenant = tenant
         store.membership = await this.access.activeMembership(store.account.id)
         await this.check(requirement, request)
-        const value = await lastValueFrom(next.handle() as Observable<unknown>, {
-          defaultValue: undefined,
-        })
-        return { value, deferred: store.deferredResponse }
+        return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
       },
-      ({ deferred }) => (deferred?.status ?? response.statusCode) < 300,
+      () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,
     )
-    // After the commit and its after-commit queue; a COMMIT that failed threw instead.
-    if (outcome.deferred) await outcome.deferred.send()
-    return outcome.value
   }
 
   private async check(requirement: Requirement, request: HttpRequest) {

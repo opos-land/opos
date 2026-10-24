@@ -133,8 +133,9 @@ export class TenantContextService {
         }),
       )
     } catch (error) {
-      if (error instanceof Rollback) return error.value as T
-      throw error
+      if (!(error instanceof Rollback)) throw error
+      await sendDeferred(store)
+      return error.value as T
     } finally {
       store.tx = undefined
     }
@@ -147,6 +148,17 @@ export class TenantContextService {
         this.logger.error(error)
       }
     }
+    await sendDeferred(store)
     return result
   }
+}
+
+/**
+ * The response oRPC held inside the transaction (defer-response.ts) goes out once the transaction
+ * has ended; after a failed COMMIT it never does, and the error answers instead.
+ */
+async function sendDeferred(store: RequestStore) {
+  const deferred = store.deferredResponse
+  store.deferredResponse = undefined
+  if (deferred) await deferred.send()
 }

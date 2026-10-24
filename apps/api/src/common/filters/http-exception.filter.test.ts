@@ -1,9 +1,15 @@
-import { ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common'
+import {
+  type ArgumentsHost,
+  ForbiddenException,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common'
 import { ORPCError, ValidationError } from '@orpc/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { ApiError } from '../errors/api-error'
-import { toErrorResponse } from './http-exception.filter'
+import { HttpExceptionFilter, toErrorResponse } from './http-exception.filter'
 
 describe('toErrorResponse', () => {
   it('keeps the code and params of an ApiError', () => {
@@ -62,5 +68,40 @@ describe('toErrorResponse', () => {
       status: 500,
       body: { code: 'server.error', message: 'Internal server error' },
     })
+  })
+})
+
+describe('HttpExceptionFilter once the response is out', () => {
+  const host = (response: object) =>
+    ({ switchToHttp: () => ({ getResponse: () => response }) }) as unknown as ArgumentsHost
+  const response = (writableEnded: boolean) => ({
+    headersSent: true,
+    writableEnded,
+    destroy: vi.fn(),
+    status: vi.fn(),
+  })
+
+  it('drops the second reply Nest attempts after oRPC answered', () => {
+    const sent = response(true)
+    const log = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
+
+    new HttpExceptionFilter().catch(
+      Object.assign(new Error('Cannot remove headers'), { code: 'ERR_HTTP_HEADERS_SENT' }),
+      host(sent),
+    )
+    expect(sent.status).not.toHaveBeenCalled()
+    expect(log).not.toHaveBeenCalled()
+    log.mockRestore()
+  })
+
+  it('logs any other error and closes a response left open', () => {
+    const open = response(false)
+    const log = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
+
+    new HttpExceptionFilter().catch(new Error('socket hang up'), host(open))
+    expect(log).toHaveBeenCalled()
+    expect(open.destroy).toHaveBeenCalled()
+    expect(open.status).not.toHaveBeenCalled()
+    log.mockRestore()
   })
 })

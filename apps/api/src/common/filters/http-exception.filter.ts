@@ -129,11 +129,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const response = host.switchToHttp().getResponse<{
       headersSent: boolean
+      writableEnded: boolean
+      destroy(): void
       status(code: number): { json(body: unknown): void }
     }>()
-    // oRPC has answered already: Nest's own reply after it fails on a 204 and lands here.
+    // The response is out already. Nest replies once more after oRPC has answered, which throws
+    // ERR_HTTP_HEADERS_SENT on a 204; anything else is a real error after the response started.
     if (response.headersSent) {
-      this.logger.debug(exception)
+      if ((exception as { code?: unknown } | null)?.code !== 'ERR_HTTP_HEADERS_SENT') {
+        this.logger.error(exception)
+      }
+      if (!response.writableEnded) response.destroy()
       return
     }
     const { status, body } = toErrorResponse(exception)

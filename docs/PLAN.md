@@ -985,17 +985,21 @@ everywhere. For a tenant route it:
    tenant the account has no membership in, an expired membership included, -> `403`.
 4. Checks the route's `@RequireTenant` or `@RequireEdition` inside the same transaction
    ([7.3](#73-permissions)).
-5. Runs the handler and commits; an exception rolls back. oRPC hands every error to Nest
-   (`RethrowHandlerPlugin`), so a refusal is always an exception and reaches `HttpExceptionFilter`.
+5. Runs the handler and commits. An exception rolls back, and so does a status of `300` or more:
+   the one oRPC holds unsent, or the one a route outside oRPC set on the response. oRPC hands every
+   error to Nest (`RethrowHandlerPlugin`), so a refusal is an exception and reaches
+   `HttpExceptionFilter`.
 6. After a commit, runs the store's after-commit queue, in order, and only then sends the response;
    a failing entry is logged and the response stands. `@orpc/nest` sends its response from inside
    its own interceptor, before this one finishes, so inside a tenant transaction
-   [defer-response.ts](../apps/api/src/common/als/defer-response.ts) holds it until here: a client
-   never sees a `2xx` for a write that did not commit, and a COMMIT that fails answers with its
-   error ([5](#5-api-contract)).
+   [defer-response.ts](../apps/api/src/common/als/defer-response.ts) holds it, and
+   `TenantContextService` sends it when the transaction ends — the same for `withTenant`. A client
+   never sees a `2xx` for a write that did not commit; a COMMIT that fails answers with its error
+   ([5](#5-api-contract)).
 
-Nest replies once more after oRPC has answered; `HttpExceptionFilter` drops what that raises once
-the headers are out, as it does for a `204`.
+Nest replies once more after oRPC has answered, which throws `ERR_HTTP_HEADERS_SENT` on a `204`;
+`HttpExceptionFilter` drops exactly that once the headers are out, logs any other late error and
+closes a response left open.
 
 Repositories take the transaction from `TenantContextService.tx()`, which throws when no tenant
 transaction is open; they never query the pool directly. The one exception is

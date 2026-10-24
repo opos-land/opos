@@ -26,6 +26,8 @@ export type TenantInContext = Tenant
 
 /** What one request knows about itself (PLAN.md 7.2); the guards and the interceptor fill it. */
 export interface RequestStore {
+  /** The client address, an IPv6 one by its /64, as the rate limit counts it (PLAN.md 7.9). */
+  clientAddress?: string
   account?: Account
   /** The latest sign-in the access token records, in seconds since the epoch (PLAN.md 7.4). */
   signedInAt?: number
@@ -52,9 +54,16 @@ export class TenantContextService {
 
   constructor(@Inject(APP_DB) private readonly db: Database) {}
 
-  /** Runs `fn` with a fresh, empty request store. */
-  run<T>(fn: () => T): T {
-    return storage.run({}, fn)
+  /** Runs `fn` with a fresh request store that knows only the client address. */
+  run<T>(fn: () => T, clientAddress?: string): T {
+    return storage.run({ clientAddress }, fn)
+  }
+
+  /** The client address of the request. */
+  clientAddress(): string {
+    const { clientAddress } = TenantContextService.store()
+    if (!clientAddress) throw new Error('No client address in the request store')
+    return clientAddress
   }
 
   /** The request store, or nothing outside a request. */

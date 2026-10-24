@@ -63,6 +63,62 @@ export const updateMemberSchema = z
 
 export type UpdateMember = z.infer<typeof updateMemberSchema>
 
+/** The edition-level permissions an invitation grants in one edition of the tenant. */
+export const editionGrantSchema = z
+  .object({
+    editionId: z.uuid(),
+    programAccess: level,
+    websiteContentAccess: level,
+    ticketsAccess: level,
+  })
+  .strict()
+
+export type EditionGrant = z.infer<typeof editionGrantSchema>
+
+/**
+ * An organizer invitation (PLAN.md 7.7). Omitted permissions are `none`, an omitted role is `org`
+ * and an omitted expiry means none; a head takes no permissions, so they are dropped for one.
+ */
+export const inviteMemberSchema = z
+  .object({
+    email: z.email().max(254),
+    role: z.enum(['head', 'org']),
+    settingsAccess: level,
+    brandingAccess: level,
+    shopConfigAccess: level,
+    /** `null` or omitted: the membership never expires. A head never expires. */
+    expiresAt: timestamp.nullable(),
+    editions: z.array(editionGrantSchema).max(50),
+  })
+  .partial()
+  .required({ email: true })
+  .strict()
+  .refine((m) => !(m.role === 'head' && m.expiresAt), {
+    message: 'A head membership never expires',
+    path: ['expiresAt'],
+  })
+  .refine((m) => !m.expiresAt || new Date(m.expiresAt) > new Date(), {
+    message: 'expiresAt must be in the future',
+    path: ['expiresAt'],
+  })
+  .refine((m) => new Set(m.editions?.map((e) => e.editionId)).size === (m.editions?.length ?? 0), {
+    message: 'Each edition appears once',
+    path: ['editions'],
+  })
+
+export type InviteMember = z.infer<typeof inviteMemberSchema>
+
+/**
+ * A known account with a confirmed email joins at once; any other address gets an invitation link,
+ * valid until `validUntil`.
+ */
+export const invitationOutcomeSchema = z.discriminatedUnion('outcome', [
+  z.object({ outcome: z.literal('added'), member: memberSchema }),
+  z.object({ outcome: z.literal('invited'), email: z.string(), validUntil: timestamp }),
+])
+
+export type InvitationOutcome = z.infer<typeof invitationOutcomeSchema>
+
 const membership = z.object({ params: z.object({ membershipId: z.string() }) })
 
 export const tenantsContract = {
@@ -89,6 +145,16 @@ export const tenantsContract = {
         summary: 'The team; needs settings>=read',
       })
       .output(z.array(memberSchema)),
+    invite: tenantRoute
+      .route({
+        method: 'POST',
+        path: '/tenants/current/members',
+        successStatus: 201,
+        summary:
+          'Invite an organizer by email; needs settings=write and passes anti-escalation. A known account with a confirmed email joins at once',
+      })
+      .input(z.object({ body: inviteMemberSchema }))
+      .output(invitationOutcomeSchema),
     update: tenantRoute
       .route({
         method: 'PATCH',

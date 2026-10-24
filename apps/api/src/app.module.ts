@@ -17,6 +17,7 @@ import { DatabaseModule } from './common/database/database.module'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { AccessRepository } from './common/permissions/access.repository'
 import { DEFAULT_RATE_LIMIT, type RateLimit, rateLimitModule } from './common/rate-limit/rate-limit'
+import { RouteRateLimiter } from './common/rate-limit/route-rate-limit'
 import { ENV, type Env } from './config/env'
 import { MeModule } from './modules/accounts/me.module'
 import { AuthModule } from './modules/auth/auth.module'
@@ -53,8 +54,9 @@ export class AppModule implements NestModule {
         { provide: APP_INTERCEPTOR, useClass: TenantTransactionInterceptor },
         TenantContextService,
         AccessRepository,
+        RouteRateLimiter,
       ],
-      exports: [ENV, TenantContextService, AccessRepository],
+      exports: [ENV, TenantContextService, AccessRepository, RouteRateLimiter],
     }
   }
 

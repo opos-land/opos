@@ -8,6 +8,8 @@ export class ApiError extends HttpException {
     readonly code: ErrorCode,
     message: string,
     readonly params?: ApiErrorBody['params'],
+    /** Response headers that go out with the error, e.g. `Retry-After` on a 429. */
+    readonly headers?: Record<string, string>,
   ) {
     super(message, status)
   }

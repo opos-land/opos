@@ -17,6 +17,11 @@ export const errorCodes = [
   'member.expiry-after-own',
   'member.outlives-own',
   'member.is-head',
+  'member.exists',
+  'invitation.invalid',
+  'invitation.expired',
+  'invitation.used',
+  'invitation.email-mismatch',
   'edition.slug-taken',
   'edition.active',
 ] as const

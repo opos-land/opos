@@ -15,6 +15,10 @@ msgstr "A convention must keep at least one head organizer. Make someone else a 
 msgid "A head organizer already has access to every edition."
 msgstr "A head organizer already has access to every edition."
 
+#: src/emails.ts
+msgid "Accept the invitation"
+msgstr "Accept the invitation"
+
 #. Glossary term: admin
 #: src/glossary.ts
 msgctxt "glossary"
@@ -137,6 +141,18 @@ msgstr "If you did not ask for this change, ignore this message."
 msgid "If you did not create an account, ignore this message."
 msgstr "If you did not create an account, ignore this message."
 
+#: src/emails.ts
+msgid "If you do not expect this invitation, ignore this message."
+msgstr "If you do not expect this invitation, ignore this message."
+
+#: src/emails.ts
+msgid "If you do not expect this, contact the head organizer of the convention."
+msgstr "If you do not expect this, contact the head organizer of the convention."
+
+#: src/emails.ts
+msgid "Invitation to the organizing team of {tenantName}"
+msgstr "Invitation to the organizing team of {tenantName}"
+
 #. Glossary term: locale
 #: src/glossary.ts
 msgctxt "glossary"
@@ -162,6 +178,10 @@ msgstr "No account uses this email address."
 #: src/errors.ts
 msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Only a head organizer can edit or remove another head organizer."
+
+#: src/emails.ts
+msgid "Open the panel"
+msgstr "Open the panel"
 
 #. Glossary term: order
 #: src/glossary.ts
@@ -231,6 +251,10 @@ msgstr "The link has expired. Ask for a new one."
 msgid "The link is valid for 1 hour and works once."
 msgstr "The link is valid for 1 hour and works once."
 
+#: src/emails.ts
+msgid "The link is valid for 7 days and works once."
+msgstr "The link is valid for 7 days and works once."
+
 #: src/errors.ts
 msgid "The new password must differ from the current one."
 msgstr "The new password must differ from the current one."
@@ -252,8 +276,28 @@ msgid "This convention already has an edition with this address."
 msgstr "This convention already has an edition with this address."
 
 #: src/errors.ts
+msgid "This invitation has already been accepted."
+msgstr "This invitation has already been accepted."
+
+#: src/errors.ts
+msgid "This invitation has expired. Ask the convention's organizers for a new one."
+msgstr "This invitation has expired. Ask the convention's organizers for a new one."
+
+#: src/errors.ts
+msgid "This invitation link is not valid. Check that you opened the whole link from the email."
+msgstr "This invitation link is not valid. Check that you opened the whole link from the email."
+
+#: src/errors.ts
+msgid "This invitation was sent to another email address. Sign in with the account that uses that address."
+msgstr "This invitation was sent to another email address. Sign in with the account that uses that address."
+
+#: src/errors.ts
 msgid "This language is not supported."
 msgstr "This language is not supported."
+
+#: src/errors.ts
+msgid "This person is already in the team. Change their membership on the team screen."
+msgstr "This person is already in the team. Change their membership on the team screen."
 
 #. Glossary term: ticket
 #: src/glossary.ts
@@ -305,6 +349,10 @@ msgstr "We received a request to reset the password of your OPOS account. Set a 
 msgid "Wrong email or password."
 msgstr "Wrong email or password."
 
+#: src/emails.ts
+msgid "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."
+msgstr "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."
+
 #: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
 msgstr "You cannot change your own role or permissions, or remove yourself from the team."
@@ -328,6 +376,14 @@ msgstr "You cannot raise the permissions of someone whose access lasts longer th
 #: src/errors.ts
 msgid "You do not have permission to do this."
 msgstr "You do not have permission to do this."
+
+#: src/emails.ts
+msgid "You have been invited to the organizing team of {tenantName} in OPOS. Accept the invitation with the link below. If you do not have an OPOS account yet, you can create one on the same page."
+msgstr "You have been invited to the organizing team of {tenantName} in OPOS. Accept the invitation with the link below. If you do not have an OPOS account yet, you can create one on the same page."
+
+#: src/emails.ts
+msgid "You have joined the organizing team of {tenantName}"
+msgstr "You have joined the organizing team of {tenantName}"
 
 #: src/errors.ts
 msgid "Your session has ended. Sign in again."

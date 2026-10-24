@@ -150,3 +150,36 @@ export function assertMayExtend(
     }
   }
 }
+
+/** What an invitation grants (PLAN.md 7.7), with the defaults of an omitted field applied. */
+export interface InvitationGrant extends TenantLevels {
+  role: TenantMembership['role']
+  expiresAt: Date | null
+  editions: (EditionAccess & { editionId: string })[]
+}
+
+/**
+ * An invitation grants a new member everything it holds, so an org invites no head, grants no
+ * permission above its own on either level, and, when its own access expires, invites only with an
+ * expiry no later than its own.
+ */
+export function assertMayInvite(
+  actor: TenantMembership,
+  actorEditions: Map<string, EditionAccess>,
+  grant: InvitationGrant,
+) {
+  if (actor.role === 'head') return
+  const nothing: TenantLevels = {
+    settingsAccess: 'none',
+    brandingAccess: 'none',
+    shopConfigAccess: 'none',
+  }
+  const { role, settingsAccess, brandingAccess, shopConfigAccess } = grant
+  assertMayGrant(actor, { role, settingsAccess, brandingAccess, shopConfigAccess }, nothing)
+  for (const { editionId, ...access } of grant.editions) {
+    assertMayGrantEdition(actor, actorEditions.get(editionId), access, null)
+  }
+  if (outlastsActor(actor, grant.expiresAt)) {
+    throw refuse('member.expiry-after-own', "Invites with access past the actor's own")
+  }
+}

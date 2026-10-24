@@ -1,14 +1,19 @@
 import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 
-// The content of Supabase Auth's emails, which the API renders in the recipient's locale when the
-// send-email hook calls it (PLAN.md 10, Send-email hook).
+// The content of the emails the API renders in the recipient's locale: Supabase Auth's, sent when
+// the send-email hook calls it (PLAN.md 10, Send-email hook), and the organizer invitations
+// (PLAN.md 7.7).
 
-/** One email: its subject, the paragraph above the link, the link's label and the closing note. */
+/**
+ * One email: its subject, the paragraph above the link, the link's label and the closing note.
+ * `validity` goes below the link: Supabase Auth's validity when omitted, nothing when `null`.
+ */
 export interface EmailContent {
   subject: MessageDescriptor
   body: MessageDescriptor
   action: MessageDescriptor
+  validity?: MessageDescriptor | null
   ignore: MessageDescriptor
 }
 
@@ -48,3 +53,21 @@ export const emailChangeCurrentEmail = (oldEmail: string, newEmail: string): Ema
 export const linkValidity = msg`The link is valid for 1 hour and works once.`
 
 export const linkFallback = msg`If the button does not work, copy this address into your browser:`
+
+/** An organizer invitation to an address without a confirmed account: the link to accept it. */
+export const invitationEmail = (tenantName: string): EmailContent => ({
+  subject: msg`Invitation to the organizing team of ${tenantName}`,
+  body: msg`You have been invited to the organizing team of ${tenantName} in OPOS. Accept the invitation with the link below. If you do not have an OPOS account yet, you can create one on the same page.`,
+  action: msg`Accept the invitation`,
+  validity: msg`The link is valid for 7 days and works once.`,
+  ignore: msg`If you do not expect this invitation, ignore this message.`,
+})
+
+/** An organizer invitation to a known account, which joined the team at once. */
+export const joinedTeamEmail = (tenantName: string): EmailContent => ({
+  subject: msg`You have joined the organizing team of ${tenantName}`,
+  body: msg`You are now a member of the organizing team of ${tenantName} in OPOS. Open the panel to see what you can work on.`,
+  action: msg`Open the panel`,
+  validity: null,
+  ignore: msg`If you do not expect this, contact the head organizer of the convention.`,
+})

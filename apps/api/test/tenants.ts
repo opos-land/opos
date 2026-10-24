@@ -140,3 +140,39 @@ export const accountRows = async (accountId: string) =>
           where tm.account_id = ${accountId}) as "editionMemberships"
     `)
   )[0]!
+
+/** The account's membership in the tenant and its edition rows, as stored. */
+export async function storedMembership(tenantId: string, accountId: string) {
+  const [membership] = await db.execute<{
+    id: string
+    role: string
+    settingsAccess: string
+    brandingAccess: string
+    shopConfigAccess: string
+    expiresAt: Date | null
+  }>(sql`
+    select id, role, settings_access as "settingsAccess", branding_access as "brandingAccess",
+      shop_config_access as "shopConfigAccess", expires_at as "expiresAt"
+    from tenant_memberships where tenant_id = ${tenantId} and account_id = ${accountId}
+  `)
+  if (!membership) return undefined
+  const editions = await db.execute<{
+    editionId: string
+    programAccess: string
+    websiteContentAccess: string
+    ticketsAccess: string
+  }>(sql`
+    select edition_id as "editionId", program_access as "programAccess",
+      website_content_access as "websiteContentAccess", tickets_access as "ticketsAccess"
+    from edition_memberships where tenant_membership_id = ${membership.id}
+  `)
+  return { ...membership, editions: [...editions] }
+}
+
+export async function removeMembership(id: string) {
+  await db.execute(sql`delete from tenant_memberships where id = ${id}`)
+}
+
+export async function deleteEdition(id: string) {
+  await db.execute(sql`delete from editions where id = ${id}`)
+}

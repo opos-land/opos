@@ -12,6 +12,7 @@ import {
   extendsAccess,
   raisesTenantLevel,
 } from './anti-escalation'
+import { InvitationsService } from './invitations.service'
 import { lockActorAndTarget } from './member-lock'
 import { MembersRepository } from './members.repository'
 
@@ -21,6 +22,7 @@ export class MembersController {
     private readonly context: TenantContextService,
     private readonly members: MembersRepository,
     private readonly access: AccessRepository,
+    private readonly invitations: InvitationsService,
   ) {}
 
   private async lock(membershipId: string) {
@@ -37,6 +39,14 @@ export class MembersController {
   @RequireTenant('settings', 'read')
   list() {
     return implement(contract.tenants.members.list).handler(() => this.members.list())
+  }
+
+  @Implement(contract.tenants.members.invite)
+  @RequireTenant('settings', 'write')
+  invite() {
+    return implement(contract.tenants.members.invite).handler(({ input }) =>
+      this.invitations.invite(input.body),
+    )
   }
 
   @Implement(contract.tenants.members.update)

@@ -21,6 +21,11 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'member.expiry-after-own': msg`You cannot give anyone access that lasts longer than yours.`,
   'member.outlives-own': msg`You cannot raise the permissions of someone whose access lasts longer than yours.`,
   'member.is-head': msg`A head organizer already has access to every edition.`,
+  'member.exists': msg`This person is already in the team. Change their membership on the team screen.`,
+  'invitation.invalid': msg`This invitation link is not valid. Check that you opened the whole link from the email.`,
+  'invitation.expired': msg`This invitation has expired. Ask the convention's organizers for a new one.`,
+  'invitation.used': msg`This invitation has already been accepted.`,
+  'invitation.email-mismatch': msg`This invitation was sent to another email address. Sign in with the account that uses that address.`,
   'edition.slug-taken': msg`This convention already has an edition with this address.`,
   'edition.active': msg`You cannot delete the active edition. Activate another edition first.`,
 

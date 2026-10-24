@@ -30,3 +30,15 @@ export async function lockActorAndTarget(
   if (!target) throw notFound('member')
   return { actor: fresh, target }
 }
+
+/**
+ * For a request that adds a member: locks the actor's membership and re-checks its settings=write,
+ * as lockActorAndTarget does.
+ */
+export async function lockActor(members: MembersRepository, actorId: string) {
+  const { actor } = await members.lockPair(actorId, actorId)
+  if (!actor || actor.expired) throw forbidden()
+  const fresh = asMembership(actor)
+  if (decideTenant(fresh, 'settings', 'write') !== 'allow') throw forbidden()
+  return fresh
+}

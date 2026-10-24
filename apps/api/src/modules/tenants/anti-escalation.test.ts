@@ -5,9 +5,11 @@ import {
   assertMayExtend,
   assertMayGrant,
   assertMayGrantEdition,
+  assertMayInvite,
   assertMayManage,
   assertWithinOwnExpiry,
   extendsAccess,
+  type InvitationGrant,
   raisesEditionLevel,
   raisesTenantLevel,
 } from './anti-escalation'
@@ -240,5 +242,80 @@ describe('assertWithinOwnExpiry', () => {
     expect(
       code(() => assertWithinOwnExpiry(org(), { current: before, next: null, raises: true })),
     ).toBe('allowed')
+  })
+})
+
+describe('assertMayInvite', () => {
+  const grant = (overrides: Partial<InvitationGrant> = {}): InvitationGrant => ({
+    role: 'org',
+    ...plain,
+    expiresAt: null,
+    editions: [],
+    ...overrides,
+  })
+  const edition = (access: Partial<EditionAccess>) => ({ editionId: 'e1', ...none, ...access })
+  const own = new Map<string, EditionAccess>([['e1', { ...none, programAccess: 'read' }]])
+  const ends = new Date('2027-01-01T00:00:00Z')
+
+  it('lets a head invite anyone with anything', () => {
+    const everything = grant({ role: 'head', shopConfigAccess: 'write' })
+
+    expect(code(() => assertMayInvite(head, new Map(), everything))).toBe('allowed')
+    expect(
+      code(() =>
+        assertMayInvite(
+          head,
+          new Map(),
+          grant({ editions: [edition({ ticketsAccess: 'write' })] }),
+        ),
+      ),
+    ).toBe('allowed')
+  })
+
+  it('refuses an org inviting a head or granting a tenant-level permission above its own', () => {
+    expect(code(() => assertMayInvite(org(), own, grant({ role: 'head' })))).toBe(
+      'member.above-own',
+    )
+    expect(code(() => assertMayInvite(org(), own, grant({ brandingAccess: 'write' })))).toBe(
+      'member.above-own',
+    )
+    expect(code(() => assertMayInvite(org(), own, grant({ settingsAccess: 'write' })))).toBe(
+      'allowed',
+    )
+  })
+
+  it('caps an org at its own access in each edition', () => {
+    expect(
+      code(() =>
+        assertMayInvite(org(), own, grant({ editions: [edition({ programAccess: 'read' })] })),
+      ),
+    ).toBe('allowed')
+    expect(
+      code(() =>
+        assertMayInvite(org(), own, grant({ editions: [edition({ programAccess: 'write' })] })),
+      ),
+    ).toBe('member.above-own')
+    expect(
+      code(() =>
+        assertMayInvite(
+          org(),
+          own,
+          grant({ editions: [{ ...edition({ programAccess: 'read' }), editionId: 'e2' }] }),
+        ),
+      ),
+    ).toBe('member.above-own')
+  })
+
+  it('keeps the access an expiring org grants within its own end', () => {
+    const expiring = org({ expiresAt: ends })
+
+    expect(code(() => assertMayInvite(expiring, own, grant()))).toBe('member.expiry-after-own')
+    expect(
+      code(() =>
+        assertMayInvite(expiring, own, grant({ expiresAt: new Date('2027-01-02T00:00:00Z') })),
+      ),
+    ).toBe('member.expiry-after-own')
+    expect(code(() => assertMayInvite(expiring, own, grant({ expiresAt: ends })))).toBe('allowed')
+    expect(code(() => assertMayInvite(org(), own, grant()))).toBe('allowed')
   })
 })

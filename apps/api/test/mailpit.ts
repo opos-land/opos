@@ -42,3 +42,10 @@ export async function deleteMail(address: string) {
   const query = encodeURIComponent(`to:"${address}"`)
   await fetch(`${api}/search?query=${query}`, { method: 'DELETE' })
 }
+
+/** The organizer invitation link in the text part of a message (PLAN.md 7.7). */
+export function invitationLinkIn(mail: Mail) {
+  const link = /https?:\/\/\S+\/invitation\?token=\S+/.exec(mail.Text)?.[0]
+  if (!link) throw new Error(`no invitation link in "${mail.Subject}"`)
+  return new URL(link)
+}

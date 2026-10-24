@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { type Account, type UpdateAccount } from '@opos/contract'
 import { accounts, type Database } from '@opos/db'
 import { isLocale } from '@opos/i18n'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNotNull } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { APP_DB } from '../../common/database/tokens'
 import { unauthenticated } from '../../common/errors/api-error'
@@ -52,6 +52,19 @@ export class AccountsRepository {
       .from(accounts)
       .where(eq(accounts.id, id))
     return row?.locale ?? null
+  }
+
+  /**
+   * The signed-in account's email once it is confirmed, else nothing: matching by email counts
+   * only a confirmed address (PLAN.md 4.2).
+   */
+  async confirmedEmail(): Promise<string | undefined> {
+    const { id } = this.context.account()
+    const [row] = await this.db
+      .select({ email: accounts.email })
+      .from(accounts)
+      .where(and(eq(accounts.id, id), isNotNull(accounts.emailConfirmedAt)))
+    return row?.email
   }
 
   /** Changes the signed-in account; an account deleted since the guard ran answers 401. */

@@ -813,8 +813,8 @@ macros, and they are their own identifiers. There are no separate keys to invent
 
 Supported locales: `en` (source) and `pl`. Czech joins with the Czech market beyond the MVP — a
 new locale is another set of `.po` catalogs plus its entries in `packages/i18n` (below), no
-migration. The default interface language is `pl`
-(`DEFAULT_LOCALE`) — a different thing from the source language. A missing translation falls back
+migration. The default interface language is `pl` (`DEFAULT_LOCALE`) — a different thing from the
+source language. A missing translation falls back
 to the source text, that is English; an identifier never appears on screen.
 
 ### Macros
@@ -841,11 +841,12 @@ One catalog per application plus a shared one:
 | `packages/i18n/locales/*.po` | API and Supabase Auth errors, email content | `packages/i18n/src` |
 
 The per-application split keeps the portal from pulling in the panel's messages. Compiled catalogs are
-loaded through a dynamic import per locale, and every import names its file:
-[catalog.ts](../packages/i18n/src/catalog.ts) lists one import per locale, because a bundler copies
-only the files an import names. The types of a compiled catalog come from the committed
+loaded through a dynamic import per locale. [catalog.ts](../packages/i18n/src/catalog.ts) names
+each shared catalog in an import of its own, because tsdown, which bundles the API, leaves an import
+path built from a variable unresolved. The types of a compiled catalog come from the committed
 `<locale>.d.mts` next to it, so typechecking needs no compiled catalogs. A new locale adds its entry
-to `SUPPORTED_LOCALES`, its import and its `.d.mts`.
+to `SUPPORTED_LOCALES`, its import and its `.d.mts` in `packages/i18n`, and its catalogs in every
+application.
 
 Every glossary term ([PRODUCT.md 3](PRODUCT.md#3-glossary)) has one rendering per locale.
 [glossary.ts](../packages/i18n/src/glossary.ts) declares each term as a `msg` descriptor with the
@@ -897,9 +898,9 @@ the contract without an entry in that map fails
 
 Emails are rendered by the API — it activates the recipient's catalog and composes the content
 through `@lingui/core`. That includes Supabase Auth's confirmation, recovery and email change
-messages, which reach the API through the send-email hook ([10](#10-supabase)). The API loads the
-shared catalog of every locale when it starts, so a bundle without them fails the start in CI
-([15.3](#153-ci)), not the first email.
+messages, which reach the API through the send-email hook ([10](#10-supabase)).
+[main.ts](../apps/api/src/main.ts) loads the shared catalog of every locale before the API listens,
+so a bundle without them fails the start in CI ([15.3](#153-ci)), not the first email.
 
 ### Formatting
 

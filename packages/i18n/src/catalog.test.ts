@@ -1,6 +1,6 @@
 import { setupI18n } from '@lingui/core'
 import { describe, expect, it } from 'vitest'
-import { activateLocale } from './catalog'
+import { activateLocale, loadCatalogs } from './catalog'
 import { glossary } from './glossary'
 
 describe('activateLocale', () => {
@@ -26,5 +26,11 @@ describe('activateLocale', () => {
 
     expect(i18n._('app.only')).toBe('Tylko w aplikacji')
     expect(i18n._(glossary.edition)).toBe('edycja')
+  })
+})
+
+describe('loadCatalogs', () => {
+  it('loads the catalog of every supported locale', async () => {
+    await expect(loadCatalogs()).resolves.toBeUndefined()
   })
 })

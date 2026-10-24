@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createEdition, createTenant, freshApp, inTenant, migrator, superuser } from './db'
+import { createEdition, createTenant, freshApp, global, inTenant, migrator, superuser } from './db'
 
 // Every covered table (PLAN.md 4.6) and the column that holds its tenant.
 const covered = [
@@ -50,6 +50,7 @@ describe('tenant isolation', () => {
     expect(rows.every((r) => r.tenant === b.id)).toBe(true)
   })
 
+  // opos_app may not update tenant_id at all, so the privilege refuses before WITH CHECK would.
   it.each(covered.filter(([table]) => table !== 'tenants'))(
     'refuses to move a row of %s to another tenant',
     async (table) => {
@@ -57,18 +58,9 @@ describe('tenant isolation', () => {
         inTenant(b.id, (sql) =>
           sql.unsafe(`update ${table} set tenant_id = '${a.id}' where tenant_id = '${b.id}'`),
         ),
-      ).rejects.toThrow(/row-level security/)
+      ).rejects.toThrow(/permission denied/)
     },
   )
-
-  it('refuses a tenant other than the one in context (tenants WITH CHECK)', async () => {
-    await expect(
-      inTenant(
-        b.id,
-        (sql) => sql`insert into tenants (slug, name) values ('rls-foreign', 'Foreign')`,
-      ),
-    ).rejects.toThrow(/row-level security/)
-  })
 
   it('rejects an insert with another tenant id', async () => {
     const a = await createTenant()
@@ -99,6 +91,44 @@ describe('tenant isolation', () => {
           await sql.unsafe(`select 1 from public.${table} limit 1`)
         }),
       ).rejects.toThrow(/permission denied/)
+    }
+  })
+})
+
+describe('runtime privileges', () => {
+  it.each(covered)('lets opos_app_global only read %s', async (table, column) => {
+    await global.unsafe(`select ${column} from ${table} limit 1`)
+    for (const statement of [
+      `insert into ${table} select * from ${table} where false`,
+      `update ${table} set ${column} = ${column} where false`,
+      `delete from ${table} where false`,
+    ]) {
+      await expect(global.unsafe(statement)).rejects.toThrow(/permission denied/)
+    }
+  })
+
+  it('lets opos_app neither create nor delete a tenant', async () => {
+    for (const statement of [
+      `insert into tenants (slug, name) values ('rls-foreign', 'Foreign')`,
+      `delete from tenants where id = '${b.id}'`,
+    ]) {
+      await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
+        /permission denied/,
+      )
+    }
+  })
+
+  it('lets opos_app update only the columns the API changes', async () => {
+    await inTenant(b.id, (sql) => sql`update tenants set name = name where id = ${b.id}`)
+    for (const statement of [
+      'update tenants set slug = slug',
+      'update tenant_memberships set account_id = account_id',
+      'update edition_memberships set tenant_membership_id = tenant_membership_id',
+      'update editions set id = id',
+    ]) {
+      await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
+        /permission denied/,
+      )
     }
   })
 })

@@ -43,6 +43,13 @@
       "when": 1792802275210,
       "tag": "0005_reserve_tenant_slugs",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792802374764,
+      "tag": "0006_narrow_runtime_privileges",
+      "breakpoints": true
     }
   ]
 }

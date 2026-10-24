@@ -490,8 +490,8 @@ Every RLS-covered table has an index starting with `tenantId`.
 | Role | Attributes | Used by |
 |---|---|---|
 | `opos_migrator` | owner of the `public` tables, `BYPASSRLS` | `pnpm db:migrate`, `pnpm db:seed` |
-| `opos_app` | DML only, no `BYPASSRLS` | runtime API inside a tenant context |
-| `opos_app_global` | DML only, `BYPASSRLS` | `GlobalDbService` exclusively |
+| `opos_app` | only the privileges the API uses (below), no `BYPASSRLS` | runtime API inside a tenant context |
+| `opos_app_global` | `select` only, `BYPASSRLS` | `GlobalDbService` exclusively |
 
 The three roles are created by `infra/supabase/db/opos-roles.sql`, which the `db` container runs
 as `supabase_admin` when it initializes an empty data directory. Supabase's own roles
@@ -537,7 +537,9 @@ create policy tenant_isolation on program_items
   using      (tenant_id = (select current_setting('app.tenant_id')::uuid))
   with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 
-grant select, insert, update, delete on program_items to opos_app, opos_app_global;
+grant select, insert, delete on program_items to opos_app;
+grant update (title, description, starts_at, ends_at) on program_items to opos_app;
+grant select on program_items to opos_app_global;
 ```
 
 The same for the remaining tables; for `tenants` the condition is `id = (select current_setting(...))`.
@@ -574,10 +576,17 @@ the system, including `PublicModule`, resolves the tenant first and then works o
 #### Migrations and verification
 
 RLS policies and the `auth.users` triggers go into hand-written migrations
-(`drizzle-kit generate --custom`). The same migration grants `select, insert, update, delete` on
-the new tables to `opos_app` and `opos_app_global` (`accounts` excepted, [4.2](#42-global-tables)),
-revokes everything from `anon` and
-`authenticated`, and adds each table's `<table>_set_updated_at` trigger ([4](#4-database-schema)).
+(`drizzle-kit generate --custom`). The same migration grants the new tables' privileges, revokes
+everything from `anon` and `authenticated`, and adds each table's `<table>_set_updated_at` trigger
+([4](#4-database-schema)). The privileges follow what the API does with a table:
+
+- `opos_app` gets `select`; `insert` and `delete` where the API creates and removes rows; `update`
+  only on the columns the API changes — never on `id`, `tenant_id` or a column that points a row at
+  an account or another row (`account_id`, `tenant_membership_id`). A new column the API changes
+  joins its grant in the same migration.
+- `opos_app_global` gets `select` and nothing else.
+- `tenants` rows are inserted, deleted and given a new slug by `opos_migrator` alone
+  ([14](#creating-a-tenant)); `accounts` follows [4.2](#42-global-tables).
 Trigger functions are `security definer` with `set search_path = ''` and schema-qualified names,
 because Supabase Auth runs with `search_path = auth`. `db:push` is for local experiments only;
 everything else goes through generated migrations.
@@ -1706,7 +1715,8 @@ any API code: the global setup applies the migrations, the tests connect as `opo
 `opos_app`, `supabase_auth_admin` (writes to `auth.users`) and `postgres` (`set role anon`), and
 remove the tenants and users they created. They cover the RLS row of the table below for every
 covered table (no context, another tenant's context, a row moved to another tenant), the
-`accounts` privileges, the
+`accounts` privileges, the runtime roles' privileges (`opos_app_global` only reads, `opos_app`
+updates only the granted columns and neither inserts nor deletes a tenant), the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
 foreign edition), `createTenant` and each of its refusals, and the `accounts` triggers. The API tests repeat

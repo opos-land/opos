@@ -107,7 +107,8 @@ QR codes in emails).
 **Authentication:** Supabase Auth (GoTrue), self-hosted ([10](#10-supabase)). Clients use
 `@supabase/auth-js` directly against `auth.opos.land`.
 
-**Frontend SPA:** Vite + React + TypeScript, Tailwind CSS + shadcn/ui, `@orpc/client` +
+**Frontend SPA:** Vite + React + TypeScript, Tailwind CSS (shadcn/ui components where a screen
+needs a widget native HTML lacks, [3.2](#32-frontend-application-layout)), `@orpc/client` +
 `@orpc/tanstack-query`,
 `@supabase/auth-js`, react-router, react-hook-form + zod, zustand, `@lingui/react`; in the
 scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
@@ -116,7 +117,8 @@ scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
 `@lingui/react/macro` macros, `@lingui/cli`.
 `Intl` for dates, numbers and currencies.
 
-**Tests:** vitest + supertest (integration), Playwright (web e2e, desktop and mobile viewports).
+**Tests:** vitest + supertest (integration), vitest + Testing Library on jsdom (frontend unit
+tests), Playwright (web e2e, desktop and mobile viewports).
 
 **Infrastructure:** Docker Compose, Traefik v3 (wildcard TLS via DNS-01), self-hosted Supabase —
 `supabase/postgres` (PostgreSQL 17) and `supabase/gotrue`, Supabase Studio (dev), Mailpit (dev).
@@ -164,14 +166,9 @@ opos/
           guards/scanner-device.guard.ts
         modules/         # one directory per module (7.1)
       Dockerfile
-    panel/
-      lingui.config.ts
-      src/
-        locales/{en,pl}.po
-        app/             # router, providers, application layout
-        features/        # one directory per feature (8), laid out as in 3.2
-        shared/{ui,lib,config}/
-      .env.example       # VITE_API_URL, VITE_AUTH_URL
+    panel/               # built: Vite and Lingui config, catalogs, app/ (router, providers, query
+                         #   client), features auth, tenants, editions, team, account, shared/
+                         #   (API link, auth client, session, i18n, UI), .env.example, tests (8)
       Dockerfile
     portal/
       lingui.config.ts
@@ -249,7 +246,8 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
 - turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
   every `db:*` task pass the database variables through (`passThroughEnv`), `test` also
   `OPOS_MAILPIT_PORT`, `db:seed` also the Supabase Auth ones and `NODE_ENV`
-  ([11](#11-environment-variables)), so they reach the scripts and stay out of the hash.
+  ([11](#11-environment-variables)), and `dev` passes `OPOS_PANEL_PORT` and `OPOS_PORTAL_PORT` to
+  the dev servers ([12](#ports)), so they reach the scripts and stay out of the hash.
 - The root scripts that take arguments, `db:seed`, `db:tenant:create` and `db:tenant:rename`, end
   with `--`, so pnpm hands the arguments through turbo to the package script.
 
@@ -271,7 +269,7 @@ src/
       model/            # types, zod schemas, mappings
       index.ts          # the feature's public API — the only thing others can see
   shared/
-    ui/                 # shadcn/ui and components with no domain knowledge
+    ui/                 # components with no domain knowledge
     lib/                # API client, auth client, i18n, formatters, storage
     config/
 ```
@@ -302,8 +300,11 @@ feature.
 A feature never reaches the database or `fetch` directly: all network traffic goes through that
 feature's `api/`, built on the API client and the auth client from `shared/lib`.
 
-`shared/ui` starts from shadcn/ui, restyled to the designer's tokens (colours, typography,
-spacing, radii). No image or illustration in `shared/ui` or in a feature is AI-generated
+`shared/ui` holds components with no domain knowledge, built on native elements and styled only
+through the tokens of the application's `src/styles.css` (colours, typography, spacing, radii),
+which the designer's values replace ([styles.css](../apps/panel/src/styles.css)). A shadcn/ui
+component joins when a screen needs a widget native HTML lacks, restyled to the same tokens. No
+image or illustration in `shared/ui` or in a feature is AI-generated
 ([PRODUCT.md 8](PRODUCT.md#8-design-and-public-image)).
 
 ---
@@ -981,8 +982,10 @@ catalogs are out of sync with the code or a message has no `pl` translation. A n
 
 The API returns a `code`, never a sentence. [errors.ts](../packages/i18n/src/errors.ts) maps a
 `code` onto a descriptor from the `msg` macro, and the client renders it through
-`i18n._(errorMessage(code), params)`. Supabase Auth's `error_code` values are mapped in the same
-file under `auth.<error_code>`; an unmapped code renders the generic `unknownError`. A `code` in
+`i18n._({ ...errorMessage(code), values: params })` — in the panel the `ErrorMessage` component of
+[messages.tsx](../apps/panel/src/shared/ui/messages.tsx), fed by
+[errors.ts](../apps/panel/src/shared/lib/errors.ts). Supabase Auth's `error_code` values are mapped
+in the shared map under `auth.<error_code>`; an unmapped code renders the generic `unknownError`. A `code` in
 the contract without an entry in that map fails
 [errors.test.ts](../packages/contract/src/errors.test.ts) in `packages/contract`.
 
@@ -1167,7 +1170,8 @@ token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenan
 **Session in the browser** — `@supabase/auth-js` with `flowType: 'pkce'`, `persistSession: true`,
 `autoRefreshToken: true`, stored in the `localStorage` of the application's own origin under a
 separate key (`opos-portal-auth`, `opos-panel-auth`). The portal and the panel never share a
-session.
+session. The panel's client is [auth.ts](../apps/panel/src/shared/lib/auth.ts); it does not read the
+URL itself (`detectSessionInUrl: false`), since `/auth/callback` exchanges the code.
 
 Because the session is readable by scripts on that origin, the portal and the panel are served
 with a strict Content Security Policy: `script-src 'self'`, no inline scripts,
@@ -1275,7 +1279,8 @@ password only after the address is proven, so a password someone set on the addr
 confirmed does not survive ([4.2](#42-global-tables)).
 
 1. The page reads `?token=`, calls `GET /invitations/preview` and keeps the token in `localStorage`
-   (`opos-panel-invitation`), so it survives the confirmation link opening in another tab.
+   ([invitation-storage.ts](../apps/panel/src/features/auth/model/invitation-storage.ts)), so it
+   survives the confirmation link opening in another tab.
 2. Signed in already, or after `signInWithPassword` or the Google return: the panel calls
    `POST /invitations/accept` and removes the stored entry.
 3. Sign-up with email: the form takes the address, prefilled with the invited one, and no password.
@@ -1286,8 +1291,8 @@ confirmed does not survive ([4.2](#42-global-tables)).
    `GOTRUE_URI_ALLOW_LIST` ([10](#10-supabase)).
 4. `/auth/callback` exchanges the code for a session and, when a stored entry is present, returns
    to `/invitation`.
-5. Back with an entry waiting for a password, the page asks for one and sets it with
-   `updateUser({ password })`, then calls `signOut({ scope: 'others' })` and accepts as in step 2.
+5. Back with an entry waiting for a password, and signed in with the invited address, the page
+   asks for one and sets it with `updateUser({ password })`, then calls `signOut({ scope: 'others' })` and accepts as in step 2.
    This replaces a password anyone set on the address before it was confirmed, as a password reset
    does ([7.6](#76-password-reset)). A Google sign-up needs no such step: Google takes an
    unconfirmed account over ([7.5](#75-google-oauth)).
@@ -1403,10 +1408,15 @@ The scanner is online only: no local ticket list, no queue of offline redemption
 
 ## 8. `apps/panel`
 
-SPA (Vite + React), `@orpc/tanstack-query` over an oRPC client of the contract, `@supabase/auth-js`
-for the session, UI state in `zustand`, forms with `react-hook-form` + zod using schemas from
-`packages/contract`.
-Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a tablet.
+SPA (Vite + React) in [apps/panel](../apps/panel), `@orpc/tanstack-query` over an oRPC client of
+the contract, `@supabase/auth-js` for the session, UI state in `zustand`, forms with
+`react-hook-form` + zod using schemas from `packages/contract`. Feature-based layout
+([3.2](#32-frontend-application-layout)). Desktop-first; usable from a tablet.
+
+Built: the features `auth`, `tenants`, `editions`, `team` and `account` with their screens below;
+the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be built: `program`,
+`shop`, `tickets`, `scanner` and their screens, and the image with its headers
+([13](#13-deployment)).
 
 | Feature | Scope |
 |---|---|
@@ -1443,17 +1453,37 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 - The fixed top-level paths — `/login`, `/auth/callback`, `/invitation`, `/scanner` — are reserved
   tenant slugs ([4.3](#43-tenant-level-tables)), so `/:tenantSlug` never shadows them; a new
   top-level path joins `RESERVED_TENANT_SLUGS` in the same PR.
-- The client's link attaches `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug`
-  and `Accept-Language` based on the active locale, and reads errors back as in
-  [5](#5-api-contract).
-- Language switcher in the account menu; the choice goes to `PATCH /me` and stays on the account.
-- The compiled Lingui catalog is loaded through a dynamic import when the locale changes.
-- `GET /me/memberships` after sign-in populates the permission store.
-- The sidebar hides sections with a `none` permission; at `read` the save buttons are `disabled`.
-- A `403` from the API -> a "no permissions" screen.
+- The API link ([api-fetch.ts](../apps/panel/src/shared/lib/api-fetch.ts)) attaches
+  `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug` and `Accept-Language` from
+  the active locale, and reads errors back as in [5](#5-api-contract). Every tenant gets a client
+  of its own whose query keys start with its slug ([api.ts](../apps/panel/src/shared/lib/api.ts)),
+  so two tenants never share a cached answer.
+- `401` from the API -> one `refreshSession()`, shared by the requests waiting on it, and one
+  retry; a failed refresh or a second `401` signs out. `session.reauthentication-required` goes to
+  the screen instead ([7.4](#74-authorization)).
 - Application start restores the session with `getSession()`, refreshing it when it has expired —
-  until that resolves the user sees a loading view, not the sign-in screen.
-- `401` from the API -> one `refreshSession()` and a retry; on failure, sign-out.
+  until that resolves the user sees a loading view, not the sign-in screen
+  ([session.ts](../apps/panel/src/shared/lib/session.ts)).
+- `GET /me/memberships` after sign-in populates the permission store
+  ([permissions.ts](../apps/panel/src/features/tenants/model/permissions.ts)). The UI reads it and
+  the API stays the authority: the sidebar hides sections with a `none` permission, at `read` the
+  save buttons are `disabled`, a page the permissions do not cover ends on the "no permissions"
+  screen when entered by URL, and an org without `settings>=read` sees only the editions it holds a
+  level in. Only the permissions that do something appear
+  ([PRODUCT.md 5.3](PRODUCT.md#53-permission-values)).
+- A `403` `permission.denied` from the API -> the "no permissions" screen until the member
+  navigates elsewhere, and the permission store is read again
+  ([query-client.ts](../apps/panel/src/app/query-client.ts)). An anti-escalation refusal, which has
+  a code of its own, shows next to the form that caused it.
+- An error is shown by its code through the catalog, never by its `message` ([6](#api-errors)).
+- Language switcher in the account menu; the choice — a language, or the browser's — goes to
+  `PATCH /me` and stays on the account. The compiled Lingui catalog is loaded through a dynamic
+  import when the locale changes ([i18n.ts](../apps/panel/src/shared/lib/i18n.ts)).
+- A tenant's dates are shown and edited in `tenants.timezone`: a `datetime-local` input holds the
+  wall-clock time of that zone (`toZonedWallTime` and `fromZonedWallTime` of `@opos/i18n`). The
+  invitation preview names no zone and shows `validUntil` in the browser's.
+- A change to a member sends only the fields the form changed; promoting to `head` sends the role
+  alone ([member.ts](../apps/panel/src/features/team/model/member.ts)).
 - `/scanner` is the one mobile-first screen of the panel and the only one that works without a
   sign-in. Camera access through `getUserMedia`; the panel is served with
   `Permissions-Policy: camera=(self)`. A text field accepts the code when the camera cannot read
@@ -1677,7 +1707,11 @@ passwords (`postgres` for Supabase's roles, `opos` for the OPOS roles) are fixed
 | `apps/portal/.env` | `VITE_API_URL`, `VITE_AUTH_URL` |
 
 `VITE_*` values are baked into the bundle at build time; turbo hashes them through framework
-inference, so a changed value rebuilds exactly the applications that read it.
+inference, so a changed value rebuilds exactly the applications that read it. The committed
+`.env.example` holds working dev values: the dev server and the unit tests fall back to them for
+every `VITE_*` that the environment and `.env` leave unset, and a production build reads only the
+environment and `.env` ([vite.config.ts](../apps/panel/vite.config.ts)). The panel validates both
+addresses when it starts ([env.ts](../apps/panel/src/shared/config/env.ts)).
 
 Production configuration lives in a `.env` next to `docker-compose.prod.yml` on the VPS — compose
 injects it into the containers. It adds `POSTGRES_PASSWORD`, `ACME_EMAIL`, `CF_DNS_API_TOKEN` and
@@ -1745,12 +1779,12 @@ repository:
 | Variable | Default | Service | Also set in `apps/api/.env` |
 |---|---|---|---|
 | `OPOS_DB_PORT` | `5432` | `db` | the port in the three `DATABASE_*_URL` |
-| `OPOS_AUTH_PORT` | `9999` | `auth`, also in `API_EXTERNAL_URL`, `GOTRUE_JWT_ISSUER` and the Google redirect URI | `AUTH_URL` |
+| `OPOS_AUTH_PORT` | `9999` | `auth`, also in `API_EXTERNAL_URL`, `GOTRUE_JWT_ISSUER` and the Google redirect URI | `AUTH_URL`; `VITE_AUTH_URL` in `apps/panel/.env` |
 | `OPOS_STUDIO_PORT` | `54323` | `studio` | — |
 | `OPOS_SMTP_PORT` | `1025` | `mailpit` SMTP | `SMTP_PORT` |
 | `OPOS_MAILPIT_PORT` | `8025` | `mailpit` UI and HTTP API | — |
-| `OPOS_API_PORT` | `3001` | target of the send-email hook | `PORT`, `API_URL` |
-| `OPOS_PANEL_PORT` | `5173` | panel addresses in `GOTRUE_URI_ALLOW_LIST` | `PANEL_URL` |
+| `OPOS_API_PORT` | `3001` | target of the send-email hook | `PORT`, `API_URL`; `VITE_API_URL` in `apps/panel/.env` |
+| `OPOS_PANEL_PORT` | `5173` | the panel dev server, panel addresses in `GOTRUE_URI_ALLOW_LIST` | `PANEL_URL` |
 | `OPOS_PORTAL_PORT` | `5174` | `GOTRUE_SITE_URL` and portal addresses in `GOTRUE_URI_ALLOW_LIST` | `PORTAL_URL` |
 
 The variables live in the shell environment, set per developer in `mise.local.toml` (git-ignored,
@@ -1953,7 +1987,9 @@ Where a test lives depends on what it needs:
 | integration | Postgres, Supabase Auth or HTTP | `test/` of the package or application, with its `globalSetup` | `packages/db/test/rls.test.ts`, `apps/api/test/*.test.ts` |
 | e2e | the full stack in a browser | the `e2e` package | `e2e/specs/` |
 
-A frontend feature keeps the unit tests of its hooks and models inside the feature directory. Each
+A frontend feature keeps the unit tests of its hooks and models inside the feature directory; a
+frontend's unit tests run on jsdom, components through Testing Library, and match
+`src/**/*.test.{ts,tsx}`. Each
 `vitest.config.ts` includes the patterns of the kinds its package has (`src/**/*.test.ts`,
 `test/**/*.test.ts`; `*.test.js` in the `vitest.config.js` of `packages/eslint-config`). Test files never reach a bundle (tsdown and Vite follow imports from the
 entry point) and never contribute messages (`linguiConfig()` excludes them).

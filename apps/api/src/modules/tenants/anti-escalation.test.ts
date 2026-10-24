@@ -115,6 +115,10 @@ describe('extendsAccess', () => {
     expect(extendsAccess(past, soon)).toBe(true)
   })
 
+  it('counts a date that does not compare as extending', () => {
+    expect(extendsAccess(soon, new Date(Number.NaN))).toBe(true)
+  })
+
   it('counts an earlier expiry, or a first one, as no grant', () => {
     expect(extendsAccess(later, soon)).toBe(false)
     expect(extendsAccess(soon, soon)).toBe(false)

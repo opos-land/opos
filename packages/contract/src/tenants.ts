@@ -1,7 +1,7 @@
 import { isTimeZone, SUPPORTED_LOCALES } from '@opos/i18n'
 import { initContract } from '@ts-rest/core'
 import { z } from 'zod'
-import { errorSchema } from './common'
+import { errorSchema, timestamp } from './common'
 import { bearer } from './me'
 
 const c = initContract()
@@ -48,7 +48,7 @@ export const memberSchema = z.object({
   settingsAccess: level,
   brandingAccess: level,
   shopConfigAccess: level,
-  expiresAt: z.string().datetime({ offset: true }).nullable(),
+  expiresAt: timestamp.nullable(),
   expired: z.boolean(),
 })
 
@@ -61,7 +61,7 @@ export const updateMemberSchema = z
     brandingAccess: level,
     shopConfigAccess: level,
     /** `null` removes the expiry. A head never expires. */
-    expiresAt: z.string().datetime({ offset: true }).nullable(),
+    expiresAt: timestamp.nullable(),
   })
   .partial()
   .strict()

@@ -8,3 +8,9 @@ export const errorSchema = z.object({
 })
 
 export type ApiError = z.infer<typeof errorSchema>
+
+/** A date-time with an offset that `Date` can read; zod alone accepts offsets such as `+99:00`. */
+export const timestamp = z
+  .string()
+  .datetime({ offset: true })
+  .refine((value) => !Number.isNaN(Date.parse(value)), 'Invalid date')

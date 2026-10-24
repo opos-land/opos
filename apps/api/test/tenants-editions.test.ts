@@ -239,6 +239,12 @@ describe('anti-escalation', () => {
     await patch(writer, targetId, { settingsAccess: 'read' }).expect(200)
   })
 
+  it('refuses an expiry that does not parse', async () => {
+    const res = await patch(writer, targetId, { expiresAt: '2099-01-01T00:00:00+99:00' })
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'expiresAt' } })
+  })
+
   it('refuses removing oneself and an org removing a head', async () => {
     expect(
       (await call(writer, 'delete', `/tenants/current/members/${writerId}`)).body,
@@ -494,6 +500,16 @@ describe('editions', () => {
         })
       ).body,
     ).toMatchObject({ code: 'request.invalid', params: { field: 'endsAt' } })
+    expect(
+      (
+        await call(a.head, 'post', '/editions', {
+          slug: slug(),
+          name: 'Offset',
+          ...window,
+          startsAt: '2027-06-01T09:00:00+99:00',
+        })
+      ).body,
+    ).toMatchObject({ code: 'request.invalid', params: { field: 'startsAt' } })
   })
 
   it('switches the active edition and refuses to delete it', async () => {

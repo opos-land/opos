@@ -1,11 +1,9 @@
 import { initContract } from '@ts-rest/core'
 import { z } from 'zod'
-import { errorSchema } from './common'
+import { errorSchema, timestamp } from './common'
 import { level, memberAccountSchema, tenantHeaders } from './tenants'
 
 const c = initContract()
-
-const timestamp = z.string().datetime({ offset: true })
 
 /** Part of the convention page addresses (PRODUCT.md 6): lowercase letters, digits, hyphens. */
 export const editionSlug = z.string().regex(/^[a-z0-9-]{1,40}$/)

@@ -12,10 +12,11 @@ const refuse = (code: RefusalCode, message: string) => new ApiError(403, code, m
 
 /**
  * Whether a new expiry makes the member's access last longer: lifting it, or moving it later, which
- * also revives an expired membership. Setting an earlier expiry grants nothing.
+ * also revives an expired membership. Only an earlier or equal expiry grants nothing, so a date that
+ * does not compare counts as extending.
  */
 export const extendsAccess = (current: Date | null, next: Date | null) =>
-  current !== null && (next === null || next > current)
+  current !== null && !(next !== null && next <= current)
 
 export interface ManagedMember {
   id: string

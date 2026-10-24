@@ -6,12 +6,19 @@ describe('safeRedirect', () => {
     expect(safeRedirect('/conventions/convention-a?x=1')).toBe('/conventions/convention-a?x=1')
   })
 
-  it.each([null, '', 'https://evil.test', '//evil.test', '/\\evil.test', 'account'])(
-    'sends %j to the account page',
-    (value) => {
-      expect(safeRedirect(value)).toBe('/account')
-    },
-  )
+  it.each([
+    null,
+    '',
+    'https://evil.test',
+    '//evil.test',
+    '/\\evil.test',
+    '/\t/evil.test',
+    '/\n/evil.test',
+    '/\r\n/evil.test',
+    'account',
+  ])('sends %j to the account page', (value) => {
+    expect(safeRedirect(value)).toBe('/account')
+  })
 })
 
 describe('withRedirect', () => {

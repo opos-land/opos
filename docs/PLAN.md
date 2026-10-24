@@ -286,6 +286,7 @@ Import rules, enforced by `import-x/no-restricted-paths` in the `react` preset o
 | `features/x` | the internals of `features/y` | **no** |
 | `shared/` | `features/` | **no** |
 | `app/` | anywhere | yes |
+| `shared/`, `features/` | `app/` | **no** |
 
 - An application's `eslint.config.js` passes its own directory to the preset
   (`react(import.meta.dirname)`); the features are the directories of `src/features` when ESLint

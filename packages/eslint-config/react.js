@@ -15,7 +15,8 @@ const sourceFiles = ['**/*.{ts,tsx}']
 /**
  * The import rules of the feature-based layout (PLAN.md 3.2), for the application whose root is
  * `root`: a feature sees another feature only through its `index.ts`, `shared/` never imports a
- * feature, `app/` imports anything. Features are read from `src/features` when the config loads.
+ * feature, `app/` imports anything and nothing imports `app/`. Features are read from
+ * `src/features` when the config loads.
  */
 export function featureBoundaries(root) {
   const featuresDir = join(root, 'src', 'features')
@@ -30,6 +31,16 @@ export function featureBoundaries(root) {
       target: './src/shared',
       from: './src/features',
       message: 'shared/ never imports a feature.',
+    },
+    {
+      target: './src/shared',
+      from: './src/app',
+      message: 'app/ is the top layer; nothing imports it.',
+    },
+    {
+      target: './src/features',
+      from: './src/app',
+      message: 'app/ is the top layer; nothing imports it.',
     },
     ...features.flatMap((feature) =>
       features

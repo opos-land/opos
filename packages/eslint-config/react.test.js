@@ -37,6 +37,14 @@ describe('react preset', () => {
     expect(await ruleIds('app/router.ts')).toEqual([])
   })
 
+  it('forbids shared/ to import app/', async () => {
+    expect(await ruleIds('shared/lib/into-app.ts')).toEqual(['import-x/no-restricted-paths'])
+  })
+
+  it('forbids a feature to import app/', async () => {
+    expect(await ruleIds('features/beta/into-app.ts')).toEqual(['import-x/no-restricted-paths'])
+  })
+
   it('applies the accessibility rules to JSX', async () => {
     expect(await ruleIds('features/beta/components/avatar.tsx')).toEqual(['jsx-a11y/alt-text'])
   })

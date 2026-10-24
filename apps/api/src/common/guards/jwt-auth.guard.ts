@@ -1,10 +1,9 @@
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common'
-import { jwtVerify } from 'jose'
 import { ENV, type Env } from '../../config/env'
 import { AccountsRepository } from '../../modules/accounts/accounts.repository'
 import { TenantContextService } from '../als/tenant-context.service'
 import { unauthenticated } from '../errors/api-error'
-import { isUuid } from '../uuid'
+import { type AccessTokenKey, accessTokenKey, bearerToken, verifyAccessToken } from './access-token'
 
 /**
  * Verifies the Supabase Auth access token (PLAN.md 7.4) and puts its account into the request
@@ -12,38 +11,25 @@ import { isUuid } from '../uuid'
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  private readonly key: Uint8Array
+  private readonly key: AccessTokenKey
 
   constructor(
-    @Inject(ENV) private readonly env: Env,
+    @Inject(ENV) env: Env,
     private readonly accounts: AccountsRepository,
     private readonly context: TenantContextService,
   ) {
-    this.key = new TextEncoder().encode(env.JWT_SECRET)
+    this.key = accessTokenKey(env)
   }
 
   async canActivate(ctx: ExecutionContext) {
     const { headers } = ctx.switchToHttp().getRequest<{ headers: Record<string, unknown> }>()
-    const header = typeof headers.authorization === 'string' ? headers.authorization : ''
-    const token = /^Bearer (\S+)$/.exec(header)?.[1]
+    const token = bearerToken(headers.authorization)
     if (!token) throw unauthenticated('Missing bearer token')
 
-    let sub: string | undefined
-    try {
-      const { payload } = await jwtVerify(token, this.key, {
-        algorithms: ['HS256'],
-        audience: 'authenticated',
-        issuer: this.env.AUTH_URL,
-        // jose checks exp only when the claim is present; a token without one never expires.
-        requiredClaims: ['exp', 'sub'],
-      })
-      sub = payload.sub
-    } catch {
-      throw unauthenticated('Invalid or expired token')
-    }
-    if (!isUuid(sub)) throw unauthenticated('Token without an account id')
+    const payload = await verifyAccessToken(token, this.key)
+    if (!payload) throw unauthenticated('Invalid or expired token, or no account id in it')
 
-    const account = await this.accounts.findForToken(sub)
+    const account = await this.accounts.findForToken(payload.sub)
     if (!account) throw unauthenticated('No account for this token')
     this.context.setAccount(account)
     return true

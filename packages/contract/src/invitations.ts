@@ -1,8 +1,14 @@
 import { z } from 'zod'
 import { accountRoute, publicRoute, timestamp } from './common'
 
-/** The token of an organizer invitation, from the link in its email (PLAN.md 7.7). */
-const token = z.string().min(1).max(8192)
+/**
+ * The token of an organizer invitation, from the link in its email (PLAN.md 7.7). The largest
+ * invitation inviteMemberSchema accepts signs a token of about 9.8k characters; the limit leaves
+ * room for it and keeps `GET /invitations/preview?token=` within Node's 16 KiB header limit.
+ */
+export const invitationToken = z.string().min(1).max(12288)
+
+const token = invitationToken
 
 export const invitationPreviewSchema = z.object({
   tenant: z.object({ name: z.string() }),

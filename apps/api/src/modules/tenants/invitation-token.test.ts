@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
+import { invitationToken, inviteMemberSchema } from '@opos/contract'
 import { SignJWT } from 'jose'
 import { describe, expect, it } from 'vitest'
+import { claimsOf, grantOf } from './invitation-grant'
 import {
   INVITATION_TTL_SECONDS,
   type InvitationClaims,
@@ -110,5 +112,29 @@ describe('invitation tokens', () => {
 
     expect(await code(verifyInvitation(noExpiry, key))).toBe('invitation.invalid')
     expect(await code(verifyInvitation(hs512, key))).toBe('invitation.invalid')
+  })
+
+  it('fit the largest invitation the request schema accepts within the token limit', async () => {
+    const body = inviteMemberSchema.parse({
+      email: `${'a'.repeat(241)}@example.test`,
+      role: 'org',
+      settingsAccess: 'write',
+      brandingAccess: 'write',
+      shopConfigAccess: 'write',
+      expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+      editions: Array.from({ length: 50 }, () => ({
+        editionId: randomUUID(),
+        programAccess: 'write',
+        websiteContentAccess: 'write',
+        ticketsAccess: 'write',
+      })),
+    })
+    expect(body.email).toHaveLength(254)
+    const oneMore = [...body.editions!, { ...body.editions![0]!, editionId: randomUUID() }]
+    expect(inviteMemberSchema.safeParse({ ...body, editions: oneMore }).success).toBe(false)
+
+    const { token } = await signInvitation(claimsOf(randomUUID(), body.email, grantOf(body)), key)
+
+    expect(invitationToken.safeParse(token).success).toBe(true)
   })
 })

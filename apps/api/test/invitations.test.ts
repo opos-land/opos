@@ -167,6 +167,33 @@ describe('inviting an address without an account', () => {
     expect(mail!.Subject).toBe(`Invitation to the organizing team of Tenant ${tenant.slug}`)
   })
 
+  it('carries the largest grant the request accepts through preview and acceptance', async () => {
+    // A tenant of its own: 50 editions, and this invitation outside the other tests' rate limit.
+    const tenant = await tenantWithHead()
+    const editions = await Promise.all(Array.from({ length: 50 }, () => addEdition(tenant.id)))
+    const all = { programAccess: 'write', websiteContentAccess: 'write', ticketsAccess: 'write' }
+    const email = newAddress()
+    await invite(
+      tenant.head,
+      {
+        email,
+        settingsAccess: 'write',
+        brandingAccess: 'write',
+        shopConfigAccess: 'write',
+        expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+        editions: editions.map((editionId) => ({ editionId, ...all })),
+      },
+      tenant.slug,
+    ).expect(201)
+    const token = await tokenSentTo(email)
+    const invitee = await registered(email)
+
+    await preview(token).expect(200)
+    await accept(token, invitee.token).expect(201)
+
+    expect((await storedMembership(tenant.id, invitee.id))!.editions).toHaveLength(50)
+  })
+
   it('works once, also after the membership it created is removed', async () => {
     const email = newAddress()
     await invite(a.head, { email }).expect(201)

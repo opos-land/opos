@@ -378,7 +378,7 @@ is a convention's last head organizer must hand that role over first — otherwi
 would be left without an owner.
 
 Database backups contain personal data, so they are encrypted and share the retention policy of
-production data.
+production data. Emails leave the platform for the mail provider only over an encrypted connection.
 
 **The privacy policy ships with the MVP.** It is published on the platform website and linked
 from the registration form. The remaining obligations stay beyond the MVP: record of processing

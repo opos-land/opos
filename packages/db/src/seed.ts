@@ -152,22 +152,31 @@ function serviceRoleKey(secret: string) {
   return `${unsigned}.${createHmac('sha256', secret).update(unsigned).digest('base64url')}`
 }
 
+async function authAdmin(method: 'POST' | 'PUT', path: string, body: object) {
+  const response = await fetch(`${authUrl}${path}`, {
+    method,
+    headers: { authorization: `Bearer ${serviceKey}`, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) {
+    throw new Error(`${method} ${path} failed: ${response.status} ${await response.text()}`)
+  }
+}
+
 async function ensureAccount(account: SeedAccount) {
   const [existing] = await db
-    .select({ id: accounts.id })
+    .select({ id: accounts.id, emailConfirmedAt: accounts.emailConfirmedAt })
     .from(accounts)
     .where(eq(accounts.email, account.email))
+  // Every seed account is confirmed: createTenant and the invitations count no other.
   if (!existing) {
-    const response = await fetch(`${authUrl}/admin/users`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${serviceKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ email: account.email, password: DEV_PASSWORD, email_confirm: true }),
+    await authAdmin('POST', '/admin/users', {
+      email: account.email,
+      password: DEV_PASSWORD,
+      email_confirm: true,
     })
-    if (!response.ok) {
-      throw new Error(
-        `Creating ${account.email} failed: ${response.status} ${await response.text()}`,
-      )
-    }
+  } else if (!existing.emailConfirmedAt) {
+    await authAdmin('PUT', `/admin/users/${existing.id}`, { email_confirm: true })
   }
   // The auth.users trigger created the row; the seed owns the names and the locale.
   await db

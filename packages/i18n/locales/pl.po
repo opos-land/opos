@@ -212,6 +212,10 @@ msgid "speaker"
 msgstr "prelegent"
 
 #: src/errors.ts
+msgid "The account with this email address has not been confirmed yet."
+msgstr "Konto z tym adresem e-mail nie zostało jeszcze potwierdzone."
+
+#: src/errors.ts
 msgid "The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters."
 msgstr "Adres może zawierać tylko małe litery, cyfry i myślniki, od 3 do 40 znaków."
 

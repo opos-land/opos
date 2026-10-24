@@ -372,6 +372,12 @@ once its owner clicks the link sent to that address. A Google sign-in counts as 
 of the account's email address takes effect once both the current and the new address confirm it
 through the links sent to them.
 
+**An email address leads to an account only once it is confirmed.** Wherever the platform finds an
+account by its email address — the admin appointing a convention's first head organizer, an
+organizer invitation, the tickets under "my tickets" — an account that has not confirmed its
+address counts as no account. The admin's script refuses it, and an invitation to it goes out as an
+invitation to a person without an account.
+
 **Account deletion is self-service.** The user deletes the account from settings; their sign-in
 identities, sessions and edition registrations go with it. The single exception: an account that
 is a convention's last head organizer must hand that role over first — otherwise the convention

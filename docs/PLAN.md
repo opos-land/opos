@@ -358,18 +358,27 @@ Supabase Auth's tables (`auth.users`, `auth.identities`, `auth.sessions`, `auth.
 OPOS keeps the profile only.
 
 **`accounts`** ([accounts.ts](../packages/db/src/schema/accounts.ts)) — `id` equals the JWT `sub`
-and `auth.users.id`; `email` is unique and lowercase (check `accounts_email_lowercase`); `locale` is
-the user's choice, `null` means detect from `Accept-Language`.
+and `auth.users.id`; `email` is unique and lowercase (check `accounts_email_lowercase`);
+`emailConfirmedAt` is `auth.users.email_confirmed_at`, `null` until the address is confirmed;
+`locale` is the user's choice, `null` means detect from `Accept-Language`.
 
-Two triggers on `auth.users`, `security definer` functions owned by `opos_migrator`, keep it in step
-with Supabase Auth: an insert creates the `accounts` row with `firstName`, `lastName` and `locale`
-from `raw_user_meta_data` (sent by the portal on sign-up; for Google `full_name` split on the first
-space), and an email change updates `accounts.email`. Every `auth.users` row has an email, because
+Triggers on `auth.users`, `security definer` functions owned by `opos_migrator`, keep it in step
+with Supabase Auth: an insert creates the `accounts` row with `emailConfirmedAt`, and with
+`firstName`, `lastName` and `locale` from `raw_user_meta_data` (sent by the portal on sign-up; for
+Google `full_name` split on the first space); an email change updates `accounts.email`, and a
+change of `email_confirmed_at` updates `emailConfirmedAt` (Supabase Auth confirms with an update,
+also right after inserting a user created confirmed). Every `auth.users` row has an email, because
 only email and Google sign-in are enabled ([10](#10-supabase)). Deleting a user in Supabase Auth
 removes `accounts`, and with it every row that references it.
 
+**Matching an account by email counts only a confirmed one.** Wherever OPOS looks an account up by
+an email address — `createTenant` ([14](#creating-a-tenant)), an invitation
+([7.7](#77-organizer-invitations)), `GET /me/tickets` — an account whose `emailConfirmedAt` is
+`null` counts as no account: Supabase Auth keeps the password of whoever registered an address
+first, before its owner confirmed it.
+
 `accounts` has no RLS, so its privileges are the database-side limit: `opos_app` may select every
-column and update only `firstName`, `lastName` and `locale`; `opos_app_global` has no access, as no
+column and update only `firstName`, `lastName` and `locale` — never `email` or `emailConfirmedAt`; `opos_app_global` has no access, as no
 cross-tenant query ([4.6](#46-tenant-isolation--rls-in-postgres)) reads it. Rows are inserted and
 deleted by the triggers and the cascade alone, both running as `opos_migrator`.
 
@@ -399,7 +408,8 @@ or extends it.
 ### 4.4 Edition-level tables
 
 **`editions`** ([editions.ts](../packages/db/src/schema/editions.ts)) — the `slug` is unique within
-the tenant, `endsAt` is after `startsAt`, and `isActive` and `isPublished` start as `false`.
+the tenant and matches the contract's `editionSlug` pattern (check `editions_slug_format`), `endsAt`
+is after `startsAt`, and `isActive` and `isPublished` start as `false`.
 
 **`edition_memberships`** ([edition-memberships.ts](../packages/db/src/schema/edition-memberships.ts))
 — the edition-level permissions (`programAccess`, `websiteContentAccess`, `ticketsAccess`) of one
@@ -451,8 +461,9 @@ Every RLS-covered table has an index starting with `tenantId`.
 
 ### 4.5 Invariants
 
-1. **Exactly one `isActive=true` edition per tenant** — a transactional switch plus a partial
-   unique index.
+1. **At most one `isActive=true` edition per tenant** — a transactional switch plus a partial
+   unique index. A tenant may have none: a new tenant starts without an edition, and editions are
+   created inactive.
 2. **At least one `head` per tenant** — checked in the service and by two constraint triggers,
    both `DEFERRABLE INITIALLY DEFERRED`, so they fire at commit:
    `tenant_memberships_at_least_one_head` (`AFTER UPDATE OF role, tenantId OR DELETE`, only for a
@@ -499,13 +510,22 @@ Every RLS-covered table has an index starting with `tenantId`.
 The three roles are created by `infra/supabase/db/opos-roles.sql`, which the `db` container runs
 as `supabase_admin` when it initializes an empty data directory. Supabase's own roles
 (`supabase_auth_admin`, `authenticator`, `anon`, `authenticated`, `service_role`) come from the
-image; `anon` and `authenticated` hold no privileges on the `public` schema — the script revokes
-the `usage` they get directly and through `PUBLIC`.
+image; `anon`, `authenticated` and `service_role` hold no privileges on the `public` schema — the
+script revokes the `usage` they get directly and through `PUBLIC`.
 
 | Role | Privileges granted by `opos-roles.sql` |
 |---|---|
-| `opos_migrator` | `create` on the database (the `drizzle` journal schema), `usage, create` on `public`, `usage` on `auth`, `select, references, trigger` on `auth.users` |
+| `opos_migrator` | `create` on the database (the `drizzle` journal schema), `usage, create` on `public`, `usage` on `auth`, `references (id)` and `trigger` on `auth.users` |
 | `opos_app`, `opos_app_global` | `usage` on `public`; table privileges come from the migrations |
+
+`opos_migrator` reads nothing in `auth`: the `accounts` triggers get the `auth.users` row as `NEW`,
+and Postgres checks the foreign key to `auth.users` as that table's owner. A migration that needs
+more from `auth.users` asks for it in `opos-roles.sql`.
+
+The script runs once, when the `db` container initializes an empty data directory. A change to it
+reaches an existing database only when its new statements are run there by hand as
+`supabase_admin`; locally `pnpm infra:reset` rebuilds the volume, then `pnpm db:migrate` and
+`pnpm db:seed` fill it again.
 
 Passwords come from `OPOS_MIGRATOR_PASSWORD`, `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`
 in the `db` container's environment; in dev all three are `opos`.
@@ -548,7 +568,9 @@ grant select on program_items to opos_app_global;
 The same for the remaining tables; for `tenants` the condition is `id = (select current_setting(...))`.
 The scalar subquery makes Postgres evaluate the setting once per query instead of once per row.
 `current_setting` without the `missing_ok` argument — a missing context has to raise an error, not
-return zero rows.
+return zero rows. `tenant_isolation` is the only permissive policy on a covered table: Postgres
+combines permissive policies with `OR`, so any other one would widen it. A restrictive policy may
+narrow it further.
 
 #### Cross-tenant queries
 
@@ -598,12 +620,19 @@ everything else goes through generated migrations.
 
 Every `db:*` script connects as `opos_migrator` through `DATABASE_MIGRATION_URL`
 ([11](#11-environment-variables)). `pnpm db:verify`
-([verify.ts](../packages/db/src/scripts/verify.ts)) exits non-zero when a covered table — `tenants`
-or any `public` table with a `tenant_id` column — lacks enabled RLS, forced RLS or a
-`tenant_isolation` policy for all commands, and when a role holds more on a `public` table than the
-rules above allow: anything but `select` for `opos_app_global` (and nothing on `accounts`), a
-table-wide `update` for `opos_app` or its `insert` or `delete` on `tenants` or `accounts`, anything
-at all for `anon`, `authenticated` and `service_role`.
+([verify.ts](../packages/db/src/scripts/verify.ts)) exits non-zero when:
+
+- a covered table — `tenants` or any `public` table with a `tenant_id` column — lacks enabled or
+  forced RLS;
+- its `tenant_isolation` policy is missing, is not a permissive policy for all commands and every
+  role, or its `USING` or `WITH CHECK` differs from the [policy shape](#policy-shape);
+- a covered table has another permissive policy;
+- a role holds more on a `public` table than the rules above allow: anything but `select` for
+  `opos_app_global` (and nothing on `accounts`), a table-wide `update` for `opos_app` or its
+  `insert` or `delete` on `tenants` or `accounts`, anything at all for `anon`, `authenticated` and
+  `service_role`;
+- `anon`, `authenticated` or `service_role` holds `usage` or `create` on the `public` schema;
+- `opos_migrator` holds anything on `auth.users` beyond `references (id)` and `trigger`.
 
 ---
 
@@ -628,7 +657,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 
 | Status | Meaning | Code when nothing more specific applies |
 |---|---|---|
-| `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
+| `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `editions_slug_format` -> `slug`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
 | `401` | missing, expired or foreign token, or no `accounts` row for it | `session.invalid` |
 | `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
@@ -653,7 +682,7 @@ and the panel call Supabase Auth at `auth.opos.land` through `@supabase/auth-js`
 | Google | `signInWithOAuth({ provider: 'google', options: { redirectTo } })` | PKCE; return through `/auth/callback` ([7.5](#75-google-oauth)) |
 | code exchange | `exchangeCodeForSession(code)` | Google return, email confirmation, recovery link |
 | refresh | `autoRefreshToken: true` | rotation on the Supabase Auth side |
-| sign-out | `signOut()` / `signOut({ scope: 'others' })` | |
+| sign-out | `signOut()` / `signOut({ scope: 'others' })` | every session of the account (the default scope `global`), or every session but the current one; an ended session's refresh tokens stop working, while an access token it already holds stays valid until its `exp` ([7.4](#74-authorization)) |
 | password reset | `resetPasswordForEmail(email, { redirectTo })`, then `updateUser({ password })` | [7.6](#76-password-reset) |
 
 Supabase Auth errors carry an `error_code`; the client translates them the same way as API codes,
@@ -686,7 +715,7 @@ by the payment provider only ([7.10](#710-payments)).
 | PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `defaultLocale`, `timezone` as an IANA zone); the slug changes only through the admin ([14](#changing-a-tenants-slug)), so a `slug` field -> `400` |
 | GET | `/tenants/current/members` | `settings>=read`; every member with the account's email and names, expired ones included and flagged `expired` |
 | POST | `/tenants/current/members` | `settings=write`; an invitation ([7.7](#77-organizer-invitations)) |
-| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry and drops the member's edition-level rows; an expiry on a head -> `400` |
+| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry, sets the three tenant-level permissions to `none` and drops the member's edition-level rows, so a later demotion starts from no access; an expiry on a head -> `400` |
 | DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation; `204`; the last head -> `409` `membership.last-head` |
 | GET | `/tenants/current/payment-config` | `shop>=read`; provider, `accountRef`, currency, whether credentials are set |
 | PUT | `/tenants/current/payment-config` | `shop=write`; `{ provider, accountRef, credentials?, currency }` |
@@ -709,7 +738,8 @@ needs neither that check nor `member.expiry-after-own`.
 A change to a member locks the actor's and the target's `tenant_memberships` rows (`for update`,
 in id order, so two requests never deadlock) and runs every check on the locked rows, the actor's
 own `settings=write` included: a promotion, demotion or permission change committed meanwhile is
-seen, not raced.
+seen, not raced. A `:membershipId` or `:tenantMembershipId` that is not a uuid is `404`, like an
+unknown one.
 
 Invitations — without the tenant header:
 
@@ -726,10 +756,10 @@ Invitations — without the tenant header:
 | POST | `/editions` | `settings=write`; `{ slug, name, startsAt, endsAt }`, created inactive and unpublished; a taken slug -> `409` `edition.slug-taken` |
 | GET | `/editions/:editionId` | membership |
 | PATCH | `/editions/:editionId` | `settings=write`; the same fields plus `isPublished` |
-| DELETE | `/editions/:editionId` | `settings=write`; `204`; `409` `edition.active` when the edition is active, checked in the delete statement itself |
+| DELETE | `/editions/:editionId` | `settings=write`; `204`; `409` `edition.active` when the edition is active, checked in the delete statement itself; `404` when a concurrent request deleted it first |
 | POST | `/editions/:editionId/activate` | `settings=write`; locks the tenant row, then deactivates the previous active edition in the same transaction, so two activations run one after the other |
 | GET | `/editions/:editionId/members` | `settings>=read` |
-| PUT | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation; `{ programAccess, websiteContentAccess, ticketsAccess }`; a head -> `409` `member.is-head` |
+| PUT | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation; `{ programAccess, websiteContentAccess, ticketsAccess }`; the edition row is locked (`for key share`) first, so a concurrent delete waits for the commit; a head -> `409` `member.is-head` |
 | DELETE | `/editions/:editionId/members/:tenantMembershipId` | `settings=write` + anti-escalation (`member.self`, `member.head-only`); a head -> `409` `member.is-head`; `204` |
 
 An edition `slug` is 1–40 lowercase letters, digits and hyphens, unique within the tenant;
@@ -1078,6 +1108,9 @@ Sessions are issued by Supabase Auth ([10](#10-supabase)):
 - Passwords: hashed by Supabase Auth; minimum length 8 (`GOTRUE_PASSWORD_MIN_LENGTH`).
 - Email confirmation is required (`GOTRUE_MAILER_AUTOCONFIRM=false`); an unconfirmed account gets
   `email_not_confirmed` on sign-in.
+- Ending a session (sign-out, `signOut({ scope: 'others' })` after a password reset) revokes its
+  refresh tokens in Supabase Auth. `JwtAuthGuard` checks the token, not the session, so an access
+  token issued before stays valid until its `exp`, at most 15 minutes later.
 
 **`JwtAuthGuard`** ([jwt-auth.guard.ts](../apps/api/src/common/guards/jwt-auth.guard.ts)) verifies
 the `Authorization: Bearer` token with `jose`: signature, `exp` and `sub` required (a token without
@@ -1128,7 +1161,9 @@ Required behaviour when the email already exists, checked in the smoke test
    `email_action_type = recovery`; the API sends the link in the recipient's locale. The link is
    valid for 1 hour (`GOTRUE_MAILER_OTP_EXP=3600`) and works once.
 2. `/reset-password` exchanges the `code` for a session, sets the new password with
-   `updateUser({ password })` and calls `signOut({ scope: 'others' })` — every other session ends.
+   `updateUser({ password })` and calls `signOut({ scope: 'others' })` — every other session ends:
+   its refresh tokens stop working at once, and an access token it already holds keeps working
+   until it expires, at most 15 minutes later (`GOTRUE_JWT_EXP=900`, [7.4](#74-authorization)).
 3. The flow works for a Google-only account as well: completing it adds password sign-in next to
    Google.
 
@@ -1137,10 +1172,11 @@ Required behaviour when the email already exists, checked in the smoke test
 An invitation is a signed JWT (`INVITE_SECRET`, TTL 7 days) with the payload
 `{ tenantId, email, role, tenantPermissions, editionPermissions, expiresAt }`.
 
-- Email of a known account (`accounts.email`) -> the membership is created immediately, the email
-  is a notification.
-- Unknown email -> an email with a `panel.opos.land/invitation?token=...` link; after registering
-  or signing in, `POST /invitations/accept` creates the membership.
+- Email of a known account with a confirmed address (`accounts.email`, `emailConfirmedAt` set,
+  [4.2](#42-global-tables)) -> the membership is created immediately, the email is a notification.
+- Unknown email, or an account that has not confirmed it -> an email with a
+  `panel.opos.land/invitation?token=...` link; after registering or signing in,
+  `POST /invitations/accept` creates the membership.
 - Permissions and the expiry from the token go through the anti-escalation check: an org whose
   access expires invites only with an expiry no later than their own (`member.expiry-after-own`).
 - An account that already holds a membership in the tenant, an expired one included, is not
@@ -1433,8 +1469,8 @@ current address and `token_hash` to the new one.
 
 The API holds `SUPABASE_SERVICE_ROLE_KEY` — a JWT with `role = service_role`, signed with
 `JWT_SECRET` — and uses it only for `DELETE /admin/users/:id` (account deletion). The seed calls
-`POST /admin/users` with the same key, or, when it is not set, with a 10-minute `service_role` JWT
-it signs with `JWT_SECRET` itself ([14](#14-demo-data-seed)). The key never reaches a frontend.
+`POST /admin/users` and `PUT /admin/users/:id` with the same key, or, when it is not set, with a
+10-minute `service_role` JWT it signs with `JWT_SECRET` itself ([14](#14-demo-data-seed)). The key never reaches a frontend.
 
 ### Rate limits
 
@@ -1679,7 +1715,8 @@ likes, payment config, ticket types, orders, attendees) join the seed in the PR 
 table.
 
 Accounts are created through the Supabase Auth admin API (`POST /admin/users` with
-`email_confirm: true` and the dev password); an existing account is skipped. The trigger fills
+`email_confirm: true` and the dev password), so every seed account is confirmed; an existing
+account is kept, and confirmed through `PUT /admin/users/:id` when it is not. The triggers fill
 `accounts`, and the seed then sets `locale` and the names. Everything else is written directly as
 `opos_migrator`; a missing tenant is created through `createTenant` ([Creating a
 tenant](#creating-a-tenant)). The active editions start 60 days after the run, so their programme
@@ -1732,12 +1769,13 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
 - Runs as `opos_migrator`, in a single transaction: inserts `tenants` and a `head`
   `tenant_memberships` row. The database rejects a tenant committed without a head
   ([4.5](#45-invariants)).
-- The head's account must already exist — the person registers in the portal first. The email is
-  matched case-insensitively.
+- The head's account must already exist with a confirmed email ([4.2](#42-global-tables)) — the
+  person registers in the portal and opens the confirmation link first. The email is matched
+  case-insensitively.
 - Any refusal changes nothing and exits non-zero with a `TenantError` code:
   `tenant.slug-invalid`, `tenant.slug-reserved`, `tenant.slug-taken`, `tenant.name-empty`,
   `tenant.locale-invalid` (outside `SUPPORTED_LOCALES` from `@opos/i18n`),
-  `tenant.timezone-invalid` (not an IANA zone), `account.not-found`.
+  `tenant.timezone-invalid` (not an IANA zone), `account.not-found`, `account.unconfirmed`.
 - In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
 
 ### Changing a tenant's slug
@@ -1783,8 +1821,9 @@ covered table (no context, another tenant's context, a row moved to another tena
 updates only the granted columns, inserts no tenant and no membership and deletes no tenant), the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
-foreign edition), `createTenant` and `renameTenant` with each of their refusals, and the `accounts`
-triggers. The API tests repeat
+foreign edition, an edition slug outside its format), `createTenant` and `renameTenant` with each
+of their refusals, an unconfirmed head included, and the `accounts` triggers, the email
+confirmation included. The API tests repeat
 these checks through the endpoints.
 
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
@@ -1800,10 +1839,12 @@ cannot run beside an API started with `pnpm dev`.
 | Area | What we check |
 |---|---|
 | permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere |
-| tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
+| tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404`; a membership id that is not a uuid -> `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
 | transactions | a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
+| promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a later demotion brings none of them back |
+| concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
@@ -1813,7 +1854,7 @@ cannot run beside an API started with `pnpm dev`.
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
 | scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; a device paired by an org whose access expires stops with that access; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
 | JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
-| account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
+| account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | `GET /invitations/preview` above the limit -> `429` with `Retry-After` |
 | i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
@@ -1847,7 +1888,7 @@ and the smoke test checks that flow ([16](#16-smoke-test)).
 | 7 | An org with `read`: no sidebar section, entering by URL -> the "no permissions" screen |
 | 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request |
 | 9 | An attendee signs up for an edition from the convention's page, sees it under "my conventions", deletes the account |
-| 10 | Password reset: request from the sign-in screen, the link from Mailpit sets a new password, the old session stops working |
+| 10 | Password reset: request from the sign-in screen, the link from Mailpit sets a new password, the old session can no longer refresh |
 | 11 | An attendee likes items, finds them in the personal schedule, reviews a past item anonymously with a speakers-only comment; the speaker sees it under "my programme items"; an org hides another review in the panel and the public rating changes |
 | 12 | An org whose membership has expired signs in to the panel and sees no convention |
 | 13 | A visitor without an account buys two tickets through the fake provider; the email in Mailpit has two QR codes; registering with the same address shows both under "my tickets" |
@@ -1895,7 +1936,8 @@ real TLS, real Google, real email delivery and a real phone.
    `Accept-Language: en` the portal is in English before sign-in; after changing the language in
    settings the choice survives sign-out and a fresh visit.
 2. **Password reset.** The forgot-password form sends a real email; the link sets a new password,
-   the previous password stops working and the earlier session is signed out.
+   the previous password stops working and the earlier session can no longer refresh; its access
+   token stops working when it expires, at most 15 minutes later.
 3. **Google cannot take over an account.** An unconfirmed account created with a password on an
    address available in Google: after signing in with Google, the password does not let anyone in.
    For a confirmed account, Google sign-in keeps the same `auth.users.id` and the password keeps

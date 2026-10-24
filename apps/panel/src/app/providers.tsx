@@ -6,21 +6,25 @@ import { setMemberships } from '../features/tenants'
 import { useSession } from '../shared/lib/session'
 import { createQueryClient } from './query-client'
 
-/** Nothing of one account survives its sign-out: no cached answer, no permissions. */
-function SignOutCleanup({ onSignOut }: { onSignOut: () => void }) {
+/**
+ * Nothing of one account survives its sign-out, or another account's session replacing it (a
+ * confirmation or password link for another address): no cached answer, no permissions.
+ */
+export function AccountChangeCleanup({ onChange }: { onChange: () => void }) {
   useEffect(
     () =>
       useSession.subscribe((state, previous) => {
-        if (previous.session && !state.session) onSignOut()
+        const before = previous.session?.user.id
+        if (before && before !== state.session?.user.id) onChange()
       }),
-    [onSignOut],
+    [onChange],
   )
   return null
 }
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient)
-  const [onSignOut] = useState(() => () => {
+  const [onAccountChange] = useState(() => () => {
     queryClient.clear()
     setMemberships(null)
   })
@@ -28,7 +32,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <I18nProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
-        <SignOutCleanup onSignOut={onSignOut} />
+        <AccountChangeCleanup onChange={onAccountChange} />
         {children}
       </QueryClientProvider>
     </I18nProvider>

@@ -1464,7 +1464,9 @@ the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be bu
   `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug` and `Accept-Language` from
   the active locale, and reads errors back as in [5](#5-api-contract). Every tenant gets a client
   of its own whose query keys start with its slug ([api.ts](../apps/panel/src/shared/lib/api.ts)),
-  so two tenants never share a cached answer.
+  so two tenants never share a cached answer. Nothing of one account outlives it in the browser:
+  a sign-out, or another account's session replacing it, clears the query cache and the
+  permission store ([providers.tsx](../apps/panel/src/app/providers.tsx)).
 - `401` from the API -> one `refreshSession()`, shared by the requests waiting on it, and one
   retry; a failed refresh or a second `401` signs out. `session.reauthentication-required` goes to
   the screen instead ([7.4](#74-authorization)).

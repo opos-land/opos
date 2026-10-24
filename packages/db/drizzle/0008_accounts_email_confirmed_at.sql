@@ -1,0 +1,1 @@
+ALTER TABLE "accounts" ADD COLUMN "email_confirmed_at" timestamp with time zone;

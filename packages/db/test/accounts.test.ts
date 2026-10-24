@@ -8,6 +8,13 @@ const account = async (id: string) => {
   return row
 }
 
+const confirmedAt = async (id: string) =>
+  (
+    await migrator<{ email_confirmed_at: Date | null }[]>`
+      select email_confirmed_at from accounts where id = ${id}
+    `
+  )[0]!.email_confirmed_at
+
 describe('accounts mirror auth.users', () => {
   it('creates an account with the sign-up metadata', async () => {
     const user = await createUser({ first_name: 'Anna', last_name: 'Nowak', locale: 'en' })
@@ -46,6 +53,23 @@ describe('accounts mirror auth.users', () => {
     expect(row!.moved).toBe(true)
   })
 
+  it('mirrors the email confirmation of the user', async () => {
+    const confirmed = await createUser()
+    const pending = await createUser({}, { confirmed: false })
+
+    expect(await confirmedAt(confirmed.id)).toBeInstanceOf(Date)
+    expect(await confirmedAt(pending.id)).toBeNull()
+  })
+
+  it('follows the confirmation of the email', async () => {
+    const user = await createUser({}, { confirmed: false })
+
+    const at = new Date('2026-01-02T03:04:05Z')
+    await authAdmin`update auth.users set email_confirmed_at = ${at} where id = ${user.id}`
+
+    expect(await confirmedAt(user.id)).toEqual(at)
+  })
+
   it('disappears with the user', async () => {
     const user = await createUser()
 
@@ -79,6 +103,7 @@ describe('accounts on the runtime roles', () => {
     for (const query of [
       app`update accounts set email = 'other@example.test' where id = ${user.id}`,
       app`update accounts set updated_at = now() where id = ${user.id}`,
+      app`update accounts set email_confirmed_at = now() where id = ${user.id}`,
       app`delete from accounts where id = ${user.id}`,
       app`insert into accounts (id, email) values (gen_random_uuid(), 'x@example.test')`,
     ]) {

@@ -156,6 +156,14 @@ describe('invariants', () => {
     ).rejects.toThrow(/tenant_memberships_head_never_expires/)
   })
 
+  it('refuses a tenant-level permission on a head membership', async () => {
+    const tenant = await createTenant()
+
+    await expect(
+      migrator`update tenant_memberships set branding_access = 'read' where account_id = ${tenant.headId}`,
+    ).rejects.toThrow(/tenant_memberships_head_holds_no_levels/)
+  })
+
   it('refuses an edition membership pointing at another tenant', async () => {
     const a = await createTenant()
     const b = await createTenant()

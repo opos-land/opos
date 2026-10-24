@@ -220,8 +220,8 @@ In the panel Jan switches convention context in the top bar.
 - An org with write access to settings manages other orgs, but cannot grant anyone a permission
   higher than their own — on either level. Lifting or extending someone's expiry grants back
   everything they hold, so an org does it only for a member who holds no more than the org.
-  Shortening someone's access or lowering their permissions grants nothing, so any org managing
-  the team may do it, an org whose own access expires included.
+  Shortening someone's access grants nothing, so any org managing the team may do it, an org whose
+  own access expires included.
 - Nobody edits their own membership.
 - A convention's last head organizer cannot be removed.
 

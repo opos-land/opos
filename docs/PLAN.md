@@ -585,8 +585,9 @@ everything from `anon` and `authenticated`, and adds each table's `<table>_set_u
   an account or another row (`account_id`, `tenant_membership_id`). A write the API starts doing —
   on a new column or on a table it did not write before — gets its grant in that PR's migration.
 - `opos_app_global` gets `select` and nothing else.
-- `tenants` rows are inserted, deleted and given a new slug by `opos_migrator` alone
-  ([14](#creating-a-tenant)); `accounts` follows [4.2](#42-global-tables).
+- `tenants` rows are inserted, deleted and given a new slug by `opos_migrator` alone, through the
+  scripts for [creating](#creating-a-tenant) and [renaming](#changing-a-tenants-slug) a tenant;
+  `accounts` follows [4.2](#42-global-tables).
 
 Trigger functions are `security definer` with `set search_path = ''` and schema-qualified names,
 because Supabase Auth runs with `search_path = auth`. `db:push` is for local experiments only;
@@ -1688,7 +1689,7 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
 The slug is the convention's address ([PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains)), and no
 endpoint changes it. The admin changes it on the server with
 [rename-tenant.ts](../packages/db/src/scripts/rename-tenant.ts), a wrapper around `renameTenant` from
-the same file:
+[packages/db/src/tenants.ts](../packages/db/src/tenants.ts):
 
 ```bash
 pnpm db:tenant:rename --slug convention-c --new-slug convention-d
@@ -1726,7 +1727,8 @@ covered table (no context, another tenant's context, a row moved to another tena
 updates only the granted columns, inserts no tenant and no membership and deletes no tenant), the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
-foreign edition), `createTenant` and each of its refusals, and the `accounts` triggers. The API tests repeat
+foreign edition), `createTenant` and `renameTenant` with each of their refusals, and the `accounts`
+triggers. The API tests repeat
 these checks through the endpoints.
 
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and

@@ -1292,8 +1292,12 @@ confirmed does not survive ([4.2](#42-global-tables)).
    waiting for a password. Sign-up with Google: `signInWithOAuth` with
    `redirectTo = <PANEL_URL>/auth/callback` ([7.5](#75-google-oauth)). Both addresses are in
    `GOTRUE_URI_ALLOW_LIST` ([10](#10-supabase)).
-4. `/auth/callback` exchanges the code for a session and, when a stored entry is present, returns
-   to `/invitation`.
+4. `/auth/callback` exchanges the code for a session and opens the page the round trip started
+   on, which the call that left keeps in `localStorage`
+   ([auth-return.ts](../apps/panel/src/features/auth/model/auth-return.ts)): `/invitation` for the
+   sign-up, the Google button and the password link of step 6. Without one, an entry waiting for a
+   password returns to `/invitation` and anything else to `/`; a stored entry alone never takes over
+   a sign-in that started elsewhere.
 5. Back with an entry waiting for a password, and signed in with the invited address, the page
    asks for one and sets it with `updateUser({ password })`, then calls `signOut({ scope: 'others' })` and accepts as in step 2.
    This replaces a password anyone set on the address before it was confirmed, as a password reset
@@ -1436,7 +1440,7 @@ the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be bu
 | Path | Screen |
 |---|---|
 | `/login` | organizer sign-in: email + password, Google button |
-| `/auth/callback` | receives `code` from Supabase Auth, calls `exchangeCodeForSession` |
+| `/auth/callback` | receives `code` from Supabase Auth, calls `exchangeCodeForSession`, opens the page the round trip started on: the `?redirect=` target of `/login`, or `/invitation` ([7.7](#77-organizer-invitations)) |
 | `/invitation` | invitation acceptance (`?token=`): the convention and the invited email, sign-in, sign-up with email or Google, the password chosen after the address is confirmed ([7.7](#77-organizer-invitations)) |
 | `/` | convention picker; redirect when there is a single membership |
 | `/:tenantSlug` | tenant dashboard |

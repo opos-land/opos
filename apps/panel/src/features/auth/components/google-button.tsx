@@ -3,8 +3,17 @@ import { useState } from 'react'
 import { Button, ErrorMessage } from '../../../shared/ui'
 import { signInWithGoogle } from '../api/auth'
 
-/** Google sign-in and sign-up in one: Supabase Auth returns to /auth/callback (PLAN.md 7.5). */
-export function GoogleButton({ onBeforeRedirect }: { onBeforeRedirect?: () => void }) {
+/**
+ * Google sign-in and sign-up in one: Supabase Auth returns to /auth/callback, which then opens
+ * `returnTo` (PLAN.md 7.5).
+ */
+export function GoogleButton({
+  returnTo,
+  onBeforeRedirect,
+}: {
+  returnTo: string
+  onBeforeRedirect?: () => void
+}) {
   const [error, setError] = useState<unknown>(null)
   const [pending, setPending] = useState(false)
 
@@ -12,7 +21,7 @@ export function GoogleButton({ onBeforeRedirect }: { onBeforeRedirect?: () => vo
     setError(null)
     setPending(true)
     onBeforeRedirect?.()
-    const error = await signInWithGoogle()
+    const error = await signInWithGoogle(returnTo)
     if (error) {
       setError(error)
       setPending(false)

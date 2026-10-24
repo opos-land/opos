@@ -5,7 +5,8 @@ import { Link, useNavigate } from 'react-router'
 import { ErrorMessage, LoadingView } from '../../../shared/ui'
 import { exchangeCode } from '../api/auth'
 import { AuthLayout } from '../components/auth-layout'
-import { storedInvitation } from '../model/invitation-storage'
+import { authReturn, forgetAuthReturn, INVITATION_PATH } from '../model/auth-return'
+import { loginPath } from '../model/redirect'
 
 /** Supabase Auth reports a failed link in the query or, for some flows, in the fragment. */
 function returnedError() {
@@ -19,12 +20,12 @@ function returnedError() {
 
 /**
  * The return from Supabase Auth with `?code=` — Google, an email confirmation, a password link
- * (PLAN.md 7.5, 7.7): the code becomes a session, then the invitation being accepted, if any,
- * or the start page.
+ * (PLAN.md 7.5, 7.7): the code becomes a session, then the page the round trip started on opens.
  */
 export function AuthCallbackPage() {
   const navigate = useNavigate()
   const [code] = useState(() => new URLSearchParams(window.location.search).get('code'))
+  const [returnTo] = useState(authReturn)
   const [error, setError] = useState<unknown>(() =>
     code
       ? returnedError()
@@ -33,25 +34,28 @@ export function AuthCallbackPage() {
   const started = useRef(false)
 
   useEffect(() => {
-    if (started.current || !code || error) return
+    if (started.current) return
     started.current = true
-    void exchangeCode(code).then((error) => {
-      if (error) setError(error)
-      else void navigate(storedInvitation() ? '/invitation' : '/', { replace: true })
+    // The return is used once, whatever the outcome: a later sign-in sets its own.
+    forgetAuthReturn()
+    if (!code || error) return
+    void exchangeCode(code).then((failure) => {
+      if (failure) setError(failure)
+      else void navigate(returnTo, { replace: true })
     })
-  }, [code, error, navigate])
+  }, [code, error, navigate, returnTo])
 
   if (!error) return <LoadingView />
 
   return (
     <AuthLayout title={<Trans>We could not sign you in</Trans>}>
       <ErrorMessage error={error} />
-      {storedInvitation() ? (
-        <Link to="/invitation" className="text-accent text-sm underline">
+      {returnTo === INVITATION_PATH ? (
+        <Link to={INVITATION_PATH} className="text-accent text-sm underline">
           <Trans>Back to the invitation</Trans>
         </Link>
       ) : (
-        <Link to="/login" className="text-accent text-sm underline">
+        <Link to={loginPath(returnTo)} className="text-accent text-sm underline">
           <Trans>Back to sign-in</Trans>
         </Link>
       )}

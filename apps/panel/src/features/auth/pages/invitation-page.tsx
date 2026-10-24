@@ -10,6 +10,7 @@ import { useSession } from '../../../shared/lib/session'
 import { ErrorMessage, LoadingView, Notice } from '../../../shared/ui'
 import { sendPasswordLink, signUpWithEmail } from '../api/auth'
 import { invitationPreviewOptions } from '../api/invitations'
+import { INVITATION_PATH } from '../model/auth-return'
 import { AcceptInvitation } from '../components/accept-invitation'
 import { AuthLayout } from '../components/auth-layout'
 import { ChoosePasswordForm } from '../components/choose-password-form'
@@ -60,7 +61,7 @@ function JoinOptions({
 }) {
   const [sentTo, setSentTo] = useState<string | null>(null)
   const signUp = async (email: string) => {
-    const error = await signUpWithEmail(email)
+    const error = await signUpWithEmail(email, INVITATION_PATH)
     if (error) return error
     onAwaitingPassword(true)
     setSentTo(email)
@@ -68,7 +69,7 @@ function JoinOptions({
   }
 
   const passwordLink = async (email: string) => {
-    const error = await sendPasswordLink(email)
+    const error = await sendPasswordLink(email, INVITATION_PATH)
     if (error) return error
     onAwaitingPassword(true)
     setSentTo(email)
@@ -108,7 +109,10 @@ function JoinOptions({
           <Trans>I already have an account</Trans>
         </h2>
         <SignInForm defaultEmail={preview.email} onSignedIn={() => onAwaitingPassword(false)} />
-        <GoogleButton onBeforeRedirect={() => onAwaitingPassword(false)} />
+        <GoogleButton
+          returnTo={INVITATION_PATH}
+          onBeforeRedirect={() => onAwaitingPassword(false)}
+        />
       </section>
       <section aria-labelledby="sign-up" className="border-line flex flex-col gap-3 border-t pt-6">
         <h2 id="sign-up" className="font-semibold">

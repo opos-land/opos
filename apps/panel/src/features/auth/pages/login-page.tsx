@@ -24,7 +24,7 @@ export function LoginPage() {
       <p className="text-muted text-center text-xs">
         <Trans>or</Trans>
       </p>
-      <GoogleButton />
+      <GoogleButton returnTo={returnTo} />
       <p className="text-muted text-sm">
         {t`Organizers join a convention's team through an invitation sent by email. The link in it lets you create an account here.`}
       </p>

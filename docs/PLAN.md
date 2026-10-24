@@ -1757,10 +1757,13 @@ using seeded data only read it.
 
 GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every push to `develop` and
 `main`, with tool versions from `mise.toml`, the same source as local machines. The `db` and `auth`
-containers run for the schema and API tests, behind `pnpm db:migrate` and `pnpm db:verify`. On a PR,
-`typecheck`, `lint` and `test` run with `--affected` against the PR base branch; a push to `develop`
-or `main` runs them on every package and fills the turbo cache that PRs restore. `pnpm format:check`,
-`pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
+containers run for the schema and API tests, behind `pnpm db:migrate`, `pnpm db:verify` and two runs
+of `pnpm db:seed` — the second proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
+run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
+package and fills the turbo cache that PRs restore. `pnpm build` then
+bundles the API, and the job starts `dist/main.js` with `NODE_ENV=production` against the same
+containers: `/health` must answer `200`. The tests run the sources; this step runs the bundle that
+production runs. `pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
 
 Branches:
 

@@ -29,7 +29,19 @@ jobs:
       - run: docker compose up -d --wait db auth
       - run: pnpm db:migrate
       - run: pnpm db:verify
+      # The second run proves the seed is idempotent
+      - run: pnpm db:seed && pnpm db:seed
       - run: pnpm turbo run typecheck lint test ${{ github.event_name == 'pull_request' && '--affected' || '' }}
         env:
           # --affected diffs against the PR base branch, not always main
           TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+      - run: pnpm build
+      # The tests run the sources; this starts the bundle that production runs
+      - name: start the built api
+        run: |
+          NODE_ENV=production node --env-file=apps/api/.env.example apps/api/dist/main.js &
+          for _ in $(seq 30); do
+            curl -fsS http://localhost:3001/health && exit 0
+            sleep 1
+          done
+          exit 1

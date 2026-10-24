@@ -8,6 +8,7 @@ import {
 import { invitationEmail, joinedTeamEmail } from '@opos/i18n/emails'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError, notFound } from '../../common/errors/api-error'
+import { postgresConstraint } from '../../common/filters/http-exception.filter'
 import { AccessRepository } from '../../common/permissions/access.repository'
 import { type EditionAccess } from '../../common/permissions/permissions'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
@@ -32,6 +33,10 @@ const memberExists = () =>
   new ApiError(409, 'member.exists', 'The account already holds a membership in this tenant')
 
 const used = () => new ApiError(409, 'invitation.used', 'The invitation has been accepted already')
+
+// The invitee's own answer: member.exists is written for the one who sends the invitation.
+const alreadyMember = () =>
+  new ApiError(409, 'invitation.already-member', 'The account is already in the team')
 
 /** A membership expiry that has passed by now leaves the invitation nothing to grant. */
 const assertGrantsAccess = (claims: InvitationClaims) => {
@@ -140,16 +145,24 @@ export class InvitationsService {
       if (!tenant) throw notFound('tenant')
       if (await this.invitations.isAccepted(jti)) throw used()
       assertGrantsAccess(claims)
-      if (await this.invitations.isMember(accountId)) throw memberExists()
+      if (await this.invitations.isMember(accountId)) throw alreadyMember()
       await this.invitations.recordAcceptance(tenant.id, jti)
       const grant = grantFromClaims(claims)
       const existing = await this.invitations.existingEditions(
         grant.editions.map((e) => e.editionId),
       )
-      await this.invitations.addMember(tenant.id, accountId, {
-        ...grant,
-        editions: grant.editions.filter(({ editionId }) => existing.has(editionId)),
-      })
+      try {
+        await this.invitations.addMember(tenant.id, accountId, {
+          ...grant,
+          editions: grant.editions.filter(({ editionId }) => existing.has(editionId)),
+        })
+      } catch (error) {
+        // Another invitation the account accepted at the same time won the unique constraint.
+        if (postgresConstraint(error) === 'tenant_memberships_account_tenant_unique') {
+          throw alreadyMember()
+        }
+        throw error
+      }
       return { tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name } }
     })
   }

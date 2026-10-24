@@ -313,7 +313,26 @@ describe('accepting an invitation', () => {
     const { token } = await signInvitation(claimsFor(a.id, existing.email), key)
 
     expect((await accept(token, existing.token).expect(409)).body).toMatchObject({
-      code: 'member.exists',
+      code: 'invitation.already-member',
+    })
+  })
+
+  it('lets one of two invitations accepted at once through, and tells the other it is in', async () => {
+    const email = newAddress()
+    const invitee = await registered(email)
+    const [one, other] = await Promise.all([
+      signInvitation(claimsFor(a.id, email), key),
+      signInvitation(claimsFor(a.id, email), key),
+    ])
+
+    const responses = await Promise.all([
+      accept(one.token, invitee.token),
+      accept(other.token, invitee.token),
+    ])
+
+    expect(responses.map((res) => res.status).sort()).toEqual([201, 409])
+    expect(responses.find((res) => res.status === 409)!.body).toMatchObject({
+      code: 'invitation.already-member',
     })
   })
 

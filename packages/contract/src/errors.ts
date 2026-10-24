@@ -22,6 +22,7 @@ export const errorCodes = [
   'invitation.expired',
   'invitation.used',
   'invitation.email-mismatch',
+  'invitation.already-member',
   'edition.slug-taken',
   'edition.active',
 ] as const

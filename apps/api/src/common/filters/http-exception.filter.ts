@@ -68,8 +68,8 @@ const constraintErrors: Record<
   },
 }
 
-/** The Postgres error behind an exception; drizzle wraps query errors in `cause`. */
-function postgresConstraint(exception: unknown): string | undefined {
+/** The constraint a Postgres error behind an exception names; drizzle wraps query errors in `cause`. */
+export function postgresConstraint(exception: unknown): string | undefined {
   let current: unknown = exception
   for (let depth = 0; depth < 3 && current && typeof current === 'object'; depth++) {
     const name = (current as { constraint_name?: unknown }).constraint_name

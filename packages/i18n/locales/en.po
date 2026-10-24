@@ -349,6 +349,10 @@ msgstr "We received a request to reset the password of your OPOS account. Set a 
 msgid "Wrong email or password."
 msgstr "Wrong email or password."
 
+#: src/errors.ts
+msgid "You are already in this convention's team."
+msgstr "You are already in this convention's team."
+
 #: src/emails.ts
 msgid "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."
 msgstr "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."

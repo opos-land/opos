@@ -1533,8 +1533,10 @@ turns every change into a cache invalidation for all of them. Each application k
 [apps/api/.env.example](../apps/api/.env.example) lists every one of them with a working dev value;
 [env.ts](../apps/api/src/config/env.ts) validates them on start, and a variable joins it in the PR
 that first reads it. `SUPABASE_SERVICE_ROLE_KEY` is signed with the environment's `JWT_SECRET` by
-`pnpm --filter api auth:service-key` ([service-key.ts](../apps/api/src/scripts/service-key.ts));
-`.env.example` holds the one signed with the dev secret.
+`pnpm --filter api auth:service-key` ([service-key.ts](../apps/api/src/scripts/service-key.ts)),
+which reads `JWT_SECRET` from the shell or `apps/api/.env` and never from `.env.example`. It refuses
+a missing secret and the dev secret; `auth:service-key --dev` signs with the dev secret, and
+`.env.example` holds the key it prints.
 
 **`packages/db`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL` from
 the environment. Without it they use
@@ -1574,8 +1576,8 @@ Production configuration lives in a `.env` next to `docker-compose.prod.yml` on 
 injects it into the containers. It adds `POSTGRES_PASSWORD`, `ACME_EMAIL`, `CF_DNS_API_TOKEN` and
 the Supabase Auth variables, and overrides `ROOT_DOMAIN=opos.land` and the `https://` addresses.
 `JWT_SECRET` and `SEND_EMAIL_HOOK_SECRET` are generated once per environment and are never reused
-between dev and production; `SUPABASE_SERVICE_ROLE_KEY` is signed with the production
-`JWT_SECRET` by `auth:service-key`.
+between dev and production; `SUPABASE_SERVICE_ROLE_KEY` is signed by
+`JWT_SECRET=<production secret> pnpm --filter api auth:service-key`.
 
 ---
 

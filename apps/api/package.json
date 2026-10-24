@@ -10,7 +10,7 @@
     "typecheck": "tsc",
     "lint": "eslint --max-warnings 0 .",
     "test": "vitest run",
-    "auth:service-key": "node --env-file-if-exists=.env.example --env-file-if-exists=.env src/scripts/service-key.ts"
+    "auth:service-key": "node --env-file-if-exists=.env src/scripts/service-key.ts"
   },
   "dependencies": {
     "@lingui/core": "catalog:",

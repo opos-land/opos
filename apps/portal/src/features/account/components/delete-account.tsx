@@ -1,11 +1,18 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation } from '@tanstack/react-query'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
 import { GoogleButton, signInWithPassword } from '../../auth'
 import { deleteAccountOptions, forgetSession } from '../api/account'
 import { deletionRefusal } from '../model/deletion'
+import {
+  forgetDeletionConfirmation,
+  googleReturn as readGoogleReturn,
+  type GoogleReturn,
+  rememberDeletionConfirmation,
+  startedDeletionConfirmation,
+} from '../model/deletion-confirmation'
 import {
   CONFIRM_DELETION_PARAM,
   CONFIRM_DELETION_PATH,
@@ -32,26 +39,67 @@ function LastHeadRefusal() {
   )
 }
 
+function OtherAccountRefusal({ email }: { email: string }) {
+  return (
+    <div role="alert" className="rounded-box border-danger text-danger border px-3 py-2 text-sm">
+      <p>
+        <Trans>
+          Google signed you in to a different account, {email}, so nothing was deleted. To delete
+          the account you started from, sign in to it and confirm again.
+        </Trans>
+      </p>
+    </div>
+  )
+}
+
 /**
  * Account deletion (PLAN.md 9): the user confirms it is them — the password again, or Google
- * again — and `DELETE /me` follows within the 5 minutes the API allows (PLAN.md 7.4).
+ * again — and `DELETE /me` follows within the 5 minutes the API allows (PLAN.md 7.4). A return from
+ * Google offers the deletion only to the account that left for it.
  */
-export function DeleteAccount({ email, methods }: { email: string; methods: SignInMethods }) {
+export function DeleteAccount({
+  userId,
+  email,
+  methods,
+}: {
+  userId: string
+  email: string
+  methods: SignInMethods
+}) {
   const { t } = useLingui()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const backFromGoogle = params.get(CONFIRM_DELETION_PARAM) === CONFIRM_DELETION_VALUE
-  const [open, setOpen] = useState(backFromGoogle)
+  const [params, setParams] = useSearchParams()
+  const [googleReturn, setGoogleReturn] = useState<GoogleReturn>(() =>
+    params.get(CONFIRM_DELETION_PARAM) === CONFIRM_DELETION_VALUE
+      ? readGoogleReturn(startedDeletionConfirmation(), userId)
+      : 'none',
+  )
+  const [open, setOpen] = useState(googleReturn === 'confirmed')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<unknown>(null)
   const [pending, setPending] = useState(false)
   const remove = useMutation(deleteAccountOptions())
+
+  // A Google return is used once: a reload or a copied link confirms nothing.
+  useEffect(() => {
+    forgetDeletionConfirmation()
+    if (!params.has(CONFIRM_DELETION_PARAM)) return
+    setParams(
+      (current) => {
+        current.delete(CONFIRM_DELETION_PARAM)
+        return current
+      },
+      { replace: true },
+    )
+  }, [params, setParams])
 
   const deleteNow = async () => {
     try {
       await remove.mutateAsync({})
     } catch (failure) {
       setError(failure)
+      // A sign-in older than the API allows: confirm again with the password or Google.
+      if (deletionRefusal(failure) === 'reauthenticate') setGoogleReturn('none')
       return
     }
     const state: AccountDeletedState = { accountDeleted: true }
@@ -76,11 +124,25 @@ export function DeleteAccount({ email, methods }: { email: string; methods: Sign
     setPending(false)
   }
 
+  const start = () => {
+    setGoogleReturn('none')
+    setOpen(true)
+  }
+
+  const keep = () => {
+    setGoogleReturn('none')
+    setError(null)
+    setOpen(false)
+  }
+
   if (!open) {
     return (
-      <Button variant="danger" className="self-start" onClick={() => setOpen(true)}>
-        <Trans>Delete my account</Trans>
-      </Button>
+      <>
+        {googleReturn === 'other-account' && <OtherAccountRefusal email={email} />}
+        <Button variant="danger" className="self-start" onClick={start}>
+          <Trans>Delete my account</Trans>
+        </Button>
+      </>
     )
   }
 
@@ -96,7 +158,7 @@ export function DeleteAccount({ email, methods }: { email: string; methods: Sign
         </Trans>
       </p>
       {refusal === 'last-head' ? <LastHeadRefusal /> : <ErrorMessage error={error} />}
-      {backFromGoogle ? (
+      {googleReturn === 'confirmed' ? (
         <>
           <p className="text-sm">
             <Trans>You signed in with Google again. Delete the account within 5 minutes.</Trans>
@@ -136,13 +198,16 @@ export function DeleteAccount({ email, methods }: { email: string; methods: Sign
             </form>
           )}
           {methods.google && (
-            <GoogleButton returnTo={CONFIRM_DELETION_PATH}>
+            <GoogleButton
+              returnTo={CONFIRM_DELETION_PATH}
+              onLeave={() => rememberDeletionConfirmation(userId)}
+            >
               <Trans>Confirm with Google</Trans>
             </GoogleButton>
           )}
         </>
       )}
-      <Button variant="secondary" className="self-start" onClick={() => setOpen(false)}>
+      <Button variant="secondary" className="self-start" onClick={keep}>
         <Trans>Keep my account</Trans>
       </Button>
     </div>

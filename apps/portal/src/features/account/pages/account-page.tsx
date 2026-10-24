@@ -36,7 +36,7 @@ export function AccountPage() {
         </Button>
       </Section>
       <Section title={<Trans>Delete the account</Trans>}>
-        {user && <DeleteAccount email={email} methods={signInMethods(user)} />}
+        {user && <DeleteAccount userId={user.id} email={email} methods={signInMethods(user)} />}
       </Section>
     </Page>
   )

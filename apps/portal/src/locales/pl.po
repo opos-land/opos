@@ -152,6 +152,10 @@ msgstr "Przejdź na stronę główną"
 msgid "Go to your account"
 msgstr "Przejdź do swojego konta"
 
+#: src/features/account/components/delete-account.tsx
+msgid "Google signed you in to a different account, {email}, so nothing was deleted. To delete the account you started from, sign in to it and confirm again."
+msgstr "Google zalogowało cię na inne konto, {email}, więc nic nie zostało usunięte. Aby usunąć konto, na którym zaczęto usuwanie, zaloguj się na nie i potwierdź ponownie."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "How long we keep it"
 msgstr "Jak długo je przechowujemy"

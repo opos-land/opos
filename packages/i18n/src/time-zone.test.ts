@@ -19,6 +19,10 @@ describe('toZonedWallTime', () => {
     expect(toZonedWallTime(at, 'Europe/London')).toBe('2026-06-01T23:30')
     expect(toZonedWallTime(at, 'UTC')).toBe('2026-06-01T22:30')
   })
+
+  it('writes the year with four digits, as datetime-local expects', () => {
+    expect(toZonedWallTime(new Date('0202-01-01T10:00:00Z'), 'UTC')).toBe('0202-01-01T10:00')
+  })
 })
 
 describe('fromZonedWallTime', () => {
@@ -54,7 +58,49 @@ describe('fromZonedWallTime', () => {
     )
   })
 
-  it.each(['', '2026-06-02', '2026-06-02T00:30:00', 'tomorrow'])('refuses %j', (value) => {
+  it('moves a skipped time past the gap in a zone behind UTC', () => {
+    // New York goes from 02:00 to 03:00 on 2026-03-08; 02:30 becomes 03:30 EDT.
+    expect(fromZonedWallTime('2026-03-08T02:30', 'America/New_York')?.toISOString()).toBe(
+      '2026-03-08T07:30:00.000Z',
+    )
+  })
+
+  it('takes the second of a doubled time in a zone behind UTC', () => {
+    // New York goes from 02:00 back to 01:00 on 2026-11-01; the second 01:30 is EST.
+    expect(fromZonedWallTime('2026-11-01T01:30', 'America/New_York')?.toISOString()).toBe(
+      '2026-11-01T06:30:00.000Z',
+    )
+  })
+
+  it('handles a shift of half an hour', () => {
+    // Lord Howe Island goes from 02:00 to 02:30 on 2026-10-04.
+    expect(fromZonedWallTime('2026-10-04T02:15', 'Australia/Lord_Howe')?.toISOString()).toBe(
+      '2026-10-03T15:45:00.000Z',
+    )
+  })
+
+  it('keeps an early year as written', () => {
+    expect(fromZonedWallTime('0202-01-01T10:00', 'UTC')?.toISOString()).toBe(
+      '0202-01-01T10:00:00.000Z',
+    )
+    expect(fromZonedWallTime('0050-01-01T10:00', 'UTC')?.toISOString()).toBe(
+      '0050-01-01T10:00:00.000Z',
+    )
+  })
+
+  it.each([
+    '',
+    '2026-06-02',
+    '2026-06-02T00:30:00',
+    'tomorrow',
+    '2026-13-01T10:00',
+    '2026-02-29T10:00',
+    '2026-04-31T10:00',
+    '2026-06-00T10:00',
+    '2026-06-02T24:00',
+    '2026-06-02T10:60',
+    '0000-01-01T10:00',
+  ])('refuses %j', (value) => {
     expect(fromZonedWallTime(value, 'Europe/Warsaw')).toBeNull()
   })
 })

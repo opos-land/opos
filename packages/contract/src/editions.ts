@@ -2,7 +2,10 @@ import { z } from 'zod'
 import { level, tenantRoute, timestamp } from './common'
 import { memberAccountSchema } from './tenants'
 
-/** Part of the convention page addresses (PRODUCT.md 6): lowercase letters, digits, hyphens. */
+/**
+ * Part of the convention page addresses (PRODUCT.md 6): lowercase letters, digits, hyphens. The
+ * database holds the same pattern as the check editions_slug_format.
+ */
 export const editionSlug = z.string().regex(/^[a-z0-9-]{1,40}$/)
 
 export const editionSchema = z.object({

@@ -63,6 +63,23 @@ describe('toErrorResponse', () => {
     })
   })
 
+  // A Postgres error as drizzle throws it: the query error carries the driver's error as its cause.
+  const violated = (constraint: string) =>
+    Object.assign(new Error('Failed query'), {
+      cause: Object.assign(new Error('violates check constraint'), { constraint_name: constraint }),
+    })
+
+  it.each([
+    ['editions_slug_format', 'slug'],
+    ['editions_ends_after_start', 'endsAt'],
+    ['tenant_memberships_head_never_expires', 'expiresAt'],
+  ])('maps a violated %s to 400 for its field', (constraint, field) => {
+    expect(toErrorResponse(violated(constraint))).toMatchObject({
+      status: 400,
+      body: { code: 'request.invalid', params: { field } },
+    })
+  })
+
   it('hides the details of an unexpected error', () => {
     expect(toErrorResponse(new Error('connection refused at 10.0.0.1'))).toEqual({
       status: 500,

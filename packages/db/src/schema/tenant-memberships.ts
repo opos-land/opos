@@ -36,5 +36,9 @@ export const tenantMemberships = pgTable(
       'tenant_memberships_head_never_expires',
       sql`${t.role} = 'org' or ${t.expiresAt} is null`,
     ),
+    check(
+      'tenant_memberships_head_holds_no_levels',
+      sql`${t.role} = 'org' or (${t.settingsAccess} = 'none' and ${t.brandingAccess} = 'none' and ${t.shopConfigAccess} = 'none')`,
+    ),
   ],
 )

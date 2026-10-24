@@ -8,6 +8,7 @@ import { loadEnv } from '../src/config/env'
 import { createApp } from './app'
 import { createAccount, deleteCreatedAccounts, deleteLater, signIn, TEST_PASSWORD } from './auth'
 import { deleteMail, verifyLinkIn, waitForMail } from './mailpit'
+import { closeTenantDb, emailConfirmed } from './tenants'
 
 // Supabase Auth calls the hook at host.docker.internal:<OPOS_API_PORT>, so this file runs the API
 // on the PORT it is configured with, on every interface (PLAN.md 12, Ports).
@@ -71,6 +72,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await deleteCreatedAccounts()
   await Promise.all(addresses.map(deleteMail))
+  await closeTenantDb()
   await app.close()
 })
 
@@ -82,16 +84,19 @@ describe('emails from Supabase Auth', () => {
       body: JSON.stringify({ email, password: TEST_PASSWORD, data: { locale: 'en' } }),
     })
     expect(response.status).toBe(200)
-    deleteLater(((await response.json()) as { id: string }).id)
+    const { id } = (await response.json()) as { id: string }
+    deleteLater(id)
 
     const [mail] = await waitForMail(email)
     expect(mail?.Subject).toBe('Confirm your email address')
     expect(mail?.HTML).toContain('Confirm email address')
+    expect(await emailConfirmed(id)).toBe(false)
 
     const link = verifyLinkIn(mail!)
     expect(new URL(link).searchParams.get('type')).toBe('signup')
     expect(await follow(link)).toContain(callback)
     await expect(signIn(email)).resolves.toBeTypeOf('string')
+    expect(await emailConfirmed(id)).toBe(true)
   })
 
   it('writes in the default locale when nothing else decides', async () => {

@@ -36,12 +36,18 @@ afterAll(async () => {
 
 export const unique = () => randomUUID().slice(0, 8)
 
-export async function createUser(meta: Record<string, string> = {}) {
+/** A user as Supabase Auth writes it; confirmed unless the test needs an unconfirmed address. */
+export async function createUser(
+  meta: Record<string, string> = {},
+  { confirmed = true }: { confirmed?: boolean } = {},
+) {
   const id = randomUUID()
   const email = `User-${unique()}@Example.test`
+  const confirmedAt = confirmed ? new Date() : null
   userIds.push(id)
   await authAdmin`
-    insert into auth.users (id, email, raw_user_meta_data) values (${id}, ${email}, ${authAdmin.json(meta)})
+    insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
+    values (${id}, ${email}, ${confirmedAt}, ${authAdmin.json(meta)})
   `
   return { id, email }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "editions" ADD CONSTRAINT "editions_slug_format" CHECK ("editions"."slug" ~ '^[a-z0-9-]{1,40}$');

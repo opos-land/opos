@@ -25,6 +25,7 @@ export type TenantErrorCode =
   | 'tenant.locale-invalid'
   | 'tenant.timezone-invalid'
   | 'account.not-found'
+  | 'account.unconfirmed'
 
 export class TenantError extends Error {
   constructor(
@@ -49,7 +50,8 @@ function assertSlug(slug: string) {
 
 /**
  * Creates a tenant and its first head in one transaction (PLAN.md 14). The head's account must
- * already exist. Runs on a connection that may write tenants outside a tenant context.
+ * already exist with a confirmed email (PLAN.md 4.2). Runs on a connection that may write tenants
+ * outside a tenant context.
  */
 export async function createTenant(db: Database, input: CreateTenantInput) {
   const name = input.name.trim()
@@ -68,11 +70,17 @@ export async function createTenant(db: Database, input: CreateTenantInput) {
 
   return db.transaction(async (tx) => {
     const [account] = await tx
-      .select({ id: accounts.id })
+      .select({ id: accounts.id, emailConfirmedAt: accounts.emailConfirmedAt })
       .from(accounts)
       .where(eq(accounts.email, email))
     if (!account) {
       throw new TenantError('account.not-found', `No account with the email ${email}`)
+    }
+    if (!account.emailConfirmedAt) {
+      throw new TenantError(
+        'account.unconfirmed',
+        `The account ${email} has not confirmed its email`,
+      )
     }
 
     const [tenant] = await tx

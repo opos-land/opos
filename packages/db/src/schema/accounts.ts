@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { check, foreignKey, pgTable, text, uuid } from 'drizzle-orm/pg-core'
+import { check, foreignKey, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { authUsers } from 'drizzle-orm/supabase'
 import { timestamps } from './columns'
 
@@ -11,6 +11,8 @@ export const accounts = pgTable(
     firstName: text(),
     lastName: text(),
     locale: text(),
+    // auth.users.email_confirmed_at, mirrored by the auth.users triggers; null until confirmed.
+    emailConfirmedAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (t) => [

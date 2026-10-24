@@ -200,6 +200,19 @@ describe('tenant isolation by path id', () => {
     const statuses = (await Promise.all(calls)).map((res) => res.status)
     expect(statuses).toEqual(calls.map(() => 404))
   })
+
+  it('answers 404 for a membership id that is not a uuid', async () => {
+    const calls = [
+      call(a.head, 'patch', '/tenants/current/members/not-a-uuid', { settingsAccess: 'read' }),
+      call(a.head, 'delete', '/tenants/current/members/not-a-uuid'),
+      call(writer, 'delete', '/tenants/current/members/not-a-uuid'),
+      call(a.head, 'put', `/editions/${editionA}/members/not-a-uuid`, none),
+      call(a.head, 'delete', `/editions/${editionA}/members/not-a-uuid`),
+    ]
+    const responses = await Promise.all(calls)
+    expect(responses.map((res) => res.status)).toEqual(calls.map(() => 404))
+    expect(responses[0]!.body).toMatchObject({ code: 'request.not-found' })
+  })
 })
 
 describe('anti-escalation', () => {
@@ -396,9 +409,7 @@ describe('anti-escalation', () => {
   })
 })
 
-describe('review fixes', () => {
-  const none = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
-
+describe('promotion to head', () => {
   it('answers 400 when a head sets an expiry on another head, and 200 to an empty PATCH', async () => {
     const t = await tenantWithHead()
     const other = await member()
@@ -428,17 +439,67 @@ describe('review fixes', () => {
     expect(list.map((m) => m.tenantMembershipId)).not.toContain(id)
   })
 
-  it('lets an org change one edition permission of a member who holds more elsewhere', async () => {
+  it('resets tenant-level permissions on promotion, so a later demotion does not restore them', async () => {
     const t = await tenantWithHead()
-    const edition = await addEdition(t.id)
-    const [actor, held] = await Promise.all([member(), member()])
-    const actorId = await addOrg(t.id, actor, { settings: 'write' })
-    await addEditionAccess(t.id, actorId, edition, { program: 'write' })
-    const heldId = await addOrg(t.id, held)
-    await addEditionAccess(t.id, heldId, edition, { tickets: 'write' })
+    const promoted = await member()
+    const id = await addOrg(t.id, promoted, { settings: 'write' })
+    const path = `/tenants/current/members/${id}`
 
-    const body = { ...none, programAccess: 'write', ticketsAccess: 'write' }
-    await call(actor, 'put', `/editions/${edition}/members/${heldId}`, body, t.slug).expect(200)
+    await call(t.head, 'patch', path, { role: 'head', shopConfigAccess: 'write' }, t.slug).expect(
+      200,
+    )
+    const res = await call(t.head, 'patch', path, { role: 'org' }, t.slug).expect(200)
+
+    expect(res.body).toMatchObject({
+      role: 'org',
+      settingsAccess: 'none',
+      brandingAccess: 'none',
+      shopConfigAccess: 'none',
+    })
+  })
+
+  it('keeps tenant-level permissions of a head at none, so a later demotion does not grant them', async () => {
+    const t = await tenantWithHead()
+    const promoted = await member()
+    const id = await addOrg(t.id, promoted)
+    const path = `/tenants/current/members/${id}`
+    await call(t.head, 'patch', path, { role: 'head' }, t.slug).expect(200)
+
+    const head = await call(
+      t.head,
+      'patch',
+      path,
+      { settingsAccess: 'write', brandingAccess: 'read', shopConfigAccess: 'write' },
+      t.slug,
+    ).expect(200)
+    const res = await call(t.head, 'patch', path, { role: 'org' }, t.slug).expect(200)
+
+    const none = { settingsAccess: 'none', brandingAccess: 'none', shopConfigAccess: 'none' }
+    expect(head.body).toMatchObject({ role: 'head', ...none })
+    expect(res.body).toMatchObject({ role: 'org', ...none })
+  })
+
+  it('applies tenant-level permissions sent with a demotion', async () => {
+    const t = await tenantWithHead()
+    const promoted = await member()
+    const id = await addOrg(t.id, promoted)
+    const path = `/tenants/current/members/${id}`
+    await call(t.head, 'patch', path, { role: 'head' }, t.slug).expect(200)
+
+    const res = await call(
+      t.head,
+      'patch',
+      path,
+      { role: 'org', brandingAccess: 'read' },
+      t.slug,
+    ).expect(200)
+
+    expect(res.body).toMatchObject({
+      role: 'org',
+      settingsAccess: 'none',
+      brandingAccess: 'read',
+      shopConfigAccess: 'none',
+    })
   })
 })
 
@@ -485,6 +546,36 @@ describe('concurrency', () => {
       isActive: boolean
     }[]
     expect(all.filter((e) => e.isActive)).toHaveLength(1)
+  })
+
+  it('answers 404 to an edition delete that waited for a concurrent delete', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const commit = await holdOpen((sql) => sql`delete from editions where id = ${edition}`)
+
+    const pending = call(t.head, 'delete', `/editions/${edition}`, undefined, t.slug).then(
+      (res) => res,
+    )
+    await sleep(300)
+    await commit()
+
+    expect((await pending).status).toBe(404)
+  })
+
+  it('answers 404 to an edition access change that waited for the edition to be deleted', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const orgId = await addOrg(t.id, await member())
+    const commit = await holdOpen((sql) => sql`delete from editions where id = ${edition}`)
+
+    const body = { programAccess: 'write', websiteContentAccess: 'none', ticketsAccess: 'none' }
+    const pending = call(t.head, 'put', `/editions/${edition}/members/${orgId}`, body, t.slug).then(
+      (res) => res,
+    )
+    await sleep(300)
+    await commit()
+
+    expect((await pending).status).toBe(404)
   })
 
   it('keeps a head when two heads demote each other at once', async () => {
@@ -637,5 +728,18 @@ describe('edition members', () => {
       ...none,
       programAccess: 'read',
     }).expect(200)
+  })
+
+  it('lets an org change one edition permission of a member who holds more elsewhere', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const [actor, held] = await Promise.all([member(), member()])
+    const actorId = await addOrg(t.id, actor, { settings: 'write' })
+    await addEditionAccess(t.id, actorId, edition, { program: 'write' })
+    const heldId = await addOrg(t.id, held)
+    await addEditionAccess(t.id, heldId, edition, { tickets: 'write' })
+
+    const body = { ...none, programAccess: 'write', ticketsAccess: 'write' }
+    await call(actor, 'put', `/editions/${edition}/members/${heldId}`, body, t.slug).expect(200)
   })
 })

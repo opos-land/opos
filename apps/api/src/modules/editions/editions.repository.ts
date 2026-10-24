@@ -61,6 +61,23 @@ export class EditionsRepository {
     return edition
   }
 
+  /**
+   * The edition, or 404, locked against a delete until the transaction ends: a row that references
+   * it can be written without a foreign key violation. A delete committed while this waits leaves
+   * no row, which is 404 as well.
+   */
+  async lock(id: string): Promise<Edition> {
+    if (!isUuid(id)) throw notFound('edition')
+    const [row] = await this.context
+      .tx()
+      .select(columns)
+      .from(editions)
+      .where(eq(editions.id, id))
+      .for('key share')
+    if (!row) throw notFound('edition')
+    return toEdition(row)
+  }
+
   /** A taken slug violates editions_tenant_slug_unique, which the filter answers with 409. */
   async create(values: { slug: string; name: string; startsAt: string; endsAt: string }) {
     const [row] = await this.context
@@ -102,7 +119,8 @@ export class EditionsRepository {
 
   /**
    * Deletes the edition unless it is active, in one statement: an activation committed meanwhile
-   * makes the row fail the condition, so the tenant never loses its active edition.
+   * makes the row fail the condition, so the tenant never loses its active edition. A delete
+   * committed meanwhile leaves no row either, and the edition is then gone rather than active.
    */
   async removeInactive(id: string) {
     const rows = await this.context
@@ -110,9 +128,9 @@ export class EditionsRepository {
       .delete(editions)
       .where(and(eq(editions.id, id), eq(editions.isActive, false)))
       .returning({ id: editions.id })
-    if (rows.length === 0) {
-      throw new ApiError(409, 'edition.active', 'The active edition cannot be deleted')
-    }
+    if (rows.length > 0) return
+    if (!(await this.find(id))) throw notFound('edition')
+    throw new ApiError(409, 'edition.active', 'The active edition cannot be deleted')
   }
 
   /**

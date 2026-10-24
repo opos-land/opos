@@ -31,6 +31,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'tenant.locale-invalid': msg`This language is not supported.`,
   'tenant.timezone-invalid': msg`Choose a time zone from the list.`,
   'account.not-found': msg`No account uses this email address.`,
+  'account.unconfirmed': msg`The account with this email address has not been confirmed yet.`,
 
   'auth.invalid_credentials': msg`Wrong email or password.`,
   'auth.email_not_confirmed': msg`Confirm your email address first. Check your inbox for the link.`,

@@ -60,13 +60,14 @@ export class MembersRepository {
   /**
    * Locks the actor's and the target's rows for the rest of the transaction and returns them
    * fresh. Ordered by id, so two requests locking the same pair never deadlock; a concurrent
-   * promotion or permission change waits, and the checks then run on what it committed.
+   * promotion or permission change waits, and the checks then run on what it committed. A target
+   * id that is not a uuid names no membership: only the actor is locked, and the target is absent.
    */
   async lockPair(actorId: string, targetId: string) {
-    if (!isUuid(targetId)) return { actor: undefined, target: undefined }
+    const ids = isUuid(targetId) ? [actorId, targetId] : [actorId]
     const rows = (
       await this.select()
-        .where(inArray(tenantMemberships.id, [actorId, targetId]))
+        .where(inArray(tenantMemberships.id, ids))
         .orderBy(asc(tenantMemberships.id))
         .for('update', { of: tenantMemberships })
     ).map(toMember)
@@ -77,21 +78,25 @@ export class MembersRepository {
   }
 
   /**
-   * An expiry on a head violates tenant_memberships_head_never_expires, which the filter answers
-   * with 400. Promoting to head clears the expiry and drops the edition-level rows: a head holds
-   * every edition, and stale rows would come back as access after a demotion.
+   * `role` is the member's role before the change. An expiry on a head violates
+   * tenant_memberships_head_never_expires, which the filter answers with 400. Promoting to head
+   * clears the expiry and drops the edition-level rows, and a member who is a head after the change
+   * keeps the tenant-level permissions at none whatever the body says: a head holds everything, and
+   * stored grants would come back as access after a demotion.
    */
-  async update(id: string, changes: UpdateMember): Promise<Member> {
+  async update(id: string, role: Member['role'], changes: UpdateMember): Promise<Member> {
     if (Object.keys(changes).length === 0) return (await this.find(id))!
     const { expiresAt, ...rest } = changes
     const tx = this.context.tx()
     if (changes.role === 'head') {
       await tx.delete(editionMemberships).where(eq(editionMemberships.tenantMembershipId, id))
     }
+    const head = (changes.role ?? role) === 'head'
     await tx
       .update(tenantMemberships)
       .set({
         ...rest,
+        ...(head && { settingsAccess: 'none', brandingAccess: 'none', shopConfigAccess: 'none' }),
         ...(changes.role === 'head'
           ? { expiresAt: null }
           : expiresAt !== undefined && { expiresAt: expiresAt ? new Date(expiresAt) : null }),

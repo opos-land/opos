@@ -60,6 +60,16 @@ describe('createTenant', () => {
     expect(await migrator`select 1 from tenants where slug = ${free}`).toHaveLength(0)
   })
 
+  it('refuses a head whose email is not confirmed and creates nothing', async () => {
+    const head = await createUser({}, { confirmed: false })
+    const free = slug()
+
+    await expect(
+      createTenant(db, { slug: free, name: 'Unconfirmed', headEmail: head.email }),
+    ).rejects.toMatchObject({ code: 'account.unconfirmed' })
+    expect(await migrator`select 1 from tenants where slug = ${free}`).toHaveLength(0)
+  })
+
   it.each([
     [{ slug: 'Bad_Slug' }, 'tenant.slug-invalid'],
     [{ slug: 'panel' }, 'tenant.slug-reserved'],

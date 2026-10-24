@@ -156,6 +156,14 @@ describe('invariants', () => {
     ).rejects.toThrow(/tenant_memberships_head_never_expires/)
   })
 
+  it('refuses a tenant-level permission on a head membership', async () => {
+    const tenant = await createTenant()
+
+    await expect(
+      migrator`update tenant_memberships set branding_access = 'read' where account_id = ${tenant.headId}`,
+    ).rejects.toThrow(/tenant_memberships_head_holds_no_levels/)
+  })
+
   it('refuses an edition membership pointing at another tenant', async () => {
     const a = await createTenant()
     const b = await createTenant()
@@ -193,5 +201,16 @@ describe('invariants', () => {
     await expect(
       migrator`insert into tenants (slug, name) values (${`Bad_${randomUUID().slice(0, 4)}`}, 'Bad')`,
     ).rejects.toThrow(/tenants_slug_format/)
+  })
+
+  it.each(['Edition_2027', '', 'a'.repeat(41)])('refuses %j as an edition slug', async (slug) => {
+    const tenant = await createTenant()
+
+    await expect(
+      migrator`
+          insert into editions (tenant_id, slug, name, starts_at, ends_at)
+          values (${tenant.id}, ${slug}, 'Bad', '2026-06-01', '2026-06-03')
+        `,
+    ).rejects.toThrow(/editions_slug_format/)
   })
 })

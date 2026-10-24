@@ -192,7 +192,8 @@ not appear in the panel.
 
 **`head` — head organizer.** Bypasses every permission, on both levels. Every convention must have
 at least one. Granted when the convention is created; handing the role over requires promoting the
-other person first.
+other person first. A head demoted to an org starts with no permissions, unless the demotion
+assigns them.
 
 **`org` — organizer.** Permissions assigned item by item, separately for the convention and for
 each edition, optionally until an expiry date.
@@ -371,6 +372,12 @@ stay with the payment provider; OPOS stores only the provider's payment referenc
 once its owner clicks the link sent to that address. A Google sign-in counts as confirmed. A change
 of the account's email address takes effect once both the current and the new address confirm it
 through the links sent to them.
+
+**An email address leads to an account only once it is confirmed.** Wherever the platform finds an
+account by its email address — the admin appointing a convention's first head organizer, an
+organizer invitation, the tickets under "my tickets" — an account that has not confirmed its
+address counts as no account. The admin's script refuses it, and an invitation to it goes out as an
+invitation to a person without an account.
 
 **Account deletion is self-service.** The user deletes the account from settings; their sign-in
 identities, sessions and edition registrations go with it. The single exception: an account that

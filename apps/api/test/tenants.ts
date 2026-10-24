@@ -83,6 +83,14 @@ export async function deleteCreatedTenants() {
   tenantIds.length = 0
 }
 
+/** Whether accounts holds the email confirmation Supabase Auth recorded (PLAN.md 4.2). */
+export const emailConfirmed = async (accountId: string) =>
+  (
+    await db.execute<{ confirmed: boolean }>(
+      sql`select email_confirmed_at is not null as confirmed from accounts where id = ${accountId}`,
+    )
+  )[0]?.confirmed
+
 export const closeTenantDb = () => db.$client.end()
 
 /**

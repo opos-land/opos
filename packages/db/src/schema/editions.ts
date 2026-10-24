@@ -38,5 +38,7 @@ export const editions = pgTable(
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
     check('editions_ends_after_start', sql`${t.endsAt} > ${t.startsAt}`),
+    // The same pattern as editionSlug in packages/contract/src/editions.ts.
+    check('editions_slug_format', sql`${t.slug} ~ '^[a-z0-9-]{1,40}$'`),
   ],
 )

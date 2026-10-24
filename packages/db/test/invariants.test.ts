@@ -194,4 +194,15 @@ describe('invariants', () => {
       migrator`insert into tenants (slug, name) values (${`Bad_${randomUUID().slice(0, 4)}`}, 'Bad')`,
     ).rejects.toThrow(/tenants_slug_format/)
   })
+
+  it.each(['Edition_2027', '', 'a'.repeat(41)])('refuses %j as an edition slug', async (slug) => {
+    const tenant = await createTenant()
+
+    await expect(
+      migrator`
+          insert into editions (tenant_id, slug, name, starts_at, ends_at)
+          values (${tenant.id}, ${slug}, 'Bad', '2026-06-01', '2026-06-03')
+        `,
+    ).rejects.toThrow(/editions_slug_format/)
+  })
 })

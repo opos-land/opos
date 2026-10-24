@@ -29,6 +29,12 @@ const constraintErrors: Record<
     message: 'endsAt must be after startsAt',
     params: { field: 'endsAt' },
   },
+  editions_slug_format: {
+    status: 400,
+    code: 'request.invalid',
+    message: 'slug may contain only lowercase letters, digits and hyphens, 1 to 40 characters',
+    params: { field: 'slug' },
+  },
   tenant_memberships_head_never_expires: {
     status: 400,
     code: 'request.invalid',

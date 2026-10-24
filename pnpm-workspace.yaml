@@ -16,6 +16,7 @@ allowBuilds:
   '@scarf/scarf': false
   # platform binaries come from optional dependencies, the postinstall only verifies them
   esbuild: false
+  unrs-resolver: false
 
 # Versions shared by more than one workspace package.
 catalog:

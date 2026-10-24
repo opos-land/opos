@@ -7,6 +7,8 @@ const envSchema = z.object({
   DATABASE_GLOBAL_URL: z.url(),
   AUTH_URL: z.url(),
   JWT_SECRET: z.string().min(32),
+  // A service_role JWT signed with JWT_SECRET, for the Supabase Auth admin API (PLAN.md 10).
+  SUPABASE_SERVICE_ROLE_KEY: z.jwt(),
   // GoTrue's hook secret format: a Standard Webhooks `whsec_` key behind the `v1,` version.
   SEND_EMAIL_HOOK_SECRET: z.string().regex(/^v1,whsec_[A-Za-z0-9+/]+={0,2}$/),
   PANEL_URL: z.url(),

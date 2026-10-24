@@ -7,6 +7,7 @@ export const errorCodes = [
   'request.not-found',
   'request.rate-limited',
   'session.invalid',
+  'session.reauthentication-required',
   'permission.denied',
   'server.error',
   'membership.last-head',

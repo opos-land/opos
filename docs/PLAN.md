@@ -152,9 +152,10 @@ opos/
   apps/
     api/                 # built: bootstrap, env, database providers, GlobalDbService, OpenAPI docs,
                          #   error filter, request store and tenant transaction, JwtAuthGuard,
-                         #   permission decorators, MeModule (profile, memberships),
-                         #   TenantsModule (tenant, team), EditionsModule, AuthModule (send-email
-                         #   hook), MailModule (Supabase Auth emails), tests
+                         #   rate limiting, permission decorators, MeModule (profile, memberships,
+                         #   account deletion), TenantsModule (tenant, team), EditionsModule,
+                         #   AuthModule (send-email hook, GoTrue admin client), MailModule
+                         #   (Supabase Auth emails), the auth:service-key script, tests
       src/
         common/
           guards/scanner-device.guard.ts
@@ -184,7 +185,7 @@ opos/
     specs/
     fixtures/            # Mailpit client, sign-in as a seeded account
   packages/
-    contract/            # built: common schemas, error codes, health, me (profile, memberships),
+    contract/            # built: common schemas, error codes, health, me (profile, memberships, deletion),
                          #   tenants (without members POST and payment config), editions
       src/
         program.ts
@@ -586,6 +587,7 @@ The complete list:
 |---|---|
 | tenant lookup by slug | returns only `id`, `slug`, `name`, `defaultLocale`, `timezone` |
 | `GET /me/memberships` | `where account_id = <account from the JWT>`, expired memberships excluded |
+| `DELETE /me` | `where account_id = <account from the JWT> and role = 'head'`; the other heads of those tenants are only checked for existence; returns only whether the account is some tenant's last head |
 | `GET /me/attendances` | `where account_id = <account from the JWT>` |
 | `GET /me/schedule` | `where account_id = <account from the JWT>` on `program_item_likes` |
 | `GET /me/program-items` | `where account_id = <account from the JWT>` on `program_item_speakers` |
@@ -662,7 +664,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | Status | Meaning | Code when nothing more specific applies |
 |---|---|---|
 | `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `editions_slug_format` -> `slug`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
-| `401` | missing, expired or foreign token, or no `accounts` row for it | `session.invalid` |
+| `401` | missing, expired or foreign token, or no `accounts` row for it; `DELETE /me` without a recent sign-in has its own code ([7.4](#74-authorization)) | `session.invalid` |
 | `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
 | `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`) | always a specific code |
@@ -702,7 +704,7 @@ by the payment provider only ([7.10](#710-payments)).
 |---|---|---|
 | GET | `/me` | account profile: `id`, `email`, `firstName`, `lastName`, `locale` |
 | PATCH | `/me` | change `firstName` and `lastName` (1–100 characters after trimming, or `null`) and `locale` (one of `SUPPORTED_LOCALES`, or `null` for detection); any other field -> `400` |
-| DELETE | `/me` | delete the account; `409` when it is some tenant's last `head`; `401` without a sign-in from the last 5 minutes |
+| DELETE | `/me` | delete the account, `204`; `401` `session.reauthentication-required` without a sign-in from the last 5 minutes; `409` `membership.last-head` when it is some tenant's last `head` ([9](#9-appsportal)) |
 | GET | `/me/memberships` | tenants (`id`, `slug`, `name`) with role, tenant-level permissions, `expiresAt` and edition-level permissions (`editionId`, `editionSlug`, the three levels); expired memberships left out |
 | GET | `/me/attendances` | "my conventions" |
 | GET | `/me/schedule` | liked programme items across all tenants, ascending by `startsAt` |
@@ -981,7 +983,7 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 
 | Module | Contents |
 |---|---|
-| `AuthModule` | the `POST /hooks/send-email` controller ([10](#send-email-hook)), the GoTrue admin client |
+| `AuthModule` | the `POST /hooks/send-email` controller ([10](#send-email-hook)), the GoTrue admin client ([10](#admin-api)) |
 | `MeModule` | profile, memberships, edition sign-ups, personal schedule, speaker's items, account deletion; global, because it provides `AccountsRepository` to `JwtAuthGuard` |
 | `TenantsModule` | tenant data, `tenant_memberships` with expiry, invitations |
 | `EditionsModule` | edition CRUD, activation, `edition_memberships` |
@@ -1117,10 +1119,13 @@ Sessions are issued by Supabase Auth ([10](#10-supabase)):
   token issued before stays valid until its `exp`, at most 15 minutes later.
 
 **`JwtAuthGuard`** ([jwt-auth.guard.ts](../apps/api/src/common/guards/jwt-auth.guard.ts)) verifies
-the `Authorization: Bearer` token with `jose`: signature, `exp` and `sub` required (a token without
-`exp` never expires), `aud = authenticated`, `iss = <AUTH_URL>`, `alg = HS256` only. `sub` is `accounts.id` (a uuid); the
-guard loads that row and
-puts it into the request store ([7.2](#72-tenant-context)) — `locale` comes from the database, not from the token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
+the `Authorization: Bearer` token with `jose`
+([access-token.ts](../apps/api/src/common/guards/access-token.ts), shared with the rate limit,
+[7.9](#79-rate-limiting)): signature, `exp` and `sub` required (a token without `exp` never
+expires), `aud = authenticated`, `iss = <AUTH_URL>`, `alg = HS256` only. `sub` is `accounts.id` (a
+uuid); the guard loads that row and puts it into the request store ([7.2](#72-tenant-context)),
+with the newest `amr` timestamp of the token — `locale` comes from the database, not from the
+token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
 
 **Session in the browser** — `@supabase/auth-js` with `flowType: 'pkce'`, `persistSession: true`,
 `autoRefreshToken: true`, stored in the `localStorage` of the application's own origin under a
@@ -1132,8 +1137,9 @@ with a strict Content Security Policy: `script-src 'self'`, no inline scripts,
 `connect-src 'self' <API_URL> <AUTH_URL>`, `frame-ancestors 'none'`.
 
 **Recent sign-in** — `DELETE /me` requires an `amr` entry in the JWT with a timestamp younger than
-5 minutes; the client gets one by confirming the password (`signInWithPassword`) or by signing in
-with Google again.
+5 minutes; without one -> `401` `session.reauthentication-required`. A refresh keeps the `amr` of
+the sign-in that started the session, so the client answers that code not by refreshing but by
+confirming the password (`signInWithPassword`) or by signing in with Google again.
 
 ### 7.5 Google OAuth
 
@@ -1193,16 +1199,28 @@ Invitation emails are sent by `MailModule`, not by Supabase Auth.
 
 ### 7.8 CORS
 
-Allowed `Origin`: `opos.land` and `panel.opos.land` (the scanner included) — an explicit list,
-never `*` and never a reflected header. Allowed headers: `Authorization`, `Content-Type`, `X-Tenant-Slug`,
-`Accept-Language`. `credentials: false` — the API sets and reads no cookies.
+Set in [app.ts](../apps/api/src/app.ts). Allowed `Origin`: `PORTAL_URL` and `PANEL_URL` (the
+scanner included) — an explicit list, never `*` and never a reflected header. Allowed headers:
+`Authorization`, `Content-Type`, `X-Tenant-Slug`, `Accept-Language`. Exposed response header:
+`Retry-After`, which a browser otherwise hides from the panel and portal on a `429`
+([7.9](#79-rate-limiting)). `credentials: false` — the API sets and reads no cookies.
 
 `POST /hooks/send-email` and `POST /hooks/payments/:provider` are called server to server and need
 no CORS; they reject every request without a valid signature.
 
 ### 7.9 Rate limiting
 
-`@nestjs/throttler`, counters in process memory.
+`@nestjs/throttler` with counters in process memory, as a global guard that runs before every
+route's own guards ([rate-limit.ts](../apps/api/src/common/rate-limit/rate-limit.ts)):
+
+- A request counts against the account of a valid access token, checked as `JwtAuthGuard` checks
+  it ([7.4](#74-authorization)), and otherwise against the client address (an IPv6 address by its
+  `/64`). An invalid token counts against the address, so a forged `sub` never spends another
+  account's requests.
+- A limit is one counter per tracker, shared by every route it covers — not one per route.
+- Above the limit: `429` `request.rate-limited` in the error shape of [5](#5-api-contract), with
+  `Retry-After` in seconds.
+- The API runs with `trust proxy` — the client address comes from `X-Forwarded-For`.
 
 | Scope | Limit |
 |---|---|
@@ -1213,10 +1231,12 @@ no CORS; they reject every request without a valid signature.
 | `GET /public/orders/:orderId` | 60 / min per IP |
 | `POST /scanner/pair` | 10 / hour per IP |
 | `/scanner/*` | 600 / min per device |
-| the rest of the API | 300 / min per account |
+| the rest of the API | 300 / min per account, per IP without a valid token |
 
-A `429` response with `Retry-After`. The API runs with `trust proxy` — the client address comes
-from `X-Forwarded-For`.
+The last row is the default every route gets; an endpoint with a limit of its own adds it in the PR
+that builds the endpoint. The default covers `GET /health` and the send-email hook as well, which
+Supabase Auth's email bucket keeps far below it ([10](#rate-limits)). Swagger UI and the OpenAPI
+document (`/docs`) are served outside the Nest router and count against no limit.
 
 Sign-up, sign-in, refresh and recovery are limited by Supabase Auth and by Traefik in front of it
 ([10](#10-supabase)).
@@ -1381,12 +1401,17 @@ unpublished edition under a direct URL or an unknown tenant -> `404`.
 `/join/...` is reached from the "Sign up" button on the convention's page.
 
 **Account deletion:** `DELETE /me` after confirming with a password or a repeated Google sign-in
-([7.4](#74-authorization)). The API deletes the user through the GoTrue admin API
-(`DELETE /admin/users/:id`); `accounts` cascades from `auth.users`, and `tenant_memberships`,
-`edition_memberships`, `attendees`, `program_item_speakers`, `program_item_likes` and
-`program_item_reviews` cascade from `accounts`. Orders are linked by email, not by account, and
-stay. `409` when the account is some
-tenant's last `head`.
+([7.4](#74-authorization)), implemented in
+[account-deletion.service.ts](../apps/api/src/modules/accounts/account-deletion.service.ts). The
+API refuses the last `head` of any tenant (`409` `membership.last-head`, from the cross-tenant check
+in [4.6](#cross-tenant-queries)), then deletes the user through the GoTrue admin API
+(`DELETE /admin/users/:id`, [10](#admin-api)), outside any transaction. `accounts` cascades from
+`auth.users`, and `tenant_memberships`, `edition_memberships`, `attendees`,
+`program_item_speakers`, `program_item_likes` and `program_item_reviews` cascade from `accounts`.
+A head demoted by another request after the check makes the deferred trigger of
+[4.5](#45-invariants) refuse the cascade; Supabase Auth then answers with a failure, and the API
+checks again and answers `409`. A user already gone counts as deleted. Orders are linked by email,
+not by account, and stay.
 
 ---
 
@@ -1472,7 +1497,12 @@ current address and `token_hash` to the new one.
 ### Admin API
 
 The API holds `SUPABASE_SERVICE_ROLE_KEY` — a JWT with `role = service_role`, signed with
-`JWT_SECRET` — and uses it only for `DELETE /admin/users/:id` (account deletion). The seed calls
+`JWT_SECRET` — and uses it only for `DELETE /admin/users/:id` (account deletion), through
+`@supabase/auth-js` in [auth-admin.client.ts](../apps/api/src/modules/auth/auth-admin.client.ts).
+A `404` means the user is already gone; any other refusal, a `401` or `403` for a key signed with
+the wrong secret included, is the API's own failure and answers `500` `server.error`, logged — never
+the caller's `session.invalid` or `permission.denied`.
+The seed calls
 `POST /admin/users` and `PUT /admin/users/:id` with the same key, or, when it is not set, with a
 10-minute `service_role` JWT it signs with `JWT_SECRET` itself ([14](#14-demo-data-seed)). The key never reaches a frontend.
 
@@ -1503,8 +1533,11 @@ turns every change into a cache invalidation for all of them. Each application k
 **`apps/api/.env`** — the API's variables, read at runtime.
 [apps/api/.env.example](../apps/api/.env.example) lists every one of them with a working dev value;
 [env.ts](../apps/api/src/config/env.ts) validates them on start, and a variable joins it in the PR
-that first reads it. `SUPABASE_SERVICE_ROLE_KEY` in dev is generated from `JWT_SECRET` by
-`pnpm --filter api auth:service-key`.
+that first reads it. `SUPABASE_SERVICE_ROLE_KEY` is signed with the environment's `JWT_SECRET` by
+`pnpm --filter api auth:service-key` ([service-key.ts](../apps/api/src/scripts/service-key.ts)),
+which reads `JWT_SECRET` from the shell or `apps/api/.env` and never from `.env.example`. It refuses
+a missing secret and the dev secret; `auth:service-key --dev` signs with the dev secret, and
+`.env.example` holds the key it prints.
 
 **`packages/db`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL` from
 the environment. Without it they use
@@ -1544,7 +1577,8 @@ Production configuration lives in a `.env` next to `docker-compose.prod.yml` on 
 injects it into the containers. It adds `POSTGRES_PASSWORD`, `ACME_EMAIL`, `CF_DNS_API_TOKEN` and
 the Supabase Auth variables, and overrides `ROOT_DOMAIN=opos.land` and the `https://` addresses.
 `JWT_SECRET` and `SEND_EMAIL_HOOK_SECRET` are generated once per environment and are never reused
-between dev and production.
+between dev and production; `SUPABASE_SERVICE_ROLE_KEY` is signed by
+`JWT_SECRET=<production secret> pnpm --filter api auth:service-key`.
 
 ---
 
@@ -1859,9 +1893,10 @@ cannot run beside an API started with `pnpm dev`.
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
 | scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; a device paired by an org whose access expires stops with that access; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
 | JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
-| account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
+| account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401` |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
-| rate limit | `GET /invitations/preview` above the limit -> `429` with `Retry-After` |
+| rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` included |
+| CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, a foreign origin gets no `Access-Control-Allow-Origin`; exactly the four allowed request headers; `Retry-After` exposed; no `Access-Control-Allow-Credentials` |
 | i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
 
 ### 15.2 E2E tests

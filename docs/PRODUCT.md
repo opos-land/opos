@@ -379,10 +379,12 @@ organizer invitation, the tickets under "my tickets" — an account that has not
 address counts as no account. The admin's script refuses it, and an invitation to it goes out as an
 invitation to a person without an account.
 
-**Account deletion is self-service.** The user deletes the account from settings; their sign-in
-identities, sessions and edition registrations go with it. The single exception: an account that
-is a convention's last head organizer must hand that role over first — otherwise the convention
-would be left without an owner.
+**Account deletion is self-service.** The user deletes the account from settings, after confirming
+it is them: entering the password again or signing in with Google again, no more than a few minutes
+before. Their sign-in identities, sessions, memberships in convention teams and edition
+registrations go with it. The single exception: an account that is a convention's last head
+organizer must hand that role over first — otherwise the convention would be left without an
+owner.
 
 Database backups contain personal data, so they are encrypted and share the retention policy of
 production data. Emails leave the platform for the mail provider only over an encrypted connection.

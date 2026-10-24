@@ -9,7 +9,8 @@
     "start": "node --env-file-if-exists=.env --enable-source-maps dist/main.js",
     "typecheck": "tsc",
     "lint": "eslint --max-warnings 0 .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "auth:service-key": "node --env-file-if-exists=.env src/scripts/service-key.ts"
   },
   "dependencies": {
     "@lingui/core": "catalog:",
@@ -17,6 +18,7 @@
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
     "@nestjs/swagger": "^11.4.7",
+    "@nestjs/throttler": "^6.7.1",
     "@opos/contract": "workspace:*",
     "@opos/db": "workspace:*",
     "@opos/i18n": "workspace:*",
@@ -24,6 +26,7 @@
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
+    "@supabase/auth-js": "^2.118.0",
     "drizzle-orm": "catalog:",
     "jose": "^6.2.12",
     "nodemailer": "^10.1.2",

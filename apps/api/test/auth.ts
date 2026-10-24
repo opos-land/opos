@@ -19,10 +19,15 @@ export async function mintToken(
     /** `null` leaves the exp claim out. */
     expiresIn?: string | null
     alg?: 'HS256' | 'HS512'
+    /** Supabase Auth's sign-in records, `{ method, timestamp }` with the time in seconds. */
+    amr?: { method: string; timestamp: number }[]
   } = {},
   key: Uint8Array = secret,
 ) {
-  const jwt = new SignJWT({ role: claims.role ?? 'authenticated' })
+  const jwt = new SignJWT({
+    role: claims.role ?? 'authenticated',
+    ...(claims.amr ? { amr: claims.amr } : {}),
+  })
     .setProtectedHeader({ alg: claims.alg ?? 'HS256', typ: 'JWT' })
     .setSubject(claims.sub ?? randomUUID())
     .setAudience(claims.aud ?? 'authenticated')
@@ -40,19 +45,29 @@ export function unsignedToken(sub: string) {
   return `${encode({ alg: 'none', typ: 'JWT' })}.${encode(claims)}.`
 }
 
-const admin = async (path: string, init: RequestInit = {}) => {
+const admin = async (path: string, init: RequestInit = {}, accept: number[] = []) => {
   const key = await mintToken({ role: 'service_role', aud: 'authenticated' })
   const response = await fetch(`${env.AUTH_URL}${path}`, {
     ...init,
     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
   })
-  if (!response.ok) throw new Error(`${path}: ${response.status} ${await response.text()}`)
+  if (!response.ok && !accept.includes(response.status)) {
+    throw new Error(`${path}: ${response.status} ${await response.text()}`)
+  }
   return response
+}
+
+/** Whether Supabase Auth still has the user. */
+export async function authUserExists(id: string) {
+  return (await admin(`/admin/users/${id}`, {}, [404])).ok
 }
 
 const created: string[] = []
 
-/** Deletes an account created outside createAccount, e.g. by a sign-up, with the others. */
+/**
+ * Deletes an account created outside createAccount, e.g. by a sign-up, with the others; one a test
+ * deleted already is skipped.
+ */
 export function deleteLater(id: string) {
   created.push(id)
 }
@@ -85,6 +100,6 @@ export async function signIn(email: string, password = TEST_PASSWORD) {
 
 export async function deleteCreatedAccounts() {
   await Promise.all(
-    created.splice(0).map((id) => admin(`/admin/users/${id}`, { method: 'DELETE' })),
+    created.splice(0).map((id) => admin(`/admin/users/${id}`, { method: 'DELETE' }, [404])),
   )
 }

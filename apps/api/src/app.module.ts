@@ -5,7 +5,8 @@ import {
   type NestModule,
   RequestMethod,
 } from '@nestjs/common'
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
+import { ThrottlerGuard } from '@nestjs/throttler'
 import { ORPCModule } from '@orpc/nest'
 import { experimental_RethrowHandlerPlugin as RethrowHandlerPlugin } from '@orpc/server/plugins'
 import { deferResponseInTenantTransaction } from './common/als/defer-response'
@@ -15,6 +16,7 @@ import { TenantTransactionInterceptor } from './common/als/tenant-transaction.in
 import { DatabaseModule } from './common/database/database.module'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { AccessRepository } from './common/permissions/access.repository'
+import { DEFAULT_RATE_LIMIT, type RateLimit, rateLimitModule } from './common/rate-limit/rate-limit'
 import { ENV, type Env } from './config/env'
 import { MeModule } from './modules/accounts/me.module'
 import { AuthModule } from './modules/auth/auth.module'
@@ -24,7 +26,8 @@ import { TenantsModule } from './modules/tenants/tenants.module'
 
 @Module({})
 export class AppModule implements NestModule {
-  static register(env: Env): DynamicModule {
+  /** `rateLimit` replaces the default limit of PLAN.md 7.9, for tests that run into it. */
+  static register(env: Env, rateLimit: RateLimit = DEFAULT_RATE_LIMIT): DynamicModule {
     return {
       module: AppModule,
       global: true,
@@ -34,6 +37,7 @@ export class AppModule implements NestModule {
           plugins: [new RethrowHandlerPlugin({ filter: () => true })],
           sendResponseInterceptors: [deferResponseInTenantTransaction],
         }),
+        rateLimitModule(env, rateLimit),
         DatabaseModule,
         HealthModule,
         MeModule,
@@ -44,6 +48,8 @@ export class AppModule implements NestModule {
       providers: [
         { provide: ENV, useValue: env },
         { provide: APP_FILTER, useClass: HttpExceptionFilter },
+        // A global guard runs before every route's own guards, JwtAuthGuard included.
+        { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: APP_INTERCEPTOR, useClass: TenantTransactionInterceptor },
         TenantContextService,
         AccessRepository,

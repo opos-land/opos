@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { type Database, editionMemberships, editions, tenantMemberships, tenants } from '@opos/db'
-import { and, asc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, ne, notExists, or, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { type TenantInContext, TenantContextService } from '../als/tenant-context.service'
 import { GLOBAL_DB } from './tokens'
 
@@ -83,5 +84,37 @@ export class GlobalDbService {
         .filter((row) => row.tenantMembershipId === id)
         .map(({ tenantMembershipId: _, ...edition }) => edition),
     }))
+  }
+
+  /**
+   * `DELETE /me`: whether the signed-in account is the only head of some tenant. Reads the other
+   * heads of the account's own tenants and returns nothing about them but that answer.
+   */
+  async ownLastHead(): Promise<boolean> {
+    const accountId = this.context.account().id
+    const otherHead = alias(tenantMemberships, 'other_head')
+    const [row] = await this.db
+      .select({ tenantId: tenantMemberships.tenantId })
+      .from(tenantMemberships)
+      .where(
+        and(
+          eq(tenantMemberships.accountId, accountId),
+          eq(tenantMemberships.role, 'head'),
+          notExists(
+            this.db
+              .select({ id: otherHead.id })
+              .from(otherHead)
+              .where(
+                and(
+                  eq(otherHead.tenantId, tenantMemberships.tenantId),
+                  eq(otherHead.role, 'head'),
+                  ne(otherHead.accountId, accountId),
+                ),
+              ),
+          ),
+        ),
+      )
+      .limit(1)
+    return row !== undefined
   }
 }

@@ -11,6 +11,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'request.not-found': msg`We could not find what you are looking for.`,
   'request.rate-limited': msg`Too many attempts. Try again in a moment.`,
   'session.invalid': msg`Your session has ended. Sign in again.`,
+  'session.reauthentication-required': msg`Confirm it is you: enter your password again or sign in with Google again.`,
   'permission.denied': msg`You do not have permission to do this.`,
   'server.error': unknownError,
   'membership.last-head': msg`A convention must keep at least one head organizer. Make someone else a head organizer first.`,

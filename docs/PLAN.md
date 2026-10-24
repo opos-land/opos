@@ -1655,7 +1655,7 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
   ([4.5](#45-invariants)).
 - The head's account must already exist — the person registers in the portal first. The email is
   matched case-insensitively.
-- Any refusal changes nothing and exits non-zero with a `CreateTenantError` code:
+- Any refusal changes nothing and exits non-zero with a `TenantError` code:
   `tenant.slug-invalid`, `tenant.slug-taken`, `tenant.name-empty`, `tenant.locale-invalid`,
   `tenant.timezone-invalid` (not an IANA zone), `account.not-found`. `tenant.locale-invalid` means
 outside `SUPPORTED_LOCALES` from `@opos/i18n`.

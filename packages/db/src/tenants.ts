@@ -11,7 +11,7 @@ export interface CreateTenantInput {
   timezone?: string
 }
 
-export type CreateTenantErrorCode =
+export type TenantErrorCode =
   | 'tenant.slug-invalid'
   | 'tenant.slug-taken'
   | 'tenant.name-empty'
@@ -19,13 +19,13 @@ export type CreateTenantErrorCode =
   | 'tenant.timezone-invalid'
   | 'account.not-found'
 
-export class CreateTenantError extends Error {
+export class TenantError extends Error {
   constructor(
-    readonly code: CreateTenantErrorCode,
+    readonly code: TenantErrorCode,
     message: string,
   ) {
     super(message)
-    this.name = 'CreateTenantError'
+    this.name = 'TenantError'
   }
 }
 
@@ -42,14 +42,14 @@ export async function createTenant(db: Database, input: CreateTenantInput) {
   const timezone = input.timezone ?? 'Europe/Warsaw'
 
   if (!SLUG.test(input.slug)) {
-    throw new CreateTenantError('tenant.slug-invalid', `Slug must match ${SLUG}: ${input.slug}`)
+    throw new TenantError('tenant.slug-invalid', `Slug must match ${SLUG}: ${input.slug}`)
   }
-  if (!name) throw new CreateTenantError('tenant.name-empty', 'Name must not be empty')
+  if (!name) throw new TenantError('tenant.name-empty', 'Name must not be empty')
   if (!isLocale(defaultLocale)) {
-    throw new CreateTenantError('tenant.locale-invalid', `Unsupported locale: ${defaultLocale}`)
+    throw new TenantError('tenant.locale-invalid', `Unsupported locale: ${defaultLocale}`)
   }
   if (!isTimeZone(timezone)) {
-    throw new CreateTenantError('tenant.timezone-invalid', `Unknown IANA time zone: ${timezone}`)
+    throw new TenantError('tenant.timezone-invalid', `Unknown IANA time zone: ${timezone}`)
   }
 
   return db.transaction(async (tx) => {
@@ -58,7 +58,7 @@ export async function createTenant(db: Database, input: CreateTenantInput) {
       .from(accounts)
       .where(eq(accounts.email, email))
     if (!account) {
-      throw new CreateTenantError('account.not-found', `No account with the email ${email}`)
+      throw new TenantError('account.not-found', `No account with the email ${email}`)
     }
 
     const [tenant] = await tx
@@ -67,7 +67,7 @@ export async function createTenant(db: Database, input: CreateTenantInput) {
       .onConflictDoNothing({ target: tenants.slug })
       .returning({ id: tenants.id, slug: tenants.slug })
     if (!tenant) {
-      throw new CreateTenantError('tenant.slug-taken', `The slug ${input.slug} is taken`)
+      throw new TenantError('tenant.slug-taken', `The slug ${input.slug} is taken`)
     }
 
     await tx

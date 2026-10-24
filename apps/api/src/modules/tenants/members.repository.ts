@@ -78,8 +78,9 @@ export class MembersRepository {
 
   /**
    * An expiry on a head violates tenant_memberships_head_never_expires, which the filter answers
-   * with 400. Promoting to head clears the expiry and drops the edition-level rows: a head holds
-   * every edition, and stale rows would come back as access after a demotion.
+   * with 400. Promoting to head clears the expiry, resets the tenant-level permissions and drops the
+   * edition-level rows: a head holds everything, and stale grants would come back as access after
+   * a demotion.
    */
   async update(id: string, changes: UpdateMember): Promise<Member> {
     if (Object.keys(changes).length === 0) return (await this.find(id))!
@@ -93,7 +94,12 @@ export class MembersRepository {
       .set({
         ...rest,
         ...(changes.role === 'head'
-          ? { expiresAt: null }
+          ? {
+              settingsAccess: 'none',
+              brandingAccess: 'none',
+              shopConfigAccess: 'none',
+              expiresAt: null,
+            }
           : expiresAt !== undefined && { expiresAt: expiresAt ? new Date(expiresAt) : null }),
       })
       .where(eq(tenantMemberships.id, id))

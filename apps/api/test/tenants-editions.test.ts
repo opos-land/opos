@@ -425,6 +425,25 @@ describe('promotion to head', () => {
       .body as { tenantMembershipId: string }[]
     expect(list.map((m) => m.tenantMembershipId)).not.toContain(id)
   })
+
+  it('resets tenant-level permissions on promotion, so a later demotion does not restore them', async () => {
+    const t = await tenantWithHead()
+    const promoted = await member()
+    const id = await addOrg(t.id, promoted, { settings: 'write' })
+    const path = `/tenants/current/members/${id}`
+
+    await call(t.head, 'patch', path, { role: 'head', shopConfigAccess: 'write' }, t.slug).expect(
+      200,
+    )
+    const res = await call(t.head, 'patch', path, { role: 'org' }, t.slug).expect(200)
+
+    expect(res.body).toMatchObject({
+      role: 'org',
+      settingsAccess: 'none',
+      brandingAccess: 'none',
+      shopConfigAccess: 'none',
+    })
+  })
 })
 
 // Each test holds a row lock from outside, so the requests really overlap (PLAN.md 15.1).

@@ -59,6 +59,13 @@ export const meContract = {
     })
     .input(z.object({ body: updateAccountSchema }))
     .output(accountSchema),
+  delete: accountRoute.route({
+    method: 'DELETE',
+    path: '/me',
+    successStatus: 204,
+    summary:
+      "Delete the signed-in account; needs a sign-in from the last 5 minutes and refuses a tenant's last head",
+  }),
   memberships: accountRoute
     .route({
       method: 'GET',

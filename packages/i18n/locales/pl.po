@@ -49,6 +49,10 @@ msgstr "Wybierz strefę czasową z listy."
 msgid "Confirm email address"
 msgstr "Potwierdź adres e-mail"
 
+#: src/errors.ts
+msgid "Confirm it is you: enter your password again or sign in with Google again."
+msgstr "Potwierdź, że to ty: wpisz ponownie hasło albo znów zaloguj się przez Google."
+
 #: src/emails.ts
 msgid "Confirm that {email} is the new email address of your OPOS account."
 msgstr "Potwierdź, że {email} to nowy adres e-mail twojego konta w OPOS."

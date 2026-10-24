@@ -20,9 +20,11 @@ import {
   closeTenantDb,
   deleteCreatedTenants,
   deleteEdition,
+  holdOpen,
   member,
   type Member,
   removeMembership,
+  sleep,
   storedMembership,
   tenantWithHead,
 } from './tenants'
@@ -230,6 +232,30 @@ describe('inviting an address without an account', () => {
       { editionId: editionA, ...none, programAccess: 'read' },
     ])
   })
+
+  it('skips an edition whose delete commits while the acceptance runs', async () => {
+    const edition = await addEdition(a.id)
+    const email = newAddress()
+    await invite(a.head, {
+      email,
+      editions: [
+        { editionId: edition, ...none, ticketsAccess: 'read' },
+        { editionId: editionA, ...none, programAccess: 'read' },
+      ],
+    }).expect(201)
+    const token = await tokenSentTo(email)
+    const invitee = await registered(email)
+    const commit = await holdOpen((sql) => sql`delete from editions where id = ${edition}`)
+
+    const pending = accept(token, invitee.token).then((res) => res)
+    await sleep(300)
+    await commit()
+
+    expect((await pending).status).toBe(201)
+    expect((await storedMembership(a.id, invitee.id))!.editions).toEqual([
+      { editionId: editionA, ...none, programAccess: 'read' },
+    ])
+  })
 })
 
 describe('accepting an invitation', () => {
@@ -414,6 +440,23 @@ describe('invitation anti-escalation', () => {
         code: 'permission.denied',
       })
     }
+  })
+
+  it('answers 404 for an edition whose delete commits while the invitation is sent', async () => {
+    const doomed = await addEdition(t.id)
+    const known = await createAccount()
+    const commit = await holdOpen((sql) => sql`delete from editions where id = ${doomed}`)
+
+    const pending = invite(
+      t.head,
+      { email: known.email, editions: [{ editionId: doomed, ...none, programAccess: 'read' }] },
+      t.slug,
+    ).then((res) => res)
+    await sleep(300)
+    await commit()
+
+    expect((await pending).status).toBe(404)
+    expect(await storedMembership(t.id, known.id)).toBeUndefined()
   })
 
   it("answers 404 for another tenant's edition or an unknown one", async () => {

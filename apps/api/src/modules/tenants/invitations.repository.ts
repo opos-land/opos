@@ -56,7 +56,12 @@ export class InvitationsRepository {
     return rows.length > 0
   }
 
-  /** The ids among `ids` that are editions of the tenant. */
+  /**
+   * The ids among `ids` that are editions of the tenant, locked against a delete until the
+   * transaction ends, as EditionsRepository.lock does: the edition rows of the new membership are
+   * then written without a foreign key violation. A delete committed while this waits leaves no
+   * row, so that edition counts as missing.
+   */
   async existingEditions(ids: string[]): Promise<Set<string>> {
     if (ids.length === 0) return new Set()
     const rows = await this.context
@@ -64,6 +69,7 @@ export class InvitationsRepository {
       .select({ id: editions.id })
       .from(editions)
       .where(inArray(editions.id, ids))
+      .for('key share')
     return new Set(rows.map((row) => row.id))
   }
 

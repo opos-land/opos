@@ -25,8 +25,9 @@ const toAccount = (row: Row): Account => ({
 
 /**
  * `accounts` has no RLS (PLAN.md 4.6): it is read and written on the opos_app pool outside a
- * tenant transaction. Only the guard looks an account up by id, the token's `sub`; every other
- * method works on the account in the request store, so no caller can pass another account's id.
+ * tenant transaction. Only the guard and the send-email hook look an account up by id, the `sub`
+ * of a verified token or the user of a verified hook payload; every other method works on the
+ * account in the request store, so no caller can pass another account's id.
  */
 @Injectable()
 export class AccountsRepository {
@@ -39,6 +40,18 @@ export class AccountsRepository {
   async findForToken(sub: string): Promise<Account | undefined> {
     const [row] = await this.db.select(columns).from(accounts).where(eq(accounts.id, sub))
     return row && toAccount(row)
+  }
+
+  /**
+   * For the send-email hook only: the chosen locale of the user a payload signed with the hook
+   * secret names. A user Supabase Auth is still creating has no committed row yet.
+   */
+  async localeForHook(id: string): Promise<string | null> {
+    const [row] = await this.db
+      .select({ locale: accounts.locale })
+      .from(accounts)
+      .where(eq(accounts.id, id))
+    return row?.locale ?? null
   }
 
   /** Changes the signed-in account; an account deleted since the guard ran answers 401. */

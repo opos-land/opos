@@ -52,6 +52,11 @@ const admin = async (path: string, init: RequestInit = {}) => {
 
 const created: string[] = []
 
+/** Deletes an account created outside createAccount, e.g. by a sign-up, with the others. */
+export function deleteLater(id: string) {
+  created.push(id)
+}
+
 export async function createAccount(metadata: Record<string, string> = {}) {
   const email = `api-${randomUUID().slice(0, 8)}@example.test`
   const response = await admin('/admin/users', {

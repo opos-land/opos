@@ -45,9 +45,41 @@ msgstr "Check the data you entered."
 msgid "Choose a time zone from the list."
 msgstr "Choose a time zone from the list."
 
+#: src/emails.ts
+msgid "Confirm email address"
+msgstr "Confirm email address"
+
+#: src/emails.ts
+msgid "Confirm that {email} is the new email address of your OPOS account."
+msgstr "Confirm that {email} is the new email address of your OPOS account."
+
+#: src/emails.ts
+msgid "Confirm the change"
+msgstr "Confirm the change"
+
+#: src/emails.ts
+msgid "Confirm the change of your email address"
+msgstr "Confirm the change of your email address"
+
+#: src/emails.ts
+msgid "Confirm the new address"
+msgstr "Confirm the new address"
+
+#: src/emails.ts
+msgid "Confirm your email address"
+msgstr "Confirm your email address"
+
 #: src/errors.ts
 msgid "Confirm your email address first. Check your inbox for the link."
 msgstr "Confirm your email address first. Check your inbox for the link."
+
+#: src/emails.ts
+msgid "Confirm your email address to finish creating your OPOS account."
+msgstr "Confirm your email address to finish creating your OPOS account."
+
+#: src/emails.ts
+msgid "Confirm your new email address"
+msgstr "Confirm your new email address"
 
 #. Glossary term: tenant
 #: src/glossary.ts
@@ -80,6 +112,26 @@ msgstr "Enter the convention name."
 msgctxt "glossary"
 msgid "head organizer"
 msgstr "head organizer"
+
+#: src/emails.ts
+msgid "If the button does not work, copy this address into your browser:"
+msgstr "If the button does not work, copy this address into your browser:"
+
+#: src/emails.ts
+msgid "If you did not ask for it, ignore this message. Your password stays the same."
+msgstr "If you did not ask for it, ignore this message. Your password stays the same."
+
+#: src/emails.ts
+msgid "If you did not ask for this change, do not confirm it and change your password."
+msgstr "If you did not ask for this change, do not confirm it and change your password."
+
+#: src/emails.ts
+msgid "If you did not ask for this change, ignore this message."
+msgstr "If you did not ask for this change, ignore this message."
+
+#: src/emails.ts
+msgid "If you did not create an account, ignore this message."
+msgstr "If you did not create an account, ignore this message."
 
 #. Glossary term: locale
 #: src/glossary.ts
@@ -125,6 +177,10 @@ msgctxt "glossary"
 msgid "programme item"
 msgstr "programme item"
 
+#: src/emails.ts
+msgid "Reset your password"
+msgstr "Reset your password"
+
 #. Glossary term: review
 #: src/glossary.ts
 msgctxt "glossary"
@@ -136,6 +192,10 @@ msgstr "review"
 msgctxt "glossary"
 msgid "scanner"
 msgstr "scanner"
+
+#: src/emails.ts
+msgid "Set a new password"
+msgstr "Set a new password"
 
 #: src/errors.ts
 msgid "Sign-up is closed at the moment."
@@ -158,6 +218,10 @@ msgstr "The address may contain only lowercase letters, digits and hyphens, 3 to
 #: src/errors.ts
 msgid "The link has expired. Ask for a new one."
 msgstr "The link has expired. Ask for a new one."
+
+#: src/emails.ts
+msgid "The link is valid for 1 hour and works once."
+msgstr "The link is valid for 1 hour and works once."
 
 #: src/errors.ts
 msgid "The new password must differ from the current one."
@@ -220,6 +284,14 @@ msgstr "We could not find this convention."
 #: src/errors.ts
 msgid "We could not find what you are looking for."
 msgstr "We could not find what you are looking for."
+
+#: src/emails.ts
+msgid "We received a request to change the email address of your OPOS account from {oldEmail} to {newEmail}. Confirm it with the link below."
+msgstr "We received a request to change the email address of your OPOS account from {oldEmail} to {newEmail}. Confirm it with the link below."
+
+#: src/emails.ts
+msgid "We received a request to reset the password of your OPOS account. Set a new password with the link below."
+msgstr "We received a request to reset the password of your OPOS account. Set a new password with the link below."
 
 #: src/errors.ts
 msgid "Wrong email or password."

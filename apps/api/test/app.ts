@@ -2,7 +2,7 @@ import 'reflect-metadata'
 import { type Type } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { Test } from '@nestjs/testing'
-import { configureApp } from '../src/app'
+import { APP_OPTIONS, configureApp } from '../src/app'
 import { AppModule } from '../src/app.module'
 import { loadEnv } from '../src/config/env'
 
@@ -12,7 +12,10 @@ export async function createApp(overrides: Record<string, string> = {}, modules:
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule.register(env), ...modules],
   }).compile()
-  const app = await configureApp(moduleRef.createNestApplication<NestExpressApplication>(), env)
+  const app = await configureApp(
+    moduleRef.createNestApplication<NestExpressApplication>(APP_OPTIONS),
+    env,
+  )
   await app.init()
   return app
 }

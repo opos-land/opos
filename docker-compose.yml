@@ -74,6 +74,9 @@ services:
       GOTRUE_HOOK_SEND_EMAIL_ENABLED: 'true'
       GOTRUE_HOOK_SEND_EMAIL_URI: http://host.docker.internal:${OPOS_API_PORT:-3001}/hooks/send-email
       GOTRUE_RATE_LIMIT_HEADER: X-Forwarded-For
+      # Dev and the tests send far more email than GoTrue's default of 30 per hour allows;
+      # production keeps the default.
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: 10000
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:

@@ -372,7 +372,7 @@ arrive together with their markets, beyond the MVP.
 
 | Where | Which language |
 |---|---|
-| panel and portal | the user's choice stored on the account; browser language by default |
+| panel and portal | the user's choice stored on the account; browser language by default and whenever nobody is signed in |
 | convention pages in the portal | the interface in the user's language; programme content as the organizer wrote it |
 | emails | the recipient's language: the choice stored on the account, else the language the account was registered in; for an address without a confirmed account, the inviting convention's language; Polish when nothing else decides |
 
@@ -411,8 +411,9 @@ invitation to a person without an account.
 
 **Account deletion is self-service.** The user deletes the account from settings, after confirming
 it is them: entering the password again or signing in with Google again, no more than a few minutes
-before. Their sign-in identities, sessions, memberships in convention teams and edition
-registrations go with it. The single exception: an account that is a convention's last head
+before. A Google sign-in that comes back with a different account deletes nothing and says so.
+Their sign-in identities, sessions, memberships in convention teams and edition registrations go
+with it. The single exception: an account that is a convention's last head
 organizer must hand that role over first — otherwise the convention would be left without an
 owner.
 
@@ -422,9 +423,14 @@ the link sent to it ([5.7](#57-organizer-invitations-by-email)).
 Database backups contain personal data, so they are encrypted and share the retention policy of
 production data. Emails leave the platform for the mail provider only over an encrypted connection.
 
-**The privacy policy ships with the MVP.** It is published on the platform website and linked
-from the registration form. The remaining obligations stay beyond the MVP: record of processing
-activities, data export and log retention.
+The platform sets no tracking or advertising cookies. The sign-in session is kept in the
+browser's local storage of the site the person signed in to, the portal or the panel.
+
+**The privacy policy ships with the MVP.** It is published on the platform website in every
+interface language, linked from the registration form and from the footer of every portal page,
+and states what this chapter states. Its text is approved by a legal review before the production
+launch. The remaining obligations stay beyond the MVP: record of processing activities, data export
+and log retention.
 
 ---
 

@@ -1,0 +1,426 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-10-25 00:33+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+
+#: src/features/landing/pages/landing-page.tsx
+msgid "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
+msgstr "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
+msgstr "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
+msgstr "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
+
+#: src/app/layout.tsx
+msgid "Account"
+msgstr "Account"
+
+#: src/features/auth/pages/register-page.tsx
+msgid "Already have an account? <0>Sign in</0>"
+msgstr "Already have an account? <0>Sign in</0>"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
+msgstr "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
+
+#: src/features/auth/pages/reset-password-page.tsx
+msgid "Ask for a new link"
+msgstr "Ask for a new link"
+
+#: src/features/auth/components/new-password-form.tsx
+#: src/features/auth/components/register-form.tsx
+msgid "At least 8 characters."
+msgstr "At least 8 characters."
+
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "Back to sign-in"
+msgstr "Back to sign-in"
+
+#: src/features/auth/components/register-form.tsx
+msgid "By creating an account you confirm that you have read the <0>privacy policy</0>."
+msgstr "By creating an account you confirm that you have read the <0>privacy policy</0>."
+
+#: src/features/auth/pages/register-page.tsx
+msgid "Check your inbox"
+msgstr "Check your inbox"
+
+#: src/features/account/components/delete-account.tsx
+msgid "Confirm with Google"
+msgstr "Confirm with Google"
+
+#: src/features/auth/components/google-button.tsx
+msgid "Continue with Google"
+msgstr "Continue with Google"
+
+#: src/features/auth/components/register-form.tsx
+#: src/features/auth/pages/register-page.tsx
+#: src/features/landing/pages/landing-page.tsx
+msgid "Create an account"
+msgstr "Create an account"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Database backups contain personal data. They are encrypted and kept under the same rules as the data itself."
+msgstr "Database backups contain personal data. They are encrypted and kept under the same rules as the data itself."
+
+#: src/features/account/components/delete-account.tsx
+msgid "Delete my account"
+msgstr "Delete my account"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Delete the account"
+msgstr "Delete the account"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Deleting your account"
+msgstr "Deleting your account"
+
+#: src/features/account/components/delete-account.tsx
+msgid "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
+msgstr "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
+
+#: src/features/auth/components/register-form.tsx
+#: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "Email"
+msgstr "Email"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Emails leave the platform for the mail provider only over an encrypted connection."
+msgstr "Emails leave the platform for the mail provider only over an encrypted connection."
+
+#: src/features/auth/components/register-form.tsx
+msgid "Enter 1 to 100 characters."
+msgstr "Enter 1 to 100 characters."
+
+#: src/features/auth/components/register-form.tsx
+#: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "Enter a valid email address."
+msgstr "Enter a valid email address."
+
+#: src/features/account/components/delete-account.tsx
+msgid "Enter it again to confirm it is you."
+msgstr "Enter it again to confirm it is you."
+
+#: src/features/account/components/profile-form.tsx
+msgid "Enter up to 100 characters."
+msgstr "Enter up to 100 characters."
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Enter your password."
+msgstr "Enter your password."
+
+#: src/features/landing/pages/landing-page.tsx
+msgid "Fantasy conventions, in one place"
+msgstr "Fantasy conventions, in one place"
+
+#: src/features/account/components/profile-form.tsx
+#: src/features/auth/components/register-form.tsx
+msgid "First name"
+msgstr "First name"
+
+#: src/features/landing/pages/landing-page.tsx
+msgid "For attendees"
+msgstr "For attendees"
+
+#: src/features/landing/pages/landing-page.tsx
+msgid "For organizers"
+msgstr "For organizers"
+
+#: src/features/auth/pages/login-page.tsx
+msgid "Forgot your password?"
+msgstr "Forgot your password?"
+
+#: src/features/auth/pages/auth-callback-page.tsx
+msgid "Go to sign-in"
+msgstr "Go to sign-in"
+
+#: src/shared/ui/messages.tsx
+msgid "Go to the home page"
+msgstr "Go to the home page"
+
+#: src/features/auth/pages/reset-password-page.tsx
+#: src/features/landing/pages/landing-page.tsx
+msgid "Go to your account"
+msgstr "Go to your account"
+
+#: src/features/account/components/delete-account.tsx
+msgid "Google signed you in to a different account, {email}, so nothing was deleted. To delete the account you started from, sign in to it and confirm again."
+msgstr "Google signed you in to a different account, {email}, so nothing was deleted. To delete the account you started from, sign in to it and confirm again."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "How long we keep it"
+msgstr "How long we keep it"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "How OPOS handles your personal data."
+msgstr "How OPOS handles your personal data."
+
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
+msgstr "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
+
+#: src/features/auth/pages/auth-callback-page.tsx
+msgid "If you opened a confirmation link, your address may be confirmed already."
+msgstr "If you opened a confirmation link, your address may be confirmed already."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "If you sign in with Google, Google confirms your email address and gives us your name."
+msgstr "If you sign in with Google, Google confirms your email address and gives us your name."
+
+#: src/features/account/components/language-form.tsx
+msgid "Interface language"
+msgstr "Interface language"
+
+#: src/features/account/components/delete-account.tsx
+msgid "Keep my account"
+msgstr "Keep my account"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Language"
+msgstr "Language"
+
+#: src/features/account/components/profile-form.tsx
+#: src/features/auth/components/register-form.tsx
+msgid "Last name"
+msgstr "Last name"
+
+#: src/shared/ui/messages.tsx
+msgid "Loading…"
+msgstr "Loading…"
+
+#: src/features/auth/components/new-password-form.tsx
+msgid "New password"
+msgstr "New password"
+
+#: src/features/auth/pages/login-page.tsx
+msgid "No account yet? <0>Create an account</0>"
+msgstr "No account yet? <0>Create an account</0>"
+
+#: src/features/auth/pages/register-page.tsx
+msgid "One account for every convention on OPOS."
+msgstr "One account for every convention on OPOS."
+
+#: src/features/landing/pages/landing-page.tsx
+msgid "One account for every convention: sign up for an edition, like programme items to build your personal schedule, review the ones you attended and find your tickets in one place. It works in a phone browser, with no app to install."
+msgstr "One account for every convention: sign up for an edition, like programme items to build your personal schedule, review the ones you attended and find your tickets in one place. It works in a phone browser, with no app to install."
+
+#: src/app/layout.tsx
+msgid "OPOS"
+msgstr "OPOS"
+
+#: src/app/layout.tsx
+msgid "OPOS is free for conventions."
+msgstr "OPOS is free for conventions."
+
+#: src/features/landing/pages/landing-page.tsx
+msgid "OPOS is the platform conventions use for their programme, tickets and attendee sign-ups. It is free for conventions."
+msgstr "OPOS is the platform conventions use for their programme, tickets and attendee sign-ups. It is free for conventions."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "OPOS uses no tracking or advertising cookies. Your sign-in session is kept in your browser’s local storage, for this site only."
+msgstr "OPOS uses no tracking or advertising cookies. Your sign-in session is kept in your browser’s local storage, for this site only."
+
+#: src/features/auth/pages/login-page.tsx
+#: src/features/auth/pages/register-page.tsx
+msgid "or"
+msgstr "or"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Orders are the conventions’ sales records: they stay after the account with the same address is deleted."
+msgstr "Orders are the conventions’ sales records: they stay after the account with the same address is deleted."
+
+#: src/shared/ui/messages.tsx
+msgid "Page not found"
+msgstr "Page not found"
+
+#: src/features/auth/components/register-form.tsx
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Password"
+msgstr "Password"
+
+#: src/app/layout.tsx
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Privacy policy"
+msgstr "Privacy policy"
+
+#: src/features/auth/components/new-password-form.tsx
+msgid "Repeat the password"
+msgstr "Repeat the password"
+
+#: src/features/auth/pages/forgot-password-page.tsx
+#: src/features/auth/pages/reset-password-page.tsx
+msgid "Reset your password"
+msgstr "Reset your password"
+
+#: src/features/account/components/profile-form.tsx
+msgid "Save"
+msgstr "Save"
+
+#: src/features/auth/components/new-password-form.tsx
+msgid "Save the new password"
+msgstr "Save the new password"
+
+#: src/features/account/components/language-form.tsx
+msgid "Saved on your account."
+msgstr "Saved on your account."
+
+#: src/features/auth/components/resend-confirmation.tsx
+msgid "Send the confirmation link again"
+msgstr "Send the confirmation link again"
+
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "Send the link"
+msgstr "Send the link"
+
+#: src/features/auth/pages/reset-password-page.tsx
+msgid "Set a new password"
+msgstr "Set a new password"
+
+#: src/app/layout.tsx
+#: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/login-page.tsx
+#: src/features/landing/pages/landing-page.tsx
+msgid "Sign in"
+msgstr "Sign in"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Sign out"
+msgstr "Sign out"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Signed in as {email}"
+msgstr "Signed in as {email}"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Signing out ends your sessions on every device."
+msgstr "Signing out ends your sessions on every device."
+
+#: src/features/account/components/language-form.tsx
+msgid "The browser's language"
+msgstr "The browser's language"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "The number of likes of a programme item is public. Who liked it is never shown to anyone."
+msgstr "The number of likes of a programme item is public. Who liked it is never shown to anyone."
+
+#: src/features/auth/components/new-password-form.tsx
+msgid "The passwords differ."
+msgstr "The passwords differ."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, tickets and invitations to a convention’s team."
+msgstr "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, tickets and invitations to a convention’s team."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
+msgstr "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
+
+#: src/features/auth/components/new-password-form.tsx
+#: src/features/auth/components/register-form.tsx
+msgid "Use at least 8 characters."
+msgstr "Use at least 8 characters."
+
+#: src/shared/ui/messages.tsx
+msgid "We could not find what you are looking for."
+msgstr "We could not find what you are looking for."
+
+#: src/features/auth/pages/auth-callback-page.tsx
+msgid "We could not sign you in"
+msgstr "We could not sign you in"
+
+#: src/features/auth/pages/register-page.tsx
+msgid "We sent a confirmation link to {sentTo}. Open it to start using your account. The link works for one hour."
+msgstr "We sent a confirmation link to {sentTo}. Open it to start using your account. The link works for one hour."
+
+#: src/features/auth/components/resend-confirmation.tsx
+msgid "We sent a new confirmation link to {email}."
+msgstr "We sent a new confirmation link to {email}."
+
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "We will send you a link to set a new password."
+msgstr "We will send you a link to set a new password."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "What we store"
+msgstr "What we store"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "What you do on the platform: the editions you sign up for, the programme items you like and the reviews you write."
+msgstr "What you do on the platform: the editions you sign up for, the programme items you like and the reviews you write."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "When you buy tickets: the email address, first name and last name given with the order, and the tickets in it. Payment details stay with the convention’s payment provider; OPOS keeps only the provider’s reference of the payment."
+msgstr "When you buy tickets: the email address, first name and last name given with the order, and the tickets in it. Payment details stay with the convention’s payment provider; OPOS keeps only the provider’s reference of the payment."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "When you help organize a convention: your membership in its team and your permissions."
+msgstr "When you help organize a convention: your membership in its team and your permissions."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Who sees it"
+msgstr "Who sees it"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Why we store it"
+msgstr "Why we store it"
+
+#: src/features/account/components/delete-account.tsx
+msgid "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
+msgstr "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
+msgstr "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
+
+#: src/features/account/components/delete-account.tsx
+msgid "You signed in with Google again. Delete the account within 5 minutes."
+msgstr "You signed in with Google again. Delete the account within 5 minutes."
+
+#: src/features/account/pages/account-page.tsx
+msgid "Your account"
+msgstr "Your account"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Your account and what you did on the platform: until you delete the account."
+msgstr "Your account and what you did on the platform: until you delete the account."
+
+#: src/features/landing/pages/landing-page.tsx
+msgid "Your account has been deleted."
+msgstr "Your account has been deleted."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Your account: your first name, last name, email address and the interface language you choose."
+msgstr "Your account: your first name, last name, email address and the interface language you choose."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Your browser"
+msgstr "Your browser"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Your name"
+msgstr "Your name"
+
+#: src/features/account/components/profile-form.tsx
+msgid "Your name is saved."
+msgstr "Your name is saved."
+
+#: src/features/auth/pages/reset-password-page.tsx
+msgid "Your new password is saved. You are signed out on every other device."
+msgstr "Your new password is saved. You are signed out on every other device."
+
+#: src/features/account/components/delete-account.tsx
+msgid "Your password"
+msgstr "Your password"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Your rights"
+msgstr "Your rights"

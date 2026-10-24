@@ -64,8 +64,8 @@ graph TB
 | App | Stack | Role | Host |
 |---|---|---|---|
 | `apps/api` | NestJS + Drizzle + oRPC | the only application backend; verifies Supabase Auth sessions | `api.opos.land` |
-| `apps/panel` | Vite + React + Tailwind + shadcn/ui | organizer panel (SPA) and the ticket scanner under `/scanner` | `panel.opos.land` |
-| `apps/portal` | Vite + React + Tailwind + shadcn/ui | landing page, registration, convention pages with the programme, likes, personal schedule, reviews, ticket checkout, "my tickets", "my conventions" (SPA, mobile-first) | `opos.land` |
+| `apps/panel` | Vite + React + Tailwind | organizer panel (SPA) and the ticket scanner under `/scanner` | `panel.opos.land` |
+| `apps/portal` | Vite + React + Tailwind | landing page, registration, convention pages with the programme, likes, personal schedule, reviews, ticket checkout, "my tickets", "my conventions" (SPA, mobile-first) | `opos.land` |
 | `auth` | Supabase Auth (`supabase/gotrue`) | registration, sign-in, sessions, password reset, Google OAuth | `auth.opos.land` |
 | `db` | Supabase Postgres (`supabase/postgres`) | the only database: `public` (OPOS tables) and `auth` (Supabase Auth) | internal network only |
 
@@ -170,14 +170,10 @@ opos/
                          #   client), features auth, tenants, editions, team, account, shared/
                          #   (API link, auth client, session, i18n, UI), .env.example, tests (8)
       Dockerfile
-    portal/
-      lingui.config.ts
-      src/
-        locales/{en,pl}.po
-        app/
-        features/        # one directory per feature (9)
-        shared/{ui,lib,config}/
-      .env.example       # VITE_API_URL, VITE_AUTH_URL
+    portal/              # built: Vite and Lingui config, catalogs, app/ (router, layout, providers,
+                         #   query client), features landing, auth, account, shared/ (API link,
+                         #   auth client, session, i18n, UI), .env.example, tests (9)
+      src/features/      # still to come: attendances, conventions, schedule, speaking, tickets
       Dockerfile
   e2e/                   # a workspace package: playwright and the test helpers
     package.json
@@ -982,9 +978,11 @@ catalogs are out of sync with the code or a message has no `pl` translation. A n
 
 The API returns a `code`, never a sentence. [errors.ts](../packages/i18n/src/errors.ts) maps a
 `code` onto a descriptor from the `msg` macro, and the client renders it through
-`i18n._({ ...errorMessage(code), values: params })` — in the panel the `ErrorMessage` component of
-[messages.tsx](../apps/panel/src/shared/ui/messages.tsx), fed by
-[errors.ts](../apps/panel/src/shared/lib/errors.ts). Supabase Auth's `error_code` values are mapped
+`i18n._({ ...errorMessage(code), values: params })` — in the panel and the portal the
+`ErrorMessage` component of their `shared/ui/messages.tsx`
+([panel](../apps/panel/src/shared/ui/messages.tsx), [portal](../apps/portal/src/shared/ui/messages.tsx)),
+fed by `shared/lib/errors.ts` ([panel](../apps/panel/src/shared/lib/errors.ts),
+[portal](../apps/portal/src/shared/lib/errors.ts)). Supabase Auth's `error_code` values are mapped
 in the shared map under `auth.<error_code>`; an unmapped code renders the generic `unknownError`. A `code` in
 the contract without an entry in that map fails
 [errors.test.ts](../packages/contract/src/errors.test.ts) in `packages/contract`.
@@ -1170,8 +1168,10 @@ token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenan
 **Session in the browser** — `@supabase/auth-js` with `flowType: 'pkce'`, `persistSession: true`,
 `autoRefreshToken: true`, stored in the `localStorage` of the application's own origin under a
 separate key (`opos-portal-auth`, `opos-panel-auth`). The portal and the panel never share a
-session. The panel's client is [auth.ts](../apps/panel/src/shared/lib/auth.ts); it does not read the
-URL itself (`detectSessionInUrl: false`), since `/auth/callback` exchanges the code.
+session. Their clients are [the portal's auth.ts](../apps/portal/src/shared/lib/auth.ts) and
+[the panel's auth.ts](../apps/panel/src/shared/lib/auth.ts); neither reads the URL itself
+(`detectSessionInUrl: false`), since `/auth/callback` (and the portal's `/reset-password`)
+exchanges the code.
 
 Because the session is readable by scripts on that origin, the portal and the panel are served
 with a strict Content Security Policy: `script-src 'self'`, no inline scripts,
@@ -1505,9 +1505,19 @@ the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be bu
 
 ## 9. `apps/portal`
 
-Feature-based layout ([3](#3-monorepo-structure)). **Mobile-first:** it is the attendees' only way
-into OPOS on a phone, so every screen is designed for a 360 px wide viewport first and works up to
-desktop.
+SPA (Vite + React) in [apps/portal](../apps/portal), built like the panel ([8](#8-appspanel)):
+`@orpc/tanstack-query` over an oRPC client of the contract, `@supabase/auth-js` for the session,
+forms with `react-hook-form` + zod, feature-based layout ([3.2](#32-frontend-application-layout)).
+**Mobile-first:** it is the attendees' only way into OPOS on a phone, so every screen is designed
+for a 360 px wide viewport first and works up to desktop: one column, controls at least 44 px tall,
+form fields with 16 px text so a phone browser does not zoom into them, no horizontal scrolling.
+
+Built: the features `landing`, `auth` and `account` with their screens below; the routes are in
+[router.tsx](../apps/portal/src/app/router.tsx) and the frame of every screen (the platform's name,
+the way to the account or to sign-in, the privacy policy in the footer) in
+[layout.tsx](../apps/portal/src/app/layout.tsx). Still to be built: `attendances`, `conventions`,
+`schedule`, `speaking`, `tickets` and their screens, which wait for their modules in the API, and
+the image with its headers ([13](#13-deployment)).
 
 | Feature | Scope |
 |---|---|
@@ -1523,13 +1533,13 @@ desktop.
 | Path | Screen |
 |---|---|
 | `/` | OPOS platform landing page |
-| `/privacy` | the privacy policy; linked from the registration form and the footer |
-| `/register` | email + password + first and last name, Google button; after submitting — "check your inbox" |
-| `/login` | the same without the profile fields; `email_not_confirmed` offers to resend the link |
-| `/auth/callback` | receives `code` (Google return, email confirmation), calls `exchangeCodeForSession` |
-| `/forgot-password` | password reset request; always confirms that the message was sent |
-| `/reset-password` | new password form, opened from the recovery link (`?code=`) |
-| `/account` | account settings, interface language, account deletion |
+| `/privacy` | the privacy policy ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); linked from the registration form and the footer |
+| `/register` | first and last name, email, password, Google button; after submitting — "check your inbox", with the link sent again on request |
+| `/login` | email and password, Google button; `email_not_confirmed` offers to send the link again (`resend({ type: 'signup' })`) |
+| `/auth/callback` | receives `code` (Google return, email confirmation), calls `exchangeCodeForSession`, opens the page the round trip started on |
+| `/forgot-password` | password reset request; confirms that the message was sent whatever the address ([7.6](#76-password-reset)) |
+| `/reset-password` | new password form, opened from the recovery link (`?code=`); saving it ends every other session ([7.6](#76-password-reset)) |
+| `/account` | names, interface language, sign-out, account deletion |
 | `/my-conventions` | the list of editions the account is signed up for |
 | `/join/:tenantSlug/:editionSlug` | edition sign-up; unauthenticated -> sign-in and back here |
 | `/conventions/:tenantSlug` | the active edition's programme grouped by day, a "Sign up" button, past editions |
@@ -1541,6 +1551,38 @@ desktop.
 | `/orders/:orderId` | order status from the link (`?token=`); after payment the tickets with QR codes |
 | `/my-tickets` | tickets bought with the account's email, grouped by edition, with QR codes |
 
+- Registration sends `signUp` with `data: { first_name, last_name, locale }`, the locale being the
+  portal's active one, and `emailRedirectTo = <PORTAL_URL>/auth/callback`; the Google button uses
+  the same address ([7.5](#75-google-oauth)). A page that needs a session sends a signed-out
+  visitor to `/login?redirect=<path>`, and `/register` carries the same `redirect`.
+- A round trip through Supabase Auth — the Google button, a confirmation link, one sent again —
+  stores the page to return to in `localStorage` before it leaves
+  ([auth-return.ts](../apps/portal/src/features/auth/model/auth-return.ts)), since an email link
+  opens in another tab. `/auth/callback` uses it once and otherwise opens the signed-in start
+  page, `/account` ([routes.ts](../apps/portal/src/shared/config/routes.ts)), which becomes
+  `/my-conventions` with the `attendances` feature. Only a path inside the portal is ever a target,
+  judged after resolving it against the portal's origin as the browser would
+  ([redirect.ts](../apps/portal/src/features/auth/model/redirect.ts)).
+- A confirmation link opened in another browser confirms the address but gives that browser no
+  session, since the PKCE verifier stays where the registration started: `/auth/callback` there
+  shows the message of `auth.pkce_code_verifier_not_found` and the way to sign in.
+- The API link ([api-fetch.ts](../apps/portal/src/shared/lib/api-fetch.ts)) works as the panel's
+  ([8](#8-appspanel)): the access token and `Accept-Language` from the active locale, one shared
+  `refreshSession()` and one retry on a `401`, and `session.reauthentication-required` left to the
+  screen. A sign-out, or another account's session replacing it, clears the query cache
+  ([providers.tsx](../apps/portal/src/app/providers.tsx)).
+- Application start restores the session with `getSession()`; a page that needs it shows a loading
+  view until then ([session.ts](../apps/portal/src/shared/lib/session.ts)).
+- Signed out, the interface follows the browser's languages; signed in, the account's `locale`
+  ([6](#locale-detection)). A session that ends — sign-out, account deletion, a failed refresh —
+  switches the interface back to the browser's languages
+  ([providers.tsx](../apps/portal/src/app/providers.tsx)). The language field on `/account` sends a language, or `null` for the
+  browser's, to `PATCH /me`; the names go there too, an emptied one as `null`.
+- An error is shown by its code through the catalog, never by its `message` ([6](#api-errors)).
+- `/privacy` is a draft in both languages, marked in its source
+  ([privacy-page.tsx](../apps/portal/src/features/landing/pages/privacy-page.tsx)) as pending the
+  legal review that approves it before the production launch.
+
 Convention pages work without signing in. Liking or reviewing while signed out leads to sign-in
 and back to the same item. Programme times are formatted in the tenant's time zone. No active
 published edition -> a "Preparations under way" message and the list of past editions; an
@@ -1549,7 +1591,18 @@ unpublished edition under a direct URL or an unknown tenant -> `404`.
 `/join/...` is reached from the "Sign up" button on the convention's page.
 
 **Account deletion:** `DELETE /me` after confirming with a password or a repeated Google sign-in
-([7.4](#74-authorization)), implemented in
+([7.4](#74-authorization)). On `/account` the user confirms with the password
+(`signInWithPassword` with the account's email, then `DELETE /me` at once) or with Google, which
+returns to `/account?confirm=deletion` and offers the deletion there only to the account that left
+for Google, remembered in `localStorage`
+([deletion-confirmation.ts](../apps/portal/src/features/account/model/deletion-confirmation.ts)).
+That return is used once and leaves the address at once: a reload or a copied link offers the
+password and Google again, another account Google signed in is told nothing was deleted, and `401`
+`session.reauthentication-required` offers both confirmations again. The methods offered follow the
+account's identities ([sign-in-methods.ts](../apps/portal/src/features/account/model/sign-in-methods.ts)).
+`409` `membership.last-head` is explained on the screen: hand the head organizer role over in the
+panel first. A deleted account forgets its session in the browser (`signOut({ scope: 'local' })`)
+and lands on `/` with a confirmation. The API side is implemented in
 [account-deletion.service.ts](../apps/api/src/modules/accounts/account-deletion.service.ts). The
 API refuses the last `head` of any tenant (`409` `membership.last-head`, from the cross-tenant check
 in [4.6](#cross-tenant-queries)), then deletes the user through the GoTrue admin API
@@ -1722,8 +1775,10 @@ passwords (`postgres` for Supabase's roles, `opos` for the OPOS roles) are fixed
 inference, so a changed value rebuilds exactly the applications that read it. The committed
 `.env.example` holds working dev values: the dev server and the unit tests fall back to them for
 every `VITE_*` that the environment and `.env` leave unset, and a production build reads only the
-environment and `.env` ([vite.config.ts](../apps/panel/vite.config.ts)). The panel validates both
-addresses when it starts ([env.ts](../apps/panel/src/shared/config/env.ts)).
+environment and `.env` ([vite.config.ts](../apps/panel/vite.config.ts), the same in
+[the portal's](../apps/portal/vite.config.ts)). The panel and the portal validate both addresses
+when they start ([panel](../apps/panel/src/shared/config/env.ts),
+[portal](../apps/portal/src/shared/config/env.ts)).
 
 Production configuration lives in a `.env` next to `docker-compose.prod.yml` on the VPS — compose
 injects it into the containers. It adds `POSTGRES_PASSWORD`, `ACME_EMAIL`, `CF_DNS_API_TOKEN` and
@@ -1791,13 +1846,13 @@ repository:
 | Variable | Default | Service | Also set in `apps/api/.env` |
 |---|---|---|---|
 | `OPOS_DB_PORT` | `5432` | `db` | the port in the three `DATABASE_*_URL` |
-| `OPOS_AUTH_PORT` | `9999` | `auth`, also in `API_EXTERNAL_URL`, `GOTRUE_JWT_ISSUER` and the Google redirect URI | `AUTH_URL`; `VITE_AUTH_URL` in `apps/panel/.env` |
+| `OPOS_AUTH_PORT` | `9999` | `auth`, also in `API_EXTERNAL_URL`, `GOTRUE_JWT_ISSUER` and the Google redirect URI | `AUTH_URL`; `VITE_AUTH_URL` in `apps/panel/.env` and `apps/portal/.env` |
 | `OPOS_STUDIO_PORT` | `54323` | `studio` | — |
 | `OPOS_SMTP_PORT` | `1025` | `mailpit` SMTP | `SMTP_PORT` |
 | `OPOS_MAILPIT_PORT` | `8025` | `mailpit` UI and HTTP API | — |
-| `OPOS_API_PORT` | `3001` | target of the send-email hook | `PORT`, `API_URL`; `VITE_API_URL` in `apps/panel/.env` |
+| `OPOS_API_PORT` | `3001` | target of the send-email hook | `PORT`, `API_URL`; `VITE_API_URL` in `apps/panel/.env` and `apps/portal/.env` |
 | `OPOS_PANEL_PORT` | `5173` | the panel dev server, panel addresses in `GOTRUE_URI_ALLOW_LIST` | `PANEL_URL` |
-| `OPOS_PORTAL_PORT` | `5174` | `GOTRUE_SITE_URL` and portal addresses in `GOTRUE_URI_ALLOW_LIST` | `PORTAL_URL` |
+| `OPOS_PORTAL_PORT` | `5174` | the portal dev server, `GOTRUE_SITE_URL` and portal addresses in `GOTRUE_URI_ALLOW_LIST` | `PORTAL_URL` |
 
 The variables live in the shell environment, set per developer in `mise.local.toml` (git-ignored,
 loaded by activated mise on entering the directory; a new file needs `mise trust` once):

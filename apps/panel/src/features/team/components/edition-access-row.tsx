@@ -4,6 +4,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { Button, ErrorMessage } from '../../../shared/ui'
 import { atLeast, membershipsKey, useCurrentTenant } from '../../tenants'
+import {
+  editionMembersKey,
+  putEditionMemberOptions,
+  removeEditionMemberOptions,
+} from '../api/members'
 import { memberName } from '../model/member'
 import { LevelSelect } from './level-select'
 
@@ -34,12 +39,12 @@ export function EditionAccessRow({
   const form = useForm<AccessValues>({ values })
 
   const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: api.editions.members.key() })
+    await queryClient.invalidateQueries({ queryKey: editionMembersKey(api) })
     await queryClient.invalidateQueries({ queryKey: membershipsKey() })
   }
-  const save = useMutation({ ...api.editions.members.put.mutationOptions(), onSuccess: refresh })
+  const save = useMutation({ ...putEditionMemberOptions(api), onSuccess: refresh })
   const remove = useMutation({
-    ...api.editions.members.remove.mutationOptions(),
+    ...removeEditionMemberOptions(api),
     onSuccess: refresh,
   })
 

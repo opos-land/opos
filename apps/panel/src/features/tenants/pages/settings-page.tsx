@@ -15,7 +15,7 @@ import {
   PageHeader,
   Section,
 } from '../../../shared/ui'
-import { membershipsKey, tenantOptions } from '../api/tenants'
+import { membershipsKey, tenantOptions, updateTenantOptions } from '../api/tenants'
 import { RequireAccess } from '../components/require-access'
 import { useCurrentTenant } from '../components/tenant-context'
 import { atLeast } from '../model/permissions'
@@ -43,7 +43,7 @@ export function SettingsPage() {
     },
   })
   const update = useMutation({
-    ...api.tenants.update.mutationOptions(),
+    ...updateTenantOptions(api),
     onSuccess: async (updated) => {
       setSaved(true)
       queryClient.setQueryData(tenantOptions(api).queryKey, updated)

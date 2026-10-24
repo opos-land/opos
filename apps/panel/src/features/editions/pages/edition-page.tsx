@@ -11,6 +11,12 @@ import {
   Section,
 } from '../../../shared/ui'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
+import {
+  activateEditionOptions,
+  editionsKey,
+  removeEditionOptions,
+  updateEditionOptions,
+} from '../api/editions'
 import { EditionForm } from '../components/edition-form'
 import { EditionStatus } from '../components/edition-status'
 import { useEditionBySlug } from '../hooks/use-editions'
@@ -28,18 +34,18 @@ export function EditionPage() {
   const canWrite = atLeast(access.settings, 'write')
   const base = `/${tenant.slug}/editions`
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: api.editions.key() })
+  const refresh = () => queryClient.invalidateQueries({ queryKey: editionsKey(api) })
   const update = useMutation({
-    ...api.editions.update.mutationOptions(),
+    ...updateEditionOptions(api),
     onSuccess: async (saved) => {
       await refresh()
       if (saved.slug !== editionSlug) void navigate(`${base}/${saved.slug}`, { replace: true })
     },
   })
-  const publish = useMutation({ ...api.editions.update.mutationOptions(), onSuccess: refresh })
-  const activate = useMutation({ ...api.editions.activate.mutationOptions(), onSuccess: refresh })
+  const publish = useMutation({ ...updateEditionOptions(api), onSuccess: refresh })
+  const activate = useMutation({ ...activateEditionOptions(api), onSuccess: refresh })
   const remove = useMutation({
-    ...api.editions.remove.mutationOptions(),
+    ...removeEditionOptions(api),
     onSuccess: async () => {
       await refresh()
       void navigate(base, { replace: true })

@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
 import { atLeast, membershipsKey, useCurrentTenant, useTenantTime } from '../../tenants'
+import { membersKey, removeMemberOptions, updateMemberOptions } from '../api/members'
 import { memberChange, type MemberFormValues, memberName } from '../model/member'
 import { LevelSelect } from './level-select'
 import { SettingsLabel, ShopLabel } from './permission-labels'
@@ -37,18 +38,18 @@ export function MemberRow({ member, isSelf }: { member: Member; isSelf: boolean 
   const promoting = useWatch({ control: form.control, name: 'role' }) === 'head'
 
   const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: api.tenants.members.key() })
+    await queryClient.invalidateQueries({ queryKey: membersKey(api) })
     await queryClient.invalidateQueries({ queryKey: membershipsKey() })
   }
   const update = useMutation({
-    ...api.tenants.members.update.mutationOptions(),
+    ...updateMemberOptions(api),
     onSuccess: async () => {
       setEditing(false)
       await refresh()
     },
   })
   const remove = useMutation({
-    ...api.tenants.members.remove.mutationOptions(),
+    ...removeMemberOptions(api),
     onSuccess: refresh,
   })
 

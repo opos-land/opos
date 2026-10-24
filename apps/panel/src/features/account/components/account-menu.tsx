@@ -1,10 +1,9 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { SUPPORTED_LOCALES, isLocale } from '@opos/i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { auth } from '../../../shared/lib/auth'
 import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
 import { ErrorMessage, Field, inputClass } from '../../../shared/ui'
-import { accountKey, accountOptions, updateAccountOptions } from '../api/account'
+import { accountKey, accountOptions, signOut, updateAccountOptions } from '../api/account'
 
 const BROWSER = 'browser'
 
@@ -52,7 +51,7 @@ export function AccountMenu() {
         <button
           type="button"
           className="text-accent self-start text-sm underline"
-          onClick={() => void auth.signOut()}
+          onClick={() => void signOut()}
         >
           <Trans>Sign out</Trans>
         </button>

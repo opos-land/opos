@@ -2,8 +2,8 @@ import { Trans } from '@lingui/react/macro'
 import { AuthError } from '@supabase/auth-js'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { auth } from '../../../shared/lib/auth'
 import { ErrorMessage, LoadingView } from '../../../shared/ui'
+import { exchangeCode } from '../api/auth'
 import { AuthLayout } from '../components/auth-layout'
 import { storedInvitation } from '../model/invitation-storage'
 
@@ -35,7 +35,7 @@ export function AuthCallbackPage() {
   useEffect(() => {
     if (started.current || !code || error) return
     started.current = true
-    void auth.exchangeCodeForSession(code).then(({ error }) => {
+    void exchangeCode(code).then((error) => {
       if (error) setError(error)
       else void navigate(storedInvitation() ? '/invitation' : '/', { replace: true })
     })

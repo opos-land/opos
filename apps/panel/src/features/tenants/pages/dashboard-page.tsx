@@ -2,6 +2,7 @@ import { Trans } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { ErrorMessage, LoadingView, PageHeader, Section } from '../../../shared/ui'
+import { editionListOptions } from '../api/tenants'
 import { useCurrentTenant } from '../components/tenant-context'
 import { useTenantTime } from '../hooks/use-tenant-time'
 import { atLeast } from '../model/permissions'
@@ -9,7 +10,7 @@ import { atLeast } from '../model/permissions'
 export function DashboardPage() {
   const { tenant, access, api } = useCurrentTenant()
   const time = useTenantTime()
-  const editions = useQuery(api.editions.list.queryOptions())
+  const editions = useQuery(editionListOptions(api))
   const visible = editions.data?.filter((e) => access.seesEdition(e.id)) ?? []
   const active = visible.find((e) => e.isActive)
   const base = `/${tenant.slug}`

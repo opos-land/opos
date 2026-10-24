@@ -1,8 +1,7 @@
 import { Trans } from '@lingui/react/macro'
 import { useState } from 'react'
-import { AUTH_CALLBACK_PATH, panelUrl } from '../../../shared/config/routes'
-import { auth } from '../../../shared/lib/auth'
 import { Button, ErrorMessage } from '../../../shared/ui'
+import { signInWithGoogle } from '../api/auth'
 
 /** Google sign-in and sign-up in one: Supabase Auth returns to /auth/callback (PLAN.md 7.5). */
 export function GoogleButton({ onBeforeRedirect }: { onBeforeRedirect?: () => void }) {
@@ -13,10 +12,7 @@ export function GoogleButton({ onBeforeRedirect }: { onBeforeRedirect?: () => vo
     setError(null)
     setPending(true)
     onBeforeRedirect?.()
-    const { error } = await auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: panelUrl(AUTH_CALLBACK_PATH) },
-    })
+    const error = await signInWithGoogle()
     if (error) {
       setError(error)
       setPending(false)

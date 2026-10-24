@@ -11,6 +11,7 @@ import {
 } from '../../../shared/ui'
 import { useEditionBySlug } from '../../editions'
 import { atLeast, RequireAccess, useCurrentTenant } from '../../tenants'
+import { editionMembersOptions, membersOptions } from '../api/members'
 import { EditionAccessRow } from '../components/edition-access-row'
 import { memberName } from '../model/member'
 import { ProgramLabel, TicketsLabel } from '../components/permission-labels'
@@ -22,11 +23,9 @@ export function EditionAccessPage() {
   const accountId = useSession((state) => state.session?.user.id)
   const allowed = atLeast(access.settings, 'read')
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
-  const members = useQuery({ ...api.tenants.members.list.queryOptions(), enabled: allowed })
+  const members = useQuery({ ...membersOptions(api), enabled: allowed })
   const rows = useQuery({
-    ...api.editions.members.list.queryOptions({
-      input: { params: { editionId: edition?.id ?? '' } },
-    }),
+    ...editionMembersOptions(api, edition?.id ?? ''),
     enabled: allowed && Boolean(edition),
   })
 

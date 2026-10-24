@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCurrentTenant } from '../../tenants'
+import { editionsOptions } from '../api/editions'
 
 /** The tenant's editions the member may see, newest first (PLAN.md 5.4). */
 export function useEditions() {
   const { access, api } = useCurrentTenant()
-  const query = useQuery(api.editions.list.queryOptions())
+  const query = useQuery(editionsOptions(api))
   return { ...query, data: query.data?.filter((edition) => access.seesEdition(edition.id)) }
 }
 

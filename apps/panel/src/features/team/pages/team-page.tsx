@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../../../shared/lib/session'
 import { ErrorMessage, LoadingView, PageHeader, Section } from '../../../shared/ui'
 import { atLeast, RequireAccess, useCurrentTenant } from '../../tenants'
+import { membersOptions } from '../api/members'
 import { InviteForm } from '../components/invite-form'
 import { MemberRow } from '../components/member-row'
 
@@ -12,7 +13,7 @@ export function TeamPage() {
   const { access, api } = useCurrentTenant()
   const accountId = useSession((state) => state.session?.user.id)
   const members = useQuery({
-    ...api.tenants.members.list.queryOptions(),
+    ...membersOptions(api),
     enabled: atLeast(access.settings, 'read'),
   })
 

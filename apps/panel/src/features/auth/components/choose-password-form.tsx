@@ -3,8 +3,8 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { auth } from '../../../shared/lib/auth'
 import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import { setPassword, signOutOtherSessions } from '../api/auth'
 
 const schema = z
   .object({ password: z.string().min(8), repeat: z.string() })
@@ -26,10 +26,10 @@ export function ChoosePasswordForm({ email, onDone }: { email: string; onDone: (
 
   const submit = form.handleSubmit(async ({ password }) => {
     setError(null)
-    const updated = await auth.updateUser({ password })
-    if (updated.error) return setError(updated.error)
-    const signedOut = await auth.signOut({ scope: 'others' })
-    if (signedOut.error) return setError(signedOut.error)
+    const updateError = await setPassword(password)
+    if (updateError) return setError(updateError)
+    const signOutError = await signOutOtherSessions()
+    if (signOutError) return setError(signOutError)
     onDone()
   })
 

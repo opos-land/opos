@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
 import { useEditions } from '../../editions'
 import { useCurrentTenant, useTenantTime } from '../../tenants'
+import { inviteMemberOptions, membersKey } from '../api/members'
 import { memberName } from '../model/member'
 import { LevelSelect } from './level-select'
 import { ProgramLabel, SettingsLabel, ShopLabel, TicketsLabel } from './permission-labels'
@@ -79,11 +80,11 @@ export function InviteForm() {
   const { errors } = form.formState
 
   const invite = useMutation({
-    ...api.tenants.members.invite.mutationOptions(),
+    ...inviteMemberOptions(api),
     onSuccess: async (result) => {
       setOutcome(result)
       form.reset(blank())
-      await queryClient.invalidateQueries({ queryKey: api.tenants.members.key() })
+      await queryClient.invalidateQueries({ queryKey: membersKey(api) })
     },
   })
 

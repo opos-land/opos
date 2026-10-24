@@ -3,8 +3,8 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { auth } from '../../../shared/lib/auth'
 import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import { signInWithPassword } from '../api/auth'
 
 const schema = z.object({ email: z.email(), password: z.string().min(1) })
 
@@ -25,7 +25,7 @@ export function SignInForm({
 
   const submit = form.handleSubmit(async (values) => {
     setError(null)
-    const { error } = await auth.signInWithPassword(values)
+    const error = await signInWithPassword(values)
     if (error) setError(error)
     else onSignedIn?.()
   })

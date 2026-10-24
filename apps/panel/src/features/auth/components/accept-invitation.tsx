@@ -2,9 +2,9 @@ import { Trans } from '@lingui/react/macro'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { auth } from '../../../shared/lib/auth'
 import { errorCode } from '../../../shared/lib/errors'
 import { Button, ErrorMessage, LoadingView } from '../../../shared/ui'
+import { signOut } from '../api/auth'
 import { acceptInvitationOptions, membershipsKey } from '../api/invitations'
 import { forgetInvitation } from '../model/invitation-storage'
 
@@ -42,7 +42,7 @@ export function AcceptInvitation({ token, email }: { token: string; email: strin
           <p className="text-sm">
             <Trans>You are signed in as {email}.</Trans>
           </p>
-          <Button variant="secondary" onClick={() => void auth.signOut()}>
+          <Button variant="secondary" onClick={() => void signOut()}>
             <Trans>Sign out and use another account</Trans>
           </Button>
         </>

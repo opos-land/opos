@@ -4,11 +4,10 @@ import { type InvitationPreview } from '@opos/contract'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { AUTH_CALLBACK_PATH, panelUrl } from '../../../shared/config/routes'
-import { auth } from '../../../shared/lib/auth'
 import { activeLocale } from '../../../shared/lib/i18n'
 import { useSession } from '../../../shared/lib/session'
 import { ErrorMessage, LoadingView, Notice } from '../../../shared/ui'
+import { sendPasswordLink, signUpWithEmail } from '../api/auth'
 import { invitationPreviewOptions } from '../api/invitations'
 import { AcceptInvitation } from '../components/accept-invitation'
 import { AuthLayout } from '../components/auth-layout'
@@ -21,7 +20,6 @@ import {
   setAwaitingPassword,
   type StoredInvitation,
   storedInvitation,
-  throwawayPassword,
 } from '../model/invitation-storage'
 
 const sameEmail = (a: string | undefined, b: string) => a?.toLowerCase() === b.toLowerCase()
@@ -58,14 +56,8 @@ function JoinOptions({
   onAwaitingPassword: (awaiting: boolean) => void
 }) {
   const [sentTo, setSentTo] = useState<string | null>(null)
-  const redirectTo = panelUrl(AUTH_CALLBACK_PATH)
-
   const signUp = async (email: string) => {
-    const { error } = await auth.signUp({
-      email,
-      password: throwawayPassword(),
-      options: { data: { locale: activeLocale() }, emailRedirectTo: redirectTo },
-    })
+    const error = await signUpWithEmail(email)
     if (error) return error
     onAwaitingPassword(true)
     setSentTo(email)
@@ -73,7 +65,7 @@ function JoinOptions({
   }
 
   const passwordLink = async (email: string) => {
-    const { error } = await auth.resetPasswordForEmail(email, { redirectTo })
+    const error = await sendPasswordLink(email)
     if (error) return error
     onAwaitingPassword(true)
     setSentTo(email)

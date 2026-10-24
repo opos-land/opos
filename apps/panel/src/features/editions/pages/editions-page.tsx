@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
 import { ErrorMessage, LoadingView, PageHeader, Section } from '../../../shared/ui'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
+import { createEditionOptions, editionsKey } from '../api/editions'
 import { EditionForm } from '../components/edition-form'
 import { EditionStatus } from '../components/edition-status'
 import { useEditions } from '../hooks/use-editions'
@@ -17,9 +18,9 @@ export function EditionsPage() {
   const queryClient = useQueryClient()
   const editions = useEditions()
   const create = useMutation({
-    ...api.editions.create.mutationOptions(),
+    ...createEditionOptions(api),
     onSuccess: async (edition) => {
-      await queryClient.invalidateQueries({ queryKey: api.editions.key() })
+      await queryClient.invalidateQueries({ queryKey: editionsKey(api) })
       void navigate(`/${tenant.slug}/editions/${edition.slug}`)
     },
   })

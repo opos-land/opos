@@ -422,9 +422,14 @@ the link sent to it ([5.7](#57-organizer-invitations-by-email)).
 Database backups contain personal data, so they are encrypted and share the retention policy of
 production data. Emails leave the platform for the mail provider only over an encrypted connection.
 
-**The privacy policy ships with the MVP.** It is published on the platform website and linked
-from the registration form. The remaining obligations stay beyond the MVP: record of processing
-activities, data export and log retention.
+The platform sets no tracking or advertising cookies. The sign-in session is kept in the
+browser's local storage of the site the person signed in to, the portal or the panel.
+
+**The privacy policy ships with the MVP.** It is published on the platform website in every
+interface language, linked from the registration form and from the footer of every portal page,
+and states what this chapter states. Its text is approved by a legal review before the production
+launch. The remaining obligations stay beyond the MVP: record of processing activities, data export
+and log retention.
 
 ---
 

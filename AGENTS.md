@@ -13,8 +13,8 @@ Write responses in the language the user writes in.
 ## Repository
 
 OPOS — a multitenant platform for running fantasy conventions, free for conventions. The code
-follows two documents; `apps/api`, the core of `apps/panel` and the shared packages they need
-exist, the rest of
+follows two documents; `apps/api`, the core of `apps/panel`, the account screens of `apps/portal`
+and the shared packages they need exist, the rest of
 [the monorepo structure](docs/PLAN.md#3-monorepo-structure) is still to be built.
 
 Everything in this repository is written in English.

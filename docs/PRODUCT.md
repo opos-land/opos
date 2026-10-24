@@ -345,7 +345,8 @@ MVP.
 zone, not the browser's: "Saturday 14:00" has to mean the same thing to an attendee in Prague and
 in Poznań.
 
-Adding another language is a translation file — it requires no changes to code or database.
+Adding another language is its translation catalogs plus registering it in the code — it requires
+no change to the database.
 
 ---
 

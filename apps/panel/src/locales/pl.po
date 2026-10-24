@@ -46,7 +46,7 @@ msgstr "Dostęp do edycji {editionName}"
 #: src/features/team/components/invite-form.tsx
 #: src/features/team/components/member-row.tsx
 msgid "Access until"
-msgstr "Dostęp do"
+msgstr "Dostęp ważny do"
 
 #: src/features/account/components/account-menu.tsx
 msgid "Account"
@@ -230,7 +230,7 @@ msgstr "Podaj hasło."
 
 #: src/features/team/components/member-row.tsx
 msgid "expired"
-msgstr "wygasło"
+msgstr "wygasł"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Go to sign-in"

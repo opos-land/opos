@@ -57,12 +57,14 @@ describe('claimsOf and grantFromClaims', () => {
       expiresAt: '2027-01-01T00:00:00.000Z',
       editions: [edition],
     })
-    const claims = claimsOf(tenantId, 'x@example.test', grant)
+    const invitedBy = randomUUID()
+    const claims = claimsOf({ tenantId, email: 'x@example.test', invitedBy }, grant)
 
     expect(claims).toMatchObject({
       tenantId,
       email: 'x@example.test',
       expiresAt: '2027-01-01T00:00:00.000Z',
+      invitedBy,
     })
     expect(grantFromClaims(claims)).toEqual(grant)
   })

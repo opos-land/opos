@@ -23,6 +23,8 @@ export const invitationClaimsSchema = z.object({
   editionPermissions: z.array(editionGrantSchema),
   /** The expiry of the membership the invitation creates; `null` for none. */
   expiresAt: timestamp.nullable(),
+  /** The membership that sent the invitation; it must still be able to send it at acceptance. */
+  invitedBy: z.uuid(),
 })
 
 export type InvitationClaims = z.infer<typeof invitationClaimsSchema>

@@ -26,6 +26,7 @@ const claims: InvitationClaims = {
     },
   ],
   expiresAt: null,
+  invitedBy: randomUUID(),
 }
 
 const code = async (promise: Promise<unknown>) => {
@@ -133,7 +134,13 @@ describe('invitation tokens', () => {
     const oneMore = [...body.editions!, { ...body.editions![0]!, editionId: randomUUID() }]
     expect(inviteMemberSchema.safeParse({ ...body, editions: oneMore }).success).toBe(false)
 
-    const { token } = await signInvitation(claimsOf(randomUUID(), body.email, grantOf(body)), key)
+    const { token } = await signInvitation(
+      claimsOf(
+        { tenantId: randomUUID(), email: body.email, invitedBy: randomUUID() },
+        grantOf(body),
+      ),
+      key,
+    )
 
     expect(invitationToken.safeParse(token).success).toBe(true)
   })

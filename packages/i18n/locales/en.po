@@ -284,6 +284,10 @@ msgid "This invitation has expired. Ask the convention's organizers for a new on
 msgstr "This invitation has expired. Ask the convention's organizers for a new one."
 
 #: src/errors.ts
+msgid "This invitation is no longer valid: whoever sent it can no longer grant this access. Ask the convention's organizers for a new one."
+msgstr "This invitation is no longer valid: whoever sent it can no longer grant this access. Ask the convention's organizers for a new one."
+
+#: src/errors.ts
 msgid "This invitation link is not valid. Check that you opened the whole link from the email."
 msgstr "This invitation link is not valid. Check that you opened the whole link from the email."
 

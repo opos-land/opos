@@ -28,10 +28,9 @@ export function grantOf(body: InviteMember): InvitationGrant {
   }
 }
 
-/** The claims of the token that carries `grant` to `email` (PLAN.md 7.7). */
+/** The claims of the token that carries `grant` to `email`, sent by `invitedBy` (PLAN.md 7.7). */
 export const claimsOf = (
-  tenantId: string,
-  email: string,
+  { tenantId, email, invitedBy }: Pick<InvitationClaims, 'tenantId' | 'email' | 'invitedBy'>,
   { role, settingsAccess, brandingAccess, shopConfigAccess, expiresAt, editions }: InvitationGrant,
 ): InvitationClaims => ({
   tenantId,
@@ -40,6 +39,7 @@ export const claimsOf = (
   tenantPermissions: { settingsAccess, brandingAccess, shopConfigAccess },
   editionPermissions: editions,
   expiresAt: expiresAt?.toISOString() ?? null,
+  invitedBy,
 })
 
 /** The grant a verified token carries, the reverse of claimsOf. */

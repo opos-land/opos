@@ -39,12 +39,15 @@ let a: Awaited<ReturnType<typeof tenantWithHead>>
 let b: Awaited<ReturnType<typeof tenantWithHead>>
 let editionA: string
 let editionB: string
+// The membership of a's head, which the tokens a test signs itself name as their sender.
+let aHeadMembership: string
 
 beforeAll(async () => {
   app = await createApp()
   await app.listen(0, '127.0.0.1')
   ;[a, b] = await Promise.all([tenantWithHead(), tenantWithHead()])
   ;[editionA, editionB] = await Promise.all([addEdition(a.id), addEdition(b.id)])
+  aHeadMembership = (await storedMembership(a.id, a.head.id))!.id
 })
 
 afterAll(async () => {
@@ -103,6 +106,7 @@ const claimsFor = (tenantId: string, email: string, overrides: Partial<Invitatio
     tenantPermissions: { settingsAccess: 'none', brandingAccess: 'none', shopConfigAccess: 'none' },
     editionPermissions: [],
     expiresAt: null,
+    invitedBy: aHeadMembership,
     ...overrides,
   }) satisfies InvitationClaims
 
@@ -538,6 +542,127 @@ describe('invitation anti-escalation', () => {
         params: { field },
       })
     }
+  })
+})
+
+describe("an invitation and its sender's standing", () => {
+  // A tenant of its own, so these invitations stay out of the other tests' rate limit counter.
+  let t: Awaited<ReturnType<typeof tenantWithHead>>
+  let edition: string
+
+  beforeAll(async () => {
+    t = await tenantWithHead()
+    edition = await addEdition(t.id)
+  })
+
+  /** An org with settings=write and program=write in the edition, and its membership id. */
+  async function sender(access: { expiresAt?: Date } = {}) {
+    const org = await member()
+    const id = await addOrg(t.id, org, { settings: 'write', ...access })
+    await addEditionAccess(t.id, id, edition, { program: 'write' })
+    return { org, id }
+  }
+
+  /** The token of an invitation `from` sends, with the confirmed account that will accept it. */
+  async function invitationFrom(from: Member, body: object = {}) {
+    const email = newAddress()
+    await invite(from, { email, ...body }, t.slug).expect(201)
+    return { token: await tokenSentTo(email), invitee: await registered(email) }
+  }
+
+  const asHead = (method: 'patch' | 'put' | 'delete', path: string, body?: object) => {
+    const server = request(app.getHttpServer())
+    const req =
+      method === 'patch'
+        ? server.patch(path)
+        : method === 'put'
+          ? server.put(path)
+          : server.delete(path)
+    return req
+      .set('Authorization', `Bearer ${t.head.token}`)
+      .set('X-Tenant-Slug', t.slug)
+      .send(body)
+  }
+
+  const revoked = async ({ token, invitee }: Awaited<ReturnType<typeof invitationFrom>>) => {
+    expect((await preview(token).expect(410)).body).toMatchObject({ code: 'invitation.revoked' })
+    expect((await accept(token, invitee.token).expect(410)).body).toMatchObject({
+      code: 'invitation.revoked',
+    })
+    expect(await storedMembership(t.id, invitee.id)).toBeUndefined()
+  }
+
+  const grant = () => ({ settingsAccess: 'write', editions: [{ editionId: edition, ...none }] })
+
+  it('stands while the org that sent it could still send it', async () => {
+    const { org } = await sender()
+    const sent = await invitationFrom(org, {
+      ...grant(),
+      editions: [{ editionId: edition, ...none, programAccess: 'write' }],
+    })
+
+    await preview(sent.token).expect(200)
+    await accept(sent.token, sent.invitee.token).expect(201)
+  })
+
+  it('goes once the org that sent it is removed from the team', async () => {
+    const { org, id } = await sender()
+    const sent = await invitationFrom(org, grant())
+
+    await asHead('delete', `/tenants/current/members/${id}`).expect(204)
+
+    await revoked(sent)
+  })
+
+  it('goes once the org that sent it loses settings=write', async () => {
+    const { org, id } = await sender()
+    const sent = await invitationFrom(org)
+
+    await asHead('patch', `/tenants/current/members/${id}`, { settingsAccess: 'read' }).expect(200)
+
+    await revoked(sent)
+  })
+
+  it('goes once the org no longer holds what it granted, and stays within what it holds', async () => {
+    const { org, id } = await sender()
+    const above = await invitationFrom(org, {
+      editions: [{ editionId: edition, ...none, programAccess: 'write' }],
+    })
+    const within = await invitationFrom(org, {
+      editions: [{ editionId: edition, ...none, programAccess: 'read' }],
+    })
+
+    await asHead('put', `/editions/${edition}/members/${id}`, {
+      ...none,
+      programAccess: 'read',
+    }).expect(200)
+
+    await revoked(above)
+    await accept(within.token, within.invitee.token).expect(201)
+  })
+
+  it("goes once the org's own access ends before the access it granted", async () => {
+    const { org, id } = await sender()
+    const sent = await invitationFrom(org)
+
+    const soon = new Date(Date.now() + 24 * 3600 * 1000).toISOString()
+    await asHead('patch', `/tenants/current/members/${id}`, { expiresAt: soon }).expect(200)
+
+    await revoked(sent)
+  })
+
+  it('goes once the org that sent it has expired', async () => {
+    const { org, id } = await sender({ expiresAt: new Date(Date.now() + 3600 * 1000) })
+    const sent = await invitationFrom(org, {
+      expiresAt: new Date(Date.now() + 1800 * 1000).toISOString(),
+    })
+
+    await asHead('patch', `/tenants/current/members/${id}`, {
+      expiresAt: new Date(Date.now() + 1000).toISOString(),
+    }).expect(200)
+    await sleep(1500)
+
+    await revoked(sent)
   })
 })
 

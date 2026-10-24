@@ -27,6 +27,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'invitation.used': msg`This invitation has already been accepted.`,
   'invitation.email-mismatch': msg`This invitation was sent to another email address. Sign in with the account that uses that address.`,
   'invitation.already-member': msg`You are already in this convention's team.`,
+  'invitation.revoked': msg`This invitation is no longer valid: whoever sent it can no longer grant this access. Ask the convention's organizers for a new one.`,
   'edition.slug-taken': msg`This convention already has an edition with this address.`,
   'edition.active': msg`You cannot delete the active edition. Activate another edition first.`,
 

@@ -16,7 +16,7 @@ import { ENV, type Env } from '../../config/env'
 import { AccountsRepository } from '../accounts/accounts.repository'
 import { MailService } from '../mail/mail.service'
 import { recipientLocale } from '../mail/recipient-locale'
-import { assertMayInvite } from './anti-escalation'
+import { assertMayInvite, type InvitationGrant } from './anti-escalation'
 import { claimsOf, grantFromClaims, grantOf } from './invitation-grant'
 import {
   type InvitationClaims,
@@ -26,13 +26,16 @@ import {
   verifyInvitation,
 } from './invitation-token'
 import { InvitationsRepository } from './invitations.repository'
-import { lockActor } from './member-lock'
+import { currentActor, lockActor } from './member-lock'
 import { MembersRepository } from './members.repository'
 
 const memberExists = () =>
   new ApiError(409, 'member.exists', 'The account already holds a membership in this tenant')
 
 const used = () => new ApiError(409, 'invitation.used', 'The invitation has been accepted already')
+
+const revoked = () =>
+  new ApiError(410, 'invitation.revoked', 'The sender of the invitation may no longer grant it')
 
 // The invitee's own answer: member.exists is written for the one who sends the invitation.
 const alreadyMember = () =>
@@ -97,7 +100,10 @@ export class InvitationsService {
       return { outcome: 'added', member: (await this.members.find(id))! }
     }
 
-    const { token, validUntil } = await signInvitation(claimsOf(tenant.id, email, grant), this.key)
+    const { token, validUntil } = await signInvitation(
+      claimsOf({ tenantId: tenant.id, email, invitedBy: actor.id }, grant),
+      this.key,
+    )
     this.context.afterCommit(() =>
       this.mail.sendLinkEmail({
         to: email,
@@ -109,6 +115,41 @@ export class InvitationsService {
     return { outcome: 'invited', email, validUntil: validUntil.toISOString() }
   }
 
+  /**
+   * What an invitation still grants, inside withTenant: the edition rows of editions that exist,
+   * and only while the membership that sent it could send it now — it exists, has not expired,
+   * holds settings=write and passes assertMayInvite on its current rows. Otherwise 410
+   * `invitation.revoked`: removing or demoting the sender withdraws what they sent. Acceptance
+   * locks the sender's membership, so a demotion committed meanwhile is seen.
+   */
+  private async standingGrant(
+    claims: InvitationClaims,
+    { lock }: { lock: boolean },
+  ): Promise<InvitationGrant> {
+    try {
+      const inviter = lock
+        ? await lockActor(this.members, claims.invitedBy)
+        : await currentActor(this.members, claims.invitedBy)
+      const grant = grantFromClaims(claims)
+      const existing = await this.invitations.existingEditions(
+        grant.editions.map((e) => e.editionId),
+      )
+      const standing = {
+        ...grant,
+        editions: grant.editions.filter(({ editionId }) => existing.has(editionId)),
+      }
+      const inviterEditions =
+        inviter.role === 'head'
+          ? new Map<string, EditionAccess>()
+          : await this.access.editionRows(inviter.id)
+      assertMayInvite(inviter, inviterEditions, standing)
+      return standing
+    } catch (error) {
+      if (error instanceof ApiError && error.getStatus() === 403) throw revoked()
+      throw error
+    }
+  }
+
   /** `GET /invitations/preview`: what the invitation page shows before anyone signs in. */
   async preview(token: string): Promise<InvitationPreview> {
     await this.rateLimiter.consume('invitationPreview', `ip:${this.context.clientAddress()}`)
@@ -118,6 +159,7 @@ export class InvitationsService {
       if (!tenant) throw notFound('tenant')
       if (await this.invitations.isAccepted(jti)) throw used()
       assertGrantsAccess(claims)
+      await this.standingGrant(claims, { lock: false })
       return {
         tenant: { name: tenant.name },
         email: claims.email,
@@ -146,16 +188,10 @@ export class InvitationsService {
       if (await this.invitations.isAccepted(jti)) throw used()
       assertGrantsAccess(claims)
       if (await this.invitations.isMember(accountId)) throw alreadyMember()
+      const grant = await this.standingGrant(claims, { lock: true })
       await this.invitations.recordAcceptance(tenant.id, jti)
-      const grant = grantFromClaims(claims)
-      const existing = await this.invitations.existingEditions(
-        grant.editions.map((e) => e.editionId),
-      )
       try {
-        await this.invitations.addMember(tenant.id, accountId, {
-          ...grant,
-          editions: grant.editions.filter(({ editionId }) => existing.has(editionId)),
-        })
+        await this.invitations.addMember(tenant.id, accountId, grant)
       } catch (error) {
         // Another invitation the account accepted at the same time won the unique constraint.
         if (postgresConstraint(error) === 'tenant_memberships_account_tenant_unique') {

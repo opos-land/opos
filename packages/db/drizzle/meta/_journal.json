@@ -85,6 +85,13 @@
       "when": 1792870678345,
       "tag": "0011_head_holds_no_levels",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792870750490,
+      "tag": "0012_backfill_email_confirmed_at",
+      "breakpoints": true
     }
   ]
 }

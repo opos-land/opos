@@ -81,8 +81,9 @@ export function assertWithinOwnExpiry(
 }
 
 /**
- * An org grants no tenant-level permission above their own. A value the target already holds is no
- * grant, so an org may change one field of a member who holds more than the org elsewhere.
+ * An org grants no tenant-level permission above their own. A value no higher than what the target
+ * already holds is no grant, so an org lowers any permission and may change one field of a member
+ * who holds more than the org elsewhere.
  */
 export function assertMayGrant(
   actor: TenantMembership,
@@ -93,15 +94,15 @@ export function assertMayGrant(
   if (changes.role === 'head') throw refuse('member.above-own', 'An org cannot appoint a head')
   for (const field of Object.values(tenantResources)) {
     const granted = changes[field]
-    if (granted && granted !== current[field] && rank[granted] > rank[actor[field]]) {
+    if (granted && rank[granted] > rank[current[field]] && rank[granted] > rank[actor[field]]) {
       throw refuse('member.above-own', `${field} above the actor's own`)
     }
   }
 }
 
 /**
- * An org grants no edition-level permission above what they hold in that edition; a value the
- * target already holds there is no grant.
+ * An org grants no edition-level permission above what they hold in that edition; a value no higher
+ * than what the target already holds there is no grant.
  */
 export function assertMayGrantEdition(
   actor: TenantMembership,
@@ -114,7 +115,7 @@ export function assertMayGrantEdition(
     keyof EditionAccess,
     EditionAccess[keyof EditionAccess],
   ][]) {
-    if (granted === (current?.[field] ?? 'none')) continue
+    if (rank[granted] <= rank[current?.[field] ?? 'none']) continue
     if (rank[granted] > rank[actorAccess?.[field] ?? 'none']) {
       throw refuse('member.above-own', `${field} above the actor's own`)
     }

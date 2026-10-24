@@ -318,6 +318,18 @@ describe('anti-escalation', () => {
     }
   })
 
+  it('lets an org lower a permission it does not hold, but not raise it again', async () => {
+    const strong = await member()
+    const strongId = await addOrg(a.id, strong)
+    // The writer holds branding=none.
+    await patch(a.head, strongId, { brandingAccess: 'write' }).expect(200)
+
+    await patch(writer, strongId, { brandingAccess: 'read' }).expect(200)
+    expect((await patch(writer, strongId, { brandingAccess: 'write' })).body).toMatchObject({
+      code: 'member.above-own',
+    })
+  })
+
   it('refuses an org reviving a member who holds more than the org', async () => {
     const strong = await member()
     const strongId = await addOrg(a.id, strong, { settings: 'write', expired: true })

@@ -686,14 +686,15 @@ Anti-escalation ([PRODUCT.md 5.6](PRODUCT.md#56-anti-escalation-policy),
 of its own: `member.self` (the own membership, heads included), `member.head-only` (an org touching
 a head), `member.above-own` (a permission above the actor's own, on either level, an org
 appointing a head, or an org extending the access of a member who holds more),
-`member.expiry-after-own` (an org whose access expires lifting an expiry or moving one past its own
-end) and `member.outlives-own` (an org whose access expires raising a permission, on either level,
-of a member whose access lasts longer than its own; lowering one passes). A value the member
-already holds is no grant: an org may change one field of a member who holds more than the org in
-another. An org that lifts `expiresAt` or moves it later — which also revives an expired
-membership — hands back everything the row holds, so the member's resulting tenant-level
-permissions and every edition row must be no higher than the org's own (`member.above-own`). An
-earlier expiry, or a first one, grants nothing and needs none of these checks.
+`member.expiry-after-own` (an org whose access expires lifting, moving later or reviving an expiry
+to none or to a date past its own end) and `member.outlives-own` (an org whose access expires
+raising a permission, on either level, of a member whose resulting access lasts longer than its
+own). A value no higher than what the member already holds is no grant: an org lowers any
+permission, and may change one field of a member who holds more than the org in another. An org
+that lifts `expiresAt` or moves it later — which also revives an expired membership — hands back
+everything the row holds, so the member's resulting tenant-level permissions and every edition row
+must be no higher than the org's own (`member.above-own`). An earlier expiry, or a first one,
+needs neither that check nor `member.expiry-after-own`.
 
 A change to a member locks the actor's and the target's `tenant_memberships` rows (`for update`,
 in id order, so two requests never deadlock) and runs every check on the locked rows, the actor's

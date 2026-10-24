@@ -68,6 +68,7 @@ describe('assertMayGrant', () => {
     const held = { ...plain, shopConfigAccess: 'write' } as const
 
     expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'write' }, held))).toBe('allowed')
+    expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'read' }, held))).toBe('allowed')
     expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'none' }, held))).toBe('allowed')
   })
 })
@@ -105,6 +106,14 @@ describe('assertMayGrantEdition', () => {
     ).toBe('member.above-own')
     expect(
       code(() => assertMayGrantEdition(head, null, { ...none, ticketsAccess: 'write' }, null)),
+    ).toBe('allowed')
+  })
+
+  it('lets an org lower a permission it does not hold to any lower level', () => {
+    const current = { ...none, ticketsAccess: 'write' } as const
+
+    expect(
+      code(() => assertMayGrantEdition(org(), null, { ...none, ticketsAccess: 'read' }, current)),
     ).toBe('allowed')
   })
 })

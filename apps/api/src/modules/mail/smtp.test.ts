@@ -1,7 +1,7 @@
 import { type AddressInfo, createServer, type Server } from 'node:net'
 import { createTransport } from 'nodemailer'
 import { afterEach, describe, expect, it } from 'vitest'
-import { smtpOptions } from './smtp'
+import { sendWithDeadline, smtpOptions } from './smtp'
 
 const mailpit = {
   NODE_ENV: 'development',
@@ -11,10 +11,21 @@ const mailpit = {
   SMTP_PASS: '',
 } as const
 
-/** An SMTP server that offers AUTH but no STARTTLS, and records every command it receives. */
-async function plaintextServer() {
+/**
+ * An SMTP server that offers AUTH but no STARTTLS, records every command it receives and answers
+ * each one after `replyDelayMs`.
+ */
+async function plaintextServer(replyDelayMs = 0) {
   const commands: string[] = []
+  const state = { closed: false }
   const server = createServer((socket) => {
+    const reply = (text: string, end = false) =>
+      setTimeout(() => {
+        if (socket.writable) {
+          if (end) socket.end(text)
+          else socket.write(text)
+        }
+      }, replyDelayMs)
     let inData = false
     socket.write('220 fake ESMTP\r\n')
     socket.setEncoding('utf8')
@@ -29,26 +40,29 @@ async function plaintextServer() {
           if (line === '.') {
             inData = false
             commands.push('<message>')
-            socket.write('250 queued\r\n')
+            reply('250 queued\r\n')
           }
           continue
         }
         commands.push(line)
         const verb = line.split(' ')[0]?.toUpperCase()
-        if (verb === 'EHLO') socket.write('250-fake\r\n250 AUTH PLAIN LOGIN\r\n')
-        else if (verb === 'STARTTLS') socket.write('502 command not implemented\r\n')
+        if (verb === 'EHLO') reply('250-fake\r\n250 AUTH PLAIN LOGIN\r\n')
+        else if (verb === 'STARTTLS') reply('502 command not implemented\r\n')
         else if (verb === 'DATA') {
           inData = true
-          socket.write('354 go ahead\r\n')
-        } else if (verb === 'QUIT') socket.end('221 bye\r\n')
-        else socket.write('250 ok\r\n')
+          reply('354 go ahead\r\n')
+        } else if (verb === 'QUIT') reply('221 bye\r\n', true)
+        else reply('250 ok\r\n')
       }
     })
     socket.on('error', () => undefined)
+    socket.on('close', () => {
+      state.closed = true
+    })
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   servers.push(server)
-  return { port: (server.address() as AddressInfo).port, commands }
+  return { port: (server.address() as AddressInfo).port, commands, state }
 }
 
 const servers: Server[] = []
@@ -107,5 +121,40 @@ describe('smtpOptions', () => {
 
     await transport.sendMail(message)
     expect(server.commands).toContain('<message>')
+  })
+})
+
+describe('sendWithDeadline', () => {
+  const options = (port: number) =>
+    smtpOptions({ ...mailpit, SMTP_HOST: '127.0.0.1', SMTP_PORT: port })
+
+  it('delivers the message', async () => {
+    const server = await plaintextServer()
+
+    await sendWithDeadline(options(server.port), 'opos@example.test', message)
+
+    expect(server.commands).toContain('MAIL FROM:<opos@example.test>')
+    expect(server.commands).toContain('<message>')
+  })
+
+  it('gives up at the deadline on a server that answers every step in time but slowly', async () => {
+    // Every reply comes well within socketTimeout, so only the overall deadline stops the send.
+    const server = await plaintextServer(300)
+    const started = Date.now()
+
+    await expect(
+      sendWithDeadline(options(server.port), 'opos@example.test', message, 800),
+    ).rejects.toThrow(/within 800 ms/)
+
+    expect(Date.now() - started).toBeLessThan(1_000)
+    await expect.poll(() => server.state.closed).toBe(true)
+    expect(server.commands).not.toContain('DATA')
+    expect(server.commands).not.toContain('<message>')
+  })
+
+  it('rejects when the server refuses the connection', async () => {
+    await expect(sendWithDeadline(options(1), 'opos@example.test', message)).rejects.toThrow(
+      /ECONNREFUSED/,
+    )
   })
 })

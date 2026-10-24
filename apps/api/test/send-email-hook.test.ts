@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { type AddressInfo, createServer } from 'node:net'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { Webhook } from 'standardwebhooks'
 import request from 'supertest'
@@ -212,4 +213,38 @@ describe('POST /hooks/send-email', () => {
       await broken.close()
     }
   })
+
+  it('answers 500 before Supabase Auth gives up when SMTP is slow', async () => {
+    // Every reply comes 1.5 s late: within the per-step timeouts, past the 4 s deadline in total.
+    const commands: string[] = []
+    const smtp = createServer((socket) => {
+      socket.on('error', () => undefined)
+      socket.write('220 slow ESMTP\r\n')
+      socket.on('data', (chunk) => {
+        commands.push(chunk.toString())
+        setTimeout(() => socket.writable && socket.write('250 ok\r\n'), 1_500)
+      })
+    })
+    await new Promise<void>((resolve) => smtp.listen(0, '127.0.0.1', resolve))
+    const slow = await createApp({
+      SMTP_HOST: '127.0.0.1',
+      SMTP_PORT: String((smtp.address() as AddressInfo).port),
+    })
+    try {
+      const { payload, headers } = signed(hookBody('signup'))
+      const started = Date.now()
+
+      await request(slow.getHttpServer())
+        .post('/hooks/send-email')
+        .set(headers)
+        .send(payload)
+        .expect(500)
+
+      expect(Date.now() - started).toBeLessThan(5_000)
+      expect(commands.join('')).not.toMatch(/^DATA/m)
+    } finally {
+      await slow.close()
+      smtp.close()
+    }
+  }, 10_000)
 })

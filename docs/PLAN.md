@@ -1413,8 +1413,11 @@ Supabase Auth sends no email itself. For every message it calls `POST /hooks/sen
 3. It builds the link `<AUTH_URL>/verify?token=<token_hash>&type=<email_action_type>&redirect_to=<redirect_to>`
    and renders the template through Lingui.
 4. It sends the message through `MailModule` and answers `200 {}`. An SMTP failure -> `500`, which
-   Supabase Auth reports to the client as a failed send. Supabase Auth waits only a few seconds for
-   the hook, so the SMTP timeouts stay below that.
+   Supabase Auth reports to the client as a failed send. Supabase Auth waits 5 s for the hook and
+   does not retry, so a send has a 4 s deadline as a whole
+   ([smtp.ts](../apps/api/src/modules/mail/smtp.ts)): at the deadline the API drops the SMTP
+   connection and answers `500`, and a message the server has not accepted by then is never
+   delivered.
 
 | `email_action_type` | Template |
 |---|---|
@@ -1804,7 +1807,7 @@ cannot run beside an API started with `pnpm dev`.
 | scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; a device paired by an org whose access expires stops with that access; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
 | JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
-| send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500` |
+| send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | `GET /invitations/preview` above the limit -> `429` with `Retry-After` |
 | i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
 

@@ -518,6 +518,22 @@ describe('concurrency', () => {
     expect((await pending).status).toBe(404)
   })
 
+  it('answers 404 to an edition access change that waited for the edition to be deleted', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const orgId = await addOrg(t.id, await member())
+    const commit = await holdOpen((sql) => sql`delete from editions where id = ${edition}`)
+
+    const body = { programAccess: 'write', websiteContentAccess: 'none', ticketsAccess: 'none' }
+    const pending = call(t.head, 'put', `/editions/${edition}/members/${orgId}`, body, t.slug).then(
+      (res) => res,
+    )
+    await sleep(300)
+    await commit()
+
+    expect((await pending).status).toBe(404)
+  })
+
   it('keeps a head when two heads demote each other at once', async () => {
     const t = await tenantWithHead()
     const second = await member()

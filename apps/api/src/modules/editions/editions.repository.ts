@@ -61,6 +61,23 @@ export class EditionsRepository {
     return edition
   }
 
+  /**
+   * The edition, or 404, locked against a delete until the transaction ends: a row that references
+   * it can be written without a foreign key violation. A delete committed while this waits leaves
+   * no row, which is 404 as well.
+   */
+  async lock(id: string): Promise<Edition> {
+    if (!isUuid(id)) throw notFound('edition')
+    const [row] = await this.context
+      .tx()
+      .select(columns)
+      .from(editions)
+      .where(eq(editions.id, id))
+      .for('key share')
+    if (!row) throw notFound('edition')
+    return toEdition(row)
+  }
+
   /** A taken slug violates editions_tenant_slug_unique, which the filter answers with 409. */
   async create(values: { slug: string; name: string; startsAt: string; endsAt: string }) {
     const [row] = await this.context

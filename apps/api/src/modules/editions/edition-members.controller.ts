@@ -54,7 +54,7 @@ export class EditionMembersController {
   put() {
     return implement(contract.editions.members.put).handler(async ({ input }) => {
       const { params, body } = input
-      const edition = await this.editions.get(params.editionId)
+      const edition = await this.editions.lock(params.editionId)
       const { actor, target } = await this.lock(params.tenantMembershipId)
       const [actorAccess, current] = await Promise.all([
         this.access.editionAccess(actor.id, edition.id),

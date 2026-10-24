@@ -226,10 +226,6 @@ msgid "Wrong email or password."
 msgstr "Nieprawidłowy e-mail lub hasło."
 
 #: src/errors.ts
-msgid "You cannot change the permissions of someone whose access lasts longer than yours."
-msgstr "Nie możesz zmieniać uprawnień osoby, której dostęp trwa dłużej niż twój."
-
-#: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
 msgstr "Nie możesz zmienić własnej roli ani uprawnień, ani usunąć siebie z zespołu."
 
@@ -240,10 +236,6 @@ msgstr "Nie możesz usunąć aktywnej edycji. Najpierw aktywuj inną edycję."
 #: src/errors.ts
 msgid "You cannot grant permissions higher than your own."
 msgstr "Nie możesz nadać uprawnień wyższych niż własne."
-
-#: src/errors.ts
-msgid "You cannot set an access end date later than your own, or remove it."
-msgstr "Nie możesz ustawić daty końca dostępu późniejszej niż własna ani jej usunąć."
 
 #: src/errors.ts
 msgid "You do not have permission to do this."

@@ -229,16 +229,12 @@ describe('anti-escalation', () => {
     expect(res.body).toMatchObject({ code: 'member.head-only' })
   })
 
-  it('caps an org at their own permissions and expiry', async () => {
+  it('caps an org at their own permissions', async () => {
     expect((await patch(writer, targetId, { shopConfigAccess: 'read' })).body).toMatchObject({
       code: 'member.above-own',
     })
     expect((await patch(writer, targetId, { role: 'head' })).body).toMatchObject({
       code: 'member.above-own',
-    })
-    const tooLate = new Date(later.getTime() + 24 * 3600 * 1000).toISOString()
-    expect((await patch(limited, targetId, { expiresAt: tooLate })).body).toMatchObject({
-      code: 'member.expiry-after-own',
     })
     await patch(writer, targetId, { settingsAccess: 'read' }).expect(200)
   })
@@ -264,46 +260,52 @@ describe('anti-escalation', () => {
     ).toMatchObject({ code: 'member.self' })
   })
 
-  it("keeps an expiring org's grants within their own access", async () => {
-    const res = await patch(limited, targetId, { settingsAccess: 'read' })
-    expect(res.body).toMatchObject({ code: 'member.outlives-own' })
-    const edition = await call(limited, 'put', `/editions/${editionA}/members/${targetId}`, {
+  it('lets an org whose access expires manage a member whose access lasts longer', async () => {
+    const lasting = await member()
+    const lastingId = await addOrg(a.id, lasting)
+    const beyond = new Date(later.getTime() + 24 * 3600 * 1000).toISOString()
+
+    await patch(limited, lastingId, { settingsAccess: 'read' }).expect(200)
+    await call(limited, 'put', `/editions/${editionA}/members/${lastingId}`, {
       programAccess: 'none',
       websiteContentAccess: 'none',
       ticketsAccess: 'none',
-    })
-    expect(edition.body).toMatchObject({ code: 'member.outlives-own' })
-
-    const bounded = await member()
-    const boundedId = await addOrg(a.id, bounded, {
-      expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
-    })
-    await patch(limited, boundedId, { settingsAccess: 'read' }).expect(200)
+    }).expect(200)
+    await patch(limited, lastingId, { expiresAt: beyond }).expect(200)
+    await patch(limited, lastingId, { expiresAt: null }).expect(200)
   })
 
-  it('refuses lifting the expiry for an org that has one', async () => {
-    const res = await patch(limited, targetId, { expiresAt: null })
-    expect(res.body).toMatchObject({ code: 'member.expiry-after-own' })
+  it('lets an org shorten the access of a member who holds more, but not extend it', async () => {
+    const strong = await member()
+    const strongId = await addOrg(a.id, strong)
+    // The writer holds settings=write but branding=none; the member gets branding=read.
+    await patch(a.head, strongId, { brandingAccess: 'read' }).expect(200)
+    const sooner = new Date(Date.now() + 24 * 3600 * 1000).toISOString()
+
+    await patch(writer, strongId, { expiresAt: later.toISOString() }).expect(200)
+    await patch(writer, strongId, { expiresAt: sooner }).expect(200)
+    for (const expiresAt of [later.toISOString(), null]) {
+      expect((await patch(writer, strongId, { expiresAt })).body).toMatchObject({
+        code: 'member.above-own',
+      })
+    }
   })
 
-  it('refuses an org reviving or extending a member who holds more than the org', async () => {
+  it('refuses an org reviving a member who holds more than the org', async () => {
     const strong = await member()
     const strongId = await addOrg(a.id, strong, { settings: 'write', expired: true })
-    await call(a.head, 'patch', `/tenants/current/members/${strongId}`, {}).expect(200)
     // The writer holds settings=write but branding=none; give the lapsed member branding=read.
-    const t = a.head
-    await call(t, 'patch', `/tenants/current/members/${strongId}`, {
-      brandingAccess: 'read',
-    }).expect(200)
+    await patch(a.head, strongId, { brandingAccess: 'read' }).expect(200)
 
-    const revive = await patch(writer, strongId, { expiresAt: null })
-    expect(revive.body).toMatchObject({ code: 'member.above-own' })
+    for (const expiresAt of [null, later.toISOString()]) {
+      expect((await patch(writer, strongId, { expiresAt })).body).toMatchObject({
+        code: 'member.above-own',
+      })
+    }
     await call(strong, 'get', '/tenants/current').expect(403)
 
     await patch(a.head, strongId, { expiresAt: null }).expect(200)
     await call(strong, 'get', '/tenants/current').expect(200)
-    const extend = await patch(writer, strongId, { expiresAt: later.toISOString() })
-    expect(extend.body).toMatchObject({ code: 'member.above-own' })
   })
 
   it('restores access when a head extends an expired membership', async () => {

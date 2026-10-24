@@ -226,10 +226,6 @@ msgid "Wrong email or password."
 msgstr "Wrong email or password."
 
 #: src/errors.ts
-msgid "You cannot change the permissions of someone whose access lasts longer than yours."
-msgstr "You cannot change the permissions of someone whose access lasts longer than yours."
-
-#: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
 msgstr "You cannot change your own role or permissions, or remove yourself from the team."
 
@@ -240,10 +236,6 @@ msgstr "You cannot delete the active edition. Activate another edition first."
 #: src/errors.ts
 msgid "You cannot grant permissions higher than your own."
 msgstr "You cannot grant permissions higher than your own."
-
-#: src/errors.ts
-msgid "You cannot set an access end date later than your own, or remove it."
-msgstr "You cannot set an access end date later than your own, or remove it."
 
 #: src/errors.ts
 msgid "You do not have permission to do this."

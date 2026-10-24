@@ -4,7 +4,7 @@ import {
   assertMayGrant,
   assertMayGrantEdition,
   assertMayManage,
-  assertWithinOwnExpiry,
+  extendsAccess,
 } from './anti-escalation'
 
 const org = (overrides: Partial<TenantMembership> = {}): TenantMembership => ({
@@ -59,21 +59,6 @@ describe('assertMayGrant', () => {
     expect(code(() => assertMayGrant(org(), { role: 'head' }, plain))).toBe('member.above-own')
   })
 
-  it("caps the expiry at the org's own", () => {
-    const actor = org({ expiresAt: new Date('2027-01-01T00:00:00Z') })
-
-    expect(code(() => assertMayGrant(actor, { expiresAt: '2026-12-31T00:00:00Z' }, plain))).toBe(
-      'allowed',
-    )
-    expect(code(() => assertMayGrant(actor, { expiresAt: '2027-02-01T00:00:00Z' }, plain))).toBe(
-      'member.expiry-after-own',
-    )
-    expect(code(() => assertMayGrant(actor, { expiresAt: null }, plain))).toBe(
-      'member.expiry-after-own',
-    )
-    expect(code(() => assertMayGrant(org(), { expiresAt: null }, plain))).toBe('allowed')
-  })
-
   it('treats a value the member already holds as no grant', () => {
     const held = { ...plain, shopConfigAccess: 'write' } as const
 
@@ -119,24 +104,21 @@ describe('assertMayGrantEdition', () => {
   })
 })
 
-describe('assertWithinOwnExpiry', () => {
-  const own = new Date('2027-01-01T00:00:00Z')
+describe('extendsAccess', () => {
+  const past = new Date('2026-01-01T00:00:00Z')
+  const soon = new Date('2027-01-01T00:00:00Z')
+  const later = new Date('2027-06-01T00:00:00Z')
 
-  it('keeps what an org with an expiry grants within their own access', () => {
-    const actor = org({ expiresAt: own })
-
-    expect(code(() => assertWithinOwnExpiry(actor, new Date('2026-12-01T00:00:00Z')))).toBe(
-      'allowed',
-    )
-    expect(code(() => assertWithinOwnExpiry(actor, own))).toBe('allowed')
-    expect(code(() => assertWithinOwnExpiry(actor, null))).toBe('member.outlives-own')
-    expect(code(() => assertWithinOwnExpiry(actor, new Date('2027-02-01T00:00:00Z')))).toBe(
-      'member.outlives-own',
-    )
+  it('counts lifting an expiry and moving it later, a revival included', () => {
+    expect(extendsAccess(soon, null)).toBe(true)
+    expect(extendsAccess(soon, later)).toBe(true)
+    expect(extendsAccess(past, soon)).toBe(true)
   })
 
-  it('leaves heads and orgs without an expiry alone', () => {
-    expect(code(() => assertWithinOwnExpiry(head, null))).toBe('allowed')
-    expect(code(() => assertWithinOwnExpiry(org(), null))).toBe('allowed')
+  it('counts an earlier expiry, or a first one, as no grant', () => {
+    expect(extendsAccess(later, soon)).toBe(false)
+    expect(extendsAccess(soon, soon)).toBe(false)
+    expect(extendsAccess(null, later)).toBe(false)
+    expect(extendsAccess(null, null)).toBe(false)
   })
 })

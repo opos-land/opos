@@ -679,13 +679,13 @@ by the payment provider only ([7.10](#710-payments)).
 Anti-escalation ([PRODUCT.md 5.6](PRODUCT.md#56-anti-escalation-policy),
 [anti-escalation.ts](../apps/api/src/modules/tenants/anti-escalation.ts)) answers `403` with a code
 of its own: `member.self` (the own membership, heads included), `member.head-only` (an org touching
-a head), `member.above-own` (a permission above the actor's own, on either level, or an org
-appointing a head), `member.expiry-after-own` (an expiry later than the actor's own, or none when
-the actor has one), `member.outlives-own` (an org whose access expires changing the permissions,
-on either level, of a member whose access would end later than theirs or never). A value the member already holds is no grant: an org may change one field of a
-member who holds more than the org in another. An org that sets or lifts `expiresAt` hands back
-everything the row holds, so the member's resulting tenant-level permissions and every edition row
-must be no higher than the org's own (`member.above-own`).
+a head), `member.above-own` (a permission above the actor's own, on either level, an org
+appointing a head, or an org extending the access of a member who holds more). A value the member
+already holds is no grant: an org may change one field of a member who holds more than the org in
+another. An org that lifts `expiresAt` or moves it later — which also revives an expired
+membership — hands back everything the row holds, so the member's resulting tenant-level
+permissions and every edition row must be no higher than the org's own (`member.above-own`). An
+earlier expiry, or a first one, grants nothing and needs no such check.
 
 A change to a member locks the actor's and the target's `tenant_memberships` rows (`for update`,
 in id order, so two requests never deadlock) and runs every check on the locked rows, the actor's
@@ -1735,9 +1735,9 @@ with a wrong signature, audience, issuer or expiry are signed in the test with `
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
 | transactions | a handler that writes and then returns a `4xx` leaves no row behind; an `afterCommit` call registered before a rollback never runs; a repository call outside a tenant transaction throws |
-| anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, lift or extend the expiry of a member who holds more, or, with an expiry of their own, change the permissions of a member who would outlast them; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
+| anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more; it may shorten that member's access, and an org whose access expires manages a member whose access lasts longer; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
-| membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access; an org cannot set an expiry later than their own |
+| membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
 | likes | idempotent `PUT`; `likeCount` changes; no endpoint returns who liked an item; `GET /me/schedule` spans tenants |
 | checkout | 20 concurrent orders against `quantity=5` -> exactly 5 hold tickets, the rest `409`; an expired hold releases its tickets; outside the sales window -> `409`; no payment config -> `409`; more than 10 tickets -> `400` |

@@ -5,11 +5,7 @@ import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
 import { ApiError } from '../../common/errors/api-error'
 import { AccessRepository } from '../../common/permissions/access.repository'
-import {
-  assertMayGrantEdition,
-  assertMayManage,
-  assertWithinOwnExpiry,
-} from '../tenants/anti-escalation'
+import { assertMayGrantEdition, assertMayManage } from '../tenants/anti-escalation'
 import { lockActorAndTarget } from '../tenants/member-lock'
 import { MembersRepository } from '../tenants/members.repository'
 import { EditionsRepository } from './editions.repository'
@@ -54,7 +50,6 @@ export class EditionMembersController {
     return tsRestHandler(contract.editions.members.put, async ({ params, body }) => {
       const edition = await this.editions.get(params.editionId)
       const { actor, target } = await this.lock(params.tenantMembershipId)
-      assertWithinOwnExpiry(actor, target.expiresAt ? new Date(target.expiresAt) : null)
       const [actorAccess, current] = await Promise.all([
         this.access.editionAccess(actor.id, edition.id),
         this.access.editionAccess(target.id, edition.id),

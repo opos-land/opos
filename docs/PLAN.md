@@ -1438,12 +1438,19 @@ it signs with `JWT_SECRET` itself ([14](#14-demo-data-seed)). The key never reac
 
 ### Rate limits
 
-GoTrue's built-in limits stay at their defaults, keyed by the client IP from `X-Forwarded-For`. The
-one exception is dev: [docker-compose.yml](../docker-compose.yml) raises
-`GOTRUE_RATE_LIMIT_EMAIL_SENT`, a global limit of 30 emails per hour by default, because the tests
-send more.
-Traefik adds a `rateLimit` middleware on the `auth.opos.land` router: an average of 30 requests per
-minute per IP, burst 10, a `429` above that.
+GoTrue's per-IP limits stay at their defaults, keyed by the client IP from `X-Forwarded-For`.
+`GOTRUE_RATE_LIMIT_EMAIL_SENT` is not per IP: it is one bucket for the whole instance, shared by
+every tenant and checked before the send-email hook is called, and an empty bucket answers sign-up,
+recovery and email change with `429 over_email_send_rate_limit`. Both environments replace GoTrue's
+default of 30 emails per hour:
+
+| Environment | `GOTRUE_RATE_LIMIT_EMAIL_SENT` |
+|---|---|
+| production (`docker-compose.prod.yml`) | `1000` emails per hour |
+| dev and the tests ([docker-compose.yml](../docker-compose.yml)) | `10000` emails per hour |
+
+Abuse is held per IP, not by this bucket. Traefik adds a `rateLimit` middleware on the
+`auth.opos.land` router: an average of 30 requests per minute per IP, burst 10, a `429` above that.
 
 ---
 

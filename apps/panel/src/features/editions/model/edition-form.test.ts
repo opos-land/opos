@@ -1,6 +1,6 @@
 import { fromZonedWallTime } from '@opos/i18n'
 import { describe, expect, it } from 'vitest'
-import { editionBody, editionFormSchema } from './edition-form'
+import { editionBody, editionFormSchema, endsAtProblem } from './edition-form'
 
 const valid = {
   name: 'Convention A 2027',
@@ -28,6 +28,30 @@ describe('editionFormSchema', () => {
 
   it('refuses an empty name', () => {
     expect(editionFormSchema.safeParse({ ...valid, name: '   ' }).success).toBe(false)
+  })
+})
+
+describe('endsAtProblem', () => {
+  const endsAtIssue = (endsAt: string) =>
+    editionFormSchema
+      .safeParse({ ...valid, endsAt })
+      .error?.issues.find((issue) => issue.path[0] === 'endsAt')?.code
+
+  it('reports an empty end as missing, not as out of order', () => {
+    expect(endsAtProblem(endsAtIssue(''))).toBe('missing')
+  })
+
+  it('reports an end before the start as out of order', () => {
+    expect(endsAtProblem(endsAtIssue('2027-04-30T10:00'))).toBe('order')
+  })
+
+  it('reports an end that names no instant as missing', () => {
+    // Set by the form when the zone has no such time.
+    expect(endsAtProblem('zone')).toBe('missing')
+  })
+
+  it('reports nothing without an error', () => {
+    expect(endsAtProblem(undefined)).toBeNull()
   })
 })
 

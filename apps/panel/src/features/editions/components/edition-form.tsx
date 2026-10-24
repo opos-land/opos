@@ -9,6 +9,7 @@ import {
   editionBody,
   editionFormSchema,
   type EditionFormValues,
+  endsAtProblem,
 } from '../model/edition-form'
 
 export function EditionForm({
@@ -35,7 +36,7 @@ export function EditionForm({
   const submit = form.handleSubmit((values) => {
     const body = editionBody(values, time.fromInput)
     if (body) onSubmit(body)
-    else form.setError('startsAt', { type: 'zone' })
+    else form.setError(time.fromInput(values.startsAt) ? 'endsAt' : 'startsAt', { type: 'zone' })
   })
 
   return (
@@ -72,7 +73,11 @@ export function EditionForm({
         <Field
           label={t`Ends`}
           hint={t`In the convention's time zone, ${zone}.`}
-          error={errors.endsAt && t`The edition must end after it starts.`}
+          error={
+            endsAtProblem(errors.endsAt?.type) === 'order'
+              ? t`The edition must end after it starts.`
+              : errors.endsAt && t`Enter the end date and time.`
+          }
         >
           {(control) => (
             <input

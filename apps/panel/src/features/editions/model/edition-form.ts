@@ -14,6 +14,13 @@ export const editionFormSchema = z
   })
   .refine((v) => v.endsAt > v.startsAt, { path: ['endsAt'] })
 
+/**
+ * What the end field reports, by the type of its error: the dates in the wrong order (the refine
+ * above), or a date that is missing or names no instant of the zone.
+ */
+export const endsAtProblem = (type: string | undefined): 'order' | 'missing' | null =>
+  type === undefined ? null : type === 'custom' ? 'order' : 'missing'
+
 export type EditionFormValues = z.infer<typeof editionFormSchema>
 
 export interface EditionBody {

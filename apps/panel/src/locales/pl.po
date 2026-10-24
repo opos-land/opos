@@ -217,6 +217,10 @@ msgid "Enter a valid email address."
 msgstr "Podaj prawidłowy adres e-mail."
 
 #: src/features/editions/components/edition-form.tsx
+msgid "Enter the end date and time."
+msgstr "Podaj datę i godzinę zakończenia."
+
+#: src/features/editions/components/edition-form.tsx
 msgid "Enter the start date and time."
 msgstr "Podaj datę i godzinę rozpoczęcia."
 

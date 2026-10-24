@@ -26,7 +26,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm i18n:check
-      - run: docker compose up -d --wait db auth
+      # mailpit: the send-email hook test reads what the API sent
+      - run: docker compose up -d --wait db auth mailpit
       - run: pnpm db:migrate
       - run: pnpm db:verify
       # The second run proves the seed is idempotent

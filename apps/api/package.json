@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@lingui/core": "catalog:",
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
@@ -25,12 +26,17 @@
     "@orpc/zod": "catalog:",
     "drizzle-orm": "catalog:",
     "jose": "^6.2.12",
+    "nodemailer": "^10.1.2",
     "postgres": "catalog:",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "standardwebhooks": "^1.1.1",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@lingui/conf": "^6.10.0",
+    "@lingui/native-tools": "0.1.6",
+    "@lingui/vite-plugin": "catalog:",
     "@nestjs/testing": "catalog:",
     "@opos/eslint-config": "workspace:*",
     "@opos/tsconfig": "workspace:*",

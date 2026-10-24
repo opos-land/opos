@@ -17,6 +17,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { AccessRepository } from './common/permissions/access.repository'
 import { ENV, type Env } from './config/env'
 import { MeModule } from './modules/accounts/me.module'
+import { AuthModule } from './modules/auth/auth.module'
 import { EditionsModule } from './modules/editions/editions.module'
 import { HealthModule } from './modules/health/health.module'
 import { TenantsModule } from './modules/tenants/tenants.module'
@@ -36,6 +37,7 @@ export class AppModule implements NestModule {
         DatabaseModule,
         HealthModule,
         MeModule,
+        AuthModule,
         TenantsModule,
         EditionsModule,
       ],

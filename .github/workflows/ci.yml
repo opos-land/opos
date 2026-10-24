@@ -46,3 +46,26 @@ jobs:
             sleep 1
           done
           exit 1
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: jdx/mise-action@v5
+      - run: pnpm install --frozen-lockfile
+      # The applications' dev addresses (docs/PLAN.md, 12. Local development)
+      - run: echo '127.0.0.1 api.localhost panel.localhost opos.localhost' | sudo tee -a /etc/hosts
+      - run: docker compose up -d --wait db auth mailpit
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm --filter @opos/e2e exec playwright install --with-deps chromium
+      # Playwright starts the api, the panel and the portal itself (e2e/playwright.config.ts)
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+          retention-days: 7

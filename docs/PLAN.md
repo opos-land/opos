@@ -175,11 +175,8 @@ opos/
                          #   auth client, session, i18n, UI), .env.example, tests (9)
       src/features/      # still to come: attendances, conventions, schedule, speaking, tickets
       Dockerfile
-  e2e/                   # a workspace package: playwright and the test helpers
-    package.json
-    playwright.config.ts
-    specs/
-    fixtures/            # Mailpit client, sign-in as a seeded account
+  e2e/                   # built: Playwright config, fixtures (stack, Mailpit, admin API, tenants,
+                         #   sign-in) with their unit tests, specs (15.2)
   packages/
     contract/            # built: common schemas, error codes, health, me (profile, memberships, deletion),
                          #   tenants (without payment config), editions, invitations
@@ -244,6 +241,8 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   `OPOS_MAILPIT_PORT`, `db:seed` also the Supabase Auth ones and `NODE_ENV`
   ([11](#11-environment-variables)), and `dev` passes `OPOS_PANEL_PORT` and `OPOS_PORTAL_PORT` to
   the dev servers ([12](#ports)), so they reach the scripts and stay out of the hash.
+- `test:e2e` depends on the panel's and the portal's `i18n:compile`, since Playwright starts their
+  dev servers ([15.2](#152-e2e-tests)), and passes `CI` and the `OPOS_*_PORT` variables through.
 - The root scripts that take arguments, `db:seed`, `db:tenant:create` and `db:tenant:rename`, end
   with `--`, so pnpm hands the arguments through turbo to the package script.
 
@@ -2116,44 +2115,61 @@ cannot run beside an API started with `pnpm dev`.
 
 ### 15.2 E2E tests
 
-Playwright in `e2e/`, through the UI of both web applications, against the full stack on a fresh
-database.
+Playwright in [e2e](../e2e), through the UI of both web applications, against the full stack on the
+seeded database. The configuration is [playwright.config.ts](../e2e/playwright.config.ts), the
+helpers are [e2e/fixtures](../e2e/fixtures) and the scenarios [e2e/specs](../e2e/specs).
 
-**Environment:** `pnpm infra:up` (Supabase `db` + `auth`, Mailpit),
-`pnpm db:migrate && pnpm db:seed`, applications started through `webServer` in the Playwright
-configuration. Chromium in two projects: desktop, and a mobile viewport (Pixel 7) for the portal;
-a browser matrix is beyond the MVP. The `e2e` directory is a workspace package — Playwright and
-the fixtures are its dependencies, not the root's.
+**Environment:** `pnpm infra:up` (Supabase `db` + `auth`, Mailpit), `pnpm db:migrate && pnpm db:seed`,
+Chromium once (`pnpm --filter @opos/e2e exec playwright install chromium`), then `pnpm test:e2e`.
+
+- Playwright starts the applications itself (`webServer`): the API as the bundle production runs,
+  the panel and the portal as dev servers. They run with the API's configuration,
+  `apps/api/.env.example` overridden by `apps/api/.env`, as in the API tests
+  ([15.1](#151-api-integration-tests)); the dev servers take their ports from `PANEL_URL` and
+  `PORTAL_URL`. Outside CI a running `pnpm dev` is reused.
+- `pnpm test:e2e` and the API tests do not run at the same time: both need the API's `PORT`, where
+  Supabase Auth sends the hook.
+- Chromium in two projects: `desktop`, and `mobile` (Pixel 7) for the portal, which runs the
+  scenarios tagged `@mobile`; a browser matrix is beyond the MVP. The browser's language is
+  `en-US`.
+- A failed test keeps its trace, video and screenshot.
+- The `e2e` directory is a workspace package — Playwright and the fixtures are its dependencies,
+  not the root's.
 
 Emails — address confirmation, password reset, invitations, tickets — are read through Mailpit's
-HTTP API
-(`localhost:<OPOS_MAILPIT_PORT>/api/v1`). Google sign-in is not covered by e2e: Supabase Auth talks to the real Google,
-and the smoke test checks that flow ([16](#16-smoke-test)).
+HTTP API (`localhost:<OPOS_MAILPIT_PORT>/api/v1`). Google sign-in is not covered by e2e: Supabase
+Auth talks to the real Google, and the smoke test checks that flow ([16](#16-smoke-test)).
+
+Tests share no data. A scenario makes its own accounts through the Supabase Auth admin API and its
+own tenant through `createTenant` on a slug of its own (`e2e-<random>`), with the head's account
+confirmed first; it writes the team and the editions it starts from as `opos_migrator`, and the
+fixtures remove its tenants, accounts and mail afterwards
+([fixtures/index.ts](../e2e/fixtures/index.ts)). A scenario using seeded data only reads it and
+never signs a seeded account out, since a sign-out ends every session of the account.
 
 **Scenarios:**
 
-| # | Scenario |
-|---|---|
-| 1 | Registration with a password: sign-in before confirming -> `email_not_confirmed`; the link from Mailpit confirms; sign-out, sign-in again; the language switch survives the session |
-| 2 | Resending the confirmation link from the sign-in screen delivers a new message |
-| 3 | The session survives a page reload; after sign-out the stored session is gone and the API answers `401` |
-| 4 | A head creates an edition, activates it, publishes it and adds programme items |
-| 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone |
-| 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee sees only their edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in |
-| 7 | An org with `read`: no sidebar section, entering by URL -> the "no permissions" screen |
-| 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request |
-| 9 | An attendee signs up for an edition from the convention's page, sees it under "my conventions", deletes the account |
-| 10 | Password reset: request from the sign-in screen, the link from Mailpit sets a new password, the old session can no longer refresh |
-| 11 | An attendee likes items, finds them in the personal schedule, reviews a past item anonymously with a speakers-only comment; the speaker sees it under "my programme items"; an org hides another review in the panel and the public rating changes |
-| 12 | An org whose membership has expired signs in to the panel and sees no convention |
-| 13 | A visitor without an account buys two tickets through the fake provider; the email in Mailpit has two QR codes; registering with the same address shows both under "my tickets" |
-| 14 | An org pairs the scanner from the panel, enters a ticket code by hand, sees the whole order, redeems one ticket; the next lookup shows it as used |
-| 15 | An org cancels a paid order in the panel; the scanner shows its tickets as invalid |
+| # | Scenario | Spec |
+|---|---|---|
+| 1 | Registration with a password: sign-in before confirming -> `email_not_confirmed`; the link from Mailpit confirms; sign-out, sign-in again; the language switch survives the session | [registration](../e2e/specs/registration.spec.ts) |
+| 2 | Resending the confirmation link from the sign-in screen delivers a new message | [registration](../e2e/specs/registration.spec.ts) |
+| 3 | The session survives a page reload; after sign-out the stored session is gone and the API answers `401` | [registration](../e2e/specs/registration.spec.ts) |
+| 4 | A head creates an edition, activates it, publishes it and adds programme items | [editions](../e2e/specs/editions.spec.ts); the programme items come with the `program` feature |
+| 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | still to come, with the `conventions` feature |
+| 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee sees only their edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in | [invitation](../e2e/specs/invitation.spec.ts) |
+| 7 | An org without `settings`: no team or settings in the sidebar, entering by URL -> the "no permissions" screen; with `settings=read`: the team without the invitation form, the settings with "Save" disabled | [permissions](../e2e/specs/permissions.spec.ts) |
+| 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request | [permissions](../e2e/specs/permissions.spec.ts) |
+| 9 | An attendee signs up for an edition from the convention's page, sees it under "my conventions", deletes the account; the last head of a convention is told to hand the role over instead | [account-deletion](../e2e/specs/account-deletion.spec.ts); the edition sign-up comes with the `attendances` feature |
+| 10 | Password reset: request from the sign-in screen, the link from Mailpit sets a new password, the old session can no longer refresh | [password-reset](../e2e/specs/password-reset.spec.ts) |
+| 11 | An attendee likes items, finds them in the personal schedule, reviews a past item anonymously with a speakers-only comment; the speaker sees it under "my programme items"; an org hides another review in the panel and the public rating changes | still to come, with the `program`, `conventions`, `schedule` and `speaking` features |
+| 12 | An org whose membership has expired signs in to the panel and sees no convention | [permissions](../e2e/specs/permissions.spec.ts) |
+| 13 | A visitor without an account buys two tickets through the fake provider; the email in Mailpit has two QR codes; registering with the same address shows both under "my tickets" | still to come, with the `tickets` features of the panel and the portal |
+| 14 | An org pairs the scanner from the panel, enters a ticket code by hand, sees the whole order, redeems one ticket; the next lookup shows it as used | still to come, with the `scanner` feature |
+| 15 | An org cancels a paid order in the panel; the scanner shows its tickets as invalid | still to come, with the `tickets` and `scanner` features |
+| 16 | A head adds a confirmed account to the team, which gets a notification, changes its permissions and removes it; an org with `settings=write` invites and raises nobody above its own permissions (`member.above-own` next to the form) and has nothing to change on a head or on itself | [team](../e2e/specs/team.spec.ts) |
+| 17 | The panel's language switcher keeps the language on the account across a reload, and the browser's language comes back when chosen | [panel-language](../e2e/specs/panel-language.spec.ts) |
 
 Scenarios 1, 9, 10, 11, 13 and 14 run in both the desktop and the mobile project.
-
-Tests share no data: every scenario that creates a tenant works on its own slug, and scenarios
-using seeded data only read it.
 
 ### 15.3 CI
 
@@ -2174,9 +2190,12 @@ Branches:
 | `develop` | default branch; every feature and fix PR targets it | none |
 | `main` | released state; changes only through a PR from `develop` | ruleset `protect-main`: PR required (0 approvals), job `check` must pass, no force push, no deletion |
 
-The e2e job receives `/etc/hosts` entries for `api.localhost`, `panel.localhost` and
-`opos.localhost`. Artifacts from failed runs
-(traces, video, screenshots) are kept for 7 days.
+The `e2e` job runs beside `check`, on its own `db`, `auth` and `mailpit` containers, migrated and
+seeded. It receives `/etc/hosts` entries for `api.localhost`, `panel.localhost` and
+`opos.localhost`, installs Chromium with its system dependencies
+(`playwright install --with-deps chromium`) and runs `pnpm test:e2e`, which starts the
+applications itself ([15.2](#152-e2e-tests)); in CI a failed test is retried once. The traces,
+videos and screenshots of a failed run are kept as an artifact for 7 days.
 
 ---
 
@@ -2241,8 +2260,8 @@ real TLS, real Google, real email delivery and a real phone.
    need `pnpm i18n:compile`, wired in as a dependency of `dev`, `build` and `test`
    ([3.1](#31-turbo-tasks)).
 3. **Green before every PR** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:verify`.
-   A change visible in the UI is additionally clicked through or checked with `curl`; a portal
-   change also in a mobile viewport.
+   A change visible in the UI additionally passes `pnpm test:e2e` and is clicked through or
+   checked with `curl`; a portal change also in a mobile viewport.
 4. **Every user-facing string inside a Lingui macro** — `<Trans>`, `t`, `plural`, `msg`. A bare
    literal in a prop or in JSX is a review error. The API returns a `code`, not a sentence. After
    adding a string, run `pnpm i18n:extract` and translate it into `pl` in the same commit,

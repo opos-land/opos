@@ -64,8 +64,8 @@ graph TB
 | App | Stack | Role | Host |
 |---|---|---|---|
 | `apps/api` | NestJS + Drizzle + oRPC | the only application backend; verifies Supabase Auth sessions | `api.opos.land` |
-| `apps/panel` | Vite + React + Tailwind + shadcn/ui | organizer panel (SPA) and the ticket scanner under `/scanner` | `panel.opos.land` |
-| `apps/portal` | Vite + React + Tailwind + shadcn/ui | landing page, registration, convention pages with the programme, likes, personal schedule, reviews, ticket checkout, "my tickets", "my conventions" (SPA, mobile-first) | `opos.land` |
+| `apps/panel` | Vite + React + Tailwind | organizer panel (SPA) and the ticket scanner under `/scanner` | `panel.opos.land` |
+| `apps/portal` | Vite + React + Tailwind | landing page, registration, convention pages with the programme, likes, personal schedule, reviews, ticket checkout, "my tickets", "my conventions" (SPA, mobile-first) | `opos.land` |
 | `auth` | Supabase Auth (`supabase/gotrue`) | registration, sign-in, sessions, password reset, Google OAuth | `auth.opos.land` |
 | `db` | Supabase Postgres (`supabase/postgres`) | the only database: `public` (OPOS tables) and `auth` (Supabase Auth) | internal network only |
 
@@ -1560,7 +1560,8 @@ the image with its headers ([13](#13-deployment)).
   ([auth-return.ts](../apps/portal/src/features/auth/model/auth-return.ts)), since an email link
   opens in another tab. `/auth/callback` uses it once and otherwise opens the signed-in start
   page, `/account` ([routes.ts](../apps/portal/src/shared/config/routes.ts)), which becomes
-  `/my-conventions` with the `attendances` feature. Only a path inside the portal is ever a target
+  `/my-conventions` with the `attendances` feature. Only a path inside the portal is ever a target,
+  judged after resolving it against the portal's origin as the browser would
   ([redirect.ts](../apps/portal/src/features/auth/model/redirect.ts)).
 - A confirmation link opened in another browser confirms the address but gives that browser no
   session, since the PKCE verifier stays where the registration started: `/auth/callback` there
@@ -1573,7 +1574,9 @@ the image with its headers ([13](#13-deployment)).
 - Application start restores the session with `getSession()`; a page that needs it shows a loading
   view until then ([session.ts](../apps/portal/src/shared/lib/session.ts)).
 - Signed out, the interface follows the browser's languages; signed in, the account's `locale`
-  ([6](#locale-detection)). The language field on `/account` sends a language, or `null` for the
+  ([6](#locale-detection)). A session that ends — sign-out, account deletion, a failed refresh —
+  switches the interface back to the browser's languages
+  ([providers.tsx](../apps/portal/src/app/providers.tsx)). The language field on `/account` sends a language, or `null` for the
   browser's, to `PATCH /me`; the names go there too, an emptied one as `null`.
 - An error is shown by its code through the catalog, never by its `message` ([6](#api-errors)).
 - `/privacy` is a draft in both languages, marked in its source
@@ -1590,7 +1593,12 @@ unpublished edition under a direct URL or an unknown tenant -> `404`.
 **Account deletion:** `DELETE /me` after confirming with a password or a repeated Google sign-in
 ([7.4](#74-authorization)). On `/account` the user confirms with the password
 (`signInWithPassword` with the account's email, then `DELETE /me` at once) or with Google, which
-returns to `/account?confirm=deletion` and offers the deletion there; the methods offered follow the
+returns to `/account?confirm=deletion` and offers the deletion there only to the account that left
+for Google, remembered in `localStorage`
+([deletion-confirmation.ts](../apps/portal/src/features/account/model/deletion-confirmation.ts)).
+That return is used once and leaves the address at once: a reload or a copied link offers the
+password and Google again, another account Google signed in is told nothing was deleted, and `401`
+`session.reauthentication-required` offers both confirmations again. The methods offered follow the
 account's identities ([sign-in-methods.ts](../apps/portal/src/features/account/model/sign-in-methods.ts)).
 `409` `membership.last-head` is explained on the screen: hand the head organizer role over in the
 panel first. A deleted account forgets its session in the browser (`signOut({ scope: 'local' })`)

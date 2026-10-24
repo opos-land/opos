@@ -6,12 +6,19 @@ describe('safeRedirect', () => {
     expect(safeRedirect('/convention-a/team?x=1')).toBe('/convention-a/team?x=1')
   })
 
-  it.each([null, '', 'https://evil.test', '//evil.test', '/\\evil.test', 'convention-a'])(
-    'sends %j to the start page',
-    (value) => {
-      expect(safeRedirect(value)).toBe('/')
-    },
-  )
+  it.each([
+    null,
+    '',
+    'https://evil.test',
+    '//evil.test',
+    '/\\evil.test',
+    '/\t/evil.test',
+    '/\n/evil.test',
+    '/\r\n/evil.test',
+    'convention-a',
+  ])('sends %j to the start page', (value) => {
+    expect(safeRedirect(value)).toBe('/')
+  })
 })
 
 describe('loginPath', () => {

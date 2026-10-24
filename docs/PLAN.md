@@ -596,7 +596,10 @@ Every `db:*` script connects as `opos_migrator` through `DATABASE_MIGRATION_URL`
 ([11](#11-environment-variables)). `pnpm db:verify`
 ([verify.ts](../packages/db/src/scripts/verify.ts)) exits non-zero when a covered table — `tenants`
 or any `public` table with a `tenant_id` column — lacks enabled RLS, forced RLS or a
-`tenant_isolation` policy for all commands.
+`tenant_isolation` policy for all commands, and when a role holds more on a `public` table than the
+rules above allow: anything but `select` for `opos_app_global` (and nothing on `accounts`), a
+table-wide `update` for `opos_app` or its `insert` or `delete` on `tenants` or `accounts`, anything
+at all for `anon`, `authenticated` and `service_role`.
 
 ---
 

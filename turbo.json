@@ -32,7 +32,19 @@
       ]
     },
     "test:e2e": {
-      "cache": false
+      "dependsOn": ["@opos/panel#i18n:compile", "@opos/portal#i18n:compile"],
+      "cache": false,
+      "passThroughEnv": [
+        "CI",
+        "OPOS_DB_PORT",
+        "OPOS_AUTH_PORT",
+        "OPOS_MAILPIT_PORT",
+        "OPOS_SMTP_PORT",
+        "OPOS_API_PORT",
+        "OPOS_PANEL_PORT",
+        "OPOS_PORTAL_PORT",
+        "PLAYWRIGHT_BROWSERS_PATH"
+      ]
     },
     "i18n:extract": {
       "cache": false

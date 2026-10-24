@@ -74,7 +74,12 @@ export function InviteForm() {
       ticketsAccess: 'none',
     })),
   })
-  const form = useForm<InviteValues>({ resolver: zodResolver(schema), values: blank() })
+  // The edition rows follow the editions query; a field already typed in survives their arrival.
+  const form = useForm<InviteValues>({
+    resolver: zodResolver(schema),
+    values: blank(),
+    resetOptions: { keepDirtyValues: true },
+  })
   const rows = useFieldArray({ control: form.control, name: 'editions' })
   const isHead = useWatch({ control: form.control, name: 'role' }) === 'head'
   const { errors } = form.formState

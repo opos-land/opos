@@ -367,7 +367,10 @@ with Supabase Auth: an insert creates the `accounts` row with `emailConfirmedAt`
 `firstName`, `lastName` and `locale` from `raw_user_meta_data` (sent by the portal on sign-up; for
 Google `full_name` split on the first space); an email change updates `accounts.email`, and a
 change of `email_confirmed_at` updates `emailConfirmedAt` (Supabase Auth confirms with an update,
-also right after inserting a user created confirmed). Every `auth.users` row has an email, because
+also right after inserting a user created confirmed). For an account created before these triggers,
+a one-time backfill
+([0012_backfill_email_confirmed_at.sql](../packages/db/drizzle/0012_backfill_email_confirmed_at.sql))
+copies `emailConfirmedAt` wherever `opos_migrator` still reads `auth.users`. Every `auth.users` row has an email, because
 only email and Google sign-in are enabled ([10](#10-supabase)). Deleting a user in Supabase Auth
 removes `accounts`, and with it every row that references it.
 
@@ -481,7 +484,8 @@ Every RLS-covered table has an index starting with `tenantId`.
    ([7.2](#72-tenant-context)), and `WITH CHECK` in the RLS policies closes it on the database side.
 5. **Every `auth.users` row has exactly one `accounts` row** — the insert trigger and the cascading
    foreign key.
-6. **A `head` membership never expires** — the check constraint on `tenant_memberships`.
+6. **A `head` membership never expires and holds no tenant-level permission** — the check
+   constraints `tenant_memberships_head_never_expires` and `tenant_memberships_head_holds_no_levels`.
 7. **A review exists only for an item that has started, written by an eligible account** —
    checked in `EngagementModule` on every write: `program_items.startsAt <= now()`, and the author
    holds a valid ticket for the item's edition (a `paid` order placed with the account's email), is
@@ -715,7 +719,7 @@ by the payment provider only ([7.10](#710-payments)).
 | PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `defaultLocale`, `timezone` as an IANA zone); the slug changes only through the admin ([14](#changing-a-tenants-slug)), so a `slug` field -> `400` |
 | GET | `/tenants/current/members` | `settings>=read`; every member with the account's email and names, expired ones included and flagged `expired` |
 | POST | `/tenants/current/members` | `settings=write`; an invitation ([7.7](#77-organizer-invitations)) |
-| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry, sets the three tenant-level permissions to `none` and drops the member's edition-level rows, so a later demotion starts from no access; an expiry on a head -> `400` |
+| PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry and drops the member's edition-level rows; a member who is a `head` after the change keeps the three tenant-level permissions at `none` whatever the body sets, so a demotion starts from no access unless it sets them; an expiry on a head -> `400` |
 | DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation; `204`; the last head -> `409` `membership.last-head` |
 | GET | `/tenants/current/payment-config` | `shop>=read`; provider, `accountRef`, currency, whether credentials are set |
 | PUT | `/tenants/current/payment-config` | `shop=write`; `{ provider, accountRef, credentials?, currency }` |
@@ -1820,7 +1824,8 @@ covered table (no context, another tenant's context, a row moved to another tena
 `accounts` privileges, the runtime roles' privileges (`opos_app_global` only reads, `opos_app`
 updates only the granted columns, inserts no tenant and no membership and deletes no tenant), the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
-concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
+concurrent transactions demoting different heads, a head expiry, a tenant-level permission on a
+head, an `edition_membership` with a
 foreign edition, an edition slug outside its format), `createTenant` and `renameTenant` with each
 of their refusals, an unconfirmed head included, and the `accounts` triggers, the email
 confirmation included. The API tests repeat
@@ -1843,7 +1848,7 @@ cannot run beside an API started with `pnpm dev`.
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
 | transactions | a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
-| promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a later demotion brings none of them back |
+| promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a permission change on a member who is already a `head` stores `none`; a later demotion brings none of them back, and one that sets permissions applies them |
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |

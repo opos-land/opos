@@ -192,7 +192,8 @@ not appear in the panel.
 
 **`head` — head organizer.** Bypasses every permission, on both levels. Every convention must have
 at least one. Granted when the convention is created; handing the role over requires promoting the
-other person first.
+other person first. A head demoted to an org starts with no permissions, unless the demotion
+assigns them.
 
 **`org` — organizer.** Permissions assigned item by item, separately for the convention and for
 each edition, optionally until an expiry date.

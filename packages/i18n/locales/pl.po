@@ -15,6 +15,10 @@ msgstr "Konwent musi mieć co najmniej jednego głównego organizatora. Najpierw
 msgid "A head organizer already has access to every edition."
 msgstr "Główny organizator ma już dostęp do każdej edycji."
 
+#: src/emails.ts
+msgid "Accept the invitation"
+msgstr "Przyjmij zaproszenie"
+
 #. Glossary term: admin
 #: src/glossary.ts
 msgctxt "glossary"
@@ -137,6 +141,18 @@ msgstr "Jeśli to nie ty prosisz o tę zmianę, zignoruj tę wiadomość."
 msgid "If you did not create an account, ignore this message."
 msgstr "Jeśli to nie ty zakładasz konto, zignoruj tę wiadomość."
 
+#: src/emails.ts
+msgid "If you do not expect this invitation, ignore this message."
+msgstr "Jeśli nie spodziewasz się tego zaproszenia, zignoruj tę wiadomość."
+
+#: src/emails.ts
+msgid "If you do not expect this, contact the head organizer of the convention."
+msgstr "Jeśli się tego nie spodziewasz, skontaktuj się z głównym organizatorem konwentu."
+
+#: src/emails.ts
+msgid "Invitation to the organizing team of {tenantName}"
+msgstr "Zaproszenie do zespołu organizatorów konwentu {tenantName}"
+
 #. Glossary term: locale
 #: src/glossary.ts
 msgctxt "glossary"
@@ -162,6 +178,10 @@ msgstr "Żadne konto nie używa tego adresu e-mail."
 #: src/errors.ts
 msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Tylko główny organizator może edytować lub usunąć innego głównego organizatora."
+
+#: src/emails.ts
+msgid "Open the panel"
+msgstr "Otwórz panel"
 
 #. Glossary term: order
 #: src/glossary.ts
@@ -231,6 +251,10 @@ msgstr "Link wygasł. Poproś o nowy."
 msgid "The link is valid for 1 hour and works once."
 msgstr "Link jest ważny przez godzinę i działa tylko raz."
 
+#: src/emails.ts
+msgid "The link is valid for 7 days and works once."
+msgstr "Link jest ważny przez 7 dni i działa tylko raz."
+
 #: src/errors.ts
 msgid "The new password must differ from the current one."
 msgstr "Nowe hasło musi różnić się od obecnego."
@@ -252,8 +276,32 @@ msgid "This convention already has an edition with this address."
 msgstr "Ten konwent ma już edycję o tym adresie."
 
 #: src/errors.ts
+msgid "This invitation has already been accepted."
+msgstr "To zaproszenie zostało już przyjęte."
+
+#: src/errors.ts
+msgid "This invitation has expired. Ask the convention's organizers for a new one."
+msgstr "To zaproszenie wygasło. Poproś organizatorów konwentu o nowe."
+
+#: src/errors.ts
+msgid "This invitation is no longer valid: whoever sent it can no longer grant this access. Ask the convention's organizers for a new one."
+msgstr "To zaproszenie straciło ważność: osoba, która je wysłała, nie może już przyznać tego dostępu. Poproś organizatorów konwentu o nowe."
+
+#: src/errors.ts
+msgid "This invitation link is not valid. Check that you opened the whole link from the email."
+msgstr "Ten link z zaproszeniem jest nieprawidłowy. Sprawdź, czy otwierasz cały link z wiadomości."
+
+#: src/errors.ts
+msgid "This invitation was sent to another email address. Sign in with the account that uses that address."
+msgstr "To zaproszenie wysłano na inny adres e-mail. Zaloguj się na konto, które używa tego adresu."
+
+#: src/errors.ts
 msgid "This language is not supported."
 msgstr "Ten język nie jest obsługiwany."
+
+#: src/errors.ts
+msgid "This person is already in the team. Change their membership on the team screen."
+msgstr "Ta osoba już należy do zespołu. Zmień jej członkostwo na ekranie zespołu."
 
 #. Glossary term: ticket
 #: src/glossary.ts
@@ -306,6 +354,14 @@ msgid "Wrong email or password."
 msgstr "Nieprawidłowy e-mail lub hasło."
 
 #: src/errors.ts
+msgid "You are already in this convention's team."
+msgstr "Już należysz do zespołu tego konwentu."
+
+#: src/emails.ts
+msgid "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."
+msgstr "Należysz teraz do zespołu organizatorów konwentu {tenantName} w OPOS. Otwórz panel, aby zobaczyć, nad czym możesz pracować."
+
+#: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
 msgstr "Nie możesz zmienić własnej roli ani uprawnień, ani usunąć siebie z zespołu."
 
@@ -328,6 +384,14 @@ msgstr "Nie możesz zwiększyć uprawnień osoby, której dostęp trwa dłużej 
 #: src/errors.ts
 msgid "You do not have permission to do this."
 msgstr "Nie masz uprawnień, żeby to zrobić."
+
+#: src/emails.ts
+msgid "You have been invited to the organizing team of {tenantName} in OPOS. Accept the invitation with the link below. If you do not have an OPOS account yet, you can create one on the same page."
+msgstr "Zaproszono cię do zespołu organizatorów konwentu {tenantName} w OPOS. Przyjmij zaproszenie, korzystając z poniższego linku. Jeśli nie masz jeszcze konta w OPOS, możesz je założyć na tej samej stronie."
+
+#: src/emails.ts
+msgid "You have joined the organizing team of {tenantName}"
+msgstr "Dołączono cię do zespołu organizatorów konwentu {tenantName}"
 
 #: src/errors.ts
 msgid "Your session has ended. Sign in again."

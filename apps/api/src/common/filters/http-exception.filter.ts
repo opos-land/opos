@@ -51,6 +51,16 @@ const constraintErrors: Record<
     code: 'edition.slug-taken',
     message: 'The tenant already has an edition with this slug',
   },
+  tenant_memberships_account_tenant_unique: {
+    status: 409,
+    code: 'member.exists',
+    message: 'The account already holds a membership in this tenant',
+  },
+  accepted_invitations_tenant_jti_unique: {
+    status: 409,
+    code: 'invitation.used',
+    message: 'The invitation has been accepted already',
+  },
   tenants_at_least_one_head: {
     status: 409,
     code: 'membership.last-head',
@@ -58,8 +68,8 @@ const constraintErrors: Record<
   },
 }
 
-/** The Postgres error behind an exception; drizzle wraps query errors in `cause`. */
-function postgresConstraint(exception: unknown): string | undefined {
+/** The constraint a Postgres error behind an exception names; drizzle wraps query errors in `cause`. */
+export function postgresConstraint(exception: unknown): string | undefined {
   let current: unknown = exception
   for (let depth = 0; depth < 3 && current && typeof current === 'object'; depth++) {
     const name = (current as { constraint_name?: unknown }).constraint_name
@@ -92,7 +102,11 @@ function validationError(error: ValidationError): ApiErrorBody {
 }
 
 /** Maps anything thrown while handling a request onto the error schema of PLAN.md 5. */
-export function toErrorResponse(exception: unknown): { status: number; body: ApiErrorBody } {
+export function toErrorResponse(exception: unknown): {
+  status: number
+  body: ApiErrorBody
+  headers?: Record<string, string>
+} {
   // Deferred constraint triggers fire at COMMIT, after the handler already chose a 2xx.
   const constraint = postgresConstraint(exception)
   const known = constraint ? constraintErrors[constraint] : undefined
@@ -102,8 +116,8 @@ export function toErrorResponse(exception: unknown): { status: number; body: Api
   }
 
   if (exception instanceof ApiError) {
-    const { code, params, message } = exception
-    return { status: exception.getStatus(), body: { code, params, message } }
+    const { code, params, message, headers } = exception
+    return { status: exception.getStatus(), body: { code, params, message }, headers }
   }
   if (exception instanceof ORPCError) {
     const cause: unknown = exception.cause
@@ -137,6 +151,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       headersSent: boolean
       writableEnded: boolean
       destroy(): void
+      setHeader(name: string, value: string): void
       status(code: number): { json(body: unknown): void }
     }>()
     // The response is out already. Nest replies once more after oRPC has answered, which throws
@@ -148,8 +163,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if (!response.writableEnded) response.destroy()
       return
     }
-    const { status, body } = toErrorResponse(exception)
+    const { status, body, headers } = toErrorResponse(exception)
     if (status >= 500) this.logger.error(exception)
+    for (const [name, value] of Object.entries(headers ?? {})) response.setHeader(name, value)
     response.status(status).json(body)
   }
 }

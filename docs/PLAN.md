@@ -153,9 +153,10 @@ opos/
     api/                 # built: bootstrap, env, database providers, GlobalDbService, OpenAPI docs,
                          #   error filter, request store and tenant transaction, JwtAuthGuard,
                          #   rate limiting, permission decorators, MeModule (profile, memberships,
-                         #   account deletion), TenantsModule (tenant, team), EditionsModule,
-                         #   AuthModule (send-email hook, GoTrue admin client), MailModule
-                         #   (Supabase Auth emails), the auth:service-key script, tests
+                         #   account deletion), TenantsModule (tenant, team, invitations),
+                         #   EditionsModule, AuthModule (send-email hook, GoTrue admin client),
+                         #   MailModule (Supabase Auth and invitation emails), the
+                         #   auth:service-key script, tests
       src/
         common/
           guards/scanner-device.guard.ts
@@ -186,7 +187,7 @@ opos/
     fixtures/            # Mailpit client, sign-in as a seeded account
   packages/
     contract/            # built: common schemas, error codes, health, me (profile, memberships, deletion),
-                         #   tenants (without members POST and payment config), editions
+                         #   tenants (without payment config), editions, invitations
       src/
         program.ts
         engagement.ts
@@ -409,6 +410,12 @@ A membership with `expiresAt <= now()` is **expired**: every read that grants ac
 out, so the account behaves as if it were not in the team. The row stays until someone removes it
 or extends it.
 
+**`accepted_invitations`** ([accepted-invitations.ts](../packages/db/src/schema/accepted-invitations.ts))
+— the `jti` of every organizer invitation accepted in the tenant, unique per tenant
+(`accepted_invitations_tenant_jti_unique`), so an invitation works once, also after the membership
+it created is removed ([7.7](#77-organizer-invitations)). Deleting the tenant removes it. It holds
+no account and no email.
+
 ### 4.4 Edition-level tables
 
 **`editions`** ([editions.ts](../packages/db/src/schema/editions.ts)) — the `slug` is unique within
@@ -539,12 +546,16 @@ Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
 #### Covered tables
 
-`tenants`, `tenant_memberships`, `editions`, `edition_memberships`, `program_items`,
-`program_item_speakers`, `program_item_likes`, `program_item_reviews`, `tenant_payment_configs`,
+`tenants`, `tenant_memberships`, `accepted_invitations`, `editions`, `edition_memberships`,
+`program_items`, `program_item_speakers`, `program_item_likes`, `program_item_reviews`, `tenant_payment_configs`,
 `ticket_types`, `orders`, `tickets`, `scanner_devices`, `attendees`.
 
 The global table `accounts` stays outside RLS — it is protected by filtering on the `accountId`
-from the JWT. The `auth` schema is accessed only by Supabase Auth.
+from the JWT, with two reads of other accounts, both inside a tenant transaction: the team's
+accounts joined to the tenant's `tenant_memberships`, which RLS limits to the tenant, and the
+invitation lookup of one confirmed account by the email of the request
+(`InvitationsRepository.confirmedAccount`, behind `settings=write` and the tenant's invitation
+limit, [7.7](#77-organizer-invitations)). The `auth` schema is accessed only by Supabase Auth.
 
 #### Tenant context
 
@@ -634,9 +645,10 @@ Every `db:*` script connects as `opos_migrator` through `DATABASE_MIGRATION_URL`
   role, or its `USING` or `WITH CHECK` differs from the [policy shape](#policy-shape);
 - a covered table has another permissive policy;
 - a role holds more on a `public` table than the rules above allow: anything but `select` for
-  `opos_app_global` (and nothing on `accounts`), a table-wide `update` for `opos_app` or its
-  `insert` or `delete` on `tenants` or `accounts`, anything at all for `anon`, `authenticated` and
-  `service_role`;
+  `opos_app_global` (and nothing on `accounts`), a table-wide `update` for `opos_app` or an
+  `insert` or `delete` of it missing from the list of the API's writes in `verify.ts` (a write the
+  API starts doing joins that list in the PR of its migration), anything at all for `anon`,
+  `authenticated` and `service_role`;
 - `anon`, `authenticated` or `service_role` holds `usage` or `create` on the `public` schema;
 - `opos_migrator` holds anything on `auth.users` beyond `references (id)` and `trigger`.
 
@@ -665,9 +677,10 @@ and debugging — **it never reaches the UI**. Every code is listed in
 |---|---|---|
 | `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `editions_slug_format` -> `slug`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
 | `401` | missing, expired or foreign token, or no `accounts` row for it; `DELETE /me` without a recent sign-in has its own code ([7.4](#74-authorization)) | `session.invalid` |
-| `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)) |
+| `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)), and so does an invitation for another email ([7.7](#77-organizer-invitations)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
-| `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`) | always a specific code |
+| `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`), and so does a unique constraint a concurrent request won (`tenant_memberships_account_tenant_unique` -> `member.exists`, or `invitation.already-member` on `POST /invitations/accept`; `accepted_invitations_tenant_jti_unique` -> `invitation.used`) | always a specific code |
+| `410` | an organizer invitation past its validity, or one its sender can no longer send ([7.7](#77-organizer-invitations)) | `invitation.expired`, `invitation.revoked` |
 | `415` | a request body that is not `application/json`, refused from its headers before routing ([json-body.ts](../apps/api/src/common/json-body.ts)): Express parses JSON within its size limit, and oRPC would read any other body itself, with no limit | `request.invalid` |
 | `429` | rate limit | `request.rate-limited` |
 | `500` | anything unexpected; the body carries no details, the log does | `server.error` |
@@ -720,7 +733,7 @@ by the payment provider only ([7.10](#710-payments)).
 | GET | `/tenants/current` | membership; returns `id`, `slug`, `name`, `defaultLocale`, `timezone` |
 | PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `defaultLocale`, `timezone` as an IANA zone); the slug changes only through the admin ([14](#changing-a-tenants-slug)), so a `slug` field -> `400` |
 | GET | `/tenants/current/members` | `settings>=read`; every member with the account's email and names, expired ones included and flagged `expired` |
-| POST | `/tenants/current/members` | `settings=write`; an invitation ([7.7](#77-organizer-invitations)) |
+| POST | `/tenants/current/members` | `settings=write` + anti-escalation; `201` with the outcome `added` (the member) or `invited` (the address and `validUntil`); an account already in the team -> `409` `member.exists`; an edition of another tenant -> `404` ([7.7](#77-organizer-invitations)) |
 | PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry and drops the member's edition-level rows; a member who is a `head` after the change keeps the three tenant-level permissions at `none` whatever the body sets, so a demotion starts from no access unless it sets them; an expiry on a head -> `400` |
 | DELETE | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation; `204`; the last head -> `409` `membership.last-head` |
 | GET | `/tenants/current/payment-config` | `shop>=read`; provider, `accountRef`, currency, whether credentials are set |
@@ -751,8 +764,17 @@ Invitations — without the tenant header:
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/invitations/preview?token=` | none | convention name and the invitee's email |
-| POST | `/invitations/accept` | JWT | creates `tenant_membership` + `edition_memberships` from the token |
+| GET | `/invitations/preview?token=` | none | convention name, the invitee's email and `validUntil` |
+| POST | `/invitations/accept` | JWT | `{ token }`; `201` with the tenant (`id`, `slug`, `name`); creates `tenant_membership` + `edition_memberships` from the token |
+
+Both answer `400` `invitation.invalid` for a token the API did not sign, `410`
+`invitation.expired` past its validity or once the membership expiry it grants has passed, `410`
+`invitation.revoked` once its sender can no longer send it, `409` `invitation.used` once it has
+been accepted and `404` when its tenant is gone. `accept` also answers `403`
+`invitation.email-mismatch` when the signed-in account's confirmed email is not the invited one,
+and `409` `invitation.already-member` when the account is already in the team. A token longer than
+12288 characters is `400` `request.invalid`; the largest invitation the request accepts signs one
+of about 9.8k ([invitations.ts](../packages/contract/src/invitations.ts)).
 
 ### 5.4 `editions` — JWT + `X-Tenant-Slug`
 
@@ -941,7 +963,7 @@ catalogs are out of sync with the code or a message has no `pl` translation. A n
 |---|---|
 | panel, portal — signed in | `accounts.locale` -> `Accept-Language` -> `DEFAULT_LOCALE` |
 | portal — signed out | `Accept-Language` -> `DEFAULT_LOCALE` |
-| emails | the recipient's `accounts.locale` -> `locale` from the sign-up metadata -> for an unknown address the inviting `tenants.defaultLocale` -> `DEFAULT_LOCALE` |
+| emails | the recipient's `accounts.locale` -> `locale` from the sign-up metadata -> for an address without a confirmed account the inviting `tenants.defaultLocale` -> `DEFAULT_LOCALE` |
 | ticket emails | `orders.locale`, taken from the portal's active locale at checkout |
 
 ### API errors
@@ -1001,8 +1023,9 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 
 ### 7.2 Tenant context
 
-`TenantContextMiddleware` (global) opens an empty request store in ALS. Nothing reads the
-database before the guards have run; the guards and the interceptor fill the store:
+`TenantContextMiddleware` (global) opens a request store in ALS that holds only the client address,
+an IPv6 one by its `/64` ([7.9](#79-rate-limiting)). Nothing reads the database before the guards
+have run; the guards and the interceptor fill the store:
 
 | Order | Component | Puts into the store |
 |---|---|---|
@@ -1047,7 +1070,10 @@ transaction is open; they never query the pool directly. The one exception is
 runs on the `opos_app` pool outside a tenant transaction. Only `findForToken(sub)`, which
 `JwtAuthGuard` calls, and `localeForHook(id)`, which the send-email hook calls with the user of a
 verified payload, take an id; every other method works on the account in the request store, so no
-caller can pass another account's id.
+caller can pass another account's id. Inside a tenant transaction two repositories read other
+accounts, listed in [4.6](#46-tenant-isolation--rls-in-postgres): `MembersRepository` joins the
+team's accounts, and `InvitationsRepository.confirmedAccount` finds one confirmed account by the
+email of an invitation request.
 
 Outbound I/O — SMTP, the GoTrue admin API — never runs inside the transaction. Code inside it
 registers the call with `TenantContextService.afterCommit(fn)`; the queue runs after the commit and
@@ -1179,23 +1205,87 @@ Required behaviour when the email already exists, checked in the smoke test
 
 ### 7.7 Organizer invitations
 
-An invitation is a signed JWT (`INVITE_SECRET`, TTL 7 days) with the payload
-`{ tenantId, email, role, tenantPermissions, editionPermissions, expiresAt }`.
+Implemented in [modules/tenants](../apps/api/src/modules/tenants)
+([invitations.service.ts](../apps/api/src/modules/tenants/invitations.service.ts)). An invitation
+is a JWT signed HS256 with `INVITE_SECRET`, valid for 7 days, with its own `jti`, the audience
+`opos:invitation` and the claims `{ tenantId, email, role, tenantPermissions, editionPermissions,
+expiresAt, invitedBy }`, where `invitedBy` is the sender's `tenant_memberships.id`
+([invitation-token.ts](../apps/api/src/modules/tenants/invitation-token.ts)). Nothing is stored
+until it is accepted.
 
-- Email of a known account with a confirmed address (`accounts.email`, `emailConfirmedAt` set,
-  [4.2](#42-global-tables)) -> the membership is created immediately, the email is a notification.
-- Unknown email, or an account that has not confirmed it -> an email with a
-  `panel.opos.land/invitation?token=...` link; after registering or signing in,
-  `POST /invitations/accept` creates the membership.
-- Permissions and the expiry from the token go through the anti-escalation check: an org whose
-  access expires invites only with an expiry no later than their own (`member.expiry-after-own`).
-- An account that already holds a membership in the tenant, an expired one included, is not
-  invited -> `409` `member.exists`; the team screen changes that membership instead, through the
-  checks of [5.3](#53-tenants--jwt--x-tenant-slug).
-- The migration of this endpoint grants `opos_app` `insert` on `tenant_memberships`
-  ([4.6](#migrations-and-verification)); until then the API creates no membership.
+`POST /tenants/current/members` runs in the tenant transaction:
 
-Invitation emails are sent by `MailModule`, not by Supabase Auth.
+1. Counts against the tenant's invitation limit ([7.9](#79-rate-limiting)).
+2. Locks the actor's membership and re-checks its `settings=write`, as a change to a member does
+   ([5.3](#53-tenants--jwt--x-tenant-slug)).
+3. Every edition of the request must belong to the tenant (`404` otherwise); the editions are read
+   `for key share`, so a delete waits for the transaction and one committed first is `404`. A
+   `head` invitation carries no levels, no expiry and no edition rows.
+4. Anti-escalation: an org invites no head and grants nothing above its own, on either level
+   (`member.above-own`); an org whose access expires invites only with an expiry no later than its
+   own (`member.expiry-after-own`).
+5. The email, lowercased, is matched against `accounts.email` of a confirmed account
+   ([4.2](#42-global-tables)):
+
+| Account with that email | Result |
+|---|---|
+| confirmed, already holding a membership in the tenant (an expired one included) | `409` `member.exists`; the team screen changes that membership instead |
+| confirmed, not in the team | the membership and its edition rows are created at once; the email is a notification with a link to `<PANEL_URL>/<tenantSlug>`, in the recipient's locale |
+| none, or one that has not confirmed the address | a signed invitation; the email links to `<PANEL_URL>/invitation?token=...`, in the tenant's `defaultLocale` |
+
+The outcome, `added` or `invited`, tells the sender whether a confirmed account uses the address;
+only a member with `settings=write` sees it, within the tenant's invitation limit.
+
+**An invitation stands only while its sender could send it.** `GET /invitations/preview` and
+`POST /invitations/accept` re-run steps 2 and 4 on the sender's current membership (`invitedBy`)
+and its current edition rows: a sender who has been removed, has expired, has lost
+`settings=write` or no longer holds what the invitation grants answers `410`
+`invitation.revoked`. Acceptance locks the sender's membership first, so a change committed
+meanwhile is seen. Removing or demoting the sender is how a head withdraws an invitation that has
+gone out; rotating `INVITE_SECRET` withdraws every one.
+
+`POST /invitations/accept` verifies the token, compares the signed-in account's confirmed email
+with the token's (`invitation.email-mismatch` otherwise), then opens `withTenant` on the token's
+`tenantId` ([7.2](#72-tenant-context)): it refuses an accepted `jti` (`invitation.used`), a
+membership expiry that has passed (`invitation.expired`) and an account already in the team
+(`invitation.already-member`, also when another invitation for the account is accepted at the same
+time), checks the sender, records the `jti` in `accepted_invitations` and creates the membership
+with the edition rows of the editions that still exist, read `for key share` as in step 3: an
+edition deleted meanwhile is skipped. `GET /invitations/preview` runs the same token and sender
+checks and reads the tenant's name in `withTenant`.
+
+Both emails are sent by `MailModule` after the commit, not by Supabase Auth; a failed send is
+logged and the response stands ([7.2](#72-tenant-context)).
+
+**An invitee without an account registers in the panel.** The `/invitation` page
+([8](#8-appspanel)) shows the preview, a sign-in and a sign-up; the account then accepts the
+invitation with `POST /invitations/accept` once it has a session. An email sign-up sets the
+password only after the address is proven, so a password someone set on the address before it was
+confirmed does not survive ([4.2](#42-global-tables)).
+
+1. The page reads `?token=`, calls `GET /invitations/preview` and keeps the token in `localStorage`
+   (`opos-panel-invitation`), so it survives the confirmation link opening in another tab.
+2. Signed in already, or after `signInWithPassword` or the Google return: the panel calls
+   `POST /invitations/accept` and removes the stored entry.
+3. Sign-up with email: the form takes the address, prefilled with the invited one, and no password.
+   The panel calls `signUp({ email, password: <random throwaway, never shown or stored>, options: {
+   data: { locale }, emailRedirectTo: <PANEL_URL>/auth/callback } })` and marks the stored entry as
+   waiting for a password. Sign-up with Google: `signInWithOAuth` with
+   `redirectTo = <PANEL_URL>/auth/callback` ([7.5](#75-google-oauth)). Both addresses are in
+   `GOTRUE_URI_ALLOW_LIST` ([10](#10-supabase)).
+4. `/auth/callback` exchanges the code for a session and, when a stored entry is present, returns
+   to `/invitation`.
+5. Back with an entry waiting for a password, the page asks for one and sets it with
+   `updateUser({ password })`, then calls `signOut({ scope: 'others' })` and accepts as in step 2.
+   This replaces a password anyone set on the address before it was confirmed, as a password reset
+   does ([7.6](#76-password-reset)). A Google sign-up needs no such step: Google takes an
+   unconfirmed account over ([7.5](#75-google-oauth)).
+6. A confirmation opened in another browser confirms the address but gives that browser no
+   session, since the PKCE verifier stays where the sign-up started. The invitee opens the
+   invitation link again there and asks for a password link:
+   `resetPasswordForEmail(email, { redirectTo: <PANEL_URL>/auth/callback })`, which marks the
+   entry as in step 3 and comes back through steps 4 and 5. The same link serves an invitee who
+   cannot sign in because someone else registered the address first.
 
 ### 7.8 CORS
 
@@ -1218,6 +1308,11 @@ route's own guards ([rate-limit.ts](../apps/api/src/common/rate-limit/rate-limit
   `/64`). An invalid token counts against the address, so a forged `sub` never spends another
   account's requests.
 - A limit is one counter per tracker, shared by every route it covers — not one per route.
+- An endpoint with a limit of its own counts it in its handler, after the route's guards and
+  permission check, through `RouteRateLimiter`
+  ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)), in the same
+  in-memory storage; its requests count against the default limit as well. Counting after the
+  permission check keeps an outsider from spending a tenant's invitations.
 - Above the limit: `429` `request.rate-limited` in the error shape of [5](#5-api-contract), with
   `Retry-After` in seconds.
 - The API runs with `trust proxy` — the client address comes from `X-Forwarded-For`.
@@ -1225,7 +1320,7 @@ route's own guards ([rate-limit.ts](../apps/api/src/common/rate-limit/rate-limit
 | Scope | Limit |
 |---|---|
 | `GET /invitations/preview` | 30 / hour per IP |
-| `POST /tenants/current/members` | 20 / hour per tenant |
+| `POST /tenants/current/members` | 20 / hour per tenant, counted for members with `settings=write` |
 | `PUT .../review` | 30 / hour per account |
 | `POST /public/.../orders` | 10 / 10 min per IP |
 | `GET /public/orders/:orderId` | 60 / min per IP |
@@ -1304,7 +1399,7 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 
 | Feature | Scope |
 |---|---|
-| `auth` | sign-in, Google return, invitation acceptance |
+| `auth` | sign-in, Google return, invitation acceptance with sign-up ([7.7](#77-organizer-invitations)) |
 | `tenants` | convention picker, dashboard, settings, language and time zone |
 | `editions` | edition list, creation, activation, publication |
 | `program` | the edition's programme items, their speakers, review moderation |
@@ -1318,7 +1413,7 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 |---|---|
 | `/login` | organizer sign-in: email + password, Google button |
 | `/auth/callback` | receives `code` from Supabase Auth, calls `exchangeCodeForSession` |
-| `/invitation` | invitation acceptance (`?token=`) |
+| `/invitation` | invitation acceptance (`?token=`): the convention and the invited email, sign-in, sign-up with email or Google, the password chosen after the address is confirmed ([7.7](#77-organizer-invitations)) |
 | `/` | convention picker; redirect when there is a single membership |
 | `/:tenantSlug` | tenant dashboard |
 | `/:tenantSlug/editions` | edition list + creation |
@@ -1576,8 +1671,8 @@ inference, so a changed value rebuilds exactly the applications that read it.
 Production configuration lives in a `.env` next to `docker-compose.prod.yml` on the VPS — compose
 injects it into the containers. It adds `POSTGRES_PASSWORD`, `ACME_EMAIL`, `CF_DNS_API_TOKEN` and
 the Supabase Auth variables, and overrides `ROOT_DOMAIN=opos.land` and the `https://` addresses.
-`JWT_SECRET` and `SEND_EMAIL_HOOK_SECRET` are generated once per environment and are never reused
-between dev and production; `SUPABASE_SERVICE_ROLE_KEY` is signed by
+`JWT_SECRET`, `SEND_EMAIL_HOOK_SECRET` and `INVITE_SECRET` (at least 32 characters, never equal to
+`JWT_SECRET`) are generated once per environment and are never reused between dev and production; `SUPABASE_SERVICE_ROLE_KEY` is signed by
 `JWT_SECRET=<production secret> pnpm --filter api auth:service-key`.
 
 ---
@@ -1750,7 +1845,7 @@ Wildcard `*.opos.land` + `opos.land` through DNS-01 (`CF_DNS_API_TOKEN`).
 data below. With `NODE_ENV=production` it fails unless `--i-know-what-i-am-doing` is passed. The
 seed covers the built tables; the rows of a table still to be built (programme items, reviews,
 likes, payment config, ticket types, orders, attendees) join the seed in the PR that builds the
-table.
+table. `accepted_invitations` holds no demo rows: a seeded team is written directly.
 
 Accounts are created through the Supabase Auth admin API (`POST /admin/users` with
 `email_confirm: true` and the dev password), so every seed account is confirmed; an existing
@@ -1856,7 +1951,8 @@ any API code: the global setup applies the migrations, the tests connect as `opo
 remove the tenants and users they created. They cover the RLS row of the table below for every
 covered table (no context, another tenant's context, a row moved to another tenant), the
 `accounts` privileges, the runtime roles' privileges (`opos_app_global` only reads, `opos_app`
-updates only the granted columns, inserts no tenant and no membership and deletes no tenant), the
+updates only the granted columns, inserts and deletes no tenant, inserts memberships and accepted
+invitations but never changes or removes an accepted invitation), the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, a tenant-level permission on a
 head, an `edition_membership` with a
@@ -1885,6 +1981,7 @@ cannot run beside an API started with `pnpm dev`.
 | promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a permission change on a member who is already a `head` stores `none`; a later demotion brings none of them back, and one that sets permissions applies them |
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
+| invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write` or no longer holding what it granted -> `410` `invitation.revoked` on preview and accept; another tenant's edition -> `404`; the membership lands in the token's tenant only |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
 | likes | idempotent `PUT`; `likeCount` changes; no endpoint returns who liked an item; `GET /me/schedule` spans tenants |
@@ -1895,7 +1992,7 @@ cannot run beside an API started with `pnpm dev`.
 | JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401` |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
-| rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` included |
+| rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` (per address) and `POST /tenants/current/members` (per tenant) included |
 | CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, a foreign origin gets no `Access-Control-Allow-Origin`; exactly the four allowed request headers; `Retry-After` exposed; no `Access-Control-Allow-Credentials` |
 | i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
 
@@ -1924,7 +2021,7 @@ and the smoke test checks that flow ([16](#16-smoke-test)).
 | 3 | The session survives a page reload; after sign-out the stored session is gone and the API answers `401` |
 | 4 | A head creates an edition, activates it, publishes it and adds programme items |
 | 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone |
-| 6 | Organizer invitation: email from Mailpit -> acceptance -> the invitee sees only their edition |
+| 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee sees only their edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in |
 | 7 | An org with `read`: no sidebar section, entering by URL -> the "no permissions" screen |
 | 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request |
 | 9 | An attendee signs up for an edition from the convention's page, sees it under "my conventions", deletes the account |

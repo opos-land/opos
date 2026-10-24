@@ -229,6 +229,34 @@ In the panel Jan switches convention context in the top bar.
 - Nobody edits their own membership.
 - A convention's last head organizer cannot be removed.
 
+### 5.7 Organizer invitations by email
+
+An org with write access to settings — or a head organizer — adds people to the team by email. The
+invitation sets everything a membership holds: the role, the convention-level permissions, the
+permissions in each edition and an optional expiry date, within the limits of
+[5.6](#56-anti-escalation-policy).
+
+| The address belongs to | What happens |
+|---|---|
+| an account that confirmed it, not yet in the team | the person joins the team at once and gets an email saying so, in their own language |
+| an account already in the team, even one whose access has expired | no invitation: the team screen changes that membership instead |
+| nobody, or an account that has not confirmed it | an email in the convention's language with a link to accept the invitation |
+
+The link is valid for 7 days and works once. It opens the invitation page in the panel, which
+shows the convention and the invited address and lets the person sign in or register there — with
+email and password, or with Google. Registering with email, they confirm the address through the
+link sent to it, come back to the panel, choose their password and join the team; a password
+anyone set on that address before it was confirmed stops working. Only an account whose confirmed
+address is the invited one can accept.
+
+An invitation stands only while the person who sent it could still send it. Once the sender has
+left the team, their access has expired, they have lost write access to settings or they no
+longer hold a permission the invitation grants, the link no longer works. Removing or demoting the
+sender is how a head organizer withdraws an invitation that has gone out.
+
+The platform keeps no list of pending invitations: until it is accepted, an invitation exists only
+in its link. A convention sends at most 20 invitations an hour.
+
 ---
 
 ## 6. Addresses and domains
@@ -344,7 +372,7 @@ arrive together with their markets, beyond the MVP.
 |---|---|
 | panel and portal | the user's choice stored on the account; browser language by default |
 | convention pages in the portal | the interface in the user's language; programme content as the organizer wrote it |
-| emails | the recipient's language: the choice stored on the account, else the language the account was registered in; for an unknown address, the inviting convention's language; Polish when nothing else decides |
+| emails | the recipient's language: the choice stored on the account, else the language the account was registered in; for an address without a confirmed account, the inviting convention's language; Polish when nothing else decides |
 
 **One convention = one content language.** Programme items are written in the convention's
 language. Content translations — the same programme item in Czech and in English — are beyond the
@@ -385,6 +413,9 @@ before. Their sign-in identities, sessions, memberships in convention teams and 
 registrations go with it. The single exception: an account that is a convention's last head
 organizer must hand that role over first — otherwise the convention would be left without an
 owner.
+
+An organizer invitation stores nothing until it is accepted: the invited address travels only in
+the link sent to it ([5.7](#57-organizer-invitations-by-email)).
 
 Database backups contain personal data, so they are encrypted and share the retention policy of
 production data. Emails leave the platform for the mail provider only over an encrypted connection.

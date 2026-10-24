@@ -80,6 +80,13 @@ describe('toErrorResponse', () => {
     })
   })
 
+  it.each([
+    ['tenant_memberships_account_tenant_unique', 'member.exists'],
+    ['accepted_invitations_tenant_jti_unique', 'invitation.used'],
+  ])('maps a violated %s to 409 %s', (constraint, code) => {
+    expect(toErrorResponse(violated(constraint))).toMatchObject({ status: 409, body: { code } })
+  })
+
   it('hides the details of an unexpected error', () => {
     expect(toErrorResponse(new Error('connection refused at 10.0.0.1'))).toEqual({
       status: 500,
@@ -120,5 +127,29 @@ describe('HttpExceptionFilter once the response is out', () => {
     expect(open.destroy).toHaveBeenCalled()
     expect(open.status).not.toHaveBeenCalled()
     log.mockRestore()
+  })
+})
+
+describe('HttpExceptionFilter', () => {
+  it('sends the headers of an ApiError with its body', () => {
+    const json = vi.fn()
+    const response = {
+      headersSent: false,
+      writableEnded: false,
+      destroy: vi.fn(),
+      setHeader: vi.fn(),
+      status: vi.fn(() => ({ json })),
+    }
+    const host = {
+      switchToHttp: () => ({ getResponse: () => response }),
+    } as unknown as ArgumentsHost
+
+    new HttpExceptionFilter().catch(
+      new ApiError(429, 'request.rate-limited', 'Slow down', undefined, { 'Retry-After': '42' }),
+      host,
+    )
+    expect(response.setHeader).toHaveBeenCalledWith('Retry-After', '42')
+    expect(response.status).toHaveBeenCalledWith(429)
+    expect(json).toHaveBeenCalledWith({ code: 'request.rate-limited', message: 'Slow down' })
   })
 })

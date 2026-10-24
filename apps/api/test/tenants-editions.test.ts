@@ -3,7 +3,7 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { deleteCreatedAccounts } from './auth'
+import { deleteCreatedAccounts, testEmail } from './auth'
 import {
   addEdition,
   addEditionAccess,
@@ -95,6 +95,12 @@ describe('permission matrix (settings)', () => {
       needs: 'write',
       allowed: 200,
       run: (w, t) => call(w, 'patch', '/tenants/current', {}, t),
+    },
+    {
+      name: 'POST member',
+      needs: 'write',
+      allowed: 409,
+      run: (w, t) => call(w, 'post', '/tenants/current/members', { email: target.email }, t),
     },
     {
       name: 'PATCH member',
@@ -196,6 +202,10 @@ describe('tenant isolation by path id', () => {
       call(a.head, 'put', `/editions/${editionB}/members/${targetId}`, none),
       call(a.head, 'put', `/editions/${editionA}/members/${foreignMemberId}`, none),
       call(a.head, 'delete', `/editions/${editionB}/members/${targetId}`),
+      call(a.head, 'post', '/tenants/current/members', {
+        email: testEmail(),
+        editions: [{ editionId: editionB, ...none }],
+      }),
     ]
     const statuses = (await Promise.all(calls)).map((res) => res.status)
     expect(statuses).toEqual(calls.map(() => 404))

@@ -23,11 +23,13 @@ export function renderLinkEmail(i18n: I18n, content: EmailContent, link: string)
   const subject = i18n._(content.subject)
   const body = i18n._(content.body)
   const action = i18n._(content.action)
-  const validity = i18n._(linkValidity)
+  const validity = content.validity === null ? null : i18n._(content.validity ?? linkValidity)
   const fallback = i18n._(linkFallback)
   const ignore = i18n._(content.ignore)
 
-  const text = [body, `${action}: ${link}`, validity, ignore, 'OPOS'].join('\n\n')
+  const text = [body, `${action}: ${link}`, validity, ignore, 'OPOS']
+    .filter((part) => part !== null)
+    .join('\n\n')
 
   const href = escapeHtml(link)
   const html = `<!doctype html>
@@ -37,8 +39,7 @@ export function renderLinkEmail(i18n: I18n, content: EmailContent, link: string)
 <div style="max-width:560px;margin:0 auto">
 <p style="margin:0 0 24px">${escapeHtml(body)}</p>
 <p style="margin:0 0 24px"><a href="${href}" style="display:inline-block;padding:12px 20px;background:#1a1a1a;color:#ffffff;text-decoration:none;font-weight:bold">${escapeHtml(action)}</a></p>
-<p style="margin:0 0 8px">${escapeHtml(validity)}</p>
-<p style="margin:0 0 24px;font-size:14px">${escapeHtml(fallback)}<br><a href="${href}" style="color:#1a1a1a;word-break:break-all">${href}</a></p>
+${validity === null ? '' : `<p style="margin:0 0 8px">${escapeHtml(validity)}</p>\n`}<p style="margin:0 0 24px;font-size:14px">${escapeHtml(fallback)}<br><a href="${href}" style="color:#1a1a1a;word-break:break-all">${href}</a></p>
 <p style="margin:0 0 24px;font-size:14px">${escapeHtml(ignore)}</p>
 <p style="margin:0;font-size:14px">OPOS</p>
 </div>

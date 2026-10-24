@@ -3,6 +3,8 @@ import { activateLocale } from '@opos/i18n'
 import {
   type EmailContent,
   emailChangeNewEmail,
+  invitationEmail,
+  joinedTeamEmail,
   recoveryEmail,
   signupEmail,
 } from '@opos/i18n/emails'
@@ -47,5 +49,21 @@ describe('renderLinkEmail', () => {
     expect(email.text).toContain('<b>x</b>@example.test')
     expect(email.html).toContain('&lt;b&gt;x&lt;/b&gt;@example.test')
     expect(email.html).not.toContain('<b>x</b>')
+  })
+
+  it('puts the validity of the email itself below the link', async () => {
+    const email = await render('pl', invitationEmail('Konwent A'), link)
+
+    expect(email.subject).toBe('Zaproszenie do zespołu organizatorów konwentu Konwent A')
+    expect(email.text).toContain('Link jest ważny przez 7 dni i działa tylko raz.')
+    expect(email.text).not.toContain('godzinę')
+  })
+
+  it('leaves the validity out of an email without one', async () => {
+    const email = await render('en', joinedTeamEmail('Convention A'), link)
+
+    expect(email.subject).toBe('You have joined the organizing team of Convention A')
+    expect(email.text).not.toContain('valid')
+    expect(email.html).not.toContain('valid for')
   })
 })

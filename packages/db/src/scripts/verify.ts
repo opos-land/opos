@@ -79,7 +79,17 @@ try {
   }
 
   // Runtime privileges (PLAN.md 4.6). has_table_privilege counts table-level grants only, so the
-  // column-level updates opos_app holds pass.
+  // column-level updates opos_app holds pass. opos_app inserts and deletes only where the API
+  // creates and removes rows: a write the API starts doing joins this list with its migration.
+  const appWrites = [
+    ['tenant_memberships', 'INSERT'],
+    ['tenant_memberships', 'DELETE'],
+    ['editions', 'INSERT'],
+    ['editions', 'DELETE'],
+    ['edition_memberships', 'INSERT'],
+    ['edition_memberships', 'DELETE'],
+    ['accepted_invitations', 'INSERT'],
+  ].map((pair) => pair.join(' '))
   const overGranted = await sql<{ role: string; table: string; privilege: string }[]>`
     select r.role, c.relname as table, p.privilege
     from pg_class c
@@ -91,7 +101,8 @@ try {
       and (
         (r.role = 'opos_app_global' and (p.privilege <> 'SELECT' or c.relname = 'accounts'))
         or (r.role = 'opos_app' and p.privilege in ('UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'))
-        or (r.role = 'opos_app' and c.relname in ('tenants', 'accounts') and p.privilege in ('INSERT', 'DELETE'))
+        or (r.role = 'opos_app' and p.privilege in ('INSERT', 'DELETE')
+          and not (c.relname || ' ' || p.privilege) = any(${appWrites}))
         or r.role in ('anon', 'authenticated', 'service_role')
       )
     order by 1, 2, 3

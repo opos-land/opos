@@ -1,3 +1,4 @@
+export * from './accepted-invitations'
 export * from './accounts'
 export * from './edition-memberships'
 export * from './editions'

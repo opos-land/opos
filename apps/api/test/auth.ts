@@ -64,6 +64,9 @@ export async function authUserExists(id: string) {
 
 const created: string[] = []
 
+/** A fresh address no account uses yet. */
+export const testEmail = (prefix = 'api') => `${prefix}-${randomUUID().slice(0, 8)}@example.test`
+
 /**
  * Deletes an account created outside createAccount, e.g. by a sign-up, with the others; one a test
  * deleted already is skipped.
@@ -72,14 +75,17 @@ export function deleteLater(id: string) {
   created.push(id)
 }
 
-export async function createAccount(metadata: Record<string, string> = {}) {
-  const email = `api-${randomUUID().slice(0, 8)}@example.test`
+/** An account with a confirmed email, unless `confirmed` is false; a random address by default. */
+export async function createAccount(
+  metadata: Record<string, string> = {},
+  { email = testEmail(), confirmed = true }: { email?: string; confirmed?: boolean } = {},
+) {
   const response = await admin('/admin/users', {
     method: 'POST',
     body: JSON.stringify({
       email,
       password: TEST_PASSWORD,
-      email_confirm: true,
+      email_confirm: confirmed,
       user_metadata: metadata,
     }),
   })

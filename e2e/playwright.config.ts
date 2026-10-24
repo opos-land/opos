@@ -4,7 +4,8 @@ import { API_DIR, apiEnv, portOf, stack } from './fixtures/stack'
 
 // E2E through the UI of the panel and the portal against the full stack (PLAN.md 15.2). The
 // infrastructure comes from `pnpm infra:up`, migrations and the seed run before; the three
-// applications start here, or a running `pnpm dev` is reused outside CI.
+// applications start here. The API starts fresh on every run, so its in-memory rate-limit
+// counters (PLAN.md 7.9) start from zero; outside CI a running panel and portal are reused.
 
 const CI = Boolean(process.env.CI)
 const app = (name: string) => fileURLToPath(new URL(`../apps/${name}/`, import.meta.url))
@@ -42,7 +43,7 @@ export default defineConfig({
       cwd: API_DIR,
       url: new URL('/health', stack.api).toString(),
       env: { ...(process.env as Record<string, string>), ...apiEnv },
-      reuseExistingServer: !CI,
+      reuseExistingServer: false,
       timeout: 120_000,
       stdout: 'ignore',
       stderr: 'pipe',

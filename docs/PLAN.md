@@ -2126,7 +2126,9 @@ Chromium once (`pnpm --filter @opos/e2e exec playwright install chromium`), then
   the panel and the portal as dev servers. They run with the API's configuration,
   `apps/api/.env.example` overridden by `apps/api/.env`, as in the API tests
   ([15.1](#151-api-integration-tests)); the dev servers take their ports from `PANEL_URL` and
-  `PORTAL_URL`. Outside CI a running `pnpm dev` is reused.
+  `PORTAL_URL`. The API starts fresh on every run, so the in-memory counters of its rate limits
+  ([7.9](#79-rate-limiting)) start from zero; an API already listening on its `PORT`, such as the
+  one `pnpm dev` starts, stops the run. Outside CI a running panel and portal are reused.
 - `pnpm test:e2e` and the API tests do not run at the same time: both need the API's `PORT`, where
   Supabase Auth sends the hook.
 - Chromium in two projects: `desktop`, and `mobile` (Pixel 7) for the portal, which runs the

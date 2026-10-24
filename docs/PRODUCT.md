@@ -223,8 +223,8 @@ In the panel Jan switches convention context in the top bar.
   Lowering a permission or shortening someone's access grants nothing, so any org managing the
   team may do it.
 - An org whose own access expires grants nothing that outlasts it: they extend no one's access past
-  their own end date, invitations included, and raise no permission of a member whose access lasts
-  longer than theirs.
+  their own end date — an invitation or a scanner they pair included — and raise no permission of
+  a member whose access lasts longer than theirs.
 - Nobody edits their own membership.
 - A convention's last head organizer cannot be removed.
 
@@ -311,7 +311,7 @@ Modules beyond the MVP are built only after the core, the programme and tickets 
 | Account | tickets belong to the order's email address; an account with that address sees them under "my tickets" |
 | Refund | done by the convention in its payment provider's dashboard; an org then cancels the order in the panel and its tickets stop being valid |
 | Invoices | issued by the convention outside OPOS |
-| Scanner | an org with tickets write access shows a pairing QR code in the panel; a phone that scans it works for that edition only, until the edition ends or someone revokes it. No sign-in on the phone |
+| Scanner | an org with tickets write access shows a pairing QR code in the panel; a phone that scans it works for that edition only, until the edition ends, the access of the org who paired it ends, or someone revokes it. No sign-in on the phone |
 | At the gate | a scan shows every ticket in the order with its state; the org ticks the ones handed in. Each ticket is redeemed once; the scanner works online only, and network coverage at the gate is the convention's responsibility |
 
 ---

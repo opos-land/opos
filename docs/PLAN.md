@@ -438,8 +438,9 @@ Composite foreign keys `(orderId, tenantId)` and `(ticketTypeId, tenantId)`. Ind
 `(tenantId, orderId)`. A ticket is valid when its order is `paid`.
 
 **`scanner_devices`** — `tenantId`, `editionId` (FK cascade), `name`, `tokenHash` (unique, sha256),
-`pairingJti` (unique), `createdByMembershipId`, `expiresAt` (the edition's `endsAt` + 1 day),
-`revokedAt` (nullable). Index `(tenantId, editionId)`.
+`pairingJti` (unique), `createdByMembershipId`, `expiresAt` (the edition's `endsAt` + 1 day, or the
+pairing org's own `expiresAt` when that comes first), `revokedAt` (nullable). Index
+`(tenantId, editionId)`.
 
 **`attendees`** — `accountId`, `tenantId`, `editionId` (FK cascade), `firstName`, `lastName`.
 Unique `(accountId, editionId)`. Indexes `(tenantId, editionId)` and `(accountId)`.
@@ -1120,6 +1121,9 @@ An invitation is a signed JWT (`INVITE_SECRET`, TTL 7 days) with the payload
   or signing in, `POST /invitations/accept` creates the membership.
 - Permissions and the expiry from the token go through the anti-escalation check: an org whose
   access expires invites only with an expiry no later than their own (`member.expiry-after-own`).
+- An account that already holds a membership in the tenant, an expired one included, is not
+  invited -> `409` `member.exists`; the team screen changes that membership instead, through the
+  checks of [5.3](#53-tenants--jwt--x-tenant-slug).
 - The migration of this endpoint grants `opos_app` `insert` on `tenant_memberships`
   ([4.6](#migrations-and-verification)); until then the API creates no membership.
 
@@ -1194,8 +1198,10 @@ type PaymentEvent = { orderId: string; paymentRef: string; status: 'paid' | 'fai
 1. An org with `tickets=write` opens the scanner screen in the panel; the panel requests a pairing
    token and shows it as a QR code.
 2. The phone opens `panel.opos.land/scanner`, scans that code and calls `POST /scanner/pair`. The
-   API checks the token, records its `jti` in `scanner_devices.pairingJti` and returns a device
-   token: 32 random bytes, stored as sha256.
+   API checks the token and that the membership which requested it is still active, records its
+   `jti` in `scanner_devices.pairingJti` and returns a device token: 32 random bytes, stored as
+   sha256. The device expires with the edition or with the pairing org's own access, whichever
+   ends first ([PRODUCT.md 5.6](PRODUCT.md#56-anti-escalation-policy)).
 3. The phone keeps the device token in `localStorage` (`opos-scanner-device`) and sends it on every
    request. No sign-in, no Supabase session.
 4. `ScannerDeviceGuard` hashes the token, finds a device that is neither revoked nor past
@@ -1757,7 +1763,7 @@ with a wrong signature, audience, issuer or expiry are signed in the test with `
 | checkout | 20 concurrent orders against `quantity=5` -> exactly 5 hold tickets, the rest `409`; an expired hold releases its tickets; outside the sales window -> `409`; no payment config -> `409`; more than 10 tickets -> `400` |
 | payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid`; an SMTP failure after the payment leaves `ticketEmailSentAt` empty and the job sends the email later |
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
-| scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
+| scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; a device paired by an org whose access expires stops with that access; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
 | JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` -> `400` |

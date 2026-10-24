@@ -5,7 +5,12 @@ import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
 import { ApiError } from '../../common/errors/api-error'
 import { AccessRepository } from '../../common/permissions/access.repository'
-import { assertMayGrantEdition, assertMayManage } from '../tenants/anti-escalation'
+import {
+  assertMayGrantEdition,
+  assertMayManage,
+  assertWithinOwnExpiry,
+  raisesEditionLevel,
+} from '../tenants/anti-escalation'
 import { lockActorAndTarget } from '../tenants/member-lock'
 import { MembersRepository } from '../tenants/members.repository'
 import { EditionsRepository } from './editions.repository'
@@ -55,6 +60,12 @@ export class EditionMembersController {
         this.access.editionAccess(target.id, edition.id),
       ])
       assertMayGrantEdition(actor, actorAccess, body, current)
+      const expiry = target.expiresAt ? new Date(target.expiresAt) : null
+      assertWithinOwnExpiry(actor, {
+        current: expiry,
+        next: expiry,
+        raises: raisesEditionLevel(body, current),
+      })
       return { status: 200, body: await this.editionMembers.put(edition.id, target.id, body) }
     })
   }

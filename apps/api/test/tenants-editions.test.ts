@@ -266,19 +266,40 @@ describe('anti-escalation', () => {
     ).toMatchObject({ code: 'member.self' })
   })
 
-  it('lets an org whose access expires manage a member whose access lasts longer', async () => {
-    const lasting = await member()
-    const lastingId = await addOrg(a.id, lasting)
-    const beyond = new Date(later.getTime() + 24 * 3600 * 1000).toISOString()
-
-    await patch(limited, lastingId, { settingsAccess: 'read' }).expect(200)
-    await call(limited, 'put', `/editions/${editionA}/members/${lastingId}`, {
-      programAccess: 'none',
+  it("keeps an expiring org's grants within its own access", async () => {
+    const [temp, lasting] = await Promise.all([member(), member()])
+    const tempId = await addOrg(a.id, temp, { settings: 'write', expiresAt: later })
+    await addEditionAccess(a.id, tempId, editionA, { program: 'write' })
+    const lastingId = await addOrg(a.id, lasting, { settings: 'read' })
+    const program = (programAccess: string) => ({
+      programAccess,
       websiteContentAccess: 'none',
       ticketsAccess: 'none',
-    }).expect(200)
-    await patch(limited, lastingId, { expiresAt: beyond }).expect(200)
-    await patch(limited, lastingId, { expiresAt: null }).expect(200)
+    })
+    const editionPath = `/editions/${editionA}/members/${lastingId}`
+    const beyond = new Date(later.getTime() + 24 * 3600 * 1000).toISOString()
+    const sooner = new Date(Date.now() + 24 * 3600 * 1000).toISOString()
+
+    // lasting never expires: temp raises none of their permissions and extends no one past `later`.
+    expect((await patch(temp, lastingId, { settingsAccess: 'write' })).body).toMatchObject({
+      code: 'member.outlives-own',
+    })
+    expect((await call(temp, 'put', editionPath, program('read'))).body).toMatchObject({
+      code: 'member.outlives-own',
+    })
+    await patch(temp, lastingId, { settingsAccess: 'none' }).expect(200)
+    await patch(temp, lastingId, { expiresAt: beyond }).expect(200)
+    expect((await patch(temp, lastingId, { expiresAt: null })).body).toMatchObject({
+      code: 'member.expiry-after-own',
+    })
+
+    // Shortened below `later`, lasting may receive what temp holds, but no longer access.
+    await patch(temp, lastingId, { expiresAt: sooner }).expect(200)
+    await patch(temp, lastingId, { settingsAccess: 'read' }).expect(200)
+    await call(temp, 'put', editionPath, program('read')).expect(200)
+    expect((await patch(temp, lastingId, { expiresAt: beyond })).body).toMatchObject({
+      code: 'member.expiry-after-own',
+    })
   })
 
   it('lets an org shorten the access of a member who holds more, but not extend it', async () => {

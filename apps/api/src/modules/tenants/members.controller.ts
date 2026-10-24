@@ -4,7 +4,14 @@ import { tsRestHandler, TsRestHandler } from '@ts-rest/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
 import { AccessRepository } from '../../common/permissions/access.repository'
-import { assertMayExtend, assertMayGrant, assertMayManage, extendsAccess } from './anti-escalation'
+import {
+  assertMayExtend,
+  assertMayGrant,
+  assertMayManage,
+  assertWithinOwnExpiry,
+  extendsAccess,
+  raisesTenantLevel,
+} from './anti-escalation'
 import { lockActorAndTarget } from './member-lock'
 import { MembersRepository } from './members.repository'
 
@@ -42,8 +49,10 @@ export class MembersController {
       const { actor, target } = await this.lock(params.membershipId)
       assertMayGrant(actor, body, target)
       const current = target.expiresAt ? new Date(target.expiresAt) : null
-      const next = body.expiresAt ? new Date(body.expiresAt) : null
-      if (body.expiresAt !== undefined && actor.role !== 'head' && extendsAccess(current, next)) {
+      const next =
+        body.expiresAt === undefined ? current : body.expiresAt ? new Date(body.expiresAt) : null
+      assertWithinOwnExpiry(actor, { current, next, raises: raisesTenantLevel(body, target) })
+      if (actor.role !== 'head' && extendsAccess(current, next)) {
         const [actorEditions, targetEditions] = await Promise.all([
           this.access.editionRows(actor.id),
           this.access.editionRows(target.id),

@@ -6,7 +6,10 @@ import {
   assertMayGrant,
   assertMayGrantEdition,
   assertMayManage,
+  assertWithinOwnExpiry,
   extendsAccess,
+  raisesEditionLevel,
+  raisesTenantLevel,
 } from './anti-escalation'
 
 const org = (overrides: Partial<TenantMembership> = {}): TenantMembership => ({
@@ -172,6 +175,56 @@ describe('assertMayExtend', () => {
           rows([['e1', { ticketsAccess: 'write' }]]),
         ),
       ),
+    ).toBe('allowed')
+  })
+})
+
+describe('raisesTenantLevel and raisesEditionLevel', () => {
+  it('count only a level above the one the member holds', () => {
+    const current = { ...plain, settingsAccess: 'read' } as const
+
+    expect(raisesTenantLevel({ settingsAccess: 'write' }, current)).toBe(true)
+    expect(raisesTenantLevel({ settingsAccess: 'read', brandingAccess: 'none' }, current)).toBe(
+      false,
+    )
+    expect(raisesTenantLevel({ settingsAccess: 'none', expiresAt: null }, current)).toBe(false)
+    expect(raisesEditionLevel({ ...none, programAccess: 'read' }, null)).toBe(true)
+    expect(raisesEditionLevel(none, { ...none, ticketsAccess: 'write' })).toBe(false)
+  })
+})
+
+describe('assertWithinOwnExpiry', () => {
+  const own = new Date('2027-01-01T00:00:00Z')
+  const before = new Date('2026-12-01T00:00:00Z')
+  const after = new Date('2027-02-01T00:00:00Z')
+  const actor = org({ expiresAt: own })
+  const check = (current: Date | null, next: Date | null, raises = false) =>
+    code(() => assertWithinOwnExpiry(actor, { current, next, raises }))
+
+  it("refuses extending access past the org's own end, a lift included", () => {
+    expect(check(before, after)).toBe('member.expiry-after-own')
+    expect(check(before, null)).toBe('member.expiry-after-own')
+  })
+
+  it("allows extending within the org's own end, and any shortening", () => {
+    expect(check(new Date('2026-06-01T00:00:00Z'), before)).toBe('allowed')
+    expect(check(null, after)).toBe('allowed')
+    expect(check(new Date('2030-01-01T00:00:00Z'), after)).toBe('allowed')
+  })
+
+  it('refuses raising a permission of a member who outlasts the org, and allows lowering it', () => {
+    expect(check(null, null, true)).toBe('member.outlives-own')
+    expect(check(after, after, true)).toBe('member.outlives-own')
+    expect(check(after, after)).toBe('allowed')
+    expect(check(before, before, true)).toBe('allowed')
+  })
+
+  it('leaves heads and orgs without an expiry alone', () => {
+    expect(
+      code(() => assertWithinOwnExpiry(head, { current: before, next: null, raises: true })),
+    ).toBe('allowed')
+    expect(
+      code(() => assertWithinOwnExpiry(org(), { current: before, next: null, raises: true })),
     ).toBe('allowed')
   })
 })

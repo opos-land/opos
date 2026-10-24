@@ -13,6 +13,8 @@ export const errorCodes = [
   'member.self',
   'member.head-only',
   'member.above-own',
+  'member.expiry-after-own',
+  'member.outlives-own',
   'member.is-head',
   'edition.slug-taken',
   'edition.active',

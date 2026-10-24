@@ -1201,8 +1201,9 @@ Invitation emails are sent by `MailModule`, not by Supabase Auth.
 
 Set in [app.ts](../apps/api/src/app.ts). Allowed `Origin`: `PORTAL_URL` and `PANEL_URL` (the
 scanner included) — an explicit list, never `*` and never a reflected header. Allowed headers:
-`Authorization`, `Content-Type`, `X-Tenant-Slug`, `Accept-Language`. `credentials: false` — the
-API sets and reads no cookies.
+`Authorization`, `Content-Type`, `X-Tenant-Slug`, `Accept-Language`. Exposed response header:
+`Retry-After`, which a browser otherwise hides from the panel and portal on a `429`
+([7.9](#79-rate-limiting)). `credentials: false` — the API sets and reads no cookies.
 
 `POST /hooks/send-email` and `POST /hooks/payments/:provider` are called server to server and need
 no CORS; they reject every request without a valid signature.
@@ -1895,7 +1896,7 @@ cannot run beside an API started with `pnpm dev`.
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401` |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` included |
-| CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, a foreign origin gets no `Access-Control-Allow-Origin`; exactly the four allowed request headers; no `Access-Control-Allow-Credentials` |
+| CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, a foreign origin gets no `Access-Control-Allow-Origin`; exactly the four allowed request headers; `Retry-After` exposed; no `Access-Control-Allow-Credentials` |
 | i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
 
 ### 15.2 E2E tests

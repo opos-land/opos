@@ -16,6 +16,8 @@ export async function configureApp(app: NestExpressApplication, env: Env) {
   app.enableCors({
     origin: [env.PANEL_URL, env.PORTAL_URL],
     allowedHeaders: ['Authorization', 'Content-Type', 'X-Tenant-Slug', 'Accept-Language'],
+    // Not CORS-safelisted: without this the panel and portal cannot read it on a 429.
+    exposedHeaders: ['Retry-After'],
     credentials: false,
   })
   app.enableShutdownHooks()

@@ -4,7 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { loadEnv } from '../src/config/env'
 import { createApp } from './app'
 
-// PLAN.md 7.8: an explicit list of origins, the four request headers, no credentials.
+// PLAN.md 7.8: an explicit list of origins, the four request headers, Retry-After exposed, no
+// credentials.
 
 const env = loadEnv()
 let app: NestExpressApplication
@@ -58,5 +59,11 @@ describe('CORS', () => {
     expect(res.headers['access-control-allow-origin']).toBe(env.PORTAL_URL)
     expect(res.headers['access-control-allow-credentials']).toBeUndefined()
     expect(res.headers.vary).toMatch(/origin/i)
+  })
+
+  it('exposes Retry-After, which a browser hides from a script otherwise', async () => {
+    const res = await request(app.getHttpServer()).get('/health').set('Origin', env.PANEL_URL)
+
+    expect(res.headers['access-control-expose-headers']).toBe('Retry-After')
   })
 })

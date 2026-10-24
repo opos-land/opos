@@ -49,6 +49,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'auth.weak_password': msg`The password is too weak. Use at least 8 characters.`,
   'auth.same_password': msg`The new password must differ from the current one.`,
   'auth.otp_expired': msg`The link has expired. Ask for a new one.`,
+  'auth.pkce_code_verifier_not_found': msg`Open the link in the browser where you asked for it, or ask for a new link there.`,
   'auth.over_email_send_rate_limit': msg`Too many emails sent. Try again in a few minutes.`,
   'auth.over_request_rate_limit': msg`Too many attempts. Try again in a few minutes.`,
   'auth.signup_disabled': msg`Sign-up is closed at the moment.`,

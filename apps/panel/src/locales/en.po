@@ -1,0 +1,650 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-10-24 23:48+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+
+#: src/features/team/components/invite-form.tsx
+msgid "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
+msgstr "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
+
+#: src/features/team/components/invite-form.tsx
+msgid "{name} has joined the team and has been told by email."
+msgstr "{name} has joined the team and has been told by email."
+
+#: src/features/team/pages/edition-access-page.tsx
+msgid "A head organizer already has access to every edition."
+msgstr "A head organizer already has access to every edition."
+
+#: src/features/team/components/member-row.tsx
+msgid "A head organizer has every permission in every edition and never expires; the member's own permissions and expiry are cleared."
+msgstr "A head organizer has every permission in every edition and never expires; the member's own permissions and expiry are cleared."
+
+#: src/features/team/components/invite-form.tsx
+msgid "A head organizer has every permission, in every edition, and never expires."
+msgstr "A head organizer has every permission, in every edition, and never expires."
+
+#: src/features/editions/pages/editions-page.tsx
+msgid "A new edition starts inactive and unpublished."
+msgstr "A new edition starts inactive and unpublished."
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Access"
+msgstr "Access"
+
+#: src/features/team/components/edition-access-row.tsx
+msgid "access expired"
+msgstr "access expired"
+
+#: src/features/team/pages/edition-access-page.tsx
+msgid "Access to {editionName}"
+msgstr "Access to {editionName}"
+
+#: src/features/team/components/invite-form.tsx
+#: src/features/team/components/member-row.tsx
+msgid "Access until"
+msgstr "Access until"
+
+#: src/features/account/components/account-menu.tsx
+msgid "Account"
+msgstr "Account"
+
+#: src/features/team/pages/edition-access-page.tsx
+msgid "Actions"
+msgstr "Actions"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Activate"
+msgstr "Activate"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Activating this edition makes it the convention's active one; the edition active now stops being active."
+msgstr "Activating this edition makes it the convention's active one; the edition active now stops being active."
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Activation and publication"
+msgstr "Activation and publication"
+
+#: src/features/editions/components/edition-status.tsx
+msgid "Active"
+msgstr "Active"
+
+#: src/features/tenants/pages/dashboard-page.tsx
+msgid "Active edition"
+msgstr "Active edition"
+
+#: src/features/editions/components/edition-form.tsx
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Address"
+msgstr "Address"
+
+#: src/features/editions/pages/editions-page.tsx
+msgid "All editions"
+msgstr "All editions"
+
+#: src/features/team/components/invite-form.tsx
+msgid "An invitation has gone to {email}. Its link works once, until {validUntil}."
+msgstr "An invitation has gone to {email}. Its link works once, until {validUntil}."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "At least 8 characters."
+msgstr "At least 8 characters."
+
+#: src/features/auth/pages/auth-callback-page.tsx
+msgid "Back to sign-in"
+msgstr "Back to sign-in"
+
+#: src/features/team/pages/edition-access-page.tsx
+msgid "Back to the edition"
+msgstr "Back to the edition"
+
+#: src/features/auth/pages/auth-callback-page.tsx
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Back to the invitation"
+msgstr "Back to the invitation"
+
+#: src/features/editions/pages/edition-page.tsx
+#: src/features/team/components/member-row.tsx
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Cannot sign in?"
+msgstr "Cannot sign in?"
+
+#: src/features/tenants/components/panel-header.tsx
+msgid "Choose a convention"
+msgstr "Choose a convention"
+
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Choose a time zone from the list."
+msgstr "Choose a time zone from the list."
+
+#: src/features/auth/components/google-button.tsx
+msgid "Continue with Google"
+msgstr "Continue with Google"
+
+#: src/features/tenants/components/panel-header.tsx
+#: src/features/tenants/pages/dashboard-page.tsx
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Convention"
+msgstr "Convention"
+
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Convention language"
+msgstr "Convention language"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Create an account"
+msgstr "Create an account"
+
+#: src/features/editions/pages/editions-page.tsx
+msgid "Create the edition"
+msgstr "Create the edition"
+
+#: src/features/tenants/components/tenant-layout.tsx
+msgid "Dashboard"
+msgstr "Dashboard"
+
+#: src/features/editions/pages/editions-page.tsx
+msgid "Dates"
+msgstr "Dates"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Delete"
+msgstr "Delete"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Delete the edition"
+msgstr "Delete the edition"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
+msgstr "Deleting an edition cannot be undone. The active edition cannot be deleted."
+
+#: src/features/team/components/member-row.tsx
+msgid "Edit"
+msgstr "Edit"
+
+#: src/features/editions/pages/editions-page.tsx
+#: src/features/team/components/invite-form.tsx
+msgid "Edition"
+msgstr "Edition"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Edition data"
+msgstr "Edition data"
+
+#: src/features/editions/pages/editions-page.tsx
+#: src/features/tenants/components/tenant-layout.tsx
+msgid "Editions"
+msgstr "Editions"
+
+#: src/features/auth/components/email-only-form.tsx
+#: src/features/auth/components/sign-in-form.tsx
+#: src/features/team/components/invite-form.tsx
+msgid "Email"
+msgstr "Email"
+
+#: src/features/team/components/member-row.tsx
+msgid "Empty for no end date. In the convention's time zone, {zone}."
+msgstr "Empty for no end date. In the convention's time zone, {zone}."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Ends"
+msgstr "Ends"
+
+#: src/features/team/components/invite-form.tsx
+msgid "Enter a date and time in the future."
+msgstr "Enter a date and time in the future."
+
+#: src/features/editions/components/edition-form.tsx
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Enter a name of up to 200 characters."
+msgstr "Enter a name of up to 200 characters."
+
+#: src/features/team/components/member-row.tsx
+msgid "Enter a valid date and time."
+msgstr "Enter a valid date and time."
+
+#: src/features/auth/components/email-only-form.tsx
+#: src/features/auth/components/sign-in-form.tsx
+#: src/features/team/components/invite-form.tsx
+msgid "Enter a valid email address."
+msgstr "Enter a valid email address."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Enter the end date and time."
+msgstr "Enter the end date and time."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Enter the start date and time."
+msgstr "Enter the start date and time."
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Enter your password."
+msgstr "Enter your password."
+
+#: src/features/team/components/member-row.tsx
+msgid "expired"
+msgstr "expired"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Go to sign-in"
+msgstr "Go to sign-in"
+
+#: src/features/auth/components/accept-invitation.tsx
+msgid "Go to your conventions"
+msgstr "Go to your conventions"
+
+#: src/features/team/components/invite-form.tsx
+#: src/features/team/components/member-row.tsx
+#: src/features/tenants/pages/tenant-picker-page.tsx
+msgid "Head organizer"
+msgstr "Head organizer"
+
+#: src/features/team/pages/edition-access-page.tsx
+msgid "Head organizers"
+msgstr "Head organizers"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "I already have an account"
+msgstr "I already have an account"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "I am new to OPOS"
+msgstr "I am new to OPOS"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "If no message arrives within a few minutes, the address may already have an account: sign in, or ask for a password link."
+msgstr "If no message arrives within a few minutes, the address may already have an account: sign in, or ask for a password link."
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "If you confirmed your address in another browser, or someone else registered it before you, ask for a link that lets you set a new password."
+msgstr "If you confirmed your address in another browser, or someone else registered it before you, ask for a link that lets you set a new password."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "In the convention's time zone, {zone}."
+msgstr "In the convention's time zone, {zone}."
+
+#: src/features/account/components/account-menu.tsx
+msgid "Interface language"
+msgstr "Interface language"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Invitation"
+msgstr "Invitation"
+
+#: src/features/team/components/invite-form.tsx
+msgid "Invite"
+msgstr "Invite"
+
+#: src/features/team/pages/team-page.tsx
+msgid "Invite to the team"
+msgstr "Invite to the team"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Join the organizing team"
+msgstr "Join the organizing team"
+
+#: src/shared/ui/messages.tsx
+msgid "Loading…"
+msgstr "Loading…"
+
+#: src/features/team/pages/edition-access-page.tsx
+msgid "Member"
+msgstr "Member"
+
+#: src/features/team/pages/team-page.tsx
+msgid "Members"
+msgstr "Members"
+
+#: src/features/editions/components/edition-form.tsx
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Name"
+msgstr "Name"
+
+#: src/features/editions/pages/editions-page.tsx
+msgid "New edition"
+msgstr "New edition"
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "New password"
+msgstr "New password"
+
+#: src/features/team/components/level-select.tsx
+#: src/features/team/components/member-row.tsx
+msgid "No access"
+msgstr "No access"
+
+#: src/features/tenants/pages/dashboard-page.tsx
+msgid "No edition is active."
+msgstr "No edition is active."
+
+#: src/features/team/components/member-row.tsx
+msgid "No end date"
+msgstr "No end date"
+
+#: src/shared/ui/messages.tsx
+msgid "No permissions"
+msgstr "No permissions"
+
+#: src/features/editions/components/edition-status.tsx
+#: src/features/tenants/pages/dashboard-page.tsx
+msgid "Not published"
+msgstr "Not published"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Open the invitation link from your email to join a convention's team."
+msgstr "Open the invitation link from your email to join a convention's team."
+
+#: src/features/auth/components/auth-layout.tsx
+#: src/features/tenants/components/panel-header.tsx
+msgid "OPOS panel"
+msgstr "OPOS panel"
+
+#: src/features/team/components/invite-form.tsx
+msgid "Optional, in the convention's time zone, {zone}."
+msgstr "Optional, in the convention's time zone, {zone}."
+
+#: src/features/auth/pages/login-page.tsx
+msgid "or"
+msgstr "or"
+
+#: src/features/team/components/invite-form.tsx
+#: src/features/team/components/member-row.tsx
+#: src/features/tenants/pages/tenant-picker-page.tsx
+msgid "Organizer"
+msgstr "Organizer"
+
+#: src/features/team/pages/edition-access-page.tsx
+msgid "Organizers"
+msgstr "Organizers"
+
+#: src/features/auth/pages/login-page.tsx
+msgid "Organizers join a convention's team through an invitation sent by email. The link in it lets you create an account here."
+msgstr "Organizers join a convention's team through an invitation sent by email. The link in it lets you create an account here."
+
+#: src/shared/ui/messages.tsx
+msgid "Page not found"
+msgstr "Page not found"
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Part of the edition's address in the portal: lowercase letters, digits and hyphens."
+msgstr "Part of the edition's address in the portal: lowercase letters, digits and hyphens."
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Password"
+msgstr "Password"
+
+#: src/features/team/pages/team-page.tsx
+msgid "Permissions in each edition are set on the edition's access page."
+msgstr "Permissions in each edition are set on the edition's access page."
+
+#: src/features/team/components/permission-labels.tsx
+msgid "Programme"
+msgstr "Programme"
+
+#: src/features/team/components/invite-form.tsx
+msgid "Programme in {edition}"
+msgstr "Programme in {edition}"
+
+#: src/features/team/components/edition-access-row.tsx
+msgid "Programme of {name}"
+msgstr "Programme of {name}"
+
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Programme times and edition dates are shown in this time zone."
+msgstr "Programme times and edition dates are shown in this time zone."
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Publish"
+msgstr "Publish"
+
+#: src/features/editions/components/edition-status.tsx
+#: src/features/tenants/pages/dashboard-page.tsx
+msgid "Published"
+msgstr "Published"
+
+#: src/features/team/components/level-select.tsx
+#: src/features/team/components/member-row.tsx
+msgid "Read"
+msgstr "Read"
+
+#: src/features/team/components/edition-access-row.tsx
+msgid "Remove access"
+msgstr "Remove access"
+
+#: src/features/team/components/member-row.tsx
+msgid "Remove from the team"
+msgstr "Remove from the team"
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Repeat the password"
+msgstr "Repeat the password"
+
+#: src/features/team/components/invite-form.tsx
+#: src/features/team/components/member-row.tsx
+msgid "Role"
+msgstr "Role"
+
+#: src/features/editions/pages/edition-page.tsx
+#: src/features/team/components/edition-access-row.tsx
+#: src/features/team/components/member-row.tsx
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Save"
+msgstr "Save"
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Save the password and join the team"
+msgstr "Save the password and join the team"
+
+#: src/features/account/components/account-menu.tsx
+msgid "Saved on your account."
+msgstr "Saved on your account."
+
+#: src/features/tenants/pages/dashboard-page.tsx
+msgid "See the editions"
+msgstr "See the editions"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Send a password link"
+msgstr "Send a password link"
+
+#: src/features/team/components/permission-labels.tsx
+#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/tenants/pages/dashboard-page.tsx
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Settings"
+msgstr "Settings"
+
+#: src/features/team/components/permission-labels.tsx
+msgid "Shop"
+msgstr "Shop"
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Sign in"
+msgstr "Sign in"
+
+#: src/features/auth/pages/login-page.tsx
+msgid "Sign in to the organizer panel"
+msgstr "Sign in to the organizer panel"
+
+#: src/features/account/components/account-menu.tsx
+msgid "Sign out"
+msgstr "Sign out"
+
+#: src/features/auth/components/accept-invitation.tsx
+msgid "Sign out and use another account"
+msgstr "Sign out and use another account"
+
+#: src/features/team/pages/team-page.tsx
+msgid "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
+msgstr "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Starts"
+msgstr "Starts"
+
+#: src/features/editions/pages/editions-page.tsx
+msgid "Status"
+msgstr "Status"
+
+#: src/features/team/pages/team-page.tsx
+#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/tenants/pages/dashboard-page.tsx
+msgid "Team"
+msgstr "Team"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Team members' permissions in this edition"
+msgstr "Team members' permissions in this edition"
+
+#: src/features/account/components/account-menu.tsx
+msgid "The browser's language"
+msgstr "The browser's language"
+
+#: src/features/tenants/pages/settings-page.tsx
+msgid "The convention's address is set by the platform administrator."
+msgstr "The convention's address is set by the platform administrator."
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "The edition is not published: the portal does not show it."
+msgstr "The edition is not published: the portal does not show it."
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "The edition is published: the portal shows it to everyone."
+msgstr "The edition is published: the portal shows it to everyone."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "The edition must end after it starts."
+msgstr "The edition must end after it starts."
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "The invitation is for {email} and is valid until {validUntil}."
+msgstr "The invitation is for {email} and is valid until {validUntil}."
+
+#: src/features/tenants/pages/settings-page.tsx
+msgid "The language of the convention's content and of invitations to people without an account."
+msgstr "The language of the convention's content and of invitations to people without an account."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "The passwords differ."
+msgstr "The passwords differ."
+
+#: src/features/tenants/pages/settings-page.tsx
+msgid "The settings are saved."
+msgstr "The settings are saved."
+
+#: src/features/team/pages/edition-access-page.tsx
+msgid "The team has no organizers besides its head organizers."
+msgstr "The team has no organizers besides its head organizers."
+
+#: src/features/editions/pages/editions-page.tsx
+msgid "There are no editions yet."
+msgstr "There are no editions yet."
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "This is the convention's active edition."
+msgstr "This is the convention's active edition."
+
+#: src/features/team/components/permission-labels.tsx
+msgid "Tickets"
+msgstr "Tickets"
+
+#: src/features/team/components/invite-form.tsx
+msgid "Tickets in {edition}"
+msgstr "Tickets in {edition}"
+
+#: src/features/team/components/edition-access-row.tsx
+msgid "Tickets of {name}"
+msgstr "Tickets of {name}"
+
+#: src/features/tenants/pages/settings-page.tsx
+msgid "Time zone"
+msgstr "Time zone"
+
+#: src/features/auth/components/accept-invitation.tsx
+msgid "Try again"
+msgstr "Try again"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Unpublish"
+msgstr "Unpublish"
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Use 1 to 40 lowercase letters, digits and hyphens."
+msgstr "Use 1 to 40 lowercase letters, digits and hyphens."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Use at least 8 characters."
+msgstr "Use at least 8 characters."
+
+#: src/shared/ui/messages.tsx
+msgid "We could not find what you are looking for."
+msgstr "We could not find what you are looking for."
+
+#: src/features/auth/pages/auth-callback-page.tsx
+msgid "We could not sign you in"
+msgstr "We could not sign you in"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "We sent a link to {sentTo}. Open it in this browser to choose your password and join the team."
+msgstr "We sent a link to {sentTo}. Open it in this browser to choose your password and join the team."
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "We will send a confirmation link to your address. Once you open it, you choose your password here and join the team. You can also continue with Google above."
+msgstr "We will send a confirmation link to your address. Once you open it, you choose your password here and join the team. You can also continue with Google above."
+
+#: src/features/team/components/level-select.tsx
+#: src/features/team/components/member-row.tsx
+msgid "Write"
+msgstr "Write"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Yes, delete {editionName}"
+msgstr "Yes, delete {editionName}"
+
+#: src/features/team/components/member-row.tsx
+msgid "Yes, remove {name} from the team"
+msgstr "Yes, remove {name} from the team"
+
+#: src/features/team/components/edition-access-row.tsx
+#: src/features/team/components/member-row.tsx
+msgid "you"
+msgstr "you"
+
+#: src/features/tenants/pages/dashboard-page.tsx
+msgid "You are a head organizer."
+msgstr "You are a head organizer."
+
+#: src/features/tenants/pages/dashboard-page.tsx
+msgid "You are an organizer."
+msgstr "You are an organizer."
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "You are invited to the organizing team of <0>{tenantName}</0>."
+msgstr "You are invited to the organizing team of <0>{tenantName}</0>."
+
+#: src/features/tenants/pages/tenant-picker-page.tsx
+msgid "You are not in any convention's team. A convention's organizers can invite you by email."
+msgstr "You are not in any convention's team. A convention's organizers can invite you by email."
+
+#: src/features/auth/components/accept-invitation.tsx
+msgid "You are signed in as {email}."
+msgstr "You are signed in as {email}."
+
+#: src/shared/ui/messages.tsx
+msgid "You do not have permission to see this page. If you need access, ask a head organizer of the convention."
+msgstr "You do not have permission to see this page. If you need access, ask a head organizer of the convention."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Your address {email} is confirmed. Choose the password you will sign in with."
+msgstr "Your address {email} is confirmed. Choose the password you will sign in with."
+
+#: src/features/tenants/pages/tenant-picker-page.tsx
+msgid "Your conventions"
+msgstr "Your conventions"

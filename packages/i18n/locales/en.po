@@ -179,6 +179,10 @@ msgstr "No account uses this email address."
 msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Only a head organizer can edit or remove another head organizer."
 
+#: src/errors.ts
+msgid "Open the link in the browser where you asked for it, or ask for a new link there."
+msgstr "Open the link in the browser where you asked for it, or ask for a new link there."
+
 #: src/emails.ts
 msgid "Open the panel"
 msgstr "Open the panel"

@@ -25,12 +25,15 @@ export class AuthAdminClient {
 
   /**
    * `DELETE /admin/users/:id`, a hard delete: `accounts` and every row referencing it cascade.
-   * `false` when the user was already gone; any other failure throws.
+   * `false` when the user was already gone. Any other failure throws an error without a `status`:
+   * a 4xx from Supabase Auth refuses the API's key, not the caller, so it is a logged `500`.
    */
   async deleteUser(id: string): Promise<boolean> {
     const { error } = await this.api.deleteUser(id, false)
     if (!error) return true
     if (error.status === 404) return false
-    throw error
+    throw new Error(`Supabase Auth refused deleteUser with ${error.status ?? 'no status'}`, {
+      cause: error,
+    })
   }
 }

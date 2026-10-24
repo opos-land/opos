@@ -1498,6 +1498,9 @@ current address and `token_hash` to the new one.
 The API holds `SUPABASE_SERVICE_ROLE_KEY` — a JWT with `role = service_role`, signed with
 `JWT_SECRET` — and uses it only for `DELETE /admin/users/:id` (account deletion), through
 `@supabase/auth-js` in [auth-admin.client.ts](../apps/api/src/modules/auth/auth-admin.client.ts).
+A `404` means the user is already gone; any other refusal, a `401` or `403` for a key signed with
+the wrong secret included, is the API's own failure and answers `500` `server.error`, logged — never
+the caller's `session.invalid` or `permission.denied`.
 The seed calls
 `POST /admin/users` and `PUT /admin/users/:id` with the same key, or, when it is not set, with a
 10-minute `service_role` JWT it signs with `JWT_SECRET` itself ([14](#14-demo-data-seed)). The key never reaches a frontend.

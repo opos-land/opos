@@ -396,9 +396,7 @@ describe('anti-escalation', () => {
   })
 })
 
-describe('review fixes', () => {
-  const none = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
-
+describe('promotion to head', () => {
   it('answers 400 when a head sets an expiry on another head, and 200 to an empty PATCH', async () => {
     const t = await tenantWithHead()
     const other = await member()
@@ -426,19 +424,6 @@ describe('review fixes', () => {
     const list = (await call(t.head, 'get', `/editions/${edition}/members`, undefined, t.slug))
       .body as { tenantMembershipId: string }[]
     expect(list.map((m) => m.tenantMembershipId)).not.toContain(id)
-  })
-
-  it('lets an org change one edition permission of a member who holds more elsewhere', async () => {
-    const t = await tenantWithHead()
-    const edition = await addEdition(t.id)
-    const [actor, held] = await Promise.all([member(), member()])
-    const actorId = await addOrg(t.id, actor, { settings: 'write' })
-    await addEditionAccess(t.id, actorId, edition, { program: 'write' })
-    const heldId = await addOrg(t.id, held)
-    await addEditionAccess(t.id, heldId, edition, { tickets: 'write' })
-
-    const body = { ...none, programAccess: 'write', ticketsAccess: 'write' }
-    await call(actor, 'put', `/editions/${edition}/members/${heldId}`, body, t.slug).expect(200)
   })
 })
 
@@ -637,5 +622,18 @@ describe('edition members', () => {
       ...none,
       programAccess: 'read',
     }).expect(200)
+  })
+
+  it('lets an org change one edition permission of a member who holds more elsewhere', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const [actor, held] = await Promise.all([member(), member()])
+    const actorId = await addOrg(t.id, actor, { settings: 'write' })
+    await addEditionAccess(t.id, actorId, edition, { program: 'write' })
+    const heldId = await addOrg(t.id, held)
+    await addEditionAccess(t.id, heldId, edition, { tickets: 'write' })
+
+    const body = { ...none, programAccess: 'write', ticketsAccess: 'write' }
+    await call(actor, 'put', `/editions/${edition}/members/${heldId}`, body, t.slug).expect(200)
   })
 })

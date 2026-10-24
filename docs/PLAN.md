@@ -1306,8 +1306,9 @@ confirmed does not survive ([4.2](#42-global-tables)).
    does ([7.6](#76-password-reset)). A Google sign-up needs no such step: Google takes an
    unconfirmed account over ([7.5](#75-google-oauth)).
 6. A confirmation opened in another browser confirms the address but gives that browser no
-   session, since the PKCE verifier stays where the sign-up started. The invitee opens the
-   invitation link again there and asks for a password link:
+   session, since the PKCE verifier stays where the sign-up started: `/auth/callback` there shows
+   the message of `auth.pkce_code_verifier_not_found`. The invitee opens the invitation link again
+   there and asks for a password link:
    `resetPasswordForEmail(email, { redirectTo: <PANEL_URL>/auth/callback })`, which marks the
    entry as in step 3 and comes back through steps 4 and 5. The same link serves an invitee who
    cannot sign in because someone else registered the address first.

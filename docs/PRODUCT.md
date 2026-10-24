@@ -246,7 +246,9 @@ The link is valid for 7 days and works once. It opens the invitation page in the
 shows the convention and the invited address and lets the person sign in or register there — with
 email and password, or with Google. Registering with email, they confirm the address through the
 link sent to it, come back to the panel, choose their password and join the team; a password
-anyone set on that address before it was confirmed stops working. Only an account whose confirmed
+anyone set on that address before it was confirmed stops working. The confirmation link signs
+them in only in the browser they registered in; opened anywhere else, the panel says so, and the
+invitation page there sends a link to set the password instead. Only an account whose confirmed
 address is the invited one can accept.
 
 An invitation stands only while the person who sent it could still send it. Once the sender has

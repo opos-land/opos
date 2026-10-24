@@ -504,6 +504,20 @@ describe('concurrency', () => {
     expect(all.filter((e) => e.isActive)).toHaveLength(1)
   })
 
+  it('answers 404 to an edition delete that waited for a concurrent delete', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const commit = await holdOpen((sql) => sql`delete from editions where id = ${edition}`)
+
+    const pending = call(t.head, 'delete', `/editions/${edition}`, undefined, t.slug).then(
+      (res) => res,
+    )
+    await sleep(300)
+    await commit()
+
+    expect((await pending).status).toBe(404)
+  })
+
   it('keeps a head when two heads demote each other at once', async () => {
     const t = await tenantWithHead()
     const second = await member()

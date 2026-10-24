@@ -102,7 +102,8 @@ export class EditionsRepository {
 
   /**
    * Deletes the edition unless it is active, in one statement: an activation committed meanwhile
-   * makes the row fail the condition, so the tenant never loses its active edition.
+   * makes the row fail the condition, so the tenant never loses its active edition. A delete
+   * committed meanwhile leaves no row either, and the edition is then gone rather than active.
    */
   async removeInactive(id: string) {
     const rows = await this.context
@@ -110,9 +111,9 @@ export class EditionsRepository {
       .delete(editions)
       .where(and(eq(editions.id, id), eq(editions.isActive, false)))
       .returning({ id: editions.id })
-    if (rows.length === 0) {
-      throw new ApiError(409, 'edition.active', 'The active edition cannot be deleted')
-    }
+    if (rows.length > 0) return
+    if (!(await this.find(id))) throw notFound('edition')
+    throw new ApiError(409, 'edition.active', 'The active edition cannot be deleted')
   }
 
   /**

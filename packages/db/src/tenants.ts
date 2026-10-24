@@ -1,5 +1,5 @@
 import { isLocale, isTimeZone } from '@opos/i18n'
-import { eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import type { Database } from './client'
 import { accounts, tenantMemberships, tenants } from './schema'
 
@@ -11,7 +11,13 @@ export interface CreateTenantInput {
   timezone?: string
 }
 
+export interface RenameTenantInput {
+  slug: string
+  newSlug: string
+}
+
 export type TenantErrorCode =
+  | 'tenant.not-found'
   | 'tenant.slug-invalid'
   | 'tenant.slug-taken'
   | 'tenant.name-empty'
@@ -31,6 +37,12 @@ export class TenantError extends Error {
 
 const SLUG = /^[a-z0-9-]{3,40}$/
 
+function assertSlug(slug: string) {
+  if (!SLUG.test(slug)) {
+    throw new TenantError('tenant.slug-invalid', `Slug must match ${SLUG}: ${slug}`)
+  }
+}
+
 /**
  * Creates a tenant and its first head in one transaction (PLAN.md 14). The head's account must
  * already exist. Runs on a connection that may write tenants outside a tenant context.
@@ -41,9 +53,7 @@ export async function createTenant(db: Database, input: CreateTenantInput) {
   const defaultLocale = input.defaultLocale ?? 'pl'
   const timezone = input.timezone ?? 'Europe/Warsaw'
 
-  if (!SLUG.test(input.slug)) {
-    throw new TenantError('tenant.slug-invalid', `Slug must match ${SLUG}: ${input.slug}`)
-  }
+  assertSlug(input.slug)
   if (!name) throw new TenantError('tenant.name-empty', 'Name must not be empty')
   if (!isLocale(defaultLocale)) {
     throw new TenantError('tenant.locale-invalid', `Unsupported locale: ${defaultLocale}`)
@@ -74,5 +84,31 @@ export async function createTenant(db: Database, input: CreateTenantInput) {
       .insert(tenantMemberships)
       .values({ accountId: account.id, tenantId: tenant.id, role: 'head' })
     return { ...tenant, headAccountId: account.id }
+  })
+}
+
+/**
+ * Moves a tenant to another slug, its public address (PLAN.md 14). No endpoint changes a slug; the
+ * admin does it through this function, on a connection that may write tenants.
+ */
+export async function renameTenant(db: Database, input: RenameTenantInput) {
+  assertSlug(input.newSlug)
+
+  return db.transaction(async (tx) => {
+    const [taken] = await tx
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(and(eq(tenants.slug, input.newSlug), ne(tenants.slug, input.slug)))
+    if (taken) {
+      throw new TenantError('tenant.slug-taken', `The slug ${input.newSlug} is taken`)
+    }
+
+    const [tenant] = await tx
+      .update(tenants)
+      .set({ slug: input.newSlug })
+      .where(eq(tenants.slug, input.slug))
+      .returning({ id: tenants.id, slug: tenants.slug })
+    if (!tenant) throw new TenantError('tenant.not-found', `No tenant with the slug ${input.slug}`)
+    return tenant
   })
 }

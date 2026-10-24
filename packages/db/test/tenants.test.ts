@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { migrationDb } from '../src/client'
 import { migrationUrl } from '../src/migration-url'
-import { createTenant } from '../src/tenants'
+import { createTenant, renameTenant } from '../src/tenants'
 import { createUser, migrator, trackTenant, unique } from './db'
 
 const db = migrationDb(migrationUrl())
@@ -69,5 +69,45 @@ describe('createTenant', () => {
     await expect(
       createTenant(db, { slug: slug(), name: 'X', headEmail: 'x@example.test', ...override }),
     ).rejects.toMatchObject({ code })
+  })
+})
+
+describe('renameTenant', () => {
+  const tenant = async () => {
+    const head = await createUser()
+    const created = await createTenant(db, { slug: slug(), name: 'Renamed', headEmail: head.email })
+    trackTenant(created.id)
+    return created
+  }
+  const slugOf = async (id: string) =>
+    (await migrator<{ slug: string }[]>`select slug from tenants where id = ${id}`)[0]?.slug
+
+  it('moves the tenant to the new slug', async () => {
+    const { id, slug: current } = await tenant()
+    const next = slug()
+
+    expect(await renameTenant(db, { slug: current, newSlug: next })).toEqual({ id, slug: next })
+    expect(await slugOf(id)).toBe(next)
+  })
+
+  it('refuses a slug taken by another tenant and changes nothing', async () => {
+    const [first, second] = await Promise.all([tenant(), tenant()])
+
+    await expect(
+      renameTenant(db, { slug: first.slug, newSlug: second.slug }),
+    ).rejects.toMatchObject({ code: 'tenant.slug-taken' })
+    expect(await slugOf(first.id)).toBe(first.slug)
+  })
+
+  it('refuses an unknown tenant and a malformed slug', async () => {
+    const { id, slug: current } = await tenant()
+
+    await expect(
+      renameTenant(db, { slug: `missing-${unique()}`, newSlug: slug() }),
+    ).rejects.toMatchObject({ code: 'tenant.not-found' })
+    await expect(renameTenant(db, { slug: current, newSlug: 'Bad_Slug' })).rejects.toMatchObject({
+      code: 'tenant.slug-invalid',
+    })
+    expect(await slugOf(id)).toBe(current)
   })
 })

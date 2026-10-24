@@ -99,6 +99,15 @@
         "OPOS_DB_PORT"
       ]
     },
+    "db:tenant:rename": {
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
+    },
     "db:studio": {
       "cache": false,
       "persistent": true,

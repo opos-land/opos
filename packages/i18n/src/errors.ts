@@ -23,6 +23,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'edition.slug-taken': msg`This convention already has an edition with this address.`,
   'edition.active': msg`You cannot delete the active edition. Activate another edition first.`,
 
+  'tenant.not-found': msg`We could not find this convention.`,
   'tenant.slug-invalid': msg`The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters.`,
   'tenant.slug-taken': msg`This address is already taken by another convention.`,
   'tenant.name-empty': msg`Enter the convention name.`,

@@ -210,6 +210,10 @@ msgid "user"
 msgstr "user"
 
 #: src/errors.ts
+msgid "We could not find this convention."
+msgstr "We could not find this convention."
+
+#: src/errors.ts
 msgid "We could not find what you are looking for."
 msgstr "We could not find what you are looking for."
 

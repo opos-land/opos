@@ -245,8 +245,8 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   every `db:*` task pass the database variables through (`passThroughEnv`), `db:seed` also the
   Supabase Auth ones and `NODE_ENV` ([11](#11-environment-variables)), so they reach the scripts and
   stay out of the hash.
-- The root scripts that take arguments, `db:seed` and `db:tenant:create`, end with `--`, so pnpm
-  hands the arguments through turbo to the package script.
+- The root scripts that take arguments, `db:seed`, `db:tenant:create` and `db:tenant:rename`, end
+  with `--`, so pnpm hands the arguments through turbo to the package script.
 
 ### 3.2 Frontend application layout
 
@@ -321,7 +321,7 @@ The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 
 | Term | Carrier |
 |---|---|
-| admin | no table: works on the database directly, through `pnpm db:tenant:create` |
+| admin | no table: works on the database directly, through `pnpm db:tenant:create` and `pnpm db:tenant:rename` |
 | org, head | `tenant_memberships` (+ optionally `edition_memberships`) |
 | user | `auth.users` + `accounts` + rows in `attendees` |
 | tenant | `tenants` |
@@ -1660,6 +1660,20 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
   `tenant.timezone-invalid` (not an IANA zone), `account.not-found`. `tenant.locale-invalid` means
 outside `SUPPORTED_LOCALES` from `@opos/i18n`.
 - In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
+
+### Changing a tenant's slug
+
+The slug is the convention's address ([PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains)). The admin
+changes it on the server with [rename-tenant.ts](../packages/db/src/scripts/rename-tenant.ts), a
+wrapper around `renameTenant` from the same file:
+
+```bash
+pnpm db:tenant:rename --slug convention-c --new-slug convention-d
+```
+
+- Runs as `opos_migrator`. Nothing redirects the old address: its links and bookmarks stop working.
+- Any refusal changes nothing and exits non-zero with a `TenantError` code: `tenant.not-found`,
+  `tenant.slug-invalid`, `tenant.slug-taken`.
 
 ---
 

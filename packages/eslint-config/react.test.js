@@ -7,10 +7,16 @@ import { react } from './react.js'
 const root = join(import.meta.dirname, 'fixtures', 'feature-app')
 
 // Type information plays no part in the rules under test, so the fixture needs no React types.
+// An import that does not resolve is not checked, so the import of a workspace package must also
+// prove that it resolves.
 const eslint = new ESLint({
   cwd: root,
   overrideConfigFile: true,
-  overrideConfig: [...react(root), tseslint.configs.disableTypeChecked],
+  overrideConfig: [
+    ...react(root),
+    tseslint.configs.disableTypeChecked,
+    { files: ['src/features/beta/into-package.ts'], rules: { 'import-x/no-unresolved': 'error' } },
+  ],
 })
 
 async function ruleIds(file) {
@@ -21,6 +27,10 @@ async function ruleIds(file) {
 describe('react preset', () => {
   it('lets a feature import another feature through its index.ts and shared/', async () => {
     expect(await ruleIds('features/beta/through-index.ts')).toEqual([])
+  })
+
+  it('lets a feature import a workspace package', async () => {
+    expect(await ruleIds('features/beta/into-package.ts')).toEqual([])
   })
 
   it("forbids a feature to import another feature's internals", async () => {

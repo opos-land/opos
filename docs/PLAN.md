@@ -632,6 +632,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
 | `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`) | always a specific code |
+| `415` | a request body that is not `application/json`, refused from its headers before routing ([json-body.ts](../apps/api/src/common/json-body.ts)): Express parses JSON within its size limit, and oRPC would read any other body itself, with no limit | `request.invalid` |
 | `429` | rate limit | `request.rate-limited` |
 | `500` | anything unexpected; the body carries no details, the log does | `server.error` |
 

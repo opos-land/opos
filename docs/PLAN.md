@@ -374,8 +374,11 @@ deleted by the triggers and the cascade alone, both running as `opos_migrator`.
 ### 4.3 Tenant-level tables
 
 **`tenants`** ([tenants.ts](../packages/db/src/schema/tenants.ts)) — the `slug` is unique,
-matches `^[a-z0-9-]{3,40}$` and changes only through the admin ([14](#changing-a-tenants-slug));
-`defaultLocale` and the IANA `timezone` default to `pl` and `Europe/Warsaw`.
+matches `^[a-z0-9-]{3,40}$`, is none of `RESERVED_TENANT_SLUGS` (the platform's subdomains,
+[PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains), and the panel's top-level paths, [8](#8-appspanel);
+check `tenants_slug_not_reserved`) and changes only through the admin
+([14](#changing-a-tenants-slug)); `defaultLocale` and the IANA `timezone` default to `pl` and
+`Europe/Warsaw`.
 
 **`tenant_memberships`** ([tenant-memberships.ts](../packages/db/src/schema/tenant-memberships.ts))
 — one row per account and tenant, holding the `role` and the tenant-level permissions
@@ -1220,6 +1223,9 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 | `/:tenantSlug/editions/:editionSlug/tickets/scanners` | pairing QR code, paired devices, revocation |
 | `/scanner` | the scanner on a phone: pairing, then scan -> order view -> tick tickets handed in |
 
+- The fixed top-level paths — `/login`, `/auth/callback`, `/invitation`, `/scanner` — are reserved
+  tenant slugs ([4.3](#43-tenant-level-tables)), so `/:tenantSlug` never shadows them; a new
+  top-level path joins `RESERVED_TENANT_SLUGS` in the same PR.
 - An interceptor attaches `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug` and
   `Accept-Language` based on the active locale.
 - Language switcher in the account menu; the choice goes to `PATCH /me` and stays on the account.
@@ -1656,9 +1662,9 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
 - The head's account must already exist — the person registers in the portal first. The email is
   matched case-insensitively.
 - Any refusal changes nothing and exits non-zero with a `TenantError` code:
-  `tenant.slug-invalid`, `tenant.slug-taken`, `tenant.name-empty`, `tenant.locale-invalid`,
-  `tenant.timezone-invalid` (not an IANA zone), `account.not-found`. `tenant.locale-invalid` means
-outside `SUPPORTED_LOCALES` from `@opos/i18n`.
+  `tenant.slug-invalid`, `tenant.slug-reserved`, `tenant.slug-taken`, `tenant.name-empty`,
+  `tenant.locale-invalid` (outside `SUPPORTED_LOCALES` from `@opos/i18n`),
+  `tenant.timezone-invalid` (not an IANA zone), `account.not-found`.
 - In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
 
 ### Changing a tenant's slug
@@ -1674,7 +1680,7 @@ pnpm db:tenant:rename --slug convention-c --new-slug convention-d
 
 - Runs as `opos_migrator`. Nothing redirects the old address: its links and bookmarks stop working.
 - Any refusal changes nothing and exits non-zero with a `TenantError` code: `tenant.not-found`,
-  `tenant.slug-invalid`, `tenant.slug-taken`.
+  `tenant.slug-invalid`, `tenant.slug-reserved`, `tenant.slug-taken`.
 
 ---
 

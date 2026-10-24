@@ -62,6 +62,7 @@ describe('createTenant', () => {
 
   it.each([
     [{ slug: 'Bad_Slug' }, 'tenant.slug-invalid'],
+    [{ slug: 'panel' }, 'tenant.slug-reserved'],
     [{ name: '  ' }, 'tenant.name-empty'],
     [{ defaultLocale: 'cs' }, 'tenant.locale-invalid'],
     [{ timezone: 'Mars/Olympus' }, 'tenant.timezone-invalid'],
@@ -99,7 +100,7 @@ describe('renameTenant', () => {
     expect(await slugOf(first.id)).toBe(first.slug)
   })
 
-  it('refuses an unknown tenant and a malformed slug', async () => {
+  it('refuses an unknown tenant, a malformed slug and a reserved one', async () => {
     const { id, slug: current } = await tenant()
 
     await expect(
@@ -107,6 +108,9 @@ describe('renameTenant', () => {
     ).rejects.toMatchObject({ code: 'tenant.not-found' })
     await expect(renameTenant(db, { slug: current, newSlug: 'Bad_Slug' })).rejects.toMatchObject({
       code: 'tenant.slug-invalid',
+    })
+    await expect(renameTenant(db, { slug: current, newSlug: 'scanner' })).rejects.toMatchObject({
+      code: 'tenant.slug-reserved',
     })
     expect(await slugOf(id)).toBe(current)
   })

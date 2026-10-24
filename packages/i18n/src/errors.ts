@@ -25,6 +25,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
 
   'tenant.not-found': msg`We could not find this convention.`,
   'tenant.slug-invalid': msg`The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters.`,
+  'tenant.slug-reserved': msg`This address is reserved for the platform. Choose another one.`,
   'tenant.slug-taken': msg`This address is already taken by another convention.`,
   'tenant.name-empty': msg`Enter the convention name.`,
   'tenant.locale-invalid': msg`This language is not supported.`,

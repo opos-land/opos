@@ -172,6 +172,10 @@ msgid "This address is already taken by another convention."
 msgstr "Ten adres jest już zajęty przez inny konwent."
 
 #: src/errors.ts
+msgid "This address is reserved for the platform. Choose another one."
+msgstr "Ten adres jest zarezerwowany dla platformy. Wybierz inny."
+
+#: src/errors.ts
 msgid "This convention already has an edition with this address."
 msgstr "Ten konwent ma już edycję o tym adresie."
 

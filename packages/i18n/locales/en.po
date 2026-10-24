@@ -172,6 +172,10 @@ msgid "This address is already taken by another convention."
 msgstr "This address is already taken by another convention."
 
 #: src/errors.ts
+msgid "This address is reserved for the platform. Choose another one."
+msgstr "This address is reserved for the platform. Choose another one."
+
+#: src/errors.ts
 msgid "This convention already has an edition with this address."
 msgstr "This convention already has an edition with this address."
 

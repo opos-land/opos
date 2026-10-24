@@ -1,0 +1,2 @@
+-- The words come from RESERVED_TENANT_SLUGS in packages/db/src/schema/tenants.ts.
+ALTER TABLE "tenants" ADD CONSTRAINT "tenants_slug_not_reserved" CHECK ("tenants"."slug" not in ('admin', 'api', 'auth', 'invitation', 'login', 'panel', 'scanner', 'www'));

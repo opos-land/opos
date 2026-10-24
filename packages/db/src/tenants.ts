@@ -1,7 +1,7 @@
 import { isLocale, isTimeZone } from '@opos/i18n'
 import { and, eq, ne } from 'drizzle-orm'
 import type { Database } from './client'
-import { accounts, tenantMemberships, tenants } from './schema'
+import { accounts, RESERVED_TENANT_SLUGS, tenantMemberships, tenants } from './schema'
 
 export interface CreateTenantInput {
   slug: string
@@ -19,6 +19,7 @@ export interface RenameTenantInput {
 export type TenantErrorCode =
   | 'tenant.not-found'
   | 'tenant.slug-invalid'
+  | 'tenant.slug-reserved'
   | 'tenant.slug-taken'
   | 'tenant.name-empty'
   | 'tenant.locale-invalid'
@@ -40,6 +41,9 @@ const SLUG = /^[a-z0-9-]{3,40}$/
 function assertSlug(slug: string) {
   if (!SLUG.test(slug)) {
     throw new TenantError('tenant.slug-invalid', `Slug must match ${SLUG}: ${slug}`)
+  }
+  if ((RESERVED_TENANT_SLUGS as readonly string[]).includes(slug)) {
+    throw new TenantError('tenant.slug-reserved', `The slug ${slug} is reserved for the platform`)
   }
 }
 

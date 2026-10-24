@@ -457,13 +457,14 @@ describe('concurrency', () => {
 })
 
 describe('tenant settings', () => {
-  it('changes the name and refuses a taken slug and an unknown time zone', async () => {
+  it('changes the name and refuses a slug and an unknown time zone', async () => {
     const res = await call(a.head, 'patch', '/tenants/current', { name: 'Renamed' }).expect(200)
     expect(res.body).toMatchObject({ name: 'Renamed', slug: a.slug })
 
-    expect((await call(a.head, 'patch', '/tenants/current', { slug: b.slug })).body).toMatchObject({
-      code: 'tenant.slug-taken',
-    })
+    // The slug changes only through the admin's script (PLAN.md 14).
+    expect(
+      (await call(a.head, 'patch', '/tenants/current', { slug: 'renamed-tenant' })).body,
+    ).toMatchObject({ code: 'request.invalid', params: { field: 'slug' } })
     expect(
       (await call(a.head, 'patch', '/tenants/current', { timezone: 'Mars/Olympus' })).body,
     ).toMatchObject({ code: 'request.invalid', params: { field: 'timezone' } })

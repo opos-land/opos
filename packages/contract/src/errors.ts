@@ -16,7 +16,6 @@ export const errorCodes = [
   'member.expiry-after-own',
   'member.outlives-own',
   'member.is-head',
-  'tenant.slug-taken',
   'edition.slug-taken',
   'edition.active',
 ] as const

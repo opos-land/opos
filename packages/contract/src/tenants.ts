@@ -11,9 +11,6 @@ export const tenantHeaders = bearer.extend({ 'x-tenant-slug': z.string() })
 
 export const level = z.enum(['none', 'read', 'write'])
 
-/** The same rule as the `tenants_slug_format` check in packages/db. */
-export const tenantSlug = z.string().regex(/^[a-z0-9-]{3,40}$/)
-
 export const tenantSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
@@ -24,15 +21,17 @@ export const tenantSchema = z.object({
 
 export type Tenant = z.infer<typeof tenantSchema>
 
+/** The slug, the convention's address, changes only through the admin (PLAN.md 14). */
 export const updateTenantSchema = z
   .object({
     name: z.string().trim().min(1).max(200),
-    slug: tenantSlug,
     defaultLocale: z.enum(SUPPORTED_LOCALES),
     timezone: z.string().refine(isTimeZone, 'Unknown IANA time zone'),
   })
   .partial()
   .strict()
+
+export type UpdateTenant = z.infer<typeof updateTenantSchema>
 
 export const memberAccountSchema = z.object({
   id: z.string().uuid(),
@@ -89,8 +88,8 @@ export const tenantsContract = c.router({
     path: '/tenants/current',
     headers: tenantHeaders,
     body: updateTenantSchema,
-    responses: { 200: tenantSchema, ...tenantErrors, 409: errorSchema },
-    summary: 'Change the tenant; needs settings=write',
+    responses: { 200: tenantSchema, ...tenantErrors },
+    summary: 'Change the name, language or time zone of the tenant; needs settings=write',
   },
   members: {
     list: {

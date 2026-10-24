@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { type Tenant } from '@opos/contract'
+import { type Tenant, type UpdateTenant } from '@opos/contract'
 import { tenants } from '@opos/db'
 import { eq } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
@@ -8,8 +8,7 @@ import { TenantContextService } from '../../common/als/tenant-context.service'
 export class TenantsRepository {
   constructor(private readonly context: TenantContextService) {}
 
-  /** A taken slug violates tenants_slug_unique, which the filter answers with 409. */
-  async update(changes: Partial<Omit<Tenant, 'id'>>): Promise<Tenant> {
+  async update(changes: UpdateTenant): Promise<Tenant> {
     const current = this.context.tenant()
     if (Object.keys(changes).length === 0) return current
     const [row] = await this.context

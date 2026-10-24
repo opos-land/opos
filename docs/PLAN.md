@@ -373,9 +373,9 @@ deleted by the triggers and the cascade alone, both running as `opos_migrator`.
 
 ### 4.3 Tenant-level tables
 
-**`tenants`** ([tenants.ts](../packages/db/src/schema/tenants.ts)) — the `slug` is unique and
-matches `^[a-z0-9-]{3,40}$`; `defaultLocale` and the IANA `timezone` default to `pl` and
-`Europe/Warsaw`.
+**`tenants`** ([tenants.ts](../packages/db/src/schema/tenants.ts)) — the `slug` is unique,
+matches `^[a-z0-9-]{3,40}$` and changes only through the admin ([14](#changing-a-tenants-slug));
+`defaultLocale` and the IANA `timezone` default to `pl` and `Europe/Warsaw`.
 
 **`tenant_memberships`** ([tenant-memberships.ts](../packages/db/src/schema/tenant-memberships.ts))
 — one row per account and tenant, holding the `role` and the tenant-level permissions
@@ -656,7 +656,7 @@ by the payment provider only ([7.10](#710-payments)).
 | Method | Path | Required permission |
 |---|---|---|
 | GET | `/tenants/current` | membership; returns `id`, `slug`, `name`, `defaultLocale`, `timezone` |
-| PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `slug`, `defaultLocale`, `timezone` as an IANA zone); a taken slug -> `409` `tenant.slug-taken` |
+| PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `defaultLocale`, `timezone` as an IANA zone); the slug changes only through the admin ([14](#changing-a-tenants-slug)), so a `slug` field -> `400` |
 | GET | `/tenants/current/members` | `settings>=read`; every member with the account's email and names, expired ones included and flagged `expired` |
 | POST | `/tenants/current/members` | `settings=write`; an invitation ([7.7](#77-organizer-invitations)) |
 | PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry and drops the member's edition-level rows; an expiry on a head -> `400` |
@@ -1213,7 +1213,7 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 | `/:tenantSlug/editions/:editionSlug/program/:programItemId` | item form, speakers, reviews with hide and show |
 | `/:tenantSlug/editions/:editionSlug/access` | team members' edition permissions |
 | `/:tenantSlug/team` | `tenant_memberships` — list, invitations, permissions, expiry date |
-| `/:tenantSlug/settings` | name, slug, convention language, time zone |
+| `/:tenantSlug/settings` | name, convention language, time zone; the slug shown, not editable |
 | `/:tenantSlug/shop` | payment provider account, currency; credentials write-only |
 | `/:tenantSlug/editions/:editionSlug/tickets` | ticket types with sold and held counts |
 | `/:tenantSlug/editions/:editionSlug/tickets/orders` | orders, search by email, order details, cancellation |
@@ -1663,9 +1663,10 @@ outside `SUPPORTED_LOCALES` from `@opos/i18n`.
 
 ### Changing a tenant's slug
 
-The slug is the convention's address ([PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains)). The admin
-changes it on the server with [rename-tenant.ts](../packages/db/src/scripts/rename-tenant.ts), a
-wrapper around `renameTenant` from the same file:
+The slug is the convention's address ([PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains)), and no
+endpoint changes it. The admin changes it on the server with
+[rename-tenant.ts](../packages/db/src/scripts/rename-tenant.ts), a wrapper around `renameTenant` from
+the same file:
 
 ```bash
 pnpm db:tenant:rename --slug convention-c --new-slug convention-d

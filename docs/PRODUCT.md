@@ -245,6 +245,10 @@ In the panel Jan switches convention context in the top bar.
 A convention links to its page in the portal from its own website and social media; the page has
 the "Sign up" button for the active edition.
 
+**Only the admin sets a convention's address.** It is chosen when the admin creates the convention,
+and only the admin changes it later: every link and bookmark to the convention's page carries it,
+and the old address stops working.
+
 **Only the admin sets a custom domain.** The field is unique platform-wide and unverified, so
 self-service would let someone claim another party's domain and intercept its traffic. Wiring up a
 domain requires manual configuration on the platform side anyway. Self-service returns together

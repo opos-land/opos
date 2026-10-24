@@ -457,6 +457,50 @@ describe('promotion to head', () => {
       shopConfigAccess: 'none',
     })
   })
+
+  it('keeps tenant-level permissions of a head at none, so a later demotion does not grant them', async () => {
+    const t = await tenantWithHead()
+    const promoted = await member()
+    const id = await addOrg(t.id, promoted)
+    const path = `/tenants/current/members/${id}`
+    await call(t.head, 'patch', path, { role: 'head' }, t.slug).expect(200)
+
+    const head = await call(
+      t.head,
+      'patch',
+      path,
+      { settingsAccess: 'write', brandingAccess: 'read', shopConfigAccess: 'write' },
+      t.slug,
+    ).expect(200)
+    const res = await call(t.head, 'patch', path, { role: 'org' }, t.slug).expect(200)
+
+    const none = { settingsAccess: 'none', brandingAccess: 'none', shopConfigAccess: 'none' }
+    expect(head.body).toMatchObject({ role: 'head', ...none })
+    expect(res.body).toMatchObject({ role: 'org', ...none })
+  })
+
+  it('applies tenant-level permissions sent with a demotion', async () => {
+    const t = await tenantWithHead()
+    const promoted = await member()
+    const id = await addOrg(t.id, promoted)
+    const path = `/tenants/current/members/${id}`
+    await call(t.head, 'patch', path, { role: 'head' }, t.slug).expect(200)
+
+    const res = await call(
+      t.head,
+      'patch',
+      path,
+      { role: 'org', brandingAccess: 'read' },
+      t.slug,
+    ).expect(200)
+
+    expect(res.body).toMatchObject({
+      role: 'org',
+      settingsAccess: 'none',
+      brandingAccess: 'read',
+      shopConfigAccess: 'none',
+    })
+  })
 })
 
 // Each test holds a row lock from outside, so the requests really overlap (PLAN.md 15.1).

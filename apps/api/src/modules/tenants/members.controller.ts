@@ -62,7 +62,7 @@ export class MembersController {
         }
         assertMayExtend(actor, actorEditions, resulting, targetEditions)
       }
-      return this.members.update(target.id, body)
+      return this.members.update(target.id, target.role, body)
     })
   }
 

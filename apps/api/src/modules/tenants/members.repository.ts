@@ -78,29 +78,27 @@ export class MembersRepository {
   }
 
   /**
-   * An expiry on a head violates tenant_memberships_head_never_expires, which the filter answers
-   * with 400. Promoting to head clears the expiry, resets the tenant-level permissions and drops the
-   * edition-level rows: a head holds everything, and stale grants would come back as access after
-   * a demotion.
+   * `role` is the member's role before the change. An expiry on a head violates
+   * tenant_memberships_head_never_expires, which the filter answers with 400. Promoting to head
+   * clears the expiry and drops the edition-level rows, and a member who is a head after the change
+   * keeps the tenant-level permissions at none whatever the body says: a head holds everything, and
+   * stored grants would come back as access after a demotion.
    */
-  async update(id: string, changes: UpdateMember): Promise<Member> {
+  async update(id: string, role: Member['role'], changes: UpdateMember): Promise<Member> {
     if (Object.keys(changes).length === 0) return (await this.find(id))!
     const { expiresAt, ...rest } = changes
     const tx = this.context.tx()
     if (changes.role === 'head') {
       await tx.delete(editionMemberships).where(eq(editionMemberships.tenantMembershipId, id))
     }
+    const head = (changes.role ?? role) === 'head'
     await tx
       .update(tenantMemberships)
       .set({
         ...rest,
+        ...(head && { settingsAccess: 'none', brandingAccess: 'none', shopConfigAccess: 'none' }),
         ...(changes.role === 'head'
-          ? {
-              settingsAccess: 'none',
-              brandingAccess: 'none',
-              shopConfigAccess: 'none',
-              expiresAt: null,
-            }
+          ? { expiresAt: null }
           : expiresAt !== undefined && { expiresAt: expiresAt ? new Date(expiresAt) : null }),
       })
       .where(eq(tenantMemberships.id, id))

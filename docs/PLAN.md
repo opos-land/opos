@@ -86,7 +86,9 @@ live next to the applications ([6](#6-localization)).
 
 **Monorepo:** turborepo, pnpm workspaces with a `catalog:` for versions shared by more than one
 package, TypeScript 6 strict, shared `packages/tsconfig` and `packages/eslint-config` (flat config
-with typed `typescript-eslint` rules, including the feature boundary rules).
+with typed `typescript-eslint` rules; for the frontends also `eslint-plugin-react`,
+`eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y` and the feature boundary rules from
+`eslint-plugin-import-x`, [3.2](#32-frontend-application-layout)).
 
 **Pinned versions:** Node, pnpm and the age of dependencies, as in
 [12](#versions-and-dependencies).
@@ -210,9 +212,8 @@ opos/
           scanner-devices.ts
           attendees.ts
     i18n/                # built: locales, detection, catalogs, formatters, glossary, error and email messages
-    tsconfig/            # built: base.json, node.json
-      react.json         # extends base.json
-    eslint-config/       # built
+    tsconfig/            # built: base.json, node.json, react.json
+    eslint-config/       # built: base, node, nest and react presets, feature boundary rules, tests
 ```
 
 ### 3.1 Turbo tasks
@@ -275,7 +276,8 @@ src/
     config/
 ```
 
-Import rules, enforced by the `no-restricted-paths` rule in `packages/eslint-config`:
+Import rules, enforced by `import-x/no-restricted-paths` in the `react` preset of
+[packages/eslint-config/react.js](../packages/eslint-config/react.js):
 
 | From | To | Allowed |
 |---|---|---|
@@ -284,6 +286,15 @@ Import rules, enforced by the `no-restricted-paths` rule in `packages/eslint-con
 | `features/x` | the internals of `features/y` | **no** |
 | `shared/` | `features/` | **no** |
 | `app/` | anywhere | yes |
+| `shared/`, `features/` | `app/` | **no** |
+
+- An application's `eslint.config.js` passes its own directory to the preset
+  (`react(import.meta.dirname)`); the features are the directories of `src/features` when ESLint
+  starts, so a new feature is covered without a config change.
+- Imports resolve through the application's `tsconfig.json`, so a path alias cannot slip past the
+  rules; an import that does not resolve is not checked.
+- [react.test.js](../packages/eslint-config/react.test.js) lints a fixture application and must
+  show every row of the table, the React, hooks and accessibility rules included.
 
 Routes stay thin: a route definition holds no logic, it only mounts a view from the right
 feature.
@@ -1774,6 +1785,10 @@ account or a version pulled right after release. Side effect: `pnpm add` may pic
 below the newest — that is intended. An urgent security fix requires a deliberate
 `minimumReleaseAgeExclude` for that specific package.
 
+A security fix for a transitive dependency whose parent pins the vulnerable version goes into
+`overrides` in `pnpm-workspace.yaml`, scoped to that parent (`<parent>><package>: <range>`)
+and commented with the advisory id. The override leaves once the parent ships the fix.
+
 ### Git hooks
 
 [lefthook.yml](../lefthook.yml), installed by `prepare`, so `pnpm install` is enough: prettier and
@@ -1934,13 +1949,13 @@ Where a test lives depends on what it needs:
 
 | Kind | Needs | Location | Example |
 |---|---|---|---|
-| unit | nothing outside the process; compiled catalogs at most | next to the file it tests, `<name>.test.ts` | `packages/i18n/src/detect.test.ts` |
+| unit | nothing outside the process; compiled catalogs at most | next to the file it tests, `<name>.test.ts` (`.test.js` in the JavaScript-only `packages/eslint-config`) | `packages/i18n/src/detect.test.ts` |
 | integration | Postgres, Supabase Auth or HTTP | `test/` of the package or application, with its `globalSetup` | `packages/db/test/rls.test.ts`, `apps/api/test/*.test.ts` |
 | e2e | the full stack in a browser | the `e2e` package | `e2e/specs/` |
 
 A frontend feature keeps the unit tests of its hooks and models inside the feature directory. Each
 `vitest.config.ts` includes the patterns of the kinds its package has (`src/**/*.test.ts`,
-`test/**/*.test.ts`). Test files never reach a bundle (tsdown and Vite follow imports from the
+`test/**/*.test.ts`; `*.test.js` in the `vitest.config.js` of `packages/eslint-config`). Test files never reach a bundle (tsdown and Vite follow imports from the
 entry point) and never contribute messages (`linguiConfig()` excludes them).
 
 ### 15.1 API integration tests

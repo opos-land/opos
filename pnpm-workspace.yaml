@@ -16,6 +16,7 @@ allowBuilds:
   '@scarf/scarf': false
   # platform binaries come from optional dependencies, the postinstall only verifies them
   esbuild: false
+  unrs-resolver: false
 
 # Versions shared by more than one workspace package.
 catalog:
@@ -43,3 +44,8 @@ catalog:
   typescript-eslint: ^8.60.0
   vitest: ^4.1.0
   zod: ^4.6.7
+
+# Security fixes for transitive dependencies whose parents pin a vulnerable version.
+overrides:
+  # GHSA-r3ph-w7gj-g6xm; @nestjs/swagger 11 pins js-yaml 5.3.0.
+  '@nestjs/swagger>js-yaml': ^5.4.1

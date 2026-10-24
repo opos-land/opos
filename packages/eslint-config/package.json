@@ -4,12 +4,28 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./index.js"
+    ".": "./index.js",
+    "./react": "./react.js"
+  },
+  "scripts": {
+    "lint": "eslint --max-warnings 0 .",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@eslint/compat": "^2.1.1",
     "@eslint/js": "catalog:",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "catalog:",
     "typescript-eslint": "catalog:"
+  },
+  "devDependencies": {
+    "@opos/tsconfig": "workspace:*",
+    "eslint": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "eslint": "catalog:"

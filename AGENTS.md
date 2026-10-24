@@ -184,10 +184,10 @@ permission or a role, or a data state the tests rely on updates
 in the same PR. Run `pnpm db:seed` twice before the PR: the second run proves it is idempotent.
 
 **Tests sit by what they need** ([tests](docs/PLAN.md#15-tests)). A unit test, which needs nothing
-outside the process, goes next to the file it tests as `<name>.test.ts`; an integration test, which
-needs Postgres, Supabase Auth or HTTP, goes into the `test/` directory of its package or
-application; an e2e test goes into the `e2e` package. New code with logic of its own gets a unit
-test in the same commit.
+outside the process, goes next to the file it tests as `<name>.test.ts` (`<name>.test.js` in the
+JavaScript-only `packages/eslint-config`); an integration test, which needs Postgres, Supabase Auth
+or HTTP, goes into the `test/` directory of its package or application; an e2e test goes into the
+`e2e` package. New code with logic of its own gets a unit test in the same commit.
 
 **Project skill and reviewers** in `.claude/`. The `docs-sync` skill is the procedure for every
 change to PRODUCT.md or PLAN.md, link and anchor check included. Before a PR, run the

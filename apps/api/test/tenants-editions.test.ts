@@ -24,7 +24,6 @@ let b: Awaited<ReturnType<typeof tenantWithHead>>
 let nobody: Member
 let reader: Member
 let writer: Member
-let limited: Member
 let target: Member
 let targetId: string
 let writerId: string
@@ -39,17 +38,10 @@ beforeAll(async () => {
   app = await createApp()
   await app.listen(0, '127.0.0.1')
   ;[a, b] = await Promise.all([tenantWithHead(), tenantWithHead()])
-  ;[nobody, reader, writer, limited, target] = await Promise.all([
-    member(),
-    member(),
-    member(),
-    member(),
-    member(),
-  ])
+  ;[nobody, reader, writer, target] = await Promise.all([member(), member(), member(), member()])
   await addOrg(a.id, nobody)
   await addOrg(a.id, reader, { settings: 'read' })
   writerId = await addOrg(a.id, writer, { settings: 'write' })
-  await addOrg(a.id, limited, { settings: 'write', expiresAt: later })
   targetId = await addOrg(a.id, target)
   ;[editionA, editionB] = await Promise.all([addEdition(a.id), addEdition(b.id)])
   lapsed = await member()
@@ -271,6 +263,7 @@ describe('anti-escalation', () => {
     const tempId = await addOrg(a.id, temp, { settings: 'write', expiresAt: later })
     await addEditionAccess(a.id, tempId, editionA, { program: 'write' })
     const lastingId = await addOrg(a.id, lasting, { settings: 'read' })
+    await addEditionAccess(a.id, lastingId, editionA, { program: 'read' })
     const program = (programAccess: string) => ({
       programAccess,
       websiteContentAccess: 'none',
@@ -284,10 +277,11 @@ describe('anti-escalation', () => {
     expect((await patch(temp, lastingId, { settingsAccess: 'write' })).body).toMatchObject({
       code: 'member.outlives-own',
     })
-    expect((await call(temp, 'put', editionPath, program('read'))).body).toMatchObject({
+    expect((await call(temp, 'put', editionPath, program('write'))).body).toMatchObject({
       code: 'member.outlives-own',
     })
     await patch(temp, lastingId, { settingsAccess: 'none' }).expect(200)
+    await call(temp, 'put', editionPath, program('none')).expect(200)
     await patch(temp, lastingId, { expiresAt: beyond }).expect(200)
     expect((await patch(temp, lastingId, { expiresAt: null })).body).toMatchObject({
       code: 'member.expiry-after-own',

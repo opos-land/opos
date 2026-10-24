@@ -228,6 +228,11 @@ describe('assertWithinOwnExpiry', () => {
     expect(check(before, before, true)).toBe('allowed')
   })
 
+  it("allows a raise in the same change that ends the member's access within the org's own", () => {
+    expect(check(null, before, true)).toBe('allowed')
+    expect(check(new Date('2026-01-01T00:00:00Z'), before, true)).toBe('allowed')
+  })
+
   it('leaves heads and orgs without an expiry alone', () => {
     expect(
       code(() => assertWithinOwnExpiry(head, { current: before, next: null, raises: true })),

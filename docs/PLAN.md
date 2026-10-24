@@ -1955,7 +1955,7 @@ Where a test lives depends on what it needs:
 
 A frontend feature keeps the unit tests of its hooks and models inside the feature directory. Each
 `vitest.config.ts` includes the patterns of the kinds its package has (`src/**/*.test.ts`,
-`test/**/*.test.ts`). Test files never reach a bundle (tsdown and Vite follow imports from the
+`test/**/*.test.ts`; `*.test.js` in the `vitest.config.js` of `packages/eslint-config`). Test files never reach a bundle (tsdown and Vite follow imports from the
 entry point) and never contribute messages (`linguiConfig()` excludes them).
 
 ### 15.1 API integration tests

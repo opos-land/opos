@@ -582,11 +582,12 @@ everything from `anon` and `authenticated`, and adds each table's `<table>_set_u
 
 - `opos_app` gets `select`; `insert` and `delete` where the API creates and removes rows; `update`
   only on the columns the API changes — never on `id`, `tenant_id` or a column that points a row at
-  an account or another row (`account_id`, `tenant_membership_id`). A new column the API changes
-  joins its grant in the same migration.
+  an account or another row (`account_id`, `tenant_membership_id`). A write the API starts doing —
+  on a new column or on a table it did not write before — gets its grant in that PR's migration.
 - `opos_app_global` gets `select` and nothing else.
 - `tenants` rows are inserted, deleted and given a new slug by `opos_migrator` alone
   ([14](#creating-a-tenant)); `accounts` follows [4.2](#42-global-tables).
+
 Trigger functions are `security definer` with `set search_path = ''` and schema-qualified names,
 because Supabase Auth runs with `search_path = auth`. `db:push` is for local experiments only;
 everything else goes through generated migrations.
@@ -1110,6 +1111,8 @@ An invitation is a signed JWT (`INVITE_SECRET`, TTL 7 days) with the payload
 - Unknown email -> an email with a `panel.opos.land/invitation?token=...` link; after registering
   or signing in, `POST /invitations/accept` creates the membership.
 - Permissions from the token go through the anti-escalation check.
+- The migration of this endpoint grants `opos_app` `insert` on `tenant_memberships`
+  ([4.6](#migrations-and-verification)); until then the API creates no membership.
 
 Invitation emails are sent by `MailModule`, not by Supabase Auth.
 
@@ -1717,7 +1720,7 @@ any API code: the global setup applies the migrations, the tests connect as `opo
 remove the tenants and users they created. They cover the RLS row of the table below for every
 covered table (no context, another tenant's context, a row moved to another tenant), the
 `accounts` privileges, the runtime roles' privileges (`opos_app_global` only reads, `opos_app`
-updates only the granted columns and neither inserts nor deletes a tenant), the
+updates only the granted columns, inserts no tenant and no membership and deletes no tenant), the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
 foreign edition), `createTenant` and each of its refusals, and the `accounts` triggers. The API tests repeat
@@ -1799,10 +1802,10 @@ GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every pus
 containers run for the schema and API tests, behind `pnpm db:migrate`, `pnpm db:verify` and two runs
 of `pnpm db:seed` — the second proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
 run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
-package and fills the turbo cache that PRs restore. `pnpm build` then
-bundles the API, and the job starts `dist/main.js` with `NODE_ENV=production` against the same
-containers: `/health` must answer `200`. The tests run the sources; this step runs the bundle that
-production runs. `pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
+package and fills the turbo cache that PRs restore. `pnpm build` then bundles the API, and the job
+starts `dist/main.js` with `NODE_ENV=production` against the same containers: `/health` must answer
+`200`. The tests run the sources; this step runs the bundle that production runs.
+`pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
 
 Branches:
 

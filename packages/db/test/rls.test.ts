@@ -62,19 +62,25 @@ describe('tenant isolation', () => {
     },
   )
 
+  // The tables opos_app inserts into; WITH CHECK refuses a row of another tenant in each.
   it('rejects an insert with another tenant id', async () => {
-    const a = await createTenant()
-    const b = await createTenant()
+    const [membership] = await migrator<{ id: string }[]>`
+      select id from tenant_memberships where tenant_id = ${a.id}
+    `
+    const [edition] = await migrator<{ id: string }[]>`
+      select id from editions where tenant_id = ${a.id}
+    `
 
-    await expect(
-      inTenant(
-        b.id,
-        (sql) => sql`
-        insert into editions (tenant_id, slug, name, starts_at, ends_at)
-        values (${a.id}, 'foreign', 'Foreign', '2026-06-01', '2026-06-03')
-      `,
-      ),
-    ).rejects.toThrow(/row-level security/)
+    for (const statement of [
+      `insert into editions (tenant_id, slug, name, starts_at, ends_at)
+       values ('${a.id}', 'foreign', 'Foreign', '2026-06-01', '2026-06-03')`,
+      `insert into edition_memberships (tenant_id, tenant_membership_id, edition_id)
+       values ('${a.id}', '${membership!.id}', '${edition!.id}')`,
+    ]) {
+      await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
+        /row-level security/,
+      )
+    }
   })
 
   it.each(['anon', 'authenticated'])('gives %s no access to public tables', async (role) => {
@@ -107,9 +113,15 @@ describe('runtime privileges', () => {
     }
   })
 
-  it('lets opos_app neither create nor delete a tenant', async () => {
+  it('lets opos_app create no tenant and no membership, and delete no tenant', async () => {
+    // An account without a membership in b: only the missing privilege can refuse it.
+    const [outsider] = await migrator<{ account_id: string }[]>`
+      select account_id from tenant_memberships where tenant_id = ${a.id}
+    `
     for (const statement of [
       `insert into tenants (slug, name) values ('rls-foreign', 'Foreign')`,
+      `insert into tenant_memberships (account_id, tenant_id, role)
+       values ('${outsider!.account_id}', '${b.id}', 'org')`,
       `delete from tenants where id = '${b.id}'`,
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(

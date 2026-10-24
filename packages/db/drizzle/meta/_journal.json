@@ -50,6 +50,13 @@
       "when": 1792802374764,
       "tag": "0006_narrow_runtime_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792803643557,
+      "tag": "0007_revoke_membership_inserts",
+      "breakpoints": true
     }
   ]
 }

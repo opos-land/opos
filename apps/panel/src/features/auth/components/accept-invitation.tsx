@@ -6,7 +6,7 @@ import { errorCode } from '../../../shared/lib/errors'
 import { Button, ErrorMessage, LoadingView } from '../../../shared/ui'
 import { signOut } from '../api/auth'
 import { acceptInvitationOptions, membershipsKey } from '../api/invitations'
-import { forgetInvitation } from '../model/invitation-storage'
+import { endsInvitation, forgetInvitation } from '../model/invitation-storage'
 
 /**
  * Accepts the invitation as soon as there is a session (PLAN.md 7.7, step 2), then opens the
@@ -21,6 +21,9 @@ export function AcceptInvitation({ token, email }: { token: string; email: strin
       forgetInvitation()
       await queryClient.invalidateQueries({ queryKey: membershipsKey() })
       void navigate(`/${tenant.slug}`, { replace: true })
+    },
+    onError: (error) => {
+      if (endsInvitation(errorCode(error))) forgetInvitation()
     },
   })
   const started = useRef(false)

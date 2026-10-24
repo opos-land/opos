@@ -1282,7 +1282,10 @@ confirmed does not survive ([4.2](#42-global-tables)).
    ([invitation-storage.ts](../apps/panel/src/features/auth/model/invitation-storage.ts)), so it
    survives the confirmation link opening in another tab.
 2. Signed in already, or after `signInWithPassword` or the Google return: the panel calls
-   `POST /invitations/accept` and removes the stored entry.
+   `POST /invitations/accept` and removes the stored entry. The entry also goes when the preview or
+   the acceptance answers `invitation.invalid`, `invitation.expired`, `invitation.used`,
+   `invitation.revoked` or `invitation.already-member`; `invitation.email-mismatch` keeps it, so the
+   invitee can sign in with the invited address instead.
 3. Sign-up with email: the form takes the address, prefilled with the invited one, and no password.
    The panel calls `signUp({ email, password: <random throwaway, never shown or stored>, options: {
    data: { locale }, emailRedirectTo: <PANEL_URL>/auth/callback } })` and marks the stored entry as

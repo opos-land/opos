@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  endsInvitation,
   forgetInvitation,
   INVITATION_STORAGE_KEY,
   rememberInvitation,
@@ -63,6 +64,25 @@ describe('the stored invitation', () => {
     localStorage.setItem(INVITATION_STORAGE_KEY, JSON.stringify({ awaitingPassword: true }))
     expect(storedInvitation()).toBeNull()
   })
+})
+
+describe('endsInvitation', () => {
+  it.each([
+    'invitation.invalid',
+    'invitation.expired',
+    'invitation.used',
+    'invitation.revoked',
+    'invitation.already-member',
+  ])('is true for %s', (code) => {
+    expect(endsInvitation(code)).toBe(true)
+  })
+
+  it.each(['invitation.email-mismatch', 'server.error', 'auth.otp_expired', undefined])(
+    'is false for %s',
+    (code) => {
+      expect(endsInvitation(code)).toBe(false)
+    },
+  )
 })
 
 describe('throwawayPassword', () => {

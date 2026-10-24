@@ -2,9 +2,10 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { formatDateTime } from '@opos/i18n'
 import { type InvitationPreview } from '@opos/contract'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { activeLocale } from '../../../shared/lib/i18n'
+import { errorCode } from '../../../shared/lib/errors'
 import { useSession } from '../../../shared/lib/session'
 import { ErrorMessage, LoadingView, Notice } from '../../../shared/ui'
 import { sendPasswordLink, signUpWithEmail } from '../api/auth'
@@ -16,6 +17,8 @@ import { EmailOnlyForm } from '../components/email-only-form'
 import { GoogleButton } from '../components/google-button'
 import { SignInForm } from '../components/sign-in-form'
 import {
+  endsInvitation,
+  forgetInvitation,
   rememberInvitation,
   setAwaitingPassword,
   type StoredInvitation,
@@ -164,6 +167,12 @@ export function InvitationPage() {
     ...invitationPreviewOptions(invitation?.token ?? ''),
     enabled: Boolean(invitation),
   })
+
+  // A dead invitation leaves nothing behind for a later visit to pick up.
+  const previewCode = preview.isError ? errorCode(preview.error) : undefined
+  useEffect(() => {
+    if (endsInvitation(previewCode)) forgetInvitation()
+  }, [previewCode])
 
   const awaitPassword = (awaitingPassword: boolean) => {
     setAwaitingPassword(awaitingPassword)

@@ -44,6 +44,22 @@ export function forgetInvitation() {
   removeStorage(INVITATION_STORAGE_KEY)
 }
 
+/** Codes after which the stored invitation can never be accepted, by this account or any other. */
+const FINAL_CODES = new Set([
+  'invitation.invalid',
+  'invitation.expired',
+  'invitation.used',
+  'invitation.revoked',
+  'invitation.already-member',
+])
+
+/**
+ * Whether an error of the preview or of the acceptance ends the invitation. An email mismatch does
+ * not: the invitee can still sign in with the invited address.
+ */
+export const endsInvitation = (code: string | undefined) =>
+  code !== undefined && FINAL_CODES.has(code)
+
 /**
  * The password an email sign-up is created with (PLAN.md 7.7, step 3): random, never shown and
  * never stored. The invitee chooses the real one once the address is confirmed.

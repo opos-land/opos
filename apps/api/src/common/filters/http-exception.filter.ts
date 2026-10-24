@@ -41,11 +41,6 @@ const constraintErrors: Record<
     code: 'membership.last-head',
     message: 'A tenant must keep at least one head',
   },
-  tenants_slug_unique: {
-    status: 409,
-    code: 'tenant.slug-taken',
-    message: 'The slug is taken by another tenant',
-  },
   editions_tenant_slug_unique: {
     status: 409,
     code: 'edition.slug-taken',

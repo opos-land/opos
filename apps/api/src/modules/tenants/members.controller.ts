@@ -9,6 +9,8 @@ import {
   assertMayGrant,
   assertMayManage,
   assertWithinOwnExpiry,
+  extendsAccess,
+  raisesTenantLevel,
 } from './anti-escalation'
 import { lockActorAndTarget } from './member-lock'
 import { MembersRepository } from './members.repository'
@@ -46,16 +48,11 @@ export class MembersController {
     return tsRestHandler(contract.tenants.members.update, async ({ params, body }) => {
       const { actor, target } = await this.lock(params.membershipId)
       assertMayGrant(actor, body, target)
-      const changesPermissions =
-        body.role !== undefined ||
-        body.settingsAccess !== undefined ||
-        body.brandingAccess !== undefined ||
-        body.shopConfigAccess !== undefined
-      if (changesPermissions) {
-        const expiry = body.expiresAt !== undefined ? body.expiresAt : target.expiresAt
-        assertWithinOwnExpiry(actor, expiry ? new Date(expiry) : null)
-      }
-      if (body.expiresAt !== undefined && actor.role !== 'head') {
+      const current = target.expiresAt ? new Date(target.expiresAt) : null
+      const next =
+        body.expiresAt === undefined ? current : body.expiresAt ? new Date(body.expiresAt) : null
+      assertWithinOwnExpiry(actor, { current, next, raises: raisesTenantLevel(body, target) })
+      if (actor.role !== 'head' && extendsAccess(current, next)) {
         const [actorEditions, targetEditions] = await Promise.all([
           this.access.editionRows(actor.id),
           this.access.editionRows(target.id),

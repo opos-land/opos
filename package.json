@@ -26,6 +26,7 @@
     "db:studio": "turbo run db:studio",
     "db:verify": "turbo run db:verify",
     "db:tenant:create": "turbo run db:tenant:create --",
+    "db:tenant:rename": "turbo run db:tenant:rename --",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:up": "docker compose up -d --wait",

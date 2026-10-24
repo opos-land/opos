@@ -1,5 +1,6 @@
 {
   "$schema": "https://turborepo.com/schema.json",
+  "globalDependencies": ["docker-compose.yml", "infra/supabase/**", ".github/workflows/**"],
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]
@@ -90,6 +91,15 @@
       ]
     },
     "db:tenant:create": {
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DATABASE_GLOBAL_URL",
+        "DATABASE_MIGRATION_URL",
+        "OPOS_DB_PORT"
+      ]
+    },
+    "db:tenant:rename": {
       "cache": false,
       "passThroughEnv": [
         "DATABASE_URL",

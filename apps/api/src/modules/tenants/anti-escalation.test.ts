@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { type TenantMembership } from '../../common/als/tenant-context.service'
+import { type EditionAccess } from '../../common/permissions/permissions'
 import {
+  assertMayExtend,
   assertMayGrant,
   assertMayGrantEdition,
   assertMayManage,
   assertWithinOwnExpiry,
+  extendsAccess,
+  raisesEditionLevel,
+  raisesTenantLevel,
 } from './anti-escalation'
 
 const org = (overrides: Partial<TenantMembership> = {}): TenantMembership => ({
@@ -59,25 +64,11 @@ describe('assertMayGrant', () => {
     expect(code(() => assertMayGrant(org(), { role: 'head' }, plain))).toBe('member.above-own')
   })
 
-  it("caps the expiry at the org's own", () => {
-    const actor = org({ expiresAt: new Date('2027-01-01T00:00:00Z') })
-
-    expect(code(() => assertMayGrant(actor, { expiresAt: '2026-12-31T00:00:00Z' }, plain))).toBe(
-      'allowed',
-    )
-    expect(code(() => assertMayGrant(actor, { expiresAt: '2027-02-01T00:00:00Z' }, plain))).toBe(
-      'member.expiry-after-own',
-    )
-    expect(code(() => assertMayGrant(actor, { expiresAt: null }, plain))).toBe(
-      'member.expiry-after-own',
-    )
-    expect(code(() => assertMayGrant(org(), { expiresAt: null }, plain))).toBe('allowed')
-  })
-
   it('treats a value the member already holds as no grant', () => {
     const held = { ...plain, shopConfigAccess: 'write' } as const
 
     expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'write' }, held))).toBe('allowed')
+    expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'read' }, held))).toBe('allowed')
     expect(code(() => assertMayGrant(org(), { shopConfigAccess: 'none' }, held))).toBe('allowed')
   })
 })
@@ -117,26 +108,137 @@ describe('assertMayGrantEdition', () => {
       code(() => assertMayGrantEdition(head, null, { ...none, ticketsAccess: 'write' }, null)),
     ).toBe('allowed')
   })
+
+  it('lets an org lower a permission it does not hold to any lower level', () => {
+    const current = { ...none, ticketsAccess: 'write' } as const
+
+    expect(
+      code(() => assertMayGrantEdition(org(), null, { ...none, ticketsAccess: 'read' }, current)),
+    ).toBe('allowed')
+  })
+})
+
+describe('extendsAccess', () => {
+  const past = new Date('2026-01-01T00:00:00Z')
+  const soon = new Date('2027-01-01T00:00:00Z')
+  const later = new Date('2027-06-01T00:00:00Z')
+
+  it('counts lifting an expiry and moving it later, a revival included', () => {
+    expect(extendsAccess(soon, null)).toBe(true)
+    expect(extendsAccess(soon, later)).toBe(true)
+    expect(extendsAccess(past, soon)).toBe(true)
+  })
+
+  it('counts a date that does not compare as extending', () => {
+    expect(extendsAccess(soon, new Date(Number.NaN))).toBe(true)
+  })
+
+  it('counts an earlier expiry, or a first one, as no grant', () => {
+    expect(extendsAccess(later, soon)).toBe(false)
+    expect(extendsAccess(soon, soon)).toBe(false)
+    expect(extendsAccess(null, later)).toBe(false)
+    expect(extendsAccess(null, null)).toBe(false)
+  })
+})
+
+describe('assertMayExtend', () => {
+  const rows = (entries: [string, Partial<EditionAccess>][]) =>
+    new Map(entries.map(([id, access]) => [id, { ...none, ...access }]))
+  const own = rows([['e1', { programAccess: 'read' }]])
+
+  it('lets an org extend a member who holds no more than the org', () => {
+    expect(
+      code(() =>
+        assertMayExtend(
+          org(),
+          own,
+          { ...plain, settingsAccess: 'read' },
+          rows([['e1', { programAccess: 'read' }]]),
+        ),
+      ),
+    ).toBe('allowed')
+  })
+
+  it('refuses a member who holds more on the tenant level', () => {
+    expect(
+      code(() => assertMayExtend(org(), own, { ...plain, shopConfigAccess: 'read' }, rows([]))),
+    ).toBe('member.above-own')
+  })
+
+  it('refuses a member who holds more in an edition, the org holding less or nothing there', () => {
+    expect(
+      code(() => assertMayExtend(org(), own, plain, rows([['e1', { programAccess: 'write' }]]))),
+    ).toBe('member.above-own')
+    expect(
+      code(() => assertMayExtend(org(), own, plain, rows([['e2', { ticketsAccess: 'read' }]]))),
+    ).toBe('member.above-own')
+  })
+
+  it('lets a head extend anyone', () => {
+    expect(
+      code(() =>
+        assertMayExtend(
+          head,
+          rows([]),
+          { ...plain, shopConfigAccess: 'write' },
+          rows([['e1', { ticketsAccess: 'write' }]]),
+        ),
+      ),
+    ).toBe('allowed')
+  })
+})
+
+describe('raisesTenantLevel and raisesEditionLevel', () => {
+  it('count only a level above the one the member holds', () => {
+    const current = { ...plain, settingsAccess: 'read' } as const
+
+    expect(raisesTenantLevel({ settingsAccess: 'write' }, current)).toBe(true)
+    expect(raisesTenantLevel({ settingsAccess: 'read', brandingAccess: 'none' }, current)).toBe(
+      false,
+    )
+    expect(raisesTenantLevel({ settingsAccess: 'none', expiresAt: null }, current)).toBe(false)
+    expect(raisesEditionLevel({ ...none, programAccess: 'read' }, null)).toBe(true)
+    expect(raisesEditionLevel(none, { ...none, ticketsAccess: 'write' })).toBe(false)
+  })
 })
 
 describe('assertWithinOwnExpiry', () => {
   const own = new Date('2027-01-01T00:00:00Z')
+  const before = new Date('2026-12-01T00:00:00Z')
+  const after = new Date('2027-02-01T00:00:00Z')
+  const actor = org({ expiresAt: own })
+  const check = (current: Date | null, next: Date | null, raises = false) =>
+    code(() => assertWithinOwnExpiry(actor, { current, next, raises }))
 
-  it('keeps what an org with an expiry grants within their own access', () => {
-    const actor = org({ expiresAt: own })
+  it("refuses extending access past the org's own end, a lift included", () => {
+    expect(check(before, after)).toBe('member.expiry-after-own')
+    expect(check(before, null)).toBe('member.expiry-after-own')
+  })
 
-    expect(code(() => assertWithinOwnExpiry(actor, new Date('2026-12-01T00:00:00Z')))).toBe(
-      'allowed',
-    )
-    expect(code(() => assertWithinOwnExpiry(actor, own))).toBe('allowed')
-    expect(code(() => assertWithinOwnExpiry(actor, null))).toBe('member.outlives-own')
-    expect(code(() => assertWithinOwnExpiry(actor, new Date('2027-02-01T00:00:00Z')))).toBe(
-      'member.outlives-own',
-    )
+  it("allows extending within the org's own end, and any shortening", () => {
+    expect(check(new Date('2026-06-01T00:00:00Z'), before)).toBe('allowed')
+    expect(check(null, after)).toBe('allowed')
+    expect(check(new Date('2030-01-01T00:00:00Z'), after)).toBe('allowed')
+  })
+
+  it('refuses raising a permission of a member who outlasts the org, and allows lowering it', () => {
+    expect(check(null, null, true)).toBe('member.outlives-own')
+    expect(check(after, after, true)).toBe('member.outlives-own')
+    expect(check(after, after)).toBe('allowed')
+    expect(check(before, before, true)).toBe('allowed')
+  })
+
+  it("allows a raise in the same change that ends the member's access within the org's own", () => {
+    expect(check(null, before, true)).toBe('allowed')
+    expect(check(new Date('2026-01-01T00:00:00Z'), before, true)).toBe('allowed')
   })
 
   it('leaves heads and orgs without an expiry alone', () => {
-    expect(code(() => assertWithinOwnExpiry(head, null))).toBe('allowed')
-    expect(code(() => assertWithinOwnExpiry(org(), null))).toBe('allowed')
+    expect(
+      code(() => assertWithinOwnExpiry(head, { current: before, next: null, raises: true })),
+    ).toBe('allowed')
+    expect(
+      code(() => assertWithinOwnExpiry(org(), { current: before, next: null, raises: true })),
+    ).toBe('allowed')
   })
 })

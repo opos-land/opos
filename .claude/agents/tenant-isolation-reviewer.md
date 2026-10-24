@@ -28,9 +28,11 @@ sections before you review; when the diff and the document disagree, report it.
   row cannot point at another tenant's row.
 - The hand-written migration enables and forces RLS on each new covered table, creates the
   `tenant_isolation` policy with `using` and `with check` on
-  `(select current_setting('app.tenant_id')::uuid)` without `missing_ok`, grants
-  `select, insert, update, delete` to `opos_app` and `opos_app_global` only, revokes everything from
-  `anon` and `authenticated`, and adds the `<table>_set_updated_at` trigger.
+  `(select current_setting('app.tenant_id')::uuid)` without `missing_ok`, grants `opos_app` only
+  what the API does with the table (`update` on named columns, never on `id`, `tenant_id` or a
+  column that points a row at an account or another row) and `opos_app_global` `select` alone,
+  revokes everything from `anon` and `authenticated`, and adds the `<table>_set_updated_at`
+  trigger.
 - Trigger functions are `security definer`, `set search_path = ''`, schema-qualified, and have
   `execute` revoked from `public`. An invariant enforced by a trigger holds under concurrent
   transactions (check for a missing lock) and on every path that can break it (insert, update,

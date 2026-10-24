@@ -16,16 +16,16 @@ type RefusalCode =
 const refuse = (code: RefusalCode, message: string) => new ApiError(403, code, message)
 
 /**
- * An org whose access expires changes the permissions only of members whose access ends no later
- * than their own, so nothing they grant outlives them. `resultingExpiry` is the member's expiry
- * after the change.
+ * Whether a new expiry makes the member's access last longer: lifting it, or moving it later, which
+ * also revives an expired membership. Only an earlier or equal expiry grants nothing, so a date that
+ * does not compare counts as extending.
  */
-export function assertWithinOwnExpiry(actor: TenantMembership, resultingExpiry: Date | null) {
-  if (actor.role === 'head' || !actor.expiresAt) return
-  if (!resultingExpiry || resultingExpiry > actor.expiresAt) {
-    throw refuse('member.outlives-own', "The member's access would outlast the actor's own")
-  }
-}
+export const extendsAccess = (current: Date | null, next: Date | null) =>
+  current !== null && !(next !== null && next <= current)
+
+/** Whether access ending at `expiresAt` (`null`: never) lasts past the org's own; fails closed. */
+const outlastsActor = (actor: TenantMembership, expiresAt: Date | null) =>
+  actor.expiresAt !== null && !(expiresAt !== null && expiresAt <= actor.expiresAt)
 
 export interface ManagedMember {
   id: string
@@ -45,10 +45,45 @@ export function assertMayManage(actor: TenantMembership, target: ManagedMember) 
   }
 }
 
+/** Whether new tenant-level permissions put any of them above what the member holds. */
+export const raisesTenantLevel = (changes: UpdateMember, current: TenantLevels) =>
+  Object.values(tenantResources).some((field) => {
+    const granted = changes[field]
+    return granted !== undefined && rank[granted] > rank[current[field]]
+  })
+
+/** Whether new edition-level permissions put any of them above what the member holds there. */
+export const raisesEditionLevel = (
+  access: EditionAccess,
+  current: EditionAccess | null | undefined,
+) =>
+  (Object.keys(access) as (keyof EditionAccess)[]).some(
+    (field) => rank[access[field]] > rank[current?.[field] ?? 'none'],
+  )
+
 /**
- * An org grants no tenant-level permission above their own and no expiry later than their own. A
- * value the target already holds is no grant, so an org may change one field of a member who holds
- * more than the org elsewhere.
+ * An org whose access expires grants nothing that outlasts it (PRODUCT.md 5.6): it extends no one's
+ * access past its own end, and raises no permission of a member whose access lasts longer. Lowering
+ * a permission or shortening access is never limited by the org's own end. `current` and `next` are
+ * the member's expiry before and after the change.
+ */
+export function assertWithinOwnExpiry(
+  actor: TenantMembership,
+  { current, next, raises }: { current: Date | null; next: Date | null; raises: boolean },
+) {
+  if (actor.role === 'head' || !actor.expiresAt) return
+  if (extendsAccess(current, next) && outlastsActor(actor, next)) {
+    throw refuse('member.expiry-after-own', "Extends the member's access past the actor's own")
+  }
+  if (raises && outlastsActor(actor, next)) {
+    throw refuse('member.outlives-own', 'Raises a permission of a member who outlasts the actor')
+  }
+}
+
+/**
+ * An org grants no tenant-level permission above their own. A value no higher than what the target
+ * already holds is no grant, so an org lowers any permission and may change one field of a member
+ * who holds more than the org elsewhere.
  */
 export function assertMayGrant(
   actor: TenantMembership,
@@ -59,21 +94,15 @@ export function assertMayGrant(
   if (changes.role === 'head') throw refuse('member.above-own', 'An org cannot appoint a head')
   for (const field of Object.values(tenantResources)) {
     const granted = changes[field]
-    if (granted && granted !== current[field] && rank[granted] > rank[actor[field]]) {
+    if (granted && rank[granted] > rank[current[field]] && rank[granted] > rank[actor[field]]) {
       throw refuse('member.above-own', `${field} above the actor's own`)
-    }
-  }
-  if (changes.expiresAt !== undefined && actor.expiresAt) {
-    const expiresAt = changes.expiresAt === null ? null : new Date(changes.expiresAt)
-    if (!expiresAt || expiresAt > actor.expiresAt) {
-      throw refuse('member.expiry-after-own', "Expiry later than the actor's own")
     }
   }
 }
 
 /**
- * An org grants no edition-level permission above what they hold in that edition; a value the
- * target already holds there is no grant.
+ * An org grants no edition-level permission above what they hold in that edition; a value no higher
+ * than what the target already holds there is no grant.
  */
 export function assertMayGrantEdition(
   actor: TenantMembership,
@@ -86,7 +115,7 @@ export function assertMayGrantEdition(
     keyof EditionAccess,
     EditionAccess[keyof EditionAccess],
   ][]) {
-    if (granted === (current?.[field] ?? 'none')) continue
+    if (rank[granted] <= rank[current?.[field] ?? 'none']) continue
     if (rank[granted] > rank[actorAccess?.[field] ?? 'none']) {
       throw refuse('member.above-own', `${field} above the actor's own`)
     }
@@ -94,8 +123,8 @@ export function assertMayGrantEdition(
 }
 
 /**
- * Lifting or moving an expiry hands the member every permission the row holds, so an org may do it
- * only for a member who holds no more than the org, on the tenant level and in every edition.
+ * Extending access (`extendsAccess`) hands the member every permission the row holds, so an org may
+ * do it only for a member who holds no more than the org, on the tenant level and in every edition.
  */
 export function assertMayExtend(
   actor: TenantMembership,

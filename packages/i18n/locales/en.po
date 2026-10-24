@@ -172,6 +172,10 @@ msgid "This address is already taken by another convention."
 msgstr "This address is already taken by another convention."
 
 #: src/errors.ts
+msgid "This address is reserved for the platform. Choose another one."
+msgstr "This address is reserved for the platform. Choose another one."
+
+#: src/errors.ts
 msgid "This convention already has an edition with this address."
 msgstr "This convention already has an edition with this address."
 
@@ -210,16 +214,16 @@ msgid "user"
 msgstr "user"
 
 #: src/errors.ts
+msgid "We could not find this convention."
+msgstr "We could not find this convention."
+
+#: src/errors.ts
 msgid "We could not find what you are looking for."
 msgstr "We could not find what you are looking for."
 
 #: src/errors.ts
 msgid "Wrong email or password."
 msgstr "Wrong email or password."
-
-#: src/errors.ts
-msgid "You cannot change the permissions of someone whose access lasts longer than yours."
-msgstr "You cannot change the permissions of someone whose access lasts longer than yours."
 
 #: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
@@ -230,12 +234,16 @@ msgid "You cannot delete the active edition. Activate another edition first."
 msgstr "You cannot delete the active edition. Activate another edition first."
 
 #: src/errors.ts
+msgid "You cannot give anyone access that lasts longer than yours."
+msgstr "You cannot give anyone access that lasts longer than yours."
+
+#: src/errors.ts
 msgid "You cannot grant permissions higher than your own."
 msgstr "You cannot grant permissions higher than your own."
 
 #: src/errors.ts
-msgid "You cannot set an access end date later than your own, or remove it."
-msgstr "You cannot set an access end date later than your own, or remove it."
+msgid "You cannot raise the permissions of someone whose access lasts longer than yours."
+msgstr "You cannot raise the permissions of someone whose access lasts longer than yours."
 
 #: src/errors.ts
 msgid "You do not have permission to do this."

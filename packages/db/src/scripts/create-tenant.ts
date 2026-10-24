@@ -1,7 +1,7 @@
 import { parseArgs } from 'node:util'
 import { migrationDb } from '../client'
 import { migrationUrl } from '../migration-url'
-import { createTenant, CreateTenantError } from '../tenants'
+import { createTenant, TenantError } from '../tenants'
 
 const usage =
   'Usage: pnpm db:tenant:create --slug <slug> --name <name> --head-email <email> [--locale pl] [--timezone Europe/Warsaw]'
@@ -35,7 +35,7 @@ try {
     `Created tenant ${tenant.slug} (${tenant.id}) with its head account ${tenant.headAccountId}.`,
   )
 } catch (error) {
-  if (!(error instanceof CreateTenantError)) throw error
+  if (!(error instanceof TenantError)) throw error
   console.error(`${error.code}: ${error.message}`)
   process.exitCode = 1
 } finally {

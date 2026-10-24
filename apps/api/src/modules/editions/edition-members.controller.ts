@@ -9,6 +9,7 @@ import {
   assertMayGrantEdition,
   assertMayManage,
   assertWithinOwnExpiry,
+  raisesEditionLevel,
 } from '../tenants/anti-escalation'
 import { lockActorAndTarget } from '../tenants/member-lock'
 import { MembersRepository } from '../tenants/members.repository'
@@ -54,12 +55,17 @@ export class EditionMembersController {
     return tsRestHandler(contract.editions.members.put, async ({ params, body }) => {
       const edition = await this.editions.get(params.editionId)
       const { actor, target } = await this.lock(params.tenantMembershipId)
-      assertWithinOwnExpiry(actor, target.expiresAt ? new Date(target.expiresAt) : null)
       const [actorAccess, current] = await Promise.all([
         this.access.editionAccess(actor.id, edition.id),
         this.access.editionAccess(target.id, edition.id),
       ])
       assertMayGrantEdition(actor, actorAccess, body, current)
+      const expiry = target.expiresAt ? new Date(target.expiresAt) : null
+      assertWithinOwnExpiry(actor, {
+        current: expiry,
+        next: expiry,
+        raises: raisesEditionLevel(body, current),
+      })
       return { status: 200, body: await this.editionMembers.put(edition.id, target.id, body) }
     })
   }

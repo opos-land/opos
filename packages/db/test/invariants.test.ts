@@ -183,6 +183,12 @@ describe('invariants', () => {
     expect(row!.moved).toBe(true)
   })
 
+  it('refuses a reserved word as a slug', async () => {
+    await expect(
+      migrator`insert into tenants (slug, name) values ('panel', 'Panel')`,
+    ).rejects.toThrow(/tenants_slug_not_reserved/)
+  })
+
   it('refuses a slug outside the allowed format', async () => {
     await expect(
       migrator`insert into tenants (slug, name) values (${`Bad_${randomUUID().slice(0, 4)}`}, 'Bad')`,

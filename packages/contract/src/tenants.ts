@@ -1,7 +1,7 @@
 import { isTimeZone, SUPPORTED_LOCALES } from '@opos/i18n'
 import { initContract } from '@ts-rest/core'
 import { z } from 'zod'
-import { errorSchema } from './common'
+import { errorSchema, timestamp } from './common'
 import { bearer } from './me'
 
 const c = initContract()
@@ -10,9 +10,6 @@ const c = initContract()
 export const tenantHeaders = bearer.extend({ 'x-tenant-slug': z.string() })
 
 export const level = z.enum(['none', 'read', 'write'])
-
-/** The same rule as the `tenants_slug_format` check in packages/db. */
-export const tenantSlug = z.string().regex(/^[a-z0-9-]{3,40}$/)
 
 export const tenantSchema = z.object({
   id: z.string().uuid(),
@@ -24,15 +21,17 @@ export const tenantSchema = z.object({
 
 export type Tenant = z.infer<typeof tenantSchema>
 
+/** The slug, the convention's address, changes only through the admin (PLAN.md 14). */
 export const updateTenantSchema = z
   .object({
     name: z.string().trim().min(1).max(200),
-    slug: tenantSlug,
     defaultLocale: z.enum(SUPPORTED_LOCALES),
     timezone: z.string().refine(isTimeZone, 'Unknown IANA time zone'),
   })
   .partial()
   .strict()
+
+export type UpdateTenant = z.infer<typeof updateTenantSchema>
 
 export const memberAccountSchema = z.object({
   id: z.string().uuid(),
@@ -49,7 +48,7 @@ export const memberSchema = z.object({
   settingsAccess: level,
   brandingAccess: level,
   shopConfigAccess: level,
-  expiresAt: z.string().datetime({ offset: true }).nullable(),
+  expiresAt: timestamp.nullable(),
   expired: z.boolean(),
 })
 
@@ -62,7 +61,7 @@ export const updateMemberSchema = z
     brandingAccess: level,
     shopConfigAccess: level,
     /** `null` removes the expiry. A head never expires. */
-    expiresAt: z.string().datetime({ offset: true }).nullable(),
+    expiresAt: timestamp.nullable(),
   })
   .partial()
   .strict()
@@ -89,8 +88,8 @@ export const tenantsContract = c.router({
     path: '/tenants/current',
     headers: tenantHeaders,
     body: updateTenantSchema,
-    responses: { 200: tenantSchema, ...tenantErrors, 409: errorSchema },
-    summary: 'Change the tenant; needs settings=write',
+    responses: { 200: tenantSchema, ...tenantErrors },
+    summary: 'Change the name, language or time zone of the tenant; needs settings=write',
   },
   members: {
     list: {

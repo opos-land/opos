@@ -229,6 +229,9 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
 
 - `build`, `dev` and `test` depend on `i18n:compile` (`test` also on `^i18n:compile`), so nothing
   runs with stale or missing catalogs.
+- The files outside every package that shape the environment the tests run in — `docker-compose.yml`,
+  `infra/supabase/` and `.github/workflows/` — are `globalDependencies`: a change to them misses
+  every task's cache, and `--affected` counts every package as affected.
 - A task with side effects is not cached: `test:e2e`, `i18n:extract` and every `db:*` task.
   Persistent tasks (`dev`, `db:studio`) set `persistent: true`.
 - The `db:*` tasks exist only in `packages/db`, `test:e2e` only in `e2e`.
@@ -242,8 +245,8 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   every `db:*` task pass the database variables through (`passThroughEnv`), `db:seed` also the
   Supabase Auth ones and `NODE_ENV` ([11](#11-environment-variables)), so they reach the scripts and
   stay out of the hash.
-- The root scripts that take arguments, `db:seed` and `db:tenant:create`, end with `--`, so pnpm
-  hands the arguments through turbo to the package script.
+- The root scripts that take arguments, `db:seed`, `db:tenant:create` and `db:tenant:rename`, end
+  with `--`, so pnpm hands the arguments through turbo to the package script.
 
 ### 3.2 Frontend application layout
 
@@ -318,7 +321,7 @@ The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 
 | Term | Carrier |
 |---|---|
-| admin | no table: works on the database directly, through `pnpm db:tenant:create` |
+| admin | no table: works on the database directly, through `pnpm db:tenant:create` and `pnpm db:tenant:rename` |
 | org, head | `tenant_memberships` (+ optionally `edition_memberships`) |
 | user | `auth.users` + `accounts` + rows in `attendees` |
 | tenant | `tenants` |
@@ -370,8 +373,11 @@ deleted by the triggers and the cascade alone, both running as `opos_migrator`.
 
 ### 4.3 Tenant-level tables
 
-**`tenants`** ([tenants.ts](../packages/db/src/schema/tenants.ts)) — the `slug` is unique and
-matches `^[a-z0-9-]{3,40}$`; `defaultLocale` and the IANA `timezone` default to `pl` and
+**`tenants`** ([tenants.ts](../packages/db/src/schema/tenants.ts)) — the `slug` is unique,
+matches `^[a-z0-9-]{3,40}$`, is none of `RESERVED_TENANT_SLUGS` (the platform's subdomains,
+[PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains), and the panel's top-level paths, [8](#8-appspanel);
+check `tenants_slug_not_reserved`) and changes only through the admin
+([14](#changing-a-tenants-slug)); `defaultLocale` and the IANA `timezone` default to `pl` and
 `Europe/Warsaw`.
 
 **`tenant_memberships`** ([tenant-memberships.ts](../packages/db/src/schema/tenant-memberships.ts))
@@ -432,8 +438,9 @@ Composite foreign keys `(orderId, tenantId)` and `(ticketTypeId, tenantId)`. Ind
 `(tenantId, orderId)`. A ticket is valid when its order is `paid`.
 
 **`scanner_devices`** — `tenantId`, `editionId` (FK cascade), `name`, `tokenHash` (unique, sha256),
-`pairingJti` (unique), `createdByMembershipId`, `expiresAt` (the edition's `endsAt` + 1 day),
-`revokedAt` (nullable). Index `(tenantId, editionId)`.
+`pairingJti` (unique), `createdByMembershipId`, `expiresAt` (the edition's `endsAt` + 1 day, or the
+pairing org's own `expiresAt` when that comes first), `revokedAt` (nullable). Index
+`(tenantId, editionId)`.
 
 **`attendees`** — `accountId`, `tenantId`, `editionId` (FK cascade), `firstName`, `lastName`.
 Unique `(accountId, editionId)`. Indexes `(tenantId, editionId)` and `(accountId)`.
@@ -484,8 +491,8 @@ Every RLS-covered table has an index starting with `tenantId`.
 | Role | Attributes | Used by |
 |---|---|---|
 | `opos_migrator` | owner of the `public` tables, `BYPASSRLS` | `pnpm db:migrate`, `pnpm db:seed` |
-| `opos_app` | DML only, no `BYPASSRLS` | runtime API inside a tenant context |
-| `opos_app_global` | DML only, `BYPASSRLS` | `GlobalDbService` exclusively |
+| `opos_app` | only the privileges the API uses (below), no `BYPASSRLS` | runtime API inside a tenant context |
+| `opos_app_global` | `select` only, `BYPASSRLS` | `GlobalDbService` exclusively |
 
 The three roles are created by `infra/supabase/db/opos-roles.sql`, which the `db` container runs
 as `supabase_admin` when it initializes an empty data directory. Supabase's own roles
@@ -531,7 +538,9 @@ create policy tenant_isolation on program_items
   using      (tenant_id = (select current_setting('app.tenant_id')::uuid))
   with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 
-grant select, insert, update, delete on program_items to opos_app, opos_app_global;
+grant select, insert, delete on program_items to opos_app;
+grant update (title, description, starts_at, ends_at) on program_items to opos_app;
+grant select on program_items to opos_app_global;
 ```
 
 The same for the remaining tables; for `tenants` the condition is `id = (select current_setting(...))`.
@@ -568,10 +577,19 @@ the system, including `PublicModule`, resolves the tenant first and then works o
 #### Migrations and verification
 
 RLS policies and the `auth.users` triggers go into hand-written migrations
-(`drizzle-kit generate --custom`). The same migration grants `select, insert, update, delete` on
-the new tables to `opos_app` and `opos_app_global` (`accounts` excepted, [4.2](#42-global-tables)),
-revokes everything from `anon` and
-`authenticated`, and adds each table's `<table>_set_updated_at` trigger ([4](#4-database-schema)).
+(`drizzle-kit generate --custom`). The same migration grants the new tables' privileges, revokes
+everything from `anon` and `authenticated`, and adds each table's `<table>_set_updated_at` trigger
+([4](#4-database-schema)). The privileges follow what the API does with a table:
+
+- `opos_app` gets `select`; `insert` and `delete` where the API creates and removes rows; `update`
+  only on the columns the API changes — never on `id`, `tenant_id` or a column that points a row at
+  an account or another row (`account_id`, `tenant_membership_id`). A write the API starts doing —
+  on a new column or on a table it did not write before — gets its grant in that PR's migration.
+- `opos_app_global` gets `select` and nothing else.
+- `tenants` rows are inserted, deleted and given a new slug by `opos_migrator` alone, through the
+  scripts for [creating](#creating-a-tenant) and [renaming](#changing-a-tenants-slug) a tenant;
+  `accounts` follows [4.2](#42-global-tables).
+
 Trigger functions are `security definer` with `set search_path = ''` and schema-qualified names,
 because Supabase Auth runs with `search_path = auth`. `db:push` is for local experiments only;
 everything else goes through generated migrations.
@@ -580,7 +598,10 @@ Every `db:*` script connects as `opos_migrator` through `DATABASE_MIGRATION_URL`
 ([11](#11-environment-variables)). `pnpm db:verify`
 ([verify.ts](../packages/db/src/scripts/verify.ts)) exits non-zero when a covered table — `tenants`
 or any `public` table with a `tenant_id` column — lacks enabled RLS, forced RLS or a
-`tenant_isolation` policy for all commands.
+`tenant_isolation` policy for all commands, and when a role holds more on a `public` table than the
+rules above allow: anything but `select` for `opos_app_global` (and nothing on `accounts`), a
+table-wide `update` for `opos_app` or its `insert` or `delete` on `tenants` or `accounts`, anything
+at all for `anon`, `authenticated` and `service_role`.
 
 ---
 
@@ -653,7 +674,7 @@ by the payment provider only ([7.10](#710-payments)).
 | Method | Path | Required permission |
 |---|---|---|
 | GET | `/tenants/current` | membership; returns `id`, `slug`, `name`, `defaultLocale`, `timezone` |
-| PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `slug`, `defaultLocale`, `timezone` as an IANA zone); a taken slug -> `409` `tenant.slug-taken` |
+| PATCH | `/tenants/current` | `settings=write` (`name` 1–200 characters, `defaultLocale`, `timezone` as an IANA zone); the slug changes only through the admin ([14](#changing-a-tenants-slug)), so a `slug` field -> `400` |
 | GET | `/tenants/current/members` | `settings>=read`; every member with the account's email and names, expired ones included and flagged `expired` |
 | POST | `/tenants/current/members` | `settings=write`; an invitation ([7.7](#77-organizer-invitations)) |
 | PATCH | `/tenants/current/members/:membershipId` | `settings=write` + anti-escalation (`role`, the three permissions, `expiresAt`); promoting to `head` clears the expiry and drops the member's edition-level rows; an expiry on a head -> `400` |
@@ -664,13 +685,17 @@ by the payment provider only ([7.10](#710-payments)).
 Anti-escalation ([PRODUCT.md 5.6](PRODUCT.md#56-anti-escalation-policy),
 [anti-escalation.ts](../apps/api/src/modules/tenants/anti-escalation.ts)) answers `403` with a code
 of its own: `member.self` (the own membership, heads included), `member.head-only` (an org touching
-a head), `member.above-own` (a permission above the actor's own, on either level, or an org
-appointing a head), `member.expiry-after-own` (an expiry later than the actor's own, or none when
-the actor has one), `member.outlives-own` (an org whose access expires changing the permissions,
-on either level, of a member whose access would end later than theirs or never). A value the member already holds is no grant: an org may change one field of a
-member who holds more than the org in another. An org that sets or lifts `expiresAt` hands back
+a head), `member.above-own` (a permission above the actor's own, on either level, an org
+appointing a head, or an org extending the access of a member who holds more),
+`member.expiry-after-own` (an org whose access expires lifting, moving later or reviving an expiry
+to none or to a date past its own end) and `member.outlives-own` (an org whose access expires
+raising a permission, on either level, of a member whose resulting access lasts longer than its
+own). A value no higher than what the member already holds is no grant: an org lowers any
+permission, and may change one field of a member who holds more than the org in another. An org
+that lifts `expiresAt` or moves it later — which also revives an expired membership — hands back
 everything the row holds, so the member's resulting tenant-level permissions and every edition row
-must be no higher than the org's own (`member.above-own`).
+must be no higher than the org's own (`member.above-own`). An earlier expiry, or a first one,
+needs neither that check nor `member.expiry-after-own`.
 
 A change to a member locks the actor's and the target's `tenant_memberships` rows (`for update`,
 in id order, so two requests never deadlock) and runs every check on the locked rows, the actor's
@@ -797,8 +822,9 @@ Lingui. The source language is **English** — messages are written in code in E
 macros, and they are their own identifiers. There are no separate keys to invent or misspell.
 
 Supported locales: `en` (source) and `pl`. Czech joins with the Czech market beyond the MVP — a
-new locale is another set of `.po` catalogs, no migration. The default interface language is `pl`
-(`DEFAULT_LOCALE`) — a different thing from the source language. A missing translation falls back
+new locale is another set of `.po` catalogs plus its entries in `packages/i18n` (below), no
+migration. The default interface language is `pl` (`DEFAULT_LOCALE`) — a different thing from the
+source language. A missing translation falls back
 to the source text, that is English; an identifier never appears on screen.
 
 ### Macros
@@ -825,7 +851,12 @@ One catalog per application plus a shared one:
 | `packages/i18n/locales/*.po` | API and Supabase Auth errors, email content | `packages/i18n/src` |
 
 The per-application split keeps the portal from pulling in the panel's messages. Compiled catalogs are
-loaded through a dynamic import per locale.
+loaded through a dynamic import per locale. [catalog.ts](../packages/i18n/src/catalog.ts) names
+each shared catalog in an import of its own, because tsdown, which bundles the API, leaves an import
+path built from a variable unresolved. The types of a compiled catalog come from the committed
+`<locale>.d.mts` next to it, so typechecking needs no compiled catalogs. A new locale adds its entry
+to `SUPPORTED_LOCALES`, its import and its `.d.mts` in `packages/i18n`, and its catalogs in every
+application.
 
 Every glossary term ([PRODUCT.md 3](PRODUCT.md#3-glossary)) has one rendering per locale.
 [glossary.ts](../packages/i18n/src/glossary.ts) declares each term as a `msg` descriptor with the
@@ -878,6 +909,8 @@ the contract without an entry in that map fails
 Emails are rendered by the API — it activates the recipient's catalog and composes the content
 through `@lingui/core`. That includes Supabase Auth's confirmation, recovery and email change
 messages, which reach the API through the send-email hook ([10](#10-supabase)).
+[main.ts](../apps/api/src/main.ts) loads the shared catalog of every locale before the API listens,
+so a bundle without them fails the start in CI ([15.3](#153-ci)), not the first email.
 
 ### Formatting
 
@@ -1086,7 +1119,13 @@ An invitation is a signed JWT (`INVITE_SECRET`, TTL 7 days) with the payload
   is a notification.
 - Unknown email -> an email with a `panel.opos.land/invitation?token=...` link; after registering
   or signing in, `POST /invitations/accept` creates the membership.
-- Permissions from the token go through the anti-escalation check.
+- Permissions and the expiry from the token go through the anti-escalation check: an org whose
+  access expires invites only with an expiry no later than their own (`member.expiry-after-own`).
+- An account that already holds a membership in the tenant, an expired one included, is not
+  invited -> `409` `member.exists`; the team screen changes that membership instead, through the
+  checks of [5.3](#53-tenants--jwt--x-tenant-slug).
+- The migration of this endpoint grants `opos_app` `insert` on `tenant_memberships`
+  ([4.6](#migrations-and-verification)); until then the API creates no membership.
 
 Invitation emails are sent by `MailModule`, not by Supabase Auth.
 
@@ -1159,8 +1198,10 @@ type PaymentEvent = { orderId: string; paymentRef: string; status: 'paid' | 'fai
 1. An org with `tickets=write` opens the scanner screen in the panel; the panel requests a pairing
    token and shows it as a QR code.
 2. The phone opens `panel.opos.land/scanner`, scans that code and calls `POST /scanner/pair`. The
-   API checks the token, records its `jti` in `scanner_devices.pairingJti` and returns a device
-   token: 32 random bytes, stored as sha256.
+   API checks the token and that the membership which requested it is still active, records its
+   `jti` in `scanner_devices.pairingJti` and returns a device token: 32 random bytes, stored as
+   sha256. The device expires with the edition or with the pairing org's own access, whichever
+   ends first ([PRODUCT.md 5.6](PRODUCT.md#56-anti-escalation-policy)).
 3. The phone keeps the device token in `localStorage` (`opos-scanner-device`) and sends it on every
    request. No sign-in, no Supabase session.
 4. `ScannerDeviceGuard` hashes the token, finds a device that is neither revoked nor past
@@ -1203,13 +1244,16 @@ Feature-based layout ([3](#3-monorepo-structure)). Desktop-first; usable from a 
 | `/:tenantSlug/editions/:editionSlug/program/:programItemId` | item form, speakers, reviews with hide and show |
 | `/:tenantSlug/editions/:editionSlug/access` | team members' edition permissions |
 | `/:tenantSlug/team` | `tenant_memberships` — list, invitations, permissions, expiry date |
-| `/:tenantSlug/settings` | name, slug, convention language, time zone |
+| `/:tenantSlug/settings` | name, convention language, time zone; the slug shown, not editable |
 | `/:tenantSlug/shop` | payment provider account, currency; credentials write-only |
 | `/:tenantSlug/editions/:editionSlug/tickets` | ticket types with sold and held counts |
 | `/:tenantSlug/editions/:editionSlug/tickets/orders` | orders, search by email, order details, cancellation |
 | `/:tenantSlug/editions/:editionSlug/tickets/scanners` | pairing QR code, paired devices, revocation |
 | `/scanner` | the scanner on a phone: pairing, then scan -> order view -> tick tickets handed in |
 
+- The fixed top-level paths — `/login`, `/auth/callback`, `/invitation`, `/scanner` — are reserved
+  tenant slugs ([4.3](#43-tenant-level-tables)), so `/:tenantSlug` never shadows them; a new
+  top-level path joins `RESERVED_TENANT_SLUGS` in the same PR.
 - An interceptor attaches `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug` and
   `Accept-Language` based on the active locale.
 - Language switcher in the account menu; the choice goes to `PATCH /me` and stays on the account.
@@ -1645,11 +1689,26 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
   ([4.5](#45-invariants)).
 - The head's account must already exist — the person registers in the portal first. The email is
   matched case-insensitively.
-- Any refusal changes nothing and exits non-zero with a `CreateTenantError` code:
-  `tenant.slug-invalid`, `tenant.slug-taken`, `tenant.name-empty`, `tenant.locale-invalid`,
-  `tenant.timezone-invalid` (not an IANA zone), `account.not-found`. `tenant.locale-invalid` means
-outside `SUPPORTED_LOCALES` from `@opos/i18n`.
+- Any refusal changes nothing and exits non-zero with a `TenantError` code:
+  `tenant.slug-invalid`, `tenant.slug-reserved`, `tenant.slug-taken`, `tenant.name-empty`,
+  `tenant.locale-invalid` (outside `SUPPORTED_LOCALES` from `@opos/i18n`),
+  `tenant.timezone-invalid` (not an IANA zone), `account.not-found`.
 - In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
+
+### Changing a tenant's slug
+
+The slug is the convention's address ([PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains)), and no
+endpoint changes it. The admin changes it on the server with
+[rename-tenant.ts](../packages/db/src/scripts/rename-tenant.ts), a wrapper around `renameTenant` from
+[packages/db/src/tenants.ts](../packages/db/src/tenants.ts):
+
+```bash
+pnpm db:tenant:rename --slug convention-c --new-slug convention-d
+```
+
+- Runs as `opos_migrator`. Nothing redirects the old address: its links and bookmarks stop working.
+- Any refusal changes nothing and exits non-zero with a `TenantError` code: `tenant.not-found`,
+  `tenant.slug-invalid`, `tenant.slug-reserved`, `tenant.slug-taken`.
 
 ---
 
@@ -1675,10 +1734,12 @@ any API code: the global setup applies the migrations, the tests connect as `opo
 `opos_app`, `supabase_auth_admin` (writes to `auth.users`) and `postgres` (`set role anon`), and
 remove the tenants and users they created. They cover the RLS row of the table below for every
 covered table (no context, another tenant's context, a row moved to another tenant), the
-`accounts` privileges, the
+`accounts` privileges, the runtime roles' privileges (`opos_app_global` only reads, `opos_app`
+updates only the granted columns, inserts no tenant and no membership and deletes no tenant), the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, an `edition_membership` with a
-foreign edition), `createTenant` and each of its refusals, and the `accounts` triggers. The API tests repeat
+foreign edition), `createTenant` and `renameTenant` with each of their refusals, and the `accounts`
+triggers. The API tests repeat
 these checks through the endpoints.
 
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
@@ -1694,15 +1755,15 @@ with a wrong signature, audience, issuer or expiry are signed in the test with `
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
 | transactions | a handler that writes and then returns a `4xx` leaves no row behind; an `afterCommit` call registered before a rollback never runs; a repository call outside a tenant transaction throws |
-| anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, lift or extend the expiry of a member who holds more, or, with an expiry of their own, change the permissions of a member who would outlast them; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
+| anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
-| membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access; an org cannot set an expiry later than their own |
+| membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
 | likes | idempotent `PUT`; `likeCount` changes; no endpoint returns who liked an item; `GET /me/schedule` spans tenants |
 | checkout | 20 concurrent orders against `quantity=5` -> exactly 5 hold tickets, the rest `409`; an expired hold releases its tickets; outside the sales window -> `409`; no payment config -> `409`; more than 10 tickets -> `400` |
 | payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid`; an SMTP failure after the payment leaves `ticketEmailSentAt` empty and the job sends the email later |
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
-| scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
+| scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; a device paired by an org whose access expires stops with that access; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
 | JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; `DELETE /me` without a recent sign-in -> `401`, with one -> the user, `accounts`, memberships and `attendees` are gone |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` -> `400` |
@@ -1754,10 +1815,13 @@ using seeded data only read it.
 
 GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every push to `develop` and
 `main`, with tool versions from `mise.toml`, the same source as local machines. The `db` and `auth`
-containers run for the schema and API tests, behind `pnpm db:migrate` and `pnpm db:verify`. On a PR,
-`typecheck`, `lint` and `test` run with `--affected` against the PR base branch; a push to `develop`
-or `main` runs them on every package and fills the turbo cache that PRs restore. `pnpm format:check`,
-`pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
+containers run for the schema and API tests, behind `pnpm db:migrate`, `pnpm db:verify` and two runs
+of `pnpm db:seed` — the second proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
+run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
+package and fills the turbo cache that PRs restore. `pnpm build` then bundles the API, and the job
+starts `dist/main.js` with `NODE_ENV=production` against the same containers: `/health` must answer
+`200`. The tests run the sources; this step runs the bundle that production runs.
+`pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
 
 Branches:
 

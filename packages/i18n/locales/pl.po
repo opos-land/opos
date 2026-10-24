@@ -172,6 +172,10 @@ msgid "This address is already taken by another convention."
 msgstr "Ten adres jest już zajęty przez inny konwent."
 
 #: src/errors.ts
+msgid "This address is reserved for the platform. Choose another one."
+msgstr "Ten adres jest zarezerwowany dla platformy. Wybierz inny."
+
+#: src/errors.ts
 msgid "This convention already has an edition with this address."
 msgstr "Ten konwent ma już edycję o tym adresie."
 
@@ -210,16 +214,16 @@ msgid "user"
 msgstr "użytkownik"
 
 #: src/errors.ts
+msgid "We could not find this convention."
+msgstr "Nie znaleziono tego konwentu."
+
+#: src/errors.ts
 msgid "We could not find what you are looking for."
 msgstr "Nie znaleziono tego, czego szukasz."
 
 #: src/errors.ts
 msgid "Wrong email or password."
 msgstr "Nieprawidłowy e-mail lub hasło."
-
-#: src/errors.ts
-msgid "You cannot change the permissions of someone whose access lasts longer than yours."
-msgstr "Nie możesz zmieniać uprawnień osoby, której dostęp trwa dłużej niż twój."
 
 #: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
@@ -230,12 +234,16 @@ msgid "You cannot delete the active edition. Activate another edition first."
 msgstr "Nie możesz usunąć aktywnej edycji. Najpierw aktywuj inną edycję."
 
 #: src/errors.ts
+msgid "You cannot give anyone access that lasts longer than yours."
+msgstr "Nie możesz nikomu nadać dostępu, który trwałby dłużej niż twój."
+
+#: src/errors.ts
 msgid "You cannot grant permissions higher than your own."
 msgstr "Nie możesz nadać uprawnień wyższych niż własne."
 
 #: src/errors.ts
-msgid "You cannot set an access end date later than your own, or remove it."
-msgstr "Nie możesz ustawić daty końca dostępu późniejszej niż własna ani jej usunąć."
+msgid "You cannot raise the permissions of someone whose access lasts longer than yours."
+msgstr "Nie możesz zwiększyć uprawnień osoby, której dostęp trwa dłużej niż twój."
 
 #: src/errors.ts
 msgid "You do not have permission to do this."

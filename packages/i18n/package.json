@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./glossary": "./src/glossary.ts",
     "./errors": "./src/errors.ts",
+    "./emails": "./src/emails.ts",
     "./lingui.config.base": "./lingui.config.base.ts",
     "./lingui.config": "./lingui.config.ts"
   },

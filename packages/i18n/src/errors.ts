@@ -17,7 +17,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'member.self': msg`You cannot change your own role or permissions, or remove yourself from the team.`,
   'member.head-only': msg`Only a head organizer can edit or remove another head organizer.`,
   'member.above-own': msg`You cannot grant permissions higher than your own.`,
-  'member.expiry-after-own': msg`You cannot extend anyone's access past the end of your own.`,
+  'member.expiry-after-own': msg`You cannot give anyone access that lasts longer than yours.`,
   'member.outlives-own': msg`You cannot raise the permissions of someone whose access lasts longer than yours.`,
   'member.is-head': msg`A head organizer already has access to every edition.`,
   'edition.slug-taken': msg`This convention already has an edition with this address.`,

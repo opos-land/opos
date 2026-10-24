@@ -234,8 +234,8 @@ msgid "You cannot delete the active edition. Activate another edition first."
 msgstr "You cannot delete the active edition. Activate another edition first."
 
 #: src/errors.ts
-msgid "You cannot extend anyone's access past the end of your own."
-msgstr "You cannot extend anyone's access past the end of your own."
+msgid "You cannot give anyone access that lasts longer than yours."
+msgstr "You cannot give anyone access that lasts longer than yours."
 
 #: src/errors.ts
 msgid "You cannot grant permissions higher than your own."

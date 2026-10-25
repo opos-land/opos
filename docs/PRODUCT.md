@@ -281,6 +281,9 @@ in its link. A convention sends at most 20 invitations an hour.
 A convention links to its page in the portal from its own website and social media; the page has
 the "Sign up" button for the active edition.
 
+The team tests on a separate Dev environment, on a domain of its own and closed to the public; it
+holds demo data and the team's own accounts.
+
 Registration, sign-in and password reset happen in the portal and the panel themselves. Signing in
 with Google is the one moment the browser passes through Supabase's own address, which Google's
 sign-in screen also names.
@@ -429,7 +432,9 @@ An organizer invitation stores nothing until it is accepted: the invited address
 the link sent to it ([5.7](#57-organizer-invitations-by-email)).
 
 The database and the sign-in service are hosted by Supabase in the EU, which processes this data
-on our behalf; the privacy policy names it. Database backups contain personal data, so they are
+on our behalf; the privacy policy names it. Personal data stays in production: the Dev environment and the developers' machines hold demo
+data and the team's own accounts only, and no production data or backup is ever copied there.
+Database backups contain personal data, so they are
 encrypted and share the retention policy of production data: Supabase's daily backups, and our own
 encrypted copies kept off Supabase for up to three months. Emails leave the platform for the mail
 provider only over an encrypted connection.
@@ -469,7 +474,7 @@ and log retention.
 - Interface following the designer's designs, with no AI-generated graphics
 - Demo data
 - Deployment: the applications on our own VPS, the database and sign-in on Supabase in the EU,
-  with backups
+  with backups, and a Dev environment for the team's testing
 
 ### Beyond the MVP
 

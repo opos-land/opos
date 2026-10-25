@@ -234,6 +234,11 @@ application; every sign-in operation goes through the API's `auth` endpoints
 is built, the existing `@supabase/auth-js` clients of the two applications are the only exception,
 and nothing new is built on them.
 
+**Dev and production are shared.** A working checkout never points at them: no `supabase link`,
+and no remote database URL, Supabase project reference or access token in a `.env` or
+`mise.local.toml`; they change only through the deploy workflow
+([environments](docs/PLAN.md#environments)). Testing happens on the local stack, with the seed.
+
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
 them to the repository. UI follows the designer's designs; where none exists yet, use plain blocks
 and real copy ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)). Do not ship

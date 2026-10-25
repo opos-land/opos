@@ -131,10 +131,11 @@ scanner the `BarcodeDetector` API with the `barcode-detector` polyfill. No Supab
 **Tests:** vitest + supertest (integration), vitest + Testing Library on jsdom (frontend unit
 tests), Playwright (web e2e, desktop and mobile viewports).
 
-**Infrastructure:** a Supabase project on supabase.com (Pro plan, EU region) for PostgreSQL 17 and
-Supabase Auth; on the VPS Docker Compose, Traefik v3 (wildcard TLS via DNS-01) and a backup
-service with `pg_dump` and restic; in dev the Supabase CLI's local stack (Postgres, Auth, Studio,
-Mailpit).
+**Infrastructure:** a Supabase project on supabase.com per deployed environment — production on
+the Pro plan, Dev in a Free organization, both in the EU — for PostgreSQL 17 and Supabase Auth; on
+each environment's VPS Docker Compose, Traefik v3 (wildcard TLS via DNS-01), and in production a
+backup service with `pg_dump` and restic; locally the Supabase CLI's stack (Postgres, Auth, Studio,
+Mailpit); GitHub Actions deploying Dev and production ([13](#13-deployment)).
 
 **Design principles:**
 
@@ -167,14 +168,17 @@ opos/
                               #   tests-first hooks in settings.json (AGENTS.md); still to come: the
                               #   BFF boundary hook (3.2)
   scripts/                    # built: tests-first.mjs, the RLS and RBAC test-first check, and its
-                              #   test; still to come: bff-boundary.mjs and its test (3.2)
-  docker-compose.prod.yml     # prod: traefik, api, panel, portal, backup (13)
+                              #   test; still to come: bff-boundary.mjs, infra-init.mjs (12),
+                              #   supabase-push.mjs and the remote block check (10), their tests
+  .github/workflows/deploy.yml  # the deployment to Dev and production (13)
+  docker-compose.deploy.yml   # traefik, api, panel, portal, tools; backup (production), mailpit (Dev) (13)
   docs/
     PRODUCT.md
     PLAN.md
   supabase/              # the Supabase CLI project (10, 12)
     config.toml          # the local stack, and the hosted project's Auth settings ([remotes.production])
-    .env.example         # the variables config.toml reads with env(), to copy into supabase/.env
+    .env.example         # the variables config.toml reads with env(), the template of supabase/.env
+    .gitignore           # .temp, .branches, snippets, signing_keys.json
   infra/
     traefik/             # static configuration (13)
     backup/              # Dockerfile and script of the backup service (13)
@@ -267,7 +271,7 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   ([11](#11-environment-variables)).
 - turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
   every `db:*` task pass the database variables through (`passThroughEnv`), `test` also the local
-  Mailpit address, `db:seed` also `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `NODE_ENV`
+  Mailpit address, `db:seed` also `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `OPOS_ENV`
   ([11](#11-environment-variables)), and `dev` passes `OPOS_PANEL_PORT` and `OPOS_PORTAL_PORT` to
   the dev servers ([12](#ports)), so they reach the scripts and stay out of the hash.
 - `test:e2e` depends on the panel's and the portal's `i18n:compile`, since Playwright starts their
@@ -354,7 +358,7 @@ image or illustration in `shared/ui` or in a feature is AI-generated
 
 ## 4. Database schema
 
-PostgreSQL 17 of the Supabase project; in dev and CI the Supabase CLI's local `supabase/postgres`
+PostgreSQL 17 of the Supabase project; locally and in CI the Supabase CLI's `supabase/postgres`
 container of the same major version ([12](#12-local-development)). Every OPOS table lives in the
 `public` schema and
 has `id uuid primary key default gen_random_uuid()`, `createdAt timestamptz not null default
@@ -584,6 +588,12 @@ same script for the local stack and the hosted project. Supabase's own roles
 project; `anon`, `authenticated` and `service_role` hold no privileges on the `public` schema — the
 script revokes the `usage` they get directly and through `PUBLIC`. `opos_app` and `opos_app_global`
 get `usage` on `public` from the script; their table privileges come from the migrations.
+
+Supabase grants `anon`, `authenticated` and `service_role` everything on what `postgres` creates
+in `public`, through default privileges. `db:roles` takes those back — `alter default privileges
+for role postgres in schema public revoke all on tables, sequences, functions from anon,
+authenticated, service_role` — and runs before the first migration of a database, so no table,
+sequence or function of OPOS ever holds a grant for them; `db:verify` reports one that does.
 
 **OPOS writes nothing into `auth`.** `postgres` holds its privileges on the `auth` tables without
 the right to pass them on, so the two things that tie `public` to `auth` — the foreign key of
@@ -1137,7 +1147,7 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 | `CheckoutModule` | orders from the portal, the payment webhook, the job expiring unpaid orders, the ticket email |
 | `PaymentsModule` | the `PaymentProvider` port and its adapters ([7.10](#710-payments)) |
 | `ScannerModule` | `ScannerDeviceGuard`, ticket lookup and redemption |
-| `MailModule` | nodemailer + Lingui templates per locale: Supabase Auth emails, invitations and tickets ([6](#6-localization)); a failed send rejects, and the caller decides what it means. TLS is never optional: implicit on port 465, STARTTLS required on any other port when `SMTP_USER` is set or `NODE_ENV` is `production` ([smtp.ts](../apps/api/src/modules/mail/smtp.ts)); only Mailpit, without credentials outside production, takes plaintext |
+| `MailModule` | nodemailer + Lingui templates per locale: Supabase Auth emails, invitations and tickets ([6](#6-localization)); a failed send rejects, and the caller decides what it means. TLS is never optional: implicit on port 465, STARTTLS required on any other port when `SMTP_USER` is set or `OPOS_ENV` is `production` ([smtp.ts](../apps/api/src/modules/mail/smtp.ts)); only Mailpit, without credentials outside production, takes plaintext |
 | `HealthModule` | `GET /health` ([5.11](#511-health--unauthenticated)) |
 | `DatabaseModule` | global; `APP_DB` (`appDb()`, `opos_app`) and `GLOBAL_DB` (`globalDb()`, `opos_app_global`) providers, pools closed on application shutdown |
 
@@ -1290,12 +1300,12 @@ application, so the portal and the panel never share a session:
 | `opos_portal_refresh`, `opos_panel_refresh` | the refresh token | `HttpOnly`, `SameSite=Strict`, `Path=/auth`, `Max-Age` 30 days, renewed on every refresh |
 | `opos_google` | the PKCE verifier, the application and the return path of a Google sign-in in progress ([7.5](#75-google-oauth)) | `HttpOnly`, `SameSite=Lax`, since it comes back on a navigation from Supabase Auth, `Path=/auth/google`, `Max-Age` 10 minutes |
 
-Every cookie is `Secure` when `API_URL` is `https`; only the dev addresses on `http://*.localhost`
+Every cookie is `Secure` when `API_URL` is `https`; only the local addresses on `http://*.localhost`
 go without it. The application of a request is its `Origin` ([5.1](#51-auth--sign-in-through-the-api)):
 the API reads and writes only that application's pair, and a request without the `Origin` of one of
 the two has no session; the Google routes take the application as in
 [5.1](#51-auth--sign-in-through-the-api). The addresses of the API and both applications share one site (`opos.land`,
-`opos.localhost` in dev, [12](#12-local-development)), so `SameSite=Strict` cookies travel with
+`opos.localhost` locally, [12](#12-local-development)), so `SameSite=Strict` cookies travel with
 their requests.
 
 **Requests that change state.** A `POST`, `PUT`, `PATCH` or `DELETE` that carries a session cookie
@@ -1536,9 +1546,9 @@ interface PaymentProvider {
 type PaymentEvent = { orderId: string; paymentRef: string; status: 'paid' | 'failed'; amountMinor: number; currency: string }
 ```
 
-- `PAYMENT_PROVIDER=fake` in dev and tests: a page at `<API_URL>/dev/payments/:orderId` with "Pay"
+- `PAYMENT_PROVIDER=fake` locally, on Dev and in tests: a page at `<API_URL>/dev/payments/:orderId` with "Pay"
   and "Fail" buttons that calls the webhook with a valid signature. The fake adapter does not load
-  when `NODE_ENV=production`.
+  when `OPOS_ENV=production` ([13](#environments)).
 - Webhook: verify the signature -> look up the order ([4.6](#46-tenant-isolation--rls-in-postgres))
   -> `withTenant` ([7.2](#72-tenant-context)) -> compare amount and currency with the order (a
   mismatch is logged and the order stays `pending`) -> `pending` becomes `paid` and `paidAt` is
@@ -1784,36 +1794,50 @@ not by account, and stay.
 
 ## 10. Supabase
 
-One Supabase project on supabase.com for production: the Pro plan (no pausing, daily backups) in
-the EU region `eu-central-1` (Frankfurt). OPOS uses its Postgres and Supabase Auth, nothing else:
+Two hosted Supabase projects on supabase.com, one per deployed environment
+([13](#environments)): production on the Pro plan (no pausing, daily backups) in the EU region
+`eu-central-1` (Frankfurt), and Dev in a separate Free organization in an EU region. OPOS uses
+their Postgres and Supabase Auth, nothing else:
 
 | Part | Use |
 |---|---|
 | Postgres 17 | the only database: `public` (OPOS tables), `drizzle` (the migration journal), `auth` (Supabase Auth) |
 | Supabase Auth | identities, passwords, sessions, password reset, Google; called by the API alone ([7.4](#74-authorization)) |
-| Data API (PostgREST), GraphQL, Realtime, Storage, Edge Functions | off: the Data API is disabled in the project, the rest is never used; `anon` and `authenticated` hold nothing in `public` anyway ([4.6](#46-tenant-isolation--rls-in-postgres)) |
+| Data API (PostgREST), GraphQL, Realtime, Storage, Edge Functions | off: the Data API is disabled, the rest is never used; `anon` and `authenticated` hold nothing in `public` anyway ([4.6](#46-tenant-isolation--rls-in-postgres)) |
 
-In dev and CI the Supabase CLI runs the same services locally ([12](#12-local-development)).
+Locally and in CI the Supabase CLI runs the same services ([12](#12-local-development)).
 
-**Configuration as code.** `supabase/config.toml` describes the local
-stack and the Auth settings of the hosted project: its base sections hold the local values, and
-`[remotes.production]`, keyed by the project's `project_id`, overrides what differs in production
-(addresses, rate limits, the Google client). `supabase config push` applies it to the project
-([13](#deployment-procedure)); an Auth setting is never changed in the dashboard alone — it joins
-`config.toml`. Secrets reach `config.toml` only through `env()`: locally from `supabase/.env`,
-copied from `supabase/.env.example`, and for the push from variables
-prefixed `PRODUCTION_` in the environment of whoever pushes. Three settings are set once per
-project instead ([project setup](#project-setup)): the signing key and IP address forwarding, which
-have no key in `config.toml`, and the email bucket `email_sent`, which `config push` sends only
-together with SMTP settings OPOS does not use; a push leaves it as it is.
+**Configuration as code.** `supabase/config.toml` describes the local stack and the Auth settings
+of both projects: its base sections hold the local values, and `[remotes.dev]` and
+`[remotes.production]`, each keyed by its project's real `project_id`, override what differs in
+that environment. A block joins in the PR after its project exists: the CLI refuses any
+`config.toml`, for `supabase start` too, whose remote `project_id` is not a project reference.
+`supabase config push` for a project without a matching block would push the local values, and an
+`env()` whose variable is unset is pushed as its literal text, so nothing pushes directly:
+`scripts/supabase-push.mjs <dev|production>` runs only in the deploy workflow
+([13](#deployment-procedure)), refuses when an `env()` name the block or the base sections use is
+unset, and then runs `supabase config push --project-ref <ref> --yes`, whose output lists every
+changed setting. Both blocks override the same list of keys — `site_url`,
+`additional_redirect_urls`, `[auth.hook.send_email]`, `[auth.external.google]`,
+`[auth.rate_limit]` — which a test in `pnpm test:scripts` checks. An Auth setting is never changed
+in the dashboard alone; it joins `config.toml`.
+
+Secrets reach `config.toml` only through `env()`: locally from `supabase/.env`, which
+`pnpm infra:init` writes ([12](#12-local-development)), and for a push from variables prefixed
+`DEV_` or `PRODUCTION_` in the GitHub Environment of the deployment. Three settings are set once
+per project instead ([project setup](#project-setup)): the signing key and IP address forwarding,
+which have no key in `config.toml`, and the email bucket `email_sent`, which `config push` sends
+only together with SMTP settings OPOS does not use; a push leaves it as it is.
 
 ### Supabase Auth configuration
 
 The rules behind `config.toml`:
 
-- The Data API is off in production: `[remotes.production.api]` sets `enabled = false`, which
-  `config push` turns into an empty list of exposed schemas. The local stack keeps the CLI's
-  gateway as it is; `anon` and `authenticated` hold nothing in `public` there either.
+- The Data API is off everywhere: `[api]` sets `enabled = false`, which `config push` turns into
+  an empty list of exposed schemas; the local gateway still serves Auth at `/auth/v1`.
+- The local stack runs only what OPOS uses: `[realtime]`, `[storage]`, `[edge_runtime]` and
+  `[analytics]` are off, and so are `[db.seed]` and `[db.migrations]` — Drizzle migrates and
+  `pnpm db:seed` seeds ([14](#14-demo-data-seed)).
 - The local Mailpit takes the API's mail: `[local_smtp]` with `smtp_port = 54325`.
 
 - Sessions and passwords as in [7.4](#74-authorization): an ES256 signing key, `jwt_expiry = 900`,
@@ -1826,18 +1850,18 @@ The rules behind `config.toml`:
   `<PORTAL_URL>/auth/confirm`, `<PANEL_URL>/auth/confirm` and `<API_URL>/auth/google/callback`.
   Locally they come from `supabase/.env` through `env()` (`SITE_URL`, `PORTAL_CONFIRM_URL`,
   `PANEL_CONFIRM_URL`, `GOOGLE_CALLBACK_URL`), so a developer who moves a port changes them there
-  ([12](#ports)); `[remotes.production]` writes the production addresses out.
+  ([12](#ports)); each remote block writes its environment's addresses out.
 - Every email goes through the send-email hook ([below](#send-email-hook)):
-  `[auth.hook.send_email]` with `uri` `https://api.opos.land/hooks/send-email` in production and
-  `SEND_EMAIL_HOOK_URI` (`http://host.docker.internal:3001/hooks/send-email`) locally, and
+  `[auth.hook.send_email]` with `uri` `https://api.<ROOT_DOMAIN>/hooks/send-email` in each remote
+  block and `SEND_EMAIL_HOOK_URI` (`http://host.docker.internal:3001/hooks/send-email`) locally, and
   `secrets` from `SEND_EMAIL_HOOK_SECRET`, the same value the API holds.
 - Google in `[auth.external.google]`, the client id and secret from `env()`; the Google client's
   authorized redirect URI is `<SUPABASE_URL>/auth/v1/callback`. Locally both stay empty unless
   someone works on Google sign-in.
-- Signing keys: in production the project's ES256 key, with the legacy JWT secret revoked; locally
-  `signing_keys_path = "./signing_keys.json"`, a key every developer creates once with
-  `supabase gen signing-key --algorithm ES256`, saved under that path before the first
-  `supabase start` and never committed.
+- Signing keys: in each project its own ES256 key, with the legacy JWT secret revoked; locally
+  `signing_keys_path = "./signing_keys.json"`, a JSON array of keys that `pnpm infra:init` creates
+  before the first `supabase start` (`[]`, then `supabase gen signing-key --algorithm ES256
+  --append`) and git never sees.
 
 ### API keys and the client's address
 
@@ -1904,16 +1928,18 @@ key ([14](#14-demo-data-seed)). The key never reaches a frontend ([3.2](#32-fron
 Supabase Auth's limits per IP, counted by the address in `Sb-Forwarded-For`, and its email bucket,
 in `[auth.rate_limit]`:
 
-| Setting | Production (`[remotes.production.auth.rate_limit]`) | Local stack and CI |
+| Setting | Dev and production (`[remotes.*.auth.rate_limit]`) | Local stack and CI |
 |---|---|---|
 | `sign_in_sign_ups` (per 5 min per IP) | `300` | `10000` |
 | `token_verifications` (per 5 min per IP) | `300` | `10000` |
 | `token_refresh` (per 5 min per IP) | `1500` | `10000` |
-| `email_sent` (per hour, the whole project) | `1000`, set in the dashboard | `10000` |
+| `email_sent` (per hour, the whole project) | `1000`, set in the dashboard | fixed by the CLI |
 
 The per-IP values are sized for a convention's venue, where hundreds of attendees share the one
-address of its network. The tests sign in, verify and refresh many times from one address, hence
-the local values.
+address of its network; Dev keeps production's values so it tests them. The tests sign in, verify
+and refresh many times from one address, hence the local values. The local stack checks no
+`apikey` on `/auth/v1`, does not read `Sb-Forwarded-For` and fixes `email_sent` itself, so these
+three are proven on Dev ([16](#16-smoke-test)).
 `email_sent` is one bucket for every tenant, checked before the send-email hook is called; an empty
 bucket answers sign-up, recovery and email change with `429` `auth.over_email_send_rate_limit`.
 Abuse is held per IP, by these limits and by the API's own limits on its `auth` endpoints
@@ -1923,12 +1949,19 @@ Abuse is held per IP, by these limits and by the API's own limits on its `auth` 
 
 ## 11. Environment variables
 
-No `.env` at the repository root in dev: a root file hides which application consumes which
-variable and turns every change into a cache invalidation for all of them. Each application, and
-`packages/db` and `supabase/`, keeps its own `.env` next to a committed `.env.example`. A
-`.env.example` is a template: it names every variable with a comment, holds the local addresses and
-ports, and leaves every password, key and secret empty. Each developer fills their `.env` from it
-([12](#12-local-development)); no working credential of any environment is ever committed.
+No `.env` at the repository root on a developer's machine: a root file hides which application
+consumes which variable and turns every change into a cache invalidation for all of them, and the
+Supabase CLI reads the root `.env` files on its own. Each application, and `packages/db` and
+`supabase/`, keeps its own `.env` next to a committed `.env.example`. A `.env.example` is a
+template: it names every variable with a comment, holds the local addresses and ports, and leaves
+every password, key and secret empty. `pnpm infra:init` writes each `.env` from its template and
+fills the secrets ([12](#12-local-development)); no working credential of any environment is ever
+committed, and a developer's `.env` holds local values only ([13](#environments)).
+
+Every process loads its own `.env` and nothing else: the API's scripts and tests through
+`node --env-file-if-exists=.env` and their Vitest configuration, the `db:*` scripts of
+`packages/db` through `tsx --env-file-if-exists=.env`, `drizzle.config.ts` and its Vitest
+configuration through `process.loadEnvFile`.
 
 **`apps/api/.env`** — the API's variables, read at runtime.
 [apps/api/.env.example](../apps/api/.env.example) lists every one of them;
@@ -1938,18 +1971,22 @@ that first reads it.
 | Variable | Value |
 |---|---|
 | `NODE_ENV`, `PORT` | `development`, `3001` |
+| `OPOS_ENV` | `local` ([13](#environments)) |
 | `DATABASE_URL`, `DATABASE_GLOBAL_URL` | `opos_app` and `opos_app_global` on the local stack (`127.0.0.1:54322`), with the passwords `db:roles` set |
 | `SUPABASE_URL` | `http://127.0.0.1:54321` locally, `https://<ref>.supabase.co` in production |
 | `SUPABASE_SECRET_KEY` | locally from `supabase status`, in production from the project's API keys |
 | `SEND_EMAIL_HOOK_SECRET` | `v1,whsec_<base64 key>`, the same as in `supabase/.env` |
 | `INVITE_SECRET` | at least 32 characters, never equal to another secret |
 | `API_URL`, `PANEL_URL`, `PORTAL_URL` | `http://api.opos.localhost:3001`, `http://panel.opos.localhost:5173`, `http://opos.localhost:5174` |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | the local Mailpit (`127.0.0.1:54325`, no credentials); the mail provider in production |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | the local Mailpit (`127.0.0.1:54325`, no credentials); Mailpit on Dev, the mail provider in production |
+| `DATABASE_MIGRATION_URL` | for the API and e2e tests only, which write their fixtures as `postgres`; `env.ts` does not read it, and the deployed `api` never receives it |
 
 **`packages/db/.env`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL`
-(the project's `postgres` role, [4.6](#46-tenant-isolation--rls-in-postgres)), `db:roles` also
-`OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`, and `db:seed` also `SUPABASE_URL` and
-`SUPABASE_SECRET_KEY`. Nothing has a default: a missing variable stops the script. turbo passes
+(the project's `postgres` role, [4.6](#46-tenant-isolation--rls-in-postgres)) and `OPOS_ENV`,
+`db:roles` and the schema tests also `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`, and
+`db:seed` also `SUPABASE_URL` and `SUPABASE_SECRET_KEY`. Nothing has a default: a missing variable
+stops the script, and so does a remote host without the `OPOS_ENV` of its environment
+([13](#environments)). turbo passes
 these variables through to the tasks ([3.1](#31-turbo-tasks)).
 
 **`supabase/.env`** — read by the CLI for the `env()` values of
@@ -1975,57 +2012,68 @@ when they start ([panel](../apps/panel/src/shared/config/env.ts),
 [portal](../apps/portal/src/shared/config/env.ts)). No `VITE_*` variable ever names Supabase
 ([3.2](#32-frontend-application-layout)).
 
-**Production** configuration lives in a `.env` next to `docker-compose.prod.yml` on the VPS, which
+**Dev and production** configuration lives in a `.env` next to `docker-compose.deploy.yml` on the
+environment's VPS, which the deploy workflow writes from the environment's GitHub Environment and
 compose injects into the containers ([13](#13-deployment)):
 
 | Variables | Read by |
 |---|---|
-| the API's variables above, with the production addresses and secrets | `api` |
-| `DATABASE_MIGRATION_URL`, `OPOS_APP_PASSWORD`, `OPOS_APP_GLOBAL_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | `tools` only |
-| `BACKUP_DATABASE_URL`, `RESTIC_PASSWORD`, `RESTIC_REMOTE_REPOSITORY`, `RESTIC_REMOTE_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | `backup` only |
-| `ROOT_DOMAIN` (`opos.land`), `ACME_EMAIL`, `CF_DNS_API_TOKEN` | `traefik` and the routers |
+| the API's variables above, with the environment's addresses and secrets; `OPOS_ENV` `dev` or `production`, `NODE_ENV=production` | `api` |
+| `DATABASE_MIGRATION_URL`, `OPOS_ENV`, `OPOS_APP_PASSWORD`, `OPOS_APP_GLOBAL_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | `tools` only |
+| `BACKUP_DATABASE_URL`, `RESTIC_PASSWORD`, `RESTIC_REMOTE_REPOSITORY`, `RESTIC_REMOTE_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | `backup` only, production |
+| `ROOT_DOMAIN` (`opos.land`, or the Dev domain), `ACME_EMAIL`, `CF_DNS_API_TOKEN` | `traefik` and the routers |
+| `DEV_BASIC_AUTH` | the Dev routers of the portal, the panel and Mailpit |
 
-Database URLs name the direct connection with TLS ([13](#database-connection)). Every secret is
-generated once per environment and never reused between dev and production.
+The GitHub Environment also holds what the runner needs for the push and not the VPS: the
+project's reference, `SUPABASE_ACCESS_TOKEN`, and the `DEV_*` or `PRODUCTION_*` values of
+`config.toml` ([10](#10-supabase)). Database URLs name the direct connection with TLS
+([13](#database-connection)). Every secret is generated once per environment and never reused
+between environments.
 
 ---
 
 ## 12. Local development
 
-Applications run natively through pnpm; Supabase runs as the Supabase CLI's local stack, whose
-services are containers of a Docker-compatible engine (Docker Desktop, OrbStack, Colima).
+Every developer runs their own Supabase: the Supabase CLI's local stack, with the seed's data,
+separate from Dev and production ([13](#environments)). Applications run natively through pnpm;
+the stack's services are containers of a Docker-compatible engine (Docker Desktop or OrbStack).
 
 ```bash
-# 0. Once: tools and dependencies
-mise install                     # Node, pnpm through corepack, the Supabase CLI
+# Once per checkout
+mise install          # Node, pnpm through corepack, the Supabase CLI (a pinned 2.x)
 pnpm install
-
-# 1. Once: secrets and the files supabase start reads
-#    copy every .env.example to .env: supabase, apps/api, packages/db, apps/panel, apps/portal
-#    generate: SEND_EMAIL_HOOK_SECRET = v1,whsec_$(openssl rand -base64 32), the same value in
-#    supabase/.env and apps/api/.env; INVITE_SECRET, OPOS_APP_PASSWORD and OPOS_APP_GLOBAL_PASSWORD with
-#    openssl rand -hex 32
-#    the signing key with supabase gen signing-key --algorithm ES256, saved as
-#    supabase/signing_keys.json
-
-# 2. Supabase
-pnpm infra:up                    # supabase start
-# -> gateway with Auth at /auth/v1 on :54321, db on :54322, studio on :54323,
-#    mailpit on :54324 (UI) and :54325 (SMTP)
-supabase status                  # the secret key and the database URL: into apps/api/.env and
-                                 # packages/db/.env, with the passwords of step 1
-
-# 3. Roles, migrations and seed
-pnpm db:roles
+pnpm infra:init       # .env files, secrets, signing key, supabase start, keys, db:roles
 pnpm db:migrate
 pnpm db:seed
 
-# 4. All applications in parallel
+# Every day
+pnpm infra:up         # supabase start
 pnpm dev
 # -> api    on api.opos.localhost:3001
 # -> panel  on panel.opos.localhost:5173
 # -> portal on opos.localhost:5174
+# -> gateway with Auth at /auth/v1 on :54321, db on :54322, studio on :54323,
+#    mailpit on :54324 (UI) and :54325 (SMTP)
 ```
+
+`pnpm infra:init` (`scripts/infra-init.mjs`) does what a developer and CI would otherwise do by
+hand, in this order, and is safe to run again — it never overwrites a value already set:
+
+1. writes every missing `.env` from its `.env.example` — `supabase/`, `apps/api`, `packages/db`,
+   `apps/panel`, `apps/portal` — with `OPOS_ENV=local`;
+2. fills the empty secrets: `SEND_EMAIL_HOOK_SECRET` (`v1,whsec_` and 32 random bytes in base64),
+   the same value in `supabase/.env` and `apps/api/.env`; `INVITE_SECRET`, `OPOS_APP_PASSWORD` and
+   `OPOS_APP_GLOBAL_PASSWORD` (`openssl rand -hex 32`), and the database URLs built from them;
+3. creates `supabase/signing_keys.json` when it is missing: `[]`, then
+   `supabase gen signing-key --algorithm ES256 --append`;
+4. runs `supabase start`, reads `supabase status -o env` and writes the secret key and the
+   addresses it reports into `apps/api/.env` and `packages/db/.env`;
+5. runs `pnpm db:roles`.
+
+It writes no `SUPABASE_PROJECT_ID` or `SUPABASE_ACCESS_TOKEN`, refuses to run where `OPOS_ENV` is
+`dev` or `production`, and never runs `supabase link`. `supabase/.gitignore`
+keeps the CLI's own state — `.temp`, `.branches`, `snippets` (the queries Studio saves) — and
+`signing_keys.json` out of git.
 
 `/etc/hosts`:
 
@@ -2038,8 +2086,8 @@ session cookies travel as in production ([7.4](#74-authorization)).
 
 The root scripts are in [package.json](../package.json); apart from `format` and `infra:*`, each
 is a `turbo run <task>` delegate ([3.1](#31-turbo-tasks)). `pnpm infra:up` is `supabase start`,
-`pnpm infra:down` `supabase stop`, and `pnpm infra:reset` wipes the local database
-(`supabase stop --no-backup`) and starts it again; the roles go with it, so `pnpm db:roles`,
+`pnpm infra:down` `supabase stop` — the data and the roles stay — and `pnpm infra:reset` wipes the
+local database (`supabase stop --no-backup`), starts it again and runs `pnpm db:roles`;
 `pnpm db:migrate` and `pnpm db:seed` follow.
 
 Every `db:*` script connects as `postgres` ([4.6](#46-tenant-isolation--rls-in-postgres)); the
@@ -2048,7 +2096,7 @@ API runs as `opos_app`.
 Swagger UI of the API at http://api.opos.localhost:3001/docs, the OpenAPI document at
 http://api.opos.localhost:3001/docs/json.
 
-Mailpit catches all dev email — UI at http://localhost:54324. Supabase Auth's messages land there
+Mailpit catches all local email — UI at http://localhost:54324. Supabase Auth's messages land there
 too, because they go through the API's send-email hook. Payments go through the fake provider
 page at http://api.opos.localhost:3001/dev/payments/:orderId ([7.10](#710-payments)). Supabase
 Studio at http://localhost:54323 browses both the `public` and the `auth` schema.
@@ -2117,24 +2165,62 @@ push (the API tests need `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0
 
 ## 13. Deployment
 
-The applications run on a VPS with Docker Compose behind Traefik v3
-(`docker-compose.prod.yml`); the database and Supabase Auth are the
-Supabase project ([10](#10-supabase)).
+The applications run on a VPS per deployed environment, with Docker Compose behind Traefik v3
+(`docker-compose.deploy.yml`); the database and Supabase Auth are that environment's Supabase
+project ([10](#10-supabase)).
+
+### Environments
+
+| | Local | Dev | Production |
+|---|---|---|---|
+| Who uses it | one developer | the team, for testing what `develop` holds; closed to the public | attendees and organizers |
+| Supabase | the CLI's local stack | a project in a separate Free organization, EU region | the Pro project, `eu-central-1` |
+| `config.toml` | the base sections | `[remotes.dev]` | `[remotes.production]` |
+| Addresses | `opos.localhost`, `panel.opos.localhost`, `api.opos.localhost` | the apex, `panel.` and `api.` of a registrable domain of its own, never under `opos.land` | `opos.land`, `panel.opos.land`, `api.opos.land` |
+| Applications | natively, `pnpm dev` | the Dev VPS | the production VPS |
+| Deployed by | the developer | the deploy workflow on every push to `develop` | the deploy workflow on every push to `main`, after a required reviewer |
+| Data | the seed | the seed and the team's own accounts; reset at will | real; never copied to Dev or to a developer's machine |
+| Mail | the local Mailpit | Mailpit on the Dev VPS | the mail provider |
+| Google | a personal OAuth client, optional | a Dev client in Testing mode, the team as its test users | the production client |
+| Payments | `fake` | `fake` | the convention's provider |
+| `OPOS_ENV` | `local` | `dev` | `production` |
+| Secrets | `pnpm infra:init` ([12](#12-local-development)) | the GitHub Environment `dev` | the GitHub Environment `production` |
+| Backups | none | none | [below](#backups) |
+
+`OPOS_ENV` is the one switch between environments. The fake payment provider loads only where it
+is `local` or `dev` ([7.10](#710-payments)), `db:seed` refuses `production`
+([14](#14-demo-data-seed)), and every `db:*` script and the schema tests refuse a
+`DATABASE_MIGRATION_URL` whose host is not on the loopback interface unless `OPOS_ENV` is `dev` or
+`production`, so a developer's `.env` holding a remote URL fails before it writes anything. Dev and
+production both run with `NODE_ENV=production`.
+
+**Dev is closed to the public.** Traefik asks for basic auth on its portal, panel and Mailpit
+routers (`DEV_BASIC_AUTH`); the API stays reachable, since Supabase Auth calls its hook and the
+browsers of the two applications call it, and it holds demo data only. Production data never
+reaches Dev: no dump, no copy, no shared secret ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)).
+
+**A working checkout never reaches Dev or production.** No `supabase link` on a developer's
+machine; no remote database URL, `SUPABASE_PROJECT_ID` or `SUPABASE_ACCESS_TOKEN` in any `.env`
+or in `mise.local.toml`, which the CLI reads on its own; the configuration reaches a project only
+through the deploy workflow ([below](#deployment-procedure)).
 
 ### Images
 
-| Service | Dockerfile / image |
-|---|---|
-| `api` | `apps/api/Dockerfile`, target `runtime`: multi-stage on `node:<the version of mise.toml>-alpine`: prune -> `turbo run build` -> the production dependencies of `@opos/api` -> `node dist/main.js`; healthcheck on `GET /health` |
-| `tools` | the same Dockerfile, target `tools`: the pruned workspace with every dependency, for `pnpm db:*`; in the compose profile `tools`, started only by `docker compose run --rm tools ...` |
-| `panel`, `portal` | multi-stage: prune -> Vite build with `VITE_API_URL` as a build argument -> `nginx` (alpine) with an SPA fallback and the headers below |
-| `backup` | `infra/backup`: `postgres:17-alpine`, for a `pg_dump` of the server's major version, with restic |
-| `traefik` | `traefik:v3`, docker provider + ACME resolver, static configuration in `infra/traefik` |
+| Service | Dockerfile / image | Compose profile |
+|---|---|---|
+| `api` | `apps/api/Dockerfile`, target `runtime`: multi-stage on `node:<the version of mise.toml>-alpine`: prune -> `turbo run build` -> the production dependencies of `@opos/api` -> `node dist/main.js`; healthcheck on `GET /health` | — |
+| `tools` | the same Dockerfile, target `tools`: the pruned workspace with every dependency, for `pnpm db:*`; started only by `docker compose run --rm tools ...` | `tools` |
+| `panel`, `portal` | multi-stage: prune -> Vite build with `VITE_API_URL` as a build argument -> `nginx` (alpine) with an SPA fallback and the headers below | — |
+| `backup` | `infra/backup`: `postgres:17-alpine`, for a `pg_dump` of the server's major version, with restic | `production` |
+| `mailpit` | `axllent/mailpit` | `dev` |
+| `traefik` | `traefik:v3`, docker provider + ACME resolver, static configuration in `infra/traefik` | — |
 
-Every image tag is exact, no `latest` and no major-only tag. Every application Dockerfile starts
-with `turbo prune <app> --docker`: the build context holds only that application's slice of the
+One compose file serves both VPS; each starts the profiles of its environment. Every image tag is
+exact, no `latest` and no major-only tag. Every application Dockerfile starts with
+`turbo prune <app> --docker`: the build context holds only that application's slice of the
 dependency graph and a pruned lockfile, so a change in one application does not invalidate the
-image layers of another.
+image layers of another. The images are built on the VPS of their environment, since
+`VITE_API_URL` and the CSP are baked in at build time.
 
 Only `tools` and `backup` hold a URL of the `postgres` role: the running API knows the runtime
 roles alone ([11](#11-environment-variables)).
@@ -2153,86 +2239,104 @@ Traefik adds `Strict-Transport-Security` on every router.
 ### Routers
 
 ```
-opos.land                    -> portal
-panel.opos.land              -> panel
-api.opos.land                -> api
+<ROOT_DOMAIN>                -> portal
+panel.<ROOT_DOMAIN>          -> panel
+api.<ROOT_DOMAIN>            -> api
+mail.<ROOT_DOMAIN>           -> mailpit     # Dev only
 ```
 
-Nothing else is routed: Supabase is reached only by the API, the tools and the backup, and calls
-`https://api.opos.land/hooks/send-email` itself.
+`ROOT_DOMAIN` is `opos.land` in production and the Dev domain on Dev. Nothing else is routed:
+Supabase is reached only by the API, the tools and the backup, and calls
+`https://api.<ROOT_DOMAIN>/hooks/send-email` itself.
 
 ### TLS
 
-Wildcard `*.opos.land` + `opos.land` through DNS-01 (`CF_DNS_API_TOKEN`). The DNS records point at
-the VPS directly, so the client address Traefik puts into `X-Forwarded-For` is the visitor's.
+Wildcard `*.<ROOT_DOMAIN>` + `<ROOT_DOMAIN>` through DNS-01 (`CF_DNS_API_TOKEN`), a token limited to
+that environment's own zone. The DNS records point at the VPS directly, so the client address
+Traefik puts into `X-Forwarded-For` is the visitor's.
 
 ### Database connection
 
 The API, the tools and the backup reach the project's Postgres over its direct connection
 (`db.<ref>.supabase.co:5432`), not through Supavisor, with TLS verified against the project's CA
 certificate (`sslmode=verify-full`; the certificate from the project's database settings, shipped
-in the images). The direct connection is IPv6; a VPS whose containers have no IPv6 route uses the
-project's IPv4 add-on. The two API pools (10 connections each), Supabase Auth, the tools and the
-backup share the direct connection limit of the project's compute size.
+in the images). The direct connection is IPv6: the Dev VPS needs an IPv6 route for its containers,
+since a Free project has no IPv4 add-on; a production VPS without one uses the project's IPv4
+add-on. The two API pools (10 connections each), Supabase Auth, the tools and the backup share
+the direct connection limit of the project's compute size.
+
+A Free project pauses after 7 days without activity; the deploy workflow and the team's testing
+keep Dev awake, and a paused project is resumed from the dashboard.
 
 ### Backups
+
+Production only; Dev holds nothing that cannot be seeded again.
 
 - Supabase's daily backups of the Pro plan, kept 7 days, restored from the dashboard; `pnpm db:roles`
   follows a restore, which does not keep the passwords of the runtime roles.
 - The `backup` service, every 6 hours: `pg_dump -Fc -n public -n auth -n drizzle
   --exclude-table=auth.schema_migrations` as the project's `postgres` role, which may not read
-  Supabase Auth's migration journal (`BACKUP_DATABASE_URL`), into restic — a repository on the VPS volume `backups`,
-  encrypted with `RESTIC_PASSWORD`, then `restic copy` to the off-server repository on S3 or R2
-  (`RESTIC_REMOTE_REPOSITORY`), encrypted with its own `RESTIC_REMOTE_PASSWORD`. A dump without
-  `auth` leaves accounts nobody can sign in to.
+  Supabase Auth's migration journal (`BACKUP_DATABASE_URL`), into restic — a repository on the VPS
+  volume `backups`, encrypted with `RESTIC_PASSWORD`, then `restic copy` to the off-server
+  repository on S3 or R2 (`RESTIC_REMOTE_REPOSITORY`), encrypted with its own
+  `RESTIC_REMOTE_PASSWORD`. A dump without `auth` leaves accounts nobody can sign in to.
 - Retention in both repositories: `restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 3
   --prune`.
-- Once a month, restore the newest dump into a fresh local stack: `pnpm infra:reset` and
-  `pnpm db:roles`, then `pg_restore` as the local `supabase_admin` — `public` and `drizzle`
-  whole, `auth` with `--data-only --disable-triggers` and without `auth.schema_migrations`, since
-  the local Supabase Auth has created that schema already — then `pnpm db:verify` and a sign-in
-  with a restored account.
+- Once a month, restore the newest dump on a throwaway server, never on a developer's machine: the
+  local stack of the CLI there, `pnpm db:roles`, then `pg_restore` as its `supabase_admin` —
+  `public` and `drizzle` whole, `auth` with `--data-only --disable-triggers` and without
+  `auth.schema_migrations`, since its Supabase Auth has created that schema already — then
+  `pnpm db:verify` and a sign-in with a restored account; the server is deleted afterwards.
 - Dumps are encrypted at rest — they contain attendees' personal data and password hashes.
 
 ### Project setup
 
-Once per Supabase project:
+Once per Supabase project, Dev and production alike:
 
-1. Create the project: Pro plan, region `eu-central-1`.
+1. Create the project: production on the Pro plan in `eu-central-1`; Dev in a Free organization of
+   its own, in an EU region.
 2. JWT signing keys: create an ES256 key and make it the current one; disable the legacy `anon`
    and `service_role` API keys, then revoke the legacy JWT secret.
 3. Turn IP address forwarding on (Authentication -> Rate Limits, or
    `security_sb_forwarded_for_enabled` through the Management API), and set `email_sent` to
    `1000` per hour ([10](#rate-limits)).
-4. `supabase link --project-ref <ref>`, then `supabase config push` with the `PRODUCTION_*`
-   variables in the environment ([10](#10-supabase)); this also turns the Data API off.
-5. Create a secret key for the API and write it, the project's address and the database URLs into
-   the production `.env` ([11](#11-environment-variables)).
-6. `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:roles`, then `db:migrate`
-   and `db:verify` the same way.
-7. The first tenant with `pnpm db:tenant:create` through `tools`, once its head has registered
-   ([14](#creating-a-tenant)).
-
-The person running the CLI against the project uses a personal access token scoped to that project.
+4. Create a secret key for the API and a personal access token for the deploy workflow, and store
+   both, the database password and the environment's other secrets in its GitHub Environment
+   ([11](#11-environment-variables)).
+5. Add the project's `[remotes.<environment>]` block, with its `project_id`, to `config.toml` in a
+   PR ([10](#10-supabase)); the next deployment pushes it, which also turns the Data API off.
+6. The first deployment runs `db:roles`, `db:migrate` and `db:verify`; on Dev also `db:seed`.
+7. Production's first tenant comes from `pnpm db:tenant:create` through `tools`, once its head has
+   registered ([14](#creating-a-tenant)).
 
 ### Deployment procedure
 
-1. `git pull` of `main` on the VPS.
-2. `docker compose -f docker-compose.prod.yml pull traefik`.
-3. `docker compose -f docker-compose.prod.yml build`.
-4. A dump before the migration: `docker compose -f docker-compose.prod.yml run --rm backup backup`.
-5. `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:migrate`.
-6. `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:verify`.
-7. When `supabase/config.toml` changed: `supabase config push` as in step 4 of the setup.
-8. `docker compose -f docker-compose.prod.yml up -d`.
-9. The smoke test from chapter [16](#16-smoke-test).
+The deploy workflow (`.github/workflows/deploy.yml`) runs on every push to `develop` in the GitHub
+Environment `dev` and on every push to `main` in `production`, which waits for a required
+reviewer. Each environment holds its own secrets, and a job sees only those of its environment.
+Over SSH to that environment's VPS it:
+
+1. checks out the pushed commit and writes the `.env` next to `docker-compose.deploy.yml` from the
+   environment's secrets ([11](#11-environment-variables));
+2. `docker compose -f docker-compose.deploy.yml --profile <environment> pull traefik`, then
+   `build`;
+3. in production, a dump before the migration: `docker compose ... run --rm backup backup`;
+4. `docker compose ... run --rm tools pnpm db:roles`, then `db:migrate` and `db:verify`, and on
+   Dev `db:seed`;
+5. pushes `supabase/config.toml` from the runner with `scripts/supabase-push.mjs <environment>`
+   ([10](#10-supabase));
+6. `docker compose ... --profile <environment> up -d`.
+
+The smoke test of chapter [16](#16-smoke-test) follows a deployment that changes sign-in,
+payments or the deployment itself: in full on Dev, its production part on production.
 
 ---
 
 ## 14. Demo data (seed)
 
 [packages/db/src/seed.ts](../packages/db/src/seed.ts), idempotent: every run converges on the
-data below. With `NODE_ENV=production` it fails unless `--i-know-what-i-am-doing` is passed. The
+data below. It runs where `OPOS_ENV` is `local` or `dev` and refuses `production`, with no flag to
+override it ([13](#environments)); on Dev the deploy workflow runs it after every migration. The
 seed covers the built tables; the rows of a table still to be built (programme items, reviews,
 likes, payment config, ticket types, orders, attendees) join the seed in the PR that builds the
 table. `accepted_invitations` holds no demo rows: a seeded team is written directly.
@@ -2300,7 +2404,7 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
   `tenant.slug-invalid`, `tenant.slug-reserved`, `tenant.slug-taken`, `tenant.name-empty`,
   `tenant.locale-invalid` (outside `SUPPORTED_LOCALES` from `@opos/i18n`),
   `tenant.timezone-invalid` (not an IANA zone), `account.not-found`, `account.unconfirmed`.
-- In production: `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:tenant:create ...`
+- In production: `docker compose -f docker-compose.deploy.yml run --rm tools pnpm db:tenant:create ...`
   ([13](#images)).
 
 ### Changing a tenant's slug
@@ -2469,10 +2573,8 @@ Scenarios 1, 9, 10, 11, 13 and 14 run in both the desktop and the mobile project
 
 GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every push to `develop` and
 `main`, with tool versions from `mise.toml`, the same source as local machines, the Supabase CLI
-included. The job generates the secrets, passwords and signing key of a run, writes
-`supabase/.env` before `supabase start` and the other `.env` files from `supabase status` after
-it, in the order of [12](#12-local-development); the CLI's local stack then serves the schema and
-API tests, behind
+included. The job runs `pnpm infra:init` as a developer does ([12](#12-local-development)); the
+CLI's local stack then serves the schema and API tests, behind
 `pnpm db:roles`, `pnpm db:migrate`, `pnpm db:verify` and two runs of `pnpm db:seed` — the second
 proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
 run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
@@ -2484,6 +2586,9 @@ starts `dist/main.js` with `NODE_ENV=production` against the same stack: `/healt
 `pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR, and so do
 `pnpm test:scripts` (the root `scripts/`, on `node --test`) and, on a PR only, the
 [tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) over the PR's commits.
+
+A push to `develop` deploys Dev and a push to `main` production, through the deploy workflow
+([13](#deployment-procedure)), once `check` has passed on that commit.
 
 Branches:
 
@@ -2503,23 +2608,29 @@ videos and screenshots of a failed run are kept as an artifact for 7 days.
 
 ## 16. Smoke test
 
-Run by hand after every deployment, on the production environment. The same flows run automatically
-in e2e ([15.2](#152-e2e-tests)) — the smoke test exists to check them where e2e cannot reach: with
-real TLS, real Google, real email delivery and a real phone.
+Run by hand after a deployment that changes sign-in, payments or the deployment itself
+([13](#deployment-procedure)). The same flows run automatically in e2e ([15.2](#152-e2e-tests)) —
+the smoke test exists to check them where e2e cannot reach: with real TLS, real Google, real email
+delivery, a real phone and the hosted Supabase project, whose `apikey` check, `Sb-Forwarded-For`
+and email bucket the local stack does not have ([10](#rate-limits)).
 
-1. **Attendee registration.** `opos.land` -> registration by email -> the confirmation message
+Dev runs every item but 13, on the seed's tenants and accounts, with addresses on the Dev domain
+for `opos.land`. Production runs the items marked **(production)**, on a smoke tenant created with
+`pnpm db:tenant:create` for the purpose and removed afterwards; it holds no seed data.
+
+1. **Attendee registration (production).** `opos.land` -> registration by email -> the confirmation message
    arrives in the recipient's language -> the link signs in, asks for the password and lands on
    "my conventions". With
    `Accept-Language: en` the portal is in English before sign-in; after changing the language in
    settings the choice survives sign-out and a fresh visit.
-2. **Password reset.** The forgot-password form sends a real email; the link sets a new password,
+2. **Password reset (production).** The forgot-password form sends a real email; the link sets a new password,
    the previous password stops working and the earlier session can no longer refresh; its access
    token stops working when it expires, at most 15 minutes later.
-3. **Google cannot take over an account.** An account registered but not confirmed on an address
+3. **Google cannot take over an account (production).** An account registered but not confirmed on an address
    available in Google: Google sign-in takes it over, and no password lets anyone in.
    For a confirmed account, Google sign-in keeps the same `auth.users.id` and the password keeps
    working.
-4. **Refresh token rotation.** A refresh token used a second time, more than 10 s after the first
+4. **Refresh token rotation (production).** A refresh token used a second time, more than 10 s after the first
    use, is rejected and ends the session. `panel.opos.land` and `opos.land` answer with the CSP
    header from [7.4](#74-authorization), and the session cookies carry `HttpOnly`, `Secure` and
    `SameSite=Strict`.
@@ -2539,20 +2650,20 @@ real TLS, real Google, real email delivery and a real phone.
    the convention page lists 2025 among past editions, an unknown slug -> the "we couldn't find
    that convention" page. `opos.land/conventions/convention-b` shows programme times in
    `Europe/Prague` regardless of the browser's zone.
-11. **The portal on a phone.** On a real phone browser (iOS Safari and Android Chrome): registration,
+11. **The portal on a phone (production).** On a real phone browser (iOS Safari and Android Chrome): registration,
    the "Sign up" button on a convention's page, edition sign-up, liking, the personal schedule, a
    review, ticket checkout and "my conventions" work without horizontal scrolling.
-12. **Supabase stays behind the API.** In the browser's developer tools the portal and the panel
+12. **Supabase stays behind the API (production).** In the browser's developer tools the portal and the panel
    reach only their own origin and `api.opos.land` — Google sign-in alone passes through the
    project's `supabase.co` address — and their bundles name no Supabase address or key. The
    project's Data API exposes no schema, and `https://api.opos.land/hooks/send-email`
    without a signature -> `401`.
-13. **A real payment.** On a test edition, a BLIK payment of the cheapest ticket through the
+13. **A real payment (production only).** On the smoke tenant's edition, a BLIK payment of the cheapest ticket through the
    convention's real provider account: the money shows up in that account, not in any OPOS
    account, the ticket email arrives, the order turns `paid`. Refund in the provider's dashboard,
    cancel in the panel. `https://api.opos.land/hooks/payments/<provider>` without a signature ->
    `401`.
-14. **The scanner on a real phone.** Pairing by camera from the panel, scanning a ticket QR code
+14. **The scanner on a real phone (production).** Pairing by camera from the panel, scanning a ticket QR code
    from another phone's screen, redemption, a second scan showing "already used", revocation
    sending the phone back to pairing.
 

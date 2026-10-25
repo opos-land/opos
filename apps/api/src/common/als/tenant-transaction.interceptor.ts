@@ -11,6 +11,7 @@ import { TENANT_REQUIREMENT } from '../decorators/require-tenant.decorator'
 import { ApiError, forbidden, notFound, unauthenticated } from '../errors/api-error'
 import { AccessRepository } from '../permissions/access.repository'
 import { decideEdition, decideTenant, type Requirement } from '../permissions/permissions'
+import { TenantWriteQueue } from '../permissions/tenant-write-queue'
 import { isUuid } from '../uuid'
 import { TenantContextService } from './tenant-context.service'
 
@@ -32,6 +33,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     private readonly context: TenantContextService,
     private readonly global: GlobalDbService,
     private readonly access: AccessRepository,
+    private readonly queue: TenantWriteQueue,
   ) {}
 
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -62,30 +64,46 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     const tenant = await this.global.tenantBySlug(slug)
     if (!tenant) throw notFound('tenant')
 
+    const write = requirement.level === 'write'
+    /** Puts the tenant into the store of the open transaction. */
+    const enter = () => {
+      const store = TenantContextService.store()
+      if (!store.account) throw unauthenticated()
+      store.tenant = tenant
+      return store.account
+    }
+    /** Reads the account's membership in the tenant into the store and checks the requirement. */
+    const admit = async () => {
+      const account = enter()
+      TenantContextService.store().membership = await this.access.activeMembership(account.id)
+      await this.check(requirement, request)
+    }
     // An exception rolls back, and so does a status of 300 or more: the one oRPC holds unsent
     // (defer-response.ts), or the one a route outside oRPC set on the response.
-    return this.context.transaction(
-      tenant.id,
-      async () => {
-        const store = TenantContextService.store()
-        if (!store.account) throw unauthenticated()
-        store.tenant = tenant
-        store.membership = await this.access.activeMembership(store.account.id)
-        await this.check(requirement, request)
-        // A write the check lets through then takes the tenant's write lock and checks again on a
-        // fresh read: every route that lowers a member's access is a write, so the second check
-        // sees each such change committed, and none can land before this transaction ends. A
-        // request refused above never queues on the lock. The lock comes before any row lock, so
-        // it adds no lock-order cycle (PLAN.md 7.3).
-        if (requirement.level === 'write') {
-          await this.access.lockTenantWrites()
-          store.membership = await this.access.activeMembership(store.account.id)
-          await this.check(requirement, request)
-        }
-        return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
-      },
-      () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,
-    )
+    const run = (ended?: () => void) =>
+      this.context.transaction(
+        tenant.id,
+        async () => {
+          // A write takes the tenant's write lock before it checks: every route that lowers a
+          // member's access is a write, so the check sees each such change committed, and none
+          // can land before this transaction ends. The lock comes before any row lock, so it adds
+          // no lock-order cycle (PLAN.md 7.3).
+          if (write) {
+            enter()
+            await this.access.lockTenantWrites()
+          }
+          await admit()
+          return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
+        },
+        () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,
+        ended,
+      )
+    if (!write) return run()
+    // A write is checked once in a short transaction of its own, so a refused one never queues,
+    // then waits in its tenant's queue without a connection, then runs and gives its turn back
+    // when its transaction ends, before the after-commit queue and the response (PLAN.md 7.3).
+    await this.context.transaction(tenant.id, admit)
+    return this.queue.run(tenant.id, (release) => run(release))
   }
 
   private async check(requirement: Requirement, request: HttpRequest) {

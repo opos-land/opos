@@ -6,6 +6,7 @@ export const errorCodes = [
   'request.invalid',
   'request.not-found',
   'request.rate-limited',
+  'request.busy',
   'session.invalid',
   'session.reauthentication-required',
   'permission.denied',

@@ -274,3 +274,48 @@ describe('@RequireEdition', () => {
     await as(outsider, a.slug).get(`/probe/editions/${randomUUID()}`).expect(403)
   })
 })
+
+// Writes of one tenant queue inside the API before they open a transaction (PLAN.md 7.3), so a
+// tenant with more waiting writes than the pool has connections leaves the pool to the others.
+describe('the write queue of a tenant', () => {
+  it('keeps connections free for other tenants while the writes of one tenant queue', async () => {
+    const writes = Array.from({ length: 12 }, () =>
+      as(a.head, a.slug)
+        .post('/probe/slow-write', {})
+        .then((res) => res),
+    )
+    await sleep(300)
+    const started = Date.now()
+    await as(b.head, b.slug).get('/tenants/current').expect(200)
+    expect(Date.now() - started).toBeLessThan(500)
+
+    // A write the check refuses is answered at once, not behind the queue.
+    const refusedAt = Date.now()
+    await as(programReader, a.slug).post('/probe/slow-write', {}).expect(403)
+    expect(Date.now() - refusedAt).toBeLessThan(200)
+
+    const statuses = (await Promise.all(writes)).map((res) => res.status)
+    expect(statuses.filter((status) => status === 200).length).toBeGreaterThanOrEqual(4)
+    expect(statuses.filter((status) => status === 503).length).toBeGreaterThanOrEqual(5)
+  }, 20_000)
+
+  // The turn ends with the transaction: the after-commit queue (outbound mail) and the response
+  // run while the next write of the tenant already goes ahead.
+  it('lets the next write of the tenant run while a slow after-commit step finishes', async () => {
+    const order: string[] = []
+    const first = as(a.head, a.slug)
+      .post('/probe/editions', {
+        slug: `queue-${randomUUID().slice(0, 8)}`,
+        fail: false,
+        slow: true,
+      })
+      .then((res) => order.push(`first ${res.status}`))
+    await sleep(20)
+    const second = as(a.head, a.slug)
+      .post('/probe/editions', { slug: `queue-${randomUUID().slice(0, 8)}`, fail: false })
+      .then((res) => order.push(`second ${res.status}`))
+    await Promise.all([first, second])
+
+    expect(order).toEqual(['second 201', 'first 201'])
+  })
+})

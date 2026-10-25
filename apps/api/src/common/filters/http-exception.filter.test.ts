@@ -9,7 +9,7 @@ import { ORPCError, ValidationError } from '@orpc/server'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { ApiError } from '../errors/api-error'
-import { HttpExceptionFilter, toErrorResponse } from './http-exception.filter'
+import { HttpExceptionFilter, postgresCode, toErrorResponse } from './http-exception.filter'
 
 describe('toErrorResponse', () => {
   it('keeps the code and params of an ApiError', () => {
@@ -66,7 +66,11 @@ describe('toErrorResponse', () => {
   // A Postgres error as drizzle throws it: the query error carries the driver's error as its cause.
   const violated = (constraint: string) =>
     Object.assign(new Error('Failed query'), {
-      cause: Object.assign(new Error('violates check constraint'), { constraint_name: constraint }),
+      // As postgres.js raises it: a PostgresError carries its severity.
+      cause: Object.assign(new Error('violates check constraint'), {
+        constraint_name: constraint,
+        severity: 'ERROR',
+      }),
     })
 
   it.each([
@@ -151,5 +155,63 @@ describe('HttpExceptionFilter', () => {
     expect(response.setHeader).toHaveBeenCalledWith('Retry-After', '42')
     expect(response.status).toHaveBeenCalledWith(429)
     expect(json).toHaveBeenCalledWith({ code: 'request.rate-limited', message: 'Slow down' })
+  })
+})
+
+describe('HttpExceptionFilter on an expected 5xx', () => {
+  const host = () => {
+    const response = {
+      headersSent: false,
+      writableEnded: false,
+      destroy: vi.fn(),
+      setHeader: vi.fn(),
+      status: vi.fn(() => ({ json: vi.fn() })),
+    }
+    return {
+      response,
+      host: { switchToHttp: () => ({ getResponse: () => response }) } as unknown as ArgumentsHost,
+    }
+  }
+
+  it('logs an ApiError marked expected as a warning', () => {
+    const { response, host: busy } = host()
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+
+    new HttpExceptionFilter().catch(
+      new ApiError(503, 'request.busy', 'Busy', undefined, undefined, { expected: true }),
+      busy,
+    )
+    expect(response.status).toHaveBeenCalledWith(503)
+    expect(error).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalledWith('Busy')
+    error.mockRestore()
+    warn.mockRestore()
+  })
+
+  it('logs any other ApiError of 5xx as an error', () => {
+    const { host: failing } = host()
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+
+    new HttpExceptionFilter().catch(new ApiError(503, 'request.busy', 'Busy'), failing)
+    expect(error).toHaveBeenCalled()
+    expect(warn).not.toHaveBeenCalled()
+    error.mockRestore()
+    warn.mockRestore()
+  })
+})
+
+describe('postgresCode', () => {
+  it('reads the SQLSTATE of a Postgres error wrapped by drizzle', () => {
+    const postgres = Object.assign(new Error('canceling statement due to lock timeout'), {
+      code: '55P03',
+      severity: 'ERROR',
+    })
+    expect(postgresCode(new Error('Failed query', { cause: postgres }))).toBe('55P03')
+  })
+
+  it('ignores the code of an error that does not come from Postgres', () => {
+    expect(postgresCode(Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }))).toBeUndefined()
   })
 })

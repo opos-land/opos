@@ -197,6 +197,8 @@ describe('tenant routes', () => {
         [a.head, 'head'],
       ] as const) {
         const res = await call(procedure, need, who)
+        // Through the check means a handler answer: never 401 or 403, and never a 5xx.
+        expect(res.status, `${label}: ${JSON.stringify(res.body)}`).toBeLessThan(500)
         expect([401, 403], `${label}: ${JSON.stringify(res.body)}`).not.toContain(res.status)
       }
     },

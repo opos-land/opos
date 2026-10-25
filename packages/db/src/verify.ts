@@ -88,7 +88,11 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public'
       and (c.relkind = 'm' or (c.relkind = 'v'
-        and not coalesce(c.reloptions @> array['security_invoker=true'], false)))
+        and not exists (
+          select 1 from unnest(c.reloptions) o
+          where lower(o) in ('security_invoker=true', 'security_invoker=on',
+            'security_invoker=yes', 'security_invoker=1')
+        )))
     order by 1
   `
   const definerViews = views.filter((view) => view.relkind === 'v')
@@ -166,7 +170,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     join pg_namespace n on n.oid = c.relnamespace
     cross join (values ('opos_app'), ('opos_app_global'), ('anon'), ('authenticated'), ('service_role')) r(role)
     cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) p(privilege)
-    where n.nspname = 'public' and c.relkind in ('r', 'p')
+    where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege(r.role, c.oid, p.privilege)
       and (
         (r.role = 'opos_app_global' and (p.privilege <> 'SELECT' or c.relname = 'accounts'))
@@ -211,6 +215,37 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   if (overGrantedColumns.length > 0) {
     problems.push(
       `Column privileges the runtime rules forbid: ${overGrantedColumns.map((r) => `${r.role} ${r.privilege} (${r.column}) on ${r.table}`).join(', ')}`,
+    )
+  }
+
+  // No runtime or Supabase API role holds anything on a sequence in public: ids are uuids.
+  const sequenceGrants = await sql<{ role: string; sequence: string; privilege: string }[]>`
+    select r.role, c.relname as sequence, p.privilege
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    cross join (values ('opos_app'), ('opos_app_global'), ('anon'), ('authenticated'), ('service_role')) r(role)
+    cross join (values ('USAGE'), ('SELECT'), ('UPDATE')) p(privilege)
+    where n.nspname = 'public' and c.relkind = 'S'
+      and has_sequence_privilege(r.role, c.oid, p.privilege)
+    order by 1, 2, 3
+  `
+  if (sequenceGrants.length > 0) {
+    problems.push(
+      `Sequence privileges the runtime rules forbid: ${sequenceGrants.map((r) => `${r.role} ${r.privilege} on ${r.sequence}`).join(', ')}`,
+    )
+  }
+
+  // A member of another role holds what that role holds, ownership and BYPASSRLS included, and may
+  // SET ROLE to it: the runtime roles are members of none.
+  const memberships = await sql<{ member: string; role: string }[]>`
+    select pg_get_userbyid(a.member) as member, pg_get_userbyid(a.roleid) as role
+    from pg_auth_members a
+    where pg_get_userbyid(a.member) in ('opos_app', 'opos_app_global')
+    order by 1, 2
+  `
+  if (memberships.length > 0) {
+    problems.push(
+      `Runtime roles that are members of other roles: ${memberships.map((r) => `${r.member} in ${r.role}`).join(', ')}`,
     )
   }
 

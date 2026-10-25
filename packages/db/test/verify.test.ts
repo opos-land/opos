@@ -126,6 +126,29 @@ describe('verifyDatabase', () => {
       expect(problems).toEqual([])
     })
 
+    it.each(['on', '1', 'yes'])(
+      'accepts a view with security_invoker = %s, as Postgres stores the value as written',
+      async (value) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`
+            create view public.verify_probe with (security_invoker = ${value})
+              as select id, tenant_id from public.editions
+          `),
+        )
+        expect(problems).toEqual([])
+      },
+    )
+
+    it('reports a view with security_invoker = off', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`
+          create view public.verify_probe with (security_invoker = off)
+            as select id, tenant_id from public.editions
+        `),
+      )
+      expect(problems.join('\n')).toMatch(/without security_invoker: verify_probe/)
+    })
+
     it('reports a materialized view, which RLS cannot cover', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(
@@ -281,6 +304,43 @@ describe('verifyDatabase', () => {
       )
       expect(problems.join('\n')).toMatch(/owned by a runtime role: verify_probe \(opos_app\)/)
     })
+
+    it.each(['anon', 'opos_app_global'])(
+      'reports a table-level grant on a view to %s',
+      async (role) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`
+            create view public.verify_probe with (security_invoker = true)
+              as select id, tenant_id from public.editions;
+            grant select, insert on public.verify_probe to ${role};
+          `),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`${role} INSERT on verify_probe`))
+      },
+    )
+
+    it('reports a privilege on a sequence in public', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`
+          create sequence public.verify_probe;
+          grant usage on sequence public.verify_probe to opos_app;
+        `),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app USAGE on verify_probe/)
+    })
+
+    it.each(['opos_app', 'opos_app_global'])(
+      'reports %s as a member of another role',
+      async (role) => {
+        const problems = await problemsAfter(
+          (sql) => sql.unsafe(`grant opos_migrator to ${role}`),
+          supabaseAdmin,
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`members of other roles: ${role} in opos_migrator`),
+        )
+      },
+    )
 
     it('reports opos_app able to bypass RLS', async () => {
       const problems = await problemsAfter(

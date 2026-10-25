@@ -57,4 +57,21 @@ describe('setTenantContext', () => {
       })
     expect(String(refusal)).toMatch(/runs as opos_app, which bypasses RLS/)
   })
+
+  it('refuses a tenant context on opos_app once it is a member of another role', async () => {
+    const tenant = await createTenant()
+    const admin = drizzle({ client: supabaseAdmin, schema, casing: 'snake_case' })
+    let refusal: unknown
+    await admin
+      .transaction(async (tx) => {
+        await tx.execute(sql`grant opos_migrator to opos_app`)
+        await tx.execute(sql`set local role opos_app`)
+        refusal = await setTenantContext(tx, tenant.id).catch((error: unknown) => error)
+        throw new Rollback()
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof Rollback)) throw error
+      })
+    expect(String(refusal)).toMatch(/runs as opos_app, a member of other roles/)
+  })
 })

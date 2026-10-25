@@ -574,8 +574,8 @@ select set_config('app.tenant_id', $1, true);   -- SET LOCAL, dropped when the t
 
 The third argument `true` is mandatory. Every request inside a tenant context runs in a
 transaction. [setTenantContext](../packages/db/src/rls.ts) reads `current_user` and the role's
-`SUPERUSER` and `BYPASSRLS` in the same query and throws unless the connection is `opos_app`
-without either: a `DATABASE_URL` that names another role answers `500` on every tenant route
+`SUPERUSER` and `BYPASSRLS` and whether it is a member of another role in the same query, and
+throws unless the connection is `opos_app` with none of them: a `DATABASE_URL` that names another role answers `500` on every tenant route
 instead of reading every tenant.
 
 #### Policy shape
@@ -660,14 +660,16 @@ transaction and expects the report:
 - a covered table has another permissive policy;
 - a `public` table is neither covered nor a [global table](#42-global-tables): a tenant table
   carries its own `tenant_id`, never only an `edition_id` or `order_id`;
-- a `public` view lacks `security_invoker = true`, or `public` holds a materialized view;
-- a role holds more on a `public` table than the rules above allow: anything but `select` for
+- a `public` view lacks `security_invoker` set on (`true`, `on`, `yes` or `1`), or `public` holds a
+  materialized view;
+- a role holds more on a `public` table or view than the rules above allow: anything but `select` for
   `opos_app_global` (and nothing on `accounts`), a table-wide `update` for `opos_app` or an
   `insert` or `delete` of it missing from the list of the API's writes in `verify.ts` (a write the
   API starts doing joins that list in the PR of its migration), anything at all for `anon`,
   `authenticated` and `service_role` — table-level and column-level grants alike, so `opos_app`
   updates only the columns on the list in `verify.ts`;
-- `opos_app` has `SUPERUSER` or `BYPASSRLS`, or a runtime role owns a relation in `public`;
+- `opos_app` has `SUPERUSER` or `BYPASSRLS`, a runtime role owns a relation in `public` or is a
+  member of another role, or any of the five roles holds anything on a `public` sequence;
 - a `security definer` function in `public` has no pinned `search_path`, or `opos_app`,
   `opos_app_global`, `anon`, `authenticated` or `service_role` may execute it — Postgres grants
   `execute` to `public` on every new function, so its migration revokes it;
@@ -2126,7 +2128,7 @@ cannot run beside an API started with `pnpm dev`.
 | permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere. [route-requirements.test.ts](../apps/api/test/route-requirements.test.ts) names the need of every tenant route and the routes without sign-in, and fails until a new contract route is on its lists; every tenant route then answers `401` without a token, `403` to an outsider, a head of another tenant, an expired org holding everything and an org one level short of the need with every other permission at `write`, and lets an org holding exactly the need and a head through; every other route but the public ones answers `401` without a token |
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404`; a membership id that is not a uuid -> `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
-| transactions | an API whose `DATABASE_URL` names `opos_migrator` answers `500` to every tenant route; a tenant context on `opos_app_global`, `opos_migrator` or an `opos_app` with `BYPASSRLS` throws; a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
+| transactions | an API whose `DATABASE_URL` names `opos_migrator` answers `500` to every tenant route; a tenant context on `opos_app_global`, `opos_migrator`, or an `opos_app` with `BYPASSRLS` or a membership in another role throws; a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a permission change on a member who is already a `head` stores `none`; a later demotion brings none of them back, and one that sets permissions applies them |
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |

@@ -43,7 +43,13 @@ export async function addEdition(tenantId: string) {
 export async function addOrg(
   tenantId: string,
   account: { id: string },
-  access: { settings?: Level; expired?: boolean; expiresAt?: Date } = {},
+  access: {
+    settings?: Level
+    branding?: Level
+    shop?: Level
+    expired?: boolean
+    expiresAt?: Date
+  } = {},
 ) {
   const expiresAt = access.expired
     ? sql`now() - interval '1 day'`
@@ -51,8 +57,10 @@ export async function addOrg(
       ? sql`${access.expiresAt.toISOString()}::timestamptz`
       : null
   const rows = await db.execute<{ id: string }>(sql`
-    insert into tenant_memberships (account_id, tenant_id, role, settings_access, expires_at)
-    values (${account.id}, ${tenantId}, 'org', ${access.settings ?? 'none'}, ${expiresAt})
+    insert into tenant_memberships
+      (account_id, tenant_id, role, settings_access, branding_access, shop_config_access, expires_at)
+    values (${account.id}, ${tenantId}, 'org', ${access.settings ?? 'none'},
+      ${access.branding ?? 'none'}, ${access.shop ?? 'none'}, ${expiresAt})
     returning id
   `)
   return rows[0]!.id
@@ -62,11 +70,13 @@ export async function addEditionAccess(
   tenantId: string,
   membershipId: string,
   editionId: string,
-  access: { program?: Level; tickets?: Level },
+  access: { program?: Level; websiteContent?: Level; tickets?: Level },
 ) {
   await db.execute(sql`
-    insert into edition_memberships (tenant_id, tenant_membership_id, edition_id, program_access, tickets_access)
-    values (${tenantId}, ${membershipId}, ${editionId}, ${access.program ?? 'none'}, ${access.tickets ?? 'none'})
+    insert into edition_memberships
+      (tenant_id, tenant_membership_id, edition_id, program_access, website_content_access, tickets_access)
+    values (${tenantId}, ${membershipId}, ${editionId}, ${access.program ?? 'none'},
+      ${access.websiteContent ?? 'none'}, ${access.tickets ?? 'none'})
   `)
 }
 

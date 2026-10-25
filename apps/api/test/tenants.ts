@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { createTenant, migrationDb, tenants } from '@opos/db'
+import { createTenant, migrationDb, tenants, type Transaction } from '@opos/db'
 import { inArray, sql } from 'drizzle-orm'
 import { createAccount, signIn } from './auth'
 
@@ -118,6 +118,16 @@ export async function holdOpen(
     sql.release()
   }
 }
+
+/**
+ * Runs `fn` in a transaction as opos_migrator, which bypasses RLS, with `app.tenant_id` set to
+ * `tenantId`: what a repository returns there comes from its own filters alone.
+ */
+export const withoutRls = <T>(tenantId: string, fn: (tx: Transaction) => Promise<T>) =>
+  db.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.tenant_id', ${tenantId}, true)`)
+    return fn(tx)
+  })
 
 /** A transaction on a connection of its own that a test drives statement by statement. */
 export async function openTransaction() {

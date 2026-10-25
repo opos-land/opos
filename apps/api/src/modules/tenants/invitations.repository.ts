@@ -9,6 +9,7 @@ import {
 } from '@opos/db'
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
+import { currentTenantId } from '../../common/database/current-tenant'
 import { type InvitationGrant } from './anti-escalation'
 
 /**
@@ -30,6 +31,7 @@ export class InvitationsRepository {
         defaultLocale: tenants.defaultLocale,
       })
       .from(tenants)
+      .where(eq(tenants.id, currentTenantId))
     return row
   }
 

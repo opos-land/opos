@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { editionMemberships, editions, tenantMemberships } from '@opos/db'
 import { and, eq, gt, isNull, or, sql } from 'drizzle-orm'
 import { type TenantMembership, TenantContextService } from '../als/tenant-context.service'
+import { currentTenantId } from '../database/current-tenant'
 import { type EditionAccess } from './permissions'
 import { tenantWriteLockKey } from './tenant-write-lock'
 
@@ -39,6 +40,7 @@ export class AccessRepository {
       .where(
         and(
           eq(tenantMemberships.accountId, accountId),
+          eq(tenantMemberships.tenantId, currentTenantId),
           or(
             isNull(tenantMemberships.expiresAt),
             gt(tenantMemberships.expiresAt, sql`statement_timestamp()`),
@@ -73,7 +75,7 @@ export class AccessRepository {
           eq(editionMemberships.tenantMembershipId, membershipId),
         ),
       )
-      .where(eq(editions.id, editionId))
+      .where(and(eq(editions.id, editionId), eq(editions.tenantId, currentTenantId)))
     if (!row) return undefined
     const { membershipId: rowId, programAccess, websiteContentAccess, ticketsAccess } = row
     if (!rowId || !programAccess || !websiteContentAccess || !ticketsAccess) return null

@@ -421,7 +421,7 @@ and `auth.users.id`; `email` is unique and lowercase (check `accounts_email_lowe
 `emailConfirmedAt` is `auth.users.email_confirmed_at`, `null` until the address is confirmed;
 `locale` is the user's choice, `null` means detect from `Accept-Language`.
 
-Triggers on `auth.users`, `security definer` functions owned by `opos_migrator`, keep it in step
+Triggers on `auth.users`, `security definer` functions owned by `postgres`, keep it in step
 with Supabase Auth: an insert creates the `accounts` row with `emailConfirmedAt`, and with
 `firstName`, `lastName` and `locale` from `raw_user_meta_data` (written by the API's
 `POST /auth/sign-up` from the form, [5.1](#51-auth--sign-in-through-the-api); for Google
@@ -430,7 +430,7 @@ change of `email_confirmed_at` updates `emailConfirmedAt` (Supabase Auth confirm
 also right after inserting a user created confirmed). For an account created before these triggers,
 a one-time backfill
 ([0012_backfill_email_confirmed_at.sql](../packages/db/drizzle/0012_backfill_email_confirmed_at.sql))
-copies `emailConfirmedAt` wherever `opos_migrator` still reads `auth.users`. Every `auth.users` row has an email, because
+copies `emailConfirmedAt` wherever the migration role reads `auth.users`. Every `auth.users` row has an email, because
 only email and Google sign-in are enabled ([10](#10-supabase)). Deleting a user in Supabase Auth
 removes `accounts`, and with it every row that references it.
 
@@ -443,7 +443,7 @@ first, before its owner confirmed it.
 `accounts` has no RLS, so its privileges are the database-side limit: `opos_app` may select every
 column and update only `firstName`, `lastName` and `locale` — never `email` or `emailConfirmedAt`; `opos_app_global` has no access, as no
 cross-tenant query ([4.6](#46-tenant-isolation--rls-in-postgres)) reads it. Rows are inserted and
-deleted by the triggers and the cascade alone, both running as `opos_migrator`.
+deleted by the triggers and the cascade alone, both running as `postgres`.
 
 ### 4.3 Tenant-level tables
 
@@ -573,38 +573,33 @@ Every RLS-covered table has an index starting with `tenantId`.
 
 | Role | Attributes | Used by |
 |---|---|---|
-| `opos_migrator` | owner of the `public` tables, `BYPASSRLS` | `pnpm db:migrate`, `pnpm db:seed` |
+| `postgres` | the project's own admin role, not a superuser: `BYPASSRLS`, `CREATEROLE`; owner of the `public` tables and the `drizzle` journal; every privilege Supabase gives it on the `auth` tables | `pnpm db:roles`, `pnpm db:migrate`, `pnpm db:seed`, the tenant scripts, the backup |
 | `opos_app` | only the privileges the API uses (below), no `BYPASSRLS` | runtime API inside a tenant context |
 | `opos_app_global` | `select` on the columns its cross-tenant queries read, never a whole table; `BYPASSRLS` | `GlobalDbService` exclusively |
 
-The three roles are created by `pnpm db:roles` (`packages/db/src/scripts/roles.ts`), which
-connects as the project's `postgres` role through `DATABASE_ADMIN_URL`
-([11](#11-environment-variables)) — the same script for the local stack and the hosted project.
-Supabase's own roles (`supabase_auth_admin`, `authenticator`, `anon`, `authenticated`,
-`service_role`) come with the project; `anon`, `authenticated` and `service_role` hold no
-privileges on the `public` schema — the script revokes the `usage` they get directly and through
-`PUBLIC`.
+The two runtime roles are created by `pnpm db:roles` (`packages/db/src/scripts/roles.ts`), which
+connects as `postgres` through `DATABASE_MIGRATION_URL` ([11](#11-environment-variables)) — the
+same script for the local stack and the hosted project. Supabase's own roles
+(`supabase_auth_admin`, `authenticator`, `anon`, `authenticated`, `service_role`) come with the
+project; `anon`, `authenticated` and `service_role` hold no privileges on the `public` schema — the
+script revokes the `usage` they get directly and through `PUBLIC`. `opos_app` and `opos_app_global`
+get `usage` on `public` from the script; their table privileges come from the migrations.
 
-| Role | Privileges granted by `db:roles` |
-|---|---|
-| `opos_migrator` | `create` on the database (the `drizzle` journal schema), `usage, create` on `public`, `usage` on `auth`, `references (id)` and `trigger` on `auth.users` |
-| `opos_app`, `opos_app_global` | `usage` on `public`; table privileges come from the migrations |
+**OPOS writes nothing into `auth`.** `postgres` holds its privileges on the `auth` tables without
+the right to pass them on, so the two things that tie `public` to `auth` — the foreign key of
+`accounts` to `auth.users` and the `accounts` triggers on `auth.users` ([4.2](#42-global-tables))
+— come from migrations running as `postgres`, and no other OPOS role holds anything in `auth`.
+Migrations create no object in the `auth` schema: the triggers are attached to `auth.users`, and
+their functions live in `public`.
 
-`db:roles` also makes the project's `postgres` role a member of `opos_migrator`, so the backup's
-dump as `postgres` reads the tables `opos_migrator` owns ([13](#backups)).
-
-`opos_migrator` reads nothing in `auth`: the `accounts` triggers get the `auth.users` row as `NEW`,
-and Postgres checks the foreign key to `auth.users` as that table's owner. A migration that needs
-more from `auth.users` asks for it in `db:roles`.
-
-The script is idempotent: it creates a missing role, sets every role's attributes and password and
-applies the grants above, so a change to it reaches a database by running it again. It runs
-locally after every `supabase start` on a new volume and after `supabase db reset`, which drop
-the roles with the cluster, and in production once per project and after a change to it
-([13](#13-deployment)). Passwords come from `OPOS_MIGRATOR_PASSWORD`, `OPOS_APP_PASSWORD` and
-`OPOS_APP_GLOBAL_PASSWORD` in the environment of the script, chosen per developer and per
-environment and never committed; they go into connection URLs, so they are hex
-(`openssl rand -hex 32`).
+The script is idempotent: it creates a missing role, sets its attributes and password and applies
+the grants above, so a change to it reaches a database by running it again. It runs locally after
+every `supabase start` on a new volume and after `supabase db reset`, which drop the roles with the
+cluster, and in production once per project, after a change to it and after a restore of
+Supabase's own backup, which does not keep the passwords of custom roles ([13](#13-deployment)).
+Passwords come from `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD` in the environment of the
+script, chosen per developer and per environment and never committed; they go into connection
+URLs, so they are hex (`openssl rand -hex 32`).
 
 Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
@@ -704,7 +699,7 @@ everything from `anon` and `authenticated`, and adds each table's `<table>_set_u
 - `opos_app_global` gets `select` on the columns the [cross-tenant queries](#cross-tenant-queries)
   read and nothing else — column by column, never a whole table, so a column added later stays
   unreadable across tenants until a query in that table needs it.
-- `tenants` rows are inserted, deleted and given a new slug by `opos_migrator` alone, through the
+- `tenants` rows are inserted, deleted and given a new slug by `postgres` alone, through the
   scripts for [creating](#creating-a-tenant) and [renaming](#changing-a-tenants-slug) a tenant;
   `accounts` follows [4.2](#42-global-tables).
 
@@ -712,7 +707,7 @@ Trigger functions are `security definer` with `set search_path = ''` and schema-
 because Supabase Auth runs with `search_path = auth`. `db:push` is for local experiments only;
 everything else goes through generated migrations.
 
-Every `db:*` script connects as `opos_migrator` through `DATABASE_MIGRATION_URL`
+Every `db:*` script connects as `postgres` through `DATABASE_MIGRATION_URL`
 ([11](#11-environment-variables)). `pnpm db:verify` runs the checks of
 [verify.ts](../packages/db/src/verify.ts) and exits non-zero when one fails; each check has a case in
 [verify.test.ts](../packages/db/test/verify.test.ts) that breaks the rule in a rolled-back
@@ -740,7 +735,8 @@ transaction and expects the report:
   `opos_app_global`, `anon`, `authenticated` or `service_role` may execute it — Postgres grants
   `execute` to `public` on every new function, so its migration revokes it;
 - `anon`, `authenticated` or `service_role` holds `usage` or `create` on the `public` schema;
-- `opos_migrator` holds anything on `auth.users` beyond `references (id)` and `trigger`.
+- `auth.users` carries a trigger other than the `opos_on_auth_user_*` triggers of the `accounts`
+  mirror, or `opos_app` or `opos_app_global` holds anything in the `auth` schema.
 
 ---
 
@@ -799,7 +795,7 @@ application the email links lead to. The two Google routes are navigations, whic
 | GET | `/auth/google` | query `app` (`portal`, `panel`), `redirect` (a path of that application) | starts Google sign-in ([7.5](#75-google-oauth)) | `302` to Supabase Auth |
 | GET | `/auth/google/callback` | query `code` or `error` | finishes Google sign-in; sets the session cookies | `302` to the application |
 | POST | `/auth/refresh` | — | `refreshSession` with the refresh token from the cookie; sets the new cookies | `204`; `401` `session.invalid` with both cookies cleared |
-| POST | `/auth/sign-out` | — | `signOut()` — every session of the account, scope `global`; with only the refresh cookie left, refreshes first to get the access token `signOut` needs; clears the cookies | `204`, also without a session or when the refresh fails |
+| POST | `/auth/sign-out` | — | `signOut({ scope: 'local' })` — this session only, so signing out of the portal leaves the panel signed in; with only the refresh cookie left, refreshes first to get the access token `signOut` needs; clears the cookies | `204`, also without a session or when the refresh fails |
 | POST | `/auth/password/forgot` | `{ email }` | `resetPasswordForEmail(email, { redirectTo: <app URL>/auth/confirm })` ([7.6](#76-password-reset)) | `202` whatever the address |
 | PUT | `/auth/password` | `{ password }` | requires a session; `updateUser({ password })`, then `signOut({ scope: 'others' })`; a `same_password` refusal still ends the other sessions, so a retry after a failed sign-out completes the change | `204` |
 
@@ -1505,11 +1501,11 @@ route's own guards ([rate-limit.ts](../apps/api/src/common/rate-limit/rate-limit
 
 | Scope | Limit |
 |---|---|
-| `POST /auth/sign-up`, `/auth/resend`, `/auth/sign-in`, `/auth/verify`, `/auth/password/forgot`, `GET /auth/google` | 30 / 5 min per IP, one counter for all six |
+| `POST /auth/sign-up`, `/auth/resend`, `/auth/sign-in`, `/auth/verify`, `/auth/password/forgot`, `GET /auth/google` | 300 / 5 min per IP, one counter for all six |
 | `GET /invitations/preview` | 30 / hour per IP |
 | `POST /tenants/current/members` | 20 / hour per tenant, counted for members with `settings=write` |
 | `PUT .../review` | 30 / hour per account |
-| `POST /public/.../orders` | 10 / 10 min per IP |
+| `POST /public/.../orders` | 10 / 10 min per IP and buyer email |
 | `GET /public/orders/:orderId` | 60 / min per IP |
 | `POST /scanner/pair` | 10 / hour per IP |
 | `/scanner/*` | 600 / min per device |
@@ -1806,9 +1802,10 @@ stack and the Auth settings of the hosted project: its base sections hold the lo
 ([13](#deployment-procedure)); an Auth setting is never changed in the dashboard alone — it joins
 `config.toml`. Secrets reach `config.toml` only through `env()`: locally from `supabase/.env`,
 copied from `supabase/.env.example`, and for the push from variables
-prefixed `PRODUCTION_` in the environment of whoever pushes. Two settings have no key in
-`config.toml` and are set once per project ([project setup](#project-setup)): the signing key and
-IP address forwarding.
+prefixed `PRODUCTION_` in the environment of whoever pushes. Three settings are set once per
+project instead ([project setup](#project-setup)): the signing key and IP address forwarding, which
+have no key in `config.toml`, and the email bucket `email_sent`, which `config push` sends only
+together with SMTP settings OPOS does not use; a push leaves it as it is.
 
 ### Supabase Auth configuration
 
@@ -1845,8 +1842,9 @@ The rules behind `config.toml`:
 ### API keys and the client's address
 
 The API holds the project's secret key (`SUPABASE_SECRET_KEY`, `sb_secret_...`) and sends it as
-`apikey` with every Supabase Auth call; a call made for a user (`updateUser`, `signOut`) adds that
-user's access token as `Authorization`. The publishable key has no use: nothing outside the API is
+`apikey` with every Supabase Auth call, never as `Authorization`: a secret key is not a JWT. A call
+made for a user (`updateUser`, `signOut`) carries that user's access token as `Authorization`, and
+an admin call none. The publishable key has no use: nothing outside the API is
 a Supabase client. Every call also carries `Sb-Forwarded-For` with the client's address from the
 request store ([7.2](#72-tenant-context)), so Supabase Auth's per-IP limits count the visitor
 ([below](#rate-limits)); Supabase Auth reads that header only with a secret key and only once IP
@@ -1908,12 +1906,14 @@ in `[auth.rate_limit]`:
 
 | Setting | Production (`[remotes.production.auth.rate_limit]`) | Local stack and CI |
 |---|---|---|
-| `sign_in_sign_ups` (per 5 min per IP) | `30` | `10000` |
-| `token_verifications` (per 5 min per IP) | `30` | `10000` |
-| `token_refresh` (per 5 min per IP) | `150` | `10000` |
-| `email_sent` (per hour, the whole project) | `1000` | `10000` |
+| `sign_in_sign_ups` (per 5 min per IP) | `300` | `10000` |
+| `token_verifications` (per 5 min per IP) | `300` | `10000` |
+| `token_refresh` (per 5 min per IP) | `1500` | `10000` |
+| `email_sent` (per hour, the whole project) | `1000`, set in the dashboard | `10000` |
 
-The tests sign in, verify and refresh many times from one address, hence the local values.
+The per-IP values are sized for a convention's venue, where hundreds of attendees share the one
+address of its network. The tests sign in, verify and refresh many times from one address, hence
+the local values.
 `email_sent` is one bucket for every tenant, checked before the send-email hook is called; an empty
 bucket answers sign-up, recovery and email change with `429` `auth.over_email_send_rate_limit`.
 Abuse is held per IP, by these limits and by the API's own limits on its `auth` endpoints
@@ -1947,8 +1947,7 @@ that first reads it.
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | the local Mailpit (`127.0.0.1:54325`, no credentials); the mail provider in production |
 
 **`packages/db/.env`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL`
-(`opos_migrator`) and `DATABASE_ADMIN_URL` (the project's `postgres` role, for `db:roles` alone,
-[4.6](#46-tenant-isolation--rls-in-postgres)), `db:roles` also `OPOS_MIGRATOR_PASSWORD`,
+(the project's `postgres` role, [4.6](#46-tenant-isolation--rls-in-postgres)), `db:roles` also
 `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`, and `db:seed` also `SUPABASE_URL` and
 `SUPABASE_SECRET_KEY`. Nothing has a default: a missing variable stops the script. turbo passes
 these variables through to the tasks ([3.1](#31-turbo-tasks)).
@@ -1982,7 +1981,7 @@ compose injects into the containers ([13](#13-deployment)):
 | Variables | Read by |
 |---|---|
 | the API's variables above, with the production addresses and secrets | `api` |
-| `DATABASE_MIGRATION_URL`, `DATABASE_ADMIN_URL`, the three `OPOS_*_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | `tools` only |
+| `DATABASE_MIGRATION_URL`, `OPOS_APP_PASSWORD`, `OPOS_APP_GLOBAL_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | `tools` only |
 | `BACKUP_DATABASE_URL`, `RESTIC_PASSWORD`, `RESTIC_REMOTE_REPOSITORY`, `RESTIC_REMOTE_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | `backup` only |
 | `ROOT_DOMAIN` (`opos.land`), `ACME_EMAIL`, `CF_DNS_API_TOKEN` | `traefik` and the routers |
 
@@ -2004,7 +2003,7 @@ pnpm install
 # 1. Once: secrets and the files supabase start reads
 #    copy every .env.example to .env: supabase, apps/api, packages/db, apps/panel, apps/portal
 #    generate: SEND_EMAIL_HOOK_SECRET = v1,whsec_$(openssl rand -base64 32), the same value in
-#    supabase/.env and apps/api/.env; INVITE_SECRET and the three OPOS_*_PASSWORD with
+#    supabase/.env and apps/api/.env; INVITE_SECRET, OPOS_APP_PASSWORD and OPOS_APP_GLOBAL_PASSWORD with
 #    openssl rand -hex 32
 #    the signing key with supabase gen signing-key --algorithm ES256, saved as
 #    supabase/signing_keys.json
@@ -2043,8 +2042,8 @@ is a `turbo run <task>` delegate ([3.1](#31-turbo-tasks)). `pnpm infra:up` is `s
 (`supabase stop --no-backup`) and starts it again; the roles go with it, so `pnpm db:roles`,
 `pnpm db:migrate` and `pnpm db:seed` follow.
 
-`db:roles` and `db:migrate` connect as described in [4.6](#46-tenant-isolation--rls-in-postgres)
-and `db:seed` as `opos_migrator`; the API runs as `opos_app`.
+Every `db:*` script connects as `postgres` ([4.6](#46-tenant-isolation--rls-in-postgres)); the
+API runs as `opos_app`.
 
 Swagger UI of the API at http://api.opos.localhost:3001/docs, the OpenAPI document at
 http://api.opos.localhost:3001/docs/json.
@@ -2137,8 +2136,8 @@ with `turbo prune <app> --docker`: the build context holds only that application
 dependency graph and a pruned lockfile, so a change in one application does not invalidate the
 image layers of another.
 
-Only `tools` holds `DATABASE_MIGRATION_URL` and `DATABASE_ADMIN_URL`: the running API knows the
-runtime roles alone ([11](#11-environment-variables)).
+Only `tools` and `backup` hold a URL of the `postgres` role: the running API knows the runtime
+roles alone ([11](#11-environment-variables)).
 
 The panel and the portal answer with:
 
@@ -2170,16 +2169,19 @@ the VPS directly, so the client address Traefik puts into `X-Forwarded-For` is t
 ### Database connection
 
 The API, the tools and the backup reach the project's Postgres over its direct connection
-(`db.<ref>.supabase.co:5432`) with TLS required. The direct connection is IPv6; a VPS whose
-containers have no IPv6 route uses the project's IPv4 add-on. Not through Supavisor: the runtime
-pools send startup parameters ([4.6](#46-tenant-isolation--rls-in-postgres)), and the OPOS roles
-sign in under their own names.
+(`db.<ref>.supabase.co:5432`), not through Supavisor, with TLS verified against the project's CA
+certificate (`sslmode=verify-full`; the certificate from the project's database settings, shipped
+in the images). The direct connection is IPv6; a VPS whose containers have no IPv6 route uses the
+project's IPv4 add-on. The two API pools (10 connections each), Supabase Auth, the tools and the
+backup share the direct connection limit of the project's compute size.
 
 ### Backups
 
-- Supabase's daily backups of the Pro plan, kept 7 days, restored from the dashboard.
-- The `backup` service, every 6 hours: `pg_dump -Fc -n public -n auth -n drizzle` as the project's
-  `postgres` role (`BACKUP_DATABASE_URL`) into restic — a repository on the VPS volume `backups`,
+- Supabase's daily backups of the Pro plan, kept 7 days, restored from the dashboard; `pnpm db:roles`
+  follows a restore, which does not keep the passwords of the runtime roles.
+- The `backup` service, every 6 hours: `pg_dump -Fc -n public -n auth -n drizzle
+  --exclude-table=auth.schema_migrations` as the project's `postgres` role, which may not read
+  Supabase Auth's migration journal (`BACKUP_DATABASE_URL`), into restic — a repository on the VPS volume `backups`,
   encrypted with `RESTIC_PASSWORD`, then `restic copy` to the off-server repository on S3 or R2
   (`RESTIC_REMOTE_REPOSITORY`), encrypted with its own `RESTIC_REMOTE_PASSWORD`. A dump without
   `auth` leaves accounts nobody can sign in to.
@@ -2197,10 +2199,11 @@ sign in under their own names.
 Once per Supabase project:
 
 1. Create the project: Pro plan, region `eu-central-1`.
-2. JWT signing keys: create an ES256 key, make it the current one, and revoke the legacy JWT
-   secret.
+2. JWT signing keys: create an ES256 key and make it the current one; disable the legacy `anon`
+   and `service_role` API keys, then revoke the legacy JWT secret.
 3. Turn IP address forwarding on (Authentication -> Rate Limits, or
-   `security_sb_forwarded_for_enabled` through the Management API).
+   `security_sb_forwarded_for_enabled` through the Management API), and set `email_sent` to
+   `1000` per hour ([10](#rate-limits)).
 4. `supabase link --project-ref <ref>`, then `supabase config push` with the `PRODUCTION_*`
    variables in the environment ([10](#10-supabase)); this also turns the Data API off.
 5. Create a secret key for the API and write it, the project's address and the database URLs into
@@ -2239,7 +2242,7 @@ Accounts are created through the Supabase Auth admin API (`POST /admin/users` wi
 [10](#admin-api)), so every seed account is confirmed; an existing
 account is kept, and confirmed through `PUT /admin/users/:id` when it is not. The triggers fill
 `accounts`, and the seed then sets `locale` and the names. Everything else is written directly as
-`opos_migrator`; a missing tenant is created through `createTenant` ([Creating a
+`postgres`; a missing tenant is created through `createTenant` ([Creating a
 tenant](#creating-a-tenant)). The active editions start 60 days after the run, so their programme
 stays in the future.
 
@@ -2287,7 +2290,7 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
   [--locale pl] [--timezone Europe/Warsaw]
 ```
 
-- Runs as `opos_migrator`, in a single transaction: inserts `tenants` and a `head`
+- Runs as `postgres`, in a single transaction: inserts `tenants` and a `head`
   `tenant_memberships` row. The database rejects a tenant committed without a head
   ([4.5](#45-invariants)).
 - The head's account must already exist with a confirmed email ([4.2](#42-global-tables)) — the
@@ -2311,7 +2314,7 @@ endpoint changes it. The admin changes it on the server with
 pnpm db:tenant:rename --slug convention-c --new-slug convention-d
 ```
 
-- Runs as `opos_migrator`. Nothing redirects the old address: its links and bookmarks stop working.
+- Runs as `postgres`. Nothing redirects the old address: its links and bookmarks stop working.
 - Any refusal changes nothing and exits non-zero with a `TenantError` code: `tenant.not-found`,
   `tenant.slug-invalid`, `tenant.slug-reserved`, `tenant.slug-taken`.
 
@@ -2337,8 +2340,8 @@ entry point) and never contribute messages (`linguiConfig()` excludes them).
 ### 15.1 API integration tests
 
 The schema itself is tested in `packages/db/test` with Vitest on the local stack's database alone, before
-any API code: the global setup applies the migrations, the tests connect as `opos_migrator`,
-`opos_app`, `supabase_auth_admin` (writes to `auth.users`), `postgres` (`set role anon`) and
+any API code: the global setup applies the migrations, the tests connect as `postgres` (the
+migration role, and `set role anon`), `opos_app`, `supabase_auth_admin` (writes to `auth.users`) and
 `supabase_admin` (roles and ownership, only inside transactions they roll back), and remove the tenants and users they created. They cover the RLS row of the table below for every
 covered table (no context, another tenant's context, a row moved to another tenant — refused by the
 missing privilege and, for a role created in the test that holds it, by `WITH CHECK` — and an
@@ -2372,7 +2375,7 @@ cannot run beside an API started with `pnpm dev`.
 | permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere. [route-requirements.test.ts](../apps/api/test/route-requirements.test.ts) names the need of every tenant route and the routes without sign-in, and fails until a new contract route is on its lists; every tenant route then answers `401` without a token, `403` to an outsider, a head of another tenant, an expired org holding everything and an org one level short of the need with every other permission at `write`, and lets an org holding exactly the need and a head through; every other route but the public ones answers `401` without a token |
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404`; a membership id that is not a uuid -> `404`; on a connection that bypasses RLS, the queries of the access and invitation repositories find nothing of another tenant and an invitation's tenant is the transaction's |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
-| transactions | an API whose `DATABASE_URL` names `opos_migrator` answers `500` to every tenant route; a tenant context on `opos_app_global`, `opos_migrator`, or an `opos_app` with `BYPASSRLS` or a membership in another role throws; a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
+| transactions | an API whose `DATABASE_URL` names `postgres` answers `500` to every tenant route; a tenant context on `opos_app_global`, `postgres`, or an `opos_app` with `BYPASSRLS` or a membership in another role throws; a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a permission change on a member who is already a `head` stores `none`; a later demotion brings none of them back, and one that sets permissions applies them |
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
@@ -2391,7 +2394,7 @@ cannot run beside an API started with `pnpm dev`.
 | requests that change state | with a session cookie, a foreign `Origin`, another subdomain of the site included, or none -> `403` `request.origin-denied` and nothing changed; a form-encoded body -> `415`; the same request from `PANEL_URL` or `PORTAL_URL` goes through |
 | auth endpoints | every operation of [5.1](#51-auth--sign-in-through-the-api) against the local stack; sign-up takes no password, and after an address registered twice is confirmed only the password chosen through `/auth/confirm` signs in; sign-up and password reset answer the same for a registered and an unknown address; a passed-on refusal keeps Supabase Auth's status and its `auth.<error_code>`, an unlisted one is `500`; every call to Supabase Auth carries the secret key and the client's address in `Sb-Forwarded-For`; `GET /auth/google` takes no `redirect` outside the application, and a callback without its `opos_google` cookie, with another browser's cookie or past 10 minutes signs nobody in |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401` |
-| send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a link to the calling application's `/auth/confirm` that `POST /auth/verify` redeems, and that names no Supabase address; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
+| send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a link to the calling application's `/auth/confirm` that names no Supabase address, and `POST /auth/verify` redeems the `signup` and `recovery` ones; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` (per address) and `POST /tenants/current/members` (per tenant) included |
 | CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, with `Access-Control-Allow-Credentials: true`; a foreign origin gets neither header; exactly the four allowed request headers; `Retry-After` exposed |
 | i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
@@ -2433,10 +2436,10 @@ request outside the API and the application's own origin.
 
 Tests share no data. A scenario makes its own accounts through the Supabase Auth admin API and its
 own tenant through `createTenant` on a slug of its own (`e2e-<random>`), with the head's account
-confirmed first; it writes the team and the editions it starts from as `opos_migrator`, and the
+confirmed first; it writes the team and the editions it starts from as `postgres`, and the
 fixtures remove its tenants, accounts and mail afterwards
 ([fixtures/index.ts](../e2e/fixtures/index.ts)). A scenario using seeded data only reads it and
-never signs a seeded account out, since a sign-out ends every session of the account.
+never changes a seeded account's password, which ends every other session of the account.
 
 **Scenarios:**
 
@@ -2542,7 +2545,7 @@ real TLS, real Google, real email delivery and a real phone.
 12. **Supabase stays behind the API.** In the browser's developer tools the portal and the panel
    reach only their own origin and `api.opos.land` — Google sign-in alone passes through the
    project's `supabase.co` address — and their bundles name no Supabase address or key. The
-   project's Data API answers that it is disabled, and `https://api.opos.land/hooks/send-email`
+   project's Data API exposes no schema, and `https://api.opos.land/hooks/send-email`
    without a signature -> `401`.
 13. **A real payment.** On a test edition, a BLIK payment of the cheapest ticket through the
    convention's real provider account: the money shows up in that account, not in any OPOS

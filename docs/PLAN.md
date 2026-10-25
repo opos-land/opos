@@ -1156,17 +1156,22 @@ with `@Implement(contract.<router>.<route>)` and its requirement next to it: a r
 `TenantTransactionInterceptor` reads the decorator through the `Reflector` and runs the check
 inside the tenant transaction ([7.2](#72-tenant-context)).
 
-A route that needs `write`, on either level, first takes the tenant's write lock — a
-transaction-level advisory lock keyed by the tenant id
-([tenant-write-lock.ts](../apps/api/src/common/permissions/tenant-write-lock.ts)) — and only then
-reads the membership and checks it. Every route that lowers a member's access (demotion, removal,
-an earlier expiry, a lower edition permission) is itself a write route, so the check sees each such
-change committed, and none can land before the write commits. Expiry is measured with
-`statement_timestamp()`, the time of the read, since a write may wait for the lock. The lock comes
-before any row lock of the transaction, so it adds no lock-order cycle with the member routes, which
-lock memberships `for update` and then the tenant row through the last-head trigger. Read routes
-take no lock. The `a write while a change to its actor commits` cases cover every write route of
-the contract and fail for a new one until it is listed.
+A route that needs `write`, on either level, checks the membership once without a lock, so a
+request that is refused never waits; one that passes then takes the tenant's write lock — a
+transaction-level advisory lock whose bigint key comes from the tenant id
+([tenant-write-lock.ts](../apps/api/src/common/permissions/tenant-write-lock.ts)) and always lies
+in `[2^62, 2^63)`, outside the int4 range of Supabase Auth's own advisory keys — and checks again
+on a fresh read. Every route that lowers another member's access (demotion, removal, an earlier
+expiry, a lower edition permission) is itself a write route, so the second check sees each such
+change committed, and none can land before the write commits. Deleting one's own account
+(`DELETE /me`) removes memberships through Supabase Auth without the lock; it lowers only the
+deleting account's own access. Expiry is measured with `statement_timestamp()`, the time of the
+read, since a write may wait for the lock. The lock comes before any row lock of the transaction,
+so it adds no lock-order cycle with the member routes, which lock memberships `for update` and then
+the tenant row through the last-head trigger. Read routes take no lock. The
+`a write while a change to its actor commits` cases cover every write route of the contract and
+fail for a new one until it is listed; an edition-level write has its case on the probe route of
+[tenant-context.test.ts](../apps/api/test/tenant-context.test.ts).
 
 ### 7.4 Authorization
 
@@ -2132,7 +2137,7 @@ cannot run beside an API started with `pnpm dev`.
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a permission change on a member who is already a `head` stores `none`; a later demotion brings none of them back, and one that sets permissions applies them |
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
-| concurrent member changes | on every write route of the contract: an org whose `settings=write` is taken away under the tenant's write lock in a transaction that commits while its write waits gets `403` and the tenant's rows are unchanged, while the same request without the demotion succeeds; on the routes outside team management, an org whose access ends while its write waits for the lock gets `403`; a tenant write and an edition delete finish beside a transaction that locked the actor's membership first and then the tenant row or the edition rows, with no deadlock; twenty interleaved requests of two tenants each see only their own tenant's editions |
+| concurrent member changes | on every write route of the contract: an org whose `settings=write` is taken away under the tenant's write lock in a transaction that commits while its write waits gets `403` and the tenant's rows are unchanged, while the same request without the demotion succeeds; on the routes outside team management, an org whose access ends while its write waits for the lock gets `403`, while the same expiry with no lock held lets it through; an outsider and a reader get `403` while the lock is held, without waiting for it; an edition-level write gets `403` once a lower edition permission commits while it waits; a tenant write and an edition delete finish beside a transaction that locked the actor's membership first and then the tenant row or the edition rows, with no deadlock; twenty interleaved requests of two tenants each see only their own tenant's editions |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write`, no longer holding what it granted, or a head demoted to org after sending a head invitation -> `410` `invitation.revoked` on preview and accept, also when the demotion commits while the acceptance waits; another tenant's edition -> `404`; the membership lands in the token's tenant only |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |

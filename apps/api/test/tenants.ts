@@ -159,6 +159,14 @@ export async function tenantState(tenantId: string) {
   }
 }
 
+/** Sets a membership to expire `ms` milliseconds from now, measured by the database. */
+export async function expireIn(membershipId: string, ms: number) {
+  await db.execute(sql`
+    update tenant_memberships set expires_at = now() + make_interval(secs => ${ms / 1000})
+    where id = ${membershipId}
+  `)
+}
+
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const countHeads = async (tenantId: string) =>

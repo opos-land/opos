@@ -12,6 +12,7 @@ import {
   closeTenantDb,
   countHeads,
   deleteCreatedTenants,
+  expireIn,
   holdOpen,
   member,
   openTransaction,
@@ -606,11 +607,11 @@ describe('concurrency', () => {
     }
 
     /** A tenant whose org holds settings=write and program=write, and another org to act on. */
-    async function setup(org: { expiresAt?: Date } = {}): Promise<Setup> {
+    async function setup(): Promise<Setup> {
       const t = await tenantWithHead()
       const edition = await addEdition(t.id)
       const [actor, other, newcomer] = await Promise.all([member(), member(), member()])
-      const orgId = await addOrg(t.id, actor, { settings: 'write', ...org })
+      const orgId = await addOrg(t.id, actor, { settings: 'write' })
       await addEditionAccess(t.id, orgId, edition, { program: 'write' })
       const otherId = await addOrg(t.id, other)
       await addEditionAccess(t.id, otherId, edition, {})
@@ -665,7 +666,15 @@ describe('concurrency', () => {
     it.each(Object.entries(writes).filter(([name]) => !name.includes('members')))(
       '%s refuses once the access of its actor ends while it waits',
       async (_, build) => {
-        const s = await setup({ expiresAt: new Date(Date.now() + 400) })
+        // The same expiry with nothing holding the lock: the org is active when its write starts.
+        const control = await setup()
+        await expireIn(control.orgId, 2000)
+        expect((await send(control, build(control))).status, 'without the wait').toBeLessThan(300)
+
+        // The test helpers share one connection, which the open transaction keeps: everything
+        // they read or write comes before it.
+        const s = await setup()
+        await expireIn(s.orgId, 400)
         const expected = await tenantState(s.t.id)
         const holder = await openTransaction()
         await lockTenantWrites(holder.sql, s.t)
@@ -679,6 +688,27 @@ describe('concurrency', () => {
         expect(await tenantState(s.t.id)).toEqual(expected)
       },
     )
+
+    // The lock is for writes the check lets through: an outsider or a member short of the need is
+    // refused at once, so requests that will fail never queue on another tenant's lock.
+    it('refuses an outsider and a reader without waiting for the write lock', async () => {
+      const s = await setup()
+      const [outsider, reader] = await Promise.all([member(), member()])
+      await addOrg(s.t.id, reader, { settings: 'read' })
+      const holder = await openTransaction()
+      await lockTenantWrites(holder.sql, s.t)
+      try {
+        for (const who of [outsider, reader]) {
+          const res = await Promise.race([
+            call(who, 'patch', '/tenants/current', { name: 'Late' }, s.t.slug).then((r) => r),
+            sleep(1000).then(() => 'waited' as const),
+          ])
+          expect(res === 'waited' ? res : res.status).toBe(403)
+        }
+      } finally {
+        await holder.commit()
+      }
+    })
 
     // A member change locks memberships first and the tenant or edition rows after. A write that
     // locked a membership after its own rows would deadlock against it; these lock like a member

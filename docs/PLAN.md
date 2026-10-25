@@ -31,27 +31,36 @@ invariants, security rules and conventions; its details live in the code this do
 
 ## 1. Architecture
 
-Three applications, three shared packages, one backend, and self-hosted Supabase for the database
-and authentication.
+Three applications, three shared packages and one backend on our VPS, and a hosted Supabase
+project on supabase.com for the database and authentication. The API is the frontends' only
+backend (BFF): the panel and the portal never talk to Supabase, load no Supabase SDK and know no
+Supabase address or key ([7.4](#74-authorization)).
 
 ```mermaid
 graph TB
-    traefik["Traefik v3 (wildcard TLS)"]
-    portal["apps/portal<br>Vite + React"]
-    panel["apps/panel<br>Vite + React"]
-    api["apps/api<br>NestJS + Drizzle"]
-    auth["Supabase Auth<br>GoTrue"]
+    subgraph vps["VPS"]
+        traefik["Traefik v3 (wildcard TLS)"]
+        portal["apps/portal<br>Vite + React"]
+        panel["apps/panel<br>Vite + React"]
+        api["apps/api<br>NestJS + Drizzle"]
+        backup["backup<br>pg_dump + restic"]
+    end
+    subgraph supabase["Supabase project (supabase.com, EU)"]
+        auth["Supabase Auth"]
+        pg[("Postgres 17")]
+    end
     packages["packages/contract · packages/db · packages/i18n"]
-    pg[("Supabase Postgres 17")]
     pay["payment provider<br>(the convention's account)"]
+    google["Google"]
 
     traefik -->|"opos.land"| portal
     traefik -->|"panel.opos.land"| panel
     traefik -->|"api.opos.land"| api
-    traefik -->|"auth.opos.land"| auth
-    portal -.->|"sign-in"| auth
-    panel -.->|"sign-in"| auth
+    portal -.->|"session cookie"| api
+    panel -.->|"session cookie"| api
+    api -->|"secret key, Sb-Forwarded-For"| auth
     auth -.->|"send-email hook"| api
+    auth -.->|"Google sign-in redirect"| google
     portal -.->|"checkout redirect"| pay
     pay -.->|"payment webhook"| api
     portal --> packages
@@ -59,15 +68,16 @@ graph TB
     api --> packages
     packages --> pg
     auth --> pg
+    backup --> pg
 ```
 
 | App | Stack | Role | Host |
 |---|---|---|---|
-| `apps/api` | NestJS + Drizzle + oRPC | the only application backend; verifies Supabase Auth sessions | `api.opos.land` |
+| `apps/api` | NestJS + Drizzle + oRPC | the only application backend and the frontends' only way to Supabase: sign-in, sessions in cookies, everything else | `api.opos.land` |
 | `apps/panel` | Vite + React + Tailwind | organizer panel (SPA) and the ticket scanner under `/scanner` | `panel.opos.land` |
 | `apps/portal` | Vite + React + Tailwind | landing page, registration, convention pages with the programme, likes, personal schedule, reviews, ticket checkout, "my tickets", "my conventions" (SPA, mobile-first) | `opos.land` |
-| `auth` | Supabase Auth (`supabase/gotrue`) | registration, sign-in, sessions, password reset, Google OAuth | `auth.opos.land` |
-| `db` | Supabase Postgres (`supabase/postgres`) | the only database: `public` (OPOS tables) and `auth` (Supabase Auth) | internal network only |
+| Supabase Auth | the Supabase project | identities, passwords, sessions, password reset, Google OAuth; called by the API alone | `<ref>.supabase.co/auth/v1`, never named to a browser except in the Google redirect |
+| Postgres | the Supabase project, PostgreSQL 17 | the only database: `public` (OPOS tables) and `auth` (Supabase Auth) | the project's direct connection, reached by the API and the backup service |
 
 **`packages/contract`** — an oRPC contract with zod schemas, the single source of truth for the
 API. No build step, apps infer types from the TS source.
@@ -77,8 +87,8 @@ multi-tenancy through `tenantId` + `editionId` columns, enforced by RLS
 ([4.6](#46-tenant-isolation--rls-in-postgres)).
 
 **`packages/i18n`** — Lingui configuration, the list of supported locales, locale detection, `Intl`
-formatters and message descriptors for API and Supabase Auth error codes. Application catalogs
-live next to the applications ([6](#6-localization)).
+formatters and message descriptors for API error codes, the Supabase Auth refusals the API passes
+on included. Application catalogs live next to the applications ([6](#6-localization)).
 
 ---
 
@@ -99,19 +109,20 @@ with typed `typescript-eslint` rules; for the frontends also `eslint-plugin-reac
 **Backend:** NestJS 11, Drizzle ORM + postgres-js, oRPC (`@orpc/nest`, `@orpc/server`) with zod 4,
 tsdown (bundles `src/main.ts` together with the workspace packages into `dist/main.js`),
 `@orpc/openapi` + `@orpc/zod` + `@nestjs/swagger` (OpenAPI document generated from the contract,
-Swagger UI), `jose` (Supabase JWT
-verification), `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (admin API),
-nodemailer, `@nestjs/throttler`, `@nestjs/schedule` (expiring unpaid orders), `qrcode` (ticket
-QR codes in emails).
+Swagger UI), `jose` (Supabase access tokens verified against the project's JWKS),
+`standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (the API's Supabase Auth
+client, its only consumer in the repository), `cookie-parser` (session cookies), nodemailer,
+`@nestjs/throttler`, `@nestjs/schedule` (expiring unpaid orders), `qrcode` (ticket QR codes in
+emails).
 
-**Authentication:** Supabase Auth (GoTrue), self-hosted ([10](#10-supabase)). Clients use
-`@supabase/auth-js` directly against `auth.opos.land`.
+**Authentication:** Supabase Auth of the hosted Supabase project ([10](#10-supabase)), called only
+by the API, which keeps the session in httpOnly cookies ([7.4](#74-authorization)). The frontends
+call the API's `auth` endpoints ([5.1](#51-auth--sign-in-through-the-api)).
 
 **Frontend SPA:** Vite + React + TypeScript, Tailwind CSS (shadcn/ui components where a screen
 needs a widget native HTML lacks, [3.2](#32-frontend-application-layout)), `@orpc/client` +
-`@orpc/tanstack-query`,
-`@supabase/auth-js`, react-router, react-hook-form + zod, zustand, `@lingui/react`; in the
-scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
+`@orpc/tanstack-query`, react-router, react-hook-form + zod, zustand, `@lingui/react`; in the
+scanner the `BarcodeDetector` API with the `barcode-detector` polyfill. No Supabase package.
 
 **i18n:** Lingui 6 — `@lingui/core`, `@lingui/react`, the `@lingui/core/macro` and
 `@lingui/react/macro` macros, `@lingui/cli`.
@@ -120,14 +131,20 @@ scanner the `BarcodeDetector` API with the `barcode-detector` polyfill.
 **Tests:** vitest + supertest (integration), vitest + Testing Library on jsdom (frontend unit
 tests), Playwright (web e2e, desktop and mobile viewports).
 
-**Infrastructure:** Docker Compose, Traefik v3 (wildcard TLS via DNS-01), self-hosted Supabase —
-`supabase/postgres` (PostgreSQL 17) and `supabase/gotrue`, Supabase Studio (dev), Mailpit (dev).
+**Infrastructure:** a Supabase project on supabase.com (Pro plan, EU region) for PostgreSQL 17 and
+Supabase Auth; on the VPS Docker Compose, Traefik v3 (wildcard TLS via DNS-01) and a backup
+service with `pg_dump` and restic; in dev the Supabase CLI's local stack (Postgres, Auth, Studio,
+Mailpit).
 
 **Design principles:**
 
 - oRPC contracts with no build step.
 - Supabase Auth owns identities and sessions; the API owns everything else.
-- Clients never reach the database: no PostgREST, no Realtime, no Storage.
+- The browser talks to the API only. Supabase is an implementation detail of the API: no frontend
+  holds its SDK, address or key, so the API can move to another server without the frontends
+  noticing.
+- Clients never reach the database: the project's Data API (PostgREST) is off, and Realtime and
+  Storage are never used.
 - OPOS never holds attendee money: payments go to the convention's own provider account, and the
   API keeps only the provider's payment reference.
 - Row-level multi-tenancy, not schema-per-tenant.
@@ -145,36 +162,44 @@ the repository; their purpose is stated in the files themselves, not here.
 ```
 opos/
   package.json, pnpm-workspace.yaml, turbo.json, mise.toml, lefthook.yml,
-  commitlint.config.mjs, docker-compose.yml, .prettierrc, .github/   # built: root tooling (3.1, 12, 15.3)
+  commitlint.config.mjs, .prettierrc, .github/   # built: root tooling (3.1, 12, 15.3)
   .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers, the
-                              #   tests-first hooks in settings.json (AGENTS.md)
-  scripts/                    # built: tests-first.mjs, the RLS and RBAC test-first check, and its test
-  docker-compose.prod.yml     # prod: traefik + apps + supabase db + auth
+                              #   tests-first hooks in settings.json (AGENTS.md); still to come: the
+                              #   BFF boundary hook (3.2)
+  scripts/                    # built: tests-first.mjs, the RLS and RBAC test-first check, and its
+                              #   test; still to come: bff-boundary.mjs and its test (3.2)
+  docker-compose.prod.yml     # prod: traefik, api, panel, portal, backup (13)
   docs/
     PRODUCT.md
     PLAN.md
+  supabase/              # the Supabase CLI project (10, 12)
+    config.toml          # the local stack, and the hosted project's Auth settings ([remotes.production])
+    .env.example         # the variables config.toml reads with env(), to copy into supabase/.env
   infra/
-    supabase/            # built: init SQL and the auth service's dev env (10)
+    traefik/             # static configuration (13)
+    backup/              # Dockerfile and script of the backup service (13)
   apps/
     api/                 # built: bootstrap, env, database providers, GlobalDbService, OpenAPI docs,
                          #   error filter, request store and tenant transaction, JwtAuthGuard,
                          #   rate limiting, permission decorators, MeModule (profile, memberships,
                          #   account deletion), TenantsModule (tenant, team, invitations),
-                         #   EditionsModule, AuthModule (send-email hook, GoTrue admin client),
-                         #   MailModule (Supabase Auth and invitation emails), the
-                         #   auth:service-key script, tests
+                         #   EditionsModule, AuthModule (send-email hook, Supabase Auth admin
+                         #   client), MailModule (Supabase Auth and invitation emails), tests;
+                         #   still to come: the auth endpoints and session cookies (5.1, 7.4)
       src/
         common/
           guards/scanner-device.guard.ts
         modules/         # one directory per module (7.1)
-      Dockerfile
+      Dockerfile         # targets runtime and tools (13)
     panel/               # built: Vite and Lingui config, catalogs, app/ (router, providers, query
                          #   client), features auth, tenants, editions, team, account, shared/
-                         #   (API link, auth client, session, i18n, UI), .env.example, tests (8)
+                         #   (API link, auth client, session, i18n, UI), .env.example, tests (8);
+                         #   the auth client gives way to the API's auth endpoints (5.1)
       Dockerfile
     portal/              # built: Vite and Lingui config, catalogs, app/ (router, layout, providers,
                          #   query client), features landing, auth, account, shared/ (API link,
-                         #   auth client, session, i18n, UI), .env.example, tests (9)
+                         #   auth client, session, i18n, UI), .env.example, tests (9); the auth
+                         #   client gives way to the API's auth endpoints (5.1)
       src/features/      # still to come: attendances, conventions, schedule, speaking, tickets
       Dockerfile
   e2e/                   # built: Playwright config, fixtures (stack, Mailpit, admin API, tenants,
@@ -191,7 +216,9 @@ opos/
         scanner.ts
         public.ts
     db/                  # built: clients, rls, core schema, migrations, createTenant, seed, scripts, tests
+      .env.example       # the db:* scripts' variables (11)
       src/
+        scripts/roles.ts # db:roles, the OPOS roles and their grants (4.6)
         schema/          # one file per table (4); still to come:
           program-items.ts
           program-item-speakers.ts
@@ -212,7 +239,7 @@ opos/
 
 Root scripts in `package.json` only delegate — `"build": "turbo run build"` — and task logic lives
 in the packages' own scripts. The exceptions are `prepare` (lefthook), `format`/`format:check`
-(prettier over the whole repository) and `infra:up`/`infra:down`/`infra:reset` (`docker compose`,
+(prettier over the whole repository) and `infra:up`/`infra:down`/`infra:reset` (the Supabase CLI,
 [12](#12-local-development)); those do not go through turbo.
 
 `packages/contract`, `packages/db` and `packages/i18n` have no build step, so `^build` gives the
@@ -226,9 +253,9 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
 
 - `build`, `dev` and `test` depend on `i18n:compile` (`test` also on `^i18n:compile`), so nothing
   runs with stale or missing catalogs.
-- The files outside every package that shape the environment the tests run in — `docker-compose.yml`,
-  `infra/supabase/` and `.github/workflows/` — are `globalDependencies`: a change to them misses
-  every task's cache, and `--affected` counts every package as affected.
+- The files outside every package that shape the environment the tests run in — `supabase/config.toml`
+  and `.github/workflows/` — are `globalDependencies`: a change to them misses every task's cache,
+  and `--affected` counts every package as affected.
 - A task with side effects is not cached: `test:e2e`, `i18n:extract` and every `db:*` task.
   Persistent tasks (`dev`, `db:studio`) set `persistent: true`.
 - The `db:*` tasks exist only in `packages/db`, `test:e2e` only in `e2e`.
@@ -239,12 +266,13 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   The API's variables are read at runtime and stay out of the hash
   ([11](#11-environment-variables)).
 - turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
-  every `db:*` task pass the database variables through (`passThroughEnv`), `test` also
-  `OPOS_MAILPIT_PORT`, `db:seed` also the Supabase Auth ones and `NODE_ENV`
+  every `db:*` task pass the database variables through (`passThroughEnv`), `test` also the local
+  Mailpit address, `db:seed` also `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `NODE_ENV`
   ([11](#11-environment-variables)), and `dev` passes `OPOS_PANEL_PORT` and `OPOS_PORTAL_PORT` to
   the dev servers ([12](#ports)), so they reach the scripts and stay out of the hash.
 - `test:e2e` depends on the panel's and the portal's `i18n:compile`, since Playwright starts their
-  dev servers ([15.2](#152-e2e-tests)), and passes `CI` and the `OPOS_*_PORT` variables through.
+  dev servers ([15.2](#152-e2e-tests)), and passes `CI`, the `OPOS_*_PORT` variables and the local
+  Mailpit address through.
 - The root scripts that take arguments, `db:seed`, `db:tenant:create` and `db:tenant:rename`, end
   with `--`, so pnpm hands the arguments through turbo to the package script.
 
@@ -267,7 +295,7 @@ src/
       index.ts          # the feature's public API — the only thing others can see
   shared/
     ui/                 # components with no domain knowledge
-    lib/                # API client, auth client, i18n, formatters, storage
+    lib/                # API client, i18n, formatters, storage
     config/
 ```
 
@@ -295,7 +323,25 @@ Routes stay thin: a route definition holds no logic, it only mounts a view from 
 feature.
 
 A feature never reaches the database or `fetch` directly: all network traffic goes through that
-feature's `api/`, built on the API client and the auth client from `shared/lib`.
+feature's `api/`, built on the API client from `shared/lib`.
+
+**The BFF boundary.** The panel and the portal talk to the API only ([7.4](#74-authorization)). In
+`apps/panel` and `apps/portal` — sources, configuration, `package.json` and `.env.example` — and in
+their production bundles nothing names Supabase:
+
+| Refused | Why |
+|---|---|
+| a dependency or import of `@supabase/*` | the SDK talks to Supabase directly |
+| an address on `supabase.co`, `supabase.in` or `supabase.com`, and the local stack's `:54321` | a request that bypasses the API |
+| a `sb_publishable_` or `sb_secret_` key, a JWT, a `VITE_*` variable whose name contains `SUPABASE` | a key in a bundle is a key for everyone |
+
+`scripts/bff-boundary.mjs` holds these rules and enforces them where
+the tests-first check runs: a Claude Code hook after every `Edit`, `Write` and `Bash` that touches
+the two applications ([.claude/settings.json](../.claude/settings.json)), lefthook `pre-commit` on the
+staged files, and CI on every PR, where it also scans `dist/` of both builds. The `react` preset
+adds the import rule as `no-restricted-imports`, so the editor shows it as well. The one place a
+Supabase address reaches a browser is the redirect of Google sign-in, sent by the API
+([7.5](#75-google-oauth)); it is never written in a frontend.
 
 `shared/ui` holds components with no domain knowledge, built on native elements and styled only
 through the tokens of the application's `src/styles.css` (colours, typography, spacing, radii),
@@ -308,7 +354,9 @@ image or illustration in `shared/ui` or in a feature is AI-generated
 
 ## 4. Database schema
 
-PostgreSQL 17 from the `supabase/postgres` image. Every OPOS table lives in the `public` schema and
+PostgreSQL 17 of the Supabase project; in dev and CI the Supabase CLI's local `supabase/postgres`
+container of the same major version ([12](#12-local-development)). Every OPOS table lives in the
+`public` schema and
 has `id uuid primary key default gen_random_uuid()`, `createdAt timestamptz not null default
 now()`, `updatedAt timestamptz not null default now()` — `accounts.id` being the one exception
 ([4.2](#42-global-tables)). `updatedAt` is kept by the database, not by Drizzle: every table has a
@@ -375,8 +423,9 @@ and `auth.users.id`; `email` is unique and lowercase (check `accounts_email_lowe
 
 Triggers on `auth.users`, `security definer` functions owned by `opos_migrator`, keep it in step
 with Supabase Auth: an insert creates the `accounts` row with `emailConfirmedAt`, and with
-`firstName`, `lastName` and `locale` from `raw_user_meta_data` (sent by the portal on sign-up; for
-Google `full_name` split on the first space); an email change updates `accounts.email`, and a
+`firstName`, `lastName` and `locale` from `raw_user_meta_data` (written by the API's
+`POST /auth/sign-up` from the form, [5.1](#51-auth--sign-in-through-the-api); for Google
+`full_name` split on the first space); an email change updates `accounts.email`, and a
 change of `email_confirmed_at` updates `emailConfirmedAt` (Supabase Auth confirms with an update,
 also right after inserting a user created confirmed). For an account created before these triggers,
 a one-time backfill
@@ -528,28 +577,34 @@ Every RLS-covered table has an index starting with `tenantId`.
 | `opos_app` | only the privileges the API uses (below), no `BYPASSRLS` | runtime API inside a tenant context |
 | `opos_app_global` | `select` on the columns its cross-tenant queries read, never a whole table; `BYPASSRLS` | `GlobalDbService` exclusively |
 
-The three roles are created by `infra/supabase/db/opos-roles.sql`, which the `db` container runs
-as `supabase_admin` when it initializes an empty data directory. Supabase's own roles
-(`supabase_auth_admin`, `authenticator`, `anon`, `authenticated`, `service_role`) come from the
-image; `anon`, `authenticated` and `service_role` hold no privileges on the `public` schema — the
-script revokes the `usage` they get directly and through `PUBLIC`.
+The three roles are created by `pnpm db:roles` (`packages/db/src/scripts/roles.ts`), which
+connects as the project's `postgres` role through `DATABASE_ADMIN_URL`
+([11](#11-environment-variables)) — the same script for the local stack and the hosted project.
+Supabase's own roles (`supabase_auth_admin`, `authenticator`, `anon`, `authenticated`,
+`service_role`) come with the project; `anon`, `authenticated` and `service_role` hold no
+privileges on the `public` schema — the script revokes the `usage` they get directly and through
+`PUBLIC`.
 
-| Role | Privileges granted by `opos-roles.sql` |
+| Role | Privileges granted by `db:roles` |
 |---|---|
 | `opos_migrator` | `create` on the database (the `drizzle` journal schema), `usage, create` on `public`, `usage` on `auth`, `references (id)` and `trigger` on `auth.users` |
 | `opos_app`, `opos_app_global` | `usage` on `public`; table privileges come from the migrations |
 
+`db:roles` also makes the project's `postgres` role a member of `opos_migrator`, so the backup's
+dump as `postgres` reads the tables `opos_migrator` owns ([13](#backups)).
+
 `opos_migrator` reads nothing in `auth`: the `accounts` triggers get the `auth.users` row as `NEW`,
 and Postgres checks the foreign key to `auth.users` as that table's owner. A migration that needs
-more from `auth.users` asks for it in `opos-roles.sql`.
+more from `auth.users` asks for it in `db:roles`.
 
-The script runs once, when the `db` container initializes an empty data directory. A change to it
-reaches an existing database only when its new statements are run there by hand as
-`supabase_admin`; locally `pnpm infra:reset` rebuilds the volume, then `pnpm db:migrate` and
-`pnpm db:seed` fill it again.
-
-Passwords come from `OPOS_MIGRATOR_PASSWORD`, `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`
-in the `db` container's environment; in dev all three are `opos`.
+The script is idempotent: it creates a missing role, sets every role's attributes and password and
+applies the grants above, so a change to it reaches a database by running it again. It runs
+locally after every `supabase start` on a new volume and after `supabase db reset`, which drop
+the roles with the cluster, and in production once per project and after a change to it
+([13](#13-deployment)). Passwords come from `OPOS_MIGRATOR_PASSWORD`, `OPOS_APP_PASSWORD` and
+`OPOS_APP_GLOBAL_PASSWORD` in the environment of the script, chosen per developer and per
+environment and never committed; they go into connection URLs, so they are hex
+(`openssl rand -hex 32`).
 
 Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
@@ -564,7 +619,8 @@ from the JWT, with two reads of other accounts, both inside a tenant transaction
 accounts joined to the tenant's `tenant_memberships`, which RLS limits to the tenant, and the
 invitation lookup of one confirmed account by the email of the request
 (`InvitationsRepository.confirmedAccount`, behind `settings=write` and the tenant's invitation
-limit, [7.7](#77-organizer-invitations)). The `auth` schema is accessed only by Supabase Auth.
+limit, [7.7](#77-organizer-invitations)). The `auth` schema is accessed only by Supabase Auth, and
+read by the backup service ([13](#backups)).
 
 #### Tenant context
 
@@ -694,8 +750,9 @@ transaction and expects the report:
 Every route takes the detailed input — `params`, `query`, `body` — and is built from one of three
 starting points in [common.ts](../packages/contract/src/common.ts): `publicRoute`, `accountRoute`
 or `tenantRoute`. They set the route's OpenAPI security, the `X-Tenant-Slug` parameter and the error
-responses, and `tenantRoute` marks the route `meta.tenant`. `Authorization` and `X-Tenant-Slug` are
-not inputs: a client sets them once on its link. The API serves the OpenAPI 3.1 document generated
+responses, and `tenantRoute` marks the route `meta.tenant`. The session and `X-Tenant-Slug` are not
+inputs: the browser sends the session cookie itself ([7.4](#74-authorization)), and a client sets
+the header once on its link. The API serves the OpenAPI 3.1 document generated
 from the contract (`@orpc/openapi`, `operationId` = the router path, e.g. `health.check`) at
 `/docs/json` and Swagger UI at `/docs`, in every environment (`https://api.opos.land/docs` in
 production). Error schema:
@@ -710,8 +767,8 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | Status | Meaning | Code when nothing more specific applies |
 |---|---|---|
 | `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `editions_slug_format` -> `slug`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
-| `401` | missing, expired or foreign token, or no `accounts` row for it; `DELETE /me` without a recent sign-in has its own code ([7.4](#74-authorization)) | `session.invalid` |
-| `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)), and so does an invitation for another email ([7.7](#77-organizer-invitations)) |
+| `401` | no session cookie, an expired or foreign access token in it, or no `accounts` row for it; `DELETE /me` without a recent sign-in has its own code ([7.4](#74-authorization)), and so do the Supabase Auth refusals the API passes on ([5.1](#51-auth--sign-in-through-the-api)) | `session.invalid` |
+| `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)), and so does an invitation for another email ([7.7](#77-organizer-invitations)); a request that changes state with the session cookie from an `Origin` outside `PANEL_URL` and `PORTAL_URL` is `request.origin-denied` ([7.4](#74-authorization)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
 | `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`), and so does a unique constraint a concurrent request won (`tenant_memberships_account_tenant_unique` -> `member.exists`, or `invitation.already-member` on `POST /invitations/accept`; `accepted_invitations_tenant_jti_unique` -> `invitation.used`) | always a specific code |
 | `410` | an organizer invitation past its validity, or one its sender can no longer send ([7.7](#77-organizer-invitations)) | `invitation.expired`, `invitation.revoked` |
@@ -723,23 +780,39 @@ and debugging — **it never reaches the UI**. Every code is listed in
 turns everything thrown during a request into this shape; code that has a specific code throws
 `ApiError(status, code, message, params)`.
 
-### 5.1 `auth` — Supabase Auth
+### 5.1 `auth` — sign-in through the API
 
-Registration, sign-in, sessions and password reset are not part of the OPOS contract. The portal
-and the panel call Supabase Auth at `auth.opos.land` through `@supabase/auth-js`:
+Registration, sign-in, sessions and password reset are API endpoints: the API calls Supabase Auth
+([10](#10-supabase)) and keeps the session in cookies ([7.4](#74-authorization)). The calling
+application is the request's `Origin` — `PORTAL_URL` is the portal, `PANEL_URL` the panel, anything
+else `403` `request.origin-denied` — and decides which session cookies a response sets and which
+application the email links lead to. The two Google routes are navigations, which carry no
+`Origin`: `GET /auth/google` takes the application from its `app` query and the callback from the
+`opos_google` cookie. No endpoint returns a token.
 
-| Operation | `auth-js` call | Notes |
-|---|---|---|
-| registration | `signUp({ email, password, options: { data: { first_name, last_name, locale }, emailRedirectTo } })` | the account works after the confirmation link |
-| sign-in | `signInWithPassword({ email, password })` | `email_not_confirmed` until confirmed |
-| Google | `signInWithOAuth({ provider: 'google', options: { redirectTo } })` | PKCE; return through `/auth/callback` ([7.5](#75-google-oauth)) |
-| code exchange | `exchangeCodeForSession(code)` | Google return, email confirmation, recovery link |
-| refresh | `autoRefreshToken: true` | rotation on the Supabase Auth side |
-| sign-out | `signOut()` / `signOut({ scope: 'others' })` | every session of the account (the default scope `global`), or every session but the current one; an ended session's refresh tokens stop working, while an access token it already holds stays valid until its `exp` ([7.4](#74-authorization)) |
-| password reset | `resetPasswordForEmail(email, { redirectTo })`, then `updateUser({ password })` | [7.6](#76-password-reset) |
+| Method | Path | Input | Does | Answers |
+|---|---|---|---|---|
+| POST | `/auth/sign-up` | `{ email, password?, firstName?, lastName? }` | `signUp` with `data: { first_name, last_name, locale }`, the locale detected from `Accept-Language` ([6](#locale-detection)), and `emailRedirectTo = <app URL>/auth/confirm`; without `password` (the panel's invitation sign-up, [7.7](#77-organizer-invitations)) a random one the API never returns or keeps | `202`, the same for an address already registered |
+| POST | `/auth/resend` | `{ email }` | `resend({ type: 'signup' })` with the same `emailRedirectTo` | `202` |
+| POST | `/auth/verify` | `{ tokenHash, type }`, `type` one of `signup`, `recovery` | `verifyOtp({ token_hash, type })` for the link from an email ([10](#send-email-hook)); sets the session cookies | `200` the account as `GET /me` |
+| POST | `/auth/sign-in` | `{ email, password }` | `signInWithPassword`; sets the session cookies | `200` the account as `GET /me` |
+| GET | `/auth/google` | query `app` (`portal`, `panel`), `redirect` (a path of that application) | starts Google sign-in ([7.5](#75-google-oauth)) | `302` to Supabase Auth |
+| GET | `/auth/google/callback` | query `code` or `error` | finishes Google sign-in; sets the session cookies | `302` to the application |
+| POST | `/auth/refresh` | — | `refreshSession` with the refresh token from the cookie; sets the new cookies | `204`; `401` `session.invalid` with both cookies cleared |
+| POST | `/auth/sign-out` | — | `signOut()` — every session of the account, scope `global`; with only the refresh cookie left, refreshes first to get the access token `signOut` needs; clears the cookies | `204`, also without a session or when the refresh fails |
+| POST | `/auth/password/forgot` | `{ email }` | `resetPasswordForEmail(email, { redirectTo: <app URL>/auth/confirm })` ([7.6](#76-password-reset)) | `202` whatever the address |
+| PUT | `/auth/password` | `{ password }` | requires a session; `updateUser({ password })`, then `signOut({ scope: 'others' })`; a `same_password` refusal still ends the other sessions, so a retry after a failed sign-out completes the change | `204` |
 
-Supabase Auth errors carry an `error_code`; the client translates them the same way as API codes,
-through `auth.<error_code>` in [errors.ts](../packages/i18n/src/errors.ts) ([6](#6-localization)).
+The two `GET` routes are plain Nest routes — a redirect, not JSON — documented in the OpenAPI
+document like `GET /health`. Every other route is in the contract (`contract.auth.*`), built from
+`publicRoute`, except `PUT /auth/password`, an `accountRoute`.
+
+A refusal of Supabase Auth reaches the client as `auth.<error_code>` with Supabase Auth's status
+when the contract lists that code — `email_not_confirmed`, `invalid_credentials`,
+`weak_password`, `same_password`, `otp_expired`, `email_address_invalid`,
+`over_email_send_rate_limit`, `over_request_rate_limit` — and as `500` `server.error`, logged,
+otherwise. The client translates them like every other code, through
+[errors.ts](../packages/i18n/src/errors.ts) ([6](#api-errors)).
 
 Outside the contract: `POST /hooks/send-email` — called by Supabase Auth only, verified by
 a Standard Webhooks signature ([10](#10-supabase)) — and `POST /hooks/payments/:provider`, called
@@ -749,9 +822,9 @@ by the payment provider only ([7.10](#710-payments)).
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/me` | account profile: `id`, `email`, `firstName`, `lastName`, `locale` |
+| GET | `/me` | account profile: `id`, `email`, `firstName`, `lastName`, `locale`, and `signInMethods` (`password`, `google`) from the access token's `app_metadata.providers` |
 | PATCH | `/me` | change `firstName` and `lastName` (1–100 characters after trimming, or `null`) and `locale` (one of `SUPPORTED_LOCALES`, or `null` for detection); any other field -> `400` |
-| DELETE | `/me` | delete the account, `204`; `401` `session.reauthentication-required` without a sign-in from the last 5 minutes; `409` `membership.last-head` when it is some tenant's last `head` ([9](#9-appsportal)) |
+| DELETE | `/me` | delete the account, `204` with the session cookies cleared; `401` `session.reauthentication-required` without a sign-in from the last 5 minutes; `409` `membership.last-head` when it is some tenant's last `head` ([9](#9-appsportal)) |
 | GET | `/me/memberships` | tenants (`id`, `slug`, `name`) with role, tenant-level permissions, `expiresAt` and edition-level permissions (`editionId`, `editionSlug`, the three levels); expired memberships left out |
 | GET | `/me/attendances` | "my conventions" |
 | GET | `/me/schedule` | liked programme items across all tenants, ascending by `startsAt` |
@@ -1008,8 +1081,9 @@ The API returns a `code`, never a sentence. [errors.ts](../packages/i18n/src/err
 `ErrorMessage` component of their `shared/ui/messages.tsx`
 ([panel](../apps/panel/src/shared/ui/messages.tsx), [portal](../apps/portal/src/shared/ui/messages.tsx)),
 fed by `shared/lib/errors.ts` ([panel](../apps/panel/src/shared/lib/errors.ts),
-[portal](../apps/portal/src/shared/lib/errors.ts)). Supabase Auth's `error_code` values are mapped
-in the shared map under `auth.<error_code>`; an unmapped code renders the generic `unknownError`. A `code` in
+[portal](../apps/portal/src/shared/lib/errors.ts)). The Supabase Auth refusals the API passes on
+are codes of the contract, `auth.<error_code>` ([5.1](#51-auth--sign-in-through-the-api)), mapped
+in the same shared map; an unmapped code renders the generic `unknownError`. A `code` in
 the contract without an entry in that map fails
 [errors.test.ts](../packages/contract/src/errors.test.ts) in `packages/contract`.
 
@@ -1043,7 +1117,7 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 
 | Module | Contents |
 |---|---|
-| `AuthModule` | the `POST /hooks/send-email` controller ([10](#send-email-hook)), the GoTrue admin client ([10](#admin-api)) |
+| `AuthModule` | the `auth` endpoints and the session cookies ([5.1](#51-auth--sign-in-through-the-api), [7.4](#74-authorization)), the Supabase Auth client with the secret key and the client's address ([10](#10-supabase)), the `POST /hooks/send-email` controller ([10](#send-email-hook)) |
 | `MeModule` | profile, memberships, edition sign-ups, personal schedule, speaker's items, account deletion; global, because it provides `AccountsRepository` to `JwtAuthGuard` |
 | `TenantsModule` | tenant data, `tenant_memberships` with expiry, invitations |
 | `EditionsModule` | edition CRUD, activation, `edition_memberships` |
@@ -1113,7 +1187,7 @@ accounts, listed in [4.6](#46-tenant-isolation--rls-in-postgres): `MembersReposi
 team's accounts, and `InvitationsRepository.confirmedAccount` finds one confirmed account by the
 email of an invitation request.
 
-Outbound I/O — SMTP, the GoTrue admin API — never runs inside the transaction. Code inside it
+Outbound I/O — SMTP, Supabase Auth — never runs inside the transaction. Code inside it
 registers the call with `TenantContextService.afterCommit(fn)`; the queue runs after the commit and
 is dropped on a rollback. The ticket email also has an outbox ([7.10](#710-payments)).
 
@@ -1185,58 +1259,92 @@ fail for a new one until it is listed; an edition-level write has its case on th
 
 ### 7.4 Authorization
 
-Sessions are issued by Supabase Auth ([10](#10-supabase)):
+Sessions are issued by Supabase Auth ([10](#10-supabase)) and held by the API; the browser never
+sees a token:
 
-- Access token: a JWT signed HS256 with `JWT_SECRET`, shared by Supabase Auth and the API; TTL
-  **15 minutes** (`GOTRUE_JWT_EXP=900`).
-- Refresh token: single-use, rotated on every refresh
-  (`GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED=true`, reuse interval 10 s); reusing a spent
-  token outside that interval revokes the whole session.
-- Passwords: hashed by Supabase Auth; minimum length 8 (`GOTRUE_PASSWORD_MIN_LENGTH`).
-- Email confirmation is required (`GOTRUE_MAILER_AUTOCONFIRM=false`); an unconfirmed account gets
-  `email_not_confirmed` on sign-in.
-- Ending a session (sign-out, `signOut({ scope: 'others' })` after a password reset) revokes its
+- Access token: a JWT signed with the project's asymmetric signing key (ES256), verified by the API
+  against the project's JWKS; TTL **15 minutes** (`jwt_expiry = 900`).
+- Refresh token: single-use, rotated on every refresh (`enable_refresh_token_rotation`, reuse
+  interval 10 s); reusing a spent token outside that interval revokes the whole session.
+- Passwords: hashed by Supabase Auth; minimum length 8 (`minimum_password_length`).
+- Email confirmation is required (`enable_confirmations`); an unconfirmed account gets
+  `auth.email_not_confirmed` on sign-in.
+- Ending a session (sign-out, `signOut({ scope: 'others' })` after a password change) revokes its
   refresh tokens in Supabase Auth. `JwtAuthGuard` checks the token, not the session, so an access
   token issued before stays valid until its `exp`, at most 15 minutes later.
 
+**Session cookies.** The API sets them on its own host, without a `Domain` attribute, one pair per
+application, so the portal and the panel never share a session:
+
+| Cookie | Holds | Attributes |
+|---|---|---|
+| `opos_portal_access`, `opos_panel_access` | the access token | `HttpOnly`, `SameSite=Strict`, `Path=/`, `Max-Age` up to the token's `exp` |
+| `opos_portal_refresh`, `opos_panel_refresh` | the refresh token | `HttpOnly`, `SameSite=Strict`, `Path=/auth`, `Max-Age` 30 days, renewed on every refresh |
+| `opos_google` | the PKCE verifier, the application and the return path of a Google sign-in in progress ([7.5](#75-google-oauth)) | `HttpOnly`, `SameSite=Lax`, since it comes back on a navigation from Supabase Auth, `Path=/auth/google`, `Max-Age` 10 minutes |
+
+Every cookie is `Secure` when `API_URL` is `https`; only the dev addresses on `http://*.localhost`
+go without it. The application of a request is its `Origin` ([5.1](#51-auth--sign-in-through-the-api)):
+the API reads and writes only that application's pair, and a request without the `Origin` of one of
+the two has no session; the Google routes take the application as in
+[5.1](#51-auth--sign-in-through-the-api). The addresses of the API and both applications share one site (`opos.land`,
+`opos.localhost` in dev, [12](#12-local-development)), so `SameSite=Strict` cookies travel with
+their requests.
+
+**Requests that change state.** A `POST`, `PUT`, `PATCH` or `DELETE` that carries a session cookie
+needs an `Origin` equal to `PANEL_URL` or `PORTAL_URL` — `403` `request.origin-denied` otherwise,
+also from another subdomain of the same site — and, with a body, `application/json`, which no HTML
+form sends (`415`, [5](#5-api-contract)). Together with `SameSite=Strict` this is the CSRF
+protection; there is no CSRF token.
+
 **`JwtAuthGuard`** ([jwt-auth.guard.ts](../apps/api/src/common/guards/jwt-auth.guard.ts)) verifies
-the `Authorization: Bearer` token with `jose`
+the access token from the application's access cookie with `jose`
 ([access-token.ts](../apps/api/src/common/guards/access-token.ts), shared with the rate limit,
-[7.9](#79-rate-limiting)): signature, `exp` and `sub` required (a token without `exp` never
-expires), `aud = authenticated`, `iss = <AUTH_URL>`, `alg = HS256` only. `sub` is `accounts.id` (a
-uuid); the guard loads that row and puts it into the request store ([7.2](#72-tenant-context)),
-with the newest `amr` timestamp of the token — `locale` comes from the database, not from the
-token. A valid token without an `accounts` row -> `401`. The JWT holds no `tenantId`.
+[7.9](#79-rate-limiting)): the signature against the keys of
+`<SUPABASE_URL>/auth/v1/.well-known/jwks.json` (`createRemoteJWKSet`, cached, fetched again for an
+unknown `kid`), `alg = ES256` only, `exp` and `sub` required (a token without `exp` never expires),
+`aud = authenticated`, `iss = <SUPABASE_URL>/auth/v1`, `is_anonymous` not true. `sub` is
+`accounts.id` (a uuid); the guard loads that row and puts it into the request store
+([7.2](#72-tenant-context)), with the newest `amr` timestamp of the token — `locale` comes from the
+database, not from the token. A valid token without an `accounts` row -> `401`. The JWT holds no
+`tenantId`. The scanner sends its device token as `Authorization: Bearer` ([7.11](#711-scanner));
+no other route reads that header.
 
-**Session in the browser** — `@supabase/auth-js` with `flowType: 'pkce'`, `persistSession: true`,
-`autoRefreshToken: true`, stored in the `localStorage` of the application's own origin under a
-separate key (`opos-portal-auth`, `opos-panel-auth`). The portal and the panel never share a
-session. Their clients are [the portal's auth.ts](../apps/portal/src/shared/lib/auth.ts) and
-[the panel's auth.ts](../apps/panel/src/shared/lib/auth.ts); neither reads the URL itself
-(`detectSessionInUrl: false`), since `/auth/callback` (and the portal's `/reset-password`)
-exchanges the code.
-
-Because the session is readable by scripts on that origin, the portal and the panel are served
-with a strict Content Security Policy: `script-src 'self'`, no inline scripts,
-`connect-src 'self' <API_URL> <AUTH_URL>`, `frame-ancestors 'none'`.
+**In the browser** the panel and the portal hold no session state of their own: the API link sends
+the cookies (`credentials: 'include'`), and the account comes from `GET /me`
+([8](#8-appspanel), [9](#9-appsportal)). They are served with a strict Content Security Policy:
+`script-src 'self'`, no inline scripts, `connect-src 'self' <API_URL>`, `frame-ancestors 'none'`.
 
 **Recent sign-in** — `DELETE /me` requires an `amr` entry in the JWT with a timestamp younger than
 5 minutes; without one -> `401` `session.reauthentication-required`. A refresh keeps the `amr` of
 the sign-in that started the session, so the client answers that code not by refreshing but by
-confirming the password (`signInWithPassword`) or by signing in with Google again.
+confirming the password (`POST /auth/sign-in`) or by signing in with Google again.
 
 ### 7.5 Google OAuth
 
-Supabase Auth's Google provider, PKCE flow:
+Supabase Auth's Google provider, PKCE flow, with the API as the client:
 
-1. The portal or the panel calls `signInWithOAuth({ provider: 'google', options: { redirectTo } })`
-   with `redirectTo = <app URL>/auth/callback`.
-2. Supabase Auth redirects to Google; Google comes back to `https://auth.opos.land/callback`.
-3. Supabase Auth creates or links the user and redirects to `redirectTo` with `?code=`.
-4. `/auth/callback` calls `exchangeCodeForSession(code)` and receives the session.
+1. The Google button navigates the browser — a navigation, not a request of the API link — to
+   `GET <API_URL>/auth/google?app=<portal|panel>&redirect=<path>`.
+2. The API takes `redirect` only as a path of that application, judged after resolving it against
+   the application's URL; anything else becomes the application's start page. It creates a PKCE
+   verifier, keeps it with the application and the path in the `opos_google` cookie
+   ([7.4](#74-authorization)) and answers `302` to
+   `<SUPABASE_URL>/auth/v1/authorize?provider=google&redirect_to=<API_URL>/auth/google/callback`
+   with the S256 code challenge (`signInWithOAuth` with `skipBrowserRedirect`).
+3. Supabase Auth redirects to Google; Google comes back to `<SUPABASE_URL>/auth/v1/callback`, the
+   redirect URI of the Google client. Google's consent screen names the project's `supabase.co`
+   address ([PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains)).
+4. Supabase Auth creates or links the user and redirects to `<API_URL>/auth/google/callback` with
+   `?code=`.
+5. The API exchanges the code with the verifier from `opos_google` (`exchangeCodeForSession`),
+   clears that cookie, sets the application's session cookies and answers `302` to the stored path
+   of the application. A missing or expired `opos_google`, an `error` from Supabase Auth or a failed
+   exchange answers `302` to `<app URL>/login?error=<code>` (`auth.<error_code>`, or
+   `auth.google-failed`), and `<PORTAL_URL>/login` when the cookie names no application.
 
-`redirectTo` must match `GOTRUE_URI_ALLOW_LIST` exactly ([10](#10-supabase)); anything else falls
-back to `GOTRUE_SITE_URL`. Supabase Auth never redirects to an arbitrary address from the request.
+`redirect_to` must match `additional_redirect_urls` exactly ([10](#10-supabase)), and the API's
+callback is the only Google entry there. Supabase Auth never redirects to an arbitrary address
+from the request, and the API never to an address outside its two applications.
 
 Required behaviour when the email already exists, checked in the smoke test
 ([16](#16-smoke-test)):
@@ -1249,15 +1357,19 @@ Required behaviour when the email already exists, checked in the smoke test
 
 ### 7.6 Password reset
 
-1. The portal calls `resetPasswordForEmail(email, { redirectTo: <PORTAL_URL>/reset-password })`.
-   Supabase Auth answers the same way for an unknown address, so the form reveals nothing about
-   registered emails. For a known address it calls the send-email hook with
-   `email_action_type = recovery`; the API sends the link in the recipient's locale. The link is
-   valid for 1 hour (`GOTRUE_MAILER_OTP_EXP=3600`) and works once.
-2. `/reset-password` exchanges the `code` for a session, sets the new password with
-   `updateUser({ password })` and calls `signOut({ scope: 'others' })` — every other session ends:
-   its refresh tokens stop working at once, and an access token it already holds keeps working
-   until it expires, at most 15 minutes later (`GOTRUE_JWT_EXP=900`, [7.4](#74-authorization)).
+1. The portal sends `POST /auth/password/forgot`; the API calls
+   `resetPasswordForEmail(email, { redirectTo: <PORTAL_URL>/auth/confirm })`. Supabase Auth
+   answers the same way for an unknown address, and so does the API, so the form reveals nothing
+   about registered emails. For a known address Supabase Auth calls the send-email hook with
+   `email_action_type = recovery`; the API sends the link
+   `<PORTAL_URL>/auth/confirm?token_hash=...&type=recovery` in the recipient's locale. The link is
+   valid for 1 hour (`otp_expiry = 3600`) and works once.
+2. `/auth/confirm` sends the `token_hash` to `POST /auth/verify`, which signs the browser in with
+   the session cookies, in whatever browser opened the link, and shows the new password form. The
+   new password goes to
+   `PUT /auth/password`: `updateUser({ password })`, then `signOut({ scope: 'others' })` — every
+   other session ends: its refresh tokens stop working at once, and an access token it already
+   holds keeps working until it expires, at most 15 minutes later ([7.4](#74-authorization)).
 3. The flow works for a Google-only account as well: completing it adds password sign-in next to
    Google.
 
@@ -1317,44 +1429,36 @@ logged and the response stands ([7.2](#72-tenant-context)).
 
 **An invitee without an account registers in the panel.** The `/invitation` page
 ([8](#8-appspanel)) shows the preview, a sign-in and a sign-up; the account then accepts the
-invitation with `POST /invitations/accept` once it has a session. An email sign-up sets the
+invitation with `POST /invitations/accept` once it has a session. The panel's sign-up sets the
 password only after the address is proven, so a password someone set on the address before it was
 confirmed does not survive ([4.2](#42-global-tables)).
 
 1. The page reads `?token=`, calls `GET /invitations/preview` and keeps the token in `localStorage`
    ([invitation-storage.ts](../apps/panel/src/features/auth/model/invitation-storage.ts)), so it
    survives the confirmation link opening in another tab.
-2. Signed in already, or after `signInWithPassword` or the Google return: the panel calls
+2. Signed in already, or after `POST /auth/sign-in` or the Google return: the panel calls
    `POST /invitations/accept` and removes the stored entry. The entry also goes when the preview or
    the acceptance answers `invitation.invalid`, `invitation.expired`, `invitation.used`,
    `invitation.revoked` or `invitation.already-member`; `invitation.email-mismatch` keeps it, so the
    invitee can sign in with the invited address instead.
 3. Sign-up with email: the form takes the address, prefilled with the invited one, and no password.
-   The panel calls `signUp({ email, password: <random throwaway, never shown or stored>, options: {
-   data: { locale }, emailRedirectTo: <PANEL_URL>/auth/callback } })` and marks the stored entry as
-   waiting for a password. Sign-up with Google: `signInWithOAuth` with
-   `redirectTo = <PANEL_URL>/auth/callback` ([7.5](#75-google-oauth)). Both addresses are in
-   `GOTRUE_URI_ALLOW_LIST` ([10](#10-supabase)).
-4. `/auth/callback` exchanges the code for a session and opens the page the round trip started
-   on, which the call that left keeps in `localStorage`
-   ([auth-return.ts](../apps/panel/src/features/auth/model/auth-return.ts)): `/invitation` for the
-   sign-up, the Google button and the password link of step 6. Without one, an entry waiting for a
-   password returns to `/invitation` and anything else to `/`; a stored entry alone never takes over
-   a sign-in that started elsewhere.
-5. Back with an entry waiting for a password, and signed in with the invited address, the page
-   asks for one and sets it with `updateUser({ password })`, then calls
-   `signOut({ scope: 'others' })` and accepts as in step 2. A retry after a failed sign-out repeats
-   only the sign-out, since Supabase Auth refuses the same password twice (`same_password`).
-   This replaces a password anyone set on the address before it was confirmed, as a password reset
-   does ([7.6](#76-password-reset)). A Google sign-up needs no such step: Google takes an
+   The panel sends `POST /auth/sign-up` without `password`; the API signs up with a random one it
+   never returns or keeps, and the confirmation link leads to `<PANEL_URL>/auth/confirm`. Sign-up
+   with Google: `GET /auth/google?app=panel&redirect=/invitation` ([7.5](#75-google-oauth)).
+4. `/auth/confirm` of the panel sends the `token_hash` to `POST /auth/verify`, which signs in
+   whatever browser opened the link, and then always asks for a password: every account the panel
+   signs up starts without one the invitee knows. The password goes to `PUT /auth/password`, which
+   also ends every other session ([5.1](#51-auth--sign-in-through-the-api)). This replaces a
+   password anyone set on the address before it was confirmed, as a password reset does
+   ([7.6](#76-password-reset)).
+5. The page then opens the page the round trip started on, kept in `localStorage`
+   ([auth-return.ts](../apps/panel/src/features/auth/model/auth-return.ts)): `/invitation`, which
+   accepts as in step 2. In a browser without that entry it opens `/`, and the invitee opens the
+   invitation link again there. A Google sign-up needs no password step: Google takes an
    unconfirmed account over ([7.5](#75-google-oauth)).
-6. A confirmation opened in another browser confirms the address but gives that browser no
-   session, since the PKCE verifier stays where the sign-up started: `/auth/callback` there shows
-   the message of `auth.pkce_code_verifier_not_found`. The invitee opens the invitation link again
-   there and asks for a password link:
-   `resetPasswordForEmail(email, { redirectTo: <PANEL_URL>/auth/callback })`, which marks the
-   entry as in step 3 and comes back through steps 4 and 5. The same link serves an invitee who
-   cannot sign in because someone else registered the address first.
+6. An invitee who cannot sign in — a forgotten password, or someone else registered the address
+   first — asks the `/invitation` page for a password link: `POST /auth/password/forgot` from the
+   panel, whose link leads to the panel's `/auth/confirm` and through steps 4 and 5.
 
 ### 7.8 CORS
 
@@ -1362,7 +1466,9 @@ Set in [app.ts](../apps/api/src/app.ts). Allowed `Origin`: `PORTAL_URL` and `PAN
 scanner included) — an explicit list, never `*` and never a reflected header. Allowed headers:
 `Authorization`, `Content-Type`, `X-Tenant-Slug`, `Accept-Language`. Exposed response header:
 `Retry-After`, which a browser otherwise hides from the panel and portal on a `429`
-([7.9](#79-rate-limiting)). `credentials: false` — the API sets and reads no cookies.
+([7.9](#79-rate-limiting)). `credentials: true`, with `Access-Control-Allow-Credentials` for those
+two origins only: the session travels in the API's cookies ([7.4](#74-authorization)).
+`Authorization` stays for the scanner's device token ([7.11](#711-scanner)).
 
 `POST /hooks/send-email` and `POST /hooks/payments/:provider` are called server to server and need
 no CORS; they reject every request without a valid signature.
@@ -1372,7 +1478,7 @@ no CORS; they reject every request without a valid signature.
 `@nestjs/throttler` with counters in process memory, as a global guard that runs before every
 route's own guards ([rate-limit.ts](../apps/api/src/common/rate-limit/rate-limit.ts)):
 
-- A request counts against the account of a valid access token, checked as `JwtAuthGuard` checks
+- A request counts against the account of a valid access token in its session cookie, checked as `JwtAuthGuard` checks
   it ([7.4](#74-authorization)), and otherwise against the client address (an IPv6 address by its
   `/64`). An invalid token counts against the address, so a forged `sub` never spends another
   account's requests.
@@ -1388,6 +1494,7 @@ route's own guards ([rate-limit.ts](../apps/api/src/common/rate-limit/rate-limit
 
 | Scope | Limit |
 |---|---|
+| `POST /auth/sign-up`, `/auth/resend`, `/auth/sign-in`, `/auth/verify`, `/auth/password/forgot`, `GET /auth/google` | 30 / 5 min per IP, one counter for all six |
 | `GET /invitations/preview` | 30 / hour per IP |
 | `POST /tenants/current/members` | 20 / hour per tenant, counted for members with `settings=write` |
 | `PUT .../review` | 30 / hour per account |
@@ -1402,8 +1509,9 @@ that builds the endpoint. The default covers `GET /health` and the send-email ho
 Supabase Auth's email bucket keeps far below it ([10](#rate-limits)). Swagger UI and the OpenAPI
 document (`/docs`) are served outside the Nest router and count against no limit.
 
-Sign-up, sign-in, refresh and recovery are limited by Supabase Auth and by Traefik in front of it
-([10](#10-supabase)).
+Supabase Auth limits sign-up, sign-in, refresh, verification and recovery once more, by the
+client's address: the API sends it with every Supabase Auth call in `Sb-Forwarded-For`, so the
+limits count each visitor, not the API's own address ([10](#rate-limits)).
 
 ### 7.10 Payments
 
@@ -1462,18 +1570,19 @@ The scanner is online only: no local ticket list, no queue of offline redemption
 ## 8. `apps/panel`
 
 SPA (Vite + React) in [apps/panel](../apps/panel), `@orpc/tanstack-query` over an oRPC client of
-the contract, `@supabase/auth-js` for the session, UI state in `zustand`, forms with
-`react-hook-form` + zod using schemas from `packages/contract`. Feature-based layout
+the contract, the session in the API's cookies ([7.4](#74-authorization)), UI state in `zustand`,
+forms with `react-hook-form` + zod using schemas from `packages/contract`. Feature-based layout
 ([3.2](#32-frontend-application-layout)). Desktop-first; usable from a tablet.
 
 Built: the features `auth`, `tenants`, `editions`, `team` and `account` with their screens below;
 the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be built: `program`,
-`shop`, `tickets`, `scanner` and their screens, and the image with its headers
-([13](#13-deployment)).
+`shop`, `tickets`, `scanner` and their screens, the image with its headers
+([13](#13-deployment)), and the move of `auth` from `@supabase/auth-js` to the API's `auth`
+endpoints ([5.1](#51-auth--sign-in-through-the-api)), which the bullets below describe.
 
 | Feature | Scope |
 |---|---|
-| `auth` | sign-in, Google return, invitation acceptance with sign-up ([7.7](#77-organizer-invitations)) |
+| `auth` | sign-in, email links, invitation acceptance with sign-up ([7.7](#77-organizer-invitations)) |
 | `tenants` | convention picker, dashboard, settings, language and time zone |
 | `editions` | edition list, creation, activation, publication |
 | `program` | the edition's programme items, their speakers, review moderation |
@@ -1485,8 +1594,8 @@ the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be bu
 
 | Path | Screen |
 |---|---|
-| `/login` | organizer sign-in: email + password, Google button |
-| `/auth/callback` | receives `code` from Supabase Auth, calls `exchangeCodeForSession`, opens the page the round trip started on: the `?redirect=` target of `/login`, or `/invitation` ([7.7](#77-organizer-invitations)) |
+| `/login` | organizer sign-in: email + password, Google button (`GET /auth/google?app=panel&redirect=<the ?redirect= target>`); shows the code of a failed Google sign-in from `?error=` |
+| `/auth/confirm` | receives `token_hash` and `type` from an email link, sends them to `POST /auth/verify`, asks for the password ([7.7](#77-organizer-invitations)), then opens the page the round trip started on, or `/` |
 | `/invitation` | invitation acceptance (`?token=`): the convention and the invited email, sign-in, sign-up with email or Google, the password chosen after the address is confirmed ([7.7](#77-organizer-invitations)) |
 | `/` | convention picker; redirect when there is a single membership |
 | `/:tenantSlug` | tenant dashboard |
@@ -1503,22 +1612,23 @@ the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be bu
 | `/:tenantSlug/editions/:editionSlug/tickets/scanners` | pairing QR code, paired devices, revocation |
 | `/scanner` | the scanner on a phone: pairing, then scan -> order view -> tick tickets handed in |
 
-- The fixed top-level paths — `/login`, `/auth/callback`, `/invitation`, `/scanner` — are reserved
+- The fixed top-level paths — `/login`, `/auth`, `/invitation`, `/scanner` — are reserved
   tenant slugs ([4.3](#43-tenant-level-tables)), so `/:tenantSlug` never shadows them; a new
   top-level path joins `RESERVED_TENANT_SLUGS` in the same PR.
-- The API link ([api-fetch.ts](../apps/panel/src/shared/lib/api-fetch.ts)) attaches
-  `Authorization: Bearer <access token from auth-js>`, `X-Tenant-Slug` and `Accept-Language` from
-  the active locale, and reads errors back as in [5](#5-api-contract). Every tenant gets a client
-  of its own whose query keys start with its slug ([api.ts](../apps/panel/src/shared/lib/api.ts)),
-  so two tenants never share a cached answer. Nothing of one account outlives it in the browser:
-  a sign-out, or another account's session replacing it, clears the query cache and the
-  permission store ([providers.tsx](../apps/panel/src/app/providers.tsx)).
-- `401` from the API -> one `refreshSession()`, shared by the requests waiting on it, and one
-  retry; a failed refresh or a second `401` signs out. `session.reauthentication-required` goes to
-  the screen instead ([7.4](#74-authorization)).
-- Application start restores the session with `getSession()`, refreshing it when it has expired —
-  until that resolves the user sees a loading view, not the sign-in screen
-  ([session.ts](../apps/panel/src/shared/lib/session.ts)).
+- The API link ([api-fetch.ts](../apps/panel/src/shared/lib/api-fetch.ts)) sends the session
+  cookies (`credentials: 'include'`), `X-Tenant-Slug` and `Accept-Language` from the active locale,
+  and reads errors back as in [5](#5-api-contract). Every tenant gets a client of its own whose
+  query keys start with its slug ([api.ts](../apps/panel/src/shared/lib/api.ts)), so two tenants
+  never share a cached answer. Nothing of one account outlives it in the browser: a sign-out, or
+  another account's session replacing it, clears the query cache and the permission store
+  ([providers.tsx](../apps/panel/src/app/providers.tsx)).
+- `401` `session.invalid` from the API -> one `POST /auth/refresh`, shared by the requests waiting
+  on it, and one retry; a failed refresh or a second `401` signs out.
+  `session.reauthentication-required` goes to the screen instead ([7.4](#74-authorization)).
+- Application start asks `GET /me`, with one refresh on a `401` as above — until that resolves the
+  user sees a loading view, not the sign-in screen
+  ([session.ts](../apps/panel/src/shared/lib/session.ts)). The panel knows it is signed in only
+  from the API's answers: it reads no cookie and stores no token.
 - `GET /me/memberships` after sign-in populates the permission store
   ([permissions.ts](../apps/panel/src/features/tenants/model/permissions.ts)). The UI reads it and
   the API stays the authority: the sidebar hides sections with a `none` permission, at `read` the
@@ -1549,8 +1659,9 @@ the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be bu
 ## 9. `apps/portal`
 
 SPA (Vite + React) in [apps/portal](../apps/portal), built like the panel ([8](#8-appspanel)):
-`@orpc/tanstack-query` over an oRPC client of the contract, `@supabase/auth-js` for the session,
-forms with `react-hook-form` + zod, feature-based layout ([3.2](#32-frontend-application-layout)).
+`@orpc/tanstack-query` over an oRPC client of the contract, the session in the API's cookies
+([7.4](#74-authorization)), forms with `react-hook-form` + zod, feature-based layout
+([3.2](#32-frontend-application-layout)).
 **Mobile-first:** it is the attendees' only way into OPOS on a phone, so every screen is designed
 for a 360 px wide viewport first and works up to desktop: one column, controls at least 44 px tall,
 form fields with 16 px text so a phone browser does not zoom into them, no horizontal scrolling.
@@ -1559,13 +1670,15 @@ Built: the features `landing`, `auth` and `account` with their screens below; th
 [router.tsx](../apps/portal/src/app/router.tsx) and the frame of every screen (the platform's name,
 the way to the account or to sign-in, the privacy policy in the footer) in
 [layout.tsx](../apps/portal/src/app/layout.tsx). Still to be built: `attendances`, `conventions`,
-`schedule`, `speaking`, `tickets` and their screens, which wait for their modules in the API, and
-the image with its headers ([13](#13-deployment)).
+`schedule`, `speaking`, `tickets` and their screens, which wait for their modules in the API, the
+image with its headers ([13](#13-deployment)), and the move of `auth` and `account` from
+`@supabase/auth-js` to the API's `auth` endpoints ([5.1](#51-auth--sign-in-through-the-api)),
+which the bullets below describe.
 
 | Feature | Scope |
 |---|---|
 | `landing` | the platform's home page, the privacy policy |
-| `auth` | registration, email confirmation, sign-in, password reset, Google return |
+| `auth` | registration, email links, sign-in, password reset |
 | `account` | account settings, language, account deletion |
 | `attendances` | "my conventions", edition sign-up, withdrawal |
 | `conventions` | a convention's page: the active edition's programme, past editions, item details, likes, reviews |
@@ -1578,10 +1691,9 @@ the image with its headers ([13](#13-deployment)).
 | `/` | OPOS platform landing page |
 | `/privacy` | the privacy policy ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); linked from the registration form and the footer |
 | `/register` | first and last name, email, password, Google button; after submitting — "check your inbox", with the link sent again on request |
-| `/login` | email and password, Google button; `email_not_confirmed` offers to send the link again (`resend({ type: 'signup' })`) |
-| `/auth/callback` | receives `code` (Google return, email confirmation), calls `exchangeCodeForSession`, opens the page the round trip started on |
+| `/login` | email and password, Google button; `auth.email_not_confirmed` offers to send the link again (`POST /auth/resend`); shows the code of a failed Google sign-in from `?error=` |
+| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends them to `POST /auth/verify`: a confirmed address opens the page the round trip started on; a recovery link shows the new password form, whose saving ends every other session ([7.6](#76-password-reset)) |
 | `/forgot-password` | password reset request; confirms that the message was sent whatever the address ([7.6](#76-password-reset)) |
-| `/reset-password` | new password form, opened from the recovery link (`?code=`); saving it ends every other session ([7.6](#76-password-reset)) |
 | `/account` | names, interface language, sign-out, account deletion |
 | `/my-conventions` | the list of editions the account is signed up for |
 | `/join/:tenantSlug/:editionSlug` | edition sign-up; unauthenticated -> sign-in and back here |
@@ -1594,28 +1706,30 @@ the image with its headers ([13](#13-deployment)).
 | `/orders/:orderId` | order status from the link (`?token=`); after payment the tickets with QR codes |
 | `/my-tickets` | tickets bought with the account's email, grouped by edition, with QR codes |
 
-- Registration sends `signUp` with `data: { first_name, last_name, locale }`, the locale being the
-  portal's active one, and `emailRedirectTo = <PORTAL_URL>/auth/callback`; the Google button uses
-  the same address ([7.5](#75-google-oauth)). A page that needs a session sends a signed-out
-  visitor to `/login?redirect=<path>`, and `/register` carries the same `redirect`.
-- A round trip through Supabase Auth — the Google button, a confirmation link, one sent again —
-  stores the page to return to in `localStorage` before it leaves
+- Registration sends `POST /auth/sign-up` with the names, and `Accept-Language` from the portal's
+  active locale, which becomes the account's `locale` ([5.1](#51-auth--sign-in-through-the-api)).
+  The Google button navigates to `GET /auth/google?app=portal&redirect=<path>`
+  ([7.5](#75-google-oauth)). A page that needs a session sends a signed-out visitor to
+  `/login?redirect=<path>`, and `/register` carries the same `redirect`.
+- An email round trip — a confirmation link, one sent again — stores the page to return to in
+  `localStorage` before it leaves
   ([auth-return.ts](../apps/portal/src/features/auth/model/auth-return.ts)), since an email link
-  opens in another tab. `/auth/callback` uses it once and otherwise opens the signed-in start
-  page, `/account` ([routes.ts](../apps/portal/src/shared/config/routes.ts)), which becomes
-  `/my-conventions` with the `attendances` feature. Only a path inside the portal is ever a target,
-  judged after resolving it against the portal's origin as the browser would
-  ([redirect.ts](../apps/portal/src/features/auth/model/redirect.ts)).
-- A confirmation link opened in another browser confirms the address but gives that browser no
-  session, since the PKCE verifier stays where the registration started: `/auth/callback` there
-  shows the message of `auth.pkce_code_verifier_not_found` and the way to sign in.
+  opens in another tab. `/auth/confirm` uses it once and otherwise opens the signed-in start page,
+  `/account` ([routes.ts](../apps/portal/src/shared/config/routes.ts)), which becomes
+  `/my-conventions` with the `attendances` feature. The Google return needs no stored page: the
+  API redirects to the path the button sent. Only a path inside the portal is ever a target, judged
+  after resolving it against the portal's origin as the browser would
+  ([redirect.ts](../apps/portal/src/features/auth/model/redirect.ts)); the API judges the Google
+  `redirect` the same way.
+- A confirmation link opened in another browser signs that browser in, since `POST /auth/verify`
+  needs only the link; without a stored page it opens the start page.
 - The API link ([api-fetch.ts](../apps/portal/src/shared/lib/api-fetch.ts)) works as the panel's
-  ([8](#8-appspanel)): the access token and `Accept-Language` from the active locale, one shared
-  `refreshSession()` and one retry on a `401`, and `session.reauthentication-required` left to the
+  ([8](#8-appspanel)): the session cookies and `Accept-Language` from the active locale, one shared
+  `POST /auth/refresh` and one retry on a `401`, and `session.reauthentication-required` left to the
   screen. A sign-out, or another account's session replacing it, clears the query cache
   ([providers.tsx](../apps/portal/src/app/providers.tsx)).
-- Application start restores the session with `getSession()`; a page that needs it shows a loading
-  view until then ([session.ts](../apps/portal/src/shared/lib/session.ts)).
+- Application start asks `GET /me`, with one refresh on a `401`; a page that needs the session
+  shows a loading view until then ([session.ts](../apps/portal/src/shared/lib/session.ts)).
 - Signed out, the interface follows the browser's languages; signed in, the account's `locale`
   ([6](#locale-detection)). A session that ends — sign-out, account deletion, a failed refresh —
   switches the interface back to the browser's languages
@@ -1635,20 +1749,22 @@ unpublished edition under a direct URL or an unknown tenant -> `404`.
 
 **Account deletion:** `DELETE /me` after confirming with a password or a repeated Google sign-in
 ([7.4](#74-authorization)). On `/account` the user confirms with the password
-(`signInWithPassword` with the account's email, then `DELETE /me` at once) or with Google, which
-returns to `/account?confirm=deletion` and offers the deletion there only to the account that left
-for Google, remembered in `localStorage`
+(`POST /auth/sign-in` with the account's email, then `DELETE /me` at once) or with Google
+(`GET /auth/google?app=portal&redirect=/account?confirm=deletion`), which returns to
+`/account?confirm=deletion` and offers the deletion there only to the account that left for Google,
+remembered in `localStorage`
 ([deletion-confirmation.ts](../apps/portal/src/features/account/model/deletion-confirmation.ts)).
 That return is used once and leaves the address at once: a reload or a copied link offers the
 password and Google again, another account Google signed in is told nothing was deleted, and `401`
 `session.reauthentication-required` offers both confirmations again. The methods offered follow the
-account's identities ([sign-in-methods.ts](../apps/portal/src/features/account/model/sign-in-methods.ts)).
+account's `signInMethods` from `GET /me`
+([sign-in-methods.ts](../apps/portal/src/features/account/model/sign-in-methods.ts)).
 `409` `membership.last-head` is explained on the screen: hand the head organizer role over in the
-panel first. A deleted account forgets its session in the browser (`signOut({ scope: 'local' })`)
-and lands on `/` with a confirmation. The API side is implemented in
+panel first. A deleted account loses its session cookies with the `204` and lands on `/` with a
+confirmation. The API side is implemented in
 [account-deletion.service.ts](../apps/api/src/modules/accounts/account-deletion.service.ts). The
 API refuses the last `head` of any tenant (`409` `membership.last-head`, from the cross-tenant check
-in [4.6](#cross-tenant-queries)), then deletes the user through the GoTrue admin API
+in [4.6](#cross-tenant-queries)), then deletes the user through the Supabase Auth admin API
 (`DELETE /admin/users/:id`, [10](#admin-api)), outside any transaction. `accounts` cascades from
 `auth.users`, and `tenant_memberships`, `edition_memberships`, `attendees`,
 `program_item_speakers`, `program_item_likes` and `program_item_reviews` cascade from `accounts`.
@@ -1661,51 +1777,74 @@ not by account, and stay.
 
 ## 10. Supabase
 
-Self-hosted on the VPS, reduced to the services OPOS uses:
+One Supabase project on supabase.com for production: the Pro plan (no pausing, daily backups) in
+the EU region `eu-central-1` (Frankfurt). OPOS uses its Postgres and Supabase Auth, nothing else:
 
-| Service | Image | Role | Reachable |
-|---|---|---|---|
-| `db` | `supabase/postgres` (17.x) | the only Postgres: `public` and `auth` schemas | internal network; `:5432` on `localhost` in dev |
-| `auth` | `supabase/gotrue` (v2.x) | Supabase Auth | `auth.opos.land`; `localhost:9999` in dev |
-| `studio`, `meta` | `supabase/studio`, `supabase/postgres-meta` | database browser | dev only, `localhost:54323` |
+| Part | Use |
+|---|---|
+| Postgres 17 | the only database: `public` (OPOS tables), `drizzle` (the migration journal), `auth` (Supabase Auth) |
+| Supabase Auth | identities, passwords, sessions, password reset, Google; called by the API alone ([7.4](#74-authorization)) |
+| Data API (PostgREST), GraphQL, Realtime, Storage, Edge Functions | off: the Data API is disabled in the project, the rest is never used; `anon` and `authenticated` hold nothing in `public` anyway ([4.6](#46-tenant-isolation--rls-in-postgres)) |
 
-Not deployed: Kong, PostgREST, Realtime, Storage, Edge Functions, Analytics, Supavisor. Traefik
-routes `auth.opos.land` straight to GoTrue, and clients use `@supabase/auth-js` with
-`url: AUTH_URL` — not `supabase-js`, which expects Kong's `/auth/v1` prefix.
+In dev and CI the Supabase CLI runs the same services locally ([12](#12-local-development)).
 
-Image tags are pinned exactly in both compose files, to the versions from Supabase's
-self-hosting compose. An upgrade bumps `db` and `auth` together, after a `pg_dump`. GoTrue
-migrates the `auth` schema itself on start.
-
-[infra/supabase/db](../infra/supabase/db) holds the init SQL from Supabase's self-hosting setup
-(roles, JWT settings), pinned to the same image version, plus `opos-roles.sql`
-([4.6](#46-tenant-isolation--rls-in-postgres)). [docker-compose.yml](../docker-compose.yml) mounts
-them read-only into the image's init directories, so they run once, on an empty data directory;
-`opos-roles.sql` runs as `supabase_admin`, after the image's own migrations.
-
-Studio reaches Postgres through `meta` only; it is used for its table and SQL editors.
+**Configuration as code.** `supabase/config.toml` describes the local
+stack and the Auth settings of the hosted project: its base sections hold the local values, and
+`[remotes.production]`, keyed by the project's `project_id`, overrides what differs in production
+(addresses, rate limits, the Google client). `supabase config push` applies it to the project
+([13](#deployment-procedure)); an Auth setting is never changed in the dashboard alone — it joins
+`config.toml`. Secrets reach `config.toml` only through `env()`: locally from `supabase/.env`,
+copied from `supabase/.env.example`, and for the push from variables
+prefixed `PRODUCTION_` in the environment of whoever pushes. Two settings have no key in
+`config.toml` and are set once per project ([project setup](#project-setup)): the signing key and
+IP address forwarding.
 
 ### Supabase Auth configuration
 
-[docker-compose.yml](../docker-compose.yml) sets the `auth` service's variables for dev, and
-`docker-compose.prod.yml` sets the same ones with the production addresses. The rules behind them:
+The rules behind `config.toml`:
 
-- Sessions and passwords as in [7.4](#74-authorization): HS256 tokens signed with the API's
-  `JWT_SECRET`, 15-minute access tokens, rotated refresh tokens with a 10 s reuse interval,
-  passwords of at least 8 characters, email confirmation required.
-- `API_EXTERNAL_URL` and `GOTRUE_JWT_ISSUER` are `AUTH_URL`; the Google redirect URI is
-  `<AUTH_URL>/callback`.
-- Sign-up is open. Email and Google sign-in only: phone and anonymous sign-in are disabled.
-- `GOTRUE_SITE_URL` is `PORTAL_URL`, and redirects go only to `GOTRUE_URI_ALLOW_LIST`:
-  `<PORTAL_URL>/auth/callback`, `<PORTAL_URL>/reset-password`, `<PANEL_URL>/auth/callback`.
-- Every email goes through the send-email hook ([below](#send-email-hook)) at
-  `https://api.opos.land/hooks/send-email`, signed with the API's `SEND_EMAIL_HOOK_SECRET`;
-  confirmation and recovery links are valid for 1 hour.
-- `service_role` is the only admin role, and the client IP comes from `X-Forwarded-For`.
+- The Data API is off in production: `[remotes.production.api]` sets `enabled = false`, which
+  `config push` turns into an empty list of exposed schemas. The local stack keeps the CLI's
+  gateway as it is; `anon` and `authenticated` hold nothing in `public` there either.
+- The local Mailpit takes the API's mail: `[local_smtp]` with `smtp_port = 54325`.
 
-GoTrue accepts plain `http` hook URLs only for `localhost` and `host.docker.internal`, so in
-production the hook goes through Traefik over HTTPS. In dev the `auth` container needs
-`extra_hosts: ["host.docker.internal:host-gateway"]`, because the API runs natively.
+- Sessions and passwords as in [7.4](#74-authorization): an ES256 signing key, `jwt_expiry = 900`,
+  `enable_refresh_token_rotation = true` with `refresh_token_reuse_interval = 10`,
+  `minimum_password_length = 8`, and in `[auth.email]` `enable_confirmations = true`,
+  `double_confirm_changes = true`, `otp_expiry = 3600`.
+- Sign-up is open (`enable_signup = true`). Email and Google sign-in only: phone sign-up,
+  anonymous sign-ins and manual identity linking are off.
+- `site_url` is `PORTAL_URL`, and `additional_redirect_urls` holds exactly
+  `<PORTAL_URL>/auth/confirm`, `<PANEL_URL>/auth/confirm` and `<API_URL>/auth/google/callback`.
+  Locally they come from `supabase/.env` through `env()` (`SITE_URL`, `PORTAL_CONFIRM_URL`,
+  `PANEL_CONFIRM_URL`, `GOOGLE_CALLBACK_URL`), so a developer who moves a port changes them there
+  ([12](#ports)); `[remotes.production]` writes the production addresses out.
+- Every email goes through the send-email hook ([below](#send-email-hook)):
+  `[auth.hook.send_email]` with `uri` `https://api.opos.land/hooks/send-email` in production and
+  `SEND_EMAIL_HOOK_URI` (`http://host.docker.internal:3001/hooks/send-email`) locally, and
+  `secrets` from `SEND_EMAIL_HOOK_SECRET`, the same value the API holds.
+- Google in `[auth.external.google]`, the client id and secret from `env()`; the Google client's
+  authorized redirect URI is `<SUPABASE_URL>/auth/v1/callback`. Locally both stay empty unless
+  someone works on Google sign-in.
+- Signing keys: in production the project's ES256 key, with the legacy JWT secret revoked; locally
+  `signing_keys_path = "./signing_keys.json"`, a key every developer creates once with
+  `supabase gen signing-key --algorithm ES256`, saved under that path before the first
+  `supabase start` and never committed.
+
+### API keys and the client's address
+
+The API holds the project's secret key (`SUPABASE_SECRET_KEY`, `sb_secret_...`) and sends it as
+`apikey` with every Supabase Auth call; a call made for a user (`updateUser`, `signOut`) adds that
+user's access token as `Authorization`. The publishable key has no use: nothing outside the API is
+a Supabase client. Every call also carries `Sb-Forwarded-For` with the client's address from the
+request store ([7.2](#72-tenant-context)), so Supabase Auth's per-IP limits count the visitor
+([below](#rate-limits)); Supabase Auth reads that header only with a secret key and only once IP
+address forwarding is on.
+
+The API creates its Supabase Auth client per request (`@supabase/auth-js`, `persistSession: false`,
+`autoRefreshToken: false`, a storage that lives as long as the request), so nothing of one
+request's session reaches another; the PKCE verifier of a Google sign-in travels in the
+`opos_google` cookie between the two requests of the flow ([7.5](#75-google-oauth)).
 
 ### Send-email hook
 
@@ -1713,16 +1852,19 @@ Supabase Auth sends no email itself. For every message it calls `POST /hooks/sen
 ([auth](../apps/api/src/modules/auth)), signed according to Standard Webhooks.
 
 1. The API verifies the signature over the raw request body (the application is created with
-   `rawBody: true`, [app.ts](../apps/api/src/app.ts)) with `SEND_EMAIL_HOOK_SECRET`, in GoTrue's
-   format `v1,whsec_<base64 key>`; a missing, invalid or older than five minutes one -> `401`. A
-   payload without the fields the API reads -> `400`.
+   `rawBody: true`, [app.ts](../apps/api/src/app.ts)) with `SEND_EMAIL_HOOK_SECRET`, in Supabase
+   Auth's format `v1,whsec_<base64 key>`; a missing, invalid or older than five minutes one -> `401`.
+   A payload without the fields the API reads -> `400`.
 2. It picks the locale: `accounts.locale` -> `user.user_metadata.locale` -> `DEFAULT_LOCALE`. A user
    Supabase Auth is still creating has no committed `accounts` row yet, so a sign-up takes the
    locale it was sent with.
-3. It builds the link `<AUTH_URL>/verify?token=<token_hash>&type=<email_action_type>&redirect_to=<redirect_to>`
-   and renders the template through Lingui.
+3. It builds the link `<redirect_to>?token_hash=<token_hash>&type=<email_action_type>`, where
+   `redirect_to` is one of the two `/auth/confirm` addresses the API itself asked for
+   ([5.1](#51-auth--sign-in-through-the-api)); any other `redirect_to` becomes
+   `<PORTAL_URL>/auth/confirm`. The link never names Supabase: `POST /auth/verify` redeems it. The
+   template is rendered through Lingui.
 4. It sends the message through `MailModule` and answers `200 {}`. An SMTP failure -> `500`, which
-   Supabase Auth reports to the client as a failed send. Supabase Auth waits 5 s for the hook and
+   Supabase Auth reports to the API as a failed send. Supabase Auth waits 5 s for the hook and
    does not retry, so a send has a 4 s deadline as a whole
    ([smtp.ts](../apps/api/src/modules/mail/smtp.ts)): at the deadline the API drops the SMTP
    connection and answers `500`, and a message the server has not accepted by then is never
@@ -1732,7 +1874,7 @@ Supabase Auth sends no email itself. For every message it calls `POST /hooks/sen
 |---|---|
 | `signup` | address confirmation |
 | `recovery` | password reset |
-| `email_change` | confirmation of the new address, to the new address; with Supabase Auth's secure email change (its default) also a confirmation of the change to the current address, and the change takes effect once both links are opened |
+| `email_change` | confirmation of the new address, to the new address, and with secure email change (`double_confirm_changes`) a confirmation of the change to the current address; the change takes effect once both links are opened. No endpoint starts an email change in the MVP |
 | anything else | `400` — those flows are disabled |
 
 Under secure email change the payload's token names are swapped: `token_hash_new` belongs to the
@@ -1740,186 +1882,205 @@ current address and `token_hash` to the new one.
 
 ### Admin API
 
-The API holds `SUPABASE_SERVICE_ROLE_KEY` — a JWT with `role = service_role`, signed with
-`JWT_SECRET` — and uses it only for `DELETE /admin/users/:id` (account deletion), through
-`@supabase/auth-js` in [auth-admin.client.ts](../apps/api/src/modules/auth/auth-admin.client.ts).
-A `404` means the user is already gone; any other refusal, a `401` or `403` for a key signed with
-the wrong secret included, is the API's own failure and answers `500` `server.error`, logged — never
-the caller's `session.invalid` or `permission.denied`.
-The seed calls
-`POST /admin/users` and `PUT /admin/users/:id` with the same key, or, when it is not set, with a
-10-minute `service_role` JWT it signs with `JWT_SECRET` itself ([14](#14-demo-data-seed)). The key never reaches a frontend.
+The secret key also authorizes Supabase Auth's admin API. The API uses it only for
+`DELETE /admin/users/:id` (account deletion), through `@supabase/auth-js` in
+[auth-admin.client.ts](../apps/api/src/modules/auth/auth-admin.client.ts). A `404` means the user
+is already gone; any other refusal, a `401` or `403` for a wrong key included, is the API's own
+failure and answers `500` `server.error`, logged — never the caller's `session.invalid` or
+`permission.denied`. The seed calls `POST /admin/users` and `PUT /admin/users/:id` with the same
+key ([14](#14-demo-data-seed)). The key never reaches a frontend ([3.2](#32-frontend-application-layout)).
 
 ### Rate limits
 
-GoTrue's per-IP limits stay at their defaults, keyed by the client IP from `X-Forwarded-For`.
-`GOTRUE_RATE_LIMIT_EMAIL_SENT` is not per IP: it is one bucket for the whole instance, shared by
-every tenant and checked before the send-email hook is called, and an empty bucket answers sign-up,
-recovery and email change with `429 over_email_send_rate_limit`. Both environments replace GoTrue's
-default of 30 emails per hour:
+Supabase Auth's limits per IP, counted by the address in `Sb-Forwarded-For`, and its email bucket,
+in `[auth.rate_limit]`:
 
-| Environment | `GOTRUE_RATE_LIMIT_EMAIL_SENT` |
-|---|---|
-| production (`docker-compose.prod.yml`) | `1000` emails per hour |
-| dev and the tests ([docker-compose.yml](../docker-compose.yml)) | `10000` emails per hour |
+| Setting | Production (`[remotes.production.auth.rate_limit]`) | Local stack and CI |
+|---|---|---|
+| `sign_in_sign_ups` (per 5 min per IP) | `30` | `10000` |
+| `token_verifications` (per 5 min per IP) | `30` | `10000` |
+| `token_refresh` (per 5 min per IP) | `150` | `10000` |
+| `email_sent` (per hour, the whole project) | `1000` | `10000` |
 
-Abuse is held per IP, not by this bucket. Traefik adds a `rateLimit` middleware on the
-`auth.opos.land` router: an average of 30 requests per minute per IP, burst 10, a `429` above that.
+The tests sign in, verify and refresh many times from one address, hence the local values.
+`email_sent` is one bucket for every tenant, checked before the send-email hook is called; an empty
+bucket answers sign-up, recovery and email change with `429` `auth.over_email_send_rate_limit`.
+Abuse is held per IP, by these limits and by the API's own limits on its `auth` endpoints
+([7.9](#79-rate-limiting)), not by the bucket.
 
 ---
 
 ## 11. Environment variables
 
-No `.env` at the repository root: a root file hides which application consumes which variable and
-turns every change into a cache invalidation for all of them. Each application keeps its own
-`.env` next to a committed `.env.example`.
+No `.env` at the repository root in dev: a root file hides which application consumes which
+variable and turns every change into a cache invalidation for all of them. Each application, and
+`packages/db` and `supabase/`, keeps its own `.env` next to a committed `.env.example`. A
+`.env.example` is a template: it names every variable with a comment, holds the local addresses and
+ports, and leaves every password, key and secret empty. Each developer fills their `.env` from it
+([12](#12-local-development)); no working credential of any environment is ever committed.
 
 **`apps/api/.env`** — the API's variables, read at runtime.
-[apps/api/.env.example](../apps/api/.env.example) lists every one of them with a working dev value;
+[apps/api/.env.example](../apps/api/.env.example) lists every one of them;
 [env.ts](../apps/api/src/config/env.ts) validates them on start, and a variable joins it in the PR
-that first reads it. `SUPABASE_SERVICE_ROLE_KEY` is signed with the environment's `JWT_SECRET` by
-`pnpm --filter api auth:service-key` ([service-key.ts](../apps/api/src/scripts/service-key.ts)),
-which reads `JWT_SECRET` from the shell or `apps/api/.env` and never from `.env.example`. It refuses
-a missing secret and the dev secret; `auth:service-key --dev` signs with the dev secret, and
-`.env.example` holds the key it prints.
-
-**`packages/db`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL` from
-the environment. Without it they use
-`postgres://opos_migrator:opos@localhost:<OPOS_DB_PORT or 5432>/postgres`, so dev needs no file;
-in production the variable comes from the API container's environment. `db:seed` also reads
-`AUTH_URL` (default `http://localhost:<OPOS_AUTH_PORT or 9999>`) and `SUPABASE_SERVICE_ROLE_KEY`
-or `JWT_SECRET`; outside production `JWT_SECRET` defaults to the dev value from
-`apps/api/.env.example`. turbo passes these variables through to the tasks
-([3.1](#31-turbo-tasks)).
-
-**`infra/supabase/.env.example`** and **`infra/supabase/.env`** — read by `docker-compose.yml` as
-the `auth` service's `env_file`s, in that order. `.env.example` is committed and holds working dev
-values; the optional, ignored `.env` overrides any of them for one developer and is created by hand
-only when needed. Together they hold only what differs between developers or is a secret:
+that first reads it.
 
 | Variable | Value |
 |---|---|
-| `GOTRUE_JWT_SECRET` | the same as the API's `JWT_SECRET` |
-| `GOTRUE_HOOK_SEND_EMAIL_SECRETS` | the same as the API's `SEND_EMAIL_HOOK_SECRET` |
-| `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`, `GOTRUE_EXTERNAL_GOOGLE_SECRET` | a personal Google OAuth client; empty unless working on Google sign-in |
+| `NODE_ENV`, `PORT` | `development`, `3001` |
+| `DATABASE_URL`, `DATABASE_GLOBAL_URL` | `opos_app` and `opos_app_global` on the local stack (`127.0.0.1:54322`), with the passwords `db:roles` set |
+| `SUPABASE_URL` | `http://127.0.0.1:54321` locally, `https://<ref>.supabase.co` in production |
+| `SUPABASE_SECRET_KEY` | locally from `supabase status`, in production from the project's API keys |
+| `SEND_EMAIL_HOOK_SECRET` | `v1,whsec_<base64 key>`, the same as in `supabase/.env` |
+| `INVITE_SECRET` | at least 32 characters, never equal to another secret |
+| `API_URL`, `PANEL_URL`, `PORTAL_URL` | `http://api.opos.localhost:3001`, `http://panel.opos.localhost:5173`, `http://opos.localhost:5174` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | the local Mailpit (`127.0.0.1:54325`, no credentials); the mail provider in production |
 
-The remaining `auth` variables from [10](#10-supabase), the dev addresses and the dev database
-passwords (`postgres` for Supabase's roles, `opos` for the OPOS roles) are fixed in
-`docker-compose.yml`. Every published port binds to `127.0.0.1`.
+**`packages/db/.env`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL`
+(`opos_migrator`) and `DATABASE_ADMIN_URL` (the project's `postgres` role, for `db:roles` alone,
+[4.6](#46-tenant-isolation--rls-in-postgres)), `db:roles` also `OPOS_MIGRATOR_PASSWORD`,
+`OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`, and `db:seed` also `SUPABASE_URL` and
+`SUPABASE_SECRET_KEY`. Nothing has a default: a missing variable stops the script. turbo passes
+these variables through to the tasks ([3.1](#31-turbo-tasks)).
 
-**The other applications:**
+**`supabase/.env`** — read by the CLI for the `env()` values of
+`config.toml` ([10](#10-supabase)): `SEND_EMAIL_HOOK_SECRET` and
+`SEND_EMAIL_HOOK_URI`, the local addresses `SITE_URL`, `PORTAL_CONFIRM_URL`, `PANEL_CONFIRM_URL`
+and `GOOGLE_CALLBACK_URL`, and `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (a personal Google
+OAuth client, empty unless working on Google sign-in).
+
+**The frontends:**
 
 | File | Variables |
 |---|---|
-| `apps/panel/.env` | `VITE_API_URL`, `VITE_AUTH_URL` |
-| `apps/portal/.env` | `VITE_API_URL`, `VITE_AUTH_URL` |
+| `apps/panel/.env` | `VITE_API_URL` |
+| `apps/portal/.env` | `VITE_API_URL` |
 
 `VITE_*` values are baked into the bundle at build time; turbo hashes them through framework
 inference, so a changed value rebuilds exactly the applications that read it. The committed
-`.env.example` holds working dev values: the dev server and the unit tests fall back to them for
-every `VITE_*` that the environment and `.env` leave unset, and a production build reads only the
+`.env.example` holds the local API address: the dev server and the unit tests fall back to it when
+the environment and `.env` leave `VITE_API_URL` unset, and a production build reads only the
 environment and `.env` ([vite.config.ts](../apps/panel/vite.config.ts), the same in
-[the portal's](../apps/portal/vite.config.ts)). The panel and the portal validate both addresses
+[the portal's](../apps/portal/vite.config.ts)). The panel and the portal validate the address
 when they start ([panel](../apps/panel/src/shared/config/env.ts),
-[portal](../apps/portal/src/shared/config/env.ts)).
+[portal](../apps/portal/src/shared/config/env.ts)). No `VITE_*` variable ever names Supabase
+([3.2](#32-frontend-application-layout)).
 
-Production configuration lives in a `.env` next to `docker-compose.prod.yml` on the VPS — compose
-injects it into the containers. It adds `POSTGRES_PASSWORD`, `ACME_EMAIL`, `CF_DNS_API_TOKEN` and
-the Supabase Auth variables, and overrides `ROOT_DOMAIN=opos.land` and the `https://` addresses.
-`JWT_SECRET`, `SEND_EMAIL_HOOK_SECRET` and `INVITE_SECRET` (at least 32 characters, never equal to
-`JWT_SECRET`) are generated once per environment and are never reused between dev and production; `SUPABASE_SERVICE_ROLE_KEY` is signed by
-`JWT_SECRET=<production secret> pnpm --filter api auth:service-key`.
+**Production** configuration lives in a `.env` next to `docker-compose.prod.yml` on the VPS, which
+compose injects into the containers ([13](#13-deployment)):
+
+| Variables | Read by |
+|---|---|
+| the API's variables above, with the production addresses and secrets | `api` |
+| `DATABASE_MIGRATION_URL`, `DATABASE_ADMIN_URL`, the three `OPOS_*_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | `tools` only |
+| `BACKUP_DATABASE_URL`, `RESTIC_PASSWORD`, `RESTIC_REMOTE_REPOSITORY`, `RESTIC_REMOTE_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | `backup` only |
+| `ROOT_DOMAIN` (`opos.land`), `ACME_EMAIL`, `CF_DNS_API_TOKEN` | `traefik` and the routers |
+
+Database URLs name the direct connection with TLS ([13](#database-connection)). Every secret is
+generated once per environment and never reused between dev and production.
 
 ---
 
 ## 12. Local development
 
-Applications run natively through pnpm, infrastructure runs in Docker.
+Applications run natively through pnpm; Supabase runs as the Supabase CLI's local stack, whose
+services are containers of a Docker-compatible engine (Docker Desktop, OrbStack, Colima).
 
 ```bash
-# 1. Infrastructure
-pnpm infra:up
-# -> supabase db on :5432, auth on :9999, studio on :54323
-# -> mailpit on :1025 (SMTP) + :8025 (UI)
+# 0. Once: tools and dependencies
+mise install                     # Node, pnpm through corepack, the Supabase CLI
+pnpm install
 
-# 2. Migrations and seed
+# 1. Once: secrets and the files supabase start reads
+#    copy every .env.example to .env: supabase, apps/api, packages/db, apps/panel, apps/portal
+#    generate: SEND_EMAIL_HOOK_SECRET = v1,whsec_$(openssl rand -base64 32), the same value in
+#    supabase/.env and apps/api/.env; INVITE_SECRET and the three OPOS_*_PASSWORD with
+#    openssl rand -hex 32
+#    the signing key with supabase gen signing-key --algorithm ES256, saved as
+#    supabase/signing_keys.json
+
+# 2. Supabase
+pnpm infra:up                    # supabase start
+# -> gateway with Auth at /auth/v1 on :54321, db on :54322, studio on :54323,
+#    mailpit on :54324 (UI) and :54325 (SMTP)
+supabase status                  # the secret key and the database URL: into apps/api/.env and
+                                 # packages/db/.env, with the passwords of step 1
+
+# 3. Roles, migrations and seed
+pnpm db:roles
 pnpm db:migrate
 pnpm db:seed
 
-# 3. All applications in parallel
+# 4. All applications in parallel
 pnpm dev
-# -> api    on api.localhost:3001
-# -> panel  on panel.localhost:5173
+# -> api    on api.opos.localhost:3001
+# -> panel  on panel.opos.localhost:5173
 # -> portal on opos.localhost:5174
 ```
 
 `/etc/hosts`:
 
 ```
-127.0.0.1 api.localhost panel.localhost opos.localhost
+127.0.0.1 api.opos.localhost panel.opos.localhost opos.localhost
 ```
 
+The three addresses share the site `opos.localhost`, as production's share `opos.land`, so the
+session cookies travel as in production ([7.4](#74-authorization)).
+
 The root scripts are in [package.json](../package.json); apart from `format` and `infra:*`, each
-is a `turbo run <task>` delegate ([3.1](#31-turbo-tasks)). `pnpm infra:reset` wipes the database
-volume and reruns the init SQL.
+is a `turbo run <task>` delegate ([3.1](#31-turbo-tasks)). `pnpm infra:up` is `supabase start`,
+`pnpm infra:down` `supabase stop`, and `pnpm infra:reset` wipes the local database
+(`supabase stop --no-backup`) and starts it again; the roles go with it, so `pnpm db:roles`,
+`pnpm db:migrate` and `pnpm db:seed` follow.
 
-`db:migrate` and `db:seed` connect as `opos_migrator`; the API runs as `opos_app`. The roles are
-created by `infra/supabase/db/opos-roles.sql` when the `db` container starts on an empty volume —
-`pnpm infra:reset` resets them together with the data. A change in `infra/supabase/db/` takes
-effect only after such a reset.
+`db:roles` and `db:migrate` connect as described in [4.6](#46-tenant-isolation--rls-in-postgres)
+and `db:seed` as `opos_migrator`; the API runs as `opos_app`.
 
-Podman works too, rootless: `podman-docker` provides the `docker` command and `docker compose`
-runs through `podman compose`. The init SQL mounts carry the `z` SELinux label,
-and `host.docker.internal:host-gateway` needs Podman 5.3 or newer.
+Swagger UI of the API at http://api.opos.localhost:3001/docs, the OpenAPI document at
+http://api.opos.localhost:3001/docs/json.
 
-Swagger UI of the API at http://api.localhost:3001/docs, the OpenAPI document at
-http://api.localhost:3001/docs/json.
-
-Mailpit catches all dev email — UI at http://localhost:8025. Supabase Auth's messages land there
+Mailpit catches all dev email — UI at http://localhost:54324. Supabase Auth's messages land there
 too, because they go through the API's send-email hook. Payments go through the fake provider
-page at http://api.localhost:3001/dev/payments/:orderId ([7.10](#710-payments)). Supabase Studio at http://localhost:54323
-browses both the `public` and the `auth` schema.
+page at http://api.opos.localhost:3001/dev/payments/:orderId ([7.10](#710-payments)). Supabase
+Studio at http://localhost:54323 browses both the `public` and the `auth` schema.
 
 ### Ports
 
-The ports above are the defaults. `docker-compose.yml` publishes every host port through a
-variable, so a developer whose machine already holds one moves it without touching the
-repository:
+The ports above are the defaults. A developer whose machine already holds one moves it without
+touching the repository:
 
-| Variable | Default | Service | Also set in `apps/api/.env` |
-|---|---|---|---|
-| `OPOS_DB_PORT` | `5432` | `db` | the port in the three `DATABASE_*_URL` |
-| `OPOS_AUTH_PORT` | `9999` | `auth`, also in `API_EXTERNAL_URL`, `GOTRUE_JWT_ISSUER` and the Google redirect URI | `AUTH_URL`; `VITE_AUTH_URL` in `apps/panel/.env` and `apps/portal/.env` |
-| `OPOS_STUDIO_PORT` | `54323` | `studio` | — |
-| `OPOS_SMTP_PORT` | `1025` | `mailpit` SMTP | `SMTP_PORT` |
-| `OPOS_MAILPIT_PORT` | `8025` | `mailpit` UI and HTTP API | — |
-| `OPOS_API_PORT` | `3001` | target of the send-email hook | `PORT`, `API_URL`; `VITE_API_URL` in `apps/panel/.env` and `apps/portal/.env` |
-| `OPOS_PANEL_PORT` | `5173` | the panel dev server, panel addresses in `GOTRUE_URI_ALLOW_LIST` | `PANEL_URL` |
-| `OPOS_PORTAL_PORT` | `5174` | the portal dev server, `GOTRUE_SITE_URL` and portal addresses in `GOTRUE_URI_ALLOW_LIST` | `PORTAL_URL` |
+| Port | Moved by | Also changes |
+|---|---|---|
+| Supabase gateway `54321` | `SUPABASE_API_PORT` | `SUPABASE_URL` in `apps/api/.env` and `packages/db/.env` |
+| database `54322` | `SUPABASE_DB_PORT` | the database URLs in `apps/api/.env` and `packages/db/.env` |
+| Studio `54323` | `SUPABASE_STUDIO_PORT` | — |
+| Mailpit `54324` and `54325` | `SUPABASE_LOCAL_SMTP_PORT`, `SUPABASE_LOCAL_SMTP_SMTP_PORT` | `SMTP_PORT` in `apps/api/.env`, the Mailpit address of the e2e tests |
+| API `3001` | `PORT` in `apps/api/.env` | `API_URL`, `VITE_API_URL` in both frontends, `SEND_EMAIL_HOOK_URI` and `GOOGLE_CALLBACK_URL` in `supabase/.env` |
+| panel `5173`, portal `5174` | `OPOS_PANEL_PORT`, `OPOS_PORTAL_PORT` | `PANEL_URL`, `PORTAL_URL`, and `SITE_URL`, `PANEL_CONFIRM_URL`, `PORTAL_CONFIRM_URL` in `supabase/.env` |
 
-The variables live in the shell environment, set per developer in `mise.local.toml` (git-ignored,
-loaded by activated mise on entering the directory; a new file needs `mise trust` once):
+The `SUPABASE_*` variables are the CLI's own overrides of `config.toml` keys (the key path, upper
+case, `.` as `_`). They and the `OPOS_*` ones live in the shell environment, set per developer in
+`mise.local.toml` (git-ignored, loaded by activated mise on entering the directory; a new file
+needs `mise trust` once):
 
 ```toml
 [env]
-OPOS_DB_PORT = "25432"
-OPOS_SMTP_PORT = "21025"
-OPOS_MAILPIT_PORT = "28025"
+SUPABASE_DB_PORT = "25432"
+SUPABASE_LOCAL_SMTP_SMTP_PORT = "21025"
 ```
 
-Never in a `.env` at the repository root ([11](#11-environment-variables)). The panel and portal dev
-servers read `OPOS_PANEL_PORT` and `OPOS_PORTAL_PORT` themselves. After a change, `pnpm infra:up`
-recreates the affected containers. A moved `OPOS_AUTH_PORT` also changes the authorized redirect URI
-of the Google OAuth client.
+Never in a `.env` at the repository root ([11](#11-environment-variables)). After a change,
+`pnpm infra:down && pnpm infra:up` recreates the stack on the new ports.
 
 ### Versions and dependencies
 
 Tool versions come from `mise.toml`: `mise install` in the repository root installs Node and,
 through `node.corepack = true`, enables corepack, which then provides the pnpm version pinned by
-the `packageManager` field. pnpm is pinned only there, never in `mise.toml`. Activated mise
-(`mise activate`) switches versions on entering the directory. A version bump changes `mise.toml`
-and `engines` together (Node) or `packageManager` and `engines` together (pnpm).
-`engineStrict: true` makes a mismatched version abort the install instead of printing a warning.
+the `packageManager` field; it also installs the Supabase CLI (`aqua:supabase/cli`), whose version
+fixes the images of the local stack. pnpm is pinned only in `packageManager`, never in `mise.toml`.
+Activated mise (`mise activate`) switches versions on entering the directory. A version bump
+changes `mise.toml` and `engines` together (Node) or `packageManager` and `engines` together
+(pnpm). `engineStrict: true` makes a mismatched version abort the install instead of printing a
+warning.
 
 `mise.toml` holds no tasks: task logic lives in turbo and root scripts ([3.1](#31-turbo-tasks)).
 
@@ -1927,7 +2088,8 @@ and `engines` together (Node) or `packageManager` and `engines` together (pnpm).
 install a version published within the last week. It is a grace window against a hijacked publisher
 account or a version pulled right after release. Side effect: `pnpm add` may pick a version one
 below the newest — that is intended. An urgent security fix requires a deliberate
-`minimumReleaseAgeExclude` for that specific package.
+`minimumReleaseAgeExclude` for that specific package. The Supabase CLI and the image tags of
+[13](#images) follow the same week.
 
 A security fix for a transitive dependency whose parent pins the vulnerable version goes into
 `overrides` in `pnpm-workspace.yaml`, scoped to that parent (`<parent>><package>: <range>`)
@@ -1935,31 +2097,48 @@ and commented with the advisory id. The override leaves once the parent ships th
 
 ### Git hooks
 
-[lefthook.yml](../lefthook.yml), installed by `prepare`, so `pnpm install` is enough: prettier and
-`eslint --fix` on staged files before a commit, commitlint and the
-[tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) on the message, and
-`turbo run typecheck test` on the packages changed against `origin/develop` before a push (the API
-tests need `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
+[lefthook.yml](../lefthook.yml), installed by `prepare`, so `pnpm install` is enough: prettier,
+`eslint --fix` and the [BFF boundary check](#32-frontend-application-layout) on staged files before
+a commit, commitlint and the [tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) on the
+message, and `turbo run typecheck test` on the packages changed against `origin/develop` before a
+push (the API tests need `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
 ---
 
 ## 13. Deployment
 
-VPS + Docker Compose behind Traefik v3.
+The applications run on a VPS with Docker Compose behind Traefik v3
+(`docker-compose.prod.yml`); the database and Supabase Auth are the
+Supabase project ([10](#10-supabase)).
 
 ### Images
 
 | Service | Dockerfile / image |
 |---|---|
-| `api` | multi-stage on `node:24-alpine`: prune -> `turbo run build` -> `node dist/main.js` |
-| `panel`, `portal` | multi-stage: prune -> Vite build -> `nginx:alpine` with an SPA fallback and the CSP header ([7.4](#74-authorization)) |
-| `db` | `supabase/postgres`, exact tag, with a `pgdata` volume and `infra/supabase/db` as init scripts |
-| `auth` | `supabase/gotrue`, exact tag |
-| `traefik` | `traefik:v3`, docker provider + ACME resolvers |
+| `api` | `apps/api/Dockerfile`, target `runtime`: multi-stage on `node:<the version of mise.toml>-alpine`: prune -> `turbo run build` -> the production dependencies of `@opos/api` -> `node dist/main.js`; healthcheck on `GET /health` |
+| `tools` | the same Dockerfile, target `tools`: the pruned workspace with every dependency, for `pnpm db:*`; in the compose profile `tools`, started only by `docker compose run --rm tools ...` |
+| `panel`, `portal` | multi-stage: prune -> Vite build with `VITE_API_URL` as a build argument -> `nginx` (alpine) with an SPA fallback and the headers below |
+| `backup` | `infra/backup`: `postgres:17-alpine`, for a `pg_dump` of the server's major version, with restic |
+| `traefik` | `traefik:v3`, docker provider + ACME resolver, static configuration in `infra/traefik` |
 
-Every application Dockerfile starts with `turbo prune <app> --docker`: the build context holds
-only that application's slice of the dependency graph and a pruned lockfile, so a change in one
-application does not invalidate the image layers of another.
+Every image tag is exact, no `latest` and no major-only tag. Every application Dockerfile starts
+with `turbo prune <app> --docker`: the build context holds only that application's slice of the
+dependency graph and a pruned lockfile, so a change in one application does not invalidate the
+image layers of another.
+
+Only `tools` holds `DATABASE_MIGRATION_URL` and `DATABASE_ADMIN_URL`: the running API knows the
+runtime roles alone ([11](#11-environment-variables)).
+
+The panel and the portal answer with:
+
+| Header | Value |
+|---|---|
+| `Content-Security-Policy` | the policy of [7.4](#74-authorization) with `default-src 'self'`, `img-src 'self' data:`, `base-uri 'self'`, `form-action 'self'`, `object-src 'none'`, `connect-src 'self' <VITE_API_URL>`; written at build time from the same build argument as the bundle |
+| `Permissions-Policy` | `camera=(self)` on the panel ([8](#8-appspanel)), `camera=()` on the portal |
+| `X-Content-Type-Options`, `Referrer-Policy` | `nosniff`, `strict-origin-when-cross-origin` |
+| `Cache-Control` | `no-cache` on `index.html`, `public, max-age=31536000, immutable` on `/assets/*` |
+
+Traefik adds `Strict-Transport-Security` on every router.
 
 ### Routers
 
@@ -1967,35 +2146,72 @@ application does not invalidate the image layers of another.
 opos.land                    -> portal
 panel.opos.land              -> panel
 api.opos.land                -> api
-auth.opos.land               -> auth     # + rateLimit middleware (10)
 ```
 
-`db` has no router and publishes no port.
+Nothing else is routed: Supabase is reached only by the API, the tools and the backup, and calls
+`https://api.opos.land/hooks/send-email` itself.
 
 ### TLS
 
-Wildcard `*.opos.land` + `opos.land` through DNS-01 (`CF_DNS_API_TOKEN`).
+Wildcard `*.opos.land` + `opos.land` through DNS-01 (`CF_DNS_API_TOKEN`). The DNS records point at
+the VPS directly, so the client address Traefik puts into `X-Forwarded-For` is the visitor's.
+
+### Database connection
+
+The API, the tools and the backup reach the project's Postgres over its direct connection
+(`db.<ref>.supabase.co:5432`) with TLS required. The direct connection is IPv6; a VPS whose
+containers have no IPv6 route uses the project's IPv4 add-on. Not through Supavisor: the runtime
+pools send startup parameters ([4.6](#46-tenant-isolation--rls-in-postgres)), and the OPOS roles
+sign in under their own names.
 
 ### Backups
 
-- `pg_dump -Fc` of the whole database — `public` and `auth` together — every 6 hours, into a
-  volume outside `pgdata`. A dump without `auth` leaves accounts nobody can sign in to.
-- Retention: 7 daily, 4 weekly, 3 monthly.
-- Off-server copy: `restic` or `rclone` to S3/R2, encrypted, with a separate key.
-- Once a month, restore a dump into a clean `supabase/postgres` container of the same tag, start
-  `auth` against it and run `pnpm db:verify` plus a test sign-in.
+- Supabase's daily backups of the Pro plan, kept 7 days, restored from the dashboard.
+- The `backup` service, every 6 hours: `pg_dump -Fc -n public -n auth -n drizzle` as the project's
+  `postgres` role (`BACKUP_DATABASE_URL`) into restic — a repository on the VPS volume `backups`,
+  encrypted with `RESTIC_PASSWORD`, then `restic copy` to the off-server repository on S3 or R2
+  (`RESTIC_REMOTE_REPOSITORY`), encrypted with its own `RESTIC_REMOTE_PASSWORD`. A dump without
+  `auth` leaves accounts nobody can sign in to.
+- Retention in both repositories: `restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 3
+  --prune`.
+- Once a month, restore the newest dump into a fresh local stack: `pnpm infra:reset` and
+  `pnpm db:roles`, then `pg_restore` as the local `supabase_admin` — `public` and `drizzle`
+  whole, `auth` with `--data-only --disable-triggers` and without `auth.schema_migrations`, since
+  the local Supabase Auth has created that schema already — then `pnpm db:verify` and a sign-in
+  with a restored account.
 - Dumps are encrypted at rest — they contain attendees' personal data and password hashes.
+
+### Project setup
+
+Once per Supabase project:
+
+1. Create the project: Pro plan, region `eu-central-1`.
+2. JWT signing keys: create an ES256 key, make it the current one, and revoke the legacy JWT
+   secret.
+3. Turn IP address forwarding on (Authentication -> Rate Limits, or
+   `security_sb_forwarded_for_enabled` through the Management API).
+4. `supabase link --project-ref <ref>`, then `supabase config push` with the `PRODUCTION_*`
+   variables in the environment ([10](#10-supabase)); this also turns the Data API off.
+5. Create a secret key for the API and write it, the project's address and the database URLs into
+   the production `.env` ([11](#11-environment-variables)).
+6. `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:roles`, then `db:migrate`
+   and `db:verify` the same way.
+7. The first tenant with `pnpm db:tenant:create` through `tools`, once its head has registered
+   ([14](#creating-a-tenant)).
+
+The person running the CLI against the project uses a personal access token scoped to that project.
 
 ### Deployment procedure
 
 1. `git pull` of `main` on the VPS.
-2. `docker compose -f docker-compose.prod.yml pull db auth traefik`.
+2. `docker compose -f docker-compose.prod.yml pull traefik`.
 3. `docker compose -f docker-compose.prod.yml build`.
-4. `pg_dump` before the migration.
-5. `docker compose -f docker-compose.prod.yml run --rm api pnpm db:migrate`.
-6. `docker compose -f docker-compose.prod.yml run --rm api pnpm db:verify`.
-7. `docker compose -f docker-compose.prod.yml up -d`.
-8. The smoke test from chapter [16](#16-smoke-test).
+4. A dump before the migration: `docker compose -f docker-compose.prod.yml run --rm backup backup`.
+5. `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:migrate`.
+6. `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:verify`.
+7. When `supabase/config.toml` changed: `supabase config push` as in step 4 of the setup.
+8. `docker compose -f docker-compose.prod.yml up -d`.
+9. The smoke test from chapter [16](#16-smoke-test).
 
 ---
 
@@ -2008,7 +2224,8 @@ likes, payment config, ticket types, orders, attendees) join the seed in the PR 
 table. `accepted_invitations` holds no demo rows: a seeded team is written directly.
 
 Accounts are created through the Supabase Auth admin API (`POST /admin/users` with
-`email_confirm: true` and the dev password), so every seed account is confirmed; an existing
+`email_confirm: true` and the dev password, authorized by `SUPABASE_SECRET_KEY`,
+[10](#admin-api)), so every seed account is confirmed; an existing
 account is kept, and confirmed through `PUT /admin/users/:id` when it is not. The triggers fill
 `accounts`, and the seed then sets `locale` and the names. Everything else is written directly as
 `opos_migrator`; a missing tenant is created through `createTenant` ([Creating a
@@ -2069,7 +2286,8 @@ pnpm db:tenant:create --slug convention-c --name "Convention C" --head-email hea
   `tenant.slug-invalid`, `tenant.slug-reserved`, `tenant.slug-taken`, `tenant.name-empty`,
   `tenant.locale-invalid` (outside `SUPPORTED_LOCALES` from `@opos/i18n`),
   `tenant.timezone-invalid` (not an IANA zone), `account.not-found`, `account.unconfirmed`.
-- In production: `docker compose -f docker-compose.prod.yml run --rm api pnpm db:tenant:create ...`.
+- In production: `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:tenant:create ...`
+  ([13](#images)).
 
 ### Changing a tenant's slug
 
@@ -2107,7 +2325,7 @@ entry point) and never contribute messages (`linguiConfig()` excludes them).
 
 ### 15.1 API integration tests
 
-The schema itself is tested in `packages/db/test` with Vitest on the `db` container alone, before
+The schema itself is tested in `packages/db/test` with Vitest on the local stack's database alone, before
 any API code: the global setup applies the migrations, the tests connect as `opos_migrator`,
 `opos_app`, `supabase_auth_admin` (writes to `auth.users`), `postgres` (`set role anon`) and
 `supabase_admin` (roles and ownership, only inside transactions they roll back), and remove the tenants and users they created. They cover the RLS row of the table below for every
@@ -2128,12 +2346,12 @@ confirmation included. Every rule of `db:verify` ([4.6](#migrations-and-verifica
 case that breaks it inside a rolled-back transaction and expects the report. The API tests repeat
 these checks through the endpoints.
 
-Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
-`supabase/gotrue`, the production tags), no database or auth mocks, in `apps/api/test/*.test.ts`.
-The tests read `apps/api/.env.example`, overridden by `apps/api/.env` when present. Test
-accounts are created through the admin API (`POST /admin/users`) and signed in with the password
-grant (`POST /token?grant_type=password`), so the API checks real Supabase Auth tokens; tokens
-with a wrong signature, audience, issuer or expiry are signed in the test with `jose`. The
+Vitest + supertest against the Supabase CLI's local stack ([12](#12-local-development)), no
+database or auth mocks, in `apps/api/test/*.test.ts`. The tests read `apps/api/.env`. Test
+accounts are created through the admin API (`POST /admin/users`) and signed in through
+`POST /auth/sign-in` with an `Origin` of one application, the cookies kept by a supertest agent, so
+the API checks real Supabase Auth tokens from real cookies; tokens with a wrong key, algorithm,
+audience, issuer or expiry are signed in the test with `jose` and sent as the access cookie. The
 send-email hook test triggers real sign-ups, recoveries and email changes and reads the messages
 from Mailpit's HTTP API; it runs the API on its `PORT`, where Supabase Auth sends the hook, so it
 cannot run beside an API started with `pnpm dev`.
@@ -2157,11 +2375,14 @@ cannot run beside an API started with `pnpm dev`.
 | payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid`; an SMTP failure after the payment leaves `ticketEmailSentAt` empty and the job sends the email later |
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
 | scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; a device paired by an org whose access expires stops with that access; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
-| JWT | an expired token, a token without `exp`, a token signed with another secret or another algorithm (`HS512`, `none`), `aud != authenticated`, a foreign `iss` and a `sub` that is not a uuid -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
+| JWT | an expired token, a token without `exp`, a token signed with a foreign ES256 key, an `HS256` token with any secret, `alg: none`, `aud != authenticated`, a foreign `iss`, `is_anonymous: true` and a `sub` that is not a uuid -> `401`; a token in `Authorization: Bearer` instead of the cookie -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
+| session cookies | sign-in, verification and the Google callback set exactly the cookies of [7.4](#74-authorization) with their attributes, `Secure` when `API_URL` is `https`; no response body or header carries a token; a session of the portal is no session for a request with the panel's `Origin`, and the reverse; `POST /auth/refresh` rotates the refresh token and a reused one outside the reuse interval ends the session; sign-out and `DELETE /me` clear the cookies |
+| requests that change state | with a session cookie, a foreign `Origin`, another subdomain of the site included, or none -> `403` `request.origin-denied` and nothing changed; a form-encoded body -> `415`; the same request from `PANEL_URL` or `PORTAL_URL` goes through |
+| auth endpoints | every operation of [5.1](#51-auth--sign-in-through-the-api) against the local stack; sign-up and password reset answer the same for a registered and an unknown address; a passed-on refusal keeps Supabase Auth's status and its `auth.<error_code>`, an unlisted one is `500`; every call to Supabase Auth carries the secret key and the client's address in `Sb-Forwarded-For`; `GET /auth/google` takes no `redirect` outside the application, and a callback without its `opos_google` cookie, with another browser's cookie or past 10 minutes signs nobody in |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401` |
-| send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a working `/verify` link; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
+| send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a link to the calling application's `/auth/confirm` that `POST /auth/verify` redeems, and that names no Supabase address; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` (per address) and `POST /tenants/current/members` (per tenant) included |
-| CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, a foreign origin gets no `Access-Control-Allow-Origin`; exactly the four allowed request headers; `Retry-After` exposed; no `Access-Control-Allow-Credentials` |
+| CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, with `Access-Control-Allow-Credentials: true`; a foreign origin gets neither header; exactly the four allowed request headers; `Retry-After` exposed |
 | i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
 
 ### 15.2 E2E tests
@@ -2170,12 +2391,13 @@ Playwright in [e2e](../e2e), through the UI of both web applications, against th
 seeded database. The configuration is [playwright.config.ts](../e2e/playwright.config.ts), the
 helpers are [e2e/fixtures](../e2e/fixtures) and the scenarios [e2e/specs](../e2e/specs).
 
-**Environment:** `pnpm infra:up` (Supabase `db` + `auth`, Mailpit), `pnpm db:migrate && pnpm db:seed`,
-Chromium once (`pnpm --filter @opos/e2e exec playwright install chromium`), then `pnpm test:e2e`.
+**Environment:** `pnpm infra:up` (the Supabase CLI's local stack with Mailpit), `pnpm db:roles`,
+`pnpm db:migrate && pnpm db:seed`, Chromium once (`pnpm --filter @opos/e2e exec playwright install
+chromium`), then `pnpm test:e2e`.
 
 - Playwright starts the applications itself (`webServer`): the API as the bundle production runs,
   the panel and the portal as dev servers. They run with the API's configuration,
-  `apps/api/.env.example` overridden by `apps/api/.env`, as in the API tests
+  `apps/api/.env`, as in the API tests
   ([15.1](#151-api-integration-tests)); the dev servers take their ports from `PANEL_URL` and
   `PORTAL_URL`. The API starts fresh on every run, so the in-memory counters of its rate limits
   ([7.9](#79-rate-limiting)) start from zero; an API already listening on its `PORT`, such as the
@@ -2193,8 +2415,10 @@ Chromium once (`pnpm --filter @opos/e2e exec playwright install chromium`), then
   not the root's.
 
 Emails — address confirmation, password reset, invitations, tickets — are read through Mailpit's
-HTTP API (`localhost:<OPOS_MAILPIT_PORT>/api/v1`). Google sign-in is not covered by e2e: Supabase
-Auth talks to the real Google, and the smoke test checks that flow ([16](#16-smoke-test)).
+HTTP API (`localhost:54324/api/v1`, moved with `SUPABASE_LOCAL_SMTP_PORT`). Google sign-in is not
+covered by e2e: Supabase Auth talks to the real Google, and the smoke test checks that flow
+([16](#16-smoke-test)). Every scenario checks the BFF boundary on the way: the browser sends no
+request outside the API and the application's own origin.
 
 Tests share no data. A scenario makes its own accounts through the Supabase Auth admin API and its
 own tenant through `createTenant` on a slug of its own (`e2e-<random>`), with the head's account
@@ -2209,7 +2433,7 @@ never signs a seeded account out, since a sign-out ends every session of the acc
 |---|---|---|
 | 1 | Registration with a password: sign-in before confirming -> `email_not_confirmed`; the link from Mailpit confirms; sign-out, sign-in again; the language switch survives the session | [registration](../e2e/specs/registration.spec.ts) |
 | 2 | Resending the confirmation link from the sign-in screen delivers a new message | [registration](../e2e/specs/registration.spec.ts) |
-| 3 | The session survives a page reload, and the portal's calls to the API carry its access token; after sign-out the stored session is gone, no call of the portal carries a token and the refresh token is refused | [registration](../e2e/specs/registration.spec.ts) |
+| 3 | The session survives a page reload, and the portal's calls to the API carry its session cookies, which no script of the page can read; after sign-out the cookies are gone and `POST /auth/refresh` is refused | [registration](../e2e/specs/registration.spec.ts) |
 | 4 | A head creates an edition, activates it, publishes it and adds programme items | [editions](../e2e/specs/editions.spec.ts); the programme items come with the `program` feature |
 | 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | still to come, with the `conventions` feature |
 | 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee sees only their edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in | [invitation](../e2e/specs/invitation.spec.ts) |
@@ -2230,13 +2454,19 @@ Scenarios 1, 9, 10, 11, 13 and 14 run in both the desktop and the mobile project
 ### 15.3 CI
 
 GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every push to `develop` and
-`main`, with tool versions from `mise.toml`, the same source as local machines. The `db`, `auth`
-and `mailpit` containers run for the schema and API tests, behind `pnpm db:migrate`, `pnpm db:verify` and two runs
-of `pnpm db:seed` — the second proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
+`main`, with tool versions from `mise.toml`, the same source as local machines, the Supabase CLI
+included. The job generates the secrets, passwords and signing key of a run, writes
+`supabase/.env` before `supabase start` and the other `.env` files from `supabase status` after
+it, in the order of [12](#12-local-development); the CLI's local stack then serves the schema and
+API tests, behind
+`pnpm db:roles`, `pnpm db:migrate`, `pnpm db:verify` and two runs of `pnpm db:seed` — the second
+proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
 run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
 package and fills the turbo cache that PRs restore. `pnpm build` then bundles the API, and the job
-starts `dist/main.js` with `NODE_ENV=production` against the same containers: `/health` must answer
-`200`. The tests run the sources; this step runs the bundle that production runs.
+starts `dist/main.js` with `NODE_ENV=production` against the same stack: `/health` must answer
+`200`. The tests run the sources; this step runs the bundle that production runs. The
+[BFF boundary check](#32-frontend-application-layout) runs on every PR over the sources and over
+`dist/` of the panel and the portal.
 `pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR, and so do
 `pnpm test:scripts` (the root `scripts/`, on `node --test`) and, on a PR only, the
 [tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) over the PR's commits.
@@ -2248,8 +2478,8 @@ Branches:
 | `develop` | default branch; every feature and fix PR targets it | none |
 | `main` | released state; changes only through a PR from `develop` | ruleset `protect-main`: PR required (0 approvals), job `check` must pass, no force push, no deletion |
 
-The `e2e` job runs beside `check`, on its own `db`, `auth` and `mailpit` containers, migrated and
-seeded. It receives `/etc/hosts` entries for `api.localhost`, `panel.localhost` and
+The `e2e` job runs beside `check`, on its own local Supabase stack, migrated and seeded. It
+receives `/etc/hosts` entries for `api.opos.localhost`, `panel.opos.localhost` and
 `opos.localhost`, installs Chromium with its system dependencies
 (`playwright install --with-deps chromium`) and runs `pnpm test:e2e`, which starts the
 applications itself ([15.2](#152-e2e-tests)); in CI a failed test is retried once. The traces,
@@ -2276,7 +2506,8 @@ real TLS, real Google, real email delivery and a real phone.
    working.
 4. **Refresh token rotation.** A refresh token used a second time, more than 10 s after the first
    use, is rejected and ends the session. `panel.opos.land` and `opos.land` answer with the CSP
-   header from [7.4](#74-authorization).
+   header from [7.4](#74-authorization), and the session cookies carry `HttpOnly`, `Secure` and
+   `SameSite=Strict`.
 5. **Edition activation.** A new 2027 edition activated -> 2026 loses `isActive`, and the database
    holds exactly one active Convention A edition.
 6. **The programme reaches the portal.** An item added in the panel shows up on
@@ -2296,8 +2527,11 @@ real TLS, real Google, real email delivery and a real phone.
 11. **The portal on a phone.** On a real phone browser (iOS Safari and Android Chrome): registration,
    the "Sign up" button on a convention's page, edition sign-up, liking, the personal schedule, a
    review, ticket checkout and "my conventions" work without horizontal scrolling.
-12. **Supabase stays internal.** `auth.opos.land` answers only GoTrue's paths, nothing listens on
-   `:5432` from outside, and `https://api.opos.land/hooks/send-email` without a signature -> `401`.
+12. **Supabase stays behind the API.** In the browser's developer tools the portal and the panel
+   reach only their own origin and `api.opos.land` — Google sign-in alone passes through the
+   project's `supabase.co` address — and their bundles name no Supabase address or key. The
+   project's Data API answers that it is disabled, and `https://api.opos.land/hooks/send-email`
+   without a signature -> `401`.
 13. **A real payment.** On a test edition, a BLIK payment of the cheapest ticket through the
    convention's real provider account: the money shows up in that account, not in any OPOS
    account, the ticket email arrives, the order turns `paid`. Refund in the provider's dashboard,
@@ -2311,8 +2545,8 @@ real TLS, real Google, real email delivery and a real phone.
 
 ## 17. Execution rules
 
-1. **Pinned versions** — Node, pnpm, dependency age and Supabase image tags, as in
-   [12](#versions-and-dependencies) and [10](#10-supabase).
+1. **Pinned versions** — Node, pnpm, the Supabase CLI, dependency age and image tags, as in
+   [12](#versions-and-dependencies) and [13](#images).
 2. **No build step for the contracts** — `packages/contract`, `packages/db` and `packages/i18n`
    point `main`/`types` at `src/index.ts`. The only exception is the translation catalogs: they
    need `pnpm i18n:compile`, wired in as a dependency of `dev`, `build` and `test`
@@ -2329,8 +2563,10 @@ real TLS, real Google, real email delivery and a real phone.
 5. **Feature based in every frontend.** A new screen starts with the question of which feature it
    belongs to; if none, a new feature is created rather than an application-level `components/`
    directory. Shared things go to `shared/`, never through an import from inside another feature.
-6. **Only the API and Supabase Auth touch the database.** No frontend gets a database URL, a
-   service role key or a PostgREST endpoint.
+6. **Only the API talks to Supabase.** No frontend gets a Supabase SDK, address or key, a database
+   URL or a PostgREST endpoint; every sign-in operation goes through the API's `auth` endpoints
+   ([5.1](#51-auth--sign-in-through-the-api)), and the BFF boundary check enforces it
+   ([3.2](#32-frontend-application-layout)).
 7. **Repository conventions** — Conventional Commits, English everywhere except the `pl` catalog,
    no emoji, no AI-generated graphics — are set in [AGENTS.md](../AGENTS.md).
 8. **Tests first for RLS and RBAC** — a change to tenant isolation or permissions starts with a

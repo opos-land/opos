@@ -7,6 +7,7 @@ import {
   global,
   inTenant,
   migrator,
+  supabaseAdmin,
   superuser,
 } from './db'
 
@@ -43,6 +44,24 @@ beforeAll(async () => {
   ;[a, b] = await Promise.all([populated(), populated()])
 })
 
+describe('coverage', () => {
+  // A new tenant table fails here until it joins `covered`, and with it every test below.
+  it('lists every tenant table of the catalog', async () => {
+    const tables = await migrator<{ relname: string }[]>`
+      select c.relname
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relkind in ('r', 'p')
+        and (c.relname = 'tenants' or exists (
+          select 1 from pg_attribute a
+          where a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped
+        ))
+      order by 1
+    `
+    expect(tables.map((t) => t.relname)).toEqual(covered.map(([table]) => table).sort())
+  })
+})
+
 describe('tenant isolation', () => {
   // On a session that never set app.tenant_id, only a policy without missing_ok raises this. A
   // reused session would hold '' and fail with a uuid error even under missing_ok.
@@ -77,6 +96,76 @@ describe('tenant isolation', () => {
       ).rejects.toThrow(/permission denied/)
     },
   )
+
+  // A role that may update tenant_id, created and dropped inside the test: only the policy's
+  // WITH CHECK stands between it and moving a visible row to another tenant.
+  it.each(covered.filter(([table]) => table !== 'tenants'))(
+    'refuses through WITH CHECK to move a row of %s to another tenant',
+    async (table) => {
+      await expect(
+        supabaseAdmin.begin(async (sql) => {
+          await sql.unsafe(`
+            create role rls_probe nologin;
+            grant usage on schema public to rls_probe;
+            grant select, update (tenant_id) on public.${table} to rls_probe;
+            set local role rls_probe;
+          `)
+          await sql`select set_config('app.tenant_id', ${b.id}, true)`
+          await sql.unsafe(`update ${table} set tenant_id = '${a.id}' where tenant_id = '${b.id}'`)
+        }),
+      ).rejects.toThrow(/new row violates row-level security policy/)
+    },
+  )
+
+  it.each(covered)('updates no row of another tenant in %s', async (table, column) => {
+    const [updatable] = await migrator<{ column: string }[]>`
+      select a.attname as column
+      from pg_attribute a
+      where a.attrelid = ${'public.' + table}::regclass and a.attnum > 0 and not a.attisdropped
+        and has_column_privilege('opos_app', a.attrelid, a.attnum, 'UPDATE')
+      order by a.attnum
+      limit 1
+    `
+    if (!updatable) return
+    const changed = await inTenant(b.id, (sql) =>
+      sql.unsafe(
+        `update ${table} set ${updatable.column} = ${updatable.column} where ${column} = '${a.id}'`,
+      ),
+    )
+    expect(changed.count).toBe(0)
+  })
+
+  it.each(covered)('deletes no row of another tenant in %s', async (table, column) => {
+    const [privilege] = await migrator<{ deletable: boolean }[]>`
+      select has_table_privilege('opos_app', ${'public.' + table}, 'DELETE') as deletable
+    `
+    if (!privilege?.deletable) return
+    const before = await migrator.unsafe(`select 1 from ${table} where ${column} = '${a.id}'`)
+    const deleted = await inTenant(b.id, (sql) =>
+      sql.unsafe(`delete from ${table} where ${column} = '${a.id}'`),
+    )
+
+    expect(deleted.count).toBe(0)
+    const after = await migrator.unsafe(`select 1 from ${table} where ${column} = '${a.id}'`)
+    expect(after.length).toBe(before.length)
+  })
+
+  // A pooled session keeps app.tenant_id as '' once a transaction has set it; a query outside a
+  // transaction then fails on the uuid cast instead of reading the last tenant's rows.
+  it('lets a session reused after a tenant transaction read no tenant', async () => {
+    const sql = freshApp()
+    try {
+      await sql.begin(async (tx) => {
+        await tx`select set_config('app.tenant_id', ${a.id}, true)`
+        await tx`select 1 from editions`
+      })
+      await expect(sql`select id from editions`).rejects.toThrow(
+        /invalid input syntax for type uuid/,
+      )
+    } finally {
+      await sql.end()
+    }
+  })
 
   // The tables opos_app inserts into; WITH CHECK refuses a row of another tenant in each.
   it('rejects an insert with another tenant id', async () => {

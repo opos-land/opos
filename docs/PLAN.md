@@ -2074,9 +2074,13 @@ entry point) and never contribute messages (`linguiConfig()` excludes them).
 
 The schema itself is tested in `packages/db/test` with Vitest on the `db` container alone, before
 any API code: the global setup applies the migrations, the tests connect as `opos_migrator`,
-`opos_app`, `supabase_auth_admin` (writes to `auth.users`) and `postgres` (`set role anon`), and
-remove the tenants and users they created. They cover the RLS row of the table below for every
-covered table (no context, another tenant's context, a row moved to another tenant), the
+`opos_app`, `supabase_auth_admin` (writes to `auth.users`), `postgres` (`set role anon`) and
+`supabase_admin` (roles and ownership, only inside transactions they roll back), and remove the tenants and users they created. They cover the RLS row of the table below for every
+covered table (no context, another tenant's context, a row moved to another tenant — refused by the
+missing privilege and, for a role created in the test that holds it, by `WITH CHECK` — and an
+`update` or `delete` of another tenant's rows changing none), a pooled session reused after a
+tenant transaction reading no tenant, and a check that the list of covered tables equals the
+catalog's, so a new tenant table fails the suite until its cases exist. They also cover the
 `accounts` privileges, the runtime roles' privileges (`opos_app_global` only reads, `opos_app`
 updates only the granted columns, inserts and deletes no tenant, inserts memberships and accepted
 invitations but never changes or removes an accepted invitation), the

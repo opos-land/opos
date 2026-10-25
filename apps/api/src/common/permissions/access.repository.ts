@@ -4,7 +4,7 @@ import { and, eq, gt, isNull, or, sql } from 'drizzle-orm'
 import { type TenantMembership, TenantContextService } from '../als/tenant-context.service'
 import { type EditionAccess } from './permissions'
 import { TENANT_WRITE_LOCK_TIMEOUT_MS, tenantWriteLockKey } from './tenant-write-lock'
-import { ApiError } from '../errors/api-error'
+import { tenantBusy } from './tenant-write-queue'
 import { postgresCode } from '../filters/http-exception.filter'
 
 /** Reads the permissions of the request's account, inside its tenant transaction (RLS on). */
@@ -18,20 +18,20 @@ export class AccessRepository {
    */
   async lockTenantWrites() {
     const tx = this.context.tx()
-    const key = tenantWriteLockKey(this.context.tenant().id)
-    // The wait is bounded for the lock alone; the row locks that follow keep the default.
-    await tx.execute(
-      sql`select set_config('lock_timeout', ${`${TENANT_WRITE_LOCK_TIMEOUT_MS}ms`}, true)`,
-    )
+    const tenantId = this.context.tenant().id
+    // The bound is for this wait alone: the transaction gets its own lock_timeout back after it.
+    // `offset 0` keeps the subquery, so the old value is read before set_config replaces it.
+    const [setting] = await tx.execute<{ previous: string }>(sql`
+      select previous, set_config('lock_timeout', ${`${TENANT_WRITE_LOCK_TIMEOUT_MS}ms`}, true)
+      from (select current_setting('lock_timeout') as previous offset 0) as current
+    `)
     try {
-      await tx.execute(sql`select pg_advisory_xact_lock(${key}::bigint)`)
+      await tx.execute(sql`select pg_advisory_xact_lock(${tenantWriteLockKey(tenantId)}::bigint)`)
     } catch (error) {
-      if (postgresCode(error) !== '55P03') throw error
-      throw new ApiError(503, 'request.busy', 'The tenant write lock is busy', undefined, {
-        'Retry-After': '1',
-      })
+      if (postgresCode(error) === '55P03') throw tenantBusy(tenantId)
+      throw error
     }
-    await tx.execute(sql`set local lock_timeout to default`)
+    await tx.execute(sql`select set_config('lock_timeout', ${setting!.previous}, true)`)
   }
 
   /**

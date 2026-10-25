@@ -66,7 +66,11 @@ describe('toErrorResponse', () => {
   // A Postgres error as drizzle throws it: the query error carries the driver's error as its cause.
   const violated = (constraint: string) =>
     Object.assign(new Error('Failed query'), {
-      cause: Object.assign(new Error('violates check constraint'), { constraint_name: constraint }),
+      // As postgres.js raises it: a PostgresError carries its severity.
+      cause: Object.assign(new Error('violates check constraint'), {
+        constraint_name: constraint,
+        severity: 'ERROR',
+      }),
     })
 
   it.each([
@@ -154,8 +158,8 @@ describe('HttpExceptionFilter', () => {
   })
 })
 
-describe('HttpExceptionFilter on a busy tenant', () => {
-  it('logs a 503 request.busy as a warning, since it is expected backpressure', () => {
+describe('HttpExceptionFilter on an expected 5xx', () => {
+  const host = () => {
     const response = {
       headersSent: false,
       writableEnded: false,
@@ -163,19 +167,36 @@ describe('HttpExceptionFilter on a busy tenant', () => {
       setHeader: vi.fn(),
       status: vi.fn(() => ({ json: vi.fn() })),
     }
-    const host = {
-      switchToHttp: () => ({ getResponse: () => response }),
-    } as unknown as ArgumentsHost
+    return {
+      response,
+      host: { switchToHttp: () => ({ getResponse: () => response }) } as unknown as ArgumentsHost,
+    }
+  }
+
+  it('logs an ApiError marked expected as a warning', () => {
+    const { response, host: busy } = host()
     const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
     const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
 
     new HttpExceptionFilter().catch(
-      new ApiError(503, 'request.busy', 'The tenant write lock is busy'),
-      host,
+      new ApiError(503, 'request.busy', 'Busy', undefined, undefined, { expected: true }),
+      busy,
     )
     expect(response.status).toHaveBeenCalledWith(503)
     expect(error).not.toHaveBeenCalled()
-    expect(warn).toHaveBeenCalled()
+    expect(warn).toHaveBeenCalledWith('Busy')
+    error.mockRestore()
+    warn.mockRestore()
+  })
+
+  it('logs any other ApiError of 5xx as an error', () => {
+    const { host: failing } = host()
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+
+    new HttpExceptionFilter().catch(new ApiError(503, 'request.busy', 'Busy'), failing)
+    expect(error).toHaveBeenCalled()
+    expect(warn).not.toHaveBeenCalled()
     error.mockRestore()
     warn.mockRestore()
   })

@@ -10,8 +10,14 @@ export class ApiError extends HttpException {
     readonly params?: ApiErrorBody['params'],
     /** Response headers that go out with the error, e.g. `Retry-After` on a 429. */
     readonly headers?: Record<string, string>,
+    /** An expected 5xx, such as a busy tenant, is logged as a warning, not as an error. */
+    readonly flags: { expected?: boolean } = {},
   ) {
     super(message, status)
+  }
+
+  get expected() {
+    return this.flags.expected === true
   }
 }
 

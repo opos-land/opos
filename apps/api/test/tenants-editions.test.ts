@@ -718,10 +718,16 @@ describe('concurrency', () => {
     it('waits past the lock timeout for a row lock once it holds the write lock', async () => {
       const s = await setup()
       const row = await openTransaction()
-      await row.sql`select 1 from tenants where id = ${s.t.id} for update`
-      const pending = send(s, writes['tenants.update']!(s))
-      await sleep(TENANT_WRITE_LOCK_TIMEOUT_MS + 1000)
-      await row.commit()
+      let pending: ReturnType<typeof send> | undefined
+      try {
+        await row.sql`select 1 from tenants where id = ${s.t.id} for update`
+        pending = send(s, writes['tenants.update']!(s))
+        // Settled now so an early failure is no unhandled rejection; awaited below.
+        pending.catch(() => {})
+        await sleep(TENANT_WRITE_LOCK_TIMEOUT_MS + 1000)
+      } finally {
+        await row.commit()
+      }
 
       expect((await pending).status).toBe(200)
     }, 15_000)

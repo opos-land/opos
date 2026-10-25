@@ -660,8 +660,8 @@ transaction and expects the report:
 - a covered table has another permissive policy;
 - a `public` table is neither covered nor a [global table](#42-global-tables): a tenant table
   carries its own `tenant_id`, never only an `edition_id` or `order_id`;
-- a `public` view lacks `security_invoker` set on (`true`, `on`, `yes` or `1`), or `public` holds a
-  materialized view;
+- a `public` view lacks `security_invoker` set to a value Postgres reads as true (`true`, `on`, `yes`,
+  `1` and their prefixes), or `public` holds a materialized view;
 - a role holds more on a `public` table or view than the rules above allow: anything but `select` for
   `opos_app_global` (and nothing on `accounts`), a table-wide `update` for `opos_app` or an
   `insert` or `delete` of it missing from the list of the API's writes in `verify.ts` (a write the

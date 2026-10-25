@@ -126,7 +126,7 @@ describe('verifyDatabase', () => {
       expect(problems).toEqual([])
     })
 
-    it.each(['on', '1', 'yes'])(
+    it.each(['on', '1', 'yes', 't', 'TRU', 'y'])(
       'accepts a view with security_invoker = %s, as Postgres stores the value as written',
       async (value) => {
         const problems = await problemsAfter((sql) =>
@@ -139,10 +139,10 @@ describe('verifyDatabase', () => {
       },
     )
 
-    it('reports a view with security_invoker = off', async () => {
+    it.each(['off', 'f', 'no', '0'])('reports a view with security_invoker = %s', async (value) => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`
-          create view public.verify_probe with (security_invoker = off)
+          create view public.verify_probe with (security_invoker = ${value})
             as select id, tenant_id from public.editions
         `),
       )

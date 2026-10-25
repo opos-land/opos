@@ -89,9 +89,9 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     where n.nspname = 'public'
       and (c.relkind = 'm' or (c.relkind = 'v'
         and not exists (
+          -- Postgres stores the value as written and reads it as a boolean: on, t, TRU, yes, 1.
           select 1 from unnest(c.reloptions) o
-          where lower(o) in ('security_invoker=true', 'security_invoker=on',
-            'security_invoker=yes', 'security_invoker=1')
+          where split_part(o, '=', 1) = 'security_invoker' and split_part(o, '=', 2)::boolean
         )))
     order by 1
   `

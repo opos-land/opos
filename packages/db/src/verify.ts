@@ -11,7 +11,7 @@ const isolation = (column: string) =>
  * The columns opos_app_global reads: what the cross-tenant queries of PLAN.md 4.6 select, and
  * nothing else. A query that needs another column adds it here in the PR of its migration.
  */
-const globalReads = [
+export const globalReads = [
   'tenants.id',
   'tenants.slug',
   'tenants.name',

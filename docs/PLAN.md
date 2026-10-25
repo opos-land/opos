@@ -526,7 +526,7 @@ Every RLS-covered table has an index starting with `tenantId`.
 |---|---|---|
 | `opos_migrator` | owner of the `public` tables, `BYPASSRLS` | `pnpm db:migrate`, `pnpm db:seed` |
 | `opos_app` | only the privileges the API uses (below), no `BYPASSRLS` | runtime API inside a tenant context |
-| `opos_app_global` | `select` only, `BYPASSRLS` | `GlobalDbService` exclusively |
+| `opos_app_global` | `select` on the columns its cross-tenant queries read, never a whole table; `BYPASSRLS` | `GlobalDbService` exclusively |
 
 The three roles are created by `infra/supabase/db/opos-roles.sql`, which the `db` container runs
 as `supabase_admin` when it initializes an empty data directory. Supabase's own roles

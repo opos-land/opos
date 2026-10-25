@@ -10,6 +10,7 @@ import {
   supabaseAdmin,
   superuser,
 } from './db'
+import { globalReads } from '../src/verify'
 
 // Every covered table (PLAN.md 4.6) and the column that holds its tenant.
 const covered = [
@@ -224,29 +225,10 @@ describe('tenant isolation', () => {
 })
 
 describe('runtime privileges', () => {
-  // The columns the cross-tenant queries of PLAN.md 4.6 read, and nothing else.
-  const globalReads: Record<(typeof covered)[number][0], string[]> = {
-    tenants: ['id', 'slug', 'name', 'default_locale', 'timezone'],
-    tenant_memberships: [
-      'id',
-      'tenant_id',
-      'account_id',
-      'role',
-      'settings_access',
-      'branding_access',
-      'shop_config_access',
-      'expires_at',
-    ],
-    editions: ['id', 'slug', 'starts_at'],
-    edition_memberships: [
-      'tenant_membership_id',
-      'edition_id',
-      'program_access',
-      'website_content_access',
-      'tickets_access',
-    ],
-    accepted_invitations: [],
-  }
+  // The columns the cross-tenant queries of PLAN.md 4.6 read: the list db:verify holds the role
+  // to, so the grants the migrations made and that list cannot drift apart.
+  const readsOf = (table: string) =>
+    globalReads.filter((read) => read.startsWith(`${table}.`)).map((read) => read.split('.')[1]!)
 
   it.each(covered)('lets opos_app_global read only what its queries need of %s', async (table) => {
     const columns = await migrator<{ column: string }[]>`
@@ -257,7 +239,7 @@ describe('runtime privileges', () => {
     // anything else, so only a missing insert, update or delete privilege can refuse them.
     for (const { column } of columns) {
       const read = global.unsafe(`select ${column} from ${table} limit 1`)
-      if (globalReads[table].includes(column)) await read
+      if (readsOf(table).includes(column)) await read
       else await expect(read, column).rejects.toThrow(/permission denied/)
       await expect(
         global.unsafe(`update ${table} set ${column} = null where false`),

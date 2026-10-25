@@ -13,8 +13,9 @@ import { currentTenantId } from '../../common/database/current-tenant'
 import { type InvitationGrant } from './anti-escalation'
 
 /**
- * Invitations inside the tenant transaction (PLAN.md 7.7): RLS keeps every query on
- * `tenant_memberships`, `editions` and `accepted_invitations` inside the tenant in context.
+ * Invitations inside the tenant transaction (PLAN.md 7.7). Every query on `tenants`,
+ * `tenant_memberships`, `editions` and `accepted_invitations` filters on the transaction's tenant
+ * itself, besides RLS (PLAN.md 4.6).
  */
 @Injectable()
 export class InvitationsRepository {
@@ -54,7 +55,12 @@ export class InvitationsRepository {
       .tx()
       .select({ id: tenantMemberships.id })
       .from(tenantMemberships)
-      .where(eq(tenantMemberships.accountId, accountId))
+      .where(
+        and(
+          eq(tenantMemberships.accountId, accountId),
+          eq(tenantMemberships.tenantId, currentTenantId),
+        ),
+      )
     return rows.length > 0
   }
 
@@ -70,7 +76,7 @@ export class InvitationsRepository {
       .tx()
       .select({ id: editions.id })
       .from(editions)
-      .where(inArray(editions.id, ids))
+      .where(and(inArray(editions.id, ids), eq(editions.tenantId, currentTenantId)))
       .for('key share')
     return new Set(rows.map((row) => row.id))
   }
@@ -81,7 +87,9 @@ export class InvitationsRepository {
       .tx()
       .select({ id: acceptedInvitations.id })
       .from(acceptedInvitations)
-      .where(eq(acceptedInvitations.jti, jti))
+      .where(
+        and(eq(acceptedInvitations.jti, jti), eq(acceptedInvitations.tenantId, currentTenantId)),
+      )
     return rows.length > 0
   }
 

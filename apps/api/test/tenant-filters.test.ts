@@ -3,8 +3,10 @@ import { type TenantContextService } from '../src/common/als/tenant-context.serv
 import { AccessRepository } from '../src/common/permissions/access.repository'
 import { InvitationsRepository } from '../src/modules/tenants/invitations.repository'
 import { deleteCreatedAccounts } from './auth'
+import { randomUUID } from 'node:crypto'
 import {
   addEdition,
+  addEditionAccess,
   addOrg,
   closeTenantDb,
   deleteCreatedTenants,
@@ -18,14 +20,25 @@ import {
 // The reads that decide which tenant a request acts in filter on the tenant of the transaction
 // themselves, besides RLS (PLAN.md 4.6): these run them on a connection that bypasses RLS.
 
+/** A TenantContextService whose transaction is `tx`, as the repositories read it. */
+const contextOf = (tx: unknown) => ({ tx: () => tx }) as unknown as TenantContextService
+
 let a: Awaited<ReturnType<typeof tenantWithHead>>
 let b: Awaited<ReturnType<typeof tenantWithHead>>
 let orgOfB: Member
+let orgOfBMembership: string
+let editionOfB: string
+const jtiOfB = randomUUID()
 
 beforeAll(async () => {
   ;[a, b] = await Promise.all([tenantWithHead(), tenantWithHead()])
   orgOfB = await member()
-  await addOrg(b.id, orgOfB, { settings: 'write' })
+  orgOfBMembership = await addOrg(b.id, orgOfB, { settings: 'write' })
+  editionOfB = await addEdition(b.id)
+  await addEditionAccess(b.id, orgOfBMembership, editionOfB, { program: 'read' })
+  await withoutRls(b.id, (tx) =>
+    new InvitationsRepository(contextOf(tx)).recordAcceptance(b.id, jtiOfB),
+  )
 })
 
 afterAll(async () => {
@@ -33,9 +46,6 @@ afterAll(async () => {
   await deleteCreatedAccounts()
   await closeTenantDb()
 })
-
-/** A TenantContextService whose transaction is `tx`, as the repositories read it. */
-const contextOf = (tx: unknown) => ({ tx: () => tx }) as unknown as TenantContextService
 
 describe('activeMembership', () => {
   it("finds no membership of another tenant in this tenant's transaction", async () => {
@@ -55,12 +65,37 @@ describe('activeMembership', () => {
 
 describe('editionAccess', () => {
   it("finds no edition of another tenant in this tenant's transaction", async () => {
-    const editionOfB = await addEdition(b.id)
     const headOfA = (await storedMembership(a.id, a.head.id))!.id
     const found = await withoutRls(a.id, (tx) =>
       new AccessRepository(contextOf(tx)).editionAccess(headOfA, editionOfB),
     )
     expect(found).toBeUndefined()
+  })
+})
+
+describe('editionRows', () => {
+  it("lists no edition row of another tenant's membership", async () => {
+    const rows = await withoutRls(a.id, (tx) =>
+      new AccessRepository(contextOf(tx)).editionRows(orgOfBMembership),
+    )
+    expect([...rows.keys()]).toEqual([])
+  })
+})
+
+describe('the reads of an invitation', () => {
+  const invitations = (tx: unknown) => new InvitationsRepository(contextOf(tx))
+
+  it("finds no member of another tenant in this tenant's transaction", async () => {
+    expect(await withoutRls(a.id, (tx) => invitations(tx).isMember(orgOfB.id))).toBe(false)
+  })
+
+  it('finds none of the editions of another tenant', async () => {
+    const found = await withoutRls(a.id, (tx) => invitations(tx).existingEditions([editionOfB]))
+    expect([...found]).toEqual([])
+  })
+
+  it('finds no invitation another tenant accepted', async () => {
+    expect(await withoutRls(a.id, (tx) => invitations(tx).isAccepted(jtiOfB))).toBe(false)
   })
 })
 

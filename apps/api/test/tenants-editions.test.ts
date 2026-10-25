@@ -7,6 +7,7 @@ import { deleteCreatedAccounts, testEmail } from './auth'
 import {
   addEdition,
   addEditionAccess,
+  addHead,
   addOrg,
   closeTenantDb,
   countHeads,
@@ -738,6 +739,45 @@ describe('edition members', () => {
       ...none,
       programAccess: 'read',
     }).expect(200)
+  })
+
+  it('answers 409 member.is-head when a head targets the edition row of another head', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const other = await member()
+    await addHead(t.id, other)
+    const members = (await call(t.head, 'get', '/tenants/current/members', undefined, t.slug))
+      .body as { id: string; account: { id: string } }[]
+    const otherId = members.find((m) => m.account.id === other.id)!.id
+
+    for (const res of [
+      await call(t.head, 'put', `/editions/${edition}/members/${otherId}`, none, t.slug),
+      await call(t.head, 'delete', `/editions/${edition}/members/${otherId}`, undefined, t.slug),
+    ]) {
+      expect(res.status).toBe(409)
+      expect(res.body).toMatchObject({ code: 'member.is-head' })
+    }
+  })
+
+  it("refuses an org removing a head's edition row", async () => {
+    const members = (await call(a.head, 'get', '/tenants/current/members')).body as {
+      id: string
+      role: string
+    }[]
+    const head = members.find((m) => m.role === 'head')!
+    const res = await call(writer, 'delete', `/editions/${editionA}/members/${head.id}`)
+    expect(res.status).toBe(403)
+    expect(res.body).toMatchObject({ code: 'member.head-only' })
+  })
+
+  it('refuses an org changing or removing its own edition row', async () => {
+    for (const res of [
+      await call(writer, 'put', `/editions/${editionA}/members/${writerId}`, none),
+      await call(writer, 'delete', `/editions/${editionA}/members/${writerId}`),
+    ]) {
+      expect(res.status).toBe(403)
+      expect(res.body).toMatchObject({ code: 'member.self' })
+    }
   })
 
   it('lets an org change one edition permission of a member who holds more elsewhere', async () => {

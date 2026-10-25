@@ -7,6 +7,37 @@ import type postgres from 'postgres'
 const isolation = (column: string) =>
   `(${column} = ( SELECT (current_setting('app.tenant_id'::text))::uuid AS current_setting))`
 
+/** The public tables outside tenant isolation (PLAN.md 4.2). */
+const globalTables = ['accounts']
+
+/**
+ * The columns opos_app updates (PLAN.md 4.6): never `id`, `tenant_id` or a column that points a
+ * row at an account or another row. A column the API starts changing joins this list in the PR
+ * of the migration that grants it.
+ */
+const appUpdates = [
+  'accounts.first_name',
+  'accounts.last_name',
+  'accounts.locale',
+  'tenants.name',
+  'tenants.default_locale',
+  'tenants.timezone',
+  'tenant_memberships.role',
+  'tenant_memberships.settings_access',
+  'tenant_memberships.branding_access',
+  'tenant_memberships.shop_config_access',
+  'tenant_memberships.expires_at',
+  'editions.slug',
+  'editions.name',
+  'editions.starts_at',
+  'editions.ends_at',
+  'editions.is_active',
+  'editions.is_published',
+  'edition_memberships.program_access',
+  'edition_memberships.website_content_access',
+  'edition_memberships.tickets_access',
+]
+
 /**
  * Checks the database against the isolation rules of PLAN.md 4.6 and returns every violation;
  * an empty list means the rules hold. Reads the catalog only, so it runs in any transaction.
@@ -19,7 +50,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     select c.relname, c.relrowsecurity and c.relforcerowsecurity as secured
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'public' and c.relkind = 'r'
+    where n.nspname = 'public' and c.relkind in ('r', 'p')
       and (c.relname = 'tenants' or exists (
         select 1 from pg_attribute a
         where a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped
@@ -31,6 +62,44 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     problems.push(
       `Tables without enabled and forced RLS: ${unsecured.map((r) => r.relname).join(', ')}`,
     )
+  }
+
+  // A public table is either covered or one of the global tables of PLAN.md 4.2; a tenant table
+  // keyed only through another row (an edition_id, an order_id) would escape every check above.
+  const uncovered = await sql<{ relname: string }[]>`
+    select c.relname
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind in ('r', 'p')
+      and not c.relname = any(${[...covered.map((table) => table.relname), ...globalTables]})
+    order by 1
+  `
+  if (uncovered.length > 0) {
+    problems.push(
+      `Public tables that are neither tenant tables nor global: ${uncovered.map((r) => r.relname).join(', ')}`,
+    )
+  }
+
+  // RLS never applies to a view on its own: one that runs as its owner, opos_migrator with
+  // BYPASSRLS, reads every tenant. A materialized view cannot carry RLS at all.
+  const views = await sql<{ relname: string; relkind: string }[]>`
+    select c.relname, c.relkind
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and (c.relkind = 'm' or (c.relkind = 'v'
+        and not coalesce(c.reloptions @> array['security_invoker=true'], false)))
+    order by 1
+  `
+  const definerViews = views.filter((view) => view.relkind === 'v')
+  if (definerViews.length > 0) {
+    problems.push(
+      `Views in public without security_invoker: ${definerViews.map((r) => r.relname).join(', ')}`,
+    )
+  }
+  const materialized = views.filter((view) => view.relkind === 'm')
+  if (materialized.length > 0) {
+    problems.push(`Materialized views in public: ${materialized.map((r) => r.relname).join(', ')}`)
   }
 
   const policies = await sql<
@@ -112,6 +181,86 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     problems.push(
       `Privileges the runtime rules forbid: ${overGranted.map((r) => `${r.role} ${r.privilege} on ${r.table}`).join(', ')}`,
     )
+  }
+
+  // The same rules for column-level grants, which has_table_privilege does not see. opos_app
+  // updates only the columns in appUpdates, never one that moves a row to another tenant or row.
+  const overGrantedColumns = await sql<
+    { role: string; table: string; column: string; privilege: string }[]
+  >`
+    select r.role, c.relname as table, a.attname as column, p.privilege
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+    cross join (values ('opos_app'), ('opos_app_global'), ('anon'), ('authenticated'), ('service_role')) r(role)
+    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('REFERENCES')) p(privilege)
+    where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
+      and has_column_privilege(r.role, c.oid, a.attnum, p.privilege)
+      and not has_table_privilege(r.role, c.oid, p.privilege)
+      and (
+        (r.role = 'opos_app_global' and (p.privilege <> 'SELECT' or c.relname = 'accounts'))
+        or (r.role = 'opos_app' and p.privilege = 'REFERENCES')
+        or (r.role = 'opos_app' and p.privilege = 'INSERT'
+          and not (c.relname || ' INSERT') = any(${appWrites}))
+        or (r.role = 'opos_app' and p.privilege = 'UPDATE'
+          and not (c.relname || '.' || a.attname) = any(${appUpdates}))
+        or r.role in ('anon', 'authenticated', 'service_role')
+      )
+    order by 1, 2, 4, 3
+  `
+  if (overGrantedColumns.length > 0) {
+    problems.push(
+      `Column privileges the runtime rules forbid: ${overGrantedColumns.map((r) => `${r.role} ${r.privilege} (${r.column}) on ${r.table}`).join(', ')}`,
+    )
+  }
+
+  // opos_app is the role RLS holds to: it bypasses nothing and owns nothing, since an owner may
+  // switch RLS off. opos_app_global reads across tenants on purpose and owns nothing either.
+  const appRole = await sql<{ bypasses: boolean }[]>`
+    select rolsuper or rolbypassrls as bypasses from pg_roles where rolname = 'opos_app'
+  `
+  if (appRole[0]?.bypasses !== false) {
+    problems.push('opos_app must not bypass RLS: it must exist without SUPERUSER and BYPASSRLS')
+  }
+  const owned = await sql<{ relname: string; owner: string }[]>`
+    select c.relname, pg_get_userbyid(c.relowner) as owner
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and pg_get_userbyid(c.relowner) in ('opos_app', 'opos_app_global')
+    order by 1
+  `
+  if (owned.length > 0) {
+    problems.push(
+      `Relations in public owned by a runtime role: ${owned.map((r) => `${r.relname} (${r.owner})`).join(', ')}`,
+    )
+  }
+
+  // A security definer function runs as its owner, which bypasses RLS: it pins its search_path,
+  // and no runtime role may call it directly. Postgres grants EXECUTE to PUBLIC on every new
+  // function, so each one is revoked in its migration (PLAN.md 4.6).
+  const definers = await sql<{ name: string; pinned: boolean; callers: string[] }[]>`
+    select p.proname as name,
+      coalesce(exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%'), false)
+        as pinned,
+      array(
+        select r.role from (values ('opos_app'), ('opos_app_global'), ('anon'), ('authenticated'), ('service_role')) r(role)
+        where has_function_privilege(r.role, p.oid, 'EXECUTE')
+      ) as callers
+    from pg_proc p
+    where p.pronamespace = 'public'::regnamespace and p.prosecdef
+    order by 1
+  `
+  const unpinned = definers.filter((fn) => !fn.pinned)
+  if (unpinned.length > 0) {
+    problems.push(
+      `Security definer functions without a pinned search_path: ${unpinned.map((fn) => fn.name).join(', ')}`,
+    )
+  }
+  for (const fn of definers) {
+    if (fn.callers.length > 0) {
+      problems.push(`Security definer function executable by ${fn.callers.join(', ')}: ${fn.name}`)
+    }
   }
 
   // Supabase's API roles reach nothing in public, not even the schema (PLAN.md 4.6).

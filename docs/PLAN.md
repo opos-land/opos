@@ -648,16 +648,24 @@ Every `db:*` script connects as `opos_migrator` through `DATABASE_MIGRATION_URL`
 [verify.test.ts](../packages/db/test/verify.test.ts) that breaks the rule in a rolled-back
 transaction and expects the report:
 
-- a covered table — `tenants` or any `public` table with a `tenant_id` column — lacks enabled or
-  forced RLS;
+- a covered table — `tenants` or any `public` table, partitioned ones included, with a
+  `tenant_id` column — lacks enabled or forced RLS;
 - its `tenant_isolation` policy is missing, is not a permissive policy for all commands and every
   role, or its `USING` or `WITH CHECK` differs from the [policy shape](#policy-shape);
 - a covered table has another permissive policy;
+- a `public` table is neither covered nor a [global table](#42-global-tables): a tenant table
+  carries its own `tenant_id`, never only an `edition_id` or `order_id`;
+- a `public` view lacks `security_invoker = true`, or `public` holds a materialized view;
 - a role holds more on a `public` table than the rules above allow: anything but `select` for
   `opos_app_global` (and nothing on `accounts`), a table-wide `update` for `opos_app` or an
   `insert` or `delete` of it missing from the list of the API's writes in `verify.ts` (a write the
   API starts doing joins that list in the PR of its migration), anything at all for `anon`,
-  `authenticated` and `service_role`;
+  `authenticated` and `service_role` — table-level and column-level grants alike, so `opos_app`
+  updates only the columns on the list in `verify.ts`;
+- `opos_app` has `SUPERUSER` or `BYPASSRLS`, or a runtime role owns a relation in `public`;
+- a `security definer` function in `public` has no pinned `search_path`, or `opos_app`,
+  `opos_app_global`, `anon`, `authenticated` or `service_role` may execute it — Postgres grants
+  `execute` to `public` on every new function, so its migration revokes it;
 - `anon`, `authenticated` or `service_role` holds `usage` or `create` on the `public` schema;
 - `opos_migrator` holds anything on `auth.users` beyond `references (id)` and `trigger`.
 
@@ -2077,7 +2085,8 @@ concurrent transactions demoting different heads, a head expiry, a tenant-level 
 head, an `edition_membership` with a
 foreign edition, an edition slug outside its format), `createTenant` and `renameTenant` with each
 of their refusals, an unconfirmed head included, and the `accounts` triggers, the email
-confirmation included. The API tests repeat
+confirmation included. Every rule of `db:verify` ([4.6](#migrations-and-verification)) has a
+case that breaks it inside a rolled-back transaction and expects the report. The API tests repeat
 these checks through the endpoints.
 
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and

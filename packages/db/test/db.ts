@@ -22,6 +22,8 @@ export const global = connect(url('opos_app_global', 'opos'))
 export const freshApp = () => postgres(appUrl, { max: 1, onnotice: () => {} })
 export const authAdmin = connect(url('supabase_auth_admin', 'postgres'))
 export const superuser = connect(url('postgres', 'postgres'))
+/** The image's only true superuser, for changes even postgres may not make (role ownership). */
+export const supabaseAdmin = connect(url('supabase_admin', 'postgres'))
 
 const tenantIds: string[] = []
 /** Removes the tenant after the test file, like the tenants created by createTenant(). */
@@ -31,7 +33,9 @@ const userIds: string[] = []
 afterAll(async () => {
   await migrator`delete from tenants where id = any(${tenantIds}::uuid[])`
   await authAdmin`delete from auth.users where id = any(${userIds}::uuid[])`
-  await Promise.all([migrator, app, global, authAdmin, superuser].map((sql) => sql.end()))
+  await Promise.all(
+    [migrator, app, global, authAdmin, superuser, supabaseAdmin].map((sql) => sql.end()),
+  )
 })
 
 export const unique = () => randomUUID().slice(0, 8)

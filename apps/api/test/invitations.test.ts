@@ -16,6 +16,7 @@ import { deleteMail, invitationLinkIn, waitForMail } from './mailpit'
 import {
   addEdition,
   addEditionAccess,
+  addHead,
   addOrg,
   closeTenantDb,
   deleteCreatedTenants,
@@ -649,6 +650,35 @@ describe("an invitation and its sender's standing", () => {
     await asHead('patch', `/tenants/current/members/${id}`, { expiresAt: soon }).expect(200)
 
     await revoked(sent)
+  })
+
+  it('goes once the head that sent a head invitation is demoted to org', async () => {
+    const head = await member()
+    await addHead(t.id, head)
+    const sent = await invitationFrom(head, { role: 'head' })
+    const id = (await storedMembership(t.id, head.id))!.id
+
+    await asHead('patch', `/tenants/current/members/${id}`, {
+      role: 'org',
+      settingsAccess: 'write',
+    }).expect(200)
+
+    await revoked(sent)
+  })
+
+  it('refuses an acceptance once a demotion of its sender commits while it waits', async () => {
+    const { org, id } = await sender()
+    const sent = await invitationFrom(org)
+    const commit = await holdOpen(
+      (sql) => sql`update tenant_memberships set settings_access = 'none' where id = ${id}`,
+    )
+
+    const pending = accept(sent.token, sent.invitee.token).then((res) => res)
+    await sleep(300)
+    await commit()
+
+    expect((await pending).body).toMatchObject({ code: 'invitation.revoked' })
+    expect(await storedMembership(t.id, sent.invitee.id)).toBeUndefined()
   })
 
   it('goes once the org that sent it has expired', async () => {

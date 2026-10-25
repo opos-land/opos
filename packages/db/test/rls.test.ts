@@ -10,6 +10,7 @@ import {
   supabaseAdmin,
   superuser,
 } from './db'
+import { globalReads } from '../src/verify'
 
 // Every covered table (PLAN.md 4.6) and the column that holds its tenant.
 const covered = [
@@ -224,14 +225,32 @@ describe('tenant isolation', () => {
 })
 
 describe('runtime privileges', () => {
-  it.each(covered)('lets opos_app_global only read %s', async (table, column) => {
-    await global.unsafe(`select ${column} from ${table} limit 1`)
+  // The columns the cross-tenant queries of PLAN.md 4.6 read: the list db:verify holds the role
+  // to, so the grants the migrations made and that list cannot drift apart.
+  const readsOf = (table: string) =>
+    globalReads.filter((read) => read.startsWith(`${table}.`)).map((read) => read.split('.')[1]!)
+
+  it.each(covered)('lets opos_app_global read only what its queries need of %s', async (table) => {
+    const columns = await migrator<{ column: string }[]>`
+      select a.attname as column from pg_attribute a
+      where a.attrelid = ${'public.' + table}::regclass and a.attnum > 0 and not a.attisdropped
+    `
+    // `default values`, `= null` and a `false` condition reach the privilege check before
+    // anything else, so only a missing insert, update or delete privilege can refuse them.
+    for (const { column } of columns) {
+      const read = global.unsafe(`select ${column} from ${table} limit 1`)
+      if (readsOf(table).includes(column)) await read
+      else await expect(read, column).rejects.toThrow(/permission denied/)
+      await expect(
+        global.unsafe(`update ${table} set ${column} = null where false`),
+        `update ${column}`,
+      ).rejects.toThrow(/permission denied/)
+    }
     for (const statement of [
-      `insert into ${table} select * from ${table} where false`,
-      `update ${table} set ${column} = ${column} where false`,
+      `insert into ${table} default values`,
       `delete from ${table} where false`,
     ]) {
-      await expect(global.unsafe(statement)).rejects.toThrow(/permission denied/)
+      await expect(global.unsafe(statement), statement).rejects.toThrow(/permission denied/)
     }
   })
 

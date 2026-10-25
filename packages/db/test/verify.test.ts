@@ -252,6 +252,29 @@ describe('verifyDatabase', () => {
       },
     )
 
+    it('reports a table-level read granted to opos_app_global', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant select on public.editions to opos_app_global`),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app_global SELECT on editions/)
+    })
+
+    it.each([
+      ['editions', 'name'],
+      ['tenants', 'created_at'],
+      ['accepted_invitations', 'jti'],
+    ])(
+      'reports a read of %s.%s, which no cross-tenant query needs, by opos_app_global',
+      async (table, column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+        )
+      },
+    )
+
     it('reports a column of accounts readable by opos_app_global', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`grant select (email) on public.accounts to opos_app_global`),

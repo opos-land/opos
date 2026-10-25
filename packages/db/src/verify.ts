@@ -7,6 +7,34 @@ import type postgres from 'postgres'
 const isolation = (column: string) =>
   `(${column} = ( SELECT (current_setting('app.tenant_id'::text))::uuid AS current_setting))`
 
+/**
+ * The columns opos_app_global reads: what the cross-tenant queries of PLAN.md 4.6 select, and
+ * nothing else. A query that needs another column adds it here in the PR of its migration.
+ */
+export const globalReads = [
+  'tenants.id',
+  'tenants.slug',
+  'tenants.name',
+  'tenants.default_locale',
+  'tenants.timezone',
+  'tenant_memberships.id',
+  'tenant_memberships.tenant_id',
+  'tenant_memberships.account_id',
+  'tenant_memberships.role',
+  'tenant_memberships.settings_access',
+  'tenant_memberships.branding_access',
+  'tenant_memberships.shop_config_access',
+  'tenant_memberships.expires_at',
+  'editions.id',
+  'editions.slug',
+  'editions.starts_at',
+  'edition_memberships.tenant_membership_id',
+  'edition_memberships.edition_id',
+  'edition_memberships.program_access',
+  'edition_memberships.website_content_access',
+  'edition_memberships.tickets_access',
+]
+
 /** The public tables outside tenant isolation (PLAN.md 4.2). */
 const globalTables = ['accounts']
 
@@ -173,7 +201,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege(r.role, c.oid, p.privilege)
       and (
-        (r.role = 'opos_app_global' and (p.privilege <> 'SELECT' or c.relname = 'accounts'))
+        r.role = 'opos_app_global'
         or (r.role = 'opos_app' and p.privilege in ('UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'))
         or (r.role = 'opos_app' and p.privilege in ('INSERT', 'DELETE')
           and not (c.relname || ' ' || p.privilege) = any(${appWrites}))
@@ -202,7 +230,8 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
       and has_column_privilege(r.role, c.oid, a.attnum, p.privilege)
       and not has_table_privilege(r.role, c.oid, p.privilege)
       and (
-        (r.role = 'opos_app_global' and (p.privilege <> 'SELECT' or c.relname = 'accounts'))
+        (r.role = 'opos_app_global' and (p.privilege <> 'SELECT'
+          or not (c.relname || '.' || a.attname) = any(${globalReads})))
         or (r.role = 'opos_app' and p.privilege = 'REFERENCES')
         or (r.role = 'opos_app' and p.privilege = 'INSERT'
           and not (c.relname || ' INSERT') = any(${appWrites}))

@@ -21,7 +21,10 @@ import {
   tenantState,
   tenantWithHead,
 } from './tenants'
-import { tenantWriteLockKey } from '../src/common/permissions/tenant-write-lock'
+import {
+  TENANT_WRITE_LOCK_TIMEOUT_MS,
+  tenantWriteLockKey,
+} from '../src/common/permissions/tenant-write-lock'
 import { tenantRequirements } from './route-needs'
 
 let app: NestExpressApplication
@@ -688,6 +691,40 @@ describe('concurrency', () => {
         expect(await tenantState(s.t.id)).toEqual(expected)
       },
     )
+
+    // A write waits for the lock a bounded time, then answers 503 and leaves the tenant as it was,
+    // so a lock held long never pins a pool connection for as long.
+    it('answers 503 request.busy to a write that waits too long for the lock', async () => {
+      const s = await setup()
+      const expected = await tenantState(s.t.id)
+      const holder = await openTransaction()
+      await lockTenantWrites(holder.sql, s.t)
+      const started = Date.now()
+      try {
+        const res = await send(s, writes['tenants.update']!(s))
+        expect(res.status).toBe(503)
+        expect(res.body).toMatchObject({ code: 'request.busy' })
+        expect(res.headers['retry-after']).toBe('1')
+        expect(Date.now() - started).toBeGreaterThanOrEqual(TENANT_WRITE_LOCK_TIMEOUT_MS)
+        expect(Date.now() - started).toBeLessThan(TENANT_WRITE_LOCK_TIMEOUT_MS + 2000)
+      } finally {
+        await holder.commit()
+      }
+      expect(await tenantState(s.t.id)).toEqual(expected)
+    }, 15_000)
+
+    // The bound is for the tenant's write lock alone: a row lock the write meets after it keeps
+    // the default and is waited for as long as it is held.
+    it('waits past the lock timeout for a row lock once it holds the write lock', async () => {
+      const s = await setup()
+      const row = await openTransaction()
+      await row.sql`select 1 from tenants where id = ${s.t.id} for update`
+      const pending = send(s, writes['tenants.update']!(s))
+      await sleep(TENANT_WRITE_LOCK_TIMEOUT_MS + 1000)
+      await row.commit()
+
+      expect((await pending).status).toBe(200)
+    }, 15_000)
 
     // The lock is for writes the check lets through: an outsider or a member short of the need is
     // refused at once, so requests that will fail never queue on another tenant's lock.

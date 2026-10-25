@@ -9,3 +9,6 @@ export function tenantWriteLockKey(tenantId: string): string {
   const leading = BigInt(`0x${tenantId.replace(/-/g, '').slice(0, 16)}`)
   return ((leading >> 2n) | (1n << 62n)).toString()
 }
+
+/** How long a write waits for its tenant's write lock before it answers 503 request.busy. */
+export const TENANT_WRITE_LOCK_TIMEOUT_MS = 5000

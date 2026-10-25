@@ -80,6 +80,20 @@ export function postgresConstraint(exception: unknown): string | undefined {
 }
 
 /**
+ * The SQLSTATE of a Postgres error behind an exception, found the same way; a Postgres error is
+ * the one that carries a `severity`, so the code of a Node error such as EPIPE is never taken.
+ */
+export function postgresCode(exception: unknown): string | undefined {
+  let current: unknown = exception
+  for (let depth = 0; depth < 3 && current && typeof current === 'object'; depth++) {
+    const { code, severity } = current as { code?: unknown; severity?: unknown }
+    if (typeof code === 'string' && typeof severity === 'string') return code
+    current = (current as { cause?: unknown }).cause
+  }
+  return undefined
+}
+
+/**
  * The first invalid field of an input oRPC refused. Every route takes the detailed input, so a path
  * starts with params, query or body and the field is below it; an unknown key names itself.
  */
@@ -164,7 +178,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return
     }
     const { status, body, headers } = toErrorResponse(exception)
-    if (status >= 500) this.logger.error(exception)
+    // A busy tenant is expected backpressure (PLAN.md 7.3), not a fault.
+    if (exception instanceof ApiError && exception.code === 'request.busy') {
+      this.logger.warn(exception.message)
+    } else if (status >= 500) {
+      this.logger.error(exception)
+    }
     for (const [name, value] of Object.entries(headers ?? {})) response.setHeader(name, value)
     response.status(status).json(body)
   }

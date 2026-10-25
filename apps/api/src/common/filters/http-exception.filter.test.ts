@@ -9,7 +9,7 @@ import { ORPCError, ValidationError } from '@orpc/server'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { ApiError } from '../errors/api-error'
-import { HttpExceptionFilter, toErrorResponse } from './http-exception.filter'
+import { HttpExceptionFilter, postgresCode, toErrorResponse } from './http-exception.filter'
 
 describe('toErrorResponse', () => {
   it('keeps the code and params of an ApiError', () => {
@@ -151,5 +151,46 @@ describe('HttpExceptionFilter', () => {
     expect(response.setHeader).toHaveBeenCalledWith('Retry-After', '42')
     expect(response.status).toHaveBeenCalledWith(429)
     expect(json).toHaveBeenCalledWith({ code: 'request.rate-limited', message: 'Slow down' })
+  })
+})
+
+describe('HttpExceptionFilter on a busy tenant', () => {
+  it('logs a 503 request.busy as a warning, since it is expected backpressure', () => {
+    const response = {
+      headersSent: false,
+      writableEnded: false,
+      destroy: vi.fn(),
+      setHeader: vi.fn(),
+      status: vi.fn(() => ({ json: vi.fn() })),
+    }
+    const host = {
+      switchToHttp: () => ({ getResponse: () => response }),
+    } as unknown as ArgumentsHost
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+
+    new HttpExceptionFilter().catch(
+      new ApiError(503, 'request.busy', 'The tenant write lock is busy'),
+      host,
+    )
+    expect(response.status).toHaveBeenCalledWith(503)
+    expect(error).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalled()
+    error.mockRestore()
+    warn.mockRestore()
+  })
+})
+
+describe('postgresCode', () => {
+  it('reads the SQLSTATE of a Postgres error wrapped by drizzle', () => {
+    const postgres = Object.assign(new Error('canceling statement due to lock timeout'), {
+      code: '55P03',
+      severity: 'ERROR',
+    })
+    expect(postgresCode(new Error('Failed query', { cause: postgres }))).toBe('55P03')
+  })
+
+  it('ignores the code of an error that does not come from Postgres', () => {
+    expect(postgresCode(Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }))).toBeUndefined()
   })
 })

@@ -3,7 +3,9 @@ import { editionMemberships, editions, tenantMemberships } from '@opos/db'
 import { and, eq, gt, isNull, or, sql } from 'drizzle-orm'
 import { type TenantMembership, TenantContextService } from '../als/tenant-context.service'
 import { type EditionAccess } from './permissions'
-import { tenantWriteLockKey } from './tenant-write-lock'
+import { TENANT_WRITE_LOCK_TIMEOUT_MS, tenantWriteLockKey } from './tenant-write-lock'
+import { ApiError } from '../errors/api-error'
+import { postgresCode } from '../filters/http-exception.filter'
 
 /** Reads the permissions of the request's account, inside its tenant transaction (RLS on). */
 @Injectable()
@@ -15,8 +17,21 @@ export class AccessRepository {
    * (PLAN.md 7.3); a membership read after it sees every member change the lock serialised.
    */
   async lockTenantWrites() {
+    const tx = this.context.tx()
     const key = tenantWriteLockKey(this.context.tenant().id)
-    await this.context.tx().execute(sql`select pg_advisory_xact_lock(${key}::bigint)`)
+    // The wait is bounded for the lock alone; the row locks that follow keep the default.
+    await tx.execute(
+      sql`select set_config('lock_timeout', ${`${TENANT_WRITE_LOCK_TIMEOUT_MS}ms`}, true)`,
+    )
+    try {
+      await tx.execute(sql`select pg_advisory_xact_lock(${key}::bigint)`)
+    } catch (error) {
+      if (postgresCode(error) !== '55P03') throw error
+      throw new ApiError(503, 'request.busy', 'The tenant write lock is busy', undefined, {
+        'Retry-After': '1',
+      })
+    }
+    await tx.execute(sql`set local lock_timeout to default`)
   }
 
   /**

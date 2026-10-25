@@ -83,4 +83,33 @@ describe('TenantWriteQueue', () => {
     await queue.run('a', async () => {})
     expect(Date.now() - started).toBeLessThan(20)
   })
+
+  it('lets the next write start as soon as the running one gives its turn back', async () => {
+    const queue = new TenantWriteQueue(1000)
+    const log: string[] = []
+
+    await Promise.all([
+      queue.run('a', async (release) => {
+        log.push('first commits')
+        release()
+        await sleep(40)
+        log.push('first answers')
+      }),
+      queue.run('a', write(log, 'second', 10)),
+    ])
+
+    expect(log).toEqual(['first commits', 'second start', 'second end', 'first answers'])
+  })
+
+  it('takes the turn back from a write that never settles after its longest turn', async () => {
+    const queue = new TenantWriteQueue(500, 60)
+    const log: string[] = []
+
+    void queue.run('a', () => new Promise<never>(() => {}))
+    const started = Date.now()
+    await queue.run('a', write(log, 'next', 10))
+
+    expect(log).toEqual(['next start', 'next end'])
+    expect(Date.now() - started).toBeGreaterThanOrEqual(50)
+  })
 })

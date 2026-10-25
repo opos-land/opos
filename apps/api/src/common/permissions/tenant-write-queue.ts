@@ -22,9 +22,22 @@ export class TenantWriteQueue {
   /** The promise each tenant's next write waits for: the end of the write queued last. */
   private readonly tails = new Map<string, Promise<void>>()
 
-  constructor(private readonly timeoutMs = TENANT_WRITE_LOCK_TIMEOUT_MS) {}
+  /**
+   * @param timeoutMs how long a write waits for its turn
+   * @param maxTurnMs how long a write keeps its turn at most; one that hangs past it lets the next
+   *   write go on, and the advisory lock still orders them in the database
+   */
+  constructor(
+    private readonly timeoutMs = TENANT_WRITE_LOCK_TIMEOUT_MS,
+    private readonly maxTurnMs = 6 * TENANT_WRITE_LOCK_TIMEOUT_MS,
+  ) {}
 
-  async run<T>(tenantId: string, write: () => Promise<T>): Promise<T> {
+  /**
+   * Runs `write` in its tenant's turn. The turn ends when `write` settles or calls the `release`
+   * it gets, whichever comes first: a write releases it when its transaction ends, so the steps
+   * after the commit run while the next write already goes ahead.
+   */
+  async run<T>(tenantId: string, write: (release: () => void) => Promise<T>): Promise<T> {
     const previous = this.tails.get(tenantId) ?? Promise.resolve()
     let release!: () => void
     const done = new Promise<void>((resolve) => (release = resolve))
@@ -45,9 +58,11 @@ export class TenantWriteQueue {
       void previous.then(release)
       throw tenantBusy(tenantId)
     }
+    const longest = setTimeout(release, this.maxTurnMs)
     try {
-      return await write()
+      return await write(release)
     } finally {
+      clearTimeout(longest)
       release()
     }
   }

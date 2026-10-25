@@ -80,7 +80,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     }
     // An exception rolls back, and so does a status of 300 or more: the one oRPC holds unsent
     // (defer-response.ts), or the one a route outside oRPC set on the response.
-    const run = () =>
+    const run = (ended?: () => void) =>
       this.context.transaction(
         tenant.id,
         async () => {
@@ -96,12 +96,14 @@ export class TenantTransactionInterceptor implements NestInterceptor {
           return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
         },
         () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,
+        ended,
       )
     if (!write) return run()
     // A write is checked once in a short transaction of its own, so a refused one never queues,
-    // then waits in its tenant's queue without a connection, then runs (PLAN.md 7.3).
+    // then waits in its tenant's queue without a connection, then runs and gives its turn back
+    // when its transaction ends, before the after-commit queue and the response (PLAN.md 7.3).
     await this.context.transaction(tenant.id, admit)
-    return this.queue.run(tenant.id, run)
+    return this.queue.run(tenant.id, (release) => run(release))
   }
 
   private async check(requirement: Requirement, request: HttpRequest) {

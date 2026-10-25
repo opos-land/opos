@@ -130,11 +130,16 @@ export class TenantContextService {
     return this.transaction(tenantId, fn)
   }
 
-  /** The tenant transaction itself; `commit` decides from the result whether to keep it. */
+  /**
+   * The tenant transaction itself; `commit` decides from the result whether to keep it. `ended`
+   * runs once the transaction has committed or rolled back, before the after-commit queue and the
+   * held response.
+   */
   async transaction<T>(
     tenantId: string,
     fn: () => Promise<T>,
     commit: (result: T) => boolean = () => true,
+    ended: () => void = () => {},
   ): Promise<T> {
     const parent = storage.getStore()
     if (parent?.tx) throw new Error('A tenant transaction is already open')
@@ -142,15 +147,17 @@ export class TenantContextService {
 
     let result: T
     try {
-      result = await storage.run(store, () =>
-        this.db.transaction(async (tx) => {
-          store.tx = tx
-          await setTenantContext(tx, tenantId)
-          const value = await fn()
-          if (!commit(value)) throw new Rollback(value)
-          return value
-        }),
-      )
+      result = await storage
+        .run(store, () =>
+          this.db.transaction(async (tx) => {
+            store.tx = tx
+            await setTenantContext(tx, tenantId)
+            const value = await fn()
+            if (!commit(value)) throw new Rollback(value)
+            return value
+          }),
+        )
+        .finally(ended)
     } catch (error) {
       if (!(error instanceof Rollback)) throw error
       await sendDeferred(store)

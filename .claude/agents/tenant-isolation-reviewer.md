@@ -38,7 +38,7 @@ sections before you review; when the diff and the document disagree, report it.
   transactions (check for a missing lock) and on every path that can break it (insert, update,
   delete, cascades).
 - Constraint and index names follow PLAN.md 4; foreign keys use `foreignKey({ name })`.
-- `packages/db/src/scripts/verify.ts` still catches the new tables.
+- `packages/db/src/verify.ts` still catches the new tables.
 
 **Cross-tenant access**
 - Every query on the `opos_app_global` role (`GlobalDbService`, `globalDb()`) appears in the table

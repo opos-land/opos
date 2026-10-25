@@ -643,8 +643,10 @@ because Supabase Auth runs with `search_path = auth`. `db:push` is for local exp
 everything else goes through generated migrations.
 
 Every `db:*` script connects as `opos_migrator` through `DATABASE_MIGRATION_URL`
-([11](#11-environment-variables)). `pnpm db:verify`
-([verify.ts](../packages/db/src/scripts/verify.ts)) exits non-zero when:
+([11](#11-environment-variables)). `pnpm db:verify` runs the checks of
+[verify.ts](../packages/db/src/verify.ts) and exits non-zero when one fails; each check has a case in
+[verify.test.ts](../packages/db/test/verify.test.ts) that breaks the rule in a rolled-back
+transaction and expects the report:
 
 - a covered table — `tenants` or any `public` table with a `tenant_id` column — lacks enabled or
   forced RLS;

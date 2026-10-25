@@ -146,7 +146,9 @@ the repository; their purpose is stated in the files themselves, not here.
 opos/
   package.json, pnpm-workspace.yaml, turbo.json, mise.toml, lefthook.yml,
   commitlint.config.mjs, docker-compose.yml, .prettierrc, .github/   # built: root tooling (3.1, 12, 15.3)
-  .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers (AGENTS.md)
+  .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers, the
+                              #   tests-first hook in settings.json (AGENTS.md)
+  scripts/                    # built: tests-first.mjs, the RLS and RBAC test-first check, and its test
   docker-compose.prod.yml     # prod: traefik + apps + supabase db + auth
   docs/
     PRODUCT.md
@@ -1902,7 +1904,8 @@ and commented with the advisory id. The override leaves once the parent ships th
 ### Git hooks
 
 [lefthook.yml](../lefthook.yml), installed by `prepare`, so `pnpm install` is enough: prettier and
-`eslint --fix` on staged files before a commit, commitlint on the message, and
+`eslint --fix` on staged files before a commit, commitlint and the
+[tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) on the message, and
 `turbo run typecheck test` on the packages changed against `origin/develop` before a push (the API
 tests need `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
@@ -2201,7 +2204,9 @@ run with `--affected` against the PR base branch; a push to `develop` or `main` 
 package and fills the turbo cache that PRs restore. `pnpm build` then bundles the API, and the job
 starts `dist/main.js` with `NODE_ENV=production` against the same containers: `/health` must answer
 `200`. The tests run the sources; this step runs the bundle that production runs.
-`pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
+`pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR, and so do
+`pnpm test:scripts` (the root `scripts/`, on `node --test`) and, on a PR only, the
+[tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) over the PR's commits.
 
 Branches:
 
@@ -2279,7 +2284,8 @@ real TLS, real Google, real email delivery and a real phone.
    point `main`/`types` at `src/index.ts`. The only exception is the translation catalogs: they
    need `pnpm i18n:compile`, wired in as a dependency of `dev`, `build` and `test`
    ([3.1](#31-turbo-tasks)).
-3. **Green before every PR** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:verify`.
+3. **Green before every PR** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:scripts`,
+   `pnpm db:verify`.
    A change visible in the UI additionally passes `pnpm test:e2e` and is clicked through or
    checked with `curl`; a portal change also in a mobile viewport.
 4. **Every user-facing string inside a Lingui macro** — `<Trans>`, `t`, `plural`, `msg`. A bare
@@ -2294,3 +2300,6 @@ real TLS, real Google, real email delivery and a real phone.
    service role key or a PostgREST endpoint.
 7. **Repository conventions** — Conventional Commits, English everywhere except the `pl` catalog,
    no emoji, no AI-generated graphics — are set in [AGENTS.md](../AGENTS.md).
+8. **Tests first for RLS and RBAC** — a change to tenant isolation or permissions starts with a
+   test that fails for the reason the change addresses; the areas, the enforcement and the
+   `No-Test-Reason:` exemption are in [AGENTS.md](../AGENTS.md#tests-first-for-rls-and-rbac).

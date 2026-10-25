@@ -5,6 +5,9 @@ commit-msg:
   jobs:
     - name: commitlint
       run: pnpm commitlint --edit {1}
+    # RLS and RBAC code travels with its test (AGENTS.md)
+    - name: tests-first
+      run: node scripts/tests-first.mjs --commit-msg {1}
 
 pre-commit:
   jobs:

@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common'
 import { editionMemberships, editions, tenantMemberships } from '@opos/db'
 import { and, eq, gt, isNull, or, sql } from 'drizzle-orm'
 import { type TenantMembership, TenantContextService } from '../als/tenant-context.service'
+import { currentTenantId } from '../database/current-tenant'
 import { type EditionAccess } from './permissions'
 import { tenantWriteLockKey } from './tenant-write-lock'
 
-/** Reads the permissions of the request's account, inside its tenant transaction (RLS on). */
+/**
+ * Reads the permissions of the request's account inside its tenant transaction; every query
+ * filters on the transaction's tenant itself, besides RLS (PLAN.md 4.6).
+ */
 @Injectable()
 export class AccessRepository {
   constructor(private readonly context: TenantContextService) {}
@@ -39,6 +43,7 @@ export class AccessRepository {
       .where(
         and(
           eq(tenantMemberships.accountId, accountId),
+          eq(tenantMemberships.tenantId, currentTenantId),
           or(
             isNull(tenantMemberships.expiresAt),
             gt(tenantMemberships.expiresAt, sql`statement_timestamp()`),
@@ -50,7 +55,7 @@ export class AccessRepository {
 
   /**
    * The edition-level permissions of a membership in one edition, in one query: `undefined` when
-   * the edition does not exist in this tenant (RLS hides another tenant's), `null` when the
+   * the edition does not exist in this tenant (another tenant's included), `null` when the
    * membership has no row for it.
    */
   async editionAccess(
@@ -73,7 +78,7 @@ export class AccessRepository {
           eq(editionMemberships.tenantMembershipId, membershipId),
         ),
       )
-      .where(eq(editions.id, editionId))
+      .where(and(eq(editions.id, editionId), eq(editions.tenantId, currentTenantId)))
     if (!row) return undefined
     const { membershipId: rowId, programAccess, websiteContentAccess, ticketsAccess } = row
     if (!rowId || !programAccess || !websiteContentAccess || !ticketsAccess) return null
@@ -91,7 +96,12 @@ export class AccessRepository {
         ticketsAccess: editionMemberships.ticketsAccess,
       })
       .from(editionMemberships)
-      .where(eq(editionMemberships.tenantMembershipId, membershipId))
+      .where(
+        and(
+          eq(editionMemberships.tenantMembershipId, membershipId),
+          eq(editionMemberships.tenantId, currentTenantId),
+        ),
+      )
     return new Map(rows.map(({ editionId, ...access }) => [editionId, access]))
   }
 }

@@ -575,8 +575,14 @@ select set_config('app.tenant_id', $1, true);   -- SET LOCAL, dropped when the t
 The third argument `true` is mandatory. Every request inside a tenant context runs in a
 transaction. [setTenantContext](../packages/db/src/rls.ts) reads `current_user` and the role's
 `SUPERUSER` and `BYPASSRLS` and whether it is a member of another role in the same query, and
-throws unless the connection is `opos_app` with none of them: a `DATABASE_URL` that names another role answers `500` on every tenant route
-instead of reading every tenant.
+throws unless the connection is `opos_app` with none of them: a `DATABASE_URL` that names another
+role answers `500` on every tenant route instead of reading every tenant. The queries that decide
+what a request may do also filter on `current_setting('app.tenant_id')`
+([current-tenant.ts](../apps/api/src/common/database/current-tenant.ts)) themselves: every query of
+[access.repository.ts](../apps/api/src/common/permissions/access.repository.ts) (the actor's
+membership, edition access and edition rows) and of the invitation repository (the tenant, its
+members, editions and accepted invitations). The other repositories rely on RLS, which
+`setTenantContext` guarantees.
 
 #### Policy shape
 
@@ -2135,7 +2141,7 @@ cannot run beside an API started with `pnpm dev`.
 | Area | What we check |
 |---|---|
 | permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere. [route-requirements.test.ts](../apps/api/test/route-requirements.test.ts) names the need of every tenant route and the routes without sign-in, and fails until a new contract route is on its lists; every tenant route then answers `401` without a token, `403` to an outsider, a head of another tenant, an expired org holding everything and an org one level short of the need with every other permission at `write`, and lets an org holding exactly the need and a head through; every other route but the public ones answers `401` without a token |
-| tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404`; a membership id that is not a uuid -> `404` |
+| tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404`; a membership id that is not a uuid -> `404`; on a connection that bypasses RLS, the queries of the access and invitation repositories find nothing of another tenant and an invitation's tenant is the transaction's |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
 | transactions | an API whose `DATABASE_URL` names `opos_migrator` answers `500` to every tenant route; a tenant context on `opos_app_global`, `opos_migrator`, or an `opos_app` with `BYPASSRLS` or a membership in another role throws; a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |

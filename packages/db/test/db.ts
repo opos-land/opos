@@ -4,7 +4,7 @@ import { afterAll } from 'vitest'
 import { migrationUrl } from '../src/migration-url'
 
 // Every role connects to the host and database of DATABASE_MIGRATION_URL.
-const url = (user: string, password: string) => {
+export const url = (user: string, password: string) => {
   const target = new URL(migrationUrl())
   target.username = user
   target.password = password

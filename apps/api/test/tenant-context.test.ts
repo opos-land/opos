@@ -189,6 +189,23 @@ describe('tenant transaction', () => {
     await as(a.head, a.slug).get('/tenants/current').expect(200)
   })
 
+  it('serves no tenant when DATABASE_URL names a role that bypasses RLS', async () => {
+    const migrator = new URL(process.env.DATABASE_MIGRATION_URL!)
+    const bypassing = await createApp({ DATABASE_URL: migrator.toString() })
+    try {
+      for (const path of ['/tenants/current', '/editions']) {
+        const res = await request(bypassing.getHttpServer())
+          .get(path)
+          .set('Authorization', `Bearer ${a.head.token}`)
+          .set('X-Tenant-Slug', a.slug)
+        expect(res.status, path).toBe(500)
+        expect(res.body, path).toEqual({ code: 'server.error', message: 'Internal server error' })
+      }
+    } finally {
+      await bypassing.close()
+    }
+  })
+
   it('throws when a repository runs outside a tenant transaction', async () => {
     const res = await as(a.head).get('/probe/outside').expect(500)
     expect(res.body).toEqual({ code: 'server.error', message: 'Internal server error' })

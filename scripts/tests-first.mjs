@@ -63,12 +63,24 @@ export function editRefusal(path, changed) {
   return `${path} is ${name} code: write or change its test first, in ${area.where}, and watch it fail (AGENTS.md, "Tests first for RLS and RBAC").`
 }
 
+/**
+ * The paths of `git status --porcelain` output, untouched: a status column may start with a space,
+ * so the output must not be trimmed. A rename yields its new path.
+ */
+export function changedPaths(status) {
+  return status
+    .split('\n')
+    .filter((line) => line.length > 3)
+    .map((line) => line.slice(3).replace(/^.* -> /, ''))
+}
+
 /** Whether a commit message carries a `No-Test-Reason:` trailer with a reason. */
 export function exempted(message) {
   return /^No-Test-Reason:[ \t]*\S/m.test(message)
 }
 
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
+const raw = (...args) => execFileSync('git', args, { encoding: 'utf8' })
+const git = (...args) => raw(...args).trim()
 const lines = (output) => (output ? output.split('\n') : [])
 
 function report(missing) {
@@ -89,9 +101,7 @@ function main([mode, value]) {
     if (!target) return 0
     const path = relative(root, target)
     // Changed, staged and untracked files of the working tree.
-    const changed = lines(git('status', '--porcelain', '--untracked-files=all')).map((line) =>
-      line.slice(3).replace(/^.* -> /, ''),
-    )
+    const changed = changedPaths(raw('status', '--porcelain', '--untracked-files=all'))
     const refusal = editRefusal(path, changed)
     if (!refusal) return 0
     console.error(refusal)

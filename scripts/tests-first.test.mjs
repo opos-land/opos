@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { areaOf, editRefusal, exempted, missingTests } from './tests-first.mjs'
+import { areaOf, changedPaths, editRefusal, exempted, missingTests } from './tests-first.mjs'
 
 describe('areaOf', () => {
   it('puts the database isolation code in rls', () => {
@@ -123,5 +123,23 @@ describe('exempted', () => {
   it('needs a reason after the trailer', () => {
     assert.equal(exempted('fix(db): x\n\nNo-Test-Reason:\n'), false)
     assert.equal(exempted('fix(db): x'), false)
+  })
+})
+
+describe('changedPaths', () => {
+  it('reads every path of git status --porcelain, the first line included', () => {
+    const status = [
+      ' M apps/api/test/tenants-editions.test.ts',
+      'M  packages/db/src/rls.ts',
+      '?? scripts/new.mjs',
+      'R  old/name.ts -> packages/db/src/verify.ts',
+      '',
+    ].join('\n')
+    assert.deepEqual(changedPaths(status), [
+      'apps/api/test/tenants-editions.test.ts',
+      'packages/db/src/rls.ts',
+      'scripts/new.mjs',
+      'packages/db/src/verify.ts',
+    ])
   })
 })

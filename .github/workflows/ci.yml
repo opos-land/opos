@@ -25,6 +25,10 @@ jobs:
           restore-keys: turbo-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
+      - run: pnpm test:scripts
+      # RLS and RBAC code travels with its test (AGENTS.md)
+      - if: github.event_name == 'pull_request'
+        run: node scripts/tests-first.mjs --base origin/${{ github.base_ref }}
       - run: pnpm i18n:check
       # mailpit: the send-email hook test reads what the API sent
       - run: docker compose up -d --wait db auth mailpit

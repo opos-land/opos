@@ -43,7 +43,13 @@ export async function addEdition(tenantId: string) {
 export async function addOrg(
   tenantId: string,
   account: { id: string },
-  access: { settings?: Level; expired?: boolean; expiresAt?: Date } = {},
+  access: {
+    settings?: Level
+    branding?: Level
+    shop?: Level
+    expired?: boolean
+    expiresAt?: Date
+  } = {},
 ) {
   const expiresAt = access.expired
     ? sql`now() - interval '1 day'`
@@ -51,8 +57,10 @@ export async function addOrg(
       ? sql`${access.expiresAt.toISOString()}::timestamptz`
       : null
   const rows = await db.execute<{ id: string }>(sql`
-    insert into tenant_memberships (account_id, tenant_id, role, settings_access, expires_at)
-    values (${account.id}, ${tenantId}, 'org', ${access.settings ?? 'none'}, ${expiresAt})
+    insert into tenant_memberships
+      (account_id, tenant_id, role, settings_access, branding_access, shop_config_access, expires_at)
+    values (${account.id}, ${tenantId}, 'org', ${access.settings ?? 'none'},
+      ${access.branding ?? 'none'}, ${access.shop ?? 'none'}, ${expiresAt})
     returning id
   `)
   return rows[0]!.id
@@ -62,11 +70,13 @@ export async function addEditionAccess(
   tenantId: string,
   membershipId: string,
   editionId: string,
-  access: { program?: Level; tickets?: Level },
+  access: { program?: Level; websiteContent?: Level; tickets?: Level },
 ) {
   await db.execute(sql`
-    insert into edition_memberships (tenant_id, tenant_membership_id, edition_id, program_access, tickets_access)
-    values (${tenantId}, ${membershipId}, ${editionId}, ${access.program ?? 'none'}, ${access.tickets ?? 'none'})
+    insert into edition_memberships
+      (tenant_id, tenant_membership_id, edition_id, program_access, website_content_access, tickets_access)
+    values (${tenantId}, ${membershipId}, ${editionId}, ${access.program ?? 'none'},
+      ${access.websiteContent ?? 'none'}, ${access.tickets ?? 'none'})
   `)
 }
 
@@ -107,6 +117,54 @@ export async function holdOpen(
     await sql`commit`
     sql.release()
   }
+}
+
+/** A transaction on a connection of its own that a test drives statement by statement. */
+export async function openTransaction() {
+  const sql = await db.$client.reserve()
+  await sql`begin`
+  const end = async (statement: 'commit' | 'rollback') => {
+    await sql.unsafe(statement)
+    sql.release()
+  }
+  return { sql, commit: () => end('commit'), rollback: () => end('rollback') }
+}
+
+/**
+ * Everything a tenant route can write in one tenant, as stored: the tenant, its editions, its
+ * memberships on both levels. Equal snapshots before and after a refused request mean it changed
+ * nothing.
+ */
+export async function tenantState(tenantId: string) {
+  const [tenant] = await db.execute(
+    sql`select name, default_locale, timezone from tenants where id = ${tenantId}`,
+  )
+  const editions = await db.execute(sql`
+    select id, slug, name, starts_at, ends_at, is_active, is_published
+    from editions where tenant_id = ${tenantId} order by id
+  `)
+  const memberships = await db.execute(sql`
+    select id, account_id, role, settings_access, branding_access, shop_config_access, expires_at
+    from tenant_memberships where tenant_id = ${tenantId} order by id
+  `)
+  const editionMemberships = await db.execute(sql`
+    select tenant_membership_id, edition_id, program_access, website_content_access, tickets_access
+    from edition_memberships where tenant_id = ${tenantId} order by tenant_membership_id, edition_id
+  `)
+  return {
+    tenant,
+    editions: [...editions],
+    memberships: [...memberships],
+    editionMemberships: [...editionMemberships],
+  }
+}
+
+/** Sets a membership to expire `ms` milliseconds from now, measured by the database. */
+export async function expireIn(membershipId: string, ms: number) {
+  await db.execute(sql`
+    update tenant_memberships set expires_at = now() + make_interval(secs => ${ms / 1000})
+    where id = ${membershipId}
+  `)
 }
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))

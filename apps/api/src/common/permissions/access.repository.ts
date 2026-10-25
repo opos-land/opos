@@ -3,13 +3,27 @@ import { editionMemberships, editions, tenantMemberships } from '@opos/db'
 import { and, eq, gt, isNull, or, sql } from 'drizzle-orm'
 import { type TenantMembership, TenantContextService } from '../als/tenant-context.service'
 import { type EditionAccess } from './permissions'
+import { tenantWriteLockKey } from './tenant-write-lock'
 
 /** Reads the permissions of the request's account, inside its tenant transaction (RLS on). */
 @Injectable()
 export class AccessRepository {
   constructor(private readonly context: TenantContextService) {}
 
-  /** The account's membership in the tenant of the transaction, skipping an expired one. */
+  /**
+   * Waits for and takes the write lock of the tenant in context until the transaction ends
+   * (PLAN.md 7.3); a membership read after it sees every member change the lock serialised.
+   */
+  async lockTenantWrites() {
+    const key = tenantWriteLockKey(this.context.tenant().id)
+    await this.context.tx().execute(sql`select pg_advisory_xact_lock(${key}::bigint)`)
+  }
+
+  /**
+   * The account's membership in the tenant of the transaction, skipping an expired one. Expiry
+   * is measured when the read runs, not when the transaction began, since a write may first wait
+   * for the tenant's write lock.
+   */
   async activeMembership(accountId: string): Promise<TenantMembership | null> {
     const [row] = await this.context
       .tx()
@@ -25,7 +39,10 @@ export class AccessRepository {
       .where(
         and(
           eq(tenantMemberships.accountId, accountId),
-          or(isNull(tenantMemberships.expiresAt), gt(tenantMemberships.expiresAt, sql`now()`)),
+          or(
+            isNull(tenantMemberships.expiresAt),
+            gt(tenantMemberships.expiresAt, sql`statement_timestamp()`),
+          ),
         ),
       )
     return row ?? null

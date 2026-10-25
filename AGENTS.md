@@ -193,6 +193,34 @@ JavaScript-only `packages/eslint-config`); an integration test, which needs Post
 or HTTP, goes into the `test/` directory of its package or application; an e2e test goes into the
 `e2e` package. New code with logic of its own gets a unit test in the same commit.
 
+### Tests first for RLS and RBAC
+
+A change to tenant isolation or to permissions starts with its test: write or change the test, run
+it and watch it fail for the reason the change addresses, then change the code. A rule that already
+holds gets a test that passes at once — break the code on purpose once to see the test catch it,
+then restore it.
+
+| Area | Code | Its tests |
+|---|---|---|
+| `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client}.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
+| `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/{tenants,editions}/`, `apps/api/src/app.module.ts`, `packages/contract/src/common.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
+
+A deleted test is no test of its area; deleted code is a change of its area.
+
+[scripts/tests-first.mjs](scripts/tests-first.mjs) holds this table and enforces it three times:
+
+| Where | Refuses |
+|---|---|
+| Claude Code hooks ([.claude/settings.json](.claude/settings.json)) | an `Edit` or `Write` of an area's code while no test of that area has changed in the working tree; after a `Bash` command, it reports an area's code the command changed under the same condition |
+| lefthook `commit-msg` | a commit that stages an area's code without a test of that area |
+| CI, on a pull request | commits since the base branch that change an area's code without a test of that area; merge commits are skipped, as in lefthook |
+
+A change that needs no test — a rename, a comment, a moved import — says why in a
+`No-Test-Reason: <reason>` trailer of its commit message; an agent the hook refuses such an edit
+asks the user instead of working around the hook. An amend that stages only code is refused when
+the code's test came in the commit it amends: stage the test again or add the trailer. A guarded path that moves or a new
+directory that holds RLS or RBAC code changes the table here and in the script together.
+
 **Project skill and reviewers** in `.claude/`. The `docs-sync` skill is the procedure for every
 change to PRODUCT.md or PLAN.md, link and anchor check included. Before a PR, run the
 `tenant-isolation-reviewer` agent when the change touches `packages/db` or `apps/api`, and the

@@ -146,7 +146,9 @@ the repository; their purpose is stated in the files themselves, not here.
 opos/
   package.json, pnpm-workspace.yaml, turbo.json, mise.toml, lefthook.yml,
   commitlint.config.mjs, docker-compose.yml, .prettierrc, .github/   # built: root tooling (3.1, 12, 15.3)
-  .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers (AGENTS.md)
+  .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers, the
+                              #   tests-first hooks in settings.json (AGENTS.md)
+  scripts/                    # built: tests-first.mjs, the RLS and RBAC test-first check, and its test
   docker-compose.prod.yml     # prod: traefik + apps + supabase db + auth
   docs/
     PRODUCT.md
@@ -571,7 +573,10 @@ select set_config('app.tenant_id', $1, true);   -- SET LOCAL, dropped when the t
 ```
 
 The third argument `true` is mandatory. Every request inside a tenant context runs in a
-transaction.
+transaction. [setTenantContext](../packages/db/src/rls.ts) reads `current_user` and the role's
+`SUPERUSER` and `BYPASSRLS` and whether it is a member of another role in the same query, and
+throws unless the connection is `opos_app` with none of them: a `DATABASE_URL` that names another role answers `500` on every tenant route
+instead of reading every tenant.
 
 #### Policy shape
 
@@ -643,19 +648,31 @@ because Supabase Auth runs with `search_path = auth`. `db:push` is for local exp
 everything else goes through generated migrations.
 
 Every `db:*` script connects as `opos_migrator` through `DATABASE_MIGRATION_URL`
-([11](#11-environment-variables)). `pnpm db:verify`
-([verify.ts](../packages/db/src/scripts/verify.ts)) exits non-zero when:
+([11](#11-environment-variables)). `pnpm db:verify` runs the checks of
+[verify.ts](../packages/db/src/verify.ts) and exits non-zero when one fails; each check has a case in
+[verify.test.ts](../packages/db/test/verify.test.ts) that breaks the rule in a rolled-back
+transaction and expects the report:
 
-- a covered table — `tenants` or any `public` table with a `tenant_id` column — lacks enabled or
-  forced RLS;
+- a covered table — `tenants` or any `public` table, partitioned ones included, with a
+  `tenant_id` column — lacks enabled or forced RLS;
 - its `tenant_isolation` policy is missing, is not a permissive policy for all commands and every
   role, or its `USING` or `WITH CHECK` differs from the [policy shape](#policy-shape);
 - a covered table has another permissive policy;
-- a role holds more on a `public` table than the rules above allow: anything but `select` for
+- a `public` table is neither covered nor a [global table](#42-global-tables): a tenant table
+  carries its own `tenant_id`, never only an `edition_id` or `order_id`;
+- a `public` view lacks `security_invoker` set to a value Postgres reads as true (`true`, `on`, `yes`,
+  `1` and their prefixes), or `public` holds a materialized view;
+- a role holds more on a `public` table or view than the rules above allow: anything but `select` for
   `opos_app_global` (and nothing on `accounts`), a table-wide `update` for `opos_app` or an
   `insert` or `delete` of it missing from the list of the API's writes in `verify.ts` (a write the
   API starts doing joins that list in the PR of its migration), anything at all for `anon`,
-  `authenticated` and `service_role`;
+  `authenticated` and `service_role` — table-level and column-level grants alike, so `opos_app`
+  updates only the columns on the list in `verify.ts`;
+- `opos_app` has `SUPERUSER` or `BYPASSRLS`, a runtime role owns a relation in `public` or is a
+  member of another role, or any of the five roles holds anything on a `public` sequence;
+- a `security definer` function in `public` has no pinned `search_path`, or `opos_app`,
+  `opos_app_global`, `anon`, `authenticated` or `service_role` may execute it — Postgres grants
+  `execute` to `public` on every new function, so its migration revokes it;
 - `anon`, `authenticated` or `service_role` holds `usage` or `create` on the `public` schema;
 - `opos_migrator` holds anything on `auth.users` beyond `references (id)` and `trigger`.
 
@@ -1138,6 +1155,23 @@ with `@Implement(contract.<router>.<route>)` and its requirement next to it: a r
 `meta.tenant` an unknown slug and expects the interceptor's `404`.
 `TenantTransactionInterceptor` reads the decorator through the `Reflector` and runs the check
 inside the tenant transaction ([7.2](#72-tenant-context)).
+
+A route that needs `write`, on either level, checks the membership once without a lock, so a
+request that is refused never waits; one that passes then takes the tenant's write lock — a
+transaction-level advisory lock whose bigint key comes from the tenant id
+([tenant-write-lock.ts](../apps/api/src/common/permissions/tenant-write-lock.ts)) and always lies
+in `[2^62, 2^63)`, outside the int4 range of Supabase Auth's own advisory keys — and checks again
+on a fresh read. Every route that lowers another member's access (demotion, removal, an earlier
+expiry, a lower edition permission) is itself a write route, so the second check sees each such
+change committed, and none can land before the write commits. Deleting one's own account
+(`DELETE /me`) removes memberships through Supabase Auth without the lock; it lowers only the
+deleting account's own access. Expiry is measured with `statement_timestamp()`, the time of the
+read, since a write may wait for the lock. The lock comes before any row lock of the transaction,
+so it adds no lock-order cycle with the member routes, which lock memberships `for update` and then
+the tenant row through the last-head trigger. Read routes take no lock. The
+`a write while a change to its actor commits` cases cover every write route of the contract and
+fail for a new one until it is listed; an edition-level write has its case on the probe route of
+[tenant-context.test.ts](../apps/api/test/tenant-context.test.ts).
 
 ### 7.4 Authorization
 
@@ -1892,7 +1926,8 @@ and commented with the advisory id. The override leaves once the parent ships th
 ### Git hooks
 
 [lefthook.yml](../lefthook.yml), installed by `prepare`, so `pnpm install` is enough: prettier and
-`eslint --fix` on staged files before a commit, commitlint on the message, and
+`eslint --fix` on staged files before a commit, commitlint and the
+[tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) on the message, and
 `turbo run typecheck test` on the packages changed against `origin/develop` before a push (the API
 tests need `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
@@ -2064,9 +2099,13 @@ entry point) and never contribute messages (`linguiConfig()` excludes them).
 
 The schema itself is tested in `packages/db/test` with Vitest on the `db` container alone, before
 any API code: the global setup applies the migrations, the tests connect as `opos_migrator`,
-`opos_app`, `supabase_auth_admin` (writes to `auth.users`) and `postgres` (`set role anon`), and
-remove the tenants and users they created. They cover the RLS row of the table below for every
-covered table (no context, another tenant's context, a row moved to another tenant), the
+`opos_app`, `supabase_auth_admin` (writes to `auth.users`), `postgres` (`set role anon`) and
+`supabase_admin` (roles and ownership, only inside transactions they roll back), and remove the tenants and users they created. They cover the RLS row of the table below for every
+covered table (no context, another tenant's context, a row moved to another tenant — refused by the
+missing privilege and, for a role created in the test that holds it, by `WITH CHECK` — and an
+`update` or `delete` of another tenant's rows changing none), a pooled session reused after a
+tenant transaction reading no tenant, and a check that the list of covered tables equals the
+catalog's, so a new tenant table fails the suite until its cases exist. They also cover the
 `accounts` privileges, the runtime roles' privileges (`opos_app_global` only reads, `opos_app`
 updates only the granted columns, inserts and deletes no tenant, inserts memberships and accepted
 invitations but never changes or removes an accepted invitation), the
@@ -2075,7 +2114,8 @@ concurrent transactions demoting different heads, a head expiry, a tenant-level 
 head, an `edition_membership` with a
 foreign edition, an edition slug outside its format), `createTenant` and `renameTenant` with each
 of their refusals, an unconfirmed head included, and the `accounts` triggers, the email
-confirmation included. The API tests repeat
+confirmation included. Every rule of `db:verify` ([4.6](#migrations-and-verification)) has a
+case that breaks it inside a rolled-back transaction and expects the report. The API tests repeat
 these checks through the endpoints.
 
 Vitest + supertest against Postgres and Supabase Auth in containers (`supabase/postgres` and
@@ -2090,15 +2130,16 @@ cannot run beside an API started with `pnpm dev`.
 
 | Area | What we check |
 |---|---|
-| permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere |
+| permission matrix | for every (endpoint, permission) pair: `none` -> `403`, `read` -> reads yes / writes `403`, `write` -> both; `head` passes everywhere. [route-requirements.test.ts](../apps/api/test/route-requirements.test.ts) names the need of every tenant route and the routes without sign-in, and fails until a new contract route is on its lists; every tenant route then answers `401` without a token, `403` to an outsider, a head of another tenant, an expired org holding everything and an org one level short of the need with every other permission at `write`, and lets an org holding exactly the need and a head through; every other route but the public ones answers `401` without a token |
 | tenant isolation | the same set of requests with someone else's `X-Tenant-Slug` and someone else's identifiers -> `403` / `404`; a membership id that is not a uuid -> `404` |
 | RLS | a query on `opos_app` without `app.tenant_id` -> error; with tenant B's context -> zero rows of tenant A; an `insert` with a foreign `tenant_id` -> `WITH CHECK` violation; `anon` and `authenticated` cannot read any `public` table |
-| transactions | a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
+| transactions | an API whose `DATABASE_URL` names `opos_migrator` answers `500` to every tenant route; a tenant context on `opos_app_global`, `opos_migrator`, or an `opos_app` with `BYPASSRLS` or a membership in another role throws; a handler that writes and then fails leaves no row behind; an `afterCommit` call registered before a rollback never runs; the response waits for the commit and the after-commit queue, and a COMMIT that fails answers with its error; a repository call outside a tenant transaction throws |
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a permission change on a member who is already a `head` stores `none`; a later demotion brings none of them back, and one that sets permissions applies them |
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
+| concurrent member changes | on every write route of the contract: an org whose `settings=write` is taken away under the tenant's write lock in a transaction that commits while its write waits gets `403` and the tenant's rows are unchanged, while the same request without the demotion succeeds; on the routes outside team management, an org whose access ends while its write waits for the lock gets `403`, while the same expiry with no lock held lets it through; an outsider and a reader get `403` while the lock is held, without waiting for it; an edition-level write gets `403` once a lower edition permission commits while it waits; a tenant write and an edition delete finish beside a transaction that locked the actor's membership first and then the tenant row or the edition rows, with no deadlock; twenty interleaved requests of two tenants each see only their own tenant's editions |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
-| invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write` or no longer holding what it granted -> `410` `invitation.revoked` on preview and accept; another tenant's edition -> `404`; the membership lands in the token's tenant only |
+| invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write`, no longer holding what it granted, or a head demoted to org after sending a head invitation -> `410` `invitation.revoked` on preview and accept, also when the demotion commits while the acceptance waits; another tenant's edition -> `404`; the membership lands in the token's tenant only |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
 | likes | idempotent `PUT`; `likeCount` changes; no endpoint returns who liked an item; `GET /me/schedule` spans tenants |
@@ -2186,7 +2227,9 @@ run with `--affected` against the PR base branch; a push to `develop` or `main` 
 package and fills the turbo cache that PRs restore. `pnpm build` then bundles the API, and the job
 starts `dist/main.js` with `NODE_ENV=production` against the same containers: `/health` must answer
 `200`. The tests run the sources; this step runs the bundle that production runs.
-`pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR.
+`pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR, and so do
+`pnpm test:scripts` (the root `scripts/`, on `node --test`) and, on a PR only, the
+[tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) over the PR's commits.
 
 Branches:
 
@@ -2264,7 +2307,8 @@ real TLS, real Google, real email delivery and a real phone.
    point `main`/`types` at `src/index.ts`. The only exception is the translation catalogs: they
    need `pnpm i18n:compile`, wired in as a dependency of `dev`, `build` and `test`
    ([3.1](#31-turbo-tasks)).
-3. **Green before every PR** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:verify`.
+3. **Green before every PR** — `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:scripts`,
+   `pnpm db:verify`.
    A change visible in the UI additionally passes `pnpm test:e2e` and is clicked through or
    checked with `curl`; a portal change also in a mobile viewport.
 4. **Every user-facing string inside a Lingui macro** — `<Trans>`, `t`, `plural`, `msg`. A bare
@@ -2279,3 +2323,6 @@ real TLS, real Google, real email delivery and a real phone.
    service role key or a PostgREST endpoint.
 7. **Repository conventions** — Conventional Commits, English everywhere except the `pl` catalog,
    no emoji, no AI-generated graphics — are set in [AGENTS.md](../AGENTS.md).
+8. **Tests first for RLS and RBAC** — a change to tenant isolation or permissions starts with a
+   test that fails for the reason the change addresses; the areas, the enforcement and the
+   `No-Test-Reason:` exemption are in [AGENTS.md](../AGENTS.md#tests-first-for-rls-and-rbac).

@@ -14,8 +14,11 @@ import {
   deleteCreatedTenants,
   member,
   type Member,
+  openTransaction,
+  sleep,
   tenantWithHead,
 } from './tenants'
+import { tenantWriteLockKey } from '../src/common/permissions/tenant-write-lock'
 
 let app: NestExpressApplication
 let a: Awaited<ReturnType<typeof tenantWithHead>>
@@ -189,6 +192,23 @@ describe('tenant transaction', () => {
     await as(a.head, a.slug).get('/tenants/current').expect(200)
   })
 
+  it('serves no tenant when DATABASE_URL names a role that bypasses RLS', async () => {
+    const migrator = new URL(process.env.DATABASE_MIGRATION_URL!)
+    const bypassing = await createApp({ DATABASE_URL: migrator.toString() })
+    try {
+      for (const path of ['/tenants/current', '/editions']) {
+        const res = await request(bypassing.getHttpServer())
+          .get(path)
+          .set('Authorization', `Bearer ${a.head.token}`)
+          .set('X-Tenant-Slug', a.slug)
+        expect(res.status, path).toBe(500)
+        expect(res.body, path).toEqual({ code: 'server.error', message: 'Internal server error' })
+      }
+    } finally {
+      await bypassing.close()
+    }
+  })
+
   it('throws when a repository runs outside a tenant transaction', async () => {
     const res = await as(a.head).get('/probe/outside').expect(500)
     expect(res.body).toEqual({ code: 'server.error', message: 'Internal server error' })
@@ -224,6 +244,29 @@ describe('@RequireEdition', () => {
 
   it("answers 404 to a member of B asking for A's edition in B", async () => {
     await as(programReader, b.slug).get(`/probe/editions/${editionA}`).expect(404)
+  })
+
+  // An edition-level write takes the tenant's write lock like a tenant-level one (PLAN.md 7.3):
+  // a lower edition permission committed under that lock while the write waits stops it.
+  it('refuses an edition write once a lower edition permission commits while it waits', async () => {
+    const writer = await member()
+    const membership = await addOrg(a.id, writer)
+    await addEditionAccess(a.id, membership, editionA, { program: 'write' })
+    await as(writer, a.slug).put(`/probe/editions/${editionA}`).expect(200)
+
+    const change = await openTransaction()
+    await change.sql`select pg_advisory_xact_lock(${tenantWriteLockKey(a.id)}::bigint)`
+    await change.sql`
+      update edition_memberships set program_access = 'read'
+      where tenant_membership_id = ${membership} and edition_id = ${editionA}
+    `
+    const pending = as(writer, a.slug)
+      .put(`/probe/editions/${editionA}`)
+      .then((res) => res)
+    await sleep(300)
+    await change.commit()
+
+    expect((await pending).status).toBe(403)
   })
 
   it('answers 403 to an account outside the tenant whether the edition exists or not', async () => {

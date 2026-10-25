@@ -104,8 +104,15 @@ export async function signIn(email: string, password = TEST_PASSWORD) {
   return ((await response.json()) as { access_token: string }).access_token
 }
 
+/**
+ * Removes the accounts the file created, ten at a time: each deletion holds a connection of
+ * Supabase Auth, and a file with a hundred accounts would otherwise use up the database's.
+ */
 export async function deleteCreatedAccounts() {
-  await Promise.all(
-    created.splice(0).map((id) => admin(`/admin/users/${id}`, { method: 'DELETE' }, [404])),
-  )
+  const ids = created.splice(0)
+  for (let i = 0; i < ids.length; i += 10) {
+    await Promise.all(
+      ids.slice(i, i + 10).map((id) => admin(`/admin/users/${id}`, { method: 'DELETE' }, [404])),
+    )
+  }
 }

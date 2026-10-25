@@ -7,16 +7,22 @@ import { deleteCreatedAccounts, testEmail } from './auth'
 import {
   addEdition,
   addEditionAccess,
+  addHead,
   addOrg,
   closeTenantDb,
   countHeads,
   deleteCreatedTenants,
+  expireIn,
   holdOpen,
   member,
+  openTransaction,
   sleep,
   type Member,
+  tenantState,
   tenantWithHead,
 } from './tenants'
+import { tenantWriteLockKey } from '../src/common/permissions/tenant-write-lock'
+import { tenantRequirements } from './route-needs'
 
 let app: NestExpressApplication
 let a: Awaited<ReturnType<typeof tenantWithHead>>
@@ -540,6 +546,224 @@ describe('concurrency', () => {
     expect(members.map((m) => m.id)).toContain(promotedId)
   })
 
+  // Every API route that lowers a member's access is a write route and runs under the tenant's
+  // write lock (PLAN.md 7.3). These tests hold that lock in a transaction of their own, lower the
+  // actor's access in it and commit while the actor's write waits: the write must read the
+  // committed change, refuse with 403 and leave the tenant as it was.
+  describe('a write while a change to its actor commits', () => {
+    interface Setup {
+      t: Awaited<ReturnType<typeof tenantWithHead>>
+      edition: string
+      org: Member
+      orgId: string
+      otherId: string
+      newcomer: Member
+    }
+    type Request = { method: Method; path: string; body?: object }
+    const noEdition = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
+
+    // A request each write route accepts from the org of setup(), and that writes something.
+    const writes: Record<string, (s: Setup) => Request> = {
+      'tenants.update': () => ({
+        method: 'patch',
+        path: '/tenants/current',
+        body: { name: 'Late' },
+      }),
+      'tenants.members.invite': (s) => ({
+        method: 'post',
+        path: '/tenants/current/members',
+        body: { email: s.newcomer.email },
+      }),
+      'tenants.members.update': (s) => ({
+        method: 'patch',
+        path: `/tenants/current/members/${s.otherId}`,
+        body: { settingsAccess: 'read' },
+      }),
+      'tenants.members.remove': (s) => ({
+        method: 'delete',
+        path: `/tenants/current/members/${s.otherId}`,
+      }),
+      'editions.create': () => ({
+        method: 'post',
+        path: '/editions',
+        body: { slug: slug(), name: 'Late', ...window },
+      }),
+      'editions.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}`,
+        body: { name: 'Late' },
+      }),
+      'editions.remove': (s) => ({ method: 'delete', path: `/editions/${s.edition}` }),
+      'editions.activate': (s) => ({ method: 'post', path: `/editions/${s.edition}/activate` }),
+      'editions.members.put': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/members/${s.otherId}`,
+        body: { ...noEdition, programAccess: 'read' },
+      }),
+      'editions.members.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/members/${s.otherId}`,
+      }),
+    }
+
+    /** A tenant whose org holds settings=write and program=write, and another org to act on. */
+    async function setup(): Promise<Setup> {
+      const t = await tenantWithHead()
+      const edition = await addEdition(t.id)
+      const [actor, other, newcomer] = await Promise.all([member(), member(), member()])
+      const orgId = await addOrg(t.id, actor, { settings: 'write' })
+      await addEditionAccess(t.id, orgId, edition, { program: 'write' })
+      const otherId = await addOrg(t.id, other)
+      await addEditionAccess(t.id, otherId, edition, {})
+      return { t, edition, org: actor, orgId, otherId, newcomer }
+    }
+
+    const send = (s: Setup, { method, path, body }: Request) =>
+      call(s.org, method, path, body, s.t.slug).then((res) => res)
+
+    const lockTenantWrites = (
+      sql: Awaited<ReturnType<typeof openTransaction>>['sql'],
+      t: Setup['t'],
+    ) => sql`select pg_advisory_xact_lock(${tenantWriteLockKey(t.id)}::bigint)`
+
+    it('covers every write route of the contract', () => {
+      const routes = Object.entries(tenantRequirements)
+        .filter(([, need]) => need.scope !== 'member' && need.level === 'write')
+        .map(([name]) => name)
+      expect(Object.keys(writes).sort()).toEqual(routes.sort())
+    })
+
+    it.each(Object.entries(writes))(
+      '%s refuses once a demotion of its actor commits, and changes nothing',
+      async (_, build) => {
+        const control = await setup()
+        expect((await send(control, build(control))).status, 'without the demotion').toBeLessThan(
+          300,
+        )
+
+        const s = await setup()
+        const expected = await tenantState(s.t.id)
+        expected.memberships = expected.memberships.map((row) =>
+          row.id === s.orgId ? { ...row, settings_access: 'none' } : row,
+        )
+        const demotion = await openTransaction()
+        await lockTenantWrites(demotion.sql, s.t)
+        await demotion.sql`update tenant_memberships set settings_access = 'none' where id = ${s.orgId}`
+
+        const pending = send(s, build(s))
+        await sleep(300)
+        await demotion.commit()
+
+        const res = await pending
+        expect(res.status).toBe(403)
+        expect(res.body).toMatchObject({ code: 'permission.denied' })
+        expect(await tenantState(s.t.id)).toEqual(expected)
+      },
+    )
+
+    // Anti-escalation already refuses an expiring org most member changes, so this covers the
+    // routes that check nothing but the permission.
+    it.each(Object.entries(writes).filter(([name]) => !name.includes('members')))(
+      '%s refuses once the access of its actor ends while it waits',
+      async (_, build) => {
+        // The same expiry with nothing holding the lock: the org is active when its write starts.
+        const control = await setup()
+        await expireIn(control.orgId, 2000)
+        expect((await send(control, build(control))).status, 'without the wait').toBeLessThan(300)
+
+        // The test helpers share one connection, which the open transaction keeps: everything
+        // they read or write comes before it.
+        const s = await setup()
+        await expireIn(s.orgId, 400)
+        const expected = await tenantState(s.t.id)
+        const holder = await openTransaction()
+        await lockTenantWrites(holder.sql, s.t)
+
+        const pending = send(s, build(s))
+        await sleep(800)
+        await holder.commit()
+
+        const res = await pending
+        expect(res.status).toBe(403)
+        expect(await tenantState(s.t.id)).toEqual(expected)
+      },
+    )
+
+    // The lock is for writes the check lets through: an outsider or a member short of the need is
+    // refused at once, so requests that will fail never queue on another tenant's lock.
+    it('refuses an outsider and a reader without waiting for the write lock', async () => {
+      const s = await setup()
+      const [outsider, reader] = await Promise.all([member(), member()])
+      await addOrg(s.t.id, reader, { settings: 'read' })
+      const holder = await openTransaction()
+      await lockTenantWrites(holder.sql, s.t)
+      try {
+        for (const who of [outsider, reader]) {
+          const res = await Promise.race([
+            call(who, 'patch', '/tenants/current', { name: 'Late' }, s.t.slug).then((r) => r),
+            sleep(1000).then(() => 'waited' as const),
+          ])
+          expect(res === 'waited' ? res : res.status).toBe(403)
+        }
+      } finally {
+        await holder.commit()
+      }
+    })
+
+    // A member change locks memberships first and the tenant or edition rows after. A write that
+    // locked a membership after its own rows would deadlock against it; these lock like a member
+    // change, from outside, and expect both sides to finish.
+    it('lets a tenant write finish beside a member change that locked its actor', async () => {
+      const s = await setup()
+      const change = await openTransaction()
+      await change.sql`select 1 from tenant_memberships where id = ${s.orgId} for update`
+
+      const pending = send(s, writes['tenants.update']!(s))
+      await sleep(300)
+      const tenantLock = change.sql`select 1 from tenants where id = ${s.t.id} for no key update`
+      const [res, lock] = await Promise.allSettled([pending, tenantLock])
+      await change.rollback()
+
+      expect(lock.status).toBe('fulfilled')
+      expect(res.status === 'fulfilled' && res.value.status).toBe(200)
+    })
+
+    it('lets an edition delete finish beside a member change that locked its actor', async () => {
+      const s = await setup()
+      const change = await openTransaction()
+      await change.sql`select 1 from tenant_memberships where id = ${s.orgId} for update`
+
+      const pending = send(s, writes['editions.remove']!(s))
+      await sleep(300)
+      const rowsLock = change.sql`delete from edition_memberships where tenant_membership_id = ${s.orgId}`
+      const [res, lock] = await Promise.allSettled([pending, rowsLock])
+      await change.rollback()
+
+      expect(lock.status).toBe('fulfilled')
+      expect(res.status === 'fulfilled' && res.value.status).toBe(204)
+    })
+  })
+
+  it('serves concurrent requests of two tenants each from its own tenant', async () => {
+    const [x, y] = await Promise.all([tenantWithHead(), tenantWithHead()])
+    const [editionX, editionY] = await Promise.all([addEdition(x.id), addEdition(y.id)])
+
+    const responses = await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        i % 2 === 0
+          ? call(x.head, 'get', '/editions', undefined, x.slug).then((res) => ['x', res] as const)
+          : call(y.head, 'get', '/editions', undefined, y.slug).then((res) => ['y', res] as const),
+      ),
+    )
+
+    for (const [tenant, res] of responses) {
+      expect(res.status).toBe(200)
+      expect((res.body as { id: string }[]).map((e) => e.id)).toEqual([
+        tenant === 'x' ? editionX : editionY,
+      ])
+    }
+  })
+
   it('serialises two activations, leaving exactly one active edition', async () => {
     const t = await tenantWithHead()
     const [x, y] = await Promise.all([addEdition(t.id), addEdition(t.id)])
@@ -738,6 +962,45 @@ describe('edition members', () => {
       ...none,
       programAccess: 'read',
     }).expect(200)
+  })
+
+  it('answers 409 member.is-head when a head targets the edition row of another head', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    const other = await member()
+    await addHead(t.id, other)
+    const members = (await call(t.head, 'get', '/tenants/current/members', undefined, t.slug))
+      .body as { id: string; account: { id: string } }[]
+    const otherId = members.find((m) => m.account.id === other.id)!.id
+
+    for (const res of [
+      await call(t.head, 'put', `/editions/${edition}/members/${otherId}`, none, t.slug),
+      await call(t.head, 'delete', `/editions/${edition}/members/${otherId}`, undefined, t.slug),
+    ]) {
+      expect(res.status).toBe(409)
+      expect(res.body).toMatchObject({ code: 'member.is-head' })
+    }
+  })
+
+  it("refuses an org removing a head's edition row", async () => {
+    const members = (await call(a.head, 'get', '/tenants/current/members')).body as {
+      id: string
+      role: string
+    }[]
+    const head = members.find((m) => m.role === 'head')!
+    const res = await call(writer, 'delete', `/editions/${editionA}/members/${head.id}`)
+    expect(res.status).toBe(403)
+    expect(res.body).toMatchObject({ code: 'member.head-only' })
+  })
+
+  it('refuses an org changing or removing its own edition row', async () => {
+    for (const res of [
+      await call(writer, 'put', `/editions/${editionA}/members/${writerId}`, none),
+      await call(writer, 'delete', `/editions/${editionA}/members/${writerId}`),
+    ]) {
+      expect(res.status).toBe(403)
+      expect(res.body).toMatchObject({ code: 'member.self' })
+    }
   })
 
   it('lets an org change one edition permission of a member who holds more elsewhere', async () => {

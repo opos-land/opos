@@ -72,6 +72,16 @@ export class TenantTransactionInterceptor implements NestInterceptor {
         store.tenant = tenant
         store.membership = await this.access.activeMembership(store.account.id)
         await this.check(requirement, request)
+        // A write the check lets through then takes the tenant's write lock and checks again on a
+        // fresh read: every route that lowers a member's access is a write, so the second check
+        // sees each such change committed, and none can land before this transaction ends. A
+        // request refused above never queues on the lock. The lock comes before any row lock, so
+        // it adds no lock-order cycle (PLAN.md 7.3).
+        if (requirement.level === 'write') {
+          await this.access.lockTenantWrites()
+          store.membership = await this.access.activeMembership(store.account.id)
+          await this.check(requirement, request)
+        }
         return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
       },
       () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,

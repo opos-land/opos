@@ -20,38 +20,11 @@ import {
   type Member,
   tenantWithHead,
 } from './tenants'
+import { type Level, type Need, tenantRequirements } from './route-needs'
 
 // Every route of the contract, checked against the permission it needs (PLAN.md 5, 7.3). A route
 // missing from the tables below fails the coverage tests, so a new route is written down here,
 // with its permission, before it can pass.
-
-type Level = 'read' | 'write'
-type Need =
-  | { scope: 'member' }
-  | { scope: 'tenant'; resource: 'settings' | 'branding' | 'shop'; level: Level }
-  | { scope: 'edition'; resource: 'program' | 'websiteContent' | 'tickets'; level: Level }
-
-const anyMember: Need = { scope: 'member' }
-const settings = (level: Level): Need => ({ scope: 'tenant', resource: 'settings', level })
-
-/** Tenant routes and what each needs; a head passes every one (PRODUCT.md 5). */
-const tenantRequirements: Record<string, Need> = {
-  'tenants.current': anyMember,
-  'tenants.update': settings('write'),
-  'tenants.members.list': settings('read'),
-  'tenants.members.invite': settings('write'),
-  'tenants.members.update': settings('write'),
-  'tenants.members.remove': settings('write'),
-  'editions.list': anyMember,
-  'editions.create': settings('write'),
-  'editions.get': anyMember,
-  'editions.update': settings('write'),
-  'editions.remove': settings('write'),
-  'editions.activate': settings('write'),
-  'editions.members.list': settings('read'),
-  'editions.members.put': settings('write'),
-  'editions.members.remove': settings('write'),
-}
 
 /** Routes without sign-in; every other route that is not a tenant route needs an account. */
 const publicRoutes = ['health.check', 'invitations.preview']

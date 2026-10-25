@@ -119,6 +119,46 @@ export async function holdOpen(
   }
 }
 
+/** A transaction on a connection of its own that a test drives statement by statement. */
+export async function openTransaction() {
+  const sql = await db.$client.reserve()
+  await sql`begin`
+  const end = async (statement: 'commit' | 'rollback') => {
+    await sql.unsafe(statement)
+    sql.release()
+  }
+  return { sql, commit: () => end('commit'), rollback: () => end('rollback') }
+}
+
+/**
+ * Everything a tenant route can write in one tenant, as stored: the tenant, its editions, its
+ * memberships on both levels. Equal snapshots before and after a refused request mean it changed
+ * nothing.
+ */
+export async function tenantState(tenantId: string) {
+  const [tenant] = await db.execute(
+    sql`select name, default_locale, timezone from tenants where id = ${tenantId}`,
+  )
+  const editions = await db.execute(sql`
+    select id, slug, name, starts_at, ends_at, is_active, is_published
+    from editions where tenant_id = ${tenantId} order by id
+  `)
+  const memberships = await db.execute(sql`
+    select id, account_id, role, settings_access, branding_access, shop_config_access, expires_at
+    from tenant_memberships where tenant_id = ${tenantId} order by id
+  `)
+  const editionMemberships = await db.execute(sql`
+    select tenant_membership_id, edition_id, program_access, website_content_access, tickets_access
+    from edition_memberships where tenant_id = ${tenantId} order by tenant_membership_id, edition_id
+  `)
+  return {
+    tenant,
+    editions: [...editions],
+    memberships: [...memberships],
+    editionMemberships: [...editionMemberships],
+  }
+}
+
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const countHeads = async (tenantId: string) =>

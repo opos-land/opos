@@ -551,6 +551,13 @@ reaches an existing database only when its new statements are run there by hand 
 Passwords come from `OPOS_MIGRATOR_PASSWORD`, `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`
 in the `db` container's environment; in dev all three are `opos`.
 
+Every session the runtime pools `appDb()` and `globalDb()` open is bounded: a statement, a wait for
+a lock included, a transaction and the idle time inside a transaction each have a limit, sent as
+startup parameters ([client.ts](../packages/db/src/client.ts)). Past a limit Postgres cancels the
+statement or ends the session, the transaction rolls back with its tenant context, and the request
+answers `500` `server.error`. A transaction never waits on anything outside the database, so a
+request that needs more time than the limits allow is a bug. The `opos_migrator` pool has no bound.
+
 Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
 #### Covered tables
@@ -2127,7 +2134,8 @@ tenant transaction reading no tenant, and a check that the list of covered table
 catalog's, so a new tenant table fails the suite until its cases exist. They also cover the
 `accounts` privileges, the runtime roles' privileges (`opos_app_global` reads only the columns its queries need, `opos_app`
 updates only the granted columns, inserts and deletes no tenant, inserts memberships and accepted
-invitations but never changes or removes an accepted invitation), the
+invitations but never changes or removes an accepted invitation), the session bounds of the
+runtime pools and an unbounded migrator pool, the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, a tenant-level permission on a
 head, an `edition_membership` with a

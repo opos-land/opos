@@ -20,6 +20,8 @@ const covered = [
   ['accepted_invitations', 'tenant_id'],
 ] as const
 
+class Rollback extends Error {}
+
 let a: Awaited<ReturnType<typeof createTenant>>
 let b: Awaited<ReturnType<typeof createTenant>>
 
@@ -99,11 +101,14 @@ describe('tenant isolation', () => {
 
   // A role that may update tenant_id, created and dropped inside the test: only the policy's
   // WITH CHECK stands between it and moving a visible row to another tenant.
+  // The role, its grants and the update live in one transaction that always rolls back, so a
+  // policy that lets the update through leaves nothing behind for the next run.
   it.each(covered.filter(([table]) => table !== 'tenants'))(
     'refuses through WITH CHECK to move a row of %s to another tenant',
     async (table) => {
-      await expect(
-        supabaseAdmin.begin(async (sql) => {
+      let refusal: unknown
+      await supabaseAdmin
+        .begin(async (sql) => {
           await sql.unsafe(`
             create role rls_probe nologin;
             grant usage on schema public to rls_probe;
@@ -111,9 +116,15 @@ describe('tenant isolation', () => {
             set local role rls_probe;
           `)
           await sql`select set_config('app.tenant_id', ${b.id}, true)`
-          await sql.unsafe(`update ${table} set tenant_id = '${a.id}' where tenant_id = '${b.id}'`)
-        }),
-      ).rejects.toThrow(/new row violates row-level security policy/)
+          refusal = await sql
+            .unsafe(`update ${table} set tenant_id = '${a.id}' where tenant_id = '${b.id}'`)
+            .catch((error: unknown) => error)
+          throw new Rollback()
+        })
+        .catch((error: unknown) => {
+          if (!(error instanceof Rollback)) throw error
+        })
+      expect(String(refusal)).toMatch(/new row violates row-level security policy/)
     },
   )
 

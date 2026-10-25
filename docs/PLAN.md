@@ -590,7 +590,8 @@ create policy tenant_isolation on program_items
 
 grant select, insert, delete on program_items to opos_app;
 grant update (title, description, starts_at, ends_at) on program_items to opos_app;
-grant select on program_items to opos_app_global;
+-- opos_app_global: select on the columns its cross-tenant queries read, never the whole table
+grant select (id, tenant_id, edition_id, starts_at) on program_items to opos_app_global;
 ```
 
 The same for the remaining tables; for `tenants` the condition is `id = (select current_setting(...))`.
@@ -638,7 +639,9 @@ everything from `anon` and `authenticated`, and adds each table's `<table>_set_u
   only on the columns the API changes — never on `id`, `tenant_id` or a column that points a row at
   an account or another row (`account_id`, `tenant_membership_id`). A write the API starts doing —
   on a new column or on a table it did not write before — gets its grant in that PR's migration.
-- `opos_app_global` gets `select` and nothing else.
+- `opos_app_global` gets `select` on the columns the [cross-tenant queries](#cross-tenant-queries)
+  read and nothing else — column by column, never a whole table, so a column added later stays
+  unreadable across tenants until a query in that table needs it.
 - `tenants` rows are inserted, deleted and given a new slug by `opos_migrator` alone, through the
   scripts for [creating](#creating-a-tenant) and [renaming](#changing-a-tenants-slug) a tenant;
   `accounts` follows [4.2](#42-global-tables).
@@ -662,9 +665,10 @@ transaction and expects the report:
   carries its own `tenant_id`, never only an `edition_id` or `order_id`;
 - a `public` view lacks `security_invoker` set to a value Postgres reads as true (`true`, `on`, `yes`,
   `1` and their prefixes), or `public` holds a materialized view;
-- a role holds more on a `public` table or view than the rules above allow: anything but `select` for
-  `opos_app_global` (and nothing on `accounts`), a table-wide `update` for `opos_app` or an
-  `insert` or `delete` of it missing from the list of the API's writes in `verify.ts` (a write the
+- a role holds more on a `public` table or view than the rules above allow: a table-level grant
+  to `opos_app_global` or a `select` of a column missing from its list of reads in `verify.ts`, a
+  table-wide `update` for `opos_app` or an `insert` or `delete` of it missing from the list of the
+  API's writes in `verify.ts` (a write the
   API starts doing joins that list in the PR of its migration), anything at all for `anon`,
   `authenticated` and `service_role` — table-level and column-level grants alike, so `opos_app`
   updates only the columns on the list in `verify.ts`;
@@ -2106,7 +2110,7 @@ missing privilege and, for a role created in the test that holds it, by `WITH CH
 `update` or `delete` of another tenant's rows changing none), a pooled session reused after a
 tenant transaction reading no tenant, and a check that the list of covered tables equals the
 catalog's, so a new tenant table fails the suite until its cases exist. They also cover the
-`accounts` privileges, the runtime roles' privileges (`opos_app_global` only reads, `opos_app`
+`accounts` privileges, the runtime roles' privileges (`opos_app_global` reads only the columns its queries need, `opos_app`
 updates only the granted columns, inserts and deletes no tenant, inserts memberships and accepted
 invitations but never changes or removes an accepted invitation), the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two

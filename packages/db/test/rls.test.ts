@@ -224,14 +224,51 @@ describe('tenant isolation', () => {
 })
 
 describe('runtime privileges', () => {
-  it.each(covered)('lets opos_app_global only read %s', async (table, column) => {
-    await global.unsafe(`select ${column} from ${table} limit 1`)
+  // The columns the cross-tenant queries of PLAN.md 4.6 read, and nothing else.
+  const globalReads: Record<(typeof covered)[number][0], string[]> = {
+    tenants: ['id', 'slug', 'name', 'default_locale', 'timezone'],
+    tenant_memberships: [
+      'id',
+      'tenant_id',
+      'account_id',
+      'role',
+      'settings_access',
+      'branding_access',
+      'shop_config_access',
+      'expires_at',
+    ],
+    editions: ['id', 'slug', 'starts_at'],
+    edition_memberships: [
+      'tenant_membership_id',
+      'edition_id',
+      'program_access',
+      'website_content_access',
+      'tickets_access',
+    ],
+    accepted_invitations: [],
+  }
+
+  it.each(covered)('lets opos_app_global read only what its queries need of %s', async (table) => {
+    const columns = await migrator<{ column: string }[]>`
+      select a.attname as column from pg_attribute a
+      where a.attrelid = ${'public.' + table}::regclass and a.attnum > 0 and not a.attisdropped
+    `
+    // `default values`, `= null` and a `false` condition reach the privilege check before
+    // anything else, so only a missing insert, update or delete privilege can refuse them.
+    for (const { column } of columns) {
+      const read = global.unsafe(`select ${column} from ${table} limit 1`)
+      if (globalReads[table].includes(column)) await read
+      else await expect(read, column).rejects.toThrow(/permission denied/)
+      await expect(
+        global.unsafe(`update ${table} set ${column} = null where false`),
+        `update ${column}`,
+      ).rejects.toThrow(/permission denied/)
+    }
     for (const statement of [
-      `insert into ${table} select * from ${table} where false`,
-      `update ${table} set ${column} = ${column} where false`,
+      `insert into ${table} default values`,
       `delete from ${table} where false`,
     ]) {
-      await expect(global.unsafe(statement)).rejects.toThrow(/permission denied/)
+      await expect(global.unsafe(statement), statement).rejects.toThrow(/permission denied/)
     }
   })
 

@@ -1149,7 +1149,13 @@ with `@Implement(contract.<router>.<route>)` and its requirement next to it: a r
 [tenant-routes.test.ts](../apps/api/test/tenant-routes.test.ts) sends every contract route marked
 `meta.tenant` an unknown slug and expects the interceptor's `404`.
 `TenantTransactionInterceptor` reads the decorator through the `Reflector` and runs the check
-inside the tenant transaction ([7.2](#72-tenant-context)).
+inside the tenant transaction ([7.2](#72-tenant-context)). The check reads the membership without a
+lock; a route that needs a tenant-level `write` reads it again with `for share` after its handler
+and before the commit, and rolls back with `403` when the permission is gone, so a demotion or an
+expiry that commits while the write runs stops it. A route that changes a member locks the actor's
+and the target's rows `for update` in its handler already ([5.3](#53-tenants--jwt--x-tenant-slug)),
+so the second read waits for nothing there. An edition-level write route adds the same second read
+of its `edition_memberships` row, with a case in the `an org demoted while its write waits` test.
 
 ### 7.4 Authorization
 
@@ -2115,6 +2121,7 @@ cannot run beside an API started with `pnpm dev`.
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a permission change on a member who is already a `head` stores `none`; a later demotion brings none of them back, and one that sets permissions applies them |
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
+| concurrent demotion | an org whose `settings=write` is taken away in a transaction that commits while its write waits gets `403` and changes nothing, on every tenant-level write route; twenty interleaved requests of two tenants each see only their own tenant's editions |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write` or no longer holding what it granted -> `410` `invitation.revoked` on preview and accept; another tenant's edition -> `404`; the membership lands in the token's tenant only |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |

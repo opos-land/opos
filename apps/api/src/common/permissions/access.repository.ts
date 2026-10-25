@@ -9,9 +9,16 @@ import { type EditionAccess } from './permissions'
 export class AccessRepository {
   constructor(private readonly context: TenantContextService) {}
 
-  /** The account's membership in the tenant of the transaction, skipping an expired one. */
-  async activeMembership(accountId: string): Promise<TenantMembership | null> {
-    const [row] = await this.context
+  /**
+   * The account's membership in the tenant of the transaction, skipping an expired one. With
+   * `lock`, the read takes `for share`: it waits for a change to the row that is not committed yet
+   * and returns the committed result, which then cannot change until this transaction ends.
+   */
+  async activeMembership(
+    accountId: string,
+    { lock = false }: { lock?: boolean } = {},
+  ): Promise<TenantMembership | null> {
+    const query = this.context
       .tx()
       .select({
         id: tenantMemberships.id,
@@ -28,6 +35,7 @@ export class AccessRepository {
           or(isNull(tenantMemberships.expiresAt), gt(tenantMemberships.expiresAt, sql`now()`)),
         ),
       )
+    const [row] = await (lock ? query.for('share') : query)
     return row ?? null
   }
 

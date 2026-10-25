@@ -72,7 +72,17 @@ export class TenantTransactionInterceptor implements NestInterceptor {
         store.tenant = tenant
         store.membership = await this.access.activeMembership(store.account.id)
         await this.check(requirement, request)
-        return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
+        const result = await lastValueFrom(next.handle() as Observable<unknown>, {
+          defaultValue: undefined,
+        })
+        // The check above read the membership without a lock, so a demotion or expiry may have
+        // committed while the handler wrote. A tenant-level write re-reads it under `for share`
+        // before the commit and rolls back if the permission is gone; reads keep the first check.
+        if (requirement.kind === 'tenant' && requirement.level === 'write') {
+          store.membership = await this.access.activeMembership(store.account.id, { lock: true })
+          await this.check(requirement, request)
+        }
+        return result
       },
       () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,
     )

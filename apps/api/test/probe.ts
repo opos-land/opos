@@ -110,7 +110,9 @@ class ProbeController {
   }
 
   @Implement(probeContract.demoteHeads)
-  @RequireTenant('settings', 'write')
+  // A membership only: a write requirement would re-check the actor after the handler and refuse
+  // the head it has just demoted, before the COMMIT this probe is about.
+  @RequireTenant()
   demoteHeads() {
     // Breaks the last-head invariant: the deferred trigger rejects it at COMMIT, after the handler.
     return implement(probeContract.demoteHeads).handler(async () => {

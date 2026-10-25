@@ -67,6 +67,15 @@ const call = (who: Member, method: Method, path: string, body?: object, slug = a
   return body ? req.send(body) : req
 }
 
+/** A tenant's editions as its head sees them: id and whether each is active. */
+const editionsOf = async (tenantSlug: string, head: Member) =>
+  (
+    (await call(head, 'get', '/editions', undefined, tenantSlug)).body as {
+      id: string
+      isActive: boolean
+    }[]
+  ).map((e) => e.id + (e.isActive ? ' active' : ''))
+
 const slug = () => randomUUID().slice(0, 8)
 const window = { startsAt: '2027-06-01T09:00:00Z', endsAt: '2027-06-03T18:00:00Z' }
 
@@ -539,6 +548,85 @@ describe('concurrency', () => {
     const members = (await call(t.head, 'get', '/tenants/current/members', undefined, t.slug))
       .body as { id: string }[]
     expect(members.map((m) => m.id)).toContain(promotedId)
+  })
+
+  // The actor loses settings=write in a transaction that commits while the request waits: every
+  // write that needs it must see the committed demotion, not the membership read before it.
+  describe('an org demoted while its write waits', () => {
+    const writes: [string, (t: { slug: string }, edition: string, target: string) => object][] = [
+      ['PATCH /tenants/current', () => ({ path: '/tenants/current', method: 'patch', body: {} })],
+      [
+        'POST /editions',
+        () => ({
+          path: '/editions',
+          method: 'post',
+          body: { slug: slug(), name: 'Late', ...window },
+        }),
+      ],
+      ['PATCH /editions/:id', (_, e) => ({ path: `/editions/${e}`, method: 'patch', body: {} })],
+      [
+        'POST /editions/:id/activate',
+        (_, e) => ({ path: `/editions/${e}/activate`, method: 'post' }),
+      ],
+      ['DELETE /editions/:id', (_, e) => ({ path: `/editions/${e}`, method: 'delete' })],
+      [
+        'PATCH /tenants/current/members/:id',
+        (_, __, m) => ({ path: `/tenants/current/members/${m}`, method: 'patch', body: {} }),
+      ],
+      [
+        'PUT /editions/:id/members/:id',
+        (_, e, m) => ({
+          path: `/editions/${e}/members/${m}`,
+          method: 'put',
+          body: { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' },
+        }),
+      ],
+    ]
+
+    it.each(writes)('%s answers 403 and changes nothing', async (_, build) => {
+      const t = await tenantWithHead()
+      const edition = await addEdition(t.id)
+      const [org, other] = await Promise.all([member(), member()])
+      const orgId = await addOrg(t.id, org, { settings: 'write' })
+      const otherId = await addOrg(t.id, other)
+      const { path, method, body } = build(t, edition, otherId) as {
+        path: string
+        method: Method
+        body?: object
+      }
+      const commit = await holdOpen(
+        (sql) => sql`update tenant_memberships set settings_access = 'none' where id = ${orgId}`,
+      )
+
+      const pending = call(org, method, path, body, t.slug).then((res) => res)
+      await sleep(300)
+      await commit()
+
+      const res = await pending
+      expect(res.status).toBe(403)
+      expect(res.body).toMatchObject({ code: 'permission.denied' })
+      expect(await editionsOf(t.slug, t.head)).toEqual([edition])
+    })
+  })
+
+  it('serves concurrent requests of two tenants each from its own tenant', async () => {
+    const [x, y] = await Promise.all([tenantWithHead(), tenantWithHead()])
+    const [editionX, editionY] = await Promise.all([addEdition(x.id), addEdition(y.id)])
+
+    const responses = await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        i % 2 === 0
+          ? call(x.head, 'get', '/editions', undefined, x.slug).then((res) => ['x', res] as const)
+          : call(y.head, 'get', '/editions', undefined, y.slug).then((res) => ['y', res] as const),
+      ),
+    )
+
+    for (const [tenant, res] of responses) {
+      expect(res.status).toBe(200)
+      expect((res.body as { id: string }[]).map((e) => e.id)).toEqual([
+        tenant === 'x' ? editionX : editionY,
+      ])
+    }
   })
 
   it('serialises two activations, leaving exactly one active edition', async () => {

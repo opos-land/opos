@@ -202,19 +202,23 @@ then restore it.
 
 | Area | Code | Its tests |
 |---|---|---|
-| `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants}.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
-| `rbac` | `apps/api/src/common/{permissions,als,guards,database}/`, `apps/api/src/modules/{tenants,editions}/`, `packages/contract/src/common.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
+| `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client}.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
+| `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/{tenants,editions}/`, `apps/api/src/app.module.ts`, `packages/contract/src/common.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
+
+A deleted test is no test of its area; deleted code is a change of its area.
 
 [scripts/tests-first.mjs](scripts/tests-first.mjs) holds this table and enforces it three times:
 
 | Where | Refuses |
 |---|---|
-| Claude Code `PreToolUse` hook ([.claude/settings.json](.claude/settings.json)) | an edit of an area's code while no test of that area has changed in the working tree |
+| Claude Code hooks ([.claude/settings.json](.claude/settings.json)) | an `Edit` or `Write` of an area's code while no test of that area has changed in the working tree; after a `Bash` command, it reports an area's code the command changed under the same condition |
 | lefthook `commit-msg` | a commit that stages an area's code without a test of that area |
-| CI, on a pull request | commits since the base branch that change an area's code without a test of that area |
+| CI, on a pull request | commits since the base branch that change an area's code without a test of that area; merge commits are skipped, as in lefthook |
 
 A change that needs no test — a rename, a comment, a moved import — says why in a
-`No-Test-Reason: <reason>` trailer of its commit message. A guarded path that moves or a new
+`No-Test-Reason: <reason>` trailer of its commit message; an agent the hook refuses such an edit
+asks the user instead of working around the hook. An amend that stages only code is refused when
+the code's test came in the commit it amends: stage the test again or add the trailer. A guarded path that moves or a new
 directory that holds RLS or RBAC code changes the table here and in the script together.
 
 **Project skill and reviewers** in `.claude/`. The `docs-sync` skill is the procedure for every

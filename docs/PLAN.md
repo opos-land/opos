@@ -147,7 +147,7 @@ opos/
   package.json, pnpm-workspace.yaml, turbo.json, mise.toml, lefthook.yml,
   commitlint.config.mjs, docker-compose.yml, .prettierrc, .github/   # built: root tooling (3.1, 12, 15.3)
   .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers, the
-                              #   tests-first hook in settings.json (AGENTS.md)
+                              #   tests-first hooks in settings.json (AGENTS.md)
   scripts/                    # built: tests-first.mjs, the RLS and RBAC test-first check, and its test
   docker-compose.prod.yml     # prod: traefik + apps + supabase db + auth
   docs/

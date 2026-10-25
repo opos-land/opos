@@ -69,8 +69,8 @@ The MVP is closed once the flow below works with no manual database edits beyond
    the convention's account, and the tickets arrive by email with QR codes.
 7. The head organizer emails an invitation granting programme write access to the 2026 edition
    only. The invitee accepts the link and sees nothing in the panel but that edition's programme.
-8. The visitor later registers in the portal on the same address — with a password, confirmed
-   through a link sent to that address, or with Google — and finds both tickets under "my
+8. The visitor later registers in the portal on the same address — by email, confirmed through
+   a link sent to that address before they choose a password, or with Google — and finds both tickets under "my
    tickets". They open the convention's page from a link the convention shared, sign up for the
    2026 edition and see it under "my conventions". All of it works in a phone browser.
 9. They like a few programme items and find them in their personal schedule. After an item
@@ -404,8 +404,10 @@ Orders store the buyer's email address, first and last name. They are the conven
 records, so deleting an account does not delete orders placed with its address. Payment details
 stay with the payment provider; OPOS stores only the provider's payment reference.
 
-**Registration with a password requires a confirmed email address.** The account starts working
-once its owner clicks the link sent to that address. A Google sign-in counts as confirmed. Changing the
+**The password comes after the confirmed email address.** Registering by email asks for the
+address and the name only; the account starts working once its owner opens the link sent to that
+address, which asks them to choose the password there. A password anyone set on the address before
+it was confirmed never works afterwards. A Google sign-in counts as confirmed. Changing the
 account's email address comes after the MVP; it takes effect once both the current and the new
 address confirm it through the links sent to them.
 

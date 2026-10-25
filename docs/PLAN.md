@@ -792,7 +792,7 @@ application the email links lead to. The two Google routes are navigations, whic
 
 | Method | Path | Input | Does | Answers |
 |---|---|---|---|---|
-| POST | `/auth/sign-up` | `{ email, password?, firstName?, lastName? }` | `signUp` with `data: { first_name, last_name, locale }`, the locale detected from `Accept-Language` ([6](#locale-detection)), and `emailRedirectTo = <app URL>/auth/confirm`; without `password` (the panel's invitation sign-up, [7.7](#77-organizer-invitations)) a random one the API never returns or keeps | `202`, the same for an address already registered |
+| POST | `/auth/sign-up` | `{ email, firstName?, lastName? }`, no password | `signUp` with a random password the API never returns or keeps, `data: { first_name, last_name, locale }`, the locale detected from `Accept-Language` ([6](#locale-detection)), and `emailRedirectTo = <app URL>/auth/confirm`; the person chooses the password only after the link proves the address ([below](#the-password-comes-after-the-confirmation)) | `202`, the same for an address already registered |
 | POST | `/auth/resend` | `{ email }` | `resend({ type: 'signup' })` with the same `emailRedirectTo` | `202` |
 | POST | `/auth/verify` | `{ tokenHash, type }`, `type` one of `signup`, `recovery` | `verifyOtp({ token_hash, type })` for the link from an email ([10](#send-email-hook)); sets the session cookies | `200` the account as `GET /me` |
 | POST | `/auth/sign-in` | `{ email, password }` | `signInWithPassword`; sets the session cookies | `200` the account as `GET /me` |
@@ -817,6 +817,18 @@ otherwise. The client translates them like every other code, through
 Outside the contract: `POST /hooks/send-email` — called by Supabase Auth only, verified by
 a Standard Webhooks signature ([10](#10-supabase)) — and `POST /hooks/payments/:provider`, called
 by the payment provider only ([7.10](#710-payments)).
+
+#### The password comes after the confirmation
+
+Supabase Auth keeps the password of whoever registered an address first, before its owner
+confirmed it ([4.2](#42-global-tables)), so no sign-up of OPOS takes a password. Every account
+registered by email starts with a random password nobody knows; the confirmation link signs in
+whatever browser opens it (`POST /auth/verify`), and `/auth/confirm` of the portal and of the panel
+then asks for the password at once and saves it with `PUT /auth/password`, which also ends every
+other session. A password anyone set on the address before it was confirmed never works after the
+confirmation. A confirmed account that leaves the form without a password gets one through the
+password reset ([7.6](#76-password-reset)), which `/login` offers. Google sign-in needs no such
+step ([7.5](#75-google-oauth)).
 
 ### 5.2 `me` — requires JWT
 
@@ -1446,11 +1458,10 @@ confirmed does not survive ([4.2](#42-global-tables)).
    never returns or keeps, and the confirmation link leads to `<PANEL_URL>/auth/confirm`. Sign-up
    with Google: `GET /auth/google?app=panel&redirect=/invitation` ([7.5](#75-google-oauth)).
 4. `/auth/confirm` of the panel sends the `token_hash` to `POST /auth/verify`, which signs in
-   whatever browser opened the link, and then always asks for a password: every account the panel
-   signs up starts without one the invitee knows. The password goes to `PUT /auth/password`, which
-   also ends every other session ([5.1](#51-auth--sign-in-through-the-api)). This replaces a
-   password anyone set on the address before it was confirmed, as a password reset does
-   ([7.6](#76-password-reset)).
+   whatever browser opened the link, and asks for the password, as every confirmation does
+   ([5.1](#the-password-comes-after-the-confirmation)); `PUT /auth/password` also ends every other
+   session. This replaces a password anyone set on the address before it was confirmed, as a
+   password reset does ([7.6](#76-password-reset)).
 5. The page then opens the page the round trip started on, kept in `localStorage`
    ([auth-return.ts](../apps/panel/src/features/auth/model/auth-return.ts)): `/invitation`, which
    accepts as in step 2. In a browser without that entry it opens `/`, and the invitee opens the
@@ -1690,9 +1701,9 @@ which the bullets below describe.
 |---|---|
 | `/` | OPOS platform landing page |
 | `/privacy` | the privacy policy ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); linked from the registration form and the footer |
-| `/register` | first and last name, email, password, Google button; after submitting — "check your inbox", with the link sent again on request |
-| `/login` | email and password, Google button; `auth.email_not_confirmed` offers to send the link again (`POST /auth/resend`); shows the code of a failed Google sign-in from `?error=` |
-| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends them to `POST /auth/verify`: a confirmed address opens the page the round trip started on; a recovery link shows the new password form, whose saving ends every other session ([7.6](#76-password-reset)) |
+| `/register` | first and last name, email, Google button — no password; after submitting — "check your inbox", with the link sent again on request (`POST /auth/resend`) |
+| `/login` | email and password, Google button, the link to `/forgot-password`; `auth.email_not_confirmed` offers to send the link again (`POST /auth/resend`); shows the code of a failed Google sign-in from `?error=` |
+| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends them to `POST /auth/verify`, then shows the password form for a confirmation and a recovery link alike ([5.1](#the-password-comes-after-the-confirmation), [7.6](#76-password-reset)); saving it ends every other session and opens the page the round trip started on |
 | `/forgot-password` | password reset request; confirms that the message was sent whatever the address ([7.6](#76-password-reset)) |
 | `/account` | names, interface language, sign-out, account deletion |
 | `/my-conventions` | the list of editions the account is signed up for |
@@ -2378,7 +2389,7 @@ cannot run beside an API started with `pnpm dev`.
 | JWT | an expired token, a token without `exp`, a token signed with a foreign ES256 key, an `HS256` token with any secret, `alg: none`, `aud != authenticated`, a foreign `iss`, `is_anonymous: true` and a `sub` that is not a uuid -> `401`; a token in `Authorization: Bearer` instead of the cookie -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged |
 | session cookies | sign-in, verification and the Google callback set exactly the cookies of [7.4](#74-authorization) with their attributes, `Secure` when `API_URL` is `https`; no response body or header carries a token; a session of the portal is no session for a request with the panel's `Origin`, and the reverse; `POST /auth/refresh` rotates the refresh token and a reused one outside the reuse interval ends the session; sign-out and `DELETE /me` clear the cookies |
 | requests that change state | with a session cookie, a foreign `Origin`, another subdomain of the site included, or none -> `403` `request.origin-denied` and nothing changed; a form-encoded body -> `415`; the same request from `PANEL_URL` or `PORTAL_URL` goes through |
-| auth endpoints | every operation of [5.1](#51-auth--sign-in-through-the-api) against the local stack; sign-up and password reset answer the same for a registered and an unknown address; a passed-on refusal keeps Supabase Auth's status and its `auth.<error_code>`, an unlisted one is `500`; every call to Supabase Auth carries the secret key and the client's address in `Sb-Forwarded-For`; `GET /auth/google` takes no `redirect` outside the application, and a callback without its `opos_google` cookie, with another browser's cookie or past 10 minutes signs nobody in |
+| auth endpoints | every operation of [5.1](#51-auth--sign-in-through-the-api) against the local stack; sign-up takes no password, and after an address registered twice is confirmed only the password chosen through `/auth/confirm` signs in; sign-up and password reset answer the same for a registered and an unknown address; a passed-on refusal keeps Supabase Auth's status and its `auth.<error_code>`, an unlisted one is `500`; every call to Supabase Auth carries the secret key and the client's address in `Sb-Forwarded-For`; `GET /auth/google` takes no `redirect` outside the application, and a callback without its `opos_google` cookie, with another browser's cookie or past 10 minutes signs nobody in |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401` |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a link to the calling application's `/auth/confirm` that `POST /auth/verify` redeems, and that names no Supabase address; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` (per address) and `POST /tenants/current/members` (per tenant) included |
@@ -2431,8 +2442,8 @@ never signs a seeded account out, since a sign-out ends every session of the acc
 
 | # | Scenario | Spec |
 |---|---|---|
-| 1 | Registration with a password: sign-in before confirming -> `email_not_confirmed`; the link from Mailpit confirms; sign-out, sign-in again; the language switch survives the session | [registration](../e2e/specs/registration.spec.ts) |
-| 2 | Resending the confirmation link from the sign-in screen delivers a new message | [registration](../e2e/specs/registration.spec.ts) |
+| 1 | Registration: the form asks for no password; the link from Mailpit confirms, signs in and asks for the password; sign-out, sign-in again with it; the language switch survives the session. Again for an address someone registered first through the API and left unconfirmed: after the owner confirms and chooses a password, no other password signs in | [registration](../e2e/specs/registration.spec.ts) |
+| 2 | Resending the confirmation link from the "check your inbox" screen delivers a new message | [registration](../e2e/specs/registration.spec.ts) |
 | 3 | The session survives a page reload, and the portal's calls to the API carry its session cookies, which no script of the page can read; after sign-out the cookies are gone and `POST /auth/refresh` is refused | [registration](../e2e/specs/registration.spec.ts) |
 | 4 | A head creates an edition, activates it, publishes it and adds programme items | [editions](../e2e/specs/editions.spec.ts); the programme items come with the `program` feature |
 | 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | still to come, with the `conventions` feature |
@@ -2494,14 +2505,15 @@ in e2e ([15.2](#152-e2e-tests)) — the smoke test exists to check them where e2
 real TLS, real Google, real email delivery and a real phone.
 
 1. **Attendee registration.** `opos.land` -> registration by email -> the confirmation message
-   arrives in the recipient's language -> the link signs in and lands on "my conventions". With
+   arrives in the recipient's language -> the link signs in, asks for the password and lands on
+   "my conventions". With
    `Accept-Language: en` the portal is in English before sign-in; after changing the language in
    settings the choice survives sign-out and a fresh visit.
 2. **Password reset.** The forgot-password form sends a real email; the link sets a new password,
    the previous password stops working and the earlier session can no longer refresh; its access
    token stops working when it expires, at most 15 minutes later.
-3. **Google cannot take over an account.** An unconfirmed account created with a password on an
-   address available in Google: after signing in with Google, the password does not let anyone in.
+3. **Google cannot take over an account.** An account registered but not confirmed on an address
+   available in Google: Google sign-in takes it over, and no password lets anyone in.
    For a confirmed account, Google sign-in keeps the same `auth.users.id` and the password keeps
    working.
 4. **Refresh token rotation.** A refresh token used a second time, more than 10 s after the first

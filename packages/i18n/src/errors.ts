@@ -10,6 +10,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'request.invalid': msg`Check the data you entered.`,
   'request.not-found': msg`We could not find what you are looking for.`,
   'request.rate-limited': msg`Too many attempts. Try again in a moment.`,
+  'request.busy': msg`This convention is being changed right now. Try again in a moment.`,
   'session.invalid': msg`Your session has ended. Sign in again.`,
   'session.reauthentication-required': msg`Confirm it is you: enter your password again or sign in with Google again.`,
   'permission.denied': msg`You do not have permission to do this.`,

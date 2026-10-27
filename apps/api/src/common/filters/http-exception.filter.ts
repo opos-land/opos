@@ -68,15 +68,33 @@ const constraintErrors: Record<
   },
 }
 
-/** The constraint a Postgres error behind an exception names; drizzle wraps query errors in `cause`. */
-export function postgresConstraint(exception: unknown): string | undefined {
+/**
+ * The Postgres error behind an exception: drizzle wraps query errors in `cause`, and a Postgres
+ * error is the one that carries a `severity`, so a Node error such as EPIPE is never taken.
+ */
+function postgresError(
+  exception: unknown,
+): { code?: unknown; constraint_name?: unknown } | undefined {
   let current: unknown = exception
   for (let depth = 0; depth < 3 && current && typeof current === 'object'; depth++) {
-    const name = (current as { constraint_name?: unknown }).constraint_name
-    if (typeof name === 'string') return name
+    if (typeof (current as { severity?: unknown }).severity === 'string') {
+      return current
+    }
     current = (current as { cause?: unknown }).cause
   }
   return undefined
+}
+
+/** The constraint a Postgres error behind an exception names. */
+export function postgresConstraint(exception: unknown): string | undefined {
+  const name = postgresError(exception)?.constraint_name
+  return typeof name === 'string' ? name : undefined
+}
+
+/** The SQLSTATE of a Postgres error behind an exception. */
+export function postgresCode(exception: unknown): string | undefined {
+  const code = postgresError(exception)?.code
+  return typeof code === 'string' ? code : undefined
 }
 
 /**
@@ -164,7 +182,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return
     }
     const { status, body, headers } = toErrorResponse(exception)
-    if (status >= 500) this.logger.error(exception)
+    if (status >= 500) {
+      if (exception instanceof ApiError && exception.expected) this.logger.warn(exception.message)
+      else this.logger.error(exception)
+    }
     for (const [name, value] of Object.entries(headers ?? {})) response.setHeader(name, value)
     response.status(status).json(body)
   }

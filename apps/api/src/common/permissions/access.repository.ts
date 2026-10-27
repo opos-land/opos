@@ -4,7 +4,9 @@ import { and, eq, gt, isNull, or, sql } from 'drizzle-orm'
 import { type TenantMembership, TenantContextService } from '../als/tenant-context.service'
 import { currentTenantId } from '../database/current-tenant'
 import { type EditionAccess } from './permissions'
-import { tenantWriteLockKey } from './tenant-write-lock'
+import { TENANT_WRITE_LOCK_TIMEOUT_MS, tenantWriteLockKey } from './tenant-write-lock'
+import { tenantBusy } from './tenant-write-queue'
+import { postgresCode } from '../filters/http-exception.filter'
 
 /**
  * Reads the permissions of the request's account inside its tenant transaction; every query
@@ -19,8 +21,21 @@ export class AccessRepository {
    * (PLAN.md 7.3); a membership read after it sees every member change the lock serialised.
    */
   async lockTenantWrites() {
-    const key = tenantWriteLockKey(this.context.tenant().id)
-    await this.context.tx().execute(sql`select pg_advisory_xact_lock(${key}::bigint)`)
+    const tx = this.context.tx()
+    const tenantId = this.context.tenant().id
+    // The bound is for this wait alone: the transaction gets its own lock_timeout back after it.
+    // `offset 0` keeps the subquery, so the old value is read before set_config replaces it.
+    const [setting] = await tx.execute<{ previous: string }>(sql`
+      select previous, set_config('lock_timeout', ${`${TENANT_WRITE_LOCK_TIMEOUT_MS}ms`}, true)
+      from (select current_setting('lock_timeout') as previous offset 0) as current
+    `)
+    try {
+      await tx.execute(sql`select pg_advisory_xact_lock(${tenantWriteLockKey(tenantId)}::bigint)`)
+    } catch (error) {
+      if (postgresCode(error) === '55P03') throw tenantBusy(tenantId)
+      throw error
+    }
+    await tx.execute(sql`select set_config('lock_timeout', ${setting!.previous}, true)`)
   }
 
   /**

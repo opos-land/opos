@@ -611,6 +611,14 @@ Passwords come from `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD` in the en
 script, chosen per developer and per environment and never committed; they go into connection
 URLs, so they are hex (`openssl rand -hex 32`).
 
+Every session the runtime pools `appDb()` and `globalDb()` open is bounded: a statement, a wait for
+a lock included, a transaction and the idle time inside a transaction each have a limit, sent as
+startup parameters ([client.ts](../packages/db/src/client.ts)). Past a limit Postgres cancels the
+statement or ends the session, the transaction rolls back with its tenant context, and the request
+answers `500` `server.error`. A transaction never waits on anything outside the database, so a
+request that needs more time than the limits allow is a bug. The migration pool `migrationDb()`,
+connected as `postgres`, has no bound.
+
 Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 
 #### Covered tables
@@ -781,6 +789,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | `415` | a request body that is not `application/json`, refused from its headers before routing ([json-body.ts](../apps/api/src/common/json-body.ts)): Express parses JSON within its size limit, and oRPC would read any other body itself, with no limit | `request.invalid` |
 | `429` | rate limit | `request.rate-limited` |
 | `500` | anything unexpected; the body carries no details, the log does | `server.error` |
+| `503` | a write that waited longer than 5 s in its tenant's queue or for its tenant's write lock ([7.3](#73-permissions)); `Retry-After: 1` | `request.busy` |
 
 `HttpExceptionFilter` ([http-exception.filter.ts](../apps/api/src/common/filters/http-exception.filter.ts))
 turns everything thrown during a request into this shape; code that has a specific code throws
@@ -1177,7 +1186,9 @@ everywhere. For a tenant route it:
 3. Loads the account's `tenant_membership` inside that transaction, skipping an expired one. A
    tenant the account has no membership in, an expired membership included, -> `403`.
 4. Checks the route's `@RequireTenant` or `@RequireEdition` inside the same transaction
-   ([7.3](#73-permissions)).
+   ([7.3](#73-permissions)). A route that needs `write` runs steps 2–4 once in a short transaction
+   of its own, waits in its tenant's queue, and then runs them again in the transaction of the
+   handler, after taking the tenant's write lock ([7.3](#73-permissions)).
 5. Runs the handler and commits. An exception rolls back, and so does a status of `300` or more:
    the one oRPC holds unsent, or the one a route outside oRPC set on the response. oRPC hands every
    error to Nest (`RethrowHandlerPlugin`), so a refusal is an exception and reaches
@@ -1258,21 +1269,27 @@ with `@Implement(contract.<router>.<route>)` and its requirement next to it: a r
 `TenantTransactionInterceptor` reads the decorator through the `Reflector` and runs the check
 inside the tenant transaction ([7.2](#72-tenant-context)).
 
-A route that needs `write`, on either level, checks the membership once without a lock, so a
-request that is refused never waits; one that passes then takes the tenant's write lock — a
-transaction-level advisory lock whose bigint key comes from the tenant id
-([tenant-write-lock.ts](../apps/api/src/common/permissions/tenant-write-lock.ts)) and always lies
-in `[2^62, 2^63)`, outside the int4 range of Supabase Auth's own advisory keys — and checks again
-on a fresh read. Every route that lowers another member's access (demotion, removal, an earlier
-expiry, a lower edition permission) is itself a write route, so the second check sees each such
-change committed, and none can land before the write commits. Deleting one's own account
-(`DELETE /me`) removes memberships through Supabase Auth without the lock; it lowers only the
-deleting account's own access. Expiry is measured with `statement_timestamp()`, the time of the
-read, since a write may wait for the lock. The lock comes before any row lock of the transaction,
-so it adds no lock-order cycle with the member routes, which lock memberships `for update` and then
-the tenant row through the last-head trigger. Read routes take no lock. The
-`a write while a change to its actor commits` cases cover every write route of the contract and
-fail for a new one until it is listed; an edition-level write has its case on the probe route of
+A route that needs `write`, on either level, goes through three steps:
+
+| Step | What happens | Bound |
+|---|---|---|
+| check | a short transaction of its own reads the membership and checks it; a refused request ends here and never waits | — |
+| queue | the write waits in its tenant's queue inside the API process ([tenant-write-queue.ts](../apps/api/src/common/permissions/tenant-write-queue.ts)), in arrival order and without a database connection, so writes queued for one tenant leave the pool to every other tenant; its turn ends when its transaction commits or rolls back, before the after-commit queue and the response, so outbound mail never holds the tenant | 5 s (`TENANT_WRITE_LOCK_TIMEOUT_MS`) of waiting, then `503` `request.busy`; a turn lasts at most 30 s, after which a hanging write lets the next one go on and the lock still orders them |
+| lock | its transaction takes the tenant's write lock — a transaction-level advisory lock whose bigint key comes from the tenant id ([tenant-write-lock.ts](../apps/api/src/common/permissions/tenant-write-lock.ts)) and always lies in `[2^62, 2^63)`, outside the int4 range of Supabase Auth's own advisory keys — then reads the membership again, checks it and runs the handler | `lock_timeout` 5 s for the lock alone, then `503` `request.busy`; the transaction's own `lock_timeout` is restored after it |
+
+Within one API process the queue already orders the writes of a tenant, so the lock rarely waits;
+it is the guarantee across processes and against any other holder. A `503` `request.busy` is an
+`ApiError` marked expected and is logged as a warning naming the tenant. Every route that lowers
+another member's access (demotion, removal, an earlier expiry, a lower edition permission) is
+itself a write route, so the check under the lock sees each such change committed, and none can
+land before the write commits. Deleting one's own account (`DELETE /me`) removes memberships
+through Supabase Auth without the lock; it lowers only the deleting account's own access. Expiry is
+measured with `statement_timestamp()`, the time of the read, since a write may wait. The lock comes
+before any row lock of the transaction, so it adds no lock-order cycle with the member routes,
+which lock memberships `for update` and then the tenant row through the last-head trigger. Read
+routes neither queue nor lock. The `a write while a change to its actor commits` cases cover every
+write route of the contract and fail for a new one until it is listed; an edition-level write and
+the queue have their cases on the probe routes of
 [tenant-context.test.ts](../apps/api/test/tenant-context.test.ts).
 
 ### 7.4 Authorization
@@ -1483,9 +1500,10 @@ Set in [app.ts](../apps/api/src/app.ts). Allowed `Origin`: `PORTAL_URL` and `PAN
 scanner included) — an explicit list, never `*` and never a reflected header. Allowed headers:
 `Authorization`, `Content-Type`, `X-Tenant-Slug`, `Accept-Language`. Exposed response header:
 `Retry-After`, which a browser otherwise hides from the panel and portal on a `429`
-([7.9](#79-rate-limiting)). `credentials: true`, with `Access-Control-Allow-Credentials` for those
-two origins only: the session travels in the API's cookies ([7.4](#74-authorization)).
-`Authorization` stays for the scanner's device token ([7.11](#711-scanner)).
+([7.9](#79-rate-limiting)) and a `503` `request.busy` ([7.3](#73-permissions)).
+`credentials: true`, with `Access-Control-Allow-Credentials` for those two origins only: the
+session travels in the API's cookies ([7.4](#74-authorization)). `Authorization` stays for the
+scanner's device token ([7.11](#711-scanner)).
 
 `POST /hooks/send-email` and `POST /hooks/payments/:provider` are called server to server and need
 no CORS; they reject every request without a valid signature.
@@ -2454,7 +2472,8 @@ tenant transaction reading no tenant, and a check that the list of covered table
 catalog's, so a new tenant table fails the suite until its cases exist. They also cover the
 `accounts` privileges, the runtime roles' privileges (`opos_app_global` reads only the columns its queries need, `opos_app`
 updates only the granted columns, inserts and deletes no tenant, inserts memberships and accepted
-invitations but never changes or removes an accepted invitation), the
+invitations but never changes or removes an accepted invitation), the session bounds of the
+runtime pools and an unbounded migration pool, the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, a tenant-level permission on a
 head, an `edition_membership` with a
@@ -2483,7 +2502,7 @@ cannot run beside an API started with `pnpm dev`.
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a permission change on a member who is already a `head` stores `none`; a later demotion brings none of them back, and one that sets permissions applies them |
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
-| concurrent member changes | on every write route of the contract: an org whose `settings=write` is taken away under the tenant's write lock in a transaction that commits while its write waits gets `403` and the tenant's rows are unchanged, while the same request without the demotion succeeds; on the routes outside team management, an org whose access ends while its write waits for the lock gets `403`, while the same expiry with no lock held lets it through; an outsider and a reader get `403` while the lock is held, without waiting for it; an edition-level write gets `403` once a lower edition permission commits while it waits; a tenant write and an edition delete finish beside a transaction that locked the actor's membership first and then the tenant row or the edition rows, with no deadlock; twenty interleaved requests of two tenants each see only their own tenant's editions |
+| concurrent member changes | on every write route of the contract: an org whose `settings=write` is taken away under the tenant's write lock in a transaction that commits while its write waits gets `403` and the tenant's rows are unchanged, while the same request without the demotion succeeds; on the routes outside team management, an org whose access ends while its write waits for the lock gets `403`, while the same expiry with no lock held lets it through; an outsider and a reader get `403` while the lock is held, without waiting for it; a write that waits past the lock timeout gets `503` `request.busy` with `Retry-After` and changes nothing, while one that holds the lock waits for a row lock as long as it is held; an edition-level write gets `403` once a lower edition permission commits while it waits; twelve slow writes of one tenant, more than the pool's connections, leave a read of another tenant answering within 500 ms and a refused write answering `403` within 200 ms, and those that wait past 5 s get `503`; a write of the tenant goes ahead while the previous one runs a slow after-commit step; a tenant write and an edition delete finish beside a transaction that locked the actor's membership first and then the tenant row or the edition rows, with no deadlock; twenty interleaved requests of two tenants each see only their own tenant's editions |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
 | invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write`, no longer holding what it granted, or a head demoted to org after sending a head invitation -> `410` `invitation.revoked` on preview and accept, also when the demotion commits while the acceptance waits; another tenant's edition -> `404`; the membership lands in the token's tenant only |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |

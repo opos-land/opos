@@ -2,7 +2,7 @@ import { Controller, Module, UseGuards } from '@nestjs/common'
 import { editions, tenantMemberships } from '@opos/db'
 import { oc } from '@orpc/contract'
 import { Implement, implement, ORPCError } from '@orpc/nest'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { TenantContextService } from '../src/common/als/tenant-context.service'
 import { GlobalDbService } from '../src/common/database/global-db.service'
@@ -44,6 +44,7 @@ export const probeContract = {
     .output(z.object({ ok: z.boolean() })),
   outside: route.route({ method: 'GET', path: '/probe/outside' }).output(z.object({})),
   demoteHeads: route.route({ method: 'POST', path: '/probe/demote-heads' }).output(z.object({})),
+  slowWrite: route.route({ method: 'POST', path: '/probe/slow-write' }).output(z.object({})),
   nested: route.route({ method: 'GET', path: '/probe/nested' }).output(z.object({})),
   withTenant: route
     .route({ method: 'GET', path: '/probe/with-tenant/{slug}' })
@@ -119,6 +120,16 @@ class ProbeController {
         .update(tenantMemberships)
         .set({ role: 'org' })
         .where(eq(tenantMemberships.role, 'head'))
+      return {}
+    })
+  }
+
+  @Implement(probeContract.slowWrite)
+  @RequireTenant('settings', 'write')
+  slowWrite() {
+    // A write that keeps its transaction, and its connection, for a second.
+    return implement(probeContract.slowWrite).handler(async () => {
+      await this.context.tx().execute(sql`select pg_sleep(1)`)
       return {}
     })
   }

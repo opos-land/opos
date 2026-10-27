@@ -13,6 +13,7 @@ import { deferResponseInTenantTransaction } from './common/als/defer-response'
 import { TenantContextMiddleware } from './common/als/tenant-context.middleware'
 import { TenantContextService } from './common/als/tenant-context.service'
 import { TenantTransactionInterceptor } from './common/als/tenant-transaction.interceptor'
+import { TenantWriteQueue } from './common/permissions/tenant-write-queue'
 import { DatabaseModule } from './common/database/database.module'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { AccessRepository } from './common/permissions/access.repository'
@@ -54,6 +55,8 @@ export class AppModule implements NestModule {
         { provide: APP_INTERCEPTOR, useClass: TenantTransactionInterceptor },
         TenantContextService,
         AccessRepository,
+        // One queue per process, built here: its bound is a plain number Nest cannot inject.
+        { provide: TenantWriteQueue, useFactory: () => new TenantWriteQueue() },
         RouteRateLimiter,
       ],
       exports: [ENV, TenantContextService, AccessRepository, RouteRateLimiter],

@@ -280,6 +280,10 @@ msgid "This convention already has an edition with this address."
 msgstr "Ten konwent ma już edycję o tym adresie."
 
 #: src/errors.ts
+msgid "This convention is being changed right now. Try again in a moment."
+msgstr "Ten konwent jest właśnie zmieniany. Spróbuj ponownie za chwilę."
+
+#: src/errors.ts
 msgid "This invitation has already been accepted."
 msgstr "To zaproszenie zostało już przyjęte."
 

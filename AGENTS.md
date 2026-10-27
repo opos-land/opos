@@ -141,7 +141,7 @@ Subject in the imperative mood (`add`, not `added`), lowercase, no trailing peri
 | `revert` | reverting a commit |
 
 Scopes: `api`, `panel`, `portal`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra`, `repo`.
-`infra` covers Traefik, compose and `infra/supabase`. The scope is optional, but when present it
+`infra` covers Traefik, compose, `infra/` and `supabase/`. The scope is optional, but when present it
 must come from this list — otherwise commitlint rejects the message. A new scope goes into
 `commitlint.config.mjs` and into this table.
 
@@ -227,13 +227,25 @@ change to PRODUCT.md or PLAN.md, link and anchor check included. Before a PR, ru
 `i18n-reviewer` agent when it touches user-facing text, a `.po` catalog or `packages/i18n`. Both
 only report; fix what they find before opening the PR.
 
+**The panel and the portal never talk to Supabase.** The API is their only backend (BFF): no
+`@supabase/*` package, no Supabase address or key and no `VITE_*` variable naming Supabase in either
+application; every sign-in operation goes through the API's `auth` endpoints
+([BFF boundary](docs/PLAN.md#32-frontend-application-layout)). Until the move of sign-in to the API
+is built, the existing `@supabase/auth-js` clients of the two applications are the only exception,
+and nothing new is built on them.
+
+**Dev and production are shared.** A working checkout never points at them: no `supabase link`,
+and no remote database URL, Supabase project reference or access token in a `.env` or
+`mise.local.toml`; they change only through the deploy workflow
+([environments](docs/PLAN.md#environments)). Testing happens on the local stack, with the seed.
+
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
 them to the repository. UI follows the designer's designs; where none exists yet, use plain blocks
 and real copy ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)). Do not ship
 component-library defaults as a finished look.
 
 The plan does not prescribe an order of work — it follows from dependencies between packages:
-the Supabase services (`infra/supabase`) before `packages/db`, because the schema references
+the Supabase services before `packages/db`, because the schema references
 `auth.users`; `packages/db` and `packages/contract` before the apps, the contract before the
 frontends. The scope to cover is set by [MVP scope](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp),
 and the readiness criteria by [tests](docs/PLAN.md#15-tests) and the

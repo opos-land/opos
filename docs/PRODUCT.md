@@ -37,7 +37,10 @@ The MVP targets a single market: Poland. The next ones are neighbouring — Czec
 have a nearly identical convention scene — and the product is multilingual from the first commit,
 so entering them is a matter of adding translation catalogs.
 
-The platform is self-hosted: our own VPS, with no lock-in to any particular cloud.
+The applications run on our own VPS. The database and sign-in run on Supabase's hosted service in
+the EU. Only our API talks to Supabase — the portal and the panel talk to the API alone — so the
+API can move to another server, and the hosting of the database and sign-in can change, without
+attendees or organizers noticing.
 
 The source code is available, not open source: it is licensed under the PolyForm Internal Use
 License 1.0.0. An organization may run and modify OPOS for its own internal operations; distributing
@@ -66,8 +69,8 @@ The MVP is closed once the flow below works with no manual database edits beyond
    the convention's account, and the tickets arrive by email with QR codes.
 7. The head organizer emails an invitation granting programme write access to the 2026 edition
    only. The invitee accepts the link and sees nothing in the panel but that edition's programme.
-8. The visitor later registers in the portal on the same address — with a password, confirmed
-   through a link sent to that address, or with Google — and finds both tickets under "my
+8. The visitor later registers in the portal on the same address — by email, confirmed through
+   a link sent to that address before they choose a password, or with Google — and finds both tickets under "my
    tickets". They open the convention's page from a link the convention shared, sign up for the
    2026 edition and see it under "my conventions". All of it works in a phone browser.
 9. They like a few programme items and find them in their personal schedule. After an item
@@ -245,11 +248,11 @@ permissions in each edition and an optional expiry date, within the limits of
 The link is valid for 7 days and works once. It opens the invitation page in the panel, which
 shows the convention and the invited address and lets the person sign in or register there — with
 email and password, or with Google. Registering with email, they confirm the address through the
-link sent to it, come back to the panel, choose their password and join the team; a password
-anyone set on that address before it was confirmed stops working. The confirmation link signs
-them in only in the browser they registered in; opened anywhere else, the panel says so, and the
-invitation page there sends a link to set the password instead. Only an account whose confirmed
-address is the invited one can accept.
+link sent to it, which signs them in to the panel in whatever browser opens it and asks them to
+choose their password there; a password anyone set on that address before it was confirmed stops
+working. They then join the team from the invitation link. A person who cannot sign in asks the
+invitation page for a link to set the password. Only an account whose confirmed address is the
+invited one can accept.
 
 An invitation stands only while the person who sent it could still send it. Once the sender has
 left the team, their access has expired, they have lost write access to settings or they no
@@ -271,13 +274,19 @@ in its link. A convention sends at most 20 invitations an hour.
 | `panel.opos.land/scanner` | the ticket scanner on a paired phone, without signing in | yes |
 | `api.opos.land` | API | yes |
 | `api.opos.land/docs` | public API documentation (Swagger UI), no sign-in | yes |
-| `auth.opos.land` | sign-in service: registration, sign-in, sessions, password reset, Google | yes |
 | `<convention>.opos.land` | public convention website (CMS module) | no |
 | customer's own domain | the same public convention website | no |
 | `admin.opos.land` | platform admin panel | no |
 
 A convention links to its page in the portal from its own website and social media; the page has
 the "Sign up" button for the active edition.
+
+The team tests on a separate Dev environment, on a domain of its own and closed to the public; it
+holds demo data and the team's own accounts.
+
+Registration, sign-in and password reset happen in the portal and the panel themselves. Signing in
+with Google is the one moment the browser passes through Supabase's own address, which Google's
+sign-in screen also names.
 
 **Only the admin sets a convention's address.** It is chosen when the admin creates the convention,
 and only the admin changes it later: every link and bookmark to the convention's page carries it,
@@ -398,10 +407,12 @@ Orders store the buyer's email address, first and last name. They are the conven
 records, so deleting an account does not delete orders placed with its address. Payment details
 stay with the payment provider; OPOS stores only the provider's payment reference.
 
-**Registration with a password requires a confirmed email address.** The account starts working
-once its owner clicks the link sent to that address. A Google sign-in counts as confirmed. A change
-of the account's email address takes effect once both the current and the new address confirm it
-through the links sent to them.
+**The password comes after the confirmed email address.** Registering by email asks for the
+address and the name only; the account starts working once its owner opens the link sent to that
+address, which asks them to choose the password there. A password anyone set on the address before
+it was confirmed never works afterwards. A Google sign-in counts as confirmed. Changing the
+account's email address comes after the MVP; it takes effect once both the current and the new
+address confirm it through the links sent to them.
 
 **An email address leads to an account only once it is confirmed.** Wherever the platform finds an
 account by its email address — the admin appointing a convention's first head organizer, an
@@ -420,11 +431,17 @@ owner.
 An organizer invitation stores nothing until it is accepted: the invited address travels only in
 the link sent to it ([5.7](#57-organizer-invitations-by-email)).
 
-Database backups contain personal data, so they are encrypted and share the retention policy of
-production data. Emails leave the platform for the mail provider only over an encrypted connection.
+The database and the sign-in service are hosted by Supabase in the EU, which processes this data
+on our behalf; the privacy policy names it. Personal data stays in production: the Dev environment and the developers' machines hold demo
+data and the team's own accounts only, and no production data or backup is ever copied there.
+Database backups contain personal data, so they are
+encrypted and share the retention policy of production data: Supabase's daily backups, and our own
+encrypted copies kept off Supabase for up to three months. Emails leave the platform for the mail
+provider only over an encrypted connection.
 
-The platform sets no tracking or advertising cookies. The sign-in session is kept in the
-browser's local storage of the site the person signed in to, the portal or the panel.
+The platform sets no tracking or advertising cookies. The sign-in session is kept in a cookie of
+the platform's API that no script on the page can read, separately for the portal and the panel; it
+is strictly necessary for signing in and needs no consent.
 
 **The privacy policy ships with the MVP.** It is published on the platform website in every
 interface language, linked from the registration form and from the footer of every portal page,
@@ -456,7 +473,8 @@ and log retention.
 - Privacy policy, linked from the registration form
 - Interface following the designer's designs, with no AI-generated graphics
 - Demo data
-- Deployment to our own VPS with backups
+- Deployment: the applications on our own VPS, the database and sign-in on Supabase in the EU,
+  with backups, and a Dev environment for the team's testing
 
 ### Beyond the MVP
 
@@ -476,6 +494,8 @@ and log retention.
   payment methods
 - Further payment providers
 - Further sign-in providers
+- Our own address instead of Supabase's during Google sign-in
+- Changing an account's email address
 - Convention catalogue in the portal
 - Speaker profiles, rooms, block schedule
 - File uploads (logos, avatars)

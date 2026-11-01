@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { after, describe, it } from 'node:test'
@@ -525,6 +534,28 @@ describe('--before-bash and --after-bash', () => {
     r.run(['--before-bash'], second)
     assert.equal(r.run(['--after-bash'], first).code, 2)
     assert.equal(r.run(['--after-bash'], second).code, 0)
+  })
+
+  it('drop their record even when they stand aside', () => {
+    const r = repo()
+    const event = { tool_use_id: 'during-merge' }
+    r.run(['--before-bash'], event)
+    r.write('.git/MERGE_HEAD', `${r.git('rev-parse', 'HEAD')}\n`)
+    assert.equal(r.run(['--after-bash'], event).code, 0)
+    assert.equal(existsSync(join(r.dir, '.git/tests-first-duringmerge.json')), false)
+  })
+
+  it('drop the records of calls that never reached --after-bash, after an hour', () => {
+    const r = repo()
+    const stale = join(r.dir, '.git/tests-first-denied.json')
+    const recent = join(r.dir, '.git/tests-first-running.json')
+    writeFileSync(stale, '{}')
+    writeFileSync(recent, '{}')
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000)
+    utimesSync(stale, twoHoursAgo, twoHoursAgo)
+    r.run(['--before-bash'], { tool_use_id: 'next' })
+    assert.equal(existsSync(stale), false)
+    assert.equal(existsSync(recent), true)
   })
 
   it('report a check that fails rather than let the command pass', () => {

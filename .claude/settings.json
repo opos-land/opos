@@ -30,6 +30,17 @@
           }
         ]
       }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/tests-first.mjs --after-bash || exit 2"
+          }
+        ]
+      }
     ]
   }
 }

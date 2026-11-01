@@ -15,7 +15,15 @@
 // The hooks read the event on stdin. A commit whose message holds a `No-Test-Reason: <reason>`
 // trailer is exempt; lefthook leaves a merge commit to CI.
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -296,16 +304,27 @@ export function main([mode, value], { cwd, stdin }) {
     })
   }
   if (mode === '--before-bash') {
-    writeFileSync(snapshotFile(readEvent()), JSON.stringify(snapshot()))
+    const file = snapshotFile(readEvent())
+    // A call that is denied never reaches --after-bash: its record goes once it is an hour old.
+    for (const name of readdirSync(dirname(file))) {
+      const record = join(dirname(file), name)
+      if (
+        /^tests-first-.+\.json$/.test(name) &&
+        Date.now() - statSync(record).mtimeMs > 3_600_000
+      ) {
+        rmSync(record)
+      }
+    }
+    writeFileSync(file, JSON.stringify(snapshot()))
     return 0
   }
   if (mode === '--after-bash') {
     return failClosed(() => {
       const file = snapshotFile(readEvent())
-      if (resolving()) return 0
       // Without the record of --before-bash, every changed file counts as the command's.
       const before = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}
       rmSync(file, { force: true })
+      if (resolving()) return 0
       const changed = touched(before, snapshot()).filter((path) => areaOf(path))
       const missing = missingTests(workingTree()).filter(({ files }) =>
         files.some((path) => changed.includes(path)),

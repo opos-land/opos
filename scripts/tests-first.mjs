@@ -49,11 +49,35 @@ const areas = [
 const asChange = (change) =>
   typeof change === 'string' ? { path: change, deleted: false } : change
 
-/** Whether the changes hold a test of `area` that was added or changed, not deleted. */
+/** Whether the changes hold a test of `area` that was added or changed, not deleted or hollow. */
 const testedIn = (area, changes) =>
   changes
     .map(asChange)
-    .some(({ path, deleted }) => !deleted && area.tests.some((pattern) => pattern.test(path)))
+    .some(
+      ({ path, deleted, hollow }) =>
+        !deleted && !hollow && area.tests.some((pattern) => pattern.test(path)),
+    )
+
+/** Whether a test file's source holds a test: a call of `describe`, `it` or `test`. */
+export function holdsTests(source) {
+  return /\b(describe|it|test)(\.\w+)*\s*[(`]/.test(source)
+}
+
+/** The changes with each test file that holds no test marked hollow; `read` returns its source. */
+function weighTests(changes, read) {
+  const source = (path) => {
+    try {
+      return read(path)
+    } catch {
+      return ''
+    }
+  }
+  return changes.map((change) =>
+    isTest(change.path) && !change.deleted
+      ? { ...change, hollow: !holdsTests(source(change.path)) }
+      : change,
+  )
+}
 
 /** The guarded area a path belongs to, or null; a test file belongs to none. */
 export function areaOf(path) {
@@ -152,13 +176,17 @@ const lines = (output) => (output ? output.split('\n') : [])
 function repository(cwd) {
   const raw = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' })
   const git = (...args) => raw(...args).trim()
-  const workingTree = () => parseStatus(raw('status', '--porcelain', '--untracked-files=all'))
+  const status = () => parseStatus(raw('status', '--porcelain', '--untracked-files=all'))
+  const workingTree = () =>
+    weighTests(status(), (path) =>
+      readFileSync(join(git('rev-parse', '--show-toplevel'), path), 'utf8'),
+    )
 
   /** The changed files of the working tree, by path, with a hash of their content or 'deleted'. */
   function snapshot() {
     const root = git('rev-parse', '--show-toplevel')
     return Object.fromEntries(
-      workingTree().map(({ path, deleted }) => {
+      status().map(({ path, deleted }) => {
         const file = join(root, path)
         return [path, deleted || !existsSync(file) ? 'deleted' : git('hash-object', file)]
       }),
@@ -255,7 +283,8 @@ export function main(
     // A merge brings commits checked on their own branch; CI checks what the merge adds.
     if (existsSync(resolve(cwd, git('rev-parse', '--git-path', 'MERGE_HEAD')))) return 0
     if (exempted(readFileSync(resolve(cwd, value), 'utf8'))) return 0
-    const missing = missingTests(parseNameStatus(raw('diff', '--cached', '--name-status')))
+    const staged = parseNameStatus(raw('diff', '--cached', '--name-status'))
+    const missing = missingTests(weighTests(staged, (path) => raw('show', `:${path}`)))
     if (missing.length === 0) return 0
     report(missing)
     console.error(
@@ -274,7 +303,7 @@ export function main(
           ? raw('log', '-1', '--remerge-diff', '--name-status', '--format=', commit)
           : raw('diff-tree', '--no-commit-id', '--name-status', '-r', commit),
       )
-      const missing = missingTests(changes)
+      const missing = missingTests(weighTests(changes, (path) => raw('show', `${commit}:${path}`)))
       return missing.length > 0 ? [{ commit, missing }] : []
     })
     if (failing.length === 0) return 0

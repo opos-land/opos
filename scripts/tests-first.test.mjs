@@ -8,6 +8,7 @@ import {
   areaOf,
   editRefusal,
   exempted,
+  holdsTests,
   main,
   missingTests,
   parseNameStatus,
@@ -21,17 +22,23 @@ after(() => fixtures.forEach((dir) => rmSync(dir, { recursive: true, force: true
 const guard = 'apps/api/src/common/guards/jwt-auth.guard.ts'
 const apiTest = 'apps/api/test/me.test.ts'
 
+/** Fresh content for `path`: a test file holds a test. */
+const sample = (path) =>
+  /\.(test|spec)\./.test(path)
+    ? `it('${Math.random()}', () => {})\n`
+    : `// ${path} ${Math.random()}\n`
+
 /** A throwaway repository with one commit on `main`, and main() run inside it. */
 function repo() {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), 'tests-first-')))
   fixtures.push(dir)
   const git = (...args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' }).trim()
-  const write = (path, content = `// ${path}\n`) => {
+  const write = (path, content = sample(path)) => {
     mkdirSync(dirname(join(dir, path)), { recursive: true })
     writeFileSync(join(dir, path), content)
   }
   const commit = (message, ...paths) => {
-    for (const path of paths) write(path, `// ${path} ${Math.random()}\n`)
+    for (const path of paths) write(path)
     git('add', '--all')
     git('commit', '-q', '--no-verify', '--allow-empty', '-m', message)
     return git('rev-parse', 'HEAD')
@@ -247,6 +254,37 @@ describe('deletions', () => {
     assert.deepEqual(missingTests([{ path: 'apps/api/src/common/guards/x.ts', deleted: true }]), [
       { area: 'rbac', files: ['apps/api/src/common/guards/x.ts'] },
     ])
+  })
+})
+
+describe('test files without tests', () => {
+  it('are told apart by a call of describe, it or test', () => {
+    for (const source of [
+      "describe('x', () => {})",
+      "it.each([1])('x %s', () => {})",
+      "test.skip('x', () => {})",
+      'test `x`',
+    ]) {
+      assert.equal(holdsTests(source), true, source)
+    }
+    for (const source of ['', '// it will come\n', 'export const testing = 1\n']) {
+      assert.equal(holdsTests(source), false, source)
+    }
+  })
+
+  it('do not count as a test of their area', () => {
+    assert.equal(missingTests([guard, { path: apiTest, deleted: false, hollow: true }]).length, 1)
+  })
+
+  it('unlock nothing in the hook, in lefthook or in CI', () => {
+    const r = repo()
+    r.write(apiTest, '')
+    assert.equal(r.edit(guard).code, 2)
+    r.write(guard)
+    r.git('add', '--all')
+    assert.equal(r.commitMsg('fix(api): x\n').code, 1)
+    r.commit('fix(api): x')
+    assert.equal(r.run(['--base', 'HEAD~1']).code, 1)
   })
 })
 

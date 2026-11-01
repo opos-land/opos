@@ -36,9 +36,11 @@ const areas = [
     name: 'rbac',
     code: [
       /^apps\/api\/src\/common\/(permissions|als|guards|database|decorators)\//,
-      /^apps\/api\/src\/modules\/(tenants|editions)\//,
+      // Every module but mail and health reads or writes as an account, a tenant or an edition.
+      /^apps\/api\/src\/modules\/(?!(mail|health)\/)/,
       /^apps\/api\/src\/app\.module\.ts$/,
-      /^packages\/contract\/src\/common\.ts$/,
+      // The routes and the access each one requires.
+      /^packages\/contract\/src\/(?!(errors|index)\.ts$)[^/]+\.ts$/,
     ],
     tests: [/^apps\/api\/test\/.+\.test\.ts$/, /^apps\/api\/src\/.+\.test\.ts$/],
     where: 'apps/api/test or a *.test.ts beside the code',

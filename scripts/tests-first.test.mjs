@@ -112,6 +112,28 @@ describe('areaOf', () => {
     }
   })
 
+  it('puts every api module but mail and health, and every contract route, in rbac', () => {
+    for (const path of [
+      'apps/api/src/modules/accounts/accounts.repository.ts',
+      'apps/api/src/modules/auth/send-email-hook.ts',
+      'apps/api/src/modules/program/program.repository.ts',
+      'packages/contract/src/tenants.ts',
+      'packages/contract/src/me.ts',
+      'packages/contract/src/invitations.ts',
+      'packages/contract/src/program.ts',
+    ]) {
+      assert.equal(areaOf(path), 'rbac', path)
+    }
+    for (const path of [
+      'apps/api/src/modules/mail/smtp.ts',
+      'apps/api/src/modules/health/health.controller.ts',
+      'packages/contract/src/errors.ts',
+      'packages/contract/src/index.ts',
+    ]) {
+      assert.notEqual(areaOf(path), 'rbac', path)
+    }
+  })
+
   it('leaves tests and everything else outside both areas', () => {
     for (const path of [
       'packages/db/test/rls.test.ts',

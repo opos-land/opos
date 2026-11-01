@@ -203,7 +203,7 @@ then restore it.
 | Area | Code | Its tests |
 |---|---|---|
 | `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client}.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
-| `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/{tenants,editions}/`, `apps/api/src/app.module.ts`, `packages/contract/src/common.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
+| `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
 
 A deleted test is no test of its area, and neither is a test file that holds no call of
 `describe`, `it` or `test`; deleted code is a change of its area, and so is a file moved out of it.

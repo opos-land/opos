@@ -252,7 +252,8 @@ application; every sign-in operation goes through the API's `auth` endpoints
 ([BFF boundary](docs/PLAN.md#32-frontend-application-layout)). Until the move of sign-in to the API
 is built, the existing `@supabase/auth-js` clients of the two applications are the only exception,
 and nothing new is built on them: the `react` ESLint preset refuses any other import of
-`@supabase/*`, and the files of the exception are listed in each application's `eslint.config.js`.
+`@supabase/*`, static or dynamic, and the files of the exception, listed in each application's
+`eslint.config.js`, may import `@supabase/auth-js` alone.
 
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`,
 and no remote database URL, Supabase project reference or access token in a `.env` or

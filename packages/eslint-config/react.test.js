@@ -23,7 +23,9 @@ const lint = (options) =>
     ],
   })
 
-const eslint = lint({ supabaseImports: ['src/shared/lib/legacy-auth.ts'] })
+const eslint = lint({
+  legacyAuth: ['src/shared/lib/legacy-auth.ts', 'src/shared/lib/legacy-client.ts'],
+})
 
 async function ruleIds(file, linter = eslint) {
   const [result] = await linter.lintFiles([join(root, 'src', file)])
@@ -71,6 +73,17 @@ describe('react preset', () => {
 
   it('forbids an import of a Supabase package', async () => {
     expect(await ruleIds('features/beta/into-supabase.ts')).toEqual(['no-restricted-imports'])
+  })
+
+  it('forbids it in a JavaScript file and as a dynamic import as well', async () => {
+    expect(await ruleIds('features/beta/into-supabase-js.js')).toEqual(['no-restricted-imports'])
+    expect(await ruleIds('features/beta/into-supabase-dynamic.ts')).toEqual([
+      'no-restricted-syntax',
+    ])
+  })
+
+  it('lets the listed files import the auth-js client and no other Supabase package', async () => {
+    expect(await ruleIds('shared/lib/legacy-client.ts')).toEqual(['no-restricted-imports'])
   })
 
   it('lets only the listed files import a Supabase package until sign-in moves to the API', async () => {

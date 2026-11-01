@@ -339,12 +339,12 @@ their production bundles nothing names Supabase:
 | an address on `supabase.co`, `supabase.in` or `supabase.com`, and the local stack's `:54321` | a request that bypasses the API |
 | a `sb_publishable_` or `sb_secret_` key, a JWT, a `VITE_*` variable whose name contains `SUPABASE` | a key in a bundle is a key for everyone |
 
-The `react` ESLint preset refuses an import of `@supabase/*` with `no-restricted-imports`
-([react.js](../packages/eslint-config/react.js)), so the editor, lefthook `pre-commit` and the
+The `react` ESLint preset refuses an import of `@supabase/*`, static or dynamic, in every script
+file ([react.js](../packages/eslint-config/react.js)), so the editor, lefthook `pre-commit` and the
 `lint` task in CI show it. The files that still hold the `@supabase/auth-js` client are listed in
 each application's `eslint.config.js` ([panel](../apps/panel/eslint.config.js),
-[portal](../apps/portal/eslint.config.js)); nothing joins that list, and the move of sign-in to the
-API empties it. Still to be built: `scripts/bff-boundary.mjs`, which holds all the rules of the
+[portal](../apps/portal/eslint.config.js)) and may import that package alone; nothing joins the
+list, and the move of sign-in to the API empties it. Still to be built: `scripts/bff-boundary.mjs`, which holds all the rules of the
 table and enforces them where the tests-first check runs — a Claude Code hook after every `Edit`,
 `Write` and `Bash` that touches the two applications
 ([.claude/settings.json](../.claude/settings.json)), lefthook `pre-commit` on the staged files, and

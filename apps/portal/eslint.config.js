@@ -2,7 +2,7 @@ import { react } from '@opos/eslint-config/react'
 
 export default react(import.meta.dirname, {
   // The auth-js client until sign-in moves to the API (AGENTS.md); nothing joins this list.
-  supabaseImports: [
+  legacyAuth: [
     'src/app/providers.test.tsx',
     'src/features/account/components/delete-account.test.tsx',
     'src/features/account/model/sign-in-methods.ts',

@@ -199,6 +199,31 @@ describe('exempted', () => {
     assert.equal(exempted('fix(db): x\n\nNo-Test-Reason:\n'), false)
     assert.equal(exempted('fix(db): x'), false)
   })
+
+  it('reads the trailer among the other trailers, a folded line included', () => {
+    assert.equal(
+      exempted(
+        'refactor(api): x\n\nBody.\n\nNo-Test-Reason: rename only,\n  no behaviour changes\nCo-Authored-By: A <a@example.com>\n',
+      ),
+      true,
+    )
+  })
+
+  it('ignores the words anywhere but in the trailers', () => {
+    assert.equal(
+      exempted('fix(api): x\n\nNo-Test-Reason: quoted as an example\n\nMore text.\n'),
+      false,
+    )
+    assert.equal(exempted('fix(api): x\n\nNo-Test-Reason: y\nand a sentence after it\n'), false)
+    assert.equal(exempted('No-Test-Reason: the subject\n'), false)
+  })
+
+  it('skips comment lines and everything below the scissors line, as git does', () => {
+    const scissors = '# ------------------------ >8 ------------------------'
+    assert.equal(exempted('fix(api): x\n\nNo-Test-Reason: y\n# Please enter the message.\n'), true)
+    assert.equal(exempted(`fix(api): x\n\nNo-Test-Reason: y\n${scissors}\ndiff --git a b\n`), true)
+    assert.equal(exempted(`fix(api): x\n${scissors}\n\nNo-Test-Reason: y\n`), false)
+  })
 })
 
 describe('deletions', () => {

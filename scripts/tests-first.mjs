@@ -125,9 +125,25 @@ export function touched(before, after) {
   return [...paths].filter((path) => before[path] !== after[path])
 }
 
-/** Whether a commit message carries a `No-Test-Reason:` trailer with a reason. */
+/**
+ * Whether a commit message carries a `No-Test-Reason:` trailer with a reason. Trailers are the
+ * last paragraph after the subject, every line of it a `Key: value` or a folded continuation;
+ * comment lines and everything below the scissors line of `git commit -v` are not the message.
+ */
 export function exempted(message) {
-  return /^No-Test-Reason:[ \t]*\S/m.test(message)
+  const paragraphs = message
+    .split(/^# -+ >8 -+$/m)[0]
+    .split('\n')
+    .filter((line) => !line.startsWith('#'))
+    .join('\n')
+    .trim()
+    .split(/\n[ \t]*\n/)
+  if (paragraphs.length < 2) return false
+  const trailers = paragraphs.at(-1).split('\n')
+  return (
+    trailers.every((line) => /^[\w-]+:[ \t]/.test(line) || /^[ \t]+\S/.test(line)) &&
+    trailers.some((line) => /^No-Test-Reason:[ \t]*\S/.test(line))
+  )
 }
 
 const lines = (output) => (output ? output.split('\n') : [])

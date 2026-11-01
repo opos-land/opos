@@ -277,9 +277,10 @@ export function main([mode, value], { cwd, stdin }) {
     return resolve(cwd, git('rev-parse', '--git-path', `tests-first-${id}.json`))
   }
   // While git resolves a merge, rebase, cherry-pick or revert the hooks stand aside: what the
-  // resolution adds is checked in CI, in the commit it ends up in.
+  // resolution adds is checked in CI, in the commit it ends up in. A rebase is in progress while
+  // its directory exists; git leaves REBASE_HEAD behind once it has finished.
   const resolving = () =>
-    ['MERGE_HEAD', 'REBASE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD'].some((name) =>
+    ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply'].some((name) =>
       existsSync(resolve(cwd, git('rev-parse', '--git-path', name))),
     )
   if (mode === '--hook') {

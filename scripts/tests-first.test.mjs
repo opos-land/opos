@@ -659,12 +659,24 @@ describe('merges', () => {
   })
 
   it('let the hooks through while git resolves a merge, rebase, cherry-pick or revert', () => {
-    for (const marker of ['MERGE_HEAD', 'REBASE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD']) {
+    for (const marker of [
+      'MERGE_HEAD',
+      'CHERRY_PICK_HEAD',
+      'REVERT_HEAD',
+      'rebase-merge/head-name',
+      'rebase-apply/head-name',
+    ]) {
       const r = repo()
       r.write(`.git/${marker}`, `${r.git('rev-parse', 'HEAD')}\n`)
       assert.equal(r.edit(guard).code, 0, marker)
       assert.equal(r.bash(() => r.write(guard)).code, 0, marker)
     }
+  })
+
+  it('check again once a rebase has finished, though git leaves REBASE_HEAD behind', () => {
+    const r = repo()
+    r.write('.git/REBASE_HEAD', `${r.git('rev-parse', 'HEAD')}\n`)
+    assert.equal(r.edit(guard).code, 2)
   })
 })
 

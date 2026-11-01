@@ -62,6 +62,14 @@ describe('the convention', () => {
 
     expect(res.body).toMatchObject({ code: 'request.not-found' })
   })
+
+  // Postgres refuses a null byte in a parameter, so these must not reach a query.
+  it.each(['/%00', '/a%00b', '/a%00b/editions', '/a%00b/active-edition'])(
+    'answers 404 for %s, an address no convention can have',
+    async (path) => {
+      await get(path).expect(404)
+    },
+  )
 })
 
 describe('editions', () => {
@@ -95,12 +103,21 @@ describe('editions', () => {
     })
   })
 
-  it('answers 404 for an unpublished edition, as for an unknown one', async () => {
+  it('answers an unpublished edition exactly as an unknown one', async () => {
     const t = await fresh()
     await addEdition(t.id, { slug: 'draft' })
 
-    await get(`/${t.slug}/editions/draft`).expect(404)
-    await get(`/${t.slug}/editions/unknown`).expect(404)
+    const draft = await get(`/${t.slug}/editions/draft`).expect(404)
+    const unknown = await get(`/${t.slug}/editions/unknown`).expect(404)
+
+    expect(draft.body).toEqual(unknown.body)
+  })
+
+  it.each(['a%00b', 'Not_A_Slug'])('answers 404 for %s, which no edition can use', async (slug) => {
+    const t = await fresh()
+
+    await get(`/${t.slug}/editions/${slug}`).expect(404)
+    await get(`/${t.slug}/editions/${slug}/program-items`).expect(404)
   })
 
   it('answers the active edition, also one whose address is "active"', async () => {
@@ -221,13 +238,18 @@ describe('the programme', () => {
     expect(res.body).toMatchObject({ id: item, title: 'Panel', likeCount: 1 })
   })
 
-  it('answers 404 for the programme of an unpublished edition', async () => {
+  it('answers the programme of an unpublished edition exactly as an unknown one', async () => {
     const t = await fresh()
     const editionId = await addEdition(t.id, { slug: 'draft' })
     const item = await addProgramItem(t.id, editionId)
 
-    await get(itemsPath(t.slug, 'draft')).expect(404)
-    await get(`${itemsPath(t.slug, 'draft')}/${item}`).expect(404)
+    const list = await get(itemsPath(t.slug, 'draft')).expect(404)
+    const unknownList = await get(itemsPath(t.slug, 'unknown')).expect(404)
+    expect(list.body).toEqual(unknownList.body)
+
+    const details = await get(`${itemsPath(t.slug, 'draft')}/${item}`).expect(404)
+    const unknownDetails = await get(`${itemsPath(t.slug, 'unknown')}/${item}`).expect(404)
+    expect(details.body).toEqual(unknownDetails.body)
   })
 
   it('answers 404 for an item outside the edition or the convention of the address', async () => {
@@ -238,10 +260,11 @@ describe('the programme', () => {
     const foreign = await published(b.id)
     const foreignItem = await addProgramItem(b.id, foreign.id)
 
-    await get(`${itemsPath(t.slug, here.slug)}/${item}`).expect(404)
+    const outside = await get(`${itemsPath(t.slug, here.slug)}/${item}`).expect(404)
+    const unknown = await get(`${itemsPath(t.slug, here.slug)}/${randomUUID()}`).expect(404)
+    expect(outside.body).toEqual(unknown.body)
     await get(`${itemsPath(t.slug, here.slug)}/${foreignItem}`).expect(404)
     await get(`${itemsPath(t.slug, here.slug)}/not-a-uuid`).expect(404)
-    await get(`${itemsPath(t.slug, here.slug)}/${randomUUID()}`).expect(404)
     expect((await get(itemsPath(t.slug, here.slug)).expect(200)).body).toEqual([])
   })
 })

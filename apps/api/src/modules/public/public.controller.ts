@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common'
-import { contract } from '@opos/contract'
+import { contract, editionSlug } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { GlobalDbService } from '../../common/database/global-db.service'
@@ -16,7 +16,9 @@ export class PublicController {
     private readonly repository: PublicRepository,
   ) {}
 
+  /** An address outside the slugs' alphabet names nothing, and must not reach a query. */
   private async tenant(slug: string) {
+    if (!editionSlug.safeParse(slug).success) throw notFound('convention')
     const tenant = await this.global.tenantBySlug(slug)
     if (!tenant) throw notFound('convention')
     return tenant

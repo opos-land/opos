@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { type PublicEdition, type PublicProgramItem } from '@opos/contract'
+import { editionSlug, type PublicEdition, type PublicProgramItem } from '@opos/contract'
 import { accounts, editions, programItemLikes, programItems, programItemSpeakers } from '@opos/db'
 import { and, asc, count, desc, eq, inArray, type SQL } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
@@ -70,6 +70,7 @@ export class PublicRepository {
   }
 
   async edition(slug: string): Promise<PublicEdition> {
+    if (!editionSlug.safeParse(slug).success) throw notFound('edition')
     const [row] = await this.publishedEditions(eq(editions.slug, slug))
     if (!row) throw notFound('edition')
     return toEdition(row)

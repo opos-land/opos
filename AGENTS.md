@@ -225,7 +225,7 @@ A deleted test is no test of its area, and neither is a test file that holds no 
 |---|---|
 | Claude Code hooks ([.claude/settings.json](.claude/settings.json)) | an `Edit` or `Write` of an area's code while no test of that area has changed in the working tree; after a `Bash` command, it reports an area's code the command changed under the same condition; both stand aside while git resolves a merge, rebase, cherry-pick or revert |
 | lefthook `commit-msg` | a commit that stages an area's code without a test of that area; a merge commit is left to CI |
-| CI, on a pull request | each commit since the base branch that changes an area's code without a test of that area in the same commit; a merge commit by what it adds beyond merging its parents, a conflict resolution included |
+| CI, on a pull request into any branch but `main` | each commit since the base branch that changes an area's code without a test of that area in the same commit; a merge commit by what it adds beyond merging its parents, a conflict resolution included |
 
 The Claude Code hooks fail closed: a check that cannot run — unreadable input, git failing, a
 broken script — refuses the edit, and after a `Bash` command reports it. When a broken script

@@ -2609,8 +2609,9 @@ starts `dist/main.js` with `NODE_ENV=production` against the same stack: `/healt
 and over `dist/` of the panel and the portal.
 `pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR, and so do
 `pnpm test:scripts` (the root `scripts/`, on `node --test`, which fails below full line, branch
-and function coverage of the scripts) and, on a PR only, the
-[tests-first check](../AGENTS.md#tests-first) on each of the PR's commits.
+and function coverage of the scripts) and, on a PR into any branch but `main`, the
+[tests-first check](../AGENTS.md#tests-first) on each of the PR's commits; a PR into `main` brings
+commits already checked on their way into `develop`.
 
 A push to `develop` deploys Dev and a push to `main` production, through the deploy workflow
 ([13](#deployment-procedure)), once `check` has passed on that commit.

@@ -26,8 +26,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm test:scripts
-      # RLS and RBAC code travels with its test (AGENTS.md)
-      - if: github.event_name == 'pull_request'
+      # Code travels with its test (AGENTS.md). A pull request into main brings develop's commits,
+      # each checked on its way into develop.
+      - if: github.event_name == 'pull_request' && github.base_ref != 'main'
         run: node scripts/tests-first.mjs --base origin/${{ github.base_ref }}
       - run: pnpm i18n:check
       # mailpit: the send-email hook test reads what the API sent

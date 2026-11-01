@@ -7,6 +7,16 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: pl\n"
 
+#: src/features/conventions/components/program-list.tsx
+#: src/features/conventions/pages/program-item-page.tsx
+msgid "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
+msgstr "{count, plural, one {Prelegent: {names}} few {Prelegenci: {names}} many {Prelegenci: {names}} other {Prelegenci: {names}}}"
+
+#: src/features/conventions/components/program-list.tsx
+#: src/features/conventions/pages/program-item-page.tsx
+msgid "{likes, plural, one {# like} other {# likes}}"
+msgstr "{likes, plural, one {# polubienie} few {# polubienia} many {# polubień} other {# polubienia}}"
+
 #: src/features/landing/pages/landing-page.tsx
 msgid "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
 msgstr "Konwent prowadzi swój zespół, edycje, program i sprzedaż akredytacji w panelu organizatora. Płatności za akredytacje trafiają prosto na własne konto konwentu u operatora płatności: OPOS nigdy nie przechowuje tych pieniędzy."
@@ -39,6 +49,10 @@ msgstr "Poproś o nowy link"
 #: src/features/auth/components/register-form.tsx
 msgid "At least 8 characters."
 msgstr "Co najmniej 8 znaków."
+
+#: src/features/conventions/pages/edition-page.tsx
+msgid "Back to {conventionName}"
+msgstr "Wróć do konwentu {conventionName}"
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Back to sign-in"
@@ -205,6 +219,10 @@ msgstr "Nowe hasło"
 msgid "No account yet? <0>Create an account</0>"
 msgstr "Nie masz jeszcze konta? <0>Załóż konto</0>"
 
+#: src/features/conventions/pages/convention-page.tsx
+msgid "No edition of this convention is active."
+msgstr "Żadna edycja tego konwentu nie jest teraz aktywna."
+
 #: src/features/auth/pages/register-page.tsx
 msgid "One account for every convention on OPOS."
 msgstr "Jedno konto na wszystkie konwenty w OPOS."
@@ -237,6 +255,10 @@ msgstr "albo"
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Orders are the conventions’ sales records: they stay after the account with the same address is deleted."
 msgstr "Zamówienia są dokumentacją sprzedaży konwentów: zostają po usunięciu konta z tym samym adresem."
+
+#: src/features/conventions/pages/convention-page.tsx
+msgid "Other editions"
+msgstr "Inne edycje"
 
 #: src/shared/ui/messages.tsx
 msgid "Page not found"
@@ -315,6 +337,14 @@ msgstr "Liczba polubień punktu programu jest publiczna. To, kto go polubił, ni
 #: src/features/auth/components/new-password-form.tsx
 msgid "The passwords differ."
 msgstr "Hasła się różnią."
+
+#: src/features/conventions/pages/program-item-page.tsx
+msgid "The whole programme"
+msgstr "Cały program"
+
+#: src/features/conventions/components/program-list.tsx
+msgid "There is no programme yet."
+msgstr "Nie ma jeszcze programu."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, tickets and invitations to a convention’s team."

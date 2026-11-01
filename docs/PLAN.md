@@ -187,7 +187,8 @@ opos/
                          #   error filter, request store and tenant transaction, JwtAuthGuard,
                          #   rate limiting, permission decorators, MeModule (profile, memberships,
                          #   account deletion), TenantsModule (tenant, team, invitations),
-                         #   EditionsModule, ProgramModule (items and speakers), AuthModule (send-email hook, Supabase Auth admin
+                         #   EditionsModule, ProgramModule (items and speakers), PublicModule (without reviews),
+                         #   AuthModule (send-email hook, Supabase Auth admin
                          #   client), MailModule (Supabase Auth and invitation emails), tests;
                          #   still to come: the auth endpoints and session cookies (5.1, 7.4)
       src/
@@ -204,20 +205,20 @@ opos/
                          #   query client), features landing, auth, account, shared/ (API link,
                          #   auth client, session, i18n, UI), .env.example, tests (9); the auth
                          #   client gives way to the API's auth endpoints (5.1)
-      src/features/      # still to come: attendances, conventions, schedule, speaking, tickets
+      src/features/      # still to come: attendances, schedule, speaking, tickets
       Dockerfile
   e2e/                   # built: Playwright config, fixtures (stack, Mailpit, admin API, tenants,
                          #   sign-in) with their unit tests, specs (15.2)
   packages/
     contract/            # built: common schemas, error codes, health, me (profile, memberships, deletion),
-                         #   tenants (without payment config), editions, invitations, program (without reviews)
+                         #   tenants (without payment config), editions, invitations, program and
+                         #   public (without reviews)
       src/
         engagement.ts
         shop.ts
         tickets.ts
         checkout.ts
         scanner.ts
-        public.ts
     db/                  # built: clients, rls, core schema, migrations, createTenant, seed, scripts, tests
       .env.example       # the db:* scripts' variables (11)
       src/
@@ -935,7 +936,7 @@ request waits is `404` too.
 | Method | Path | Required permission |
 |---|---|---|
 | GET | `/editions/:editionId/program-items` | `program>=read` |
-| POST | `/editions/:editionId/program-items` | `program=write` |
+| POST | `/editions/:editionId/program-items` | `program=write`; `409` `program.too-many-items` once the edition holds 1000 items |
 | PATCH | `/editions/:editionId/program-items/:programItemId` | `program=write` |
 | DELETE | `/editions/:editionId/program-items/:programItemId` | `program=write` |
 | PUT | `/editions/:editionId/program-items/:programItemId/speakers` | `program=write`; `{ emails }` replaces the list; an email without a confirmed account -> `404` `speaker.account-not-found`, naming the email in `params`, and the list stays as it was |
@@ -965,14 +966,16 @@ Eligibility and start time are checked as invariant 7 in [4.5](#45-invariants) d
 |---|---|---|
 | GET | `/public/tenants/:slug` | tenant name, `defaultLocale`, `timezone`; `404` when unknown |
 | GET | `/public/tenants/:slug/editions` | published editions, descending by `startsAt` |
-| GET | `/public/tenants/:slug/editions/active` | the active and published edition |
-| GET | `/public/tenants/:slug/editions/:editionSlug` | a single published edition |
-| GET | `/public/tenants/:slug/editions/:editionSlug/program-items` | programme, ascending by `startsAt`, with speaker names, `likeCount`, `ratingAverage`, `reviewCount` |
+| GET | `/public/tenants/:slug/active-edition` | the active and published edition; `404` when none is both |
+| GET | `/public/tenants/:slug/editions/:editionSlug` | a single published edition; `404` for an unpublished one, as for an unknown one |
+| GET | `/public/tenants/:slug/editions/:editionSlug/program-items` | programme, ascending by `startsAt`, with speaker names and `likeCount`; `ratingAverage` and `reviewCount` come with the reviews |
 | GET | `/public/tenants/:slug/editions/:editionSlug/program-items/:programItemId` | programme item details with the same counters |
 | GET | `/public/tenants/:slug/editions/:editionSlug/program-items/:programItemId/reviews` | public, non-hidden reviews; anonymous authors without a name |
 
-The `isPublished = true` filter lives in the repository, not in the controller. Counters and
-averages count non-hidden reviews only. Who liked an item is never returned.
+The schemas are in [public.ts](../packages/contract/src/public.ts), and the reviews route is still to
+be built. The `isPublished = true` filter lives in the repository, not in the controller. Counters
+and averages count non-hidden reviews only. Who liked an item is never returned, and neither is a
+speaker's address or account: a speaker is a first and last name, and one with neither is left out.
 
 ### 5.8 `tickets` — JWT + `X-Tenant-Slug` + edition permission
 
@@ -1711,11 +1714,12 @@ SPA (Vite + React) in [apps/portal](../apps/portal), built like the panel ([8](#
 for a 360 px wide viewport first and works up to desktop: one column, controls at least 44 px tall,
 form fields with 16 px text so a phone browser does not zoom into them, no horizontal scrolling.
 
-Built: the features `landing`, `auth` and `account` with their screens below; the routes are in
-[router.tsx](../apps/portal/src/app/router.tsx) and the frame of every screen (the platform's name,
-the way to the account or to sign-in, the privacy policy in the footer) in
-[layout.tsx](../apps/portal/src/app/layout.tsx). Still to be built: `attendances`, `conventions`,
-`schedule`, `speaking`, `tickets` and their screens, which wait for their modules in the API, the
+Built: the features `landing`, `auth`, `account` and `conventions` with their screens below; the
+routes are in [router.tsx](../apps/portal/src/app/router.tsx) and the frame of every screen (the
+platform's name, the way to the account or to sign-in, the privacy policy in the footer) in
+[layout.tsx](../apps/portal/src/app/layout.tsx). Still to be built: on the convention pages the
+"Sign up" button, the like button, ratings, comments and the review form, which wait for their
+modules; `attendances`, `schedule`, `speaking`, `tickets` and their screens, which wait for their modules in the API, the
 image with its headers ([13](#13-deployment)), and the move of `auth` and `account` from
 `@supabase/auth-js` to the API's `auth` endpoints ([5.1](#51-auth--sign-in-through-the-api)),
 which the bullets below describe.
@@ -2517,7 +2521,8 @@ cannot run beside an API started with `pnpm dev`.
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
 | concurrent member changes | on every write route of the contract: an org whose `settings=write` and `program=write` are taken away under the tenant's write lock in a transaction that commits while its write waits gets `403` and the tenant's rows are unchanged, while the same request without the demotion succeeds; on the routes outside team management, an org whose access ends while its write waits for the lock gets `403`, while the same expiry with no lock held lets it through; on the routes of team management, an org whose access ends while its write waits for its own membership row, and on `editions.members.put` and an invitation that names editions for an edition row, gets `403` and changes nothing, while the same expiry with nothing held lets it through; an outsider and a reader get `403` while the lock is held, without waiting for it; a write that waits past the lock timeout gets `503` `request.busy` with `Retry-After` and changes nothing, while one that holds the lock waits for a row lock as long as it is held; an edition-level write gets `403` once a lower edition permission commits while it waits; twelve slow writes of one tenant, more than the pool's connections, leave a read of another tenant answering within 500 ms and a refused write answering `403` within 200 ms, and those that wait past 5 s get `503`; a write of the tenant goes ahead while the previous one runs a slow after-commit step; a tenant write and an edition delete finish beside a transaction that locked the actor's membership first and then the tenant row or the edition rows, with no deadlock; twenty interleaved requests of two tenants each see only their own tenant's editions |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
-| programme items | create, change and delete; validation of the title, description and dates, also when a patch's end falls before the stored start; a description cleared with `null`; the edition's items by start time; deleting an item takes its speakers along; an item through the path of another edition of the tenant or an edition or item of another tenant -> `404` and unchanged, an org with `program=write` in one edition -> `404` through its own path and `403` through the other; the speaker list replaced, an address counted once whatever its case, cleared when empty, up to 10; an address without an account or with an unconfirmed one, or an account deleted while the list is written -> `404` `speaker.account-not-found` naming it, with the list unchanged; another item keeping its speakers; one account speaking in two tenants; the limit shared by the whole team of a tenant and kept per tenant, counting new addresses, those without an account and a speaker of another edition included, and nothing for a removal, a speaker already in the edition or a request refused by its permission |
+| public routes | no sign-in; a convention answers its name, language and time zone and nothing else; only published editions, newest first, an unpublished or unknown one `404`, the active edition `404` when it is unpublished or there is none, also with an edition whose address is `active`; the programme by start time with speaker names and `likeCount`, never a speaker's address or account or who liked an item, a speaker with no name left out; the programme of an unpublished edition and an item of another edition or convention `404` |
+| programme items | create, change and delete; the 1000th item of an edition created, the next `409` `program.too-many-items` with the limit in `params`, while another edition still takes one; validation of the title, description and dates, also when a patch's end falls before the stored start; a description cleared with `null`; the edition's items by start time; deleting an item takes its speakers along; an item through the path of another edition of the tenant or an edition or item of another tenant -> `404` and unchanged, an org with `program=write` in one edition -> `404` through its own path and `403` through the other; the speaker list replaced, an address counted once whatever its case, cleared when empty, up to 10; an address without an account or with an unconfirmed one, or an account deleted while the list is written -> `404` `speaker.account-not-found` naming it, with the list unchanged; another item keeping its speakers; one account speaking in two tenants; the limit shared by the whole team of a tenant and kept per tenant, counting new addresses, those without an account and a speaker of another edition included, and nothing for a removal, a speaker already in the edition or a request refused by its permission |
 | invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write`, no longer holding what it granted, or a head demoted to org after sending a head invitation -> `410` `invitation.revoked` on preview and accept, also when the demotion commits or the sender's access ends while the acceptance waits for the sender's membership or an edition; a preview of a revoked invitation answers without waiting for a held edition; a membership expiry the invitation grants that passes while the acceptance waits -> `410` `invitation.expired`; another tenant's edition -> `404`; the membership lands in the token's tenant only |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
@@ -2586,7 +2591,7 @@ never changes a seeded account's password, which ends every other session of the
 | 2 | Resending the confirmation link from the "check your inbox" screen delivers a new message | [registration](../e2e/specs/registration.spec.ts) |
 | 3 | The session survives a page reload, and the portal's calls to the API carry its session cookies, which no script of the page can read; after sign-out the cookies are gone and `POST /auth/refresh` is refused | [registration](../e2e/specs/registration.spec.ts) |
 | 4 | A head creates an edition, activates it, publishes it and adds programme items with a speaker; an address without a confirmed account is refused, naming the address | [editions](../e2e/specs/editions.spec.ts) |
-| 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | still to come, with the `conventions` feature |
+| 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | [conventions](../e2e/specs/conventions.spec.ts) |
 | 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee sees only their edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in | [invitation](../e2e/specs/invitation.spec.ts) |
 | 7 | An org without `settings`: no team or settings in the sidebar, entering by URL -> the "no permissions" screen; with `settings=read`: the team without the invitation form, the settings with "Save" disabled | [permissions](../e2e/specs/permissions.spec.ts) |
 | 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request | [permissions](../e2e/specs/permissions.spec.ts) |

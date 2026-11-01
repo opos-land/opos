@@ -7,6 +7,16 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#: src/features/conventions/components/program-list.tsx
+#: src/features/conventions/pages/program-item-page.tsx
+msgid "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
+msgstr "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
+
+#: src/features/conventions/components/program-list.tsx
+#: src/features/conventions/pages/program-item-page.tsx
+msgid "{likes, plural, one {# like} other {# likes}}"
+msgstr "{likes, plural, one {# like} other {# likes}}"
+
 #: src/features/landing/pages/landing-page.tsx
 msgid "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
 msgstr "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
@@ -39,6 +49,10 @@ msgstr "Ask for a new link"
 #: src/features/auth/components/register-form.tsx
 msgid "At least 8 characters."
 msgstr "At least 8 characters."
+
+#: src/features/conventions/pages/edition-page.tsx
+msgid "Back to {conventionName}"
+msgstr "Back to {conventionName}"
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Back to sign-in"
@@ -205,6 +219,10 @@ msgstr "New password"
 msgid "No account yet? <0>Create an account</0>"
 msgstr "No account yet? <0>Create an account</0>"
 
+#: src/features/conventions/pages/convention-page.tsx
+msgid "No edition of this convention is active."
+msgstr "No edition of this convention is active."
+
 #: src/features/auth/pages/register-page.tsx
 msgid "One account for every convention on OPOS."
 msgstr "One account for every convention on OPOS."
@@ -237,6 +255,10 @@ msgstr "or"
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Orders are the conventions’ sales records: they stay after the account with the same address is deleted."
 msgstr "Orders are the conventions’ sales records: they stay after the account with the same address is deleted."
+
+#: src/features/conventions/pages/convention-page.tsx
+msgid "Other editions"
+msgstr "Other editions"
 
 #: src/shared/ui/messages.tsx
 msgid "Page not found"
@@ -315,6 +337,14 @@ msgstr "The number of likes of a programme item is public. Who liked it is never
 #: src/features/auth/components/new-password-form.tsx
 msgid "The passwords differ."
 msgstr "The passwords differ."
+
+#: src/features/conventions/pages/program-item-page.tsx
+msgid "The whole programme"
+msgstr "The whole programme"
+
+#: src/features/conventions/components/program-list.tsx
+msgid "There is no programme yet."
+msgstr "There is no programme yet."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, tickets and invitations to a convention’s team."

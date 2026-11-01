@@ -5,6 +5,9 @@ import { memberAccountSchema } from './tenants'
 
 export const MAX_SPEAKERS = 10
 
+/** What one edition may hold: its public programme is one answer, sent to anyone who asks. */
+export const MAX_PROGRAM_ITEMS = 1000
+
 export const programItemSchema = z.object({
   id: z.uuid(),
   editionId: z.uuid(),
@@ -60,7 +63,7 @@ export const programContract = {
       method: 'POST',
       path: '/editions/{editionId}/program-items',
       successStatus: 201,
-      summary: 'Create a programme item; needs program=write',
+      summary: 'Create a programme item, up to the limit of an edition; needs program=write',
     })
     .input(edition.extend({ body: createProgramItemSchema }))
     .output(programItemSchema),

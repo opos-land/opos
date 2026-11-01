@@ -31,6 +31,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'invitation.revoked': msg`This invitation is no longer valid: whoever sent it can no longer grant this access. Ask the convention's organizers for a new one.`,
   'edition.slug-taken': msg`This convention already has an edition with this address.`,
   'edition.active': msg`You cannot delete the active edition. Activate another edition first.`,
+  'program.too-many-items': msg`This edition has reached the limit of programme items: {limit}.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 
   'tenant.not-found': msg`We could not find this convention.`,

@@ -34,6 +34,16 @@ describe('errorMessage', () => {
     )
   })
 
+  it('names the limit of programme items, from the params of the error', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    const descriptor = errorMessage('program.too-many-items')
+    expect(i18n._({ ...descriptor, values: { limit: 1000 } })).toBe(
+      'Ta edycja osiągnęła limit punktów programu: 1000.',
+    )
+  })
+
   // A limit can run for an hour (PLAN.md 7.9), so the message promises no moment.
   it('asks to come back later above a rate limit', async () => {
     const i18n = setupI18n()

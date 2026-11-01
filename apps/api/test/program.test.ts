@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { type NestExpressApplication } from '@nestjs/platform-express'
+import { MAX_PROGRAM_ITEMS } from '@opos/contract'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
@@ -10,6 +11,7 @@ import {
   addEdition,
   addEditionAccess,
   addOrg,
+  addProgramItems,
   closeTenantDb,
   deleteCreatedTenants,
   holdOpen,
@@ -143,6 +145,20 @@ describe('programme items', () => {
       ...(field && { params: { field } }),
     })
     expect(await list()).toEqual(before)
+  })
+
+  it('takes no more items than an edition may hold, whichever edition is full', async () => {
+    const full = await addEdition(a.id)
+    await addProgramItems(a.id, full, MAX_PROGRAM_ITEMS - 1)
+
+    await create({}, full)
+    const res = await call(a.head, 'post', itemsOf(full), valid).expect(409)
+
+    expect(res.body).toMatchObject({
+      code: 'program.too-many-items',
+      params: { limit: MAX_PROGRAM_ITEMS },
+    })
+    await create({}, await addEdition(a.id))
   })
 
   it('accepts the longest title and description', async () => {

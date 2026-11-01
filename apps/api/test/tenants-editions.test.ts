@@ -692,6 +692,104 @@ describe('concurrency', () => {
       },
     )
 
+    // After the check under the write lock, a member change waits for rows and re-checks its actor
+    // on the row it locked (PLAN.md 5.3), so the access of an actor may end during that wait too.
+    // These requests raise nothing, so anti-escalation lets an org whose access expires send them.
+    const memberChanges: Record<string, (s: Setup, ends: Date) => Request> = {
+      'tenants.members.invite': (s, ends) => ({
+        method: 'post',
+        path: '/tenants/current/members',
+        body: { email: s.newcomer.email, expiresAt: ends.toISOString() },
+      }),
+      'tenants.members.update': (s) => ({
+        method: 'patch',
+        path: `/tenants/current/members/${s.otherId}`,
+        body: { settingsAccess: 'none' },
+      }),
+      'tenants.members.remove': (s) => writes['tenants.members.remove']!(s),
+      'editions.members.put': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/members/${s.otherId}`,
+        body: noEdition,
+      }),
+      'editions.members.remove': (s) => writes['editions.members.remove']!(s),
+    }
+
+    /** `build` is refused, changing nothing, when the actor's access ends while `hold` is held. */
+    async function refusedOnceAccessEnds(
+      build: (s: Setup, ends: Date) => Request,
+      hold: (sql: Awaited<ReturnType<typeof openTransaction>>['sql'], s: Setup) => Promise<unknown>,
+    ) {
+      // The same expiry with nothing held: the org is active when its write starts and ends.
+      const control = await setup()
+      const controlEnds = await expireIn(control.orgId, 3000)
+      expect(
+        (await send(control, build(control, controlEnds))).status,
+        'without the wait',
+      ).toBeLessThan(300)
+
+      // The test helpers share one connection, which the open transaction keeps: everything they
+      // read or write comes before it.
+      const s = await setup()
+      const ends = await expireIn(s.orgId, 600)
+      const expected = await tenantState(s.t.id)
+      const holder = await openTransaction()
+      await hold(holder.sql, s)
+
+      let settled = false
+      const pending = send(s, build(s, ends)).finally(() => {
+        settled = true
+      })
+      await sleep(1000)
+      // Read before the commit and asserted after it, so a failure leaves no transaction open.
+      const waited = !settled
+      await holder.commit()
+
+      const res = await pending
+      expect(waited, 'the request waits for what is held').toBe(true)
+      expect(res.status).toBe(403)
+      expect(res.body).toMatchObject({ code: 'permission.denied' })
+      expect(await tenantState(s.t.id)).toEqual(expected)
+    }
+
+    const holdEdition = (sql: Awaited<ReturnType<typeof openTransaction>>['sql'], s: Setup) =>
+      sql`select 1 from editions where id = ${s.edition} for update`
+
+    it.each(Object.entries(memberChanges))(
+      '%s refuses once the access of its actor ends while it waits for the actor row',
+      (_, build) =>
+        refusedOnceAccessEnds(
+          build,
+          (sql, s) => sql`select 1 from tenant_memberships where id = ${s.orgId} for update`,
+        ),
+      15_000,
+    )
+
+    it(
+      'editions.members.put refuses once the access of its actor ends while it waits for the edition',
+      () => refusedOnceAccessEnds(memberChanges['editions.members.put']!, holdEdition),
+      15_000,
+    )
+
+    // An invitation locks its actor first and the editions it names after.
+    it(
+      'tenants.members.invite refuses once the access of its actor ends while it waits for an edition',
+      () =>
+        refusedOnceAccessEnds(
+          (s, ends) => ({
+            method: 'post',
+            path: '/tenants/current/members',
+            body: {
+              email: s.newcomer.email,
+              expiresAt: ends.toISOString(),
+              editions: [{ editionId: s.edition, ...noEdition }],
+            },
+          }),
+          holdEdition,
+        ),
+      15_000,
+    )
+
     // A write waits for the lock a bounded time, then answers 503 and leaves the tenant as it was,
     // so a lock held long never pins a pool connection for as long.
     it('answers 503 request.busy to a write that waits too long for the lock', async () => {

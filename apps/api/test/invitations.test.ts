@@ -21,6 +21,7 @@ import {
   closeTenantDb,
   deleteCreatedTenants,
   deleteEdition,
+  expireIn,
   holdOpen,
   member,
   type Member,
@@ -66,7 +67,7 @@ const newAddress = () => {
   return address
 }
 
-const none = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
+const none = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' } as const
 
 const invite = (who: Member, body: object, slug = a.slug) =>
   request(app.getHttpServer())
@@ -679,6 +680,112 @@ describe("an invitation and its sender's standing", () => {
 
     expect((await pending).body).toMatchObject({ code: 'invitation.revoked' })
     expect(await storedMembership(t.id, sent.invitee.id)).toBeUndefined()
+  })
+
+  it('answers a preview of a withdrawn invitation without waiting for its editions', async () => {
+    const { id } = await sender()
+    const editionPermissions = [{ editionId: edition, ...none }]
+    const claims = claimsFor(t.id, newAddress(), { invitedBy: id, editionPermissions })
+    const { token } = await signInvitation(claims, key)
+    await removeMembership(id)
+
+    const commit = await holdOpen(
+      (sql) => sql`select 1 from editions where id = ${edition} for update`,
+    )
+    try {
+      const res = await Promise.race([
+        preview(token).then((r) => r),
+        sleep(1000).then(() => 'waited' as const),
+      ])
+      expect(res === 'waited' ? res : res.status).toBe(410)
+    } finally {
+      await commit()
+    }
+  })
+
+  describe('an acceptance while what it waits for is held', () => {
+    /** An invitation whose grant ends with its sender, `ms` milliseconds from now. */
+    const endingWithSender = async (ms: number, overrides: Partial<InvitationClaims> = {}) => {
+      const { id } = await sender()
+      const email = newAddress()
+      const invitee = await registered(email)
+      const expiresAt = (await expireIn(id, ms)).toISOString()
+      const claims = claimsFor(t.id, email, { invitedBy: id, expiresAt, ...overrides })
+      return { id, invitee, token: (await signInvitation(claims, key)).token }
+    }
+
+    /** What the acceptance answers when `statement` holds a row until after the expiry passes. */
+    async function acceptedAfterHold(
+      { token, invitee }: { token: string; invitee: Member },
+      statement: Parameters<typeof holdOpen>[0],
+    ) {
+      const commit = await holdOpen(statement)
+      let settled = false
+      const pending = accept(token, invitee.token)
+        .then((res) => res)
+        .finally(() => {
+          settled = true
+        })
+      await sleep(1500)
+      // Read before the commit and asserted after it, so a failure leaves no transaction open.
+      const waited = !settled
+      await commit()
+      const res = await pending
+      expect(waited, 'the acceptance waits for what is held').toBe(true)
+      return res
+    }
+
+    it('refuses once the org that sent it expires while it waits for the sender', async () => {
+      const control = await endingWithSender(3000)
+      await accept(control.token, control.invitee.token).expect(201)
+
+      const sent = await endingWithSender(1000)
+      const res = await acceptedAfterHold(
+        sent,
+        (sql) => sql`select 1 from tenant_memberships where id = ${sent.id} for update`,
+      )
+
+      expect(res.body).toMatchObject({ code: 'invitation.revoked' })
+      expect(await storedMembership(t.id, sent.invitee.id)).toBeUndefined()
+    }, 15_000)
+
+    it('refuses once the org that sent it expires while it waits for an edition', async () => {
+      const editionPermissions = [{ editionId: edition, ...none }]
+      const control = await endingWithSender(3000, { editionPermissions })
+      await accept(control.token, control.invitee.token).expect(201)
+
+      const sent = await endingWithSender(1000, { editionPermissions })
+      const res = await acceptedAfterHold(
+        sent,
+        (sql) => sql`select 1 from editions where id = ${edition} for update`,
+      )
+
+      expect(res.body).toMatchObject({ code: 'invitation.revoked' })
+      expect(await storedMembership(t.id, sent.invitee.id)).toBeUndefined()
+    }, 15_000)
+
+    it('answers invitation.expired once the access it grants ends while it waits', async () => {
+      const head = (await storedMembership(t.id, t.head.id))!
+      const fromHead = async (ms: number) => {
+        const email = newAddress()
+        const invitee = await registered(email)
+        const expiresAt = new Date(Date.now() + ms).toISOString()
+        const claims = claimsFor(t.id, email, { invitedBy: head.id, expiresAt })
+        return { invitee, token: (await signInvitation(claims, key)).token }
+      }
+
+      const control = await fromHead(3000)
+      await accept(control.token, control.invitee.token).expect(201)
+
+      const sent = await fromHead(1000)
+      const res = await acceptedAfterHold(
+        sent,
+        (sql) => sql`select 1 from tenant_memberships where id = ${head.id} for update`,
+      )
+
+      expect(res.body).toMatchObject({ code: 'invitation.expired' })
+      expect(await storedMembership(t.id, sent.invitee.id)).toBeUndefined()
+    }, 15_000)
   })
 
   it('goes once the org that sent it has expired', async () => {

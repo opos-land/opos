@@ -74,10 +74,13 @@ export class InvitationsService {
   async invite(body: InviteMember): Promise<InvitationOutcome> {
     const tenant = this.context.tenant()
     await this.rateLimiter.consume('invitations', `tenant:${tenant.id}`)
-    const actor = await lockActor(this.members, this.context.membership()!.id)
+    const membershipId = this.context.membership()!.id
+    await lockActor(this.members, membershipId)
     const grant = grantOf(body)
     const existing = await this.invitations.existingEditions(grant.editions.map((e) => e.editionId))
     if (grant.editions.some(({ editionId }) => !existing.has(editionId))) throw notFound('edition')
+    // The wait for those editions may outlast the actor's access: the checks read it after them.
+    const actor = await currentActor(this.members, membershipId)
     const actorEditions =
       actor.role === 'head'
         ? new Map<string, EditionAccess>()
@@ -127,13 +130,13 @@ export class InvitationsService {
     { lock }: { lock: boolean },
   ): Promise<InvitationGrant> {
     try {
-      const inviter = lock
-        ? await lockActor(this.members, claims.invitedBy)
-        : await currentActor(this.members, claims.invitedBy)
+      await (lock ? lockActor : currentActor)(this.members, claims.invitedBy)
       const grant = grantFromClaims(claims)
       const existing = await this.invitations.existingEditions(
         grant.editions.map((e) => e.editionId),
       )
+      // The wait for those editions may outlast the sender's access: the checks read it after them.
+      const inviter = await currentActor(this.members, claims.invitedBy)
       const standing = {
         ...grant,
         editions: grant.editions.filter(({ editionId }) => existing.has(editionId)),
@@ -189,6 +192,8 @@ export class InvitationsService {
       assertGrantsAccess(claims)
       if (await this.invitations.isMember(accountId)) throw alreadyMember()
       const grant = await this.standingGrant(claims, { lock: true })
+      // The waits in standingGrant may outlast what the invitation grants.
+      assertGrantsAccess(claims)
       await this.invitations.recordAcceptance(tenant.id, jti)
       try {
         await this.invitations.addMember(tenant.id, accountId, grant)

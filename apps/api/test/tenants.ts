@@ -169,12 +169,18 @@ export async function tenantState(tenantId: string) {
   }
 }
 
-/** Sets a membership to expire `ms` milliseconds from now, measured by the database. */
+/**
+ * Sets a membership to expire `ms` milliseconds from now, measured by the database, and returns
+ * that moment. It is whole milliseconds, so a body may carry the exact expiry the row holds.
+ */
 export async function expireIn(membershipId: string, ms: number) {
-  await db.execute(sql`
-    update tenant_memberships set expires_at = now() + make_interval(secs => ${ms / 1000})
+  const [row] = await db.execute<{ epochMs: string }>(sql`
+    update tenant_memberships
+    set expires_at = date_trunc('milliseconds', now() + make_interval(secs => ${ms / 1000}))
     where id = ${membershipId}
+    returning (extract(epoch from expires_at) * 1000)::bigint as "epochMs"
   `)
+  return new Date(Number(row!.epochMs))
 }
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))

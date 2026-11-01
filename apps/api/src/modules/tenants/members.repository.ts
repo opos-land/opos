@@ -18,7 +18,7 @@ const columns = {
   brandingAccess: tenantMemberships.brandingAccess,
   shopConfigAccess: tenantMemberships.shopConfigAccess,
   expiresAt: tenantMemberships.expiresAt,
-  expired: sql<boolean>`coalesce(${tenantMemberships.expiresAt} <= now(), false)`,
+  expired: sql<boolean>`coalesce(${tenantMemberships.expiresAt} <= statement_timestamp(), false)`,
 }
 
 type Row = Omit<Member, 'expiresAt'> & { expiresAt: Date | null }
@@ -62,15 +62,19 @@ export class MembersRepository {
    * fresh. Ordered by id, so two requests locking the same pair never deadlock; a concurrent
    * promotion or permission change waits, and the checks then run on what it committed. A target
    * id that is not a uuid names no membership: only the actor is locked, and the target is absent.
+   * The read is a statement of its own after the lock: the time of the locking statement is from
+   * before its wait, and an access that ended during the wait must read as expired.
    */
   async lockPair(actorId: string, targetId: string) {
     const ids = isUuid(targetId) ? [actorId, targetId] : [actorId]
-    const rows = (
-      await this.select()
-        .where(inArray(tenantMemberships.id, ids))
-        .orderBy(asc(tenantMemberships.id))
-        .for('update', { of: tenantMemberships })
-    ).map(toMember)
+    await this.context
+      .tx()
+      .select({ id: tenantMemberships.id })
+      .from(tenantMemberships)
+      .where(inArray(tenantMemberships.id, ids))
+      .orderBy(asc(tenantMemberships.id))
+      .for('update')
+    const rows = (await this.select().where(inArray(tenantMemberships.id, ids))).map(toMember)
     return {
       actor: rows.find((row) => row.id === actorId),
       target: rows.find((row) => row.id === targetId),

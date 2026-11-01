@@ -207,7 +207,7 @@ code is covered by a test of its own package.
 | `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
 | `api`, `panel`, `portal` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
 | `db`, `contract`, `i18n`, `eslint-config` | the rest of `packages/<name>/` | a `*.test.*` anywhere in the same package |
-| `scripts`, `claude` | `scripts/`, `.claude/` | a `*.test.mjs` in the same directory tree |
+| `scripts`, `claude` | `scripts/`, `.claude/` | a `*.test.*` in the same directory tree, run by `pnpm test:scripts` |
 | `unlisted` | code anywhere else | none: a new directory of code gets its area here and in the script first |
 
 Code is a script or SQL file. Tests and what serves them — `test/` helpers, `fixtures/`, the whole

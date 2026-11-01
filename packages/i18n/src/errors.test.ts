@@ -24,6 +24,26 @@ describe('errorMessage', () => {
     )
   })
 
+  it('names the address of a speaker without an account, from the params of the error', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    const descriptor = errorMessage('speaker.account-not-found')
+    expect(i18n._({ ...descriptor, values: { email: 'kasia@example.com' } })).toBe(
+      'Żadne potwierdzone konto nie używa adresu e-mail kasia@example.com. Poproś prelegenta o założenie konta, jeśli jeszcze go nie ma, i potwierdzenie tego adresu.',
+    )
+  })
+
+  // A limit can run for an hour (PLAN.md 7.9), so the message promises no moment.
+  it('asks to come back later above a rate limit', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(i18n._(errorMessage('request.rate-limited'))).toBe(
+      'Zbyt wiele prób. Spróbuj ponownie później.',
+    )
+  })
+
   it('falls back to the generic message for an unknown code', () => {
     expect(errorMessage('no.such-code')).toBe(unknownError)
   })

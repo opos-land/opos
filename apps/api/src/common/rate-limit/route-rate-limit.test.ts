@@ -56,6 +56,7 @@ describe('RouteRateLimiter', () => {
     expect(ROUTE_RATE_LIMITS).toEqual({
       invitations: { limit: 20, ttl: 3_600_000 },
       invitationPreview: { limit: 30, ttl: 3_600_000 },
+      speakers: { limit: 100, ttl: 3_600_000 },
     })
   })
 })

@@ -9,6 +9,7 @@ import {
   addEditionAccess,
   addHead,
   addOrg,
+  addProgramItem,
   closeTenantDb,
   countHeads,
   deleteCreatedTenants,
@@ -561,6 +562,7 @@ describe('concurrency', () => {
       orgId: string
       otherId: string
       newcomer: Member
+      item: string
     }
     type Request = { method: Method; path: string; body?: object }
     const noEdition = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
@@ -607,9 +609,31 @@ describe('concurrency', () => {
         method: 'delete',
         path: `/editions/${s.edition}/members/${s.otherId}`,
       }),
+      'program.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/program-items`,
+        body: { title: 'Late', ...window },
+      }),
+      'program.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/program-items/${s.item}`,
+        body: { title: 'Late' },
+      }),
+      'program.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/program-items/${s.item}`,
+      }),
+      'program.speakers.put': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/program-items/${s.item}/speakers`,
+        body: { emails: [s.newcomer.email] },
+      }),
     }
 
-    /** A tenant whose org holds settings=write and program=write, and another org to act on. */
+    /**
+     * A tenant whose org holds settings=write and program=write, another org to act on and a
+     * programme item.
+     */
     async function setup(): Promise<Setup> {
       const t = await tenantWithHead()
       const edition = await addEdition(t.id)
@@ -618,7 +642,8 @@ describe('concurrency', () => {
       await addEditionAccess(t.id, orgId, edition, { program: 'write' })
       const otherId = await addOrg(t.id, other)
       await addEditionAccess(t.id, otherId, edition, {})
-      return { t, edition, org: actor, orgId, otherId, newcomer }
+      const item = await addProgramItem(t.id, edition)
+      return { t, edition, org: actor, orgId, otherId, newcomer, item }
     }
 
     const send = (s: Setup, { method, path, body }: Request) =>
@@ -649,9 +674,13 @@ describe('concurrency', () => {
         expected.memberships = expected.memberships.map((row) =>
           row.id === s.orgId ? { ...row, settings_access: 'none' } : row,
         )
+        expected.editionMemberships = expected.editionMemberships.map((row) =>
+          row.tenant_membership_id === s.orgId ? { ...row, program_access: 'none' } : row,
+        )
         const demotion = await openTransaction()
         await lockTenantWrites(demotion.sql, s.t)
         await demotion.sql`update tenant_memberships set settings_access = 'none' where id = ${s.orgId}`
+        await demotion.sql`update edition_memberships set program_access = 'none' where tenant_membership_id = ${s.orgId}`
 
         const pending = send(s, build(s))
         await sleep(300)

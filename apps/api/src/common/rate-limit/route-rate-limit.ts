@@ -13,6 +13,8 @@ export const ROUTE_RATE_LIMITS = {
   invitations: { limit: 20, ttl: 3_600_000 },
   /** `GET /invitations/preview`, per client address. */
   invitationPreview: { limit: 30, ttl: 3_600_000 },
+  /** `PUT .../speakers`, per tenant, one for each address not yet a speaker in the edition. */
+  speakers: { limit: 100, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS

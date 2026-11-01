@@ -10,6 +10,7 @@ export type Need =
 
 const anyMember: Need = { scope: 'member' }
 const settings = (level: Level): Need => ({ scope: 'tenant', resource: 'settings', level })
+const program = (level: Level): Need => ({ scope: 'edition', resource: 'program', level })
 
 /** Tenant routes and what each needs; a head passes every one (PRODUCT.md 5). */
 export const tenantRequirements: Record<string, Need> = {
@@ -28,4 +29,9 @@ export const tenantRequirements: Record<string, Need> = {
   'editions.members.list': settings('read'),
   'editions.members.put': settings('write'),
   'editions.members.remove': settings('write'),
+  'program.list': program('read'),
+  'program.create': program('write'),
+  'program.update': program('write'),
+  'program.remove': program('write'),
+  'program.speakers.put': program('write'),
 }

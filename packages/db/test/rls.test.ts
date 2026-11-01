@@ -242,6 +242,9 @@ describe('tenant isolation', () => {
     const [edition] = await migrator<{ id: string }[]>`
       select id from editions where tenant_id = ${a.id}
     `
+    const [item] = await migrator<{ id: string }[]>`
+      select id from program_items where tenant_id = ${a.id}
+    `
     // An account without a membership in a: only WITH CHECK can refuse it.
     const outsider = await createUser()
 
@@ -253,6 +256,10 @@ describe('tenant isolation', () => {
       `insert into edition_memberships (tenant_id, tenant_membership_id, edition_id)
        values ('${a.id}', '${membership!.id}', '${edition!.id}')`,
       `insert into accepted_invitations (tenant_id, jti) values ('${a.id}', gen_random_uuid())`,
+      `insert into program_items (tenant_id, edition_id, title, starts_at, ends_at)
+       values ('${a.id}', '${edition!.id}', 'Foreign', '2026-06-01', '2026-06-02')`,
+      `insert into program_item_speakers (tenant_id, program_item_id, account_id)
+       values ('${a.id}', '${item!.id}', '${outsider.id}')`,
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /row-level security/,
@@ -362,6 +369,39 @@ describe('runtime privileges', () => {
     expect(left).toEqual({ items: 0, speakers: 0, likes: 0 })
   })
 
+  it('lets opos_app write programme items and their speakers, and no like', async () => {
+    const edition = await createEdition(b.id)
+    const account = await createUser()
+
+    await inTenant(b.id, async (sql) => {
+      const [item] = await sql<{ id: string }[]>`
+        insert into program_items (tenant_id, edition_id, title, starts_at, ends_at)
+        values (${b.id}, ${edition}, 'Item', '2026-06-01 10:00Z', '2026-06-01 11:00Z')
+        returning id
+      `
+      await sql`
+        update program_items
+        set title = 'Renamed', description = 'Text', starts_at = starts_at, ends_at = ends_at
+        where id = ${item!.id}
+      `
+      await sql`
+        insert into program_item_speakers (tenant_id, program_item_id, account_id)
+        values (${b.id}, ${item!.id}, ${account.id})
+      `
+      await sql`delete from program_item_speakers where program_item_id = ${item!.id}`
+      await sql`delete from program_items where id = ${item!.id}`
+    })
+
+    for (const statement of [
+      'insert into program_item_likes default values',
+      'delete from program_item_likes',
+    ]) {
+      await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
+        /permission denied/,
+      )
+    }
+  })
+
   it('lets opos_app update only the columns the API changes', async () => {
     await inTenant(b.id, (sql) => sql`update tenants set name = name where id = ${b.id}`)
     for (const statement of [
@@ -369,6 +409,10 @@ describe('runtime privileges', () => {
       'update tenant_memberships set account_id = account_id',
       'update edition_memberships set tenant_membership_id = tenant_membership_id',
       'update editions set id = id',
+      'update program_items set tenant_id = tenant_id',
+      'update program_items set edition_id = edition_id',
+      'update program_item_speakers set account_id = account_id',
+      'update program_item_likes set account_id = account_id',
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /permission denied/,

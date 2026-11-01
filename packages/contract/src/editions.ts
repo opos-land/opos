@@ -27,9 +27,9 @@ const editionFields = z.object({
   endsAt: timestamp,
 })
 
-const endsAfterStart = (e: { startsAt?: string; endsAt?: string }) =>
+export const endsAfterStart = (e: { startsAt?: string; endsAt?: string }) =>
   !e.startsAt || !e.endsAt || new Date(e.endsAt) > new Date(e.startsAt)
-const endsAfterStartIssue = { message: 'endsAt must be after startsAt', path: ['endsAt'] }
+export const endsAfterStartIssue = { message: 'endsAt must be after startsAt', path: ['endsAt'] }
 
 export const createEditionSchema = editionFields
   .strict()

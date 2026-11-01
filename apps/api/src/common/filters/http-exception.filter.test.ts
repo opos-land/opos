@@ -76,6 +76,7 @@ describe('toErrorResponse', () => {
   it.each([
     ['editions_slug_format', 'slug'],
     ['editions_ends_after_start', 'endsAt'],
+    ['program_items_ends_after_start', 'endsAt'],
     ['tenant_memberships_head_never_expires', 'expiresAt'],
   ])('maps a violated %s to 400 for its field', (constraint, field) => {
     expect(toErrorResponse(violated(constraint))).toMatchObject({

@@ -202,7 +202,9 @@ assigns them.
 each edition, optionally until an expiry date.
 
 Speakers, attendees and ticket buyers are not team members: they hold no permissions in the
-panel and act only in the portal, on their own programme items, registrations and tickets.
+panel and act only in the portal, on their own programme items, registrations and tickets. An org
+with write access to an edition's programme assigns a speaker by the address of a confirmed account,
+up to 10 on one programme item. A convention names at most 100 new addresses an hour this way.
 
 ### 5.5 Example
 
@@ -418,7 +420,7 @@ address confirm it through the links sent to them.
 
 **An email address leads to an account only once it is confirmed.** Wherever the platform finds an
 account by its email address — the admin appointing a convention's first head organizer, an
-organizer invitation, the tickets under "my tickets" — an account that has not confirmed its
+organizer invitation, a speaker on a programme item, the tickets under "my tickets" — an account that has not confirmed its
 address counts as no account. The admin's script refuses it, and an invitation to it goes out as an
 invitation to a person without an account.
 

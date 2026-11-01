@@ -64,6 +64,10 @@ const appUpdates = [
   'edition_memberships.program_access',
   'edition_memberships.website_content_access',
   'edition_memberships.tickets_access',
+  'program_items.title',
+  'program_items.description',
+  'program_items.starts_at',
+  'program_items.ends_at',
 ]
 
 /**
@@ -191,6 +195,10 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     ['edition_memberships', 'INSERT'],
     ['edition_memberships', 'DELETE'],
     ['accepted_invitations', 'INSERT'],
+    ['program_items', 'INSERT'],
+    ['program_items', 'DELETE'],
+    ['program_item_speakers', 'INSERT'],
+    ['program_item_speakers', 'DELETE'],
   ].map((pair) => pair.join(' '))
   const overGranted = await sql<{ role: string; table: string; privilege: string }[]>`
     select r.role, c.relname as table, p.privilege

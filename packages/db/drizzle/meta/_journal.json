@@ -113,6 +113,20 @@
       "when": 1792921636623,
       "tag": "0015_narrow_global_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793560301297,
+      "tag": "0016_program_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793560301727,
+      "tag": "0017_program_items_privileges",
+      "breakpoints": true
     }
   ]
 }

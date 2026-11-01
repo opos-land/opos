@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createEdition,
+  createProgramItem,
   createTenant,
   createUser,
   freshApp,
@@ -19,6 +20,9 @@ const covered = [
   ['editions', 'tenant_id'],
   ['edition_memberships', 'tenant_id'],
   ['accepted_invitations', 'tenant_id'],
+  ['program_items', 'tenant_id'],
+  ['program_item_speakers', 'tenant_id'],
+  ['program_item_likes', 'tenant_id'],
 ] as const
 
 class Rollback extends Error {}
@@ -27,8 +31,8 @@ let a: Awaited<ReturnType<typeof createTenant>>
 let b: Awaited<ReturnType<typeof createTenant>>
 
 /**
- * A tenant with a row in every covered table: its head membership, an edition, its access and an
- * accepted invitation.
+ * A tenant with a row in every covered table: its head membership, an edition, its access, an
+ * accepted invitation, and a programme item with a speaker and a like.
  */
 async function populated() {
   const tenant = await createTenant()
@@ -39,6 +43,15 @@ async function populated() {
   `
   await migrator`
     insert into accepted_invitations (tenant_id, jti) values (${tenant.id}, gen_random_uuid())
+  `
+  const item = await createProgramItem(tenant.id, edition)
+  await migrator`
+    insert into program_item_speakers (tenant_id, program_item_id, account_id)
+    values (${tenant.id}, ${item}, ${tenant.headId})
+  `
+  await migrator`
+    insert into program_item_likes (tenant_id, program_item_id, account_id)
+    values (${tenant.id}, ${item}, ${tenant.headId})
   `
   return tenant
 }
@@ -63,6 +76,21 @@ describe('coverage', () => {
     `
     expect(tables.map((t) => t.relname)).toEqual(covered.map(([table]) => table).sort())
   })
+
+  // PLAN.md 4.4: RLS filters on the tenant column of every query, so an index must start with it.
+  it.each(covered)(
+    'holds an index on %s that starts with its tenant column',
+    async (table, column) => {
+      const [row] = await migrator<{ indexed: boolean }[]>`
+      select exists (
+        select 1 from pg_index i
+        join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+        where i.indrelid = ${'public.' + table}::regclass and a.attname = ${column}
+      ) as indexed
+    `
+      expect(row!.indexed).toBe(true)
+    },
+  )
 })
 
 describe('tenant isolation', () => {
@@ -119,6 +147,33 @@ describe('tenant isolation', () => {
           await sql`select set_config('app.tenant_id', ${b.id}, true)`
           refusal = await sql
             .unsafe(`update ${table} set tenant_id = '${a.id}' where tenant_id = '${b.id}'`)
+            .catch((error: unknown) => error)
+          throw new Rollback()
+        })
+        .catch((error: unknown) => {
+          if (!(error instanceof Rollback)) throw error
+        })
+      expect(String(refusal)).toMatch(/new row violates row-level security policy/)
+    },
+  )
+
+  // The same on insert, for every table whether or not opos_app inserts into it yet. WITH CHECK
+  // runs before the constraints, so the row needs nothing but its tenant.
+  it.each(covered.filter(([table]) => table !== 'tenants'))(
+    'refuses through WITH CHECK to insert a row of another tenant into %s',
+    async (table) => {
+      let refusal: unknown
+      await supabaseAdmin
+        .begin(async (sql) => {
+          await sql.unsafe(`
+            create role rls_probe nologin;
+            grant usage on schema public to rls_probe;
+            grant insert on public.${table} to rls_probe;
+            set local role rls_probe;
+          `)
+          await sql`select set_config('app.tenant_id', ${b.id}, true)`
+          refusal = await sql
+            .unsafe(`insert into ${table} (tenant_id) values ('${a.id}')`)
             .catch((error: unknown) => error)
           throw new Rollback()
         })
@@ -213,6 +268,9 @@ describe('tenant isolation', () => {
       'editions',
       'edition_memberships',
       'accepted_invitations',
+      'program_items',
+      'program_item_speakers',
+      'program_item_likes',
     ]) {
       await expect(
         superuser.begin(async (sql) => {
@@ -277,6 +335,31 @@ describe('runtime privileges', () => {
       `
       await sql`insert into accepted_invitations (tenant_id, jti) values (${b.id}, gen_random_uuid())`
     })
+  })
+
+  // The route deletes the edition as opos_app, which holds no delete on the rows that cascade.
+  it('lets opos_app delete an edition together with its programme', async () => {
+    const tenant = await createTenant()
+    const edition = await createEdition(tenant.id)
+    const item = await createProgramItem(tenant.id, edition)
+    await migrator`
+      insert into program_item_speakers (tenant_id, program_item_id, account_id)
+      values (${tenant.id}, ${item}, ${tenant.headId})
+    `
+    await migrator`
+      insert into program_item_likes (tenant_id, program_item_id, account_id)
+      values (${tenant.id}, ${item}, ${tenant.headId})
+    `
+
+    await inTenant(tenant.id, (sql) => sql`delete from editions where id = ${edition}`)
+
+    const [left] = await migrator<{ items: number; speakers: number; likes: number }[]>`
+      select
+        (select count(*)::int from program_items where id = ${item}) as items,
+        (select count(*)::int from program_item_speakers where program_item_id = ${item}) as speakers,
+        (select count(*)::int from program_item_likes where program_item_id = ${item}) as likes
+    `
+    expect(left).toEqual({ items: 0, speakers: 0, likes: 0 })
   })
 
   it('lets opos_app update only the columns the API changes', async () => {

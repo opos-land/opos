@@ -1,8 +1,17 @@
 import { createHmac } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { migrationDb } from './client'
 import { migrationUrl } from './migration-url'
-import { accounts, editionMemberships, editions, tenantMemberships, tenants } from './schema'
+import {
+  accounts,
+  editionMemberships,
+  editions,
+  programItemLikes,
+  programItems,
+  programItemSpeakers,
+  tenantMemberships,
+  tenants,
+} from './schema'
 import { createTenant } from './tenants'
 
 // Demo data (PLAN.md 14). Idempotent: every run converges on the same rows.
@@ -26,6 +35,13 @@ interface SeedMember {
   >
 }
 
+interface SeedItem {
+  title: string
+  description?: string
+  speakers?: string[]
+  likedBy?: string[]
+}
+
 interface SeedEdition {
   slug: string
   name: string
@@ -33,6 +49,7 @@ interface SeedEdition {
   endsAt: Date
   isActive: boolean
   isPublished: boolean
+  program: SeedItem[]
 }
 
 interface SeedTenant {
@@ -47,13 +64,23 @@ interface SeedTenant {
 
 const DEV_PASSWORD = 'password123'
 const DEV_JWT_SECRET = 'dev-jwt-secret-at-least-32-characters-long'
-const DAY = 24 * 60 * 60 * 1000
+const HOUR = 60 * 60 * 1000
+const DAY = 24 * HOUR
 
 // The active editions start 60 days after the run, so their programme stays in the future.
 const upcoming = (days: number) => {
   const start = new Date(Date.now() + 60 * DAY)
   start.setUTCHours(8, 0, 0, 0)
-  return { startsAt: start, endsAt: new Date(start.getTime() + days * DAY + 10 * 60 * 60 * 1000) }
+  return { startsAt: start, endsAt: new Date(start.getTime() + days * DAY + 10 * HOUR) }
+}
+
+// Four programme items a day, two hours apart, from two hours after the edition starts.
+const ITEMS_PER_DAY = 4
+const slot = (edition: Pick<SeedEdition, 'startsAt'>, index: number) => {
+  const day = Math.floor(index / ITEMS_PER_DAY)
+  const hours = 2 + 2 * (index % ITEMS_PER_DAY)
+  const startsAt = new Date(edition.startsAt.getTime() + day * DAY + hours * HOUR)
+  return { startsAt, endsAt: new Date(startsAt.getTime() + 1.5 * HOUR) }
 }
 
 const ACCOUNTS: SeedAccount[] = [
@@ -83,6 +110,24 @@ const TENANTS: SeedTenant[] = [
         endsAt: new Date('2025-06-15T18:00:00Z'),
         isActive: false,
         isPublished: true,
+        program: [
+          { title: 'Opening ceremony' },
+          {
+            title: 'Worldbuilding from scratch',
+            description: 'Geography, history and belief, in the order a new world needs them.',
+            speakers: ['speaker@example.com'],
+          },
+          { title: 'A history of tabletop role-playing' },
+          { title: 'Costume armour workshop' },
+          {
+            title: 'Writing villains people remember',
+            description: 'What a good antagonist wants, and why the reader half agrees.',
+            speakers: ['speaker@example.com'],
+          },
+          { title: 'Board game design clinic' },
+          { title: 'Folklore in modern fantasy' },
+          { title: 'Closing ceremony' },
+        ],
       },
       {
         slug: '2026',
@@ -90,6 +135,24 @@ const TENANTS: SeedTenant[] = [
         ...upcoming(2),
         isActive: true,
         isPublished: true,
+        program: [
+          { title: 'Opening ceremony' },
+          {
+            title: 'Maps for imaginary worlds',
+            description: 'Coastlines, rivers and borders that look as if they grew there.',
+            likedBy: ['attendee@example.com'],
+          },
+          { title: 'Running your first campaign', likedBy: ['attendee@example.com'] },
+          { title: 'Prop making on a budget' },
+          { title: 'Magic systems that hold together', likedBy: ['attendee@example.com'] },
+          { title: 'Miniature painting basics' },
+          { title: 'Dragons across cultures' },
+          { title: 'Live action role-play safety' },
+          { title: 'Translating fantasy fiction' },
+          { title: 'Speed painting contest' },
+          { title: 'An evening of fantasy music' },
+          { title: 'Closing ceremony' },
+        ],
       },
     ],
     team: [
@@ -122,6 +185,12 @@ const TENANTS: SeedTenant[] = [
         ...upcoming(1),
         isActive: true,
         isPublished: true,
+        program: [
+          { title: 'Welcome talk' },
+          { title: 'An introduction to live role-play' },
+          { title: 'Fantasy cartography' },
+          { title: 'Closing panel' },
+        ],
       },
     ],
     team: [],
@@ -216,6 +285,16 @@ async function seedTenant(spec: SeedTenant) {
   const team = await Promise.all(
     spec.team.map(async (member) => ({ ...member, id: await accountId(member.email) })),
   )
+  const itemAccounts = new Set(
+    spec.editions.flatMap(({ program }) =>
+      program.flatMap(({ speakers = [], likedBy = [] }) => [...speakers, ...likedBy]),
+    ),
+  )
+  const accountIds = new Map(
+    await Promise.all(
+      [...itemAccounts].map(async (email) => [email, await accountId(email)] as const),
+    ),
+  )
 
   await db.transaction(async (tx) => {
     await tx
@@ -225,7 +304,9 @@ async function seedTenant(spec: SeedTenant) {
 
     // Inactive editions first: the partial unique index allows one active edition at a time.
     const editionIds = new Map<string, string>()
-    for (const edition of [...spec.editions].sort((a, b) => +a.isActive - +b.isActive)) {
+    for (const { program, ...edition } of [...spec.editions].sort(
+      (a, b) => +a.isActive - +b.isActive,
+    )) {
       const [row] = await tx
         .insert(editions)
         .values({ tenantId, ...edition })
@@ -240,7 +321,42 @@ async function seedTenant(spec: SeedTenant) {
           },
         })
         .returning({ id: editions.id })
-      editionIds.set(edition.slug, row!.id)
+      const editionId = row!.id
+      editionIds.set(edition.slug, editionId)
+
+      // A programme item has no natural key: its title identifies it within a seeded edition.
+      for (const [index, item] of program.entries()) {
+        const values = {
+          title: item.title,
+          description: item.description ?? null,
+          ...slot(edition, index),
+        }
+        const [existing] = await tx
+          .select({ id: programItems.id })
+          .from(programItems)
+          .where(and(eq(programItems.editionId, editionId), eq(programItems.title, item.title)))
+        const [saved] = existing
+          ? await tx
+              .update(programItems)
+              .set(values)
+              .where(eq(programItems.id, existing.id))
+              .returning({ id: programItems.id })
+          : await tx
+              .insert(programItems)
+              .values({ tenantId, editionId, ...values })
+              .returning({ id: programItems.id })
+        const onItem = (email: string) => ({
+          tenantId,
+          programItemId: saved!.id,
+          accountId: accountIds.get(email)!,
+        })
+        for (const email of item.speakers ?? []) {
+          await tx.insert(programItemSpeakers).values(onItem(email)).onConflictDoNothing()
+        }
+        for (const email of item.likedBy ?? []) {
+          await tx.insert(programItemLikes).values(onItem(email)).onConflictDoNothing()
+        }
+      }
     }
 
     const members = [

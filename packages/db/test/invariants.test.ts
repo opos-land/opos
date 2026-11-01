@@ -2,7 +2,16 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import postgres from 'postgres'
 import { migrationUrl } from '../src/migration-url'
-import { createEdition, createTenant, createUser, migrator, superuser, unique } from './db'
+import {
+  authAdmin,
+  createEdition,
+  createProgramItem,
+  createTenant,
+  createUser,
+  migrator,
+  superuser,
+  unique,
+} from './db'
 
 describe('invariants', () => {
   it('allows one active edition per tenant', async () => {
@@ -212,5 +221,123 @@ describe('invariants', () => {
           values (${tenant.id}, ${slug}, 'Bad', '2026-06-01', '2026-06-03')
         `,
     ).rejects.toThrow(/editions_slug_format/)
+  })
+})
+
+describe('programme items', () => {
+  // A speaker and a like share one shape: a programme item and an account, once per pair.
+  const itemAccountTables = ['program_item_speakers', 'program_item_likes'] as const
+
+  const addToItem = (
+    table: (typeof itemAccountTables)[number],
+    tenantId: string,
+    itemId: string,
+    accountId: string,
+  ) =>
+    migrator.unsafe(
+      `insert into ${table} (tenant_id, program_item_id, account_id)
+       values ('${tenantId}', '${itemId}', '${accountId}')`,
+    )
+
+  const countOn = async (table: string, column: string, id: string) =>
+    (
+      await migrator.unsafe<{ count: number }[]>(
+        `select count(*)::int as count from ${table} where ${column} = '${id}'`,
+      )
+    )[0]!.count
+
+  it('refuses a programme item in an edition of another tenant', async () => {
+    const [a, b] = await Promise.all([createTenant(), createTenant()])
+    const foreignEdition = await createEdition(b.id)
+
+    await expect(createProgramItem(a.id, foreignEdition)).rejects.toThrow(
+      /program_items_edition_fk/,
+    )
+  })
+
+  it('refuses a programme item that does not end after it starts', async () => {
+    const tenant = await createTenant()
+    const edition = await createEdition(tenant.id)
+
+    await expect(
+      migrator`
+        insert into program_items (tenant_id, edition_id, title, starts_at, ends_at)
+        values (${tenant.id}, ${edition}, 'Backwards', '2026-06-01 12:00Z', '2026-06-01 12:00Z')
+      `,
+    ).rejects.toThrow(/program_items_ends_after_start/)
+  })
+
+  it.each(itemAccountTables)('refuses a row of %s on an item of another tenant', async (table) => {
+    const [a, b] = await Promise.all([createTenant(), createTenant()])
+    const foreignItem = await createProgramItem(b.id, await createEdition(b.id))
+
+    await expect(addToItem(table, a.id, foreignItem, a.headId)).rejects.toThrow(
+      new RegExp(`${table}_program_item_fk`),
+    )
+  })
+
+  // The answer must not tell whether the account already has a row on the other tenant's item.
+  it.each(itemAccountTables)(
+    'refuses a row of %s on a foreign item alike when the account has one there',
+    async (table) => {
+      const [a, b] = await Promise.all([createTenant(), createTenant()])
+      const foreignItem = await createProgramItem(b.id, await createEdition(b.id))
+      await addToItem(table, b.id, foreignItem, a.headId)
+
+      await expect(addToItem(table, a.id, foreignItem, a.headId)).rejects.toThrow(
+        new RegExp(`${table}_program_item_fk`),
+      )
+    },
+  )
+
+  it.each(itemAccountTables)('refuses a second row of %s for one account', async (table) => {
+    const tenant = await createTenant()
+    const item = await createProgramItem(tenant.id, await createEdition(tenant.id))
+    await addToItem(table, tenant.id, item, tenant.headId)
+
+    await expect(addToItem(table, tenant.id, item, tenant.headId)).rejects.toThrow(
+      new RegExp(`${table}_tenant_item_account_unique`),
+    )
+  })
+
+  it.each(itemAccountTables)('takes the rows of %s along with the edition', async (table) => {
+    const tenant = await createTenant()
+    const edition = await createEdition(tenant.id)
+    const item = await createProgramItem(tenant.id, edition)
+    await addToItem(table, tenant.id, item, tenant.headId)
+
+    await migrator`delete from editions where id = ${edition}`
+
+    expect(await countOn('program_items', 'edition_id', edition)).toBe(0)
+    expect(await countOn(table, 'program_item_id', item)).toBe(0)
+  })
+
+  it.each(itemAccountTables)('takes the rows of %s along with the account', async (table) => {
+    const tenant = await createTenant()
+    const item = await createProgramItem(tenant.id, await createEdition(tenant.id))
+    const account = await createUser()
+    await addToItem(table, tenant.id, item, account.id)
+
+    await authAdmin`delete from auth.users where id = ${account.id}`
+
+    expect(await countOn(table, 'account_id', account.id)).toBe(0)
+    expect(await countOn('program_items', 'id', item)).toBe(1)
+  })
+
+  it.each([
+    ['program_items', 'title'],
+    ['program_item_speakers', 'account_id'],
+    ['program_item_likes', 'account_id'],
+  ])('moves updated_at on every update of %s', async (table, column) => {
+    const tenant = await createTenant()
+    const item = await createProgramItem(tenant.id, await createEdition(tenant.id))
+    await addToItem('program_item_speakers', tenant.id, item, tenant.headId)
+    await addToItem('program_item_likes', tenant.id, item, tenant.headId)
+
+    const [row] = await migrator.unsafe<{ moved: boolean }[]>(
+      `update ${table} set ${column} = ${column} where tenant_id = '${tenant.id}'
+       returning updated_at > created_at as moved`,
+    )
+    expect(row!.moved).toBe(true)
   })
 })

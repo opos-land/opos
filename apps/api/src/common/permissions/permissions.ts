@@ -22,6 +22,7 @@ export type EditionResource = keyof typeof editionResources
 export type EditionAccess = Record<(typeof editionResources)[EditionResource], Level>
 
 export type Requirement =
+  | { kind: 'account'; resource?: undefined; level?: undefined }
   | { kind: 'tenant'; resource?: undefined; level?: undefined }
   | { kind: 'tenant'; resource: TenantResource; level: Level }
   | { kind: 'edition'; resource: EditionResource; level: Level; param: string }

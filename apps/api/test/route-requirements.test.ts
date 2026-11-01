@@ -119,7 +119,7 @@ async function org(
 }
 
 /** One level short of the need, with every other permission at write. */
-function short(need: Exclude<Need, { scope: 'member' }>) {
+function short(need: Extract<Need, { resource: string }>) {
   return need.scope === 'tenant'
     ? org({ ...tenantWrite, [need.resource]: below(need.level) }, editionWrite)
     : org(tenantWrite, { ...editionWrite, [need.resource]: below(need.level) })
@@ -127,6 +127,7 @@ function short(need: Exclude<Need, { scope: 'member' }>) {
 
 /** Exactly the need and nothing else. */
 function exactly(need: Need) {
+  if (need.scope === 'account') return member()
   if (need.scope === 'member') return org()
   return need.scope === 'tenant'
     ? org({ [need.resource]: need.level })
@@ -165,7 +166,7 @@ describe('tenant routes', () => {
     expect(res.body).toMatchObject({ code: 'session.invalid' })
   })
 
-  it.each(routes)(
+  it.each(routes.filter(([, , need]) => need.scope !== 'account'))(
     '%s refuses an outsider, a head of another tenant and an expired org holding everything',
     async (_, procedure, need) => {
       const outsider = await member()
@@ -185,13 +186,13 @@ describe('tenant routes', () => {
     },
   )
 
-  it.each(routes.filter(([, , need]) => need.scope !== 'member'))(
+  it.each(routes.filter(([, , need]) => 'resource' in need))(
     '%s refuses an org one level short of what it needs',
     async (_, procedure, need) => {
       const res = await call(
         procedure,
         need,
-        await short(need as Exclude<Need, { scope: 'member' }>),
+        await short(need as Extract<Need, { resource: string }>),
       )
       expect(res.status).toBe(403)
       expect(res.body).toMatchObject({ code: 'permission.denied' })

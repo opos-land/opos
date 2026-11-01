@@ -260,6 +260,8 @@ describe('tenant isolation', () => {
        values ('${a.id}', '${edition!.id}', 'Foreign', '2026-06-01', '2026-06-02')`,
       `insert into program_item_speakers (tenant_id, program_item_id, account_id)
        values ('${a.id}', '${item!.id}', '${outsider.id}')`,
+      `insert into program_item_likes (tenant_id, program_item_id, account_id)
+       values ('${a.id}', '${item!.id}', '${outsider.id}')`,
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /row-level security/,
@@ -369,7 +371,7 @@ describe('runtime privileges', () => {
     expect(left).toEqual({ items: 0, speakers: 0, likes: 0 })
   })
 
-  it('lets opos_app write programme items and their speakers, and no like', async () => {
+  it('lets opos_app write programme items, their speakers and likes', async () => {
     const edition = await createEdition(b.id)
     const account = await createUser()
 
@@ -389,17 +391,13 @@ describe('runtime privileges', () => {
         values (${b.id}, ${item!.id}, ${account.id})
       `
       await sql`delete from program_item_speakers where program_item_id = ${item!.id}`
+      await sql`
+        insert into program_item_likes (tenant_id, program_item_id, account_id)
+        values (${b.id}, ${item!.id}, ${account.id})
+      `
+      await sql`delete from program_item_likes where program_item_id = ${item!.id}`
       await sql`delete from program_items where id = ${item!.id}`
     })
-
-    for (const statement of [
-      'insert into program_item_likes default values',
-      'delete from program_item_likes',
-    ]) {
-      await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
-        /permission denied/,
-      )
-    }
   })
 
   it('lets opos_app update only the columns the API changes', async () => {

@@ -288,6 +288,10 @@ msgid "This convention is being changed right now. Try again in a moment."
 msgstr "This convention is being changed right now. Try again in a moment."
 
 #: src/errors.ts
+msgid "This edition has ended, so its programme items take no new likes."
+msgstr "This edition has ended, so its programme items take no new likes."
+
+#: src/errors.ts
 msgid "This edition has reached the limit of programme items: {limit}."
 msgstr "This edition has reached the limit of programme items: {limit}."
 

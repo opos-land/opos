@@ -324,7 +324,8 @@ Modules beyond the MVP are built only after the core, the programme and tickets 
 ### 7.1 Likes and personal schedule
 
 - Any signed-in user likes programme items of a published edition, before or during the edition.
-  A like puts the item into the user's personal schedule in the portal.
+  A like puts the item into the user's personal schedule in the portal, and the user can take it
+  back at any time.
 - The like count of an item is public. Who liked an item is not shown to anyone.
 
 ### 7.2 Reviews

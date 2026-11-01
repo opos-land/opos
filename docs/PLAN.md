@@ -187,7 +187,8 @@ opos/
                          #   error filter, request store and tenant transaction, JwtAuthGuard,
                          #   rate limiting, permission decorators, MeModule (profile, memberships,
                          #   account deletion), TenantsModule (tenant, team, invitations),
-                         #   EditionsModule, ProgramModule (items and speakers), PublicModule (without reviews),
+                         #   EditionsModule, ProgramModule (items and speakers), PublicModule and
+                         #   EngagementModule (without reviews),
                          #   AuthModule (send-email hook, Supabase Auth admin
                          #   client), MailModule (Supabase Auth and invitation emails), tests;
                          #   still to come: the auth endpoints and session cookies (5.1, 7.4)
@@ -211,10 +212,9 @@ opos/
                          #   sign-in) with their unit tests, specs (15.2)
   packages/
     contract/            # built: common schemas, error codes, health, me (profile, memberships, deletion),
-                         #   tenants (without payment config), editions, invitations, program and
-                         #   public (without reviews)
+                         #   tenants (without payment config), editions, invitations, program, public and
+                         #   engagement (without reviews)
       src/
-        engagement.ts
         shop.ts
         tickets.ts
         checkout.ts
@@ -856,7 +856,7 @@ which `/login` offers. Google sign-in needs no such step ([7.5](#75-google-oauth
 | DELETE | `/me` | delete the account, `204` with the session cookies cleared; `401` `session.reauthentication-required` without a sign-in from the last 5 minutes; `409` `membership.last-head` when it is some tenant's last `head` ([9](#9-appsportal)) |
 | GET | `/me/memberships` | tenants (`id`, `slug`, `name`) with role, tenant-level permissions, `expiresAt` and edition-level permissions (`editionId`, `editionSlug`, the three levels); expired memberships left out |
 | GET | `/me/attendances` | "my conventions" |
-| GET | `/me/schedule` | liked programme items across all tenants, ascending by `startsAt` |
+| GET | `/me/schedule` | liked programme items of published editions across all tenants, ascending by `startsAt`, each with its edition and its tenant's name and time zone |
 | GET | `/me/program-items` | programme items where the account is a speaker, with their non-hidden reviews |
 | GET | `/me/tickets` | tickets from `paid` orders placed with the account's email, across all tenants, with their codes |
 | POST | `/me/attendances` | `{ tenantSlug, editionSlug, firstName, lastName }`; `409` on a repeat sign-up, `404` for an unpublished edition |
@@ -953,12 +953,16 @@ membership in the team.
 
 | Method | Path | Description |
 |---|---|---|
-| PUT | `/editions/:editionId/program-items/:programItemId/like` | like; idempotent; `404` for an unpublished edition |
-| DELETE | `/editions/:editionId/program-items/:programItemId/like` | remove the like |
+| PUT | `/editions/:editionId/program-items/:programItemId/like` | like, `204`; idempotent; `404` for an unpublished edition, as for an unknown item; `409` `like.edition-ended` once the edition has ended |
+| DELETE | `/editions/:editionId/program-items/:programItemId/like` | remove the like, `204`; idempotent, also after the edition has ended |
 | PUT | `/editions/:editionId/program-items/:programItemId/review` | `{ rating, comment?, isAnonymous, visibility }`; creates or replaces the account's review; `403` `review.not-eligible`, `409` `review.not-started` |
 | DELETE | `/editions/:editionId/program-items/:programItemId/review` | delete the account's review |
 
-Eligibility and start time are checked as invariant 7 in [4.5](#45-invariants) describes.
+The likes are built, in [engagement.ts](../packages/contract/src/engagement.ts), and the two review
+routes are still to be built. These routes carry `@InTenant`: they run in the tenant's transaction
+for any signed-in account, with no membership to check and without the tenant's write lock, so they
+must not lower anyone's access. Eligibility and start time are checked as invariant 7 in
+[4.5](#45-invariants) describes.
 
 ### 5.7 `public` — unauthenticated
 
@@ -1180,7 +1184,8 @@ have run; the guards and the interceptor fill the store:
 
 [TenantContextService](../apps/api/src/common/als/tenant-context.service.ts) holds the store;
 [TenantTransactionInterceptor](../apps/api/src/common/als/tenant-transaction.interceptor.ts) runs
-for a **tenant route**, one marked with `@RequireTenant` or `@RequireEdition` ([7.3](#73-permissions)),
+for a **tenant route**, one marked with `@RequireTenant`, `@RequireEdition` ([7.3](#73-permissions))
+or `@InTenant` ([5.6](#56-engagement--jwt--x-tenant-slug-no-membership-required)),
 or a scanner request. Every other route ignores `X-Tenant-Slug`, so a client may send the header
 everywhere. For a tenant route it:
 
@@ -1190,7 +1195,8 @@ everywhere. For a tenant route it:
 2. Opens a transaction on the `opos_app` pool and runs
    `select set_config('app.tenant_id', <tenantId>, true)`.
 3. Loads the account's `tenant_membership` inside that transaction, skipping an expired one. A
-   tenant the account has no membership in, an expired membership included, -> `403`.
+   tenant the account has no membership in, an expired membership included, -> `403`, except on a
+   route with `@InTenant`.
 4. Checks the route's `@RequireTenant` or `@RequireEdition` inside the same transaction
    ([7.3](#73-permissions)). A route that needs `write` runs steps 2–4 once in a short transaction
    of its own, waits in its tenant's queue, and then runs them again in the transaction of the
@@ -2526,7 +2532,7 @@ cannot run beside an API started with `pnpm dev`.
 | invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write`, no longer holding what it granted, or a head demoted to org after sending a head invitation -> `410` `invitation.revoked` on preview and accept, also when the demotion commits or the sender's access ends while the acceptance waits for the sender's membership or an edition; a preview of a revoked invitation answers without waiting for a held edition; a membership expiry the invitation grants that passes while the acceptance waits -> `410` `invitation.expired`; another tenant's edition -> `404`; the membership lands in the token's tenant only |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
-| likes | idempotent `PUT`; `likeCount` changes; no endpoint returns who liked an item; `GET /me/schedule` spans tenants |
+| likes | idempotent `PUT` and `DELETE` without a membership; `likeCount` changes; `404` for an unpublished edition, as for an unknown item, and through another edition or tenant; `409` `like.edition-ended` on a like once the edition has ended, while it can still be taken away; no endpoint returns who liked an item; `GET /me/schedule` spans tenants, shows an account only its own likes and leaves out an edition no longer published |
 | checkout | 20 concurrent orders against `quantity=5` -> exactly 5 hold tickets, the rest `409`; an expired hold releases its tickets; outside the sales window -> `409`; no payment config -> `409`; more than 10 tickets -> `400` |
 | payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid`; an SMTP failure after the payment leaves `ticketEmailSentAt` empty and the job sends the email later |
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |

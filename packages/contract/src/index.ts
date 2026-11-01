@@ -1,4 +1,5 @@
 import { editionsContract } from './editions'
+import { engagementContract } from './engagement'
 import { healthContract } from './health'
 import { invitationsContract } from './invitations'
 import { meContract } from './me'
@@ -15,12 +16,14 @@ export const contract = {
   invitations: invitationsContract,
   program: programContract,
   public: publicContract,
+  engagement: engagementContract,
 }
 
 export type Contract = typeof contract
 
 export * from './common'
 export * from './editions'
+export * from './engagement'
 export * from './errors'
 export * from './health'
 export * from './invitations'

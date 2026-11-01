@@ -92,6 +92,13 @@ describe('toErrorResponse', () => {
     expect(toErrorResponse(violated(constraint))).toMatchObject({ status: 409, body: { code } })
   })
 
+  it('maps a like on an item deleted meanwhile to 404', () => {
+    expect(toErrorResponse(violated('program_item_likes_program_item_fk'))).toMatchObject({
+      status: 404,
+      body: { code: 'request.not-found' },
+    })
+  })
+
   it('hides the details of an unexpected error', () => {
     expect(toErrorResponse(new Error('connection refused at 10.0.0.1'))).toEqual({
       status: 500,

@@ -44,6 +44,15 @@ describe('errorMessage', () => {
     )
   })
 
+  it('says why an item of a past edition takes no like', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(i18n._(errorMessage('like.edition-ended'))).toBe(
+      'Ta edycja już się skończyła, więc nie można polubić jej punktów programu.',
+    )
+  })
+
   // A limit can run for an hour (PLAN.md 7.9), so the message promises no moment.
   it('asks to come back later above a rate limit', async () => {
     const i18n = setupI18n()

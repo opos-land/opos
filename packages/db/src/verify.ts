@@ -28,11 +28,21 @@ export const globalReads = [
   'editions.id',
   'editions.slug',
   'editions.starts_at',
+  'editions.tenant_id',
+  'editions.name',
+  'editions.is_published',
   'edition_memberships.tenant_membership_id',
   'edition_memberships.edition_id',
   'edition_memberships.program_access',
   'edition_memberships.website_content_access',
   'edition_memberships.tickets_access',
+  'program_items.id',
+  'program_items.edition_id',
+  'program_items.title',
+  'program_items.starts_at',
+  'program_items.ends_at',
+  'program_item_likes.account_id',
+  'program_item_likes.program_item_id',
 ]
 
 /** The public tables outside tenant isolation (PLAN.md 4.2). */
@@ -199,6 +209,8 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     ['program_items', 'DELETE'],
     ['program_item_speakers', 'INSERT'],
     ['program_item_speakers', 'DELETE'],
+    ['program_item_likes', 'INSERT'],
+    ['program_item_likes', 'DELETE'],
   ].map((pair) => pair.join(' '))
   const overGranted = await sql<{ role: string; table: string; privilege: string }[]>`
     select r.role, c.relname as table, p.privilege

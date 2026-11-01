@@ -38,4 +38,9 @@ export class MeController {
   memberships() {
     return implement(contract.me.memberships).handler(() => this.global.ownMemberships())
   }
+
+  @Implement(contract.me.schedule)
+  schedule() {
+    return implement(contract.me.schedule).handler(() => this.global.ownSchedule())
+  }
 }

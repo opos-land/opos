@@ -23,6 +23,7 @@ import { ENV, type Env } from './config/env'
 import { MeModule } from './modules/accounts/me.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { EditionsModule } from './modules/editions/editions.module'
+import { EngagementModule } from './modules/engagement/engagement.module'
 import { HealthModule } from './modules/health/health.module'
 import { ProgramModule } from './modules/program/program.module'
 import { PublicModule } from './modules/public/public.module'
@@ -50,6 +51,7 @@ export class AppModule implements NestModule {
         EditionsModule,
         ProgramModule,
         PublicModule,
+        EngagementModule,
       ],
       providers: [
         { provide: ENV, useValue: env },

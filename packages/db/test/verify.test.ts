@@ -260,7 +260,7 @@ describe('verifyDatabase', () => {
     })
 
     it.each([
-      ['editions', 'name'],
+      ['editions', 'ends_at'],
       ['tenants', 'created_at'],
       ['accepted_invitations', 'jti'],
     ])(

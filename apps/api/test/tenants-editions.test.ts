@@ -656,7 +656,7 @@ describe('concurrency', () => {
 
     it('covers every write route of the contract', () => {
       const routes = Object.entries(tenantRequirements)
-        .filter(([, need]) => need.scope !== 'member' && need.level === 'write')
+        .filter(([, need]) => 'resource' in need && need.level === 'write')
         .map(([name]) => name)
       expect(Object.keys(writes).sort()).toEqual(routes.sort())
     })

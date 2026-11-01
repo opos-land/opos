@@ -2,6 +2,7 @@ import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale } from '../features/account'
 import { AuthCallbackPage, InvitationPage, LoginPage, RequireSession } from '../features/auth'
 import { EditionPage, EditionsPage } from '../features/editions'
+import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionAccessPage, TeamPage } from '../features/team'
 import {
   DashboardPage,
@@ -42,6 +43,8 @@ export const router = createBrowserRouter([
           { path: 'editions', element: <EditionsPage /> },
           { path: 'editions/:editionSlug', element: <EditionPage /> },
           { path: 'editions/:editionSlug/access', element: <EditionAccessPage /> },
+          { path: 'editions/:editionSlug/program', element: <ProgramPage /> },
+          { path: 'editions/:editionSlug/program/:programItemId', element: <ProgramItemPage /> },
           { path: 'team', element: <TeamPage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: '*', element: <NotFoundView /> },

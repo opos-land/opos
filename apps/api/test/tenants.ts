@@ -31,22 +31,52 @@ export async function tenantWithHead() {
   return { id, slug, head }
 }
 
-export async function addEdition(tenantId: string) {
-  const slug = randomUUID().slice(0, 8)
+export async function addEdition(
+  tenantId: string,
+  values: {
+    slug?: string
+    isPublished?: boolean
+    isActive?: boolean
+    startsAt?: string
+    endsAt?: string
+  } = {},
+) {
+  const slug = values.slug ?? randomUUID().slice(0, 8)
   const rows = await db.execute<{ id: string }>(sql`
-    insert into editions (tenant_id, slug, name, starts_at, ends_at)
-    values (${tenantId}, ${slug}, ${slug}, '2027-06-01', '2027-06-03') returning id
+    insert into editions (tenant_id, slug, name, starts_at, ends_at, is_published, is_active)
+    values (${tenantId}, ${slug}, ${slug}, ${values.startsAt ?? '2027-06-01'},
+      ${values.endsAt ?? '2027-06-03'}, ${values.isPublished ?? false}, ${values.isActive ?? false})
+    returning id
   `)
   return rows[0]!.id
 }
 
-export async function addProgramItem(tenantId: string, editionId: string) {
+export async function addProgramItem(
+  tenantId: string,
+  editionId: string,
+  values: { title?: string; startsAt?: string; endsAt?: string } = {},
+) {
   const rows = await db.execute<{ id: string }>(sql`
     insert into program_items (tenant_id, edition_id, title, starts_at, ends_at)
-    values (${tenantId}, ${editionId}, 'Item', '2027-06-01 09:00Z', '2027-06-01 10:00Z')
+    values (${tenantId}, ${editionId}, ${values.title ?? 'Item'},
+      ${values.startsAt ?? '2027-06-01 09:00Z'}, ${values.endsAt ?? '2027-06-01 10:00Z'})
     returning id
   `)
   return rows[0]!.id
+}
+
+export async function addSpeaker(tenantId: string, itemId: string, accountId: string) {
+  await db.execute(sql`
+    insert into program_item_speakers (tenant_id, program_item_id, account_id)
+    values (${tenantId}, ${itemId}, ${accountId})
+  `)
+}
+
+export async function addLike(tenantId: string, itemId: string, accountId: string) {
+  await db.execute(sql`
+    insert into program_item_likes (tenant_id, program_item_id, account_id)
+    values (${tenantId}, ${itemId}, ${accountId})
+  `)
 }
 
 export async function addOrg(

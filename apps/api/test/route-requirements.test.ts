@@ -27,7 +27,16 @@ import { type Level, type Need, tenantRequirements } from './route-needs'
 // with its permission, before it can pass.
 
 /** Routes without sign-in; every other route that is not a tenant route needs an account. */
-const publicRoutes = ['health.check', 'invitations.preview']
+const publicRoutes = [
+  'health.check',
+  'invitations.preview',
+  'public.tenant',
+  'public.editions',
+  'public.activeEdition',
+  'public.edition',
+  'public.programItems',
+  'public.programItem',
+]
 
 const procedures = (router: AnyContractRouter, prefix = ''): [string, AnyContractProcedure][] =>
   Object.entries(router).flatMap(([key, value]: [string, AnyContractRouter]) =>

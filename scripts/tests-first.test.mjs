@@ -345,6 +345,16 @@ describe('--base', () => {
     assert.match(stderr, new RegExp(guard))
   })
 
+  it('checks each commit on its own: a later test does not cover an earlier commit', () => {
+    const r = repo()
+    const untested = r.commit('fix(api): guard without a test', guard)
+    r.commit('test(api): an unrelated test', apiTest)
+    const { code, stderr } = r.run(['--base', 'HEAD~2'])
+    assert.equal(code, 1)
+    assert.match(stderr, new RegExp(`${untested.slice(0, 12)} fix\\(api\\): guard without a test`))
+    assert.doesNotMatch(stderr, /an unrelated test/)
+  })
+
   it('accepts a commit with its test, and one with a No-Test-Reason trailer', () => {
     const r = repo()
     r.commit('fix(api): x', guard, apiTest)

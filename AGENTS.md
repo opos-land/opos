@@ -213,7 +213,7 @@ A deleted test is no test of its area; deleted code is a change of its area.
 |---|---|
 | Claude Code hooks ([.claude/settings.json](.claude/settings.json)) | an `Edit` or `Write` of an area's code while no test of that area has changed in the working tree; after a `Bash` command, it reports an area's code the command changed under the same condition |
 | lefthook `commit-msg` | a commit that stages an area's code without a test of that area |
-| CI, on a pull request | commits since the base branch that change an area's code without a test of that area; merge commits are skipped, as in lefthook |
+| CI, on a pull request | each commit since the base branch that changes an area's code without a test of that area in the same commit; merge commits are skipped, as in lefthook |
 
 A change that needs no test — a rename, a comment, a moved import — says why in a
 `No-Test-Reason: <reason>` trailer of its commit message; an agent the hook refuses such an edit

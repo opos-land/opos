@@ -206,15 +206,22 @@ export function main(
     return 1
   }
   if (mode === '--base') {
-    const unexempted = lines(git('rev-list', '--no-merges', `${value}..HEAD`)).filter(
-      (commit) => !exempted(git('log', '-1', '--format=%B', commit)),
+    // Each commit carries its own test: a test in a later commit covers nothing before it.
+    const failing = lines(git('rev-list', '--reverse', '--no-merges', `${value}..HEAD`)).flatMap(
+      (commit) => {
+        if (exempted(git('log', '-1', '--format=%B', commit))) return []
+        const changes = parseNameStatus(
+          raw('diff-tree', '--no-commit-id', '--name-status', '-r', commit),
+        )
+        const missing = missingTests(changes)
+        return missing.length > 0 ? [{ commit, missing }] : []
+      },
     )
-    const changes = unexempted.flatMap((commit) =>
-      parseNameStatus(raw('diff-tree', '--no-commit-id', '--name-status', '-r', commit)),
-    )
-    const missing = missingTests(changes)
-    if (missing.length === 0) return 0
-    report(missing)
+    if (failing.length === 0) return 0
+    for (const { commit, missing } of failing) {
+      console.error(git('log', '-1', '--format=%H %s', commit).replace(/^(\w{12})\w+/, '$1'))
+      report(missing)
+    }
     console.error(
       'Add the test, or state why none applies with a `No-Test-Reason: <reason>` trailer in the commit message.',
     )

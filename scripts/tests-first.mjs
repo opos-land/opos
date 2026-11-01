@@ -268,10 +268,7 @@ function report(missing) {
  * Runs one mode in the repository that holds `cwd`; `stdin` reads the hook event. Returns the exit
  * code.
  */
-export function main(
-  [mode, value],
-  { cwd = process.cwd(), stdin = () => readFileSync(0, 'utf8') } = {},
-) {
+export function main([mode, value], { cwd, stdin }) {
   const { raw, git, workingTree, snapshot } = repository(cwd)
   const readEvent = () => JSON.parse(stdin())
   // One record per Bash call, inside the repository: calls of one session may overlap.
@@ -364,7 +361,10 @@ export function main(
   return 64
 }
 
-/* node:coverage ignore next 3 */
+/* node:coverage ignore next 6 */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  process.exitCode = main(process.argv.slice(2))
+  process.exitCode = main(process.argv.slice(2), {
+    cwd: process.cwd(),
+    stdin: () => readFileSync(0, 'utf8'),
+  })
 }

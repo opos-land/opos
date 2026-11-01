@@ -370,6 +370,13 @@ describe('test files without tests', () => {
     assert.equal(missingTests([guard, { path: apiTest, deleted: false, hollow: true }]).length, 1)
   })
 
+  it('include one that cannot be read', () => {
+    const r = repo()
+    mkdirSync(join(r.dir, dirname(apiTest)), { recursive: true })
+    symlinkSync('missing.ts', join(r.dir, apiTest))
+    assert.equal(r.edit(guard).code, 2)
+  })
+
   it('unlock nothing in the hook, in lefthook or in CI', () => {
     const r = repo()
     r.write(apiTest, '')
@@ -502,6 +509,13 @@ describe('--before-bash and --after-bash', () => {
     assert.match(stderr, new RegExp(guard))
   })
 
+  it('keep one record when the event names neither the call nor the session', () => {
+    const r = repo()
+    r.run(['--before-bash'], {})
+    r.write(guard)
+    assert.equal(r.run(['--after-bash'], {}).code, 2)
+  })
+
   it('keep the record of each Bash call apart when calls of one session overlap', () => {
     const r = repo()
     const first = { session_id: 'one', tool_use_id: 'first' }
@@ -591,6 +605,10 @@ describe('--base', () => {
     assert.equal(code, 1)
     assert.match(stderr, new RegExp(`${untested.slice(0, 12)} fix\\(api\\): guard without a test`))
     assert.doesNotMatch(stderr, /an unrelated test/)
+  })
+
+  it('accepts a branch with no commits of its own', () => {
+    assert.equal(repo().run(['--base', 'HEAD']).code, 0)
   })
 
   it('accepts a commit with its test, and one with a No-Test-Reason trailer', () => {

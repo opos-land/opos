@@ -97,12 +97,12 @@ export class PublicRepository {
       .where(inArray(programItemLikes.programItemId, ids))
       .groupBy(programItemLikes.programItemId)
     const likeCounts = new Map(likes.map((row) => [row.programItemId, row.likes]))
+    const byItem = Map.groupBy(speakers, (speaker) => speaker.programItemId)
     return rows.map((row) => ({
       ...row,
       startsAt: row.startsAt.toISOString(),
       endsAt: row.endsAt.toISOString(),
-      speakers: speakers
-        .filter((speaker) => speaker.programItemId === row.id)
+      speakers: (byItem.get(row.id) ?? [])
         .filter((speaker) => speaker.firstName || speaker.lastName)
         .map(({ firstName, lastName }) => ({ firstName, lastName })),
       likeCount: likeCounts.get(row.id) ?? 0,

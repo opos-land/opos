@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { type ProgramItem, type UpdateProgramItem } from '@opos/contract'
+import { MAX_PROGRAM_ITEMS, type ProgramItem, type UpdateProgramItem } from '@opos/contract'
 import { accounts, programItems, programItemSpeakers } from '@opos/db'
-import { and, asc, eq, inArray, isNotNull, notInArray } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNotNull, notInArray } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError, notFound } from '../../common/errors/api-error'
 import { postgresConstraint } from '../../common/filters/http-exception.filter'
@@ -62,13 +62,12 @@ export class ProgramRepository {
         ),
       )
       .orderBy(asc(accounts.lastName), asc(accounts.email))
+    const byItem = Map.groupBy(speakers, (speaker) => speaker.programItemId)
     return rows.map((row) => ({
       ...row,
       startsAt: row.startsAt.toISOString(),
       endsAt: row.endsAt.toISOString(),
-      speakers: speakers
-        .filter((speaker) => speaker.programItemId === row.id)
-        .map(({ programItemId: _, ...speaker }) => speaker),
+      speakers: (byItem.get(row.id) ?? []).map(({ programItemId: _, ...speaker }) => speaker),
     }))
   }
 
@@ -99,6 +98,17 @@ export class ProgramRepository {
     editionId: string,
     values: { title: string; description?: string | null; startsAt: string; endsAt: string },
   ): Promise<ProgramItem> {
+    // A write runs under the tenant's write lock (PLAN.md 7.3), so nothing is added after the count.
+    const [held] = await this.context
+      .tx()
+      .select({ items: count() })
+      .from(programItems)
+      .where(eq(programItems.editionId, editionId))
+    if (held!.items >= MAX_PROGRAM_ITEMS) {
+      throw new ApiError(409, 'program.too-many-items', 'The edition holds the most items it can', {
+        limit: MAX_PROGRAM_ITEMS,
+      })
+    }
     const rows = await this.context
       .tx()
       .insert(programItems)

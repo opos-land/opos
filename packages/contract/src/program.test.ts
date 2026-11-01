@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createProgramItemSchema,
+  MAX_PROGRAM_ITEMS,
   MAX_SPEAKERS,
   putSpeakersSchema,
   updateProgramItemSchema,
@@ -13,6 +14,12 @@ const valid = {
 }
 
 const refused = (result: { success: boolean }) => expect(result.success).toBe(false)
+
+describe('MAX_PROGRAM_ITEMS', () => {
+  it('bounds what the public programme of an edition can return', () => {
+    expect(MAX_PROGRAM_ITEMS).toBe(1000)
+  })
+})
 
 describe('createProgramItemSchema', () => {
   it('takes a title, a start and an end, and trims the title', () => {

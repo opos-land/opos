@@ -204,7 +204,8 @@ each edition, optionally until an expiry date.
 Speakers, attendees and ticket buyers are not team members: they hold no permissions in the
 panel and act only in the portal, on their own programme items, registrations and tickets. An org
 with write access to an edition's programme assigns a speaker by the address of a confirmed account,
-up to 10 on one programme item. A convention names at most 100 new addresses an hour this way.
+up to 10 on one programme item. A convention names at most 100 new addresses an hour this way. An
+edition holds at most 1000 programme items.
 
 ### 5.5 Example
 

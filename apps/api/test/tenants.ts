@@ -65,6 +65,15 @@ export async function addProgramItem(
   return rows[0]!.id
 }
 
+/** `count` programme items at once, for a test that needs an edition full of them. */
+export async function addProgramItems(tenantId: string, editionId: string, count: number) {
+  await db.execute(sql`
+    insert into program_items (tenant_id, edition_id, title, starts_at, ends_at)
+    select ${tenantId}, ${editionId}, 'Item ' || n, '2027-06-01 09:00Z', '2027-06-01 10:00Z'
+    from generate_series(1, ${count}::int) as n
+  `)
+}
+
 export async function addSpeaker(tenantId: string, itemId: string, accountId: string) {
   await db.execute(sql`
     insert into program_item_speakers (tenant_id, program_item_id, account_id)

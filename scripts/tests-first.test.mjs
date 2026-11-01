@@ -231,7 +231,7 @@ describe('parseStatus', () => {
       ' M apps/api/test/tenants-editions.test.ts',
       'M  packages/db/src/rls.ts',
       '?? scripts/new.mjs',
-      'R  old/name.ts -> packages/db/src/verify.ts',
+      'R  packages/db/src/verify.ts -> packages/db/src/checks.ts',
       ' D packages/db/test/old.test.ts',
       'D  apps/api/src/common/guards/gone.ts',
       '',
@@ -240,7 +240,8 @@ describe('parseStatus', () => {
       { path: 'apps/api/test/tenants-editions.test.ts', deleted: false },
       { path: 'packages/db/src/rls.ts', deleted: false },
       { path: 'scripts/new.mjs', deleted: false },
-      { path: 'packages/db/src/verify.ts', deleted: false },
+      { path: 'packages/db/src/verify.ts', deleted: true },
+      { path: 'packages/db/src/checks.ts', deleted: false },
       { path: 'packages/db/test/old.test.ts', deleted: true },
       { path: 'apps/api/src/common/guards/gone.ts', deleted: true },
     ])
@@ -248,12 +249,17 @@ describe('parseStatus', () => {
 })
 
 describe('parseNameStatus', () => {
-  it('reads git diff --name-status, a rename as its new path', () => {
-    assert.deepEqual(parseNameStatus('M\ta.ts\nD\tb.test.ts\nR100\told.ts\tnew.ts\n'), [
-      { path: 'a.ts', deleted: false },
-      { path: 'b.test.ts', deleted: true },
-      { path: 'new.ts', deleted: false },
-    ])
+  it('reads git diff --name-status, a rename as both of its paths and a copy as its new one', () => {
+    assert.deepEqual(
+      parseNameStatus('M\ta.ts\nD\tb.test.ts\nR100\told.ts\tnew.ts\nC75\tsource.ts\tcopy.ts\n'),
+      [
+        { path: 'a.ts', deleted: false },
+        { path: 'b.test.ts', deleted: true },
+        { path: 'old.ts', deleted: true },
+        { path: 'new.ts', deleted: false },
+        { path: 'copy.ts', deleted: false },
+      ],
+    )
   })
 })
 
@@ -304,6 +310,32 @@ describe('--before-bash and --after-bash', () => {
     const r = repo()
     r.write(guard)
     assert.equal(r.bash(() => r.write('docs/PLAN.md')).code, 0)
+  })
+})
+
+describe('renames', () => {
+  const moved = 'apps/api/src/auth/jwt-auth.guard.ts'
+  const move = (r) => {
+    mkdirSync(join(r.dir, dirname(moved)), { recursive: true })
+    r.git('mv', guard, moved)
+  }
+
+  it('count a file moved out of an area as a change of that area', () => {
+    const r = repo()
+    r.commit('chore: add the guard', guard)
+    const { code, stderr } = r.bash(() => move(r))
+    assert.equal(code, 2)
+    assert.match(stderr, new RegExp(guard))
+    r.write(moved, '// changed\n')
+    assert.equal(r.commitMsg('refactor(api): move the guard\n').code, 1)
+  })
+
+  it('reach CI as the old path too', () => {
+    const r = repo()
+    r.commit('chore: add the guard', guard)
+    move(r)
+    r.commit('refactor(api): move the guard')
+    assert.equal(r.run(['--base', 'HEAD~1']).code, 1)
   })
 })
 

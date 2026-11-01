@@ -81,26 +81,41 @@ export function editRefusal(path, changes) {
 
 /**
  * The entries of `git status --porcelain` output, untouched: a status column may start with a
- * space, so the output must not be trimmed. A rename yields its new path.
+ * space, so the output must not be trimmed. A rename yields its old path, deleted, and its new one.
  */
 export function parseStatus(status) {
   return status
     .split('\n')
     .filter((line) => line.length > 3)
-    .map((line) => ({
-      path: line.slice(3).replace(/^.* -> /, ''),
-      deleted: line.slice(0, 2).includes('D'),
-    }))
+    .flatMap((line) => {
+      const [path, from] = line.slice(3).split(' -> ').reverse()
+      const deleted = line.slice(0, 2).includes('D')
+      return line[0] === 'R'
+        ? [
+            { path: from, deleted: true },
+            { path, deleted },
+          ]
+        : [{ path, deleted }]
+    })
 }
 
-/** The entries of `git diff --name-status` output; a rename or copy yields its new path. */
+/**
+ * The entries of `git diff --name-status` output. A rename yields its old path, deleted, and its new
+ * one; a copy yields its new path.
+ */
 export function parseNameStatus(output) {
   return output
     .split('\n')
     .filter(Boolean)
-    .map((line) => {
+    .flatMap((line) => {
       const [status, ...paths] = line.split('\t')
-      return { path: paths.at(-1), deleted: status === 'D' }
+      const path = paths.at(-1)
+      if (status.startsWith('R'))
+        return [
+          { path: paths[0], deleted: true },
+          { path, deleted: false },
+        ]
+      return [{ path, deleted: status === 'D' }]
     })
 }
 

@@ -205,7 +205,8 @@ then restore it.
 | `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client}.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
 | `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/{tenants,editions}/`, `apps/api/src/app.module.ts`, `packages/contract/src/common.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
 
-A deleted test is no test of its area; deleted code is a change of its area.
+A deleted test is no test of its area; deleted code is a change of its area, and so is a file
+moved out of it.
 
 [scripts/tests-first.mjs](scripts/tests-first.mjs) holds this table and enforces it three times:
 

@@ -410,7 +410,9 @@ stay with the payment provider; OPOS stores only the provider's payment referenc
 **The password comes after the confirmed email address.** Registering by email asks for the
 address and the name only; the account starts working once its owner opens the link sent to that
 address, which asks them to choose the password there. A password anyone set on the address before
-it was confirmed never works afterwards. A Google sign-in counts as confirmed. Changing the
+it was confirmed never works afterwards. A Google sign-in counts as confirmed. Setting a password,
+like deleting the account, needs a sign-in from the last few minutes: opening the link counts as
+one, and a page left open longer offers to send a new link. Changing the
 account's email address comes after the MVP; it takes effect once both the current and the new
 address confirm it through the links sent to them.
 

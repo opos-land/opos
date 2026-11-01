@@ -786,7 +786,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | Status | Meaning | Code when nothing more specific applies |
 |---|---|---|
 | `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `editions_slug_format` -> `slug`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
-| `401` | no session cookie, an expired or foreign access token in it, or no `accounts` row for it; `DELETE /me` without a recent sign-in has its own code ([7.4](#74-authorization)), and so do the Supabase Auth refusals the API passes on ([5.1](#51-auth--sign-in-through-the-api)) | `session.invalid` |
+| `401` | no session cookie, an expired or foreign access token in it, or no `accounts` row for it; `DELETE /me` and `PUT /auth/password` without a recent sign-in have their own code ([7.4](#74-authorization)), and so do the Supabase Auth refusals the API passes on ([5.1](#51-auth--sign-in-through-the-api)) | `session.invalid` |
 | `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)), and so does an invitation for another email ([7.7](#77-organizer-invitations)); a request that changes state with the session cookie from an `Origin` outside `PANEL_URL` and `PORTAL_URL` is `request.origin-denied` ([7.4](#74-authorization)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
 | `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`), and so does a unique constraint a concurrent request won (`tenant_memberships_account_tenant_unique` -> `member.exists`, or `invitation.already-member` on `POST /invitations/accept`; `accepted_invitations_tenant_jti_unique` -> `invitation.used`) | always a specific code |
@@ -821,7 +821,7 @@ application the email links lead to. The two Google routes are navigations, whic
 | POST | `/auth/refresh` | — | `refreshSession` with the refresh token from the cookie; sets the new cookies | `204`; `401` `session.invalid` with both cookies cleared |
 | POST | `/auth/sign-out` | — | `signOut({ scope: 'local' })` — this session only, so signing out of the portal leaves the panel signed in; with only the refresh cookie left, refreshes first to get the access token `signOut` needs; clears the cookies | `204`, also without a session or when the refresh fails |
 | POST | `/auth/password/forgot` | `{ email }` | `resetPasswordForEmail(email, { redirectTo: <app URL>/auth/confirm })` ([7.6](#76-password-reset)) | `202` whatever the address |
-| PUT | `/auth/password` | `{ password }` | requires a session; `updateUser({ password })`, then `signOut({ scope: 'others' })`; a `same_password` refusal still ends the other sessions, so a retry after a failed sign-out completes the change | `204` |
+| PUT | `/auth/password` | `{ password }` | requires a session with a recent sign-in ([7.4](#74-authorization)), else `401` `session.reauthentication-required`; `updateUser({ password })`, then `signOut({ scope: 'others' })`; a `same_password` refusal still ends the other sessions, so a retry after a failed sign-out completes the change | `204` |
 
 The two `GET` routes are plain Nest routes — a redirect, not JSON — documented in the OpenAPI
 document like `GET /health`. Every other route is in the contract (`contract.auth.*`), built from
@@ -846,9 +846,11 @@ registered by email starts with a random password nobody knows; the confirmation
 whatever browser opens it (`POST /auth/verify`), and `/auth/confirm` of the portal and of the panel
 then asks for the password at once and saves it with `PUT /auth/password`, which also ends every
 other session. A password anyone set on the address before it was confirmed never works after the
-confirmation. A confirmed account that leaves the form without a password gets one through the
-password reset ([7.6](#76-password-reset)), which `/login` offers. Google sign-in needs no such
-step ([7.5](#75-google-oauth)).
+confirmation. The session the link started counts as a recent sign-in for 5 minutes
+([7.4](#74-authorization)); a form saved later answers `session.reauthentication-required`, and
+the form then offers a new link by email (`POST /auth/password/forgot`). A confirmed account that
+leaves the form without a password gets one through the password reset ([7.6](#76-password-reset)),
+which `/login` offers. Google sign-in needs no such step ([7.5](#75-google-oauth)).
 
 ### 5.2 `me` — requires JWT
 
@@ -1354,10 +1356,13 @@ the cookies (`credentials: 'include'`), and the account comes from `GET /me`
 ([8](#8-appspanel), [9](#9-appsportal)). They are served with a strict Content Security Policy:
 `script-src 'self'`, no inline scripts, `connect-src 'self' <API_URL>`, `frame-ancestors 'none'`.
 
-**Recent sign-in** — `DELETE /me` requires an `amr` entry in the JWT with a timestamp younger than
-5 minutes; without one -> `401` `session.reauthentication-required`. A refresh keeps the `amr` of
-the sign-in that started the session, so the client answers that code not by refreshing but by
-confirming the password (`POST /auth/sign-in`) or by signing in with Google again.
+**Recent sign-in** — `DELETE /me` and `PUT /auth/password` require an `amr` entry in the JWT with a
+timestamp younger than 5 minutes; without one -> `401` `session.reauthentication-required`. A
+session that `POST /auth/verify` started carries the `amr` of that link, so a confirmation or a
+recovery link counts as a sign-in at the moment it was opened. A refresh keeps the `amr` of the
+sign-in that started the session, so the client answers that code not by refreshing but by
+confirming the password (`POST /auth/sign-in`) or by signing in with Google again; the password
+form of `/auth/confirm` offers a new link by email instead.
 
 ### 7.5 Google OAuth
 
@@ -1406,8 +1411,9 @@ Required behaviour when the email already exists, checked in the smoke test
    valid for 1 hour (`otp_expiry = 3600`) and works once.
 2. `/auth/confirm` sends the `token_hash` to `POST /auth/verify`, which signs the browser in with
    the session cookies, in whatever browser opened the link, and shows the new password form. The
-   new password goes to
-   `PUT /auth/password`: `updateUser({ password })`, then `signOut({ scope: 'others' })` — every
+   new password goes to `PUT /auth/password` within 5 minutes of opening the link, or the form
+   offers a new link ([7.4](#74-authorization)):
+   `updateUser({ password })`, then `signOut({ scope: 'others' })` — every
    other session ends: its refresh tokens stop working at once, and an access token it already
    holds keeps working until it expires, at most 15 minutes later ([7.4](#74-authorization)).
 3. The flow works for a Google-only account as well: completing it adds password sign-in next to
@@ -2521,7 +2527,7 @@ cannot run beside an API started with `pnpm dev`.
 | session cookies | sign-in, verification and the Google callback set exactly the cookies of [7.4](#74-authorization) with their attributes, `Secure` when `API_URL` is `https`; no response body or header carries a token; a session of the portal is no session for a request with the panel's `Origin`, and the reverse; `POST /auth/refresh` rotates the refresh token and a reused one outside the reuse interval ends the session; sign-out and `DELETE /me` clear the cookies |
 | requests that change state | with a session cookie, a foreign `Origin`, another subdomain of the site included, or none -> `403` `request.origin-denied` and nothing changed; a form-encoded body -> `415`; the same request from `PANEL_URL` or `PORTAL_URL` goes through |
 | auth endpoints | every operation of [5.1](#51-auth--sign-in-through-the-api) against the local stack; sign-up takes no password, and after an address registered twice is confirmed only the password chosen through `/auth/confirm` signs in; sign-up and password reset answer the same for a registered and an unknown address; a passed-on refusal keeps Supabase Auth's status and its `auth.<error_code>`, an unlisted one is `500`; every call to Supabase Auth carries the secret key and the client's address in `Sb-Forwarded-For`; `GET /auth/google` takes no `redirect` outside the application, and a callback without its `opos_google` cookie, with another browser's cookie or past 10 minutes signs nobody in |
-| account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401` |
+| account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`, and the same for `PUT /auth/password`, which accepts the session of a confirmation or recovery link opened less than 5 minutes before; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401` |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a link to the calling application's `/auth/confirm` that names no Supabase address, and `POST /auth/verify` redeems the `signup` and `recovery` ones; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` (per address) and `POST /tenants/current/members` (per tenant) included |
 | CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, with `Access-Control-Allow-Credentials: true`; a foreign origin gets neither header; exactly the four allowed request headers; `Retry-After` exposed |

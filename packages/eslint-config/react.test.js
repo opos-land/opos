@@ -9,18 +9,24 @@ const root = join(import.meta.dirname, 'fixtures', 'feature-app')
 // Type information plays no part in the rules under test, so the fixture needs no React types.
 // An import that does not resolve is not checked, so the import of a workspace package must also
 // prove that it resolves.
-const eslint = new ESLint({
-  cwd: root,
-  overrideConfigFile: true,
-  overrideConfig: [
-    ...react(root),
-    tseslint.configs.disableTypeChecked,
-    { files: ['src/features/beta/into-package.ts'], rules: { 'import-x/no-unresolved': 'error' } },
-  ],
-})
+const lint = (options) =>
+  new ESLint({
+    cwd: root,
+    overrideConfigFile: true,
+    overrideConfig: [
+      ...react(root, options),
+      tseslint.configs.disableTypeChecked,
+      {
+        files: ['src/features/beta/into-package.ts'],
+        rules: { 'import-x/no-unresolved': 'error' },
+      },
+    ],
+  })
 
-async function ruleIds(file) {
-  const [result] = await eslint.lintFiles([join(root, 'src', file)])
+const eslint = lint({ supabaseImports: ['src/shared/lib/legacy-auth.ts'] })
+
+async function ruleIds(file, linter = eslint) {
+  const [result] = await linter.lintFiles([join(root, 'src', file)])
   return result.messages.map((message) => message.ruleId)
 }
 
@@ -61,6 +67,15 @@ describe('react preset', () => {
 
   it('applies the React rules to JSX', async () => {
     expect(await ruleIds('features/beta/components/name-list.tsx')).toEqual(['react/jsx-key'])
+  })
+
+  it('forbids an import of a Supabase package', async () => {
+    expect(await ruleIds('features/beta/into-supabase.ts')).toEqual(['no-restricted-imports'])
+  })
+
+  it('lets only the listed files import a Supabase package until sign-in moves to the API', async () => {
+    expect(await ruleIds('shared/lib/legacy-auth.ts')).toEqual([])
+    expect(await ruleIds('shared/lib/legacy-auth.ts', lint())).toEqual(['no-restricted-imports'])
   })
 
   it('applies the rules of hooks', async () => {

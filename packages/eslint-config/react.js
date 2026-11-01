@@ -68,8 +68,12 @@ export function featureBoundaries(root) {
   })
 }
 
-/** A browser application built with React: the panel and the portal. */
-export function react(root) {
+/**
+ * A browser application built with React: the panel and the portal. Neither imports a Supabase
+ * package, since the API is its only backend (PLAN.md 3.2); `supabaseImports` lists the files that
+ * still do until sign-in moves to the API, and nothing joins that list.
+ */
+export function react(root, { supabaseImports = [] } = {}) {
   return tseslint.config(
     base,
     {
@@ -91,8 +95,22 @@ export function react(root) {
       rules: {
         // Types replace prop-types.
         'react/prop-types': 'off',
+        'no-restricted-imports': [
+          'error',
+          {
+            patterns: [
+              {
+                group: ['@supabase/*'],
+                message: 'The API is the only backend: sign-in goes through its auth endpoints.',
+              },
+            ],
+          },
+        ],
       },
     },
+    supabaseImports.length > 0
+      ? { files: supabaseImports, rules: { 'no-restricted-imports': 'off' } }
+      : {},
     featureBoundaries(root),
   )
 }

@@ -1,24 +1,58 @@
 #!/usr/bin/env node
-// A change to tenant isolation (rls) or to permissions and tenant context (rbac) starts with a
-// test of its area (AGENTS.md, "Tests first for RLS and RBAC").
+// A change of code starts with a test of its area (AGENTS.md, "Tests first"): tenant isolation
+// (rls) and permissions and tenant context (rbac) with tests in fixed places, any other code with
+// a test of its own package.
 //
-//   --hook               Claude Code PreToolUse hook for Edit and Write: refuses an edit of a
-//                        guarded file while no test of its area has changed in the working tree
+//   --hook               Claude Code PreToolUse hook for Edit and Write: refuses an edit of an
+//                        area's code while no test of that area has changed in the working tree
 //   --before-bash        Claude Code PreToolUse hook for Bash: records the changed files' contents
-//   --after-bash         Claude Code PostToolUse hook for Bash: reports a guarded file the command
-//                        changed while no test of its area has changed in the working tree
+//   --after-bash         Claude Code PostToolUse hook for Bash: reports an area's code the command
+//                        changed while no test of that area has changed in the working tree
 //   --commit-msg <file>  lefthook commit-msg: the staged files carry a test of each changed area
-//   --base <ref>         CI: the commits since <ref> carry a test of each changed area
+//   --base <ref>         CI: each commit since <ref> carries a test of each area it changes; a
+//                        merge, of each area it changes beyond merging its parents
 //
 // The hooks read the event on stdin. A commit whose message holds a `No-Test-Reason: <reason>`
-// trailer is exempt, and so is a merge commit.
+// trailer is exempt; lefthook leaves a merge commit to CI.
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join, relative } from 'node:path'
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const isTest = (path) => /\.test\.[cm]?[jt]sx?$/.test(path)
+const isTest = (path) => /\.(test|spec)\.[cm]?[jt]sx?$/.test(path)
+
+/**
+ * Whether a path is code: a script or SQL, but no type declaration, tool configuration, test
+ * helper or fixture, the e2e package, a catalog, installed or built output, or a file outside the
+ * repository.
+ */
+const isCode = (path) =>
+  /\.([cm]?[jt]sx?|sql)$/.test(path) &&
+  !/\.d\.[cm]?ts$/.test(path) &&
+  !/(^|\/)(eslint|vite|vitest|lingui|drizzle|tsdown|playwright|commitlint)\.config(\.\w+)?\.[cm]?[jt]s$/.test(
+    path,
+  ) &&
+  !/(^|\/)(test|fixtures|locales|node_modules|dist|build|coverage|\.turbo)\//.test(path) &&
+  !/^(e2e\/|\.\.\/|\/)/.test(path)
+
+/** Any other code of a package, covered by a test anywhere in the same package. */
+const packageArea = (name, dir) => {
+  const prefix = dir.replaceAll('.', '\\.')
+  return {
+    name,
+    code: [new RegExp(`^${prefix}/`)],
+    tests: [new RegExp(`^${prefix}/.+\\.test\\.[cm]?[jt]sx?$`)],
+    where: dir,
+  }
+}
 
 const areas = [
   {
@@ -36,29 +70,70 @@ const areas = [
     name: 'rbac',
     code: [
       /^apps\/api\/src\/common\/(permissions|als|guards|database|decorators)\//,
-      /^apps\/api\/src\/modules\/(tenants|editions)\//,
+      // Every module but mail and health reads or writes as an account, a tenant or an edition.
+      /^apps\/api\/src\/modules\/(?!(mail|health)\/)/,
       /^apps\/api\/src\/app\.module\.ts$/,
-      /^packages\/contract\/src\/common\.ts$/,
+      // The routes and the access each one requires.
+      /^packages\/contract\/src\/(?!(errors|index)\.ts$)[^/]+\.ts$/,
     ],
     tests: [/^apps\/api\/test\/.+\.test\.ts$/, /^apps\/api\/src\/.+\.test\.ts$/],
     where: 'apps/api/test or a *.test.ts beside the code',
   },
+  packageArea('api', 'apps/api'),
+  packageArea('panel', 'apps/panel'),
+  packageArea('portal', 'apps/portal'),
+  packageArea('db', 'packages/db'),
+  packageArea('contract', 'packages/contract'),
+  packageArea('i18n', 'packages/i18n'),
+  packageArea('eslint-config', 'packages/eslint-config'),
+  packageArea('scripts', 'scripts'),
+  packageArea('claude', '.claude'),
+  // Code anywhere else waits for an area of its own, here and in AGENTS.md.
+  { name: 'unlisted', code: [/^/], tests: [], where: 'an area of its own' },
 ]
 
 /** A changed file; a path alone is a file that still exists. */
 const asChange = (change) =>
   typeof change === 'string' ? { path: change, deleted: false } : change
 
-/** Whether the changes hold a test of `area` that was added or changed, not deleted. */
+/** Whether the changes hold a test of `area` that was added or changed, not deleted or hollow. */
 const testedIn = (area, changes) =>
   changes
     .map(asChange)
-    .some(({ path, deleted }) => !deleted && area.tests.some((pattern) => pattern.test(path)))
+    .some(
+      ({ path, deleted, hollow }) =>
+        !deleted && !hollow && area.tests.some((pattern) => pattern.test(path)),
+    )
 
-/** The guarded area a path belongs to, or null; a test file belongs to none. */
+/**
+ * Whether a test file's source holds a test: a line that opens with a call of `describe`, `it` or
+ * `test`, `.todo` aside, outside a block comment that opens a line.
+ */
+export function holdsTests(source) {
+  const code = source.replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, '')
+  return /^[ \t]*(describe|it|test)(\.(?!todo\b)\w+(\([^()]*\))?)*\s*\(/m.test(code)
+}
+
+/** The changes with each test file that holds no test marked hollow; `read` returns its source. */
+function weighTests(changes, read) {
+  const source = (path) => {
+    try {
+      return read(path)
+    } catch {
+      return ''
+    }
+  }
+  return changes.map((change) =>
+    isTest(change.path) && !change.deleted
+      ? { ...change, hollow: !holdsTests(source(change.path)) }
+      : change,
+  )
+}
+
+/** The first area whose code matches a path, or null for a test or a file that is not code. */
 export function areaOf(path) {
-  if (isTest(path)) return null
-  return areas.find((area) => area.code.some((pattern) => pattern.test(path)))?.name ?? null
+  if (isTest(path) || !isCode(path)) return null
+  return areas.find((area) => area.code.some((pattern) => pattern.test(path))).name
 }
 
 /** The areas changed without a test of their own, with the files that changed, deleted included. */
@@ -76,32 +151,49 @@ export function editRefusal(path, changes) {
   if (!name) return null
   const area = areas.find((candidate) => candidate.name === name)
   if (testedIn(area, changes)) return null
-  return `${path} is ${name} code: write or change its test first, in ${area.where}, and watch it fail (AGENTS.md, "Tests first for RLS and RBAC"). If the change needs no test, ask the user.`
+  if (name === 'unlisted') {
+    return `${path} is code outside every area: add its area to scripts/tests-first.mjs and to the table in AGENTS.md ("Tests first") before writing it.`
+  }
+  return `${path} is ${name} code: write or change its test first, in ${area.where}, and watch it fail (AGENTS.md, "Tests first"). If the change needs no test, ask the user.`
 }
 
 /**
- * The entries of `git status --porcelain` output, untouched: a status column may start with a
- * space, so the output must not be trimmed. A rename yields its new path.
+ * The entries of `git status --porcelain -z` output, where no path is quoted. A rename, in the
+ * index or in the working tree, yields its old path, deleted, and its new one; a copy yields its
+ * new path.
  */
-export function parseStatus(status) {
-  return status
-    .split('\n')
-    .filter((line) => line.length > 3)
-    .map((line) => ({
-      path: line.slice(3).replace(/^.* -> /, ''),
-      deleted: line.slice(0, 2).includes('D'),
-    }))
+export function parseStatus(output) {
+  const fields = output.split('\0')
+  const changes = []
+  for (let i = 0; i < fields.length - 1; i++) {
+    const status = fields[i].slice(0, 2)
+    const path = fields[i].slice(3)
+    // The old path of a rename or a copy follows as a field of its own.
+    if (/[RC]/.test(status)) {
+      const from = fields[++i]
+      if (status.includes('R')) changes.push({ path: from, deleted: true })
+    }
+    changes.push({ path, deleted: status.includes('D') })
+  }
+  return changes
 }
 
-/** The entries of `git diff --name-status` output; a rename or copy yields its new path. */
+/**
+ * The entries of `git diff --name-status -z` output, where no path is quoted. A rename yields its
+ * old path, deleted, and its new one; a copy yields its new path.
+ */
 export function parseNameStatus(output) {
-  return output
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      const [status, ...paths] = line.split('\t')
-      return { path: paths.at(-1), deleted: status === 'D' }
-    })
+  const fields = output.split('\0')
+  const changes = []
+  for (let i = 0; i < fields.length - 1;) {
+    const status = fields[i++]
+    if (/^[RC]/.test(status)) {
+      const from = fields[i++]
+      if (status.startsWith('R')) changes.push({ path: from, deleted: true })
+    }
+    changes.push({ path: fields[i++], deleted: status === 'D' })
+  }
+  return changes
 }
 
 /** The paths whose content differs between two snapshots of path -> hash, either side missing. */
@@ -110,32 +202,126 @@ export function touched(before, after) {
   return [...paths].filter((path) => before[path] !== after[path])
 }
 
-/** Whether a commit message carries a `No-Test-Reason:` trailer with a reason. */
+/**
+ * Whether a commit message carries a `No-Test-Reason:` trailer with a reason, read by git itself:
+ * comment lines and what follows the scissors line drop out, folded values unfold, and with the key
+ * configured a block that also holds footers such as `BREAKING CHANGE:` still counts.
+ */
 export function exempted(message) {
-  return /^No-Test-Reason:[ \t]*\S/m.test(message)
+  const trailers = execFileSync(
+    'git',
+    [
+      '-c',
+      'trailer.notestreason.key=No-Test-Reason',
+      'interpret-trailers',
+      '--parse',
+      '--no-divider',
+    ],
+    { input: message, encoding: 'utf8' },
+  )
+  return /^No-Test-Reason:[ \t]*\S/im.test(trailers)
 }
 
-const raw = (...args) => execFileSync('git', args, { encoding: 'utf8' })
-const git = (...args) => raw(...args).trim()
 const lines = (output) => (output ? output.split('\n') : [])
-const workingTree = () => parseStatus(raw('status', '--porcelain', '--untracked-files=all'))
 
-/** The changed files of the working tree, by path, with a hash of their content or 'deleted'. */
-function snapshot() {
-  const root = git('rev-parse', '--show-toplevel')
-  return Object.fromEntries(
-    workingTree().map(({ path, deleted }) => {
-      const file = join(root, path)
-      return [path, deleted || !existsSync(file) ? 'deleted' : git('hash-object', file)]
-    }),
-  )
+/** Git in the repository that holds `cwd`. */
+function repository(cwd) {
+  const raw = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' })
+  const git = (...args) => raw(...args).trim()
+  let top
+  const root = () => (top ??= git('rev-parse', '--show-toplevel'))
+  // Without optional locks, a hook never takes the index lock from a git command running beside it.
+  const status = () =>
+    parseStatus(raw('--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all'))
+  const weigh = (changes) => weighTests(changes, (path) => readFileSync(join(root(), path), 'utf8'))
+  const workingTree = () => weigh(status())
+
+  /**
+   * The changed files, by path, with a hash of their content; 'none' for one that is gone or is no
+   * file, such as a nested repository.
+   */
+  function snapshot(changes) {
+    const files = changes
+      .map(({ path }) => path)
+      .filter((path) => statSync(join(root(), path), { throwIfNoEntry: false })?.isFile())
+    const hashes =
+      files.length === 0
+        ? []
+        : execFileSync('git', ['hash-object', '--stdin-paths'], {
+            cwd,
+            encoding: 'utf8',
+            input: files.map((path) => join(root(), path)).join('\n'),
+          }).split('\n')
+    const hashOf = new Map(files.map((path, i) => [path, hashes[i]]))
+    return Object.fromEntries(changes.map(({ path }) => [path, hashOf.get(path) ?? 'none']))
+  }
+
+  /** The record of one Bash call, inside the repository: calls of one session may overlap. */
+  const snapshotFile = (event) => {
+    const id = String(event.tool_use_id ?? event.session_id ?? 'bash').replace(/\W/g, '')
+    return resolve(cwd, git('rev-parse', '--git-path', `tests-first-${id}.json`))
+  }
+
+  // While git resolves a merge, rebase, cherry-pick or revert the hooks stand aside: what the
+  // resolution adds is checked in CI, in the commit it ends up in. A rebase is in progress while
+  // its directory exists; git leaves REBASE_HEAD behind once it has finished.
+  const resolving = () =>
+    lines(
+      git(
+        'rev-parse',
+        ...[
+          'MERGE_HEAD',
+          'CHERRY_PICK_HEAD',
+          'REVERT_HEAD',
+          'rebase-merge',
+          'rebase-apply',
+        ].flatMap((name) => ['--git-path', name]),
+      ),
+    ).some((path) => existsSync(resolve(cwd, path)))
+
+  return { raw, git, status, weigh, workingTree, snapshot, snapshotFile, resolving }
 }
 
-const snapshotFile = (event) =>
-  join(
-    tmpdir(),
-    `opos-tests-first-${String(event.session_id ?? 'session').replace(/\W/g, '')}.json`,
-  )
+/** The top level of the git repository that holds `dir`, or null when no repository does. */
+function topLevel(dir) {
+  try {
+    return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    }).trim()
+  } catch (error) {
+    if (/not a git repository/.test(error.stderr)) return null
+    throw error
+  }
+}
+
+/** The checkout of this repository that holds `path`, or null: the areas hold for no other. */
+function checkoutOf(path) {
+  let dir = path
+  while (!existsSync(dir)) dir = dirname(dir)
+  const root = topLevel(statSync(dir).isDirectory() ? dir : dirname(dir))
+  return root && existsSync(join(root, 'scripts', 'tests-first.mjs')) ? root : null
+}
+
+/** The real path of `path`, resolved through its deepest existing ancestor: a new file has none. */
+function realPath(path) {
+  try {
+    return realpathSync(path)
+  } catch {
+    return join(realPath(dirname(path)), basename(path))
+  }
+}
+
+/** Runs a Claude Code hook so that a check which cannot run refuses the change it was asked about. */
+function failClosed(check) {
+  try {
+    return check()
+  } catch (error) {
+    console.error(`tests-first could not check this change, so it refuses it: ${error.message}`)
+    return 2
+  }
+}
 
 function report(missing) {
   for (const { area, files } of missing) {
@@ -144,47 +330,73 @@ function report(missing) {
   }
 }
 
-const readEvent = () => JSON.parse(readFileSync(0, 'utf8'))
-
-function main([mode, value]) {
+/**
+ * Runs one mode in the repository that holds `cwd`; `stdin` reads the hook event. Returns the exit
+ * code.
+ */
+export function main([mode, value], { cwd, stdin }) {
+  const readEvent = () => JSON.parse(stdin())
   if (mode === '--hook') {
-    const event = readEvent()
-    const target = event.tool_input?.file_path ?? event.tool_input?.notebook_path
-    if (!target) return 0
-    const refusal = editRefusal(
-      relative(git('rev-parse', '--show-toplevel'), target),
-      workingTree(),
-    )
-    if (!refusal) return 0
-    console.error(refusal)
-    return 2
+    return failClosed(() => {
+      const event = readEvent()
+      const target = event.tool_input?.file_path ?? event.tool_input?.notebook_path
+      if (!target) return 0
+      // The file decides the repository: the session's directory may lie anywhere.
+      const file = realPath(resolve(cwd, target))
+      const root = checkoutOf(file)
+      if (!root) return 0
+      const { workingTree, resolving } = repository(root)
+      if (resolving()) return 0
+      const refusal = editRefusal(relative(root, file), workingTree())
+      if (!refusal) return 0
+      console.error(refusal)
+      return 2
+    })
   }
+  if ((mode === '--before-bash' || mode === '--after-bash') && !checkoutOf(cwd)) return 0
+  const { raw, git, status, weigh, snapshot, snapshotFile, resolving } = repository(cwd)
   if (mode === '--before-bash') {
-    writeFileSync(snapshotFile(readEvent()), JSON.stringify(snapshot()))
+    const file = snapshotFile(readEvent())
+    // A call that is denied never reaches --after-bash: its record goes once it is an hour old.
+    for (const name of readdirSync(dirname(file))) {
+      const record = join(dirname(file), name)
+      if (
+        /^tests-first-.+\.json$/.test(name) &&
+        Date.now() - statSync(record).mtimeMs > 3_600_000
+      ) {
+        rmSync(record)
+      }
+    }
+    writeFileSync(file, JSON.stringify(snapshot(status())))
     return 0
   }
   if (mode === '--after-bash') {
-    const file = snapshotFile(readEvent())
-    if (!existsSync(file)) return 0
-    const before = JSON.parse(readFileSync(file, 'utf8'))
-    rmSync(file)
-    const changed = touched(before, snapshot()).filter((path) => areaOf(path))
-    const missing = missingTests(workingTree()).filter(({ files }) =>
-      files.some((path) => changed.includes(path)),
-    )
-    if (missing.length === 0) return 0
-    console.error('The command changed RLS or RBAC code while no test of its area has changed:')
-    report(missing)
-    console.error(
-      'Revert it, or write the test first and watch it fail (AGENTS.md, "Tests first for RLS and RBAC").',
-    )
-    return 2
+    return failClosed(() => {
+      const file = snapshotFile(readEvent())
+      // Without the record of --before-bash, every changed file counts as the command's.
+      const before = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}
+      rmSync(file, { force: true })
+      if (resolving()) return 0
+      const after = status()
+      const changed = touched(before, snapshot(after)).filter((path) => areaOf(path))
+      const missing = missingTests(weigh(after)).filter(({ files }) =>
+        files.some((path) => changed.includes(path)),
+      )
+      if (missing.length === 0) return 0
+      console.error('The command changed code while no test of its area has changed:')
+      report(missing)
+      console.error(
+        'Revert it, or write the test first and watch it fail (AGENTS.md, "Tests first").',
+      )
+      return 2
+    })
   }
   if (mode === '--commit-msg') {
-    // A merge brings commits checked on their own branch; CI skips merges the same way.
-    if (existsSync(git('rev-parse', '--git-path', 'MERGE_HEAD'))) return 0
-    if (exempted(readFileSync(value, 'utf8'))) return 0
-    const missing = missingTests(parseNameStatus(raw('diff', '--cached', '--name-status')))
+    // A merge brings commits checked on their own branch; CI checks what the merge adds.
+    if (existsSync(resolve(cwd, git('rev-parse', '--git-path', 'MERGE_HEAD')))) return 0
+    if (exempted(readFileSync(resolve(cwd, value), 'utf8'))) return 0
+    const staged = parseNameStatus(raw('diff', '--cached', '--name-status', '-z'))
+    const missing = missingTests(weighTests(staged, (path) => raw('show', `:${path}`)))
     if (missing.length === 0) return 0
     report(missing)
     console.error(
@@ -193,15 +405,24 @@ function main([mode, value]) {
     return 1
   }
   if (mode === '--base') {
-    const unexempted = lines(git('rev-list', '--no-merges', `${value}..HEAD`)).filter(
-      (commit) => !exempted(git('log', '-1', '--format=%B', commit)),
-    )
-    const changes = unexempted.flatMap((commit) =>
-      parseNameStatus(raw('diff-tree', '--no-commit-id', '--name-status', '-r', commit)),
-    )
-    const missing = missingTests(changes)
-    if (missing.length === 0) return 0
-    report(missing)
+    // Each commit carries its own test: a test in a later commit covers nothing before it. A
+    // merge counts by what it adds beyond merging its parents, a conflict resolution included.
+    const failing = lines(git('rev-list', '--reverse', `${value}..HEAD`)).flatMap((commit) => {
+      if (exempted(git('log', '-1', '--format=%B', commit))) return []
+      const merge = git('rev-list', '--parents', '-n', '1', commit).split(' ').length > 2
+      const changes = parseNameStatus(
+        merge
+          ? raw('log', '-1', '--remerge-diff', '--name-status', '-z', '--format=', commit)
+          : raw('diff-tree', '--no-commit-id', '--name-status', '-z', '-r', commit),
+      )
+      const missing = missingTests(weighTests(changes, (path) => raw('show', `${commit}:${path}`)))
+      return missing.length > 0 ? [{ commit, missing }] : []
+    })
+    if (failing.length === 0) return 0
+    for (const { commit, missing } of failing) {
+      console.error(git('log', '-1', '--format=%H %s', commit).replace(/^(\w{12})\w+/, '$1'))
+      report(missing)
+    }
     console.error(
       'Add the test, or state why none applies with a `No-Test-Reason: <reason>` trailer in the commit message.',
     )
@@ -213,6 +434,12 @@ function main([mode, value]) {
   return 64
 }
 
+/* node:coverage ignore next 8 */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  process.exitCode = main(process.argv.slice(2))
+  // The Claude Code hooks look at the project, whatever directory the session is in.
+  const hook = ['--hook', '--before-bash', '--after-bash'].includes(process.argv[2])
+  process.exitCode = main(process.argv.slice(2), {
+    cwd: (hook && process.env.CLAUDE_PROJECT_DIR) || process.cwd(),
+    stdin: () => readFileSync(0, 'utf8'),
+  })
 }

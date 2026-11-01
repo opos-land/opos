@@ -167,7 +167,7 @@ opos/
   .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers, the
                               #   tests-first hooks in settings.json (AGENTS.md); still to come: the
                               #   BFF boundary hook (3.2)
-  scripts/                    # built: tests-first.mjs, the RLS and RBAC test-first check, and its
+  scripts/                    # built: tests-first.mjs, the test-first check of every change, and its
                               #   test; still to come: bff-boundary.mjs, infra-init.mjs (12),
                               #   supabase-push.mjs and the remote block check (10), their tests
   .github/workflows/deploy.yml  # the deployment to Dev and production (13)
@@ -339,11 +339,16 @@ their production bundles nothing names Supabase:
 | an address on `supabase.co`, `supabase.in` or `supabase.com`, and the local stack's `:54321` | a request that bypasses the API |
 | a `sb_publishable_` or `sb_secret_` key, a JWT, a `VITE_*` variable whose name contains `SUPABASE` | a key in a bundle is a key for everyone |
 
-`scripts/bff-boundary.mjs` holds these rules and enforces them where
-the tests-first check runs: a Claude Code hook after every `Edit`, `Write` and `Bash` that touches
-the two applications ([.claude/settings.json](../.claude/settings.json)), lefthook `pre-commit` on the
-staged files, and CI on every PR, where it also scans `dist/` of both builds. The `react` preset
-adds the import rule as `no-restricted-imports`, so the editor shows it as well. The one place a
+The `react` ESLint preset refuses an import of `@supabase/*`, static or dynamic, in every script
+file ([react.js](../packages/eslint-config/react.js)), so the editor, lefthook `pre-commit` and the
+`lint` task in CI show it. The files that still hold the `@supabase/auth-js` client are listed in
+each application's `eslint.config.js` ([panel](../apps/panel/eslint.config.js),
+[portal](../apps/portal/eslint.config.js)) and may import that package alone; nothing joins the
+list, and the move of sign-in to the API empties it. Still to be built: `scripts/bff-boundary.mjs`, which holds all the rules of the
+table and enforces them where the tests-first check runs — a Claude Code hook after every `Edit`,
+`Write` and `Bash` that touches the two applications
+([.claude/settings.json](../.claude/settings.json)), lefthook `pre-commit` on the staged files, and
+CI on every PR, where it also scans `dist/` of both builds. The one place a
 Supabase address reaches a browser is the redirect of Google sign-in, sent by the API
 ([7.5](#75-google-oauth)); it is never written in a frontend.
 
@@ -2174,8 +2179,8 @@ and commented with the advisory id. The override leaves once the parent ships th
 ### Git hooks
 
 [lefthook.yml](../lefthook.yml), installed by `prepare`, so `pnpm install` is enough: prettier,
-`eslint --fix` and the [BFF boundary check](#32-frontend-application-layout) on staged files before
-a commit, commitlint and the [tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) on the
+`eslint --fix` and, once built, the [BFF boundary check](#32-frontend-application-layout) on staged files before
+a commit, commitlint and the [tests-first check](../AGENTS.md#tests-first) on the
 message, and `turbo run typecheck test` on the packages changed against `origin/develop` before a
 push (the API tests need `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
@@ -2600,11 +2605,14 @@ run with `--affected` against the PR base branch; a push to `develop` or `main` 
 package and fills the turbo cache that PRs restore. `pnpm build` then bundles the API, and the job
 starts `dist/main.js` with `NODE_ENV=production` against the same stack: `/health` must answer
 `200`. The tests run the sources; this step runs the bundle that production runs. The
-[BFF boundary check](#32-frontend-application-layout) runs on every PR over the sources and over
-`dist/` of the panel and the portal.
+[BFF boundary check](#32-frontend-application-layout), once built, runs on every PR over the sources
+and over `dist/` of the panel and the portal.
 `pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR, and so do
-`pnpm test:scripts` (the root `scripts/`, on `node --test`) and, on a PR only, the
-[tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) over the PR's commits.
+`pnpm test:scripts` (the tests of the root `scripts/` and of `.claude/`, on `node --test`; it fails
+below full line, branch and function coverage of the root scripts, each imported by a test beside
+it) and, on a PR into any branch but `main`, the
+[tests-first check](../AGENTS.md#tests-first) on each of the PR's commits; a PR into `main` brings
+commits already checked on their way into `develop`.
 
 A push to `develop` deploys Dev and a push to `main` production, through the deploy workflow
 ([13](#deployment-procedure)), once `check` has passed on that commit.
@@ -2714,6 +2722,7 @@ for `opos.land`. Production runs the items marked **(production)**, on a smoke t
    ([3.2](#32-frontend-application-layout)).
 7. **Repository conventions** — Conventional Commits, English everywhere except the `pl` catalog,
    no emoji, no AI-generated graphics — are set in [AGENTS.md](../AGENTS.md).
-8. **Tests first for RLS and RBAC** — a change to tenant isolation or permissions starts with a
-   test that fails for the reason the change addresses; the areas, the enforcement and the
-   `No-Test-Reason:` exemption are in [AGENTS.md](../AGENTS.md#tests-first-for-rls-and-rbac).
+8. **Tests first** — every change of code starts with a test that fails for the reason the change
+   addresses: tenant isolation and permissions with tests in fixed places, any other code with a
+   test of its own package; the areas, the enforcement and the `No-Test-Reason:` exemption are in
+   [AGENTS.md](../AGENTS.md#tests-first).

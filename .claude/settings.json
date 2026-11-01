@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/tests-first.mjs --hook"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/tests-first.mjs --hook || exit 2"
           }
         ]
       },
@@ -26,7 +26,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/tests-first.mjs --after-bash"
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/tests-first.mjs --after-bash || exit 2"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/tests-first.mjs --after-bash || exit 2"
           }
         ]
       }

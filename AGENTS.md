@@ -193,33 +193,52 @@ JavaScript-only `packages/eslint-config`); an integration test, which needs Post
 or HTTP, goes into the `test/` directory of its package or application; an e2e test goes into the
 `e2e` package. New code with logic of its own gets a unit test in the same commit.
 
-### Tests first for RLS and RBAC
+### Tests first
 
-A change to tenant isolation or to permissions starts with its test: write or change the test, run
-it and watch it fail for the reason the change addresses, then change the code. A rule that already
-holds gets a test that passes at once — break the code on purpose once to see the test catch it,
-then restore it.
+Every change of code starts with its test: write or change the test, run it and watch it fail for
+the reason the change addresses, then change the code. A rule that already holds gets a test that
+passes at once — break the code on purpose once to see the test catch it, then restore it. Tenant
+isolation and permissions have areas of their own, with their tests in fixed places; any other
+code is covered by a test of its own package.
 
 | Area | Code | Its tests |
 |---|---|---|
 | `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client}.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
-| `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/{tenants,editions}/`, `apps/api/src/app.module.ts`, `packages/contract/src/common.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
+| `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
+| `api`, `panel`, `portal` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
+| `db`, `contract`, `i18n`, `eslint-config` | the rest of `packages/<name>/` | a `*.test.*` anywhere in the same package |
+| `scripts`, `claude` | `scripts/`, `.claude/` | a `*.test.*` in the same directory tree, run by `pnpm test:scripts` |
+| `unlisted` | code anywhere else | none: a new directory of code gets its area here and in the script first |
 
-A deleted test is no test of its area; deleted code is a change of its area.
+Code is a script or SQL file. Tests and what serves them — `test/` helpers, `fixtures/`, the whole
+`e2e` package — are not code, and neither are type declarations, the configuration files of the
+tools (`eslint`, `vite`, `vitest`, `lingui`, `drizzle`, `tsdown`, `playwright`, `commitlint`), the
+`locales/` catalogs, nor installed or built output. A file belongs to the first area that matches
+it.
+
+A deleted test is no test of its area, and neither is a test file in which no line opens with a
+call of `describe`, `it` or `test` (`.todo` and commented-out calls aside); deleted code is a change of its area, and so is a file moved out of it.
 
 [scripts/tests-first.mjs](scripts/tests-first.mjs) holds this table and enforces it three times:
 
 | Where | Refuses |
 |---|---|
-| Claude Code hooks ([.claude/settings.json](.claude/settings.json)) | an `Edit` or `Write` of an area's code while no test of that area has changed in the working tree; after a `Bash` command, it reports an area's code the command changed under the same condition |
-| lefthook `commit-msg` | a commit that stages an area's code without a test of that area |
-| CI, on a pull request | commits since the base branch that change an area's code without a test of that area; merge commits are skipped, as in lefthook |
+| Claude Code hooks ([.claude/settings.json](.claude/settings.json)) | an `Edit` or `Write` of an area's code while no test of that area has changed in the working tree; after a `Bash` command, whether it succeeded or failed, it reports an area's code the command changed under the same condition; both stand aside while git resolves a merge, rebase, cherry-pick or revert |
+| lefthook `commit-msg` | a commit that stages an area's code without a test of that area; a merge commit is left to CI |
+| CI, on a pull request into any branch but `main` | each commit since the base branch that changes an area's code without a test of that area in the same commit; a merge commit by what it adds beyond merging its parents, a conflict resolution included |
+
+The Claude Code hooks look at the checkout of this repository that holds the edited file, and a
+`Bash` command at the project's directory; a file in no checkout of it is not checked. They fail
+closed: a check that cannot run — unreadable input, git failing, a broken script — refuses the
+edit, and after a `Bash` command reports it. When a broken script
+refuses every edit, the user restores it with `! git restore scripts/tests-first.mjs`.
 
 A change that needs no test — a rename, a comment, a moved import — says why in a
-`No-Test-Reason: <reason>` trailer of its commit message; an agent the hook refuses such an edit
+`No-Test-Reason: <reason>` trailer of its commit message, read as git reads trailers — in the last
+paragraph, beside footers such as `BREAKING CHANGE:`; an agent the hook refuses such an edit
 asks the user instead of working around the hook. An amend that stages only code is refused when
-the code's test came in the commit it amends: stage the test again or add the trailer. A guarded path that moves or a new
-directory that holds RLS or RBAC code changes the table here and in the script together.
+the code's test came in the commit it amends: stage the test again or add the trailer. A path of
+an area that moves, or a new directory of code, changes the table here and in the script together.
 
 **Project skill and reviewers** in `.claude/`. The `docs-sync` skill is the procedure for every
 change to PRODUCT.md or PLAN.md, link and anchor check included. Before a PR, run the
@@ -232,7 +251,9 @@ only report; fix what they find before opening the PR.
 application; every sign-in operation goes through the API's `auth` endpoints
 ([BFF boundary](docs/PLAN.md#32-frontend-application-layout)). Until the move of sign-in to the API
 is built, the existing `@supabase/auth-js` clients of the two applications are the only exception,
-and nothing new is built on them.
+and nothing new is built on them: the `react` ESLint preset refuses any other import of
+`@supabase/*`, static or dynamic, and the files of the exception, listed in each application's
+`eslint.config.js`, may import `@supabase/auth-js` alone.
 
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`,
 and no remote database URL, Supabase project reference or access token in a `.env` or

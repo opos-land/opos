@@ -1,6 +1,13 @@
-import { accountApi } from '../../../shared/lib/api'
+import { accountApi, tenantApi } from '../../../shared/lib/api'
 
 // The convention pages' routes (PLAN.md 5.7), which need no sign-in.
+
+/** Every convention page query, whose like counts a like changes. */
+export const publicKey = () => accountApi.public.key()
+
+export const likeOptions = (slug: string) => tenantApi(slug).engagement.like.mutationOptions()
+
+export const unlikeOptions = (slug: string) => tenantApi(slug).engagement.unlike.mutationOptions()
 
 export const conventionOptions = (slug: string) =>
   accountApi.public.tenant.queryOptions({ input: { params: { slug } } })

@@ -206,7 +206,7 @@ opos/
                          #   query client), features landing, auth, account, shared/ (API link,
                          #   auth client, session, i18n, UI), .env.example, tests (9); the auth
                          #   client gives way to the API's auth endpoints (5.1)
-      src/features/      # still to come: attendances, schedule, speaking, tickets
+      src/features/      # still to come: attendances, speaking, tickets
       Dockerfile
   e2e/                   # built: Playwright config, fixtures (stack, Mailpit, admin API, tenants,
                          #   sign-in) with their unit tests, specs (15.2)
@@ -1720,12 +1720,12 @@ SPA (Vite + React) in [apps/portal](../apps/portal), built like the panel ([8](#
 for a 360 px wide viewport first and works up to desktop: one column, controls at least 44 px tall,
 form fields with 16 px text so a phone browser does not zoom into them, no horizontal scrolling.
 
-Built: the features `landing`, `auth`, `account` and `conventions` with their screens below; the
-routes are in [router.tsx](../apps/portal/src/app/router.tsx) and the frame of every screen (the
+Built: the features `landing`, `auth`, `account`, `conventions` and `schedule` with their screens
+below; the routes are in [router.tsx](../apps/portal/src/app/router.tsx) and the frame of every screen (the
 platform's name, the way to the account or to sign-in, the privacy policy in the footer) in
 [layout.tsx](../apps/portal/src/app/layout.tsx). Still to be built: on the convention pages the
-"Sign up" button, the like button, ratings, comments and the review form, which wait for their
-modules; `attendances`, `schedule`, `speaking`, `tickets` and their screens, which wait for their modules in the API, the
+"Sign up" button, ratings, comments and the review form, which wait for their modules;
+`attendances`, `speaking`, `tickets` and their screens, which wait for their modules in the API, the
 image with its headers ([13](#13-deployment)), and the move of `auth` and `account` from
 `@supabase/auth-js` to the API's `auth` endpoints ([5.1](#51-auth--sign-in-through-the-api)),
 which the bullets below describe.
@@ -2603,7 +2603,7 @@ never changes a seeded account's password, which ends every other session of the
 | 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request | [permissions](../e2e/specs/permissions.spec.ts) |
 | 9 | An attendee signs up for an edition from the convention's page, sees it under "my conventions", deletes the account; the last head of a convention is told to hand the role over instead | [account-deletion](../e2e/specs/account-deletion.spec.ts); the edition sign-up comes with the `attendances` feature |
 | 10 | Password reset: request from the sign-in screen, the link from Mailpit sets a new password, the old session can no longer refresh | [password-reset](../e2e/specs/password-reset.spec.ts) |
-| 11 | An attendee likes items, finds them in the personal schedule, reviews a past item anonymously with a speakers-only comment; the speaker sees it under "my programme items"; an org hides another review in the panel and the public rating changes | still to come, with the `program`, `conventions`, `schedule` and `speaking` features |
+| 11 | An attendee likes items, finds them in the personal schedule, reviews a past item anonymously with a speakers-only comment; the speaker sees it under "my programme items"; an org hides another review in the panel and the public rating changes | [schedule](../e2e/specs/schedule.spec.ts) up to the personal schedule; the reviews still to come, with the `speaking` feature |
 | 12 | An org whose membership has expired signs in to the panel and sees no convention | [permissions](../e2e/specs/permissions.spec.ts) |
 | 13 | A visitor without an account buys two tickets through the fake provider; the email in Mailpit has two QR codes; registering with the same address shows both under "my tickets" | still to come, with the `tickets` features of the panel and the portal |
 | 14 | An org pairs the scanner from the panel, enters a ticket code by hand, sees the whole order, redeems one ticket; the next lookup shows it as used | still to come, with the `scanner` feature |

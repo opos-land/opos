@@ -7,11 +7,17 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProgramItemPage } from './program-item-page'
 
-const api = vi.hoisted(() => ({ convention: vi.fn(), item: vi.fn() }))
+const api = vi.hoisted(() => ({ convention: vi.fn(), item: vi.fn(), edition: vi.fn() }))
 
 vi.mock('../api/conventions', () => ({
   conventionOptions: () => ({ queryKey: ['convention'], queryFn: api.convention }),
   programItemOptions: () => ({ queryKey: ['item'], queryFn: api.item }),
+  editionOptions: () => ({ queryKey: ['edition'], queryFn: api.edition }),
+}))
+vi.mock('../components/like-button', () => ({
+  LikeButton: ({ editionId, ended }: { editionId: string; ended: boolean }) => (
+    <p>{`like in ${editionId}, ${ended ? 'ended' : 'open'}`}</p>
+  ),
 }))
 
 const panel = {
@@ -57,6 +63,10 @@ beforeEach(() => {
     timezone: 'Europe/Warsaw',
   })
   api.item.mockReset().mockResolvedValue(panel)
+  api.edition.mockReset().mockResolvedValue({
+    id: 'edition-1',
+    endsAt: new Date(Date.now() + 86_400_000).toISOString(),
+  })
 })
 
 afterEach(cleanup)
@@ -84,6 +94,19 @@ describe('ProgramItemPage', () => {
     await screen.findByRole('heading', { name: 'A panel on maps', level: 1 })
     expect(mentions('June 2, 2027')).toBe(1)
     expect(mentions('June 3, 2027')).toBe(1)
+  })
+
+  it('offers the like of an edition still running, and says when it has ended', async () => {
+    view()
+    expect(await screen.findByText('like in edition-1, open')).toBeDefined()
+    cleanup()
+
+    api.edition.mockResolvedValue({
+      id: 'edition-1',
+      endsAt: new Date(Date.now() - 1000).toISOString(),
+    })
+    view()
+    expect(await screen.findByText('like in edition-1, ended')).toBeDefined()
   })
 
   it('names every speaker with the plural label', async () => {

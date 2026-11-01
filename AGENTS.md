@@ -193,17 +193,28 @@ JavaScript-only `packages/eslint-config`); an integration test, which needs Post
 or HTTP, goes into the `test/` directory of its package or application; an e2e test goes into the
 `e2e` package. New code with logic of its own gets a unit test in the same commit.
 
-### Tests first for RLS and RBAC
+### Tests first
 
-A change to tenant isolation or to permissions starts with its test: write or change the test, run
-it and watch it fail for the reason the change addresses, then change the code. A rule that already
-holds gets a test that passes at once — break the code on purpose once to see the test catch it,
-then restore it.
+Every change of code starts with its test: write or change the test, run it and watch it fail for
+the reason the change addresses, then change the code. A rule that already holds gets a test that
+passes at once — break the code on purpose once to see the test catch it, then restore it. Tenant
+isolation and permissions have areas of their own, with their tests in fixed places; any other
+code is covered by a test of its own package.
 
 | Area | Code | Its tests |
 |---|---|---|
 | `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client}.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
 | `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
+| `api`, `panel`, `portal` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
+| `db`, `contract`, `i18n`, `eslint-config` | the rest of `packages/<name>/` | a `*.test.*` anywhere in the same package |
+| `scripts`, `claude` | `scripts/`, `.claude/` | a `*.test.mjs` in the same directory tree |
+| `unlisted` | code anywhere else | none: a new directory of code gets its area here and in the script first |
+
+Code is a script or SQL file. Tests and what serves them — `test/` helpers, `fixtures/`, the whole
+`e2e` package — are not code, and neither are type declarations, the configuration files of the
+tools (`eslint`, `vite`, `vitest`, `lingui`, `drizzle`, `tsdown`, `playwright`, `commitlint`), the
+`locales/` catalogs, nor installed or built output. A file belongs to the first area that matches
+it.
 
 A deleted test is no test of its area, and neither is a test file that holds no call of
 `describe`, `it` or `test`; deleted code is a change of its area, and so is a file moved out of it.
@@ -223,8 +234,8 @@ refuses every edit, the user restores it with `! git restore scripts/tests-first
 A change that needs no test — a rename, a comment, a moved import — says why in a
 `No-Test-Reason: <reason>` trailer of its commit message; an agent the hook refuses such an edit
 asks the user instead of working around the hook. An amend that stages only code is refused when
-the code's test came in the commit it amends: stage the test again or add the trailer. A guarded path that moves or a new
-directory that holds RLS or RBAC code changes the table here and in the script together.
+the code's test came in the commit it amends: stage the test again or add the trailer. A path of
+an area that moves, or a new directory of code, changes the table here and in the script together.
 
 **Project skill and reviewers** in `.claude/`. The `docs-sync` skill is the procedure for every
 change to PRODUCT.md or PLAN.md, link and anchor check included. Before a PR, run the

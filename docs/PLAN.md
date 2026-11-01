@@ -167,7 +167,7 @@ opos/
   .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers, the
                               #   tests-first hooks in settings.json (AGENTS.md); still to come: the
                               #   BFF boundary hook (3.2)
-  scripts/                    # built: tests-first.mjs, the RLS and RBAC test-first check, and its
+  scripts/                    # built: tests-first.mjs, the test-first check of every change, and its
                               #   test; still to come: bff-boundary.mjs, infra-init.mjs (12),
                               #   supabase-push.mjs and the remote block check (10), their tests
   .github/workflows/deploy.yml  # the deployment to Dev and production (13)
@@ -2175,7 +2175,7 @@ and commented with the advisory id. The override leaves once the parent ships th
 
 [lefthook.yml](../lefthook.yml), installed by `prepare`, so `pnpm install` is enough: prettier,
 `eslint --fix` and the [BFF boundary check](#32-frontend-application-layout) on staged files before
-a commit, commitlint and the [tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) on the
+a commit, commitlint and the [tests-first check](../AGENTS.md#tests-first) on the
 message, and `turbo run typecheck test` on the packages changed against `origin/develop` before a
 push (the API tests need `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
@@ -2604,7 +2604,7 @@ starts `dist/main.js` with `NODE_ENV=production` against the same stack: `/healt
 `dist/` of the panel and the portal.
 `pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR, and so do
 `pnpm test:scripts` (the root `scripts/`, on `node --test`) and, on a PR only, the
-[tests-first check](../AGENTS.md#tests-first-for-rls-and-rbac) on each of the PR's commits.
+[tests-first check](../AGENTS.md#tests-first) on each of the PR's commits.
 
 A push to `develop` deploys Dev and a push to `main` production, through the deploy workflow
 ([13](#deployment-procedure)), once `check` has passed on that commit.
@@ -2714,6 +2714,7 @@ for `opos.land`. Production runs the items marked **(production)**, on a smoke t
    ([3.2](#32-frontend-application-layout)).
 7. **Repository conventions** — Conventional Commits, English everywhere except the `pl` catalog,
    no emoji, no AI-generated graphics — are set in [AGENTS.md](../AGENTS.md).
-8. **Tests first for RLS and RBAC** — a change to tenant isolation or permissions starts with a
-   test that fails for the reason the change addresses; the areas, the enforcement and the
-   `No-Test-Reason:` exemption are in [AGENTS.md](../AGENTS.md#tests-first-for-rls-and-rbac).
+8. **Tests first** — every change of code starts with a test that fails for the reason the change
+   addresses: tenant isolation and permissions with tests in fixed places, any other code with a
+   test of its own package; the areas, the enforcement and the `No-Test-Reason:` exemption are in
+   [AGENTS.md](../AGENTS.md#tests-first).

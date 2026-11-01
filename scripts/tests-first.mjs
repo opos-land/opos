@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// A change to tenant isolation (rls) or to permissions and tenant context (rbac) starts with a
-// test of its area (AGENTS.md, "Tests first for RLS and RBAC").
+// A change of code starts with a test of its area (AGENTS.md, "Tests first"): tenant isolation
+// (rls) and permissions and tenant context (rbac) with tests in fixed places, any other code with
+// a test of its own package.
 //
-//   --hook               Claude Code PreToolUse hook for Edit and Write: refuses an edit of a
-//                        guarded file while no test of its area has changed in the working tree
+//   --hook               Claude Code PreToolUse hook for Edit and Write: refuses an edit of an
+//                        area's code while no test of that area has changed in the working tree
 //   --before-bash        Claude Code PreToolUse hook for Bash: records the changed files' contents
-//   --after-bash         Claude Code PostToolUse hook for Bash: reports a guarded file the command
-//                        changed while no test of its area has changed in the working tree
+//   --after-bash         Claude Code PostToolUse hook for Bash: reports an area's code the command
+//                        changed while no test of that area has changed in the working tree
 //   --commit-msg <file>  lefthook commit-msg: the staged files carry a test of each changed area
 //   --base <ref>         CI: each commit since <ref> carries a test of each area it changes; a
 //                        merge, of each area it changes beyond merging its parents
@@ -18,7 +19,32 @@ import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'n
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const isTest = (path) => /\.test\.[cm]?[jt]sx?$/.test(path)
+const isTest = (path) => /\.(test|spec)\.[cm]?[jt]sx?$/.test(path)
+
+/**
+ * Whether a path is code: a script or SQL, but no type declaration, tool configuration, test
+ * helper or fixture, the e2e package, a catalog, installed or built output, or a file outside the
+ * repository.
+ */
+const isCode = (path) =>
+  /\.([cm]?[jt]sx?|sql)$/.test(path) &&
+  !/\.d\.[cm]?ts$/.test(path) &&
+  !/(^|\/)(eslint|vite|vitest|lingui|drizzle|tsdown|playwright|commitlint)\.config(\.\w+)?\.[cm]?[jt]s$/.test(
+    path,
+  ) &&
+  !/(^|\/)(test|fixtures|locales|node_modules|dist|build|coverage|\.turbo)\//.test(path) &&
+  !/^(e2e\/|\.\.\/|\/)/.test(path)
+
+/** Any other code of a package, covered by a test anywhere in the same package. */
+const packageArea = (name, dir) => {
+  const prefix = dir.replaceAll('.', '\\.')
+  return {
+    name,
+    code: [new RegExp(`^${prefix}/`)],
+    tests: [new RegExp(`^${prefix}/.+\\.test\\.[cm]?[jt]sx?$`)],
+    where: dir,
+  }
+}
 
 const areas = [
   {
@@ -45,6 +71,17 @@ const areas = [
     tests: [/^apps\/api\/test\/.+\.test\.ts$/, /^apps\/api\/src\/.+\.test\.ts$/],
     where: 'apps/api/test or a *.test.ts beside the code',
   },
+  packageArea('api', 'apps/api'),
+  packageArea('panel', 'apps/panel'),
+  packageArea('portal', 'apps/portal'),
+  packageArea('db', 'packages/db'),
+  packageArea('contract', 'packages/contract'),
+  packageArea('i18n', 'packages/i18n'),
+  packageArea('eslint-config', 'packages/eslint-config'),
+  packageArea('scripts', 'scripts'),
+  packageArea('claude', '.claude'),
+  // Code anywhere else waits for an area of its own, here and in AGENTS.md.
+  { name: 'unlisted', code: [/^/], tests: [], where: 'an area of its own' },
 ]
 
 /** A changed file; a path alone is a file that still exists. */
@@ -81,10 +118,10 @@ function weighTests(changes, read) {
   )
 }
 
-/** The guarded area a path belongs to, or null; a test file belongs to none. */
+/** The first area whose code matches a path, or null for a test or a file that is not code. */
 export function areaOf(path) {
-  if (isTest(path)) return null
-  return areas.find((area) => area.code.some((pattern) => pattern.test(path)))?.name ?? null
+  if (isTest(path) || !isCode(path)) return null
+  return areas.find((area) => area.code.some((pattern) => pattern.test(path))).name
 }
 
 /** The areas changed without a test of their own, with the files that changed, deleted included. */
@@ -102,7 +139,10 @@ export function editRefusal(path, changes) {
   if (!name) return null
   const area = areas.find((candidate) => candidate.name === name)
   if (testedIn(area, changes)) return null
-  return `${path} is ${name} code: write or change its test first, in ${area.where}, and watch it fail (AGENTS.md, "Tests first for RLS and RBAC"). If the change needs no test, ask the user.`
+  if (name === 'unlisted') {
+    return `${path} is code outside every area: add its area to scripts/tests-first.mjs and to the table in AGENTS.md ("Tests first") before writing it.`
+  }
+  return `${path} is ${name} code: write or change its test first, in ${area.where}, and watch it fail (AGENTS.md, "Tests first"). If the change needs no test, ask the user.`
 }
 
 /**
@@ -273,10 +313,10 @@ export function main(
         files.some((path) => changed.includes(path)),
       )
       if (missing.length === 0) return 0
-      console.error('The command changed RLS or RBAC code while no test of its area has changed:')
+      console.error('The command changed code while no test of its area has changed:')
       report(missing)
       console.error(
-        'Revert it, or write the test first and watch it fail (AGENTS.md, "Tests first for RLS and RBAC").',
+        'Revert it, or write the test first and watch it fail (AGENTS.md, "Tests first").',
       )
       return 2
     })

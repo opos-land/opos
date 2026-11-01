@@ -134,14 +134,58 @@ describe('areaOf', () => {
     }
   })
 
-  it('leaves tests and everything else outside both areas', () => {
+  it('puts any other code in the area of its package', () => {
+    for (const [path, area] of [
+      ['apps/api/src/modules/mail/smtp.ts', 'api'],
+      ['apps/api/src/main.ts', 'api'],
+      ['apps/api/src/common/errors/api-error.ts', 'api'],
+      ['apps/panel/src/app/router.tsx', 'panel'],
+      ['apps/panel/env.config.ts', 'panel'],
+      ['apps/portal/src/features/auth/api/auth.ts', 'portal'],
+      ['packages/db/src/seed.ts', 'db'],
+      ['packages/contract/src/errors.ts', 'contract'],
+      ['packages/i18n/src/glossary.ts', 'i18n'],
+      ['packages/eslint-config/react.js', 'eslint-config'],
+      ['scripts/tests-first.mjs', 'scripts'],
+      ['.claude/skills/docs-sync/scripts/check-doc-links.mjs', 'claude'],
+    ]) {
+      assert.equal(areaOf(path), area, path)
+    }
+  })
+
+  it('puts code outside every package in an area that no test covers', () => {
+    for (const path of ['tools/generate.ts', 'apps/kiosk/src/main.ts']) {
+      assert.equal(areaOf(path), 'unlisted', path)
+    }
+  })
+
+  it('leaves tests, their helpers and whatever is not code outside every area', () => {
     for (const path of [
       'packages/db/test/rls.test.ts',
       'apps/api/src/modules/tenants/anti-escalation.test.ts',
-      'apps/api/src/modules/mail/smtp.ts',
-      'packages/db/src/seed.ts',
+      'e2e/specs/portal.spec.ts',
+      'apps/api/test/app.ts',
+      'packages/db/test/db.ts',
+      'e2e/fixtures/api.ts',
+      'e2e/playwright.config.ts',
+      'packages/eslint-config/fixtures/feature-app/src/app/router.ts',
+      'apps/panel/vite.config.ts',
+      'apps/api/vitest.config.ts',
+      'apps/api/eslint.config.js',
+      'apps/api/tsdown.config.ts',
+      'packages/db/drizzle.config.ts',
+      'packages/i18n/lingui.config.base.ts',
+      'commitlint.config.mjs',
+      'packages/i18n/locales/pl.d.mts',
+      'apps/panel/src/locales/pl.mjs',
+      'apps/panel/src/locales/pl.po',
+      'apps/panel/src/styles.css',
       'packages/db/drizzle/meta/_journal.json',
+      '.github/workflows/ci.yml',
       'docs/PLAN.md',
+      'apps/api/dist/main.js',
+      'node_modules/zod/index.js',
+      '../elsewhere/x.ts',
     ]) {
       assert.equal(areaOf(path), null, path)
     }
@@ -195,8 +239,24 @@ describe('missingTests', () => {
     )
   })
 
-  it('ignores a change outside both areas', () => {
-    assert.deepEqual(missingTests(['apps/panel/src/app/router.tsx']), [])
+  it('asks any other code for a test of its own package', () => {
+    assert.deepEqual(missingTests(['apps/panel/src/app/router.tsx', 'apps/portal/src/a.test.ts']), [
+      { area: 'panel', files: ['apps/panel/src/app/router.tsx'] },
+    ])
+    assert.deepEqual(
+      missingTests(['apps/panel/src/app/router.tsx', 'apps/panel/src/app/x.test.tsx']),
+      [],
+    )
+  })
+
+  it('never finds a test for unlisted code', () => {
+    assert.deepEqual(missingTests(['tools/generate.ts', 'tools/generate.test.ts']), [
+      { area: 'unlisted', files: ['tools/generate.ts'] },
+    ])
+  })
+
+  it('ignores a change that is not code', () => {
+    assert.deepEqual(missingTests(['docs/PLAN.md', 'apps/panel/src/locales/pl.po']), [])
   })
 })
 
@@ -213,9 +273,21 @@ describe('editRefusal', () => {
     )
   })
 
-  it('allows editing a test, and a file outside both areas', () => {
+  it('allows editing a test, and a file that is not code', () => {
     assert.equal(editRefusal('packages/db/test/rls.test.ts', []), null)
-    assert.equal(editRefusal('apps/api/src/modules/mail/smtp.ts', []), null)
+    assert.equal(editRefusal('docs/PLAN.md', []), null)
+  })
+
+  it('refuses any other code before a test of its package changed', () => {
+    assert.match(editRefusal('apps/api/src/modules/mail/smtp.ts', []) ?? '', /apps\/api/)
+    assert.equal(
+      editRefusal('apps/api/src/modules/mail/smtp.ts', ['apps/api/test/a.test.ts']),
+      null,
+    )
+  })
+
+  it('refuses unlisted code until it has an area', () => {
+    assert.match(editRefusal('tools/generate.ts', []) ?? '', /outside every area/)
   })
 })
 

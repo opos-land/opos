@@ -1,6 +1,6 @@
 import { SUPPORTED_LOCALES } from '@opos/i18n'
 import { z } from 'zod'
-import { accountRoute, level } from './common'
+import { accountRoute, level, timestamp } from './common'
 
 const name = z.string().trim().min(1).max(100)
 
@@ -47,6 +47,18 @@ export const membershipSchema = z.object({
 
 export type Membership = z.infer<typeof membershipSchema>
 
+/** A liked programme item and where it takes place, in the time zone of its convention. */
+export const scheduleItemSchema = z.object({
+  id: z.uuid(),
+  title: z.string(),
+  startsAt: timestamp,
+  endsAt: timestamp,
+  edition: z.object({ slug: z.string(), name: z.string() }),
+  tenant: z.object({ slug: z.string(), name: z.string(), timezone: z.string() }),
+})
+
+export type ScheduleItem = z.infer<typeof scheduleItemSchema>
+
 export const meContract = {
   get: accountRoute
     .route({ method: 'GET', path: '/me', summary: 'The signed-in account' })
@@ -73,4 +85,11 @@ export const meContract = {
       summary: "The account's memberships in every tenant",
     })
     .output(z.array(membershipSchema)),
+  schedule: accountRoute
+    .route({
+      method: 'GET',
+      path: '/me/schedule',
+      summary: 'The liked programme items of published editions, in every tenant, by start time',
+    })
+    .output(z.array(scheduleItemSchema)),
 }

@@ -1,5 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { type Database, editionMemberships, editions, tenantMemberships, tenants } from '@opos/db'
+import {
+  type Database,
+  editionMemberships,
+  editions,
+  programItemLikes,
+  programItems,
+  tenantMemberships,
+  tenants,
+} from '@opos/db'
 import { and, asc, eq, gt, inArray, isNull, ne, notExists, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { type TenantInContext, TenantContextService } from '../als/tenant-context.service'
@@ -29,6 +37,38 @@ export class GlobalDbService {
       .from(tenants)
       .where(eq(tenants.slug, slug))
     return row
+  }
+
+  /**
+   * `GET /me/schedule`: the signed-in account's liked items in every tenant, only while their
+   * edition is published. The id comes from the request store, never from a caller.
+   */
+  async ownSchedule() {
+    const rows = await this.db
+      .select({
+        id: programItems.id,
+        title: programItems.title,
+        startsAt: programItems.startsAt,
+        endsAt: programItems.endsAt,
+        edition: { slug: editions.slug, name: editions.name },
+        tenant: { slug: tenants.slug, name: tenants.name, timezone: tenants.timezone },
+      })
+      .from(programItemLikes)
+      .innerJoin(programItems, eq(programItems.id, programItemLikes.programItemId))
+      .innerJoin(editions, eq(editions.id, programItems.editionId))
+      .innerJoin(tenants, eq(tenants.id, editions.tenantId))
+      .where(
+        and(
+          eq(programItemLikes.accountId, this.context.account().id),
+          eq(editions.isPublished, true),
+        ),
+      )
+      .orderBy(asc(programItems.startsAt), asc(programItems.title))
+    return rows.map(({ startsAt, endsAt, ...row }) => ({
+      ...row,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+    }))
   }
 
   /**

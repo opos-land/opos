@@ -24,9 +24,14 @@ export function Layout() {
           </Link>
           {status === 'ready' &&
             (session ? (
-              <Link to="/account" className={linkClass}>
-                <Trans>Account</Trans>
-              </Link>
+              <div className="flex items-center gap-4">
+                <Link to="/schedule" className={linkClass}>
+                  <Trans>My schedule</Trans>
+                </Link>
+                <Link to="/account" className={linkClass}>
+                  <Trans>Account</Trans>
+                </Link>
+              </div>
             ) : (
               <Link to="/login" className={linkClass}>
                 <Trans>Sign in</Trans>

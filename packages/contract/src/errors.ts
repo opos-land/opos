@@ -29,6 +29,7 @@ export const errorCodes = [
   'edition.active',
   'speaker.account-not-found',
   'program.too-many-items',
+  'like.edition-ended',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

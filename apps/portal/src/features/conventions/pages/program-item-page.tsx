@@ -3,15 +3,17 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
 import { isNotFound } from '../../../shared/lib/errors'
 import { ErrorMessage, linkClass, LoadingView, NotFoundView, Page } from '../../../shared/ui'
-import { conventionOptions, programItemOptions } from '../api/conventions'
+import { conventionOptions, editionOptions, programItemOptions } from '../api/conventions'
+import { LikeButton } from '../components/like-button'
 import { useConventionTime } from '../hooks/use-convention-time'
 import { speakerNames } from '../model/program-days'
 
-/** One programme item's details; likes and reviews join them with their modules (PLAN.md 9). */
+/** One programme item's details and its like; ratings and comments come with the reviews (PLAN.md 9). */
 export function ProgramItemPage() {
   const { tenantSlug = '', editionSlug = '', programItemId = '' } = useParams()
   const convention = useQuery(conventionOptions(tenantSlug))
   const item = useQuery(programItemOptions(tenantSlug, editionSlug, programItemId))
+  const edition = useQuery(editionOptions(tenantSlug, editionSlug))
   const time = useConventionTime(convention.data?.timezone ?? 'UTC')
 
   if (convention.isError || item.isError) {
@@ -42,6 +44,14 @@ export function ProgramItemPage() {
       <p className="text-muted text-sm">
         <Plural value={likes} one="# like" other="# likes" />
       </p>
+      {edition.data && (
+        <LikeButton
+          tenantSlug={tenantSlug}
+          editionId={edition.data.id}
+          programItemId={programItemId}
+          ended={new Date(edition.data.endsAt) <= new Date()}
+        />
+      )}
     </Page>
   )
 }

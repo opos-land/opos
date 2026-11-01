@@ -107,6 +107,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
   }
 
   private async check(requirement: Requirement, request: HttpRequest) {
+    if (requirement.kind === 'account') return
     const membership = this.context.membership()
     if (requirement.kind === 'tenant') {
       if (decideTenant(membership, requirement.resource, requirement.level) !== 'allow') {

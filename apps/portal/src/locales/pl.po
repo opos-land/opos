@@ -17,6 +17,10 @@ msgstr "{count, plural, one {Prelegent: {names}} few {Prelegenci: {names}} many 
 msgid "{likes, plural, one {# like} other {# likes}}"
 msgstr "{likes, plural, one {# polubienie} few {# polubienia} many {# polubień} other {# polubienia}}"
 
+#: src/features/schedule/pages/schedule-page.tsx
+msgid "{tenantName}, {editionName}"
+msgstr "{tenantName}, {editionName}"
+
 #: src/features/landing/pages/landing-page.tsx
 msgid "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
 msgstr "Konwent prowadzi swój zespół, edycje, program i sprzedaż akredytacji w panelu organizatora. Płatności za akredytacje trafiają prosto na własne konto konwentu u operatora płatności: OPOS nigdy nie przechowuje tych pieniędzy."
@@ -207,9 +211,18 @@ msgstr "Język"
 msgid "Last name"
 msgstr "Nazwisko"
 
+#: src/features/conventions/components/like-button.tsx
+msgid "Like"
+msgstr "Polub"
+
 #: src/shared/ui/messages.tsx
 msgid "Loading…"
 msgstr "Wczytywanie…"
+
+#: src/app/layout.tsx
+#: src/features/schedule/pages/schedule-page.tsx
+msgid "My schedule"
+msgstr "Mój plan"
 
 #: src/features/auth/components/new-password-form.tsx
 msgid "New password"
@@ -274,6 +287,10 @@ msgstr "Hasło"
 msgid "Privacy policy"
 msgstr "Polityka prywatności"
 
+#: src/features/conventions/components/like-button.tsx
+msgid "Remove the like"
+msgstr "Usuń polubienie"
+
 #: src/features/auth/components/new-password-form.tsx
 msgid "Repeat the password"
 msgstr "Powtórz hasło"
@@ -313,6 +330,10 @@ msgstr "Ustaw nowe hasło"
 #: src/features/landing/pages/landing-page.tsx
 msgid "Sign in"
 msgstr "Zaloguj się"
+
+#: src/features/conventions/components/like-button.tsx
+msgid "Sign in to like this item"
+msgstr "Zaloguj się, aby polubić ten punkt programu"
 
 #: src/features/account/pages/account-page.tsx
 msgid "Sign out"
@@ -410,6 +431,10 @@ msgstr "Jesteś ostatnim głównym organizatorem konwentu, a każdy konwent musi
 #: src/features/landing/pages/privacy-page.tsx
 msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
 msgstr "Konto usuwasz samodzielnie w ustawieniach konta, po ponownym potwierdzeniu, że to ty: hasłem albo przez Google. Razem z nim znikają twoje metody logowania, sesje, polubienia, opinie, zapisy na edycje i członkostwa w zespołach konwentów. Ostatni główny organizator konwentu najpierw przekazuje tę rolę, aby konwent nie został bez właściciela."
+
+#: src/features/schedule/pages/schedule-page.tsx
+msgid "You have not liked any programme items yet."
+msgstr "Nie masz jeszcze polubionych punktów programu."
 
 #: src/features/account/components/delete-account.tsx
 msgid "You signed in with Google again. Delete the account within 5 minutes."

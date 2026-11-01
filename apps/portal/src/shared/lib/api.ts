@@ -23,8 +23,8 @@ const session: ApiSession = {
   },
 }
 
-function client(): ApiClient {
-  const apiFetch = createApiFetch({ session, locale: activeLocale })
+function client(tenantSlug?: string): ApiClient {
+  const apiFetch = createApiFetch({ session, locale: activeLocale, tenantSlug })
   const link = new OpenAPILink(contract, {
     url: env.VITE_API_URL,
     fetch: (request) => apiFetch(request),
@@ -35,3 +35,15 @@ function client(): ApiClient {
 
 /** Routes outside a tenant: `me`. */
 export const accountApi: Api = createTanstackQueryUtils(client(), { path: ['account'] })
+
+const tenantApis = new Map<string, Api>()
+
+/** Routes inside one tenant: every request carries its X-Tenant-Slug. */
+export function tenantApi(slug: string): Api {
+  let api = tenantApis.get(slug)
+  if (!api) {
+    api = createTanstackQueryUtils(client(slug), { path: ['tenant', slug] })
+    tenantApis.set(slug, api)
+  }
+  return api
+}

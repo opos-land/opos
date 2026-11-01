@@ -1,6 +1,7 @@
 export { signInWithPassword, signOut } from './api/auth'
 export { GoogleButton } from './components/google-button'
 export { RequireSession } from './components/require-session'
+export { loginPath } from './model/redirect'
 export { AuthCallbackPage } from './pages/auth-callback-page'
 export { ForgotPasswordPage } from './pages/forgot-password-page'
 export { LoginPage } from './pages/login-page'

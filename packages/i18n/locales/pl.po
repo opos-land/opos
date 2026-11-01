@@ -288,6 +288,10 @@ msgid "This convention is being changed right now. Try again in a moment."
 msgstr "Ten konwent jest właśnie zmieniany. Spróbuj ponownie za chwilę."
 
 #: src/errors.ts
+msgid "This edition has ended, so its programme items take no new likes."
+msgstr "Ta edycja już się skończyła, więc nie można polubić jej punktów programu."
+
+#: src/errors.ts
 msgid "This edition has reached the limit of programme items: {limit}."
 msgstr "Ta edycja osiągnęła limit punktów programu: {limit}."
 

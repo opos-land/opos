@@ -10,6 +10,7 @@ import {
 } from '../features/auth'
 import { ConventionPage, EditionPage, ProgramItemPage } from '../features/conventions'
 import { LandingPage, PrivacyPage } from '../features/landing'
+import { SchedulePage } from '../features/schedule'
 import { NotFoundView } from '../shared/ui'
 import { Layout } from './layout'
 
@@ -30,6 +31,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireSession>
             <AccountPage />
+          </RequireSession>
+        ),
+      },
+      {
+        path: '/schedule',
+        element: (
+          <RequireSession>
+            <SchedulePage />
           </RequireSession>
         ),
       },

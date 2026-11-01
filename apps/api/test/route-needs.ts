@@ -4,11 +4,14 @@
 
 export type Level = 'read' | 'write'
 export type Need =
+  /** Signed in, with or without a place in the team. */
+  | { scope: 'account' }
   | { scope: 'member' }
   | { scope: 'tenant'; resource: 'settings' | 'branding' | 'shop'; level: Level }
   | { scope: 'edition'; resource: 'program' | 'websiteContent' | 'tickets'; level: Level }
 
 const anyMember: Need = { scope: 'member' }
+const anyAccount: Need = { scope: 'account' }
 const settings = (level: Level): Need => ({ scope: 'tenant', resource: 'settings', level })
 const program = (level: Level): Need => ({ scope: 'edition', resource: 'program', level })
 
@@ -34,4 +37,6 @@ export const tenantRequirements: Record<string, Need> = {
   'program.update': program('write'),
   'program.remove': program('write'),
   'program.speakers.put': program('write'),
+  'engagement.like': anyAccount,
+  'engagement.unlike': anyAccount,
 }

@@ -81,6 +81,15 @@ export async function createEdition(tenantId: string, values: { isActive?: boole
   return edition!.id
 }
 
+export async function createProgramItem(tenantId: string, editionId: string) {
+  const [item] = await migrator<{ id: string }[]>`
+    insert into program_items (tenant_id, edition_id, title, starts_at, ends_at)
+    values (${tenantId}, ${editionId}, 'Item', '2026-06-01 10:00Z', '2026-06-01 11:00Z')
+    returning id
+  `
+  return item!.id
+}
+
 export const inTenant = <T>(tenantId: string, run: (sql: postgres.TransactionSql) => Promise<T>) =>
   app.begin(async (sql) => {
     await sql`select set_config('app.tenant_id', ${tenantId}, true)`

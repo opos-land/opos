@@ -224,9 +224,6 @@ opos/
       src/
         scripts/roles.ts # db:roles, the OPOS roles and their grants (4.6)
         schema/          # one file per table (4); still to come:
-          program-items.ts
-          program-item-speakers.ts
-          program-item-likes.ts
           program-item-reviews.ts
           tenant-payment-configs.ts
           ticket-types.ts
@@ -493,23 +490,22 @@ is after `startsAt`, and `isActive` and `isPublished` start as `false`.
 — the edition-level permissions (`programAccess`, `websiteContentAccess`, `ticketsAccess`) of one
 `tenant_membership` in one edition.
 
-**`program_items`** — `tenantId`, `editionId` (FK cascade), `title`, `description` (nullable),
-`startsAt`, `endsAt`. Unique `(id, tenantId)`. Index `(tenantId, editionId, startsAt)`.
+**`program_items`** ([program-items.ts](../packages/db/src/schema/program-items.ts)) — belongs to an
+edition of its own tenant (composite foreign key), which takes it along when deleted; `endsAt` is
+after `startsAt`.
 
-**`program_item_speakers`** — `tenantId`, `programItemId` (FK cascade), `accountId` (FK cascade).
-Unique `(programItemId, accountId)`. Composite foreign key `(programItemId, tenantId)`. Index
-`(accountId)`.
-
-**`program_item_likes`** — `tenantId`, `programItemId` (FK cascade), `accountId` (FK cascade).
-Unique `(programItemId, accountId)`. Composite foreign key `(programItemId, tenantId)`. Indexes
-`(tenantId, programItemId)` and `(accountId)`.
+**`program_item_speakers`** ([program-item-speakers.ts](../packages/db/src/schema/program-item-speakers.ts))
+and **`program_item_likes`** ([program-item-likes.ts](../packages/db/src/schema/program-item-likes.ts))
+— one row per programme item and account, in the tenant of the item (composite foreign key). Their
+unique constraint starts with `tenantId`, so a row on another tenant's item answers the foreign key
+whether or not the account has a row there. Deleting the item or the account removes the row.
 
 **`program_item_reviews`** — `tenantId`, `programItemId` (FK cascade), `accountId` (FK cascade),
 `rating` (smallint, check 1–5), `comment` (text, nullable, up to 2000 characters),
 `isAnonymous` (default `false`), `visibility` (`review_visibility`, default `public`),
 `hiddenAt` (timestamptz, nullable), `hiddenByAccountId` (nullable, FK set null).
-Unique `(programItemId, accountId)`. Composite foreign key `(programItemId, tenantId)`. Indexes
-`(tenantId, programItemId)` and `(accountId)`.
+Unique `(tenantId, programItemId, accountId)`. Composite foreign key `(programItemId, tenantId)`.
+Index `(accountId)`.
 
 **`ticket_types`** — `tenantId`, `editionId` (FK cascade), `name`, `priceMinor` (integer, in the
 tenant's currency), `quantity` (integer, nullable = no limit), `salesStartAt`, `salesEndAt`,
@@ -667,11 +663,6 @@ alter table program_items force  row level security;
 create policy tenant_isolation on program_items
   using      (tenant_id = (select current_setting('app.tenant_id')::uuid))
   with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
-
-grant select, insert, delete on program_items to opos_app;
-grant update (title, description, starts_at, ends_at) on program_items to opos_app;
--- opos_app_global: select on the columns its cross-tenant queries read, never the whole table
-grant select (id, tenant_id, edition_id, starts_at) on program_items to opos_app_global;
 ```
 
 The same for the remaining tables; for `tenants` the condition is `id = (select current_setting(...))`.
@@ -2366,9 +2357,8 @@ payments or the deployment itself: in full on Dev, its production part on produc
 [packages/db/src/seed.ts](../packages/db/src/seed.ts), idempotent: every run converges on the
 data below. It runs where `OPOS_ENV` is `local` or `dev` and refuses `production`, with no flag to
 override it ([13](#environments)); on Dev the deploy workflow runs it after every migration. The
-seed covers the built tables; the rows of a table still to be built (programme items, reviews,
-likes, payment config, ticket types, orders, attendees) join the seed in the PR that builds the
-table. `accepted_invitations` holds no demo rows: a seeded team is written directly.
+seed covers the built tables; the rows of a table still to be built (reviews, payment config,
+ticket types, orders, attendees) join the seed in the PR that builds the table. `accepted_invitations` holds no demo rows: a seeded team is written directly.
 
 Accounts are created through the Supabase Auth admin API (`POST /admin/users` with
 `email_confirm: true` and the dev password, authorized by `SUPABASE_SECRET_KEY`,
@@ -2488,7 +2478,10 @@ runtime pools and an unbounded migration pool, the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, a tenant-level permission on a
 head, an `edition_membership` with a
-foreign edition, an edition slug outside its format), `createTenant` and `renameTenant` with each
+foreign edition, an edition slug outside its format, a programme item in a foreign edition or not
+ending after it starts, a speaker or like on another tenant's item or twice for one account, and
+both cascading from the edition and the account, also when `opos_app` deletes the edition), an
+index starting with the tenant column on every covered table, `createTenant` and `renameTenant` with each
 of their refusals, an unconfirmed head included, and the `accounts` triggers, the email
 confirmation included. Every rule of `db:verify` ([4.6](#migrations-and-verification)) has a
 case that breaks it inside a rolled-back transaction and expects the report. The API tests repeat

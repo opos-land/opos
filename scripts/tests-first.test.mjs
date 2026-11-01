@@ -1,14 +1,78 @@
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { after, describe, it } from 'node:test'
 import {
   areaOf,
   editRefusal,
   exempted,
+  main,
   missingTests,
   parseNameStatus,
   parseStatus,
   touched,
 } from './tests-first.mjs'
+
+const fixtures = []
+after(() => fixtures.forEach((dir) => rmSync(dir, { recursive: true, force: true })))
+
+const guard = 'apps/api/src/common/guards/jwt-auth.guard.ts'
+const apiTest = 'apps/api/test/me.test.ts'
+
+/** A throwaway repository with one commit on `main`, and main() run inside it. */
+function repo() {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'tests-first-')))
+  fixtures.push(dir)
+  const git = (...args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' }).trim()
+  const write = (path, content = `// ${path}\n`) => {
+    mkdirSync(dirname(join(dir, path)), { recursive: true })
+    writeFileSync(join(dir, path), content)
+  }
+  const commit = (message, ...paths) => {
+    for (const path of paths) write(path, `// ${path} ${Math.random()}\n`)
+    git('add', '--all')
+    git('commit', '-q', '--no-verify', '--allow-empty', '-m', message)
+    return git('rev-parse', 'HEAD')
+  }
+  git('init', '-q', '-b', 'main')
+  git('config', 'user.email', 'test@example.com')
+  git('config', 'user.name', 'test')
+  git('config', 'commit.gpgsign', 'false')
+  commit('chore: start', 'README.md')
+
+  /** main() with `event` on stdin, its exit code and what it wrote to stderr. */
+  function run(argv, event = {}) {
+    const messages = []
+    const original = console.error
+    console.error = (...args) => messages.push(args.join(' '))
+    try {
+      const code = main(argv, { cwd: dir, stdin: () => JSON.stringify(event) })
+      return { code, stderr: messages.join('\n') }
+    } finally {
+      console.error = original
+    }
+  }
+
+  const edit = (path, extra = {}) =>
+    run(['--hook'], { session_id: 'edit', ...extra, tool_input: { file_path: join(dir, path) } })
+
+  /** The two Bash hooks around `command`, which changes the working tree. */
+  function bash(command, session = String(Math.random())) {
+    const event = { session_id: session, tool_input: { command: 'test' } }
+    assert.equal(run(['--before-bash'], event).code, 0)
+    command()
+    return run(['--after-bash'], event)
+  }
+
+  const commitMsg = (message) => {
+    write('.git/COMMIT_EDITMSG', message)
+    return run(['--commit-msg', '.git/COMMIT_EDITMSG'])
+  }
+
+  return { dir, git, write, commit, run, edit, bash, commitMsg }
+}
 
 describe('areaOf', () => {
   it('puts the database isolation code in rls', () => {
@@ -200,5 +264,99 @@ describe('touched', () => {
       'c',
       'd',
     ])
+  })
+})
+
+describe('--hook', () => {
+  it('refuses an edit of guarded code before a test of its area changed', () => {
+    const { code, stderr } = repo().edit(guard)
+    assert.equal(code, 2)
+    assert.match(stderr, /rbac code: write or change its test first/)
+  })
+
+  it('allows the edit once a test of its area changed', () => {
+    const r = repo()
+    r.write(apiTest)
+    assert.equal(r.edit(guard).code, 0)
+  })
+
+  it('allows an edit outside every area, and an event without a file', () => {
+    const r = repo()
+    assert.equal(r.edit('docs/PLAN.md').code, 0)
+    assert.equal(r.run(['--hook'], { tool_input: { command: 'ls' } }).code, 0)
+  })
+})
+
+describe('--before-bash and --after-bash', () => {
+  it('report guarded code a command changed while no test of its area changed', () => {
+    const r = repo()
+    const { code, stderr } = r.bash(() => r.write(guard))
+    assert.equal(code, 2)
+    assert.match(stderr, new RegExp(guard))
+  })
+
+  it('accept guarded code a command changed together with its test', () => {
+    const r = repo()
+    assert.equal(r.bash(() => (r.write(guard), r.write(apiTest))).code, 0)
+  })
+
+  it('ignore guarded code that was already changed before the command', () => {
+    const r = repo()
+    r.write(guard)
+    assert.equal(r.bash(() => r.write('docs/PLAN.md')).code, 0)
+  })
+})
+
+describe('--commit-msg', () => {
+  it('refuses a commit that stages guarded code without a test of its area', () => {
+    const r = repo()
+    r.write(guard)
+    r.git('add', '--all')
+    const { code, stderr } = r.commitMsg('fix(api): x\n')
+    assert.equal(code, 1)
+    assert.match(stderr, /No-Test-Reason/)
+  })
+
+  it('accepts the commit with the test, or with a No-Test-Reason trailer', () => {
+    const r = repo()
+    r.write(guard)
+    r.git('add', '--all')
+    assert.equal(r.commitMsg('refactor(api): x\n\nNo-Test-Reason: rename only\n').code, 0)
+    r.write(apiTest)
+    r.git('add', '--all')
+    assert.equal(r.commitMsg('fix(api): x\n').code, 0)
+  })
+
+  it('leaves a merge commit to CI', () => {
+    const r = repo()
+    r.write(guard)
+    r.git('add', '--all')
+    r.write('.git/MERGE_HEAD', `${r.git('rev-parse', 'HEAD')}\n`)
+    assert.equal(r.commitMsg('Merge branch develop\n').code, 0)
+  })
+})
+
+describe('--base', () => {
+  it('refuses commits since the base that change guarded code without a test', () => {
+    const r = repo()
+    r.commit('fix(api): x', guard)
+    const { code, stderr } = r.run(['--base', 'HEAD~1'])
+    assert.equal(code, 1)
+    assert.match(stderr, new RegExp(guard))
+  })
+
+  it('accepts a commit with its test, and one with a No-Test-Reason trailer', () => {
+    const r = repo()
+    r.commit('fix(api): x', guard, apiTest)
+    r.commit('refactor(api): y\n\nNo-Test-Reason: rename only', guard)
+    assert.equal(r.run(['--base', 'HEAD~2']).code, 0)
+  })
+})
+
+describe('main', () => {
+  it('names its modes for an unknown one', () => {
+    const { code, stderr } = repo().run(['--nope'])
+    assert.equal(code, 64)
+    assert.match(stderr, /Usage/)
   })
 })

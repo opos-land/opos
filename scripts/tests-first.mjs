@@ -15,7 +15,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, relative } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const isTest = (path) => /\.test\.[cm]?[jt]sx?$/.test(path)
@@ -115,20 +115,26 @@ export function exempted(message) {
   return /^No-Test-Reason:[ \t]*\S/m.test(message)
 }
 
-const raw = (...args) => execFileSync('git', args, { encoding: 'utf8' })
-const git = (...args) => raw(...args).trim()
 const lines = (output) => (output ? output.split('\n') : [])
-const workingTree = () => parseStatus(raw('status', '--porcelain', '--untracked-files=all'))
 
-/** The changed files of the working tree, by path, with a hash of their content or 'deleted'. */
-function snapshot() {
-  const root = git('rev-parse', '--show-toplevel')
-  return Object.fromEntries(
-    workingTree().map(({ path, deleted }) => {
-      const file = join(root, path)
-      return [path, deleted || !existsSync(file) ? 'deleted' : git('hash-object', file)]
-    }),
-  )
+/** Git in the repository that holds `cwd`. */
+function repository(cwd) {
+  const raw = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' })
+  const git = (...args) => raw(...args).trim()
+  const workingTree = () => parseStatus(raw('status', '--porcelain', '--untracked-files=all'))
+
+  /** The changed files of the working tree, by path, with a hash of their content or 'deleted'. */
+  function snapshot() {
+    const root = git('rev-parse', '--show-toplevel')
+    return Object.fromEntries(
+      workingTree().map(({ path, deleted }) => {
+        const file = join(root, path)
+        return [path, deleted || !existsSync(file) ? 'deleted' : git('hash-object', file)]
+      }),
+    )
+  }
+
+  return { raw, git, workingTree, snapshot }
 }
 
 const snapshotFile = (event) =>
@@ -144,9 +150,16 @@ function report(missing) {
   }
 }
 
-const readEvent = () => JSON.parse(readFileSync(0, 'utf8'))
-
-function main([mode, value]) {
+/**
+ * Runs one mode in the repository that holds `cwd`; `stdin` reads the hook event. Returns the exit
+ * code.
+ */
+export function main(
+  [mode, value],
+  { cwd = process.cwd(), stdin = () => readFileSync(0, 'utf8') } = {},
+) {
+  const { raw, git, workingTree, snapshot } = repository(cwd)
+  const readEvent = () => JSON.parse(stdin())
   if (mode === '--hook') {
     const event = readEvent()
     const target = event.tool_input?.file_path ?? event.tool_input?.notebook_path
@@ -182,8 +195,8 @@ function main([mode, value]) {
   }
   if (mode === '--commit-msg') {
     // A merge brings commits checked on their own branch; CI skips merges the same way.
-    if (existsSync(git('rev-parse', '--git-path', 'MERGE_HEAD'))) return 0
-    if (exempted(readFileSync(value, 'utf8'))) return 0
+    if (existsSync(resolve(cwd, git('rev-parse', '--git-path', 'MERGE_HEAD')))) return 0
+    if (exempted(readFileSync(resolve(cwd, value), 'utf8'))) return 0
     const missing = missingTests(parseNameStatus(raw('diff', '--cached', '--name-status')))
     if (missing.length === 0) return 0
     report(missing)
@@ -213,6 +226,7 @@ function main([mode, value]) {
   return 64
 }
 
+/* node:coverage ignore next 3 */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   process.exitCode = main(process.argv.slice(2))
 }

@@ -228,23 +228,32 @@ const lines = (output) => (output ? output.split('\n') : [])
 function repository(cwd) {
   const raw = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' })
   const git = (...args) => raw(...args).trim()
+  let top
+  const root = () => (top ??= git('rev-parse', '--show-toplevel'))
   // Without optional locks, a hook never takes the index lock from a git command running beside it.
   const status = () =>
     parseStatus(raw('--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all'))
-  const workingTree = () =>
-    weighTests(status(), (path) =>
-      readFileSync(join(git('rev-parse', '--show-toplevel'), path), 'utf8'),
-    )
+  const weigh = (changes) => weighTests(changes, (path) => readFileSync(join(root(), path), 'utf8'))
+  const workingTree = () => weigh(status())
 
-  /** The changed files of the working tree, by path, with a hash of their content or 'deleted'. */
-  function snapshot() {
-    const root = git('rev-parse', '--show-toplevel')
-    return Object.fromEntries(
-      status().map(({ path, deleted }) => {
-        const file = join(root, path)
-        return [path, deleted || !existsSync(file) ? 'deleted' : git('hash-object', file)]
-      }),
-    )
+  /**
+   * The changed files, by path, with a hash of their content; 'none' for one that is gone or is no
+   * file, such as a nested repository.
+   */
+  function snapshot(changes) {
+    const files = changes
+      .map(({ path }) => path)
+      .filter((path) => statSync(join(root(), path), { throwIfNoEntry: false })?.isFile())
+    const hashes =
+      files.length === 0
+        ? []
+        : execFileSync('git', ['hash-object', '--stdin-paths'], {
+            cwd,
+            encoding: 'utf8',
+            input: files.map((path) => join(root(), path)).join('\n'),
+          }).split('\n')
+    const hashOf = new Map(files.map((path, i) => [path, hashes[i]]))
+    return Object.fromEntries(changes.map(({ path }) => [path, hashOf.get(path) ?? 'none']))
   }
 
   /** The record of one Bash call, inside the repository: calls of one session may overlap. */
@@ -257,11 +266,20 @@ function repository(cwd) {
   // resolution adds is checked in CI, in the commit it ends up in. A rebase is in progress while
   // its directory exists; git leaves REBASE_HEAD behind once it has finished.
   const resolving = () =>
-    ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply'].some((name) =>
-      existsSync(resolve(cwd, git('rev-parse', '--git-path', name))),
-    )
+    lines(
+      git(
+        'rev-parse',
+        ...[
+          'MERGE_HEAD',
+          'CHERRY_PICK_HEAD',
+          'REVERT_HEAD',
+          'rebase-merge',
+          'rebase-apply',
+        ].flatMap((name) => ['--git-path', name]),
+      ),
+    ).some((path) => existsSync(resolve(cwd, path)))
 
-  return { raw, git, workingTree, snapshot, snapshotFile, resolving }
+  return { raw, git, status, weigh, workingTree, snapshot, snapshotFile, resolving }
 }
 
 /** The top level of the git repository that holds `dir`, or null when no repository does. */
@@ -336,7 +354,7 @@ export function main([mode, value], { cwd, stdin }) {
     })
   }
   if ((mode === '--before-bash' || mode === '--after-bash') && !checkoutOf(cwd)) return 0
-  const { raw, git, workingTree, snapshot, snapshotFile, resolving } = repository(cwd)
+  const { raw, git, status, weigh, snapshot, snapshotFile, resolving } = repository(cwd)
   if (mode === '--before-bash') {
     const file = snapshotFile(readEvent())
     // A call that is denied never reaches --after-bash: its record goes once it is an hour old.
@@ -349,7 +367,7 @@ export function main([mode, value], { cwd, stdin }) {
         rmSync(record)
       }
     }
-    writeFileSync(file, JSON.stringify(snapshot()))
+    writeFileSync(file, JSON.stringify(snapshot(status())))
     return 0
   }
   if (mode === '--after-bash') {
@@ -359,8 +377,9 @@ export function main([mode, value], { cwd, stdin }) {
       const before = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}
       rmSync(file, { force: true })
       if (resolving()) return 0
-      const changed = touched(before, snapshot()).filter((path) => areaOf(path))
-      const missing = missingTests(workingTree()).filter(({ files }) =>
+      const after = status()
+      const changed = touched(before, snapshot(after)).filter((path) => areaOf(path))
+      const missing = missingTests(weigh(after)).filter(({ files }) =>
         files.some((path) => changed.includes(path)),
       )
       if (missing.length === 0) return 0

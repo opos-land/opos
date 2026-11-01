@@ -603,6 +603,15 @@ describe('--before-bash and --after-bash', () => {
     assert.match(stderr, new RegExp(guard))
   })
 
+  it('pass over a directory git reports as one entry, such as a nested repository', () => {
+    const r = repo()
+    const nested = join(r.dir, 'apps/panel/vendor')
+    mkdirSync(nested, { recursive: true })
+    execFileSync('git', ['init', '-q'], { cwd: nested })
+    writeFileSync(join(nested, 'x.ts'), '// x\n')
+    assert.equal(r.bash(() => r.write('docs/PLAN.md')).code, 0)
+  })
+
   it('keep one record when the event names neither the call nor the session', () => {
     const r = repo()
     r.run(['--before-bash'], {})

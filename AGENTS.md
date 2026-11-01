@@ -227,8 +227,10 @@ A deleted test is no test of its area, and neither is a test file that holds no 
 | lefthook `commit-msg` | a commit that stages an area's code without a test of that area; a merge commit is left to CI |
 | CI, on a pull request into any branch but `main` | each commit since the base branch that changes an area's code without a test of that area in the same commit; a merge commit by what it adds beyond merging its parents, a conflict resolution included |
 
-The Claude Code hooks fail closed: a check that cannot run — unreadable input, git failing, a
-broken script — refuses the edit, and after a `Bash` command reports it. When a broken script
+The Claude Code hooks look at the checkout of this repository that holds the edited file, and a
+`Bash` command at the project's directory; a file in no checkout of it is not checked. They fail
+closed: a check that cannot run — unreadable input, git failing, a broken script — refuses the
+edit, and after a `Bash` command reports it. When a broken script
 refuses every edit, the user restores it with `! git restore scripts/tests-first.mjs`.
 
 A change that needs no test — a rename, a comment, a moved import — says why in a

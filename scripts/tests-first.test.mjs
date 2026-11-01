@@ -31,6 +31,13 @@ after(() => fixtures.forEach((dir) => rmSync(dir, { recursive: true, force: true
 const guard = 'apps/api/src/common/guards/jwt-auth.guard.ts'
 const apiTest = 'apps/api/test/me.test.ts'
 
+/** A directory in no git repository. */
+function outsideGit() {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'no-git-')))
+  fixtures.push(dir)
+  return dir
+}
+
 /** Fresh content for `path`: a test file holds a test. */
 const sample = (path) =>
   /\.(test|spec)\./.test(path)
@@ -56,15 +63,16 @@ function repo() {
   git('config', 'user.email', 'test@example.com')
   git('config', 'user.name', 'test')
   git('config', 'commit.gpgsign', 'false')
-  commit('chore: start', 'README.md')
+  // scripts/tests-first.mjs marks a checkout of this repository.
+  commit('chore: start', 'README.md', 'scripts/tests-first.mjs')
 
-  /** main() with `event` on stdin, its exit code and what it wrote to stderr. */
-  function run(argv, event = {}) {
+  /** main() in `cwd` with `event` on stdin, its exit code and what it wrote to stderr. */
+  function run(argv, event = {}, cwd = dir) {
     const messages = []
     const original = console.error
     console.error = (...args) => messages.push(args.join(' '))
     try {
-      const code = main(argv, { cwd: dir, stdin: () => JSON.stringify(event) })
+      const code = main(argv, { cwd, stdin: () => JSON.stringify(event) })
       return { code, stderr: messages.join('\n') }
     } finally {
       console.error = original
@@ -482,12 +490,38 @@ describe('--hook', () => {
 
   it('refuses the edit when the check itself fails', () => {
     const r = repo()
-    const unreadable = main(['--hook'], { cwd: r.dir, stdin: () => 'not json' })
-    assert.equal(unreadable, 2)
-    const outsideGit = mkdtempSync(join(tmpdir(), 'no-git-'))
-    fixtures.push(outsideGit)
-    const event = JSON.stringify({ tool_input: { file_path: join(outsideGit, 'a.ts') } })
-    assert.equal(main(['--hook'], { cwd: outsideGit, stdin: () => event }), 2)
+    assert.equal(main(['--hook'], { cwd: r.dir, stdin: () => 'not json' }), 2)
+    const path = process.env.PATH
+    process.env.PATH = ''
+    try {
+      assert.equal(r.edit(guard).code, 2, 'git cannot run')
+    } finally {
+      process.env.PATH = path
+    }
+  })
+
+  it('refuses an edit of a file that already exists', () => {
+    const r = repo()
+    r.commit('chore: add the guard', guard)
+    assert.equal(r.edit(guard).code, 2)
+  })
+
+  it('checks the repository that holds the file, whatever the session’s directory', () => {
+    const r = repo()
+    const event = { tool_input: { file_path: join(r.dir, guard) } }
+    const { code, stderr } = r.run(['--hook'], event, outsideGit())
+    assert.equal(code, 2)
+    assert.match(stderr, /rbac code/)
+  })
+
+  it('allows an edit outside any git repository, or in another repository', () => {
+    const away = outsideGit()
+    const loose = JSON.stringify({ tool_input: { file_path: join(away, guard) } })
+    assert.equal(main(['--hook'], { cwd: away, stdin: () => loose }), 0)
+    const other = outsideGit()
+    execFileSync('git', ['init', '-q'], { cwd: other })
+    const foreign = JSON.stringify({ tool_input: { file_path: join(other, guard) } })
+    assert.equal(main(['--hook'], { cwd: repo().dir, stdin: () => foreign }), 0)
   })
 })
 
@@ -556,6 +590,13 @@ describe('--before-bash and --after-bash', () => {
     r.run(['--before-bash'], { tool_use_id: 'next' })
     assert.equal(existsSync(stale), false)
     assert.equal(existsSync(recent), true)
+  })
+
+  it('stand aside when the session’s directory is in no git repository', () => {
+    const away = outsideGit()
+    const event = () => JSON.stringify({ tool_use_id: 'away' })
+    assert.equal(main(['--before-bash'], { cwd: away, stdin: event }), 0)
+    assert.equal(main(['--after-bash'], { cwd: away, stdin: event }), 0)
   })
 
   it('report a check that fails rather than let the command pass', () => {

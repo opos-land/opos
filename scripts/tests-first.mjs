@@ -243,7 +243,43 @@ function repository(cwd) {
     )
   }
 
-  return { raw, git, workingTree, snapshot }
+  /** The record of one Bash call, inside the repository: calls of one session may overlap. */
+  const snapshotFile = (event) => {
+    const id = String(event.tool_use_id ?? event.session_id ?? 'bash').replace(/\W/g, '')
+    return resolve(cwd, git('rev-parse', '--git-path', `tests-first-${id}.json`))
+  }
+
+  // While git resolves a merge, rebase, cherry-pick or revert the hooks stand aside: what the
+  // resolution adds is checked in CI, in the commit it ends up in. A rebase is in progress while
+  // its directory exists; git leaves REBASE_HEAD behind once it has finished.
+  const resolving = () =>
+    ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply'].some((name) =>
+      existsSync(resolve(cwd, git('rev-parse', '--git-path', name))),
+    )
+
+  return { raw, git, workingTree, snapshot, snapshotFile, resolving }
+}
+
+/** The top level of the git repository that holds `dir`, or null when no repository does. */
+function topLevel(dir) {
+  try {
+    return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    }).trim()
+  } catch (error) {
+    if (/not a git repository/.test(error.stderr)) return null
+    throw error
+  }
+}
+
+/** The checkout of this repository that holds `path`, or null: the areas hold for no other. */
+function checkoutOf(path) {
+  let dir = path
+  while (!existsSync(dir)) dir = dirname(dir)
+  const root = topLevel(statSync(dir).isDirectory() ? dir : dirname(dir))
+  return root && existsSync(join(root, 'scripts', 'tests-first.mjs')) ? root : null
 }
 
 /** The real path of `path`, resolved through its deepest existing ancestor: a new file has none. */
@@ -277,32 +313,26 @@ function report(missing) {
  * code.
  */
 export function main([mode, value], { cwd, stdin }) {
-  const { raw, git, workingTree, snapshot } = repository(cwd)
   const readEvent = () => JSON.parse(stdin())
-  // One record per Bash call, inside the repository: calls of one session may overlap.
-  const snapshotFile = (event) => {
-    const id = String(event.tool_use_id ?? event.session_id ?? 'bash').replace(/\W/g, '')
-    return resolve(cwd, git('rev-parse', '--git-path', `tests-first-${id}.json`))
-  }
-  // While git resolves a merge, rebase, cherry-pick or revert the hooks stand aside: what the
-  // resolution adds is checked in CI, in the commit it ends up in. A rebase is in progress while
-  // its directory exists; git leaves REBASE_HEAD behind once it has finished.
-  const resolving = () =>
-    ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply'].some((name) =>
-      existsSync(resolve(cwd, git('rev-parse', '--git-path', name))),
-    )
   if (mode === '--hook') {
     return failClosed(() => {
       const event = readEvent()
       const target = event.tool_input?.file_path ?? event.tool_input?.notebook_path
-      if (!target || resolving()) return 0
-      const root = git('rev-parse', '--show-toplevel')
-      const refusal = editRefusal(relative(root, realPath(resolve(cwd, target))), workingTree())
+      if (!target) return 0
+      // The file decides the repository: the session's directory may lie anywhere.
+      const file = realPath(resolve(cwd, target))
+      const root = checkoutOf(file)
+      if (!root) return 0
+      const { workingTree, resolving } = repository(root)
+      if (resolving()) return 0
+      const refusal = editRefusal(relative(root, file), workingTree())
       if (!refusal) return 0
       console.error(refusal)
       return 2
     })
   }
+  if ((mode === '--before-bash' || mode === '--after-bash') && !checkoutOf(cwd)) return 0
+  const { raw, git, workingTree, snapshot, snapshotFile, resolving } = repository(cwd)
   if (mode === '--before-bash') {
     const file = snapshotFile(readEvent())
     // A call that is denied never reaches --after-bash: its record goes once it is an hour old.
@@ -381,10 +411,12 @@ export function main([mode, value], { cwd, stdin }) {
   return 64
 }
 
-/* node:coverage ignore next 6 */
+/* node:coverage ignore next 8 */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  // The Claude Code hooks look at the project, whatever directory the session is in.
+  const hook = ['--hook', '--before-bash', '--after-bash'].includes(process.argv[2])
   process.exitCode = main(process.argv.slice(2), {
-    cwd: process.cwd(),
+    cwd: (hook && process.env.CLAUDE_PROJECT_DIR) || process.cwd(),
     stdin: () => readFileSync(0, 'utf8'),
   })
 }

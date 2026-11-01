@@ -8,6 +8,7 @@ import {
   RequireSession,
   ResetPasswordPage,
 } from '../features/auth'
+import { ConventionPage, EditionPage, ProgramItemPage } from '../features/conventions'
 import { LandingPage, PrivacyPage } from '../features/landing'
 import { NotFoundView } from '../shared/ui'
 import { Layout } from './layout'
@@ -31,6 +32,12 @@ export const router = createBrowserRouter([
             <AccountPage />
           </RequireSession>
         ),
+      },
+      { path: '/conventions/:tenantSlug', element: <ConventionPage /> },
+      { path: '/conventions/:tenantSlug/:editionSlug', element: <EditionPage /> },
+      {
+        path: '/conventions/:tenantSlug/:editionSlug/program/:programItemId',
+        element: <ProgramItemPage />,
       },
       { path: '*', element: <NotFoundView /> },
     ],

@@ -205,7 +205,7 @@ opos/
                          #   query client), features landing, auth, account, shared/ (API link,
                          #   auth client, session, i18n, UI), .env.example, tests (9); the auth
                          #   client gives way to the API's auth endpoints (5.1)
-      src/features/      # still to come: attendances, conventions, schedule, speaking, tickets
+      src/features/      # still to come: attendances, schedule, speaking, tickets
       Dockerfile
   e2e/                   # built: Playwright config, fixtures (stack, Mailpit, admin API, tenants,
                          #   sign-in) with their unit tests, specs (15.2)
@@ -1714,11 +1714,12 @@ SPA (Vite + React) in [apps/portal](../apps/portal), built like the panel ([8](#
 for a 360 px wide viewport first and works up to desktop: one column, controls at least 44 px tall,
 form fields with 16 px text so a phone browser does not zoom into them, no horizontal scrolling.
 
-Built: the features `landing`, `auth` and `account` with their screens below; the routes are in
-[router.tsx](../apps/portal/src/app/router.tsx) and the frame of every screen (the platform's name,
-the way to the account or to sign-in, the privacy policy in the footer) in
-[layout.tsx](../apps/portal/src/app/layout.tsx). Still to be built: `attendances`, `conventions`,
-`schedule`, `speaking`, `tickets` and their screens, which wait for their modules in the API, the
+Built: the features `landing`, `auth`, `account` and `conventions` with their screens below; the
+routes are in [router.tsx](../apps/portal/src/app/router.tsx) and the frame of every screen (the
+platform's name, the way to the account or to sign-in, the privacy policy in the footer) in
+[layout.tsx](../apps/portal/src/app/layout.tsx). Still to be built: on the convention pages the
+"Sign up" button, the like button, ratings, comments and the review form, which wait for their
+modules; `attendances`, `schedule`, `speaking`, `tickets` and their screens, which wait for their modules in the API, the
 image with its headers ([13](#13-deployment)), and the move of `auth` and `account` from
 `@supabase/auth-js` to the API's `auth` endpoints ([5.1](#51-auth--sign-in-through-the-api)),
 which the bullets below describe.
@@ -2590,7 +2591,7 @@ never changes a seeded account's password, which ends every other session of the
 | 2 | Resending the confirmation link from the "check your inbox" screen delivers a new message | [registration](../e2e/specs/registration.spec.ts) |
 | 3 | The session survives a page reload, and the portal's calls to the API carry its session cookies, which no script of the page can read; after sign-out the cookies are gone and `POST /auth/refresh` is refused | [registration](../e2e/specs/registration.spec.ts) |
 | 4 | A head creates an edition, activates it, publishes it and adds programme items with a speaker; an address without a confirmed account is refused, naming the address | [editions](../e2e/specs/editions.spec.ts) |
-| 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | still to come, with the `conventions` feature |
+| 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | [conventions](../e2e/specs/conventions.spec.ts) |
 | 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee sees only their edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in | [invitation](../e2e/specs/invitation.spec.ts) |
 | 7 | An org without `settings`: no team or settings in the sidebar, entering by URL -> the "no permissions" screen; with `settings=read`: the team without the invitation form, the settings with "Save" disabled | [permissions](../e2e/specs/permissions.spec.ts) |
 | 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request | [permissions](../e2e/specs/permissions.spec.ts) |

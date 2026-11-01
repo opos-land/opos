@@ -64,6 +64,17 @@ export class TenantFactory {
     return { id: row!.id, slug, name: input.name ?? `Edition ${slug}` }
   }
 
+  /** A programme item of an edition, an hour long; returns its id. */
+  async addProgramItem(tenantId: string, editionId: string, title: string, startsAt: string) {
+    const endsAt = new Date(new Date(startsAt).getTime() + 60 * 60 * 1000).toISOString()
+    const [row] = await this.db.execute<{ id: string }>(sql`
+      insert into program_items (tenant_id, edition_id, title, starts_at, ends_at)
+      values (${tenantId}, ${editionId}, ${title}, ${startsAt}, ${endsAt})
+      returning id
+    `)
+    return row!.id
+  }
+
   /** An org membership; returns its id. */
   async addOrg(tenantId: string, accountId: string, input: OrgInput = {}) {
     const expiresAt = input.expired ? sql`now() - interval '1 day'` : null

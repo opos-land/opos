@@ -8,10 +8,11 @@
 //   --after-bash         Claude Code PostToolUse hook for Bash: reports a guarded file the command
 //                        changed while no test of its area has changed in the working tree
 //   --commit-msg <file>  lefthook commit-msg: the staged files carry a test of each changed area
-//   --base <ref>         CI: the commits since <ref> carry a test of each changed area
+//   --base <ref>         CI: each commit since <ref> carries a test of each area it changes; a
+//                        merge, of each area it changes beyond merging its parents
 //
 // The hooks read the event on stdin. A commit whose message holds a `No-Test-Reason: <reason>`
-// trailer is exempt, and so is a merge commit.
+// trailer is exempt; lefthook leaves a merge commit to CI.
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
@@ -208,11 +209,17 @@ export function main(
     const id = String(event.tool_use_id ?? event.session_id ?? 'bash').replace(/\W/g, '')
     return resolve(cwd, git('rev-parse', '--git-path', `tests-first-${id}.json`))
   }
+  // While git resolves a merge, rebase, cherry-pick or revert the hooks stand aside: what the
+  // resolution adds is checked in CI, in the commit it ends up in.
+  const resolving = () =>
+    ['MERGE_HEAD', 'REBASE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD'].some((name) =>
+      existsSync(resolve(cwd, git('rev-parse', '--git-path', name))),
+    )
   if (mode === '--hook') {
     return failClosed(() => {
       const event = readEvent()
       const target = event.tool_input?.file_path ?? event.tool_input?.notebook_path
-      if (!target) return 0
+      if (!target || resolving()) return 0
       const root = git('rev-parse', '--show-toplevel')
       const refusal = editRefusal(relative(root, realPath(resolve(cwd, target))), workingTree())
       if (!refusal) return 0
@@ -227,6 +234,7 @@ export function main(
   if (mode === '--after-bash') {
     return failClosed(() => {
       const file = snapshotFile(readEvent())
+      if (resolving()) return 0
       // Without the record of --before-bash, every changed file counts as the command's.
       const before = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}
       rmSync(file, { force: true })
@@ -244,7 +252,7 @@ export function main(
     })
   }
   if (mode === '--commit-msg') {
-    // A merge brings commits checked on their own branch; CI skips merges the same way.
+    // A merge brings commits checked on their own branch; CI checks what the merge adds.
     if (existsSync(resolve(cwd, git('rev-parse', '--git-path', 'MERGE_HEAD')))) return 0
     if (exempted(readFileSync(resolve(cwd, value), 'utf8'))) return 0
     const missing = missingTests(parseNameStatus(raw('diff', '--cached', '--name-status')))
@@ -256,17 +264,19 @@ export function main(
     return 1
   }
   if (mode === '--base') {
-    // Each commit carries its own test: a test in a later commit covers nothing before it.
-    const failing = lines(git('rev-list', '--reverse', '--no-merges', `${value}..HEAD`)).flatMap(
-      (commit) => {
-        if (exempted(git('log', '-1', '--format=%B', commit))) return []
-        const changes = parseNameStatus(
-          raw('diff-tree', '--no-commit-id', '--name-status', '-r', commit),
-        )
-        const missing = missingTests(changes)
-        return missing.length > 0 ? [{ commit, missing }] : []
-      },
-    )
+    // Each commit carries its own test: a test in a later commit covers nothing before it. A
+    // merge counts by what it adds beyond merging its parents, a conflict resolution included.
+    const failing = lines(git('rev-list', '--reverse', `${value}..HEAD`)).flatMap((commit) => {
+      if (exempted(git('log', '-1', '--format=%B', commit))) return []
+      const merge = git('rev-list', '--parents', '-n', '1', commit).split(' ').length > 2
+      const changes = parseNameStatus(
+        merge
+          ? raw('log', '-1', '--remerge-diff', '--name-status', '--format=', commit)
+          : raw('diff-tree', '--no-commit-id', '--name-status', '-r', commit),
+      )
+      const missing = missingTests(changes)
+      return missing.length > 0 ? [{ commit, missing }] : []
+    })
     if (failing.length === 0) return 0
     for (const { commit, missing } of failing) {
       console.error(git('log', '-1', '--format=%H %s', commit).replace(/^(\w{12})\w+/, '$1'))

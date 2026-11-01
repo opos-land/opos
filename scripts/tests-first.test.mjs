@@ -469,6 +469,55 @@ describe('--base', () => {
   })
 })
 
+describe('merges', () => {
+  /** `side` branches off with a tested guard change while `main` moves on; back on `main`. */
+  function diverged() {
+    const r = repo()
+    const start = r.git('rev-parse', 'HEAD')
+    r.git('switch', '-q', '-c', 'side')
+    r.commit('fix(api): guard with its test', guard, apiTest)
+    r.git('switch', '-q', 'main')
+    r.commit('docs: x', 'docs/PLAN.md')
+    return { r, start }
+  }
+
+  it('pass in CI when they add nothing beyond their parents', () => {
+    const { r, start } = diverged()
+    r.git('merge', '-q', '--no-edit', 'side')
+    assert.equal(r.run(['--base', start]).code, 0)
+  })
+
+  it('are checked in CI for what they add beyond their parents', () => {
+    const { r, start } = diverged()
+    r.git('merge', '-q', '--no-commit', 'side')
+    r.write('apps/api/src/common/guards/extra.ts')
+    r.git('add', '--all')
+    r.git('commit', '-q', '--no-verify', '-m', 'Merge branch side')
+    const { code, stderr } = r.run(['--base', start])
+    assert.equal(code, 1)
+    assert.match(stderr, /Merge branch side/)
+    assert.match(stderr, /guards\/extra\.ts/)
+  })
+
+  it('pass in CI with a No-Test-Reason trailer', () => {
+    const { r, start } = diverged()
+    r.git('merge', '-q', '--no-commit', 'side')
+    r.write('apps/api/src/common/guards/extra.ts')
+    r.git('add', '--all')
+    r.git('commit', '-q', '--no-verify', '-m', 'Merge branch side\n\nNo-Test-Reason: conflict only')
+    assert.equal(r.run(['--base', start]).code, 0)
+  })
+
+  it('let the hooks through while git resolves a merge, rebase, cherry-pick or revert', () => {
+    for (const marker of ['MERGE_HEAD', 'REBASE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD']) {
+      const r = repo()
+      r.write(`.git/${marker}`, `${r.git('rev-parse', 'HEAD')}\n`)
+      assert.equal(r.edit(guard).code, 0, marker)
+      assert.equal(r.bash(() => r.write(guard)).code, 0, marker)
+    }
+  })
+})
+
 describe('main', () => {
   it('names its modes for an unknown one', () => {
     const { code, stderr } = repo().run(['--nope'])

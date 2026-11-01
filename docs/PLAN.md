@@ -187,7 +187,7 @@ opos/
                          #   error filter, request store and tenant transaction, JwtAuthGuard,
                          #   rate limiting, permission decorators, MeModule (profile, memberships,
                          #   account deletion), TenantsModule (tenant, team, invitations),
-                         #   EditionsModule, AuthModule (send-email hook, Supabase Auth admin
+                         #   EditionsModule, ProgramModule (items and speakers), AuthModule (send-email hook, Supabase Auth admin
                          #   client), MailModule (Supabase Auth and invitation emails), tests;
                          #   still to come: the auth endpoints and session cookies (5.1, 7.4)
       src/
@@ -210,9 +210,8 @@ opos/
                          #   sign-in) with their unit tests, specs (15.2)
   packages/
     contract/            # built: common schemas, error codes, health, me (profile, memberships, deletion),
-                         #   tenants (without payment config), editions, invitations
+                         #   tenants (without payment config), editions, invitations, program (without reviews)
       src/
-        program.ts
         engagement.ts
         shop.ts
         tickets.ts
@@ -442,7 +441,8 @@ removes `accounts`, and with it every row that references it.
 
 **Matching an account by email counts only a confirmed one.** Wherever OPOS looks an account up by
 an email address — `createTenant` ([14](#creating-a-tenant)), an invitation
-([7.7](#77-organizer-invitations)), `GET /me/tickets` — an account whose `emailConfirmedAt` is
+([7.7](#77-organizer-invitations)), a speaker list
+([5.5](#55-program--jwt--x-tenant-slug--edition-permission)), `GET /me/tickets` — an account whose `emailConfirmedAt` is
 `null` counts as no account: Supabase Auth keeps the password of whoever registered an address
 first, before its owner confirmed it.
 
@@ -629,11 +629,14 @@ Every RLS-covered table also gets `FORCE ROW LEVEL SECURITY`.
 `ticket_types`, `orders`, `tickets`, `scanner_devices`, `attendees`.
 
 The global table `accounts` stays outside RLS — it is protected by filtering on the `accountId`
-from the JWT, with two reads of other accounts, both inside a tenant transaction: the team's
-accounts joined to the tenant's `tenant_memberships`, which RLS limits to the tenant, and the
-invitation lookup of one confirmed account by the email of the request
-(`InvitationsRepository.confirmedAccount`, behind `settings=write` and the tenant's invitation
-limit, [7.7](#77-organizer-invitations)). The `auth` schema is accessed only by Supabase Auth, and
+from the JWT, with four reads of other accounts, all inside a tenant transaction: the team's accounts
+joined to the tenant's `tenant_memberships` and the speakers' accounts joined to its
+`program_item_speakers`, both of which RLS limits to the tenant; the invitation lookup of one
+confirmed account by the email of the request (`InvitationsRepository.confirmedAccount`, behind
+`settings=write` and the tenant's invitation limit, [7.7](#77-organizer-invitations)); and the lookup
+of the confirmed accounts on an item's speaker list (`ProgramRepository.confirmedAccounts`, behind
+`program=write` and the tenant's limit of new addresses, [5.5](#55-program--jwt--x-tenant-slug--edition-permission),
+[7.9](#79-rate-limiting)). The `auth` schema is accessed only by Supabase Auth, and
 read by the backup service ([13](#backups)).
 
 #### Tenant context
@@ -779,7 +782,7 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `editions_slug_format` -> `slug`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
 | `401` | no session cookie, an expired or foreign access token in it, or no `accounts` row for it; `DELETE /me` and `PUT /auth/password` without a recent sign-in have their own code ([7.4](#74-authorization)), and so do the Supabase Auth refusals the API passes on ([5.1](#51-auth--sign-in-through-the-api)) | `session.invalid` |
 | `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)), and so does an invitation for another email ([7.7](#77-organizer-invitations)); a request that changes state with the session cookie from an `Origin` outside `PANEL_URL` and `PORTAL_URL` is `request.origin-denied` ([7.4](#74-authorization)) |
-| `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found` |
+| `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found`; an address without a confirmed account in a speaker list has its own code ([5.5](#55-program--jwt--x-tenant-slug--edition-permission)) |
 | `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`), and so does a unique constraint a concurrent request won (`tenant_memberships_account_tenant_unique` -> `member.exists`, or `invitation.already-member` on `POST /invitations/accept`; `accepted_invitations_tenant_jti_unique` -> `invitation.used`) | always a specific code |
 | `410` | an organizer invitation past its validity, or one its sender can no longer send ([7.7](#77-organizer-invitations)) | `invitation.expired`, `invitation.revoked` |
 | `415` | a request body that is not `application/json`, refused from its headers before routing ([json-body.ts](../apps/api/src/common/json-body.ts)): Express parses JSON within its size limit, and oRPC would read any other body itself, with no limit | `request.invalid` |
@@ -935,13 +938,15 @@ request waits is `404` too.
 | POST | `/editions/:editionId/program-items` | `program=write` |
 | PATCH | `/editions/:editionId/program-items/:programItemId` | `program=write` |
 | DELETE | `/editions/:editionId/program-items/:programItemId` | `program=write` |
-| PUT | `/editions/:editionId/program-items/:programItemId/speakers` | `program=write`; `{ emails }` replaces the list; an email without an account -> `404` `speaker.account-not-found` |
+| PUT | `/editions/:editionId/program-items/:programItemId/speakers` | `program=write`; `{ emails }` replaces the list; an email without a confirmed account -> `404` `speaker.account-not-found`, naming the email in `params`, and the list stays as it was |
 | GET | `/editions/:editionId/program-items/:programItemId/reviews` | `program>=read`; hidden reviews included, anonymous authors without a name |
 | PUT | `/editions/:editionId/program-items/:programItemId/reviews/:reviewId/hidden` | `program=write`; hides the review |
 | DELETE | `/editions/:editionId/program-items/:programItemId/reviews/:reviewId/hidden` | `program=write`; shows it again |
 
-Validation: `endsAt > startsAt`, `title` 3–200 characters, `description` up to 5000 characters,
-up to 10 speakers per item.
+The schemas are in [program.ts](../packages/contract/src/program.ts), and the two review routes
+are still to be built. An item is reached only through its own edition: the path of another edition
+answers `404`, so `program=write` in one edition reaches no item of another. A speaker needs no
+membership in the team.
 
 ### 5.6 `engagement` — JWT + `X-Tenant-Slug`, no membership required
 
@@ -1209,8 +1214,9 @@ transaction is open; they never query the pool directly. The one exception is
 runs on the `opos_app` pool outside a tenant transaction. Only `findForToken(sub)`, which
 `JwtAuthGuard` calls, and `localeForHook(id)`, which the send-email hook calls with the user of a
 verified payload, take an id; every other method works on the account in the request store, so no
-caller can pass another account's id. Inside a tenant transaction two repositories read other
-accounts, listed in [4.6](#46-tenant-isolation--rls-in-postgres): `MembersRepository` joins the
+caller can pass another account's id. Inside a tenant transaction three repositories read other
+accounts, listed in [4.6](#46-tenant-isolation--rls-in-postgres): `ProgramRepository` joins the
+speakers' accounts and finds the confirmed accounts of a speaker list, `MembersRepository` joins the
 team's accounts, and `InvitationsRepository.confirmedAccount` finds one confirmed account by the
 email of an invitation request.
 
@@ -1535,6 +1541,7 @@ route's own guards ([rate-limit.ts](../apps/api/src/common/rate-limit/rate-limit
 | `POST /auth/sign-up`, `/auth/resend`, `/auth/sign-in`, `/auth/verify`, `/auth/password/forgot`, `GET /auth/google` | 300 / 5 min per IP, one counter for all six |
 | `GET /invitations/preview` | 30 / hour per IP |
 | `POST /tenants/current/members` | 20 / hour per tenant, counted for members with `settings=write` |
+| `PUT .../program-items/:programItemId/speakers` | 100 addresses / hour per tenant, counted for members with `program=write`: each address on the list that is not yet a speaker in the edition, also one without an account; a removal and a speaker already in the edition cost nothing |
 | `PUT .../review` | 30 / hour per account |
 | `POST /public/.../orders` | 10 / 10 min per IP and buyer email |
 | `GET /public/orders/:orderId` | 60 / min per IP |
@@ -2474,7 +2481,8 @@ tenant transaction reading no tenant, and a check that the list of covered table
 catalog's, so a new tenant table fails the suite until its cases exist. They also cover the
 `accounts` privileges, the runtime roles' privileges (`opos_app_global` reads only the columns its queries need, `opos_app`
 updates only the granted columns, inserts and deletes no tenant, inserts memberships and accepted
-invitations but never changes or removes an accepted invitation), the session bounds of the
+invitations but never changes or removes an accepted invitation, writes programme items and their
+speakers but no like), the session bounds of the
 runtime pools and an unbounded migration pool, the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, a tenant-level permission on a
@@ -2507,8 +2515,9 @@ cannot run beside an API started with `pnpm dev`.
 | anti-escalation | an org cannot grant permissions above their own, edit or remove themselves, touch a `head`, or lift, extend or revive the expiry of a member who holds more, though it may shorten that member's access; an org whose access expires extends no one past its own end and raises no permission of a member who outlasts it, but lowers and shortens freely; under concurrency (a row locked from outside while the request runs), a promotion or permission change committed meanwhile is respected |
 | promotion | promoting an org to `head` clears its expiry, its tenant-level permissions and its edition rows; a permission change on a member who is already a `head` stores `none`; a later demotion brings none of them back, and one that sets permissions applies them |
 | concurrent deletes | an edition delete that waited for another delete of the same edition, and an edition access change that waited for the edition's delete -> `404` |
-| concurrent member changes | on every write route of the contract: an org whose `settings=write` is taken away under the tenant's write lock in a transaction that commits while its write waits gets `403` and the tenant's rows are unchanged, while the same request without the demotion succeeds; on the routes outside team management, an org whose access ends while its write waits for the lock gets `403`, while the same expiry with no lock held lets it through; on the routes of team management, an org whose access ends while its write waits for its own membership row, and on `editions.members.put` and an invitation that names editions for an edition row, gets `403` and changes nothing, while the same expiry with nothing held lets it through; an outsider and a reader get `403` while the lock is held, without waiting for it; a write that waits past the lock timeout gets `503` `request.busy` with `Retry-After` and changes nothing, while one that holds the lock waits for a row lock as long as it is held; an edition-level write gets `403` once a lower edition permission commits while it waits; twelve slow writes of one tenant, more than the pool's connections, leave a read of another tenant answering within 500 ms and a refused write answering `403` within 200 ms, and those that wait past 5 s get `503`; a write of the tenant goes ahead while the previous one runs a slow after-commit step; a tenant write and an edition delete finish beside a transaction that locked the actor's membership first and then the tenant row or the edition rows, with no deadlock; twenty interleaved requests of two tenants each see only their own tenant's editions |
+| concurrent member changes | on every write route of the contract: an org whose `settings=write` and `program=write` are taken away under the tenant's write lock in a transaction that commits while its write waits gets `403` and the tenant's rows are unchanged, while the same request without the demotion succeeds; on the routes outside team management, an org whose access ends while its write waits for the lock gets `403`, while the same expiry with no lock held lets it through; on the routes of team management, an org whose access ends while its write waits for its own membership row, and on `editions.members.put` and an invitation that names editions for an edition row, gets `403` and changes nothing, while the same expiry with nothing held lets it through; an outsider and a reader get `403` while the lock is held, without waiting for it; a write that waits past the lock timeout gets `503` `request.busy` with `Retry-After` and changes nothing, while one that holds the lock waits for a row lock as long as it is held; an edition-level write gets `403` once a lower edition permission commits while it waits; twelve slow writes of one tenant, more than the pool's connections, leave a read of another tenant answering within 500 ms and a refused write answering `403` within 200 ms, and those that wait past 5 s get `503`; a write of the tenant goes ahead while the previous one runs a slow after-commit step; a tenant write and an edition delete finish beside a transaction that locked the actor's membership first and then the tenant row or the edition rows, with no deadlock; twenty interleaved requests of two tenants each see only their own tenant's editions |
 | invariants | a second active edition, removing the last `head`, an `edition_membership` with a foreign edition, `expiresAt` on a `head`, a speaker, like or review pointing at another tenant's item |
+| programme items | create, change and delete; validation of the title, description and dates, also when a patch's end falls before the stored start; a description cleared with `null`; the edition's items by start time; deleting an item takes its speakers along; an item through the path of another edition of the tenant or an edition or item of another tenant -> `404` and unchanged, an org with `program=write` in one edition -> `404` through its own path and `403` through the other; the speaker list replaced, an address counted once whatever its case, cleared when empty, up to 10; an address without an account or with an unconfirmed one, or an account deleted while the list is written -> `404` `speaker.account-not-found` naming it, with the list unchanged; another item keeping its speakers; one account speaking in two tenants; the limit shared by the whole team of a tenant and kept per tenant, counting new addresses, those without an account and a speaker of another edition included, and nothing for a removal, a speaker already in the edition or a request refused by its permission |
 | invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write`, no longer holding what it granted, or a head demoted to org after sending a head invitation -> `410` `invitation.revoked` on preview and accept, also when the demotion commits or the sender's access ends while the acceptance waits for the sender's membership or an edition; a preview of a revoked invitation answers without waiting for a held edition; a membership expiry the invitation grants that passes while the acceptance waits -> `410` `invitation.expired`; another tenant's edition -> `404`; the membership lands in the token's tenant only |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |

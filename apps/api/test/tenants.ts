@@ -40,6 +40,15 @@ export async function addEdition(tenantId: string) {
   return rows[0]!.id
 }
 
+export async function addProgramItem(tenantId: string, editionId: string) {
+  const rows = await db.execute<{ id: string }>(sql`
+    insert into program_items (tenant_id, edition_id, title, starts_at, ends_at)
+    values (${tenantId}, ${editionId}, 'Item', '2027-06-01 09:00Z', '2027-06-01 10:00Z')
+    returning id
+  `)
+  return rows[0]!.id
+}
+
 export async function addOrg(
   tenantId: string,
   account: { id: string },
@@ -142,8 +151,8 @@ export async function openTransaction() {
 
 /**
  * Everything a tenant route can write in one tenant, as stored: the tenant, its editions, its
- * memberships on both levels. Equal snapshots before and after a refused request mean it changed
- * nothing.
+ * memberships on both levels, its programme items and their speakers. Equal snapshots before and
+ * after a refused request mean it changed nothing.
  */
 export async function tenantState(tenantId: string) {
   const [tenant] = await db.execute(
@@ -161,11 +170,21 @@ export async function tenantState(tenantId: string) {
     select tenant_membership_id, edition_id, program_access, website_content_access, tickets_access
     from edition_memberships where tenant_id = ${tenantId} order by tenant_membership_id, edition_id
   `)
+  const programItems = await db.execute(sql`
+    select id, edition_id, title, description, starts_at, ends_at
+    from program_items where tenant_id = ${tenantId} order by id
+  `)
+  const programItemSpeakers = await db.execute(sql`
+    select program_item_id, account_id
+    from program_item_speakers where tenant_id = ${tenantId} order by program_item_id, account_id
+  `)
   return {
     tenant,
     editions: [...editions],
     memberships: [...memberships],
     editionMemberships: [...editionMemberships],
+    programItems: [...programItems],
+    programItemSpeakers: [...programItemSpeakers],
   }
 }
 

@@ -27,6 +27,7 @@ export const errorCodes = [
   'invitation.revoked',
   'edition.slug-taken',
   'edition.active',
+  'speaker.account-not-found',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

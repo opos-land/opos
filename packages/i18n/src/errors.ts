@@ -9,7 +9,7 @@ export const unknownError = msg`Something went wrong. Try again.`
 export const errorMessages: Record<string, MessageDescriptor> = {
   'request.invalid': msg`Check the data you entered.`,
   'request.not-found': msg`We could not find what you are looking for.`,
-  'request.rate-limited': msg`Too many attempts. Try again in a moment.`,
+  'request.rate-limited': msg`Too many attempts. Try again later.`,
   'request.busy': msg`This convention is being changed right now. Try again in a moment.`,
   'session.invalid': msg`Your session has ended. Sign in again.`,
   'session.reauthentication-required': msg`Confirm it is you: enter your password again or sign in with Google again.`,
@@ -31,6 +31,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'invitation.revoked': msg`This invitation is no longer valid: whoever sent it can no longer grant this access. Ask the convention's organizers for a new one.`,
   'edition.slug-taken': msg`This convention already has an edition with this address.`,
   'edition.active': msg`You cannot delete the active edition. Activate another edition first.`,
+  'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 
   'tenant.not-found': msg`We could not find this convention.`,
   'tenant.slug-invalid': msg`The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters.`,

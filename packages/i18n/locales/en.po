@@ -176,6 +176,10 @@ msgid "No account uses this email address."
 msgstr "No account uses this email address."
 
 #: src/errors.ts
+msgid "No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address."
+msgstr "No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address."
+
+#: src/errors.ts
 msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Only a head organizer can edit or remove another head organizer."
 
@@ -328,8 +332,8 @@ msgid "Too many attempts. Try again in a few minutes."
 msgstr "Too many attempts. Try again in a few minutes."
 
 #: src/errors.ts
-msgid "Too many attempts. Try again in a moment."
-msgstr "Too many attempts. Try again in a moment."
+msgid "Too many attempts. Try again later."
+msgstr "Too many attempts. Try again later."
 
 #: src/errors.ts
 msgid "Too many emails sent. Try again in a few minutes."

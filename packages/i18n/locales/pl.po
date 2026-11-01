@@ -176,6 +176,10 @@ msgid "No account uses this email address."
 msgstr "Żadne konto nie używa tego adresu e-mail."
 
 #: src/errors.ts
+msgid "No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address."
+msgstr "Żadne potwierdzone konto nie używa adresu e-mail {email}. Poproś prelegenta o założenie konta, jeśli jeszcze go nie ma, i potwierdzenie tego adresu."
+
+#: src/errors.ts
 msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Tylko główny organizator może edytować lub usunąć innego głównego organizatora."
 
@@ -328,8 +332,8 @@ msgid "Too many attempts. Try again in a few minutes."
 msgstr "Zbyt wiele prób. Spróbuj ponownie za kilka minut."
 
 #: src/errors.ts
-msgid "Too many attempts. Try again in a moment."
-msgstr "Zbyt wiele prób. Spróbuj ponownie za chwilę."
+msgid "Too many attempts. Try again later."
+msgstr "Zbyt wiele prób. Spróbuj ponownie później."
 
 #: src/errors.ts
 msgid "Too many emails sent. Try again in a few minutes."

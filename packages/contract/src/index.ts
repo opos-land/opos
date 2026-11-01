@@ -2,6 +2,7 @@ import { editionsContract } from './editions'
 import { healthContract } from './health'
 import { invitationsContract } from './invitations'
 import { meContract } from './me'
+import { programContract } from './program'
 import { tenantsContract } from './tenants'
 
 /** The API contract (PLAN.md 5): the API implements it, clients call through it. */
@@ -11,6 +12,7 @@ export const contract = {
   tenants: tenantsContract,
   editions: editionsContract,
   invitations: invitationsContract,
+  program: programContract,
 }
 
 export type Contract = typeof contract
@@ -21,4 +23,5 @@ export * from './errors'
 export * from './health'
 export * from './invitations'
 export * from './me'
+export * from './program'
 export * from './tenants'

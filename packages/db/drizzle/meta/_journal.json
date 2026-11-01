@@ -127,6 +127,13 @@
       "when": 1793560301727,
       "tag": "0017_program_items_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793560677467,
+      "tag": "0018_program_item_writes",
+      "breakpoints": true
     }
   ]
 }

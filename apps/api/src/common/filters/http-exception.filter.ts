@@ -29,6 +29,12 @@ const constraintErrors: Record<
     message: 'endsAt must be after startsAt',
     params: { field: 'endsAt' },
   },
+  program_items_ends_after_start: {
+    status: 400,
+    code: 'request.invalid',
+    message: 'endsAt must be after startsAt',
+    params: { field: 'endsAt' },
+  },
   editions_slug_format: {
     status: 400,
     code: 'request.invalid',

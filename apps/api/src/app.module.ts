@@ -24,6 +24,7 @@ import { MeModule } from './modules/accounts/me.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { EditionsModule } from './modules/editions/editions.module'
 import { HealthModule } from './modules/health/health.module'
+import { ProgramModule } from './modules/program/program.module'
 import { TenantsModule } from './modules/tenants/tenants.module'
 
 @Module({})
@@ -46,6 +47,7 @@ export class AppModule implements NestModule {
         AuthModule,
         TenantsModule,
         EditionsModule,
+        ProgramModule,
       ],
       providers: [
         { provide: ENV, useValue: env },

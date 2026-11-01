@@ -370,6 +370,17 @@ describe('--before-bash and --after-bash', () => {
     assert.match(stderr, new RegExp(guard))
   })
 
+  it('keep the record of each Bash call apart when calls of one session overlap', () => {
+    const r = repo()
+    const first = { session_id: 'one', tool_use_id: 'first' }
+    const second = { session_id: 'one', tool_use_id: 'second' }
+    r.run(['--before-bash'], first)
+    r.write(guard)
+    r.run(['--before-bash'], second)
+    assert.equal(r.run(['--after-bash'], first).code, 2)
+    assert.equal(r.run(['--after-bash'], second).code, 0)
+  })
+
   it('report a check that fails rather than let the command pass', () => {
     const r = repo()
     assert.equal(main(['--after-bash'], { cwd: r.dir, stdin: () => '' }), 2)

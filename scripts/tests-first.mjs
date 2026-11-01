@@ -14,7 +14,6 @@
 // trailer is exempt, and so is a merge commit.
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -168,12 +167,6 @@ function repository(cwd) {
   return { raw, git, workingTree, snapshot }
 }
 
-const snapshotFile = (event) =>
-  join(
-    tmpdir(),
-    `opos-tests-first-${String(event.session_id ?? 'session').replace(/\W/g, '')}.json`,
-  )
-
 /** The real path of `path`, resolved through its deepest existing ancestor: a new file has none. */
 function realPath(path) {
   try {
@@ -210,6 +203,11 @@ export function main(
 ) {
   const { raw, git, workingTree, snapshot } = repository(cwd)
   const readEvent = () => JSON.parse(stdin())
+  // One record per Bash call, inside the repository: calls of one session may overlap.
+  const snapshotFile = (event) => {
+    const id = String(event.tool_use_id ?? event.session_id ?? 'bash').replace(/\W/g, '')
+    return resolve(cwd, git('rev-parse', '--git-path', `tests-first-${id}.json`))
+  }
   if (mode === '--hook') {
     return failClosed(() => {
       const event = readEvent()

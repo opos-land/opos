@@ -105,9 +105,13 @@ const testedIn = (area, changes) =>
         !deleted && !hollow && area.tests.some((pattern) => pattern.test(path)),
     )
 
-/** Whether a test file's source holds a test: a call of `describe`, `it` or `test`. */
+/**
+ * Whether a test file's source holds a test: a line that opens with a call of `describe`, `it` or
+ * `test`, `.todo` aside, outside a block comment that opens a line.
+ */
 export function holdsTests(source) {
-  return /\b(describe|it|test)(\.\w+)*\s*[(`]/.test(source)
+  const code = source.replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, '')
+  return /^[ \t]*(describe|it|test)(\.(?!todo\b)\w+(\([^()]*\))?)*\s*\(/m.test(code)
 }
 
 /** The changes with each test file that holds no test marked hollow; `read` returns its source. */

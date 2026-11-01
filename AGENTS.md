@@ -216,8 +216,8 @@ tools (`eslint`, `vite`, `vitest`, `lingui`, `drizzle`, `tsdown`, `playwright`, 
 `locales/` catalogs, nor installed or built output. A file belongs to the first area that matches
 it.
 
-A deleted test is no test of its area, and neither is a test file that holds no call of
-`describe`, `it` or `test`; deleted code is a change of its area, and so is a file moved out of it.
+A deleted test is no test of its area, and neither is a test file in which no line opens with a
+call of `describe`, `it` or `test` (`.todo` and commented-out calls aside); deleted code is a change of its area, and so is a file moved out of it.
 
 [scripts/tests-first.mjs](scripts/tests-first.mjs) holds this table and enforces it three times:
 

@@ -388,16 +388,26 @@ describe('deletions', () => {
 })
 
 describe('test files without tests', () => {
-  it('are told apart by a call of describe, it or test', () => {
+  it('are told apart by a call of describe, it or test that opens a line', () => {
     for (const source of [
       "describe('x', () => {})",
-      "it.each([1])('x %s', () => {})",
-      "test.skip('x', () => {})",
-      'test `x`',
+      "  it.each([1])('x %s', () => {})",
+      "\ttest.skip('x', () => {})",
+      "it.skip.each([[1, 2]])('x', () => {})",
+      "describe.each(cases.map((c) => c))('x', () => {})",
     ]) {
       assert.equal(holdsTests(source), true, source)
     }
-    for (const source of ['', '// it will come\n', 'export const testing = 1\n']) {
+    for (const source of [
+      '',
+      '// it will come\n',
+      '// write it (later)\n',
+      "// it('x', () => {})\n",
+      "/*\nit('x', () => {})\n*/\n",
+      "it.todo('later')\n",
+      'export const testing = 1\n',
+      'export const ok = /a/.test(s)\n',
+    ]) {
       assert.equal(holdsTests(source), false, source)
     }
   })

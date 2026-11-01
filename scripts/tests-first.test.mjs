@@ -407,22 +407,30 @@ describe('test files without tests', () => {
 })
 
 describe('parseStatus', () => {
-  it('reads every entry of git status --porcelain, the first line included', () => {
+  it('reads every entry of git status --porcelain -z, renames in either column', () => {
     const status = [
       ' M apps/api/test/tenants-editions.test.ts',
       'M  packages/db/src/rls.ts',
-      '?? scripts/new.mjs',
-      'R  packages/db/src/verify.ts -> packages/db/src/checks.ts',
+      '?? scripts/a -> b.mjs',
+      'R  packages/db/src/checks.ts',
+      'packages/db/src/verify.ts',
+      ' R packages/db/src/moved.ts',
+      'packages/db/src/rls.ts',
+      'C  packages/db/src/copy.ts',
+      'packages/db/src/tenants.ts',
       ' D packages/db/test/old.test.ts',
       'D  apps/api/src/common/guards/gone.ts',
       '',
-    ].join('\n')
+    ].join('\0')
     assert.deepEqual(parseStatus(status), [
       { path: 'apps/api/test/tenants-editions.test.ts', deleted: false },
       { path: 'packages/db/src/rls.ts', deleted: false },
-      { path: 'scripts/new.mjs', deleted: false },
+      { path: 'scripts/a -> b.mjs', deleted: false },
       { path: 'packages/db/src/verify.ts', deleted: true },
       { path: 'packages/db/src/checks.ts', deleted: false },
+      { path: 'packages/db/src/rls.ts', deleted: true },
+      { path: 'packages/db/src/moved.ts', deleted: false },
+      { path: 'packages/db/src/copy.ts', deleted: false },
       { path: 'packages/db/test/old.test.ts', deleted: true },
       { path: 'apps/api/src/common/guards/gone.ts', deleted: true },
     ])
@@ -430,9 +438,23 @@ describe('parseStatus', () => {
 })
 
 describe('parseNameStatus', () => {
-  it('reads git diff --name-status, a rename as both of its paths and a copy as its new one', () => {
+  it('reads git diff --name-status -z, a rename as both of its paths and a copy as its new one', () => {
     assert.deepEqual(
-      parseNameStatus('M\ta.ts\nD\tb.test.ts\nR100\told.ts\tnew.ts\nC75\tsource.ts\tcopy.ts\n'),
+      parseNameStatus(
+        [
+          'M',
+          'a.ts',
+          'D',
+          'b.test.ts',
+          'R100',
+          'old.ts',
+          'new.ts',
+          'C75',
+          'source.ts',
+          'copy.ts',
+          '',
+        ].join('\0'),
+      ),
       [
         { path: 'a.ts', deleted: false },
         { path: 'b.test.ts', deleted: true },
@@ -606,20 +628,29 @@ describe('--before-bash and --after-bash', () => {
 })
 
 describe('renames', () => {
-  const moved = 'apps/api/src/auth/jwt-auth.guard.ts'
+  // Out of rbac into db, together with a test of db: only the old path still asks for a test.
+  const moved = 'packages/db/src/jwt-auth.guard.ts'
+  const dbTest = 'packages/db/src/jwt-auth.guard.test.ts'
   const move = (r) => {
     mkdirSync(join(r.dir, dirname(moved)), { recursive: true })
     r.git('mv', guard, moved)
+    r.write(dbTest)
+  }
+  const blamesTheOldPath = (stderr) => {
+    assert.match(stderr, new RegExp(`rbac code[^]*${guard}`))
+    assert.doesNotMatch(stderr, /db code/)
   }
 
   it('count a file moved out of an area as a change of that area', () => {
     const r = repo()
     r.commit('chore: add the guard', guard)
-    const { code, stderr } = r.bash(() => move(r))
-    assert.equal(code, 2)
-    assert.match(stderr, new RegExp(guard))
-    r.write(moved, '// changed\n')
-    assert.equal(r.commitMsg('refactor(api): move the guard\n').code, 1)
+    const bash = r.bash(() => move(r))
+    assert.equal(bash.code, 2)
+    blamesTheOldPath(bash.stderr)
+    r.git('add', '--all')
+    const commit = r.commitMsg('refactor(api): move the guard\n')
+    assert.equal(commit.code, 1)
+    blamesTheOldPath(commit.stderr)
   })
 
   it('reach CI as the old path too', () => {
@@ -627,7 +658,43 @@ describe('renames', () => {
     r.commit('chore: add the guard', guard)
     move(r)
     r.commit('refactor(api): move the guard')
+    const { code, stderr } = r.run(['--base', 'HEAD~1'])
+    assert.equal(code, 1)
+    blamesTheOldPath(stderr)
+  })
+
+  it('count a rename the index does not hold yet, as git add -N shows it', () => {
+    const r = repo()
+    r.commit('chore: add the guard', guard)
+    const { code, stderr } = r.bash(() => {
+      mkdirSync(join(r.dir, dirname(moved)), { recursive: true })
+      execFileSync('mv', [join(r.dir, guard), join(r.dir, moved)])
+      r.git('add', '-N', moved)
+      r.write(dbTest)
+    })
+    assert.equal(code, 2)
+    blamesTheOldPath(stderr)
+  })
+})
+
+describe('file names git would quote', () => {
+  const odd = 'apps/panel/src/zażółć gęślą.ts'
+
+  it('keep their area in the Bash hooks, in lefthook and in CI', () => {
+    const r = repo()
+    const bash = r.bash(() => r.write(odd))
+    assert.equal(bash.code, 2)
+    assert.match(bash.stderr, new RegExp(odd))
+    r.git('add', '--all')
+    assert.equal(r.commitMsg('feat(panel): x\n').code, 1)
+    r.commit('feat(panel): x')
     assert.equal(r.run(['--base', 'HEAD~1']).code, 1)
+  })
+
+  it('keep an arrow that is part of the name', () => {
+    const r = repo()
+    const { stderr } = r.bash(() => r.write('apps/panel/src/a -> b.ts'))
+    assert.match(stderr, /panel code[^]*a -> b\.ts/)
   })
 })
 

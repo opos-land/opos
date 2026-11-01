@@ -154,43 +154,42 @@ export function editRefusal(path, changes) {
 }
 
 /**
- * The entries of `git status --porcelain` output, untouched: a status column may start with a
- * space, so the output must not be trimmed. A rename yields its old path, deleted, and its new one.
+ * The entries of `git status --porcelain -z` output, where no path is quoted. A rename, in the
+ * index or in the working tree, yields its old path, deleted, and its new one; a copy yields its
+ * new path.
  */
-export function parseStatus(status) {
-  return status
-    .split('\n')
-    .filter((line) => line.length > 3)
-    .flatMap((line) => {
-      const [path, from] = line.slice(3).split(' -> ').reverse()
-      const deleted = line.slice(0, 2).includes('D')
-      return line[0] === 'R'
-        ? [
-            { path: from, deleted: true },
-            { path, deleted },
-          ]
-        : [{ path, deleted }]
-    })
+export function parseStatus(output) {
+  const fields = output.split('\0')
+  const changes = []
+  for (let i = 0; i < fields.length - 1; i++) {
+    const status = fields[i].slice(0, 2)
+    const path = fields[i].slice(3)
+    // The old path of a rename or a copy follows as a field of its own.
+    if (/[RC]/.test(status)) {
+      const from = fields[++i]
+      if (status.includes('R')) changes.push({ path: from, deleted: true })
+    }
+    changes.push({ path, deleted: status.includes('D') })
+  }
+  return changes
 }
 
 /**
- * The entries of `git diff --name-status` output. A rename yields its old path, deleted, and its new
- * one; a copy yields its new path.
+ * The entries of `git diff --name-status -z` output, where no path is quoted. A rename yields its
+ * old path, deleted, and its new one; a copy yields its new path.
  */
 export function parseNameStatus(output) {
-  return output
-    .split('\n')
-    .filter(Boolean)
-    .flatMap((line) => {
-      const [status, ...paths] = line.split('\t')
-      const path = paths.at(-1)
-      if (status.startsWith('R'))
-        return [
-          { path: paths[0], deleted: true },
-          { path, deleted: false },
-        ]
-      return [{ path, deleted: status === 'D' }]
-    })
+  const fields = output.split('\0')
+  const changes = []
+  for (let i = 0; i < fields.length - 1;) {
+    const status = fields[i++]
+    if (/^[RC]/.test(status)) {
+      const from = fields[i++]
+      if (status.startsWith('R')) changes.push({ path: from, deleted: true })
+    }
+    changes.push({ path: fields[i++], deleted: status === 'D' })
+  }
+  return changes
 }
 
 /** The paths whose content differs between two snapshots of path -> hash, either side missing. */
@@ -226,7 +225,9 @@ const lines = (output) => (output ? output.split('\n') : [])
 function repository(cwd) {
   const raw = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' })
   const git = (...args) => raw(...args).trim()
-  const status = () => parseStatus(raw('status', '--porcelain', '--untracked-files=all'))
+  // Without optional locks, a hook never takes the index lock from a git command running beside it.
+  const status = () =>
+    parseStatus(raw('--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all'))
   const workingTree = () =>
     weighTests(status(), (path) =>
       readFileSync(join(git('rev-parse', '--show-toplevel'), path), 'utf8'),
@@ -372,7 +373,7 @@ export function main([mode, value], { cwd, stdin }) {
     // A merge brings commits checked on their own branch; CI checks what the merge adds.
     if (existsSync(resolve(cwd, git('rev-parse', '--git-path', 'MERGE_HEAD')))) return 0
     if (exempted(readFileSync(resolve(cwd, value), 'utf8'))) return 0
-    const staged = parseNameStatus(raw('diff', '--cached', '--name-status'))
+    const staged = parseNameStatus(raw('diff', '--cached', '--name-status', '-z'))
     const missing = missingTests(weighTests(staged, (path) => raw('show', `:${path}`)))
     if (missing.length === 0) return 0
     report(missing)
@@ -389,8 +390,8 @@ export function main([mode, value], { cwd, stdin }) {
       const merge = git('rev-list', '--parents', '-n', '1', commit).split(' ').length > 2
       const changes = parseNameStatus(
         merge
-          ? raw('log', '-1', '--remerge-diff', '--name-status', '--format=', commit)
-          : raw('diff-tree', '--no-commit-id', '--name-status', '-r', commit),
+          ? raw('log', '-1', '--remerge-diff', '--name-status', '-z', '--format=', commit)
+          : raw('diff-tree', '--no-commit-id', '--name-status', '-z', '-r', commit),
       )
       const missing = missingTests(weighTests(changes, (path) => raw('show', `${commit}:${path}`)))
       return missing.length > 0 ? [{ commit, missing }] : []

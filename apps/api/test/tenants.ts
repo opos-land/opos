@@ -74,6 +74,14 @@ export async function addProgramItems(tenantId: string, editionId: string, count
   `)
 }
 
+/** How many likes an item holds, as stored. */
+export const countLikes = async (itemId: string) =>
+  (
+    await db.execute<{ count: number }>(
+      sql`select count(*)::int as count from program_item_likes where program_item_id = ${itemId}`,
+    )
+  )[0]!.count
+
 export async function addSpeaker(tenantId: string, itemId: string, accountId: string) {
   await db.execute(sql`
     insert into program_item_speakers (tenant_id, program_item_id, account_id)

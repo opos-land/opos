@@ -29,6 +29,11 @@ const constraintErrors: Record<
     message: 'endsAt must be after startsAt',
     params: { field: 'endsAt' },
   },
+  program_item_likes_account_fk: {
+    status: 401,
+    code: 'session.invalid',
+    message: 'The account no longer exists',
+  },
   program_item_likes_program_item_fk: {
     status: 404,
     code: 'request.not-found',

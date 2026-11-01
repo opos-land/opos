@@ -99,6 +99,13 @@ describe('toErrorResponse', () => {
     })
   })
 
+  it('maps a like by an account deleted meanwhile to 401', () => {
+    expect(toErrorResponse(violated('program_item_likes_account_fk'))).toMatchObject({
+      status: 401,
+      body: { code: 'session.invalid' },
+    })
+  })
+
   it('hides the details of an unexpected error', () => {
     expect(toErrorResponse(new Error('connection refused at 10.0.0.1'))).toEqual({
       status: 500,

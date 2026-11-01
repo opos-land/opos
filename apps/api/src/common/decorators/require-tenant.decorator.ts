@@ -13,7 +13,7 @@ export const tenantRoute =
   (requirement: Requirement): MethodDecorator =>
   (target, key, descriptor) => {
     if (Reflect.getMetadata(TENANT_REQUIREMENT, descriptor.value as object)) {
-      throw new Error(`${String(key)}: one @RequireTenant or @RequireEdition per route`)
+      throw new Error(`${String(key)}: one @RequireTenant, @RequireEdition or @InTenant per route`)
     }
     applyDecorators(UseGuards(JwtAuthGuard), SetMetadata(TENANT_REQUIREMENT, requirement))(
       target,

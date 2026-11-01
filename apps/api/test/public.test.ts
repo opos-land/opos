@@ -135,11 +135,13 @@ describe('editions', () => {
   it('answers 404 when the active edition is unpublished, or when none is active', async () => {
     const hidden = await fresh()
     await addEdition(hidden.id, { isActive: true })
-    await get(`/${hidden.slug}/active-edition`).expect(404)
+    const draft = await get(`/${hidden.slug}/active-edition`).expect(404)
 
     const none = await fresh()
     await published(none.id)
-    await get(`/${none.slug}/active-edition`).expect(404)
+    const absent = await get(`/${none.slug}/active-edition`).expect(404)
+
+    expect(draft.body).toEqual(absent.body)
   })
 
   it('keeps the editions of one convention off the address of another', async () => {

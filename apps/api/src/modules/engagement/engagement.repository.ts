@@ -47,11 +47,14 @@ export class EngagementRepository {
       .onConflictDoNothing()
   }
 
-  /** Always possible for an item that exists: a like is the account's own. */
+  /**
+   * A like is the account's own, so it can always be taken back. Without one, an unpublished edition
+   * answers like an unknown one here too, so this tells nobody that a draft item exists.
+   */
   async unlike(editionId: string, id: string) {
     const item = await this.item(editionId, id)
     if (!item) throw notFound('programme item')
-    await this.context
+    const removed = await this.context
       .tx()
       .delete(programItemLikes)
       .where(
@@ -60,5 +63,7 @@ export class EngagementRepository {
           eq(programItemLikes.accountId, this.context.account().id),
         ),
       )
+      .returning({ id: programItemLikes.id })
+    if (removed.length === 0 && !item.isPublished) throw notFound('programme item')
   }
 }

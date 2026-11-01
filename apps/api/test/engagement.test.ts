@@ -6,12 +6,16 @@ import { createApp } from './app'
 import { deleteCreatedAccounts } from './auth'
 import {
   addEdition,
+  addLike,
   addOrg,
   addProgramItem,
   closeTenantDb,
+  countLikes,
   deleteCreatedTenants,
+  holdOpen,
   member,
   type Member,
+  sleep,
   tenantWithHead,
 } from './tenants'
 
@@ -56,10 +60,19 @@ const unlike = (who: Member, editionId: string, itemId: string, slug = a.slug) =
 const schedule = (who: Member) =>
   request(app.getHttpServer()).get('/me/schedule').set('Authorization', `Bearer ${who.token}`)
 
+const DAY = 24 * 3600 * 1000
+const days = (count: number) => new Date(Date.now() + count * DAY).toISOString()
+
 /** A published edition that has not ended, with one item. */
 async function published(tenantId: string, values: Parameters<typeof addEdition>[1] = {}) {
   const slug = randomUUID().slice(0, 8)
-  const editionId = await addEdition(tenantId, { slug, isPublished: true, ...values })
+  const editionId = await addEdition(tenantId, {
+    slug,
+    isPublished: true,
+    startsAt: days(30),
+    endsAt: days(32),
+    ...values,
+  })
   return { slug, editionId, item: await addProgramItem(tenantId, editionId) }
 }
 
@@ -134,14 +147,45 @@ describe('likes', () => {
   })
 
   it('takes no new like once the edition has ended, but lets one go', async () => {
-    const live = await published(a.id, { startsAt: '2027-06-01', endsAt: '2027-06-03' })
-    await like(fan, live.editionId, live.item).expect(204)
-    const past = await published(a.id, { startsAt: '2024-06-01', endsAt: '2024-06-03' })
+    const past = await published(a.id, { startsAt: days(-3), endsAt: days(-1) })
 
     const res = await like(fan, past.editionId, past.item).expect(409)
-
     expect(res.body).toMatchObject({ code: 'like.edition-ended' })
+
+    await addLike(a.id, past.item, fan.id)
     await unlike(fan, past.editionId, past.item).expect(204)
+    expect(await countLikes(past.item)).toBe(0)
+  })
+
+  it('lets a like go once its edition is unpublished', async () => {
+    const draft = await addEdition(a.id)
+    const item = await addProgramItem(a.id, draft)
+    await addLike(a.id, item, fan.id)
+
+    await unlike(fan, draft, item).expect(204)
+
+    expect(await countLikes(item)).toBe(0)
+  })
+
+  it('answers the removal of an unpublished item without a like as for an unknown one', async () => {
+    const draft = await addEdition(a.id)
+    const item = await addProgramItem(a.id, draft)
+
+    const hidden = await unlike(fan, draft, item).expect(404)
+    const unknown = await unlike(fan, draft, randomUUID()).expect(404)
+
+    expect(hidden.body).toEqual(unknown.body)
+  })
+
+  it('answers 404 once the delete of the item commits while the like waits', async () => {
+    const { editionId, item } = await published(a.id)
+    const commit = await holdOpen((sql) => sql`delete from program_items where id = ${item}`)
+
+    const pending = like(fan, editionId, item).then((res) => res)
+    await sleep(300)
+    await commit()
+
+    expect((await pending).status).toBe(404)
   })
 
   it('refuses a request without a token, and answers 404 for an unknown tenant', async () => {

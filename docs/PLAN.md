@@ -688,7 +688,7 @@ The complete list:
 | `GET /me/memberships` | `where account_id = <account from the JWT>`, expired memberships excluded |
 | `DELETE /me` | `where account_id = <account from the JWT> and role = 'head'`; the other heads of those tenants are only checked for existence; returns only whether the account is some tenant's last head |
 | `GET /me/attendances` | `where account_id = <account from the JWT>` |
-| `GET /me/schedule` | `where account_id = <account from the JWT>` on `program_item_likes` |
+| `GET /me/schedule` | `where account_id = <account from the JWT>` on `program_item_likes`, published editions only; returns only each item's title and times, its edition's slug and name, and its tenant's slug, name and time zone |
 | `GET /me/program-items` | `where account_id = <account from the JWT>` on `program_item_speakers` |
 | `GET /me/tickets` | `where email = <confirmed email of the account from the JWT>` on `orders` |
 | payment webhook | order lookup by the `orderId` from a verified webhook; returns only `id`, `tenantId` |
@@ -954,7 +954,7 @@ membership in the team.
 | Method | Path | Description |
 |---|---|---|
 | PUT | `/editions/:editionId/program-items/:programItemId/like` | like, `204`; idempotent; `404` for an unpublished edition, as for an unknown item; `409` `like.edition-ended` once the edition has ended |
-| DELETE | `/editions/:editionId/program-items/:programItemId/like` | remove the like, `204`; idempotent, also after the edition has ended |
+| DELETE | `/editions/:editionId/program-items/:programItemId/like` | remove the like, `204`; idempotent, also after the edition has ended; an unpublished edition answers `204` only to an account that held a like, and otherwise `404`, as for an unknown item |
 | PUT | `/editions/:editionId/program-items/:programItemId/review` | `{ rating, comment?, isAnonymous, visibility }`; creates or replaces the account's review; `403` `review.not-eligible`, `409` `review.not-started` |
 | DELETE | `/editions/:editionId/program-items/:programItemId/review` | delete the account's review |
 
@@ -1272,9 +1272,11 @@ update() { ... }
 create() { ... }
 ```
 
-`@RequireTenant` and `@RequireEdition` apply `JwtAuthGuard` themselves, so a tenant route is never
-unauthenticated. A route takes one of the two (`@RequireEdition` already requires a membership); a
-second one on the same handler throws when the module loads. Every route has a method of its own
+`@RequireTenant`, `@RequireEdition` and `@InTenant` apply `JwtAuthGuard` themselves, so a tenant route
+is never unauthenticated. A route takes one of the three (`@RequireEdition` already requires a
+membership); a second one on the same handler throws when the module loads. `@InTenant` checks no
+membership: such a handler sees the whole tenant under RLS, so its own filters are the only guard,
+and it is the exception ([5.6](#56-engagement--jwt--x-tenant-slug-no-membership-required)). Every route has a method of its own
 with `@Implement(contract.<router>.<route>)` and its requirement next to it: a router-level
 `@Implement(contract.<router>)` copies the method's decorators onto every route of the router.
 [tenant-routes.test.ts](../apps/api/test/tenant-routes.test.ts) sends every contract route marked
@@ -2532,7 +2534,7 @@ cannot run beside an API started with `pnpm dev`.
 | invitations | an unknown address gets the link in the tenant's language and joins with exactly what the invitation grants once its confirmed account accepts; a confirmed account joins at once and gets a notification in its own language; an unconfirmed account counts as no account; an account already in the team, an expired membership included -> `409` `member.exists` on invite and `invitation.already-member` on accept, also when two invitations for one account are accepted at once; accepting with another account or an unconfirmed one -> `403`; an expired, forged or tampered token -> `410` / `400`; a token accepted once -> `409` `invitation.used`, also after its membership is removed and when two acceptances race; an edition deleted meanwhile is skipped on accept and `404` on invite, also when the delete commits while the request runs; the largest invitation the request accepts goes through preview and acceptance; anti-escalation on role, both levels and expiry; a sender removed, expired, without `settings=write`, no longer holding what it granted, or a head demoted to org after sending a head invitation -> `410` `invitation.revoked` on preview and accept, also when the demotion commits or the sender's access ends while the acceptance waits for the sender's membership or an edition; a preview of a revoked invitation answers without waiting for a held edition; a membership expiry the invitation grants that passes while the acceptance waits -> `410` `invitation.expired`; another tenant's edition -> `404`; the membership lands in the token's tenant only |
 | membership expiry | an expired org gets `403` on every tenant endpoint and is missing from `GET /me/memberships`; extending `expiresAt` restores access |
 | reviews | before `startsAt` -> `409`; an account that holds no valid ticket for the edition and is not a team member with access to it -> `403`; a second review replaces the first; an anonymous review returns no author name from any endpoint, panel included; a speakers-only comment is missing from the public endpoint and present in `GET /me/program-items` for the speaker; a hidden review disappears from the public counters |
-| likes | idempotent `PUT` and `DELETE` without a membership; `likeCount` changes; `404` for an unpublished edition, as for an unknown item, and through another edition or tenant; `409` `like.edition-ended` on a like once the edition has ended, while it can still be taken away; no endpoint returns who liked an item; `GET /me/schedule` spans tenants, shows an account only its own likes and leaves out an edition no longer published |
+| likes | idempotent `PUT` and `DELETE` without a membership; `likeCount` changes; `404` for an unpublished edition, as for an unknown item, and through another edition or tenant; `409` `like.edition-ended` on a like once the edition has ended, while it can still be taken away, as it can when the edition is unpublished; the removal of an unpublished item without a like answers like an unknown item; a like while the delete of its item commits -> `404`; no endpoint returns who liked an item; `GET /me/schedule` spans tenants, shows an account only its own likes and leaves out an edition no longer published |
 | checkout | 20 concurrent orders against `quantity=5` -> exactly 5 hold tickets, the rest `409`; an expired hold releases its tickets; outside the sales window -> `409`; no payment config -> `409`; more than 10 tickets -> `400` |
 | payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid`; an SMTP failure after the payment leaves `ticketEmailSentAt` empty and the job sends the email later |
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |

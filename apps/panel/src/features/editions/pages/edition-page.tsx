@@ -120,6 +120,15 @@ export function EditionPage() {
           </div>
         </Section>
       )}
+      {atLeast(access.edition(edition.id).program, 'read') && (
+        <Section title={<Trans>Programme</Trans>}>
+          <p className="text-sm">
+            <Link to={`${base}/${edition.slug}/program`} className="text-accent underline">
+              <Trans>Programme items of this edition</Trans>
+            </Link>
+          </p>
+        </Section>
+      )}
       {atLeast(access.settings, 'read') && (
         <Section title={<Trans>Access</Trans>}>
           <p className="text-sm">

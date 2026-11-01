@@ -11,6 +11,10 @@ msgstr ""
 msgid "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
 msgstr "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
 
+#: src/features/program/components/speakers-editor.tsx
+msgid "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
+msgstr "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
+
 #: src/features/team/components/invite-form.tsx
 msgid "{name} has joined the team and has been told by email."
 msgstr "{name} has joined the team and has been told by email."
@@ -76,6 +80,14 @@ msgstr "Active"
 msgid "Active edition"
 msgstr "Active edition"
 
+#: src/features/program/components/speakers-editor.tsx
+msgid "Add"
+msgstr "Add"
+
+#: src/features/program/pages/program-page.tsx
+msgid "Add the item"
+msgstr "Add the item"
+
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Address"
@@ -84,6 +96,10 @@ msgstr "Address"
 #: src/features/editions/pages/editions-page.tsx
 msgid "All editions"
 msgstr "All editions"
+
+#: src/features/program/pages/program-item-page.tsx
+msgid "All programme items"
+msgstr "All programme items"
 
 #: src/features/team/components/invite-form.tsx
 msgid "An invitation has gone to {email}. Its link works once, until {validUntil}."
@@ -107,6 +123,7 @@ msgid "Back to the invitation"
 msgstr "Back to the invitation"
 
 #: src/features/editions/pages/edition-page.tsx
+#: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/member-row.tsx
 msgid "Cancel"
 msgstr "Cancel"
@@ -154,6 +171,7 @@ msgid "Dates"
 msgstr "Dates"
 
 #: src/features/editions/pages/edition-page.tsx
+#: src/features/program/pages/program-item-page.tsx
 msgid "Delete"
 msgstr "Delete"
 
@@ -161,9 +179,21 @@ msgstr "Delete"
 msgid "Delete the edition"
 msgstr "Delete the edition"
 
+#: src/features/program/pages/program-item-page.tsx
+msgid "Delete the programme item"
+msgstr "Delete the programme item"
+
+#: src/features/program/pages/program-item-page.tsx
+msgid "Deleting a programme item cannot be undone."
+msgstr "Deleting a programme item cannot be undone."
+
 #: src/features/editions/pages/edition-page.tsx
 msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
 msgstr "Deleting an edition cannot be undone. The active edition cannot be deleted."
+
+#: src/features/program/components/program-item-form.tsx
+msgid "Description"
+msgstr "Description"
 
 #: src/features/team/components/member-row.tsx
 msgid "Edit"
@@ -194,6 +224,7 @@ msgid "Empty for no end date. In the convention's time zone, {zone}."
 msgstr "Empty for no end date. In the convention's time zone, {zone}."
 
 #: src/features/editions/components/edition-form.tsx
+#: src/features/program/components/program-item-form.tsx
 msgid "Ends"
 msgstr "Ends"
 
@@ -206,21 +237,28 @@ msgstr "Enter a date and time in the future."
 msgid "Enter a name of up to 200 characters."
 msgstr "Enter a name of up to 200 characters."
 
+#: src/features/program/components/program-item-form.tsx
+msgid "Enter a title of 3 to 200 characters."
+msgstr "Enter a title of 3 to 200 characters."
+
 #: src/features/team/components/member-row.tsx
 msgid "Enter a valid date and time."
 msgstr "Enter a valid date and time."
 
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
+#: src/features/program/components/speakers-editor.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
 
 #: src/features/editions/components/edition-form.tsx
+#: src/features/program/components/program-item-form.tsx
 msgid "Enter the end date and time."
 msgstr "Enter the end date and time."
 
 #: src/features/editions/components/edition-form.tsx
+#: src/features/program/components/program-item-form.tsx
 msgid "Enter the start date and time."
 msgstr "Enter the start date and time."
 
@@ -267,6 +305,7 @@ msgid "If you confirmed your address in another browser, or someone else registe
 msgstr "If you confirmed your address in another browser, or someone else registered it before you, ask for a link that lets you set a new password."
 
 #: src/features/editions/components/edition-form.tsx
+#: src/features/program/components/program-item-form.tsx
 msgid "In the convention's time zone, {zone}."
 msgstr "In the convention's time zone, {zone}."
 
@@ -314,6 +353,10 @@ msgstr "New edition"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "New password"
 msgstr "New password"
+
+#: src/features/program/pages/program-page.tsx
+msgid "New programme item"
+msgstr "New programme item"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/member-row.tsx
@@ -384,6 +427,8 @@ msgstr "Password"
 msgid "Permissions in each edition are set on the edition's access page."
 msgstr "Permissions in each edition are set on the edition's access page."
 
+#: src/features/editions/pages/edition-page.tsx
+#: src/features/program/pages/program-page.tsx
 #: src/features/team/components/permission-labels.tsx
 msgid "Programme"
 msgstr "Programme"
@@ -391,6 +436,18 @@ msgstr "Programme"
 #: src/features/team/components/invite-form.tsx
 msgid "Programme in {edition}"
 msgstr "Programme in {edition}"
+
+#: src/features/program/pages/program-item-page.tsx
+msgid "Programme item data"
+msgstr "Programme item data"
+
+#: src/features/program/pages/program-page.tsx
+msgid "Programme items"
+msgstr "Programme items"
+
+#: src/features/editions/pages/edition-page.tsx
+msgid "Programme items of this edition"
+msgstr "Programme items of this edition"
 
 #: src/features/team/components/edition-access-row.tsx
 msgid "Programme of {name}"
@@ -414,6 +471,14 @@ msgstr "Published"
 msgid "Read"
 msgstr "Read"
 
+#: src/features/program/components/speakers-editor.tsx
+msgid "Remove"
+msgstr "Remove"
+
+#: src/features/program/components/speakers-editor.tsx
+msgid "Remove {email}"
+msgstr "Remove {email}"
+
 #: src/features/team/components/edition-access-row.tsx
 msgid "Remove access"
 msgstr "Remove access"
@@ -432,6 +497,7 @@ msgid "Role"
 msgstr "Role"
 
 #: src/features/editions/pages/edition-page.tsx
+#: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/edition-access-row.tsx
 #: src/features/team/components/member-row.tsx
 #: src/features/tenants/pages/settings-page.tsx
@@ -485,7 +551,17 @@ msgstr "Sign out and use another account"
 msgid "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
 msgstr "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
 
+#: src/features/program/components/speakers-editor.tsx
+msgid "Speaker email"
+msgstr "Speaker email"
+
+#: src/features/program/pages/program-item-page.tsx
+#: src/features/program/pages/program-page.tsx
+msgid "Speakers"
+msgstr "Speakers"
+
 #: src/features/editions/components/edition-form.tsx
+#: src/features/program/components/program-item-form.tsx
 msgid "Starts"
 msgstr "Starts"
 
@@ -502,6 +578,10 @@ msgstr "Team"
 #: src/features/editions/pages/edition-page.tsx
 msgid "Team members' permissions in this edition"
 msgstr "Team members' permissions in this edition"
+
+#: src/features/program/components/speakers-editor.tsx
+msgid "The address of the speaker's confirmed account."
+msgstr "The address of the speaker's confirmed account."
 
 #: src/features/account/components/account-menu.tsx
 msgid "The browser's language"
@@ -535,6 +615,10 @@ msgstr "The language of the convention's content and of invitations to people wi
 msgid "The passwords differ."
 msgstr "The passwords differ."
 
+#: src/features/program/components/program-item-form.tsx
+msgid "The programme item must end after it starts."
+msgstr "The programme item must end after it starts."
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "The settings are saved."
 msgstr "The settings are saved."
@@ -547,9 +631,17 @@ msgstr "The team has no organizers besides its head organizers."
 msgid "There are no editions yet."
 msgstr "There are no editions yet."
 
+#: src/features/program/pages/program-page.tsx
+msgid "There are no programme items yet."
+msgstr "There are no programme items yet."
+
 #: src/features/editions/pages/edition-page.tsx
 msgid "This is the convention's active edition."
 msgstr "This is the convention's active edition."
+
+#: src/features/program/components/speakers-editor.tsx
+msgid "This item has no speakers yet."
+msgstr "This item has no speakers yet."
 
 #: src/features/team/components/permission-labels.tsx
 msgid "Tickets"
@@ -563,9 +655,18 @@ msgstr "Tickets in {edition}"
 msgid "Tickets of {name}"
 msgstr "Tickets of {name}"
 
+#: src/features/program/pages/program-page.tsx
+msgid "Time"
+msgstr "Time"
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Time zone"
 msgstr "Time zone"
+
+#: src/features/program/components/program-item-form.tsx
+#: src/features/program/pages/program-page.tsx
+msgid "Title"
+msgstr "Title"
 
 #: src/features/auth/components/accept-invitation.tsx
 msgid "Try again"
@@ -582,6 +683,10 @@ msgstr "Use 1 to 40 lowercase letters, digits and hyphens."
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Use at least 8 characters."
 msgstr "Use at least 8 characters."
+
+#: src/features/program/components/program-item-form.tsx
+msgid "Use up to 5000 characters."
+msgstr "Use up to 5000 characters."
 
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
@@ -607,6 +712,10 @@ msgstr "Write"
 #: src/features/editions/pages/edition-page.tsx
 msgid "Yes, delete {editionName}"
 msgstr "Yes, delete {editionName}"
+
+#: src/features/program/pages/program-item-page.tsx
+msgid "Yes, delete {title}"
+msgstr "Yes, delete {title}"
 
 #: src/features/team/components/member-row.tsx
 msgid "Yes, remove {name} from the team"

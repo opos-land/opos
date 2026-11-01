@@ -196,7 +196,7 @@ opos/
         modules/         # one directory per module (7.1)
       Dockerfile         # targets runtime and tools (13)
     panel/               # built: Vite and Lingui config, catalogs, app/ (router, providers, query
-                         #   client), features auth, tenants, editions, team, account, shared/
+                         #   client), features auth, tenants, editions, program, team, account, shared/
                          #   (API link, auth client, session, i18n, UI), .env.example, tests (8);
                          #   the auth client gives way to the API's auth endpoints (5.1)
       Dockerfile
@@ -1619,9 +1619,9 @@ the contract, the session in the API's cookies ([7.4](#74-authorization)), UI st
 forms with `react-hook-form` + zod using schemas from `packages/contract`. Feature-based layout
 ([3.2](#32-frontend-application-layout)). Desktop-first; usable from a tablet.
 
-Built: the features `auth`, `tenants`, `editions`, `team` and `account` with their screens below;
-the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be built: `program`,
-`shop`, `tickets`, `scanner` and their screens, the image with its headers
+Built: the features `auth`, `tenants`, `editions`, `program`, `team` and `account` with their screens
+below; the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be built: review
+moderation in `program`, `shop`, `tickets`, `scanner` and their screens, the image with its headers
 ([13](#13-deployment)), and the move of `auth` from `@supabase/auth-js` to the API's `auth`
 endpoints ([5.1](#51-auth--sign-in-through-the-api)), which the bullets below describe.
 
@@ -2585,7 +2585,7 @@ never changes a seeded account's password, which ends every other session of the
 | 1 | Registration: the form asks for no password; the link from Mailpit confirms, signs in and asks for the password; sign-out, sign-in again with it; the language switch survives the session. Again for an address someone registered first through the API and left unconfirmed: after the owner confirms and chooses a password, no other password signs in | [registration](../e2e/specs/registration.spec.ts) |
 | 2 | Resending the confirmation link from the "check your inbox" screen delivers a new message | [registration](../e2e/specs/registration.spec.ts) |
 | 3 | The session survives a page reload, and the portal's calls to the API carry its session cookies, which no script of the page can read; after sign-out the cookies are gone and `POST /auth/refresh` is refused | [registration](../e2e/specs/registration.spec.ts) |
-| 4 | A head creates an edition, activates it, publishes it and adds programme items | [editions](../e2e/specs/editions.spec.ts); the programme items come with the `program` feature |
+| 4 | A head creates an edition, activates it, publishes it and adds programme items with a speaker; an address without a confirmed account is refused, naming the address | [editions](../e2e/specs/editions.spec.ts) |
 | 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | still to come, with the `conventions` feature |
 | 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee sees only their edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in | [invitation](../e2e/specs/invitation.spec.ts) |
 | 7 | An org without `settings`: no team or settings in the sidebar, entering by URL -> the "no permissions" screen; with `settings=read`: the team without the invitation form, the settings with "Save" disabled | [permissions](../e2e/specs/permissions.spec.ts) |

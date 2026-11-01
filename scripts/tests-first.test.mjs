@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { after, describe, it } from 'node:test'
@@ -316,6 +316,31 @@ describe('--hook', () => {
     assert.equal(r.edit('docs/PLAN.md').code, 0)
     assert.equal(r.run(['--hook'], { tool_input: { command: 'ls' } }).code, 0)
   })
+
+  it('allows an edit of a file outside the repository', () => {
+    const r = repo()
+    const outside = join(dirname(r.dir), 'elsewhere', guard)
+    assert.equal(r.run(['--hook'], { tool_input: { file_path: outside } }).code, 0)
+  })
+
+  it('finds the area of a file reached through a symbolic link to the repository', () => {
+    const r = repo()
+    const link = `${r.dir}-link`
+    symlinkSync(r.dir, link)
+    fixtures.push(link)
+    const event = { tool_input: { file_path: join(link, 'apps/api/src/common/guards/new.ts') } }
+    assert.equal(r.run(['--hook'], event).code, 2)
+  })
+
+  it('refuses the edit when the check itself fails', () => {
+    const r = repo()
+    const unreadable = main(['--hook'], { cwd: r.dir, stdin: () => 'not json' })
+    assert.equal(unreadable, 2)
+    const outsideGit = mkdtempSync(join(tmpdir(), 'no-git-'))
+    fixtures.push(outsideGit)
+    const event = JSON.stringify({ tool_input: { file_path: join(outsideGit, 'a.ts') } })
+    assert.equal(main(['--hook'], { cwd: outsideGit, stdin: () => event }), 2)
+  })
 })
 
 describe('--before-bash and --after-bash', () => {
@@ -335,6 +360,19 @@ describe('--before-bash and --after-bash', () => {
     const r = repo()
     r.write(guard)
     assert.equal(r.bash(() => r.write('docs/PLAN.md')).code, 0)
+  })
+
+  it('count every changed file as the command’s when --before-bash left no record', () => {
+    const r = repo()
+    r.write(guard)
+    const { code, stderr } = r.run(['--after-bash'], { session_id: 'never-recorded' })
+    assert.equal(code, 2)
+    assert.match(stderr, new RegExp(guard))
+  })
+
+  it('report a check that fails rather than let the command pass', () => {
+    const r = repo()
+    assert.equal(main(['--after-bash'], { cwd: r.dir, stdin: () => '' }), 2)
   })
 })
 

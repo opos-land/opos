@@ -13,9 +13,9 @@
 // The hooks read the event on stdin. A commit whose message holds a `No-Test-Reason: <reason>`
 // trailer is exempt, and so is a merge commit.
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, relative, resolve } from 'node:path'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const isTest = (path) => /\.test\.[cm]?[jt]sx?$/.test(path)
@@ -174,6 +174,25 @@ const snapshotFile = (event) =>
     `opos-tests-first-${String(event.session_id ?? 'session').replace(/\W/g, '')}.json`,
   )
 
+/** The real path of `path`, resolved through its deepest existing ancestor: a new file has none. */
+function realPath(path) {
+  try {
+    return realpathSync(path)
+  } catch {
+    return join(realPath(dirname(path)), basename(path))
+  }
+}
+
+/** Runs a Claude Code hook so that a check which cannot run refuses the change it was asked about. */
+function failClosed(check) {
+  try {
+    return check()
+  } catch (error) {
+    console.error(`tests-first could not check this change, so it refuses it: ${error.message}`)
+    return 2
+  }
+}
+
 function report(missing) {
   for (const { area, files } of missing) {
     const where = areas.find((candidate) => candidate.name === area).where
@@ -192,37 +211,39 @@ export function main(
   const { raw, git, workingTree, snapshot } = repository(cwd)
   const readEvent = () => JSON.parse(stdin())
   if (mode === '--hook') {
-    const event = readEvent()
-    const target = event.tool_input?.file_path ?? event.tool_input?.notebook_path
-    if (!target) return 0
-    const refusal = editRefusal(
-      relative(git('rev-parse', '--show-toplevel'), target),
-      workingTree(),
-    )
-    if (!refusal) return 0
-    console.error(refusal)
-    return 2
+    return failClosed(() => {
+      const event = readEvent()
+      const target = event.tool_input?.file_path ?? event.tool_input?.notebook_path
+      if (!target) return 0
+      const root = git('rev-parse', '--show-toplevel')
+      const refusal = editRefusal(relative(root, realPath(resolve(cwd, target))), workingTree())
+      if (!refusal) return 0
+      console.error(refusal)
+      return 2
+    })
   }
   if (mode === '--before-bash') {
     writeFileSync(snapshotFile(readEvent()), JSON.stringify(snapshot()))
     return 0
   }
   if (mode === '--after-bash') {
-    const file = snapshotFile(readEvent())
-    if (!existsSync(file)) return 0
-    const before = JSON.parse(readFileSync(file, 'utf8'))
-    rmSync(file)
-    const changed = touched(before, snapshot()).filter((path) => areaOf(path))
-    const missing = missingTests(workingTree()).filter(({ files }) =>
-      files.some((path) => changed.includes(path)),
-    )
-    if (missing.length === 0) return 0
-    console.error('The command changed RLS or RBAC code while no test of its area has changed:')
-    report(missing)
-    console.error(
-      'Revert it, or write the test first and watch it fail (AGENTS.md, "Tests first for RLS and RBAC").',
-    )
-    return 2
+    return failClosed(() => {
+      const file = snapshotFile(readEvent())
+      // Without the record of --before-bash, every changed file counts as the command's.
+      const before = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}
+      rmSync(file, { force: true })
+      const changed = touched(before, snapshot()).filter((path) => areaOf(path))
+      const missing = missingTests(workingTree()).filter(({ files }) =>
+        files.some((path) => changed.includes(path)),
+      )
+      if (missing.length === 0) return 0
+      console.error('The command changed RLS or RBAC code while no test of its area has changed:')
+      report(missing)
+      console.error(
+        'Revert it, or write the test first and watch it fail (AGENTS.md, "Tests first for RLS and RBAC").',
+      )
+      return 2
+    })
   }
   if (mode === '--commit-msg') {
     // A merge brings commits checked on their own branch; CI skips merges the same way.

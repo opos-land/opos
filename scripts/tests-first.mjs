@@ -199,24 +199,23 @@ export function touched(before, after) {
 }
 
 /**
- * Whether a commit message carries a `No-Test-Reason:` trailer with a reason. Trailers are the
- * last paragraph after the subject, every line of it a `Key: value` or a folded continuation;
- * comment lines and everything below the scissors line of `git commit -v` are not the message.
+ * Whether a commit message carries a `No-Test-Reason:` trailer with a reason, read by git itself:
+ * comment lines and what follows the scissors line drop out, folded values unfold, and with the key
+ * configured a block that also holds footers such as `BREAKING CHANGE:` still counts.
  */
 export function exempted(message) {
-  const paragraphs = message
-    .split(/^# -+ >8 -+$/m)[0]
-    .split('\n')
-    .filter((line) => !line.startsWith('#'))
-    .join('\n')
-    .trim()
-    .split(/\n[ \t]*\n/)
-  if (paragraphs.length < 2) return false
-  const trailers = paragraphs.at(-1).split('\n')
-  return (
-    trailers.every((line) => /^[\w-]+:[ \t]/.test(line) || /^[ \t]+\S/.test(line)) &&
-    trailers.some((line) => /^No-Test-Reason:[ \t]*\S/.test(line))
+  const trailers = execFileSync(
+    'git',
+    [
+      '-c',
+      'trailer.notestreason.key=No-Test-Reason',
+      'interpret-trailers',
+      '--parse',
+      '--no-divider',
+    ],
+    { input: message, encoding: 'utf8' },
   )
+  return /^No-Test-Reason:[ \t]*\S/im.test(trailers)
 }
 
 const lines = (output) => (output ? output.split('\n') : [])

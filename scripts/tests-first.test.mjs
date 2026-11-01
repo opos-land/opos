@@ -332,8 +332,27 @@ describe('exempted', () => {
       exempted('fix(api): x\n\nNo-Test-Reason: quoted as an example\n\nMore text.\n'),
       false,
     )
-    assert.equal(exempted('fix(api): x\n\nNo-Test-Reason: y\nand a sentence after it\n'), false)
     assert.equal(exempted('No-Test-Reason: the subject\n'), false)
+  })
+
+  it('reads the trailer beside other footers, as AGENTS.md asks for them', () => {
+    assert.equal(
+      exempted('feat(contract)!: x\n\nBody.\n\nBREAKING CHANGE: routes moved\nNo-Test-Reason: y\n'),
+      true,
+    )
+    assert.equal(exempted('fix(api): x\n\nNo-Test-Reason: y\nRefs #12\n'), true)
+  })
+
+  it('reads every spelling git reads as the trailer', () => {
+    for (const message of [
+      'fix(api): x\n\nNo-Test-Reason:rename only\n',
+      'fix(api): x\n\nNo-Test-Reason:\n  rename only\n',
+      'fix(api): x\n\nno-test-reason: rename only\n',
+      'fix(api): x\r\n\r\nNo-Test-Reason: rename only\r\n',
+      'fix(api): x\n\nBody.\n---\nNo-Test-Reason: rename only\n',
+    ]) {
+      assert.equal(exempted(message), true, JSON.stringify(message))
+    }
   })
 
   it('skips comment lines and everything below the scissors line, as git does', () => {

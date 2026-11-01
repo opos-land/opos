@@ -234,7 +234,8 @@ edit, and after a `Bash` command reports it. When a broken script
 refuses every edit, the user restores it with `! git restore scripts/tests-first.mjs`.
 
 A change that needs no test — a rename, a comment, a moved import — says why in a
-`No-Test-Reason: <reason>` trailer of its commit message; an agent the hook refuses such an edit
+`No-Test-Reason: <reason>` trailer of its commit message, read as git reads trailers — in the last
+paragraph, beside footers such as `BREAKING CHANGE:`; an agent the hook refuses such an edit
 asks the user instead of working around the hook. An amend that stages only code is refused when
 the code's test came in the commit it amends: stage the test again or add the trailer. A path of
 an area that moves, or a new directory of code, changes the table here and in the script together.

@@ -26,8 +26,9 @@ paths = [
 ]
 
 # Working tree scan. Its findings carry no commit, so the commit list above cannot match them.
-# The values in the env template are local-only development values. A later change empties the
-# template's secrets and removes this entry.
+# This entry has no commit condition, so it also opens the history of that file: any finding in
+# the env template is allowed in every commit, past and future. The values in the template are
+# local-only development values. The entry goes once the template holds no secret values.
 [[allowlists]]
 description = "local-only development values in the env template, working tree scan"
 paths = [

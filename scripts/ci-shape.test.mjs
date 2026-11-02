@@ -104,6 +104,14 @@ test('gitleaks keeps its default rules', () => {
 test('the history allowlist needs both a listed commit and a listed path', () => {
   const gitleaks = read('../.gitleaks.toml')
   assert.match(gitleaks, /condition = "AND"/)
+  // the AND condition belongs to the allowlist holding the commits; the other has no commits
+  const lists = gitleaks.split('[[allowlists]]').slice(1)
+  assert.equal(lists.length, 2)
+  const [history, tree] = lists
+  assert.match(history, /condition = "AND"/)
+  assert.match(history, /commits = \[/)
+  assert.doesNotMatch(tree, /commits\s*=/)
+  assert.doesNotMatch(tree, /condition\s*=/)
   for (const short of [
     '7e5f8cc',
     '4149f7b',

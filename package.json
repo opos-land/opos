@@ -30,6 +30,7 @@
     "db:tenant:rename": "turbo run db:tenant:rename --",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "infra:init": "node scripts/infra-init.mjs",
     "infra:up": "docker compose up -d --wait",
     "infra:down": "docker compose down",
     "infra:reset": "docker compose down -v && pnpm infra:up"

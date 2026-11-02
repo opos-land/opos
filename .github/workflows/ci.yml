@@ -80,7 +80,7 @@ jobs:
       - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
       - run: pnpm install --frozen-lockfile
       # The applications' dev addresses (docs/PLAN.md, 12. Local development)
-      - run: echo '127.0.0.1 api.localhost panel.localhost opos.localhost' | sudo tee -a /etc/hosts
+      - run: echo '127.0.0.1 api.opos.localhost panel.opos.localhost opos.localhost' | sudo tee -a /etc/hosts
       - run: docker compose up -d --wait db auth mailpit
       - run: pnpm db:migrate
       - run: pnpm db:seed

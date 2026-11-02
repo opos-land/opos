@@ -1,0 +1,10 @@
+# The CLI's own state
+.branches
+.temp
+snippets
+
+# The local ES256 signing key, written by `pnpm infra:init`
+signing_keys.json
+
+# Local environment
+.env

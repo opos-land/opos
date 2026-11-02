@@ -168,8 +168,9 @@ opos/
                               #   tests-first hooks in settings.json (AGENTS.md); still to come: the
                               #   BFF boundary hook (3.2)
   scripts/                    # built: tests-first.mjs, the test-first check of every change, and its
-                              #   test; still to come: bff-boundary.mjs, infra-init.mjs (12),
-                              #   supabase-push.mjs and the remote block check (10), their tests
+                              #   test, infra-init.mjs (12) and its test; still to come:
+                              #   bff-boundary.mjs, supabase-push.mjs and the remote block check
+                              #   (10), their tests
   .github/workflows/deploy.yml  # the deployment to Dev and production (13)
   docker-compose.deploy.yml   # traefik, api, panel, portal, tools; backup (production), mailpit (Dev) (13)
   docs/
@@ -2228,8 +2229,9 @@ in `[auth.rate_limit]`:
 
 The per-IP values are sized for a convention's venue, where hundreds of attendees share the one
 address of its network; Dev keeps production's values so it tests them. The tests sign in, verify
-and refresh many times from one address, hence the local values. The local stack checks no
-`apikey` on `/auth/v1`, does not read `Sb-Forwarded-For` and fixes `email_sent` itself, so these
+and refresh many times from one address, hence the local values. The local stack takes the secret
+key as `apikey` on the admin routes, which answer `401` without it, checks none on the other
+`/auth/v1` routes, does not read `Sb-Forwarded-For` and fixes `email_sent` itself, so these
 three are proven on Dev ([16](#16-smoke-test)).
 `email_sent` is one bucket for every tenant, checked before the send-email hook is called; an empty
 bucket answers sign-up, recovery and email change with `429` `auth.over_email_send_rate_limit`.
@@ -2369,7 +2371,13 @@ It writes no `SUPABASE_PROJECT_ID` or `SUPABASE_ACCESS_TOKEN`, refuses to run wh
 keeps the CLI's own state — `.temp`, `.branches`, `snippets` (the queries Studio saves) — and
 `signing_keys.json` out of git.
 
-`/etc/hosts`:
+Built so far in [infra-init.mjs](../scripts/infra-init.mjs): steps 1, 2 and 4, and the refusals
+above. Still to be built: step 3, the stable per-checkout signing key (the CLI signs ES256 with its own
+key without it), and step 5, which waits for `pnpm db:roles`; until then `pnpm infra:up`, `infra:down` and `infra:reset` stay on
+`docker-compose.yml`.
+
+Where the system does not resolve `*.localhost` to the loopback interface (CI's Ubuntu does not),
+`/etc/hosts` needs:
 
 ```
 127.0.0.1 api.opos.localhost panel.opos.localhost opos.localhost

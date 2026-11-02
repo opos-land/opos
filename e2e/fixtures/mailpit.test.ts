@@ -10,7 +10,7 @@ describe('links in a message', () => {
   })
 
   it('finds the invitation link in the text part', () => {
-    const link = 'http://panel.localhost:5173/invitation?token=a.b.c'
+    const link = 'http://panel.opos.localhost:5173/invitation?token=a.b.c'
     expect(invitationLinkIn(mail(`Join the team: ${link} (valid for 7 days)`))).toBe(link)
   })
 

@@ -2,6 +2,8 @@ min_version = "2026.10.0"
 
 [tools]
 node = "24.15.0"
+# The version fixes the images of the local Supabase stack
+"aqua:supabase/cli" = "2.122.0"
 
 [settings]
 # pnpm is pinned by packageManager in package.json; corepack provides it

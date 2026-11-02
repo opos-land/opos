@@ -135,7 +135,7 @@ describe('errors', () => {
   })
 
   it('refuses a body of another type before any handler reads it', async () => {
-    for (const type of ['text/plain', 'application/octet-stream']) {
+    for (const type of ['text/plain', 'application/octet-stream', 'application/json-x']) {
       const res = await request(app.getHttpServer())
         .patch('/me')
         .set('Authorization', `Bearer ${token}`)

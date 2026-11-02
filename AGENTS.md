@@ -182,6 +182,12 @@ typecheck, lint and tests before every PR. The API tests need the database: `pnp
 then `pnpm install` installs dependencies and wires up the hooks. Dependencies younger than 7 days are
 rejected by `minimumReleaseAge` — that is policy, not a failure.
 
+**CI gates** ([CI](docs/PLAN.md#153-ci)): a PR into `main` needs the jobs `check`, `e2e` and `secrets`
+green. `secrets` scans the tree and the whole history for secrets and fails on a dependency with a
+high advisory, so a secret never enters a commit, not even one removed later. An action in a
+workflow is pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it
+goes through `env`.
+
 **The seed follows the schema.** A change that adds a table, a column without a default, a
 permission or a role, or a data state the tests rely on updates
 [packages/db/src/seed.ts](packages/db/src/seed.ts) and the [demo data](docs/PLAN.md#14-demo-data-seed)

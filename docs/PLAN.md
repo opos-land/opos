@@ -2624,7 +2624,8 @@ CLI's local stack then serves the schema and API tests, behind
 `pnpm db:roles`, `pnpm db:migrate`, `pnpm db:verify` and two runs of `pnpm db:seed` — the second
 proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
 run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
-package and fills the turbo cache that PRs restore. `pnpm build` then bundles the API, and the job
+package with `TURBO_FORCE`, so no cached result stands in for a run, and fills the turbo cache that
+PRs restore. `pnpm build` then bundles the API, and the job
 starts `dist/main.js` with `NODE_ENV=production` against the same stack: `/health` must answer
 `200`. The tests run the sources; this step runs the bundle that production runs. The
 [BFF boundary check](#32-frontend-application-layout), once built, runs on every PR over the sources
@@ -2634,17 +2635,32 @@ and over `dist/` of the panel and the portal.
 below full line, branch and function coverage of the root scripts, each imported by a test beside
 it) and, on a PR into any branch but `main`, the
 [tests-first check](../AGENTS.md#tests-first) on each of the PR's commits; a PR into `main` brings
-commits already checked on their way into `develop`.
+commits already checked on their way into `develop`. `check` also runs the link and anchor check of
+the documents (`.claude/skills/docs-sync/scripts/check-doc-links.mjs`) and the migration journal
+check (`scripts/check-migrations.mjs`) in two forms: on a PR against the base branch, and on every
+push to `develop` or `main` against the commit before the push, which sees what two PRs valid
+alone do to the journal once both have merged; a push that creates a branch has no such commit and
+skips it.
+
+The workflow reads the repository and nothing more (`permissions: contents: read`), every action is
+pinned by a full commit hash with its tag in a comment, and no `run` step interpolates event data:
+`github.*` values reach a script through `env`. [ci-shape.test.mjs](../scripts/ci-shape.test.mjs)
+holds these rules and the shape of the ruleset.
+
+The `secrets` job checks out the whole history and scans it with gitleaks, a pinned release binary
+verified against its checksum: `gitleaks dir` over the tree and `gitleaks git` over every commit,
+both with `--redact`. It then runs `pnpm audit --audit-level high`, which fails on a dependency with
+a high or critical advisory.
 
 A push to `develop` deploys Dev and a push to `main` production, through the deploy workflow
-([13](#deployment-procedure)), once `check` has passed on that commit.
+([13](#deployment-procedure)), once `check`, `e2e` and `secrets` have passed on that commit.
 
 Branches:
 
 | Branch | Role | Protection |
 |---|---|---|
 | `develop` | default branch; every feature and fix PR targets it | none |
-| `main` | released state; changes only through a PR from `develop` | ruleset `protect-main`: PR required (0 approvals), job `check` must pass, no force push, no deletion |
+| `main` | released state; changes only through a PR from `develop` | ruleset `protect-main` ([protect-main.json](../.github/rulesets/protect-main.json)): PR required (0 approvals), jobs `check`, `e2e` and `secrets` must pass, no force push, no deletion |
 
 The `e2e` job runs beside `check`, on its own local Supabase stack, migrated and seeded. It
 receives `/etc/hosts` entries for `api.opos.localhost`, `panel.opos.localhost` and

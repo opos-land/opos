@@ -70,10 +70,11 @@ function setup({ env = {}, files = {}, status = STATUS, templates = TEMPLATES } 
     snapshots[line] = { files: new Map(store), options }
     return line === 'supabase status -o env' ? status : ''
   }
-  const run = () => initInfra({ exec, fs, env, root: ROOT })
+  const warnings = []
+  const run = () => initInfra({ exec, fs, env, root: ROOT, warn: (line) => warnings.push(line) })
   const text = (path) => store.get(at(path))
   const value = (path, key) => new RegExp(`^${key}=(.*)$`, 'm').exec(text(path))?.[1]
-  return { run, store, events, snapshots, text, value }
+  return { run, store, events, snapshots, text, value, warnings }
 }
 
 test('fillEnvFile keeps a value already set and fills an empty one', () => {
@@ -90,13 +91,57 @@ test('fillEnvFile ignores a value for a key the template does not name', () => {
   assert.equal(fillEnvFile('A=\n', '', { Z: 'z' }), 'A=\n')
 })
 
-test('fillEnvFile treats a quoted empty value as set and keeps a set value as written', () => {
-  assert.equal(fillEnvFile('A=\nB=\n', 'A=""\nB="x y"\n', { A: 'a', B: 'b' }), 'A=""\nB="x y"\n')
+test('fillEnvFile fills a quoted empty value and keeps a set value as written', () => {
+  assert.equal(fillEnvFile('A=\nB=\n', 'A=""\nB="x y"\n', { A: 'a', B: 'b' }), 'A=a\nB="x y"\n')
 })
 
-test('fillEnvFile keeps a developer key the template does not name, after the template', () => {
-  assert.equal(fillEnvFile('A=\n', 'A=1\nMINE=2\n', {}), 'A=1\nMINE=2\n')
-  assert.equal(fillEnvFile('A=', 'MINE=2\n', {}), 'A=\nMINE=2\n')
+test('fillEnvFile fills an empty value that has a comment after it, and keeps the comment', () => {
+  assert.equal(fillEnvFile('A=\n', 'A= # mine\n', { A: 'a' }), 'A=a # mine\n')
+})
+
+test('fillEnvFile leaves every byte of an existing file that has nothing to fill', () => {
+  const existing = [
+    '# LEGACY=abc',
+    'A=1',
+    'export MINE=2',
+    '  INDENTED=3',
+    'MULTI="line1',
+    'line2"',
+    '',
+    '# trailing note',
+    '',
+  ].join('\n')
+  assert.equal(fillEnvFile('A=\n', existing, { A: 'x' }), existing)
+  assert.equal(fillEnvFile('A=\nMINE=\nINDENTED=\nMULTI=\n', existing, { MINE: 'z' }), existing)
+})
+
+test('fillEnvFile does not overwrite a set value written with export or indentation', () => {
+  assert.equal(fillEnvFile('A=\n', 'export A=mine\n', { A: 'gen' }), 'export A=mine\n')
+  assert.equal(fillEnvFile('A=\n', '  A=mine\n', { A: 'gen' }), '  A=mine\n')
+})
+
+test('fillEnvFile fills an empty export line in place', () => {
+  assert.equal(fillEnvFile('A=\n', '# note\nexport A=\n', { A: 'gen' }), '# note\nexport A=gen\n')
+})
+
+test('fillEnvFile does not cut a multi-line value, and fills the key after it', () => {
+  const existing = 'A="line1\nline2"\nB=\n'
+  assert.equal(fillEnvFile('A=\nB=\n', existing, { A: 'g', B: 'b' }), 'A="line1\nline2"\nB=b\n')
+})
+
+test('fillEnvFile appends a template key the file lacks, with the template comment', () => {
+  assert.equal(fillEnvFile('# the b\nB=x\n', 'A=1', {}), 'A=1\n# the b\nB=x\n')
+  assert.equal(fillEnvFile('# the b\nB=\n', 'A=1\n', { B: 'y' }), 'A=1\n# the b\nB=y\n')
+})
+
+test('fillEnvFile takes the template value for an empty key when the template sets one', () => {
+  assert.equal(fillEnvFile('A=http://x\n', 'A=\n', { A: 'gen' }), 'A=http://x\n')
+})
+
+test('fillEnvFile gives the same bytes when run again on its own output', () => {
+  const template = '# one\nA=\n\n# two\nB=\nC=x\n'
+  const once = fillEnvFile(template, 'MINE=1\nB=""\n', { A: 'a', B: 'b' })
+  assert.equal(fillEnvFile(template, once, { A: 'other', B: 'other' }), once)
 })
 
 test('initInfra refuses OPOS_ENV dev or production and touches nothing', async () => {
@@ -309,4 +354,79 @@ test('nodeExec rejects when the command fails or does not exist', async () => {
     /exited with 3/,
   )
   await assert.rejects(nodeExec('opos-no-such-command-xyz', [], options), /ENOENT/)
+})
+
+test('initInfra leaves the comments, export lines and unknown keys of an existing .env', async () => {
+  const mine = '# LEGACY=abc\nexport MINE=2\n  INDENTED=3\nINVITE_SECRET=mine\n'
+  const ctx = setup({ files: { 'apps/api/.env': mine } })
+  await ctx.run()
+  assert.ok(ctx.text('apps/api/.env').startsWith(mine))
+  assert.equal(ctx.value('apps/api/.env', 'INVITE_SECRET'), 'mine')
+})
+
+test('initInfra does not rewrite an .env that has nothing to fill', async () => {
+  const ctx = setup()
+  await ctx.run()
+  ctx.events.length = 0
+  await ctx.run()
+  assert.deepEqual(ctx.events, ['exec supabase start', 'exec supabase status -o env'])
+})
+
+test('initInfra warns about an address that differs from the template, naming no value', async () => {
+  const ctx = setup({
+    files: {
+      'apps/api/.env': 'PANEL_URL=http://panel.old.example:1\n',
+      'apps/panel/.env': 'VITE_API_URL=http://api.opos.localhost:3001\n',
+    },
+  })
+  await ctx.run()
+  assert.deepEqual(ctx.warnings, [
+    'apps/api/.env: PANEL_URL differs from apps/api/.env.example; change it by hand if the address is not meant to differ',
+  ])
+})
+
+test('initInfra does not warn about an address that is empty or equal to the template', async () => {
+  const ctx = setup({ files: { 'apps/api/.env': 'PANEL_URL=\nAPI_URL=\n' } })
+  await ctx.run()
+  assert.deepEqual(ctx.warnings, [])
+})
+
+test('initInfra refuses two different hook secrets, naming the key and no value', async () => {
+  const ctx = setup({
+    files: {
+      'supabase/.env': 'SEND_EMAIL_HOOK_SECRET=v1,whsec_AAAA\n',
+      'apps/api/.env': 'SEND_EMAIL_HOOK_SECRET=v1,whsec_BBBB\n',
+    },
+  })
+  await assert.rejects(ctx.run(), (error) => {
+    assert.match(error.message, /SEND_EMAIL_HOOK_SECRET/)
+    assert.doesNotMatch(error.message, /AAAA|BBBB/)
+    return true
+  })
+  assert.deepEqual(ctx.events, [])
+})
+
+test('initInfra accepts the same hook secret in both files', async () => {
+  const same = `v1,whsec_${Buffer.alloc(32, 5).toString('base64')}`
+  const ctx = setup({
+    files: {
+      'supabase/.env': `SEND_EMAIL_HOOK_SECRET=${same}\n`,
+      'apps/api/.env': `SEND_EMAIL_HOOK_SECRET=${same}\n`,
+    },
+  })
+  await ctx.run()
+})
+
+test('nodeExec names the signal that killed a command, and points SIGKILL at mise', async () => {
+  const options = { cwd: tmpdir(), env: process.env }
+  const kill = (signal) => ['-e', `process.kill(process.pid, '${signal}')`]
+  await assert.rejects(
+    nodeExec(process.execPath, kill('SIGTERM'), options),
+    (error) =>
+      /killed by SIGTERM/.test(error.message) && !/run it through mise/.test(error.message),
+  )
+  await assert.rejects(
+    nodeExec(process.execPath, kill('SIGKILL'), options),
+    (error) => /killed by SIGKILL/.test(error.message) && /run it through mise/.test(error.message),
+  )
 })

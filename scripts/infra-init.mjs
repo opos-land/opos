@@ -16,41 +16,70 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 // Each directory holds a .env.example and gets a .env.
 const ENV_DIRS = ['supabase', 'apps/api', 'packages/db', 'apps/panel', 'apps/portal']
 
-const ASSIGNMENT = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/
-
-/** The `KEY=value` lines of an env file, as a map of key to the value as written. */
-function assignments(text) {
-  const found = new Map()
-  for (const line of text.split('\n')) {
-    const match = ASSIGNMENT.exec(line)
-    if (match) found.set(match[1], match[2])
-  }
-  return found
-}
+const ADDRESS_KEYS = ['API_URL', 'PANEL_URL', 'PORTAL_URL', 'VITE_API_URL']
 
 const isSet = (value) => (value ?? '').trim() !== ''
 
+const KEY_LINE = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/
+// What may follow `=` on the line of an empty value: nothing, a quoted nothing, and a comment.
+const EMPTY_REST = /^\s*(?:(["'`])\1)?(?:\s*(#.*))?$/
+
+/** The keys of a template with the comment lines right above each and the value it sets. */
+function templateKeys(template) {
+  const parsed = parseEnv(template)
+  const lines = template.split('\n')
+  const keys = []
+  lines.forEach((line, idx) => {
+    const match = KEY_LINE.exec(line)
+    if (!match) return
+    let start = idx
+    while (start > 0 && lines[start - 1].trimStart().startsWith('#')) start--
+    keys.push({ key: match[1], lines: lines.slice(start, idx + 1), value: parsed[match[1]] })
+  })
+  return keys
+}
+
+/** `text` with the empty assignment of `key` given `value`; the rest of the line stays. */
+function fillAssignment(text, key, value) {
+  const lines = text.split('\n')
+  const target = new RegExp(`^(\\s*(?:export\\s+)?${key}\\s*=)(.*)$`)
+  for (let idx = lines.length - 1; idx >= 0; idx--) {
+    const match = target.exec(lines[idx])
+    const rest = match && EMPTY_REST.exec(match[2])
+    if (!rest) continue
+    lines[idx] = `${match[1]}${value}${rest[2] ? ` ${rest[2]}` : ''}`
+    break
+  }
+  return lines.join('\n')
+}
+
 /**
- * The text of an env file: the template, with an empty value taken from `existing` when that holds
- * one, or else from `values`. A value set in `existing` or in the template is never overwritten, and
- * a key of `existing` the template does not name stays, after the template.
+ * `existing` edited in place: an empty value of a key the template names is filled, from the
+ * template when it sets one and else from `values`, and a template key the file lacks is appended
+ * with its comment. Every other byte stays, comments, `export` lines, multi-line values and keys
+ * the template does not name included; a value `parseEnv` reads as set is never touched. An
+ * empty `existing` gives the template, filled.
  */
 export function fillEnvFile(template, existing, values) {
-  const current = assignments(existing)
-  const named = new Set()
-  const lines = template.split('\n').map((line) => {
-    const match = ASSIGNMENT.exec(line)
-    if (!match) return line
-    const [, key, value] = match
-    named.add(key)
-    if (isSet(current.get(key))) return `${key}=${current.get(key)}`
-    if (isSet(value) || !Object.hasOwn(values, key)) return line
-    return `${key}=${values[key]}`
-  })
-  const extra = [...current].filter(([key]) => !named.has(key)).map(([key, v]) => `${key}=${v}`)
-  if (extra.length === 0) return lines.join('\n')
-  const body = lines.at(-1) === '' ? lines.slice(0, -1) : lines
-  return [...body, ...extra, ''].join('\n')
+  let text = existing.trim() === '' ? template : existing
+  const present = parseEnv(text)
+  const appended = []
+  for (const { key, lines, value } of templateKeys(template)) {
+    let fill = null
+    if (isSet(value)) fill = value
+    else if (Object.hasOwn(values, key)) fill = values[key]
+    // parseEnv names an empty `export KEY=` line `export KEY`
+    const current = present[key] ?? present[`export ${key}`]
+    if (current !== undefined) {
+      if (!isSet(current) && fill !== null) text = fillAssignment(text, key, fill)
+    } else if (fill === null) {
+      appended.push(...lines)
+    } else {
+      appended.push(...lines.slice(0, -1), `${key}=${fill}`)
+    }
+  }
+  if (appended.length === 0) return text
+  return `${text.endsWith('\n') ? text : `${text}\n`}${appended.join('\n')}\n`
 }
 
 export const nodeFs = {
@@ -66,9 +95,17 @@ export function nodeExec(file, args, { cwd, env }) {
     let out = ''
     child.stdout.on('data', (chunk) => (out += chunk))
     child.on('error', reject)
-    child.on('close', (code) => {
+    child.on('close', (code, signal) => {
+      const command = `${file} ${args.join(' ')}`
       if (code === 0) resolve(out)
-      else reject(new Error(`${file} ${args.join(' ')} exited with ${code}`))
+      else if (signal === null) reject(new Error(`${command} exited with ${code}`))
+      else if (signal === 'SIGKILL') {
+        reject(
+          new Error(
+            `${command} was killed by SIGKILL; run it through mise (mise exec -- pnpm infra:init), since a binary installed by brew is killed by macOS when its signature is invalid`,
+          ),
+        )
+      } else reject(new Error(`${command} was killed by ${signal}`))
     })
   })
 }
@@ -85,6 +122,7 @@ export async function initInfra({
   fs = nodeFs,
   env = process.env,
   root = ROOT,
+  warn = console.warn,
 } = {}) {
   if (env.OPOS_ENV && env.OPOS_ENV !== 'local') {
     throw new Error(
@@ -101,7 +139,25 @@ export async function initInfra({
     }),
   )
   const current = (dir) => (fs.exists(file(dir, '.env')) ? fs.read(file(dir, '.env')) : '')
-  const known = (dir, key) => assignments(current(dir)).get(key)
+  const known = (dir, key) => parseEnv(current(dir))[key]
+
+  // Before anything is written: two hook secrets that differ, and addresses that left the template
+  const hook = ['supabase', 'apps/api'].map((dir) => known(dir, 'SEND_EMAIL_HOOK_SECRET'))
+  if (hook.every(isSet) && hook[0] !== hook[1]) {
+    throw new Error(
+      'SEND_EMAIL_HOOK_SECRET differs between supabase/.env and apps/api/.env; make them equal',
+    )
+  }
+  for (const dir of ENV_DIRS) {
+    const wanted = parseEnv(templates.get(dir))
+    for (const key of ADDRESS_KEYS) {
+      if (isSet(known(dir, key)) && isSet(wanted[key]) && known(dir, key) !== wanted[key]) {
+        warn(
+          `${dir}/.env: ${key} differs from ${dir}/.env.example; change it by hand if the address is not meant to differ`,
+        )
+      }
+    }
+  }
 
   /** Writes `dir/.env` filled with `values`, only when that changes it. */
   const fill = (dir, values) => {

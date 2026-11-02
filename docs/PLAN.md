@@ -176,10 +176,7 @@ opos/
   docs/
     PRODUCT.md
     PLAN.md
-  supabase/              # the Supabase CLI project (10, 12)
-    config.toml          # the local stack, and the hosted project's Auth settings ([remotes.production])
-    .env.example         # the variables config.toml reads with env(), the template of supabase/.env
-    .gitignore           # .temp, .branches, snippets, signing_keys.json
+  supabase/              # built: the Supabase CLI project (10, 12); still to come: the [remotes.*] blocks
   infra/
     traefik/             # static configuration (13)
     backup/              # Dockerfile and script of the backup service (13)
@@ -262,8 +259,8 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
 
 - `build`, `dev` and `test` depend on `i18n:compile` (`test` also on `^i18n:compile`), so nothing
   runs with stale or missing catalogs.
-- The files outside every package that shape the environment the tests run in — `supabase/config.toml`
-  and `.github/workflows/` — are `globalDependencies`: a change to them misses every task's cache,
+- The files outside every package that shape the environment the tests run in — `supabase/config.toml`,
+  `mise.toml` and `.github/workflows/` — are `globalDependencies`: a change to them misses every task's cache,
   and `--affected` counts every package as affected.
 - A task with side effects is not cached: `test:e2e`, `i18n:extract` and every `db:*` task.
   Persistent tasks (`dev`, `db:studio`) set `persistent: true`.
@@ -2376,8 +2373,8 @@ above. Still to be built: step 3, the stable per-checkout signing key (the CLI s
 key without it), and step 5, which waits for `pnpm db:roles`; until then `pnpm infra:up`, `infra:down` and `infra:reset` stay on
 `docker-compose.yml`.
 
-Where the system does not resolve `*.localhost` to the loopback interface (CI's Ubuntu does not),
-`/etc/hosts` needs:
+CI adds this line to its `/etc/hosts` ([15.3](#153-ci)); a developer's machine needs it only when
+the names do not resolve to the loopback interface:
 
 ```
 127.0.0.1 api.opos.localhost panel.opos.localhost opos.localhost

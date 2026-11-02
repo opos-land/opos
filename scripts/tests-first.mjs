@@ -60,7 +60,8 @@ const areas = [
     code: [
       /^packages\/db\/drizzle\/[^/]+\.sql$/,
       /^packages\/db\/src\/schema\//,
-      /^packages\/db\/src\/(rls|verify|tenants|client)\.ts$/,
+      /^packages\/db\/src\/(rls|verify|tenants|client|roles|migration-url)\.ts$/,
+      /^packages\/db\/src\/scripts\/roles\.ts$/,
       /^infra\/supabase\/db\//,
     ],
     tests: [/^packages\/db\/test\/.+\.test\.ts$/],
@@ -107,11 +108,11 @@ const testedIn = (area, changes) =>
 
 /**
  * Whether a test file's source holds a test: a line that opens with a call of `describe`, `it` or
- * `test`, `.todo` aside, outside a block comment that opens a line.
+ * `test`, `.todo` and `.skip` aside, outside a block comment that opens a line.
  */
 export function holdsTests(source) {
   const code = source.replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, '')
-  return /^[ \t]*(describe|it|test)(\.(?!todo\b)\w+(\([^()]*\))?)*\s*\(/m.test(code)
+  return /^[ \t]*(describe|it|test)(\.(?!(todo|skip)\b)\w+(\([^()]*\))?)*\s*\(/m.test(code)
 }
 
 /** The changes with each test file that holds no test marked hollow; `read` returns its source. */

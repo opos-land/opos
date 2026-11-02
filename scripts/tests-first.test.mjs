@@ -387,13 +387,21 @@ describe('deletions', () => {
   })
 })
 
+describe('the rls area', () => {
+  it('holds the roles and the migration url of packages/db', () => {
+    assert.equal(areaOf('packages/db/src/roles.ts'), 'rls')
+    assert.equal(areaOf('packages/db/src/scripts/roles.ts'), 'rls')
+    assert.equal(areaOf('packages/db/src/migration-url.ts'), 'rls')
+  })
+})
+
 describe('test files without tests', () => {
   it('are told apart by a call of describe, it or test that opens a line', () => {
     for (const source of [
       "describe('x', () => {})",
       "  it.each([1])('x %s', () => {})",
-      "\ttest.skip('x', () => {})",
-      "it.skip.each([[1, 2]])('x', () => {})",
+      "\ttest.only('x', () => {})",
+      "it.each([1])('x', () => {})",
       "describe.each(cases.map((c) => c))('x', () => {})",
     ]) {
       assert.equal(holdsTests(source), true, source)
@@ -405,11 +413,19 @@ describe('test files without tests', () => {
       "// it('x', () => {})\n",
       "/*\nit('x', () => {})\n*/\n",
       "it.todo('later')\n",
+      "it.skip('x', () => {})\n",
+      "describe.skip('x', () => {})\n",
+      "\ttest.skip('x', () => {})\n",
+      "it.skip.each([[1, 2]])('x', () => {})\n",
       'export const testing = 1\n',
       'export const ok = /a/.test(s)\n',
     ]) {
       assert.equal(holdsTests(source), false, source)
     }
+  })
+
+  it('count a live test beside a skipped one', () => {
+    assert.equal(holdsTests("it.skip('a', () => {})\nit('b', () => {})\n"), true)
   })
 
   it('do not count as a test of their area', () => {

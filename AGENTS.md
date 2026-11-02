@@ -203,7 +203,7 @@ code is covered by a test of its own package.
 
 | Area | Code | Its tests |
 |---|---|---|
-| `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client}.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
+| `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client,roles,migration-url}.ts`, `packages/db/src/scripts/roles.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
 | `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
 | `api`, `panel`, `portal` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
 | `db`, `contract`, `i18n`, `eslint-config` | the rest of `packages/<name>/` | a `*.test.*` anywhere in the same package |
@@ -217,7 +217,7 @@ tools (`eslint`, `vite`, `vitest`, `lingui`, `drizzle`, `tsdown`, `playwright`, 
 it.
 
 A deleted test is no test of its area, and neither is a test file in which no line opens with a
-call of `describe`, `it` or `test` (`.todo` and commented-out calls aside); deleted code is a change of its area, and so is a file moved out of it.
+call of `describe`, `it` or `test` (`.todo`, `.skip` and commented-out calls aside); deleted code is a change of its area, and so is a file moved out of it.
 
 [scripts/tests-first.mjs](scripts/tests-first.mjs) holds this table and enforces it three times:
 

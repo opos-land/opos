@@ -233,6 +233,11 @@ closed: a check that cannot run — unreadable input, git failing, a broken scri
 edit, and after a `Bash` command reports it. When a broken script
 refuses every edit, the user restores it with `! git restore scripts/tests-first.mjs`.
 
+After an `Edit` or `Write` of a migration, the hook [.claude/hooks/migration-reminder.mjs](.claude/hooks/migration-reminder.mjs)
+hands the agent the rules of a migration as context; it never blocks. The project permissions in
+[.claude/settings.json](.claude/settings.json) deny a read of the real `.env` files and of
+the Supabase signing keys file; the `.env.example` templates stay readable.
+
 A change that needs no test — a rename, a comment, a moved import — says why in a
 `No-Test-Reason: <reason>` trailer of its commit message, read as git reads trailers — in the last
 paragraph, beside footers such as `BREAKING CHANGE:`; an agent the hook refuses such an edit
@@ -244,7 +249,9 @@ an area that moves, or a new directory of code, changes the table here and in th
 change to PRODUCT.md or PLAN.md, link and anchor check included. Before a PR, run the
 `tenant-isolation-reviewer` agent when the change touches `packages/db` or `apps/api`, and the
 `i18n-reviewer` agent when it touches user-facing text, a `.po` catalog or `packages/i18n`. Both
-only report; fix what they find before opening the PR.
+only report; fix what they find before opening the PR. [.claude/agent-docs.test.mjs](.claude/agent-docs.test.mjs)
+checks that the paths this file and the agent files cite exist and that the area names here equal
+those of the script.
 
 **The panel and the portal never talk to Supabase.** The API is their only backend (BFF): no
 `@supabase/*` package, no Supabase address or key and no `VITE_*` variable naming Supabase in either

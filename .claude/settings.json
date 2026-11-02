@@ -1,4 +1,12 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(./apps/*/.env)",
+      "Read(./packages/*/.env)",
+      "Read(./supabase/.env)",
+      "Read(./supabase/signing_keys.json)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -21,6 +29,15 @@
       }
     ],
     "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/migration-reminder.mjs"
+          }
+        ]
+      },
       {
         "matcher": "Bash",
         "hooks": [

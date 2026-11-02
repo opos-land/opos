@@ -228,6 +228,7 @@ opos/
       .env.example       # the db:* scripts' variables (11)
       src/
         scripts/roles.ts # db:roles, the OPOS roles and their grants (4.6)
+        scripts/reset-2fa.ts # db:account:reset-2fa (14)
         schema/          # one file per table (4); still to come:
           account-recovery-codes.ts
           program-item-reviews.ts
@@ -274,14 +275,15 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   ([11](#11-environment-variables)).
 - turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
   every `db:*` task pass the database variables through (`passThroughEnv`), `test` also the local
-  Mailpit address, `db:seed` also `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `OPOS_ENV`
+  Mailpit address, `db:seed` also `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `OPOS_ENV`,
+  `db:account:reset-2fa` those and the mail variables
   ([11](#11-environment-variables)), and `dev` passes `OPOS_PANEL_PORT` and `OPOS_PORTAL_PORT` to
   the dev servers ([12](#ports)), so they reach the scripts and stay out of the hash.
 - `test:e2e` depends on the panel's and the portal's `i18n:compile`, since Playwright starts their
   dev servers ([15.2](#152-e2e-tests)), and passes `CI`, the `OPOS_*_PORT` variables and the local
   Mailpit address through.
-- The root scripts that take arguments, `db:seed`, `db:tenant:create` and `db:tenant:rename`, end
-  with `--`, so pnpm hands the arguments through turbo to the package script.
+- The root scripts that take arguments, `db:seed`, `db:tenant:create`, `db:tenant:rename` and
+  `db:account:reset-2fa`, end with `--`, so pnpm hands the arguments through turbo to the package script.
 
 ### 3.2 Frontend application layout
 
@@ -394,7 +396,7 @@ The [glossary](PRODUCT.md#3-glossary) terms map onto tables as follows:
 
 | Term | Carrier |
 |---|---|
-| admin | no table: works on the database directly, through `pnpm db:tenant:create` and `pnpm db:tenant:rename` |
+| admin | no table: works on the database directly, through `pnpm db:tenant:create`, `pnpm db:tenant:rename` and `pnpm db:account:reset-2fa` |
 | org, head | `tenant_memberships` (+ optionally `edition_memberships`) |
 | user | `auth.users` + `accounts` + rows in `attendees` |
 | tenant | `tenants` |
@@ -455,7 +457,8 @@ through `public.opos_handle_mfa_factor_change()`: `security definer`, `search_pa
 factor clears it, and an unverified factor leaves it `null`.
 
 **Matching an account by email counts only a confirmed one.** Wherever OPOS looks an account up by
-an email address — `createTenant` ([14](#creating-a-tenant)), an invitation
+an email address — `createTenant` ([14](#creating-a-tenant)),
+`pnpm db:account:reset-2fa` ([14](#resetting-two-factor-authentication)), an invitation
 ([7.7](#77-organizer-invitations)), a speaker list
 ([5.5](#55-program--jwt--x-tenant-slug--edition-permission)), `GET /me/tickets` — an account whose `emailConfirmedAt` is
 `null` counts as no account: Supabase Auth keeps the password of whoever registered an address
@@ -471,6 +474,8 @@ deleted by the triggers and the cascade alone, both running as `postgres`.
 ([7.12](#712-two-factor-authentication)): `accountId` (FK `accounts`, cascade), `codeHash` (text, the
 SHA-256 of the code), `usedAt` (timestamptz, nullable). It has no RLS either: `opos_app` may select,
 insert and delete, and update `usedAt` alone; `opos_app_global` has no access.
+
+Still to be built: the column `mfaEnabledAt`, its trigger and the table `account_recovery_codes`.
 
 ### 4.3 Tenant-level tables
 
@@ -593,7 +598,8 @@ Every RLS-covered table has an index starting with `tenantId`.
 11. **A scanner works only inside its edition** — every scanner query filters on the device's
     `editionId`; a ticket from another edition is `404`.
 12. **`accounts.mfaEnabledAt` is set exactly while the account holds a verified factor** — trigger
-    `opos_on_auth_mfa_factor_changed` ([4.2](#42-global-tables)).
+    `opos_on_auth_mfa_factor_changed` ([4.2](#42-global-tables)). Still to be built: this invariant,
+    with its column and trigger.
 
 ### 4.6 Tenant isolation — RLS in Postgres
 
@@ -601,7 +607,7 @@ Every RLS-covered table has an index starting with `tenantId`.
 
 | Role | Attributes | Used by |
 |---|---|---|
-| `postgres` | the project's own admin role, not a superuser: `BYPASSRLS`, `CREATEROLE`; owner of the `public` tables and the `drizzle` journal; every privilege Supabase gives it on the `auth` tables | `pnpm db:roles`, `pnpm db:migrate`, `pnpm db:seed`, the tenant scripts, the backup |
+| `postgres` | the project's own admin role, not a superuser: `BYPASSRLS`, `CREATEROLE`; owner of the `public` tables and the `drizzle` journal; every privilege Supabase gives it on the `auth` tables | `pnpm db:roles`, `pnpm db:migrate`, `pnpm db:seed`, the tenant scripts, `pnpm db:account:reset-2fa`, the backup |
 | `opos_app` | only the privileges the API uses (below), no `BYPASSRLS` | runtime API inside a tenant context |
 | `opos_app_global` | `select` on the columns its cross-tenant queries read, never a whole table; `BYPASSRLS` | `GlobalDbService` exclusively |
 
@@ -627,6 +633,8 @@ It runs before the first migration of a database, so no table, sequence or funct
 holds a grant for the three roles and none of its functions is executable through `PUBLIC`;
 `db:verify` reports one that is.
 
+Still to be built: `db:roles` itself ([3](#3-monorepo-structure)), with every statement of this table.
+
 **OPOS writes nothing into `auth`.** Of its privileges on the `auth` tables `postgres` may pass on
 `select` alone, so what ties `public` to `auth` — the foreign key of `accounts` to `auth.users`, the
 `accounts` triggers on `auth.users` and the trigger on `auth.mfa_factors`
@@ -646,11 +654,11 @@ URLs, so they are hex (`openssl rand -hex 32`).
 Every session the runtime pools `appDb()` and `globalDb()` open is bounded by the settings of its
 role, which `db:roles` writes from `RUNTIME_TIMEOUTS` ([client.ts](../packages/db/src/client.ts)):
 
-| Role setting | Bounds | Value |
-|---|---|---|
-| `statement_timeout` | a statement, a wait for a lock included | `15s` |
-| `idle_in_transaction_session_timeout` | the idle time inside a transaction | `15s` |
-| `transaction_timeout` | a transaction | `30s` |
+| Role setting | Bounds |
+|---|---|
+| `statement_timeout` | a statement, a wait for a lock included |
+| `idle_in_transaction_session_timeout` | the idle time inside a transaction |
+| `transaction_timeout` | a transaction |
 
 The pools send `application_name` alone as a startup parameter. Past a limit Postgres cancels the
 statement or ends the session, the transaction rolls back with its tenant context, and the request
@@ -658,6 +666,9 @@ answers `500` `server.error`. A transaction never waits on anything outside the 
 request that needs more time than the limits allow is a bug. The runtime pools use the direct
 connection: `env.ts` refuses a runtime URL through Supavisor where `OPOS_ENV` is `dev` or `production`
 ([13](#database-connection)).
+
+Still to be built: the limits as role settings and that refusal in `env.ts`; until `db:roles` writes
+them, [client.ts](../packages/db/src/client.ts) sends the limits as startup parameters.
 
 The migration pool `migrationDb()`, connected as `postgres`, sends no limit of its own. On a hosted
 project it runs under the server's `statement_timeout` of 2 minutes, which comes from the server's
@@ -838,13 +849,13 @@ and debugging — **it never reaches the UI**. Every code is listed in
 | `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `editions_slug_format` -> `slug`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
 | `401` | no session cookie, an expired or foreign access token in it, or no `accounts` row for it; a route that needs a recent sign-in without one has its own code (`session.reauthentication-required`, [7.4](#74-authorization)), a session below `aal2` on an account with two-factor authentication has its own (`session.mfa-required`, [7.12](#712-two-factor-authentication)), and so do the Supabase Auth refusals the API passes on ([5.1](#51-auth--sign-in-through-the-api)) | `session.invalid` |
 | `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)), and so does an invitation for another email ([7.7](#77-organizer-invitations)); a request that changes state with the session cookie from an `Origin` outside `PANEL_URL` and `PORTAL_URL` is `request.origin-denied` ([7.4](#74-authorization)) |
-| `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found`; an address without a confirmed account in a speaker list has its own code ([5.5](#55-program--jwt--x-tenant-slug--edition-permission)) |
+| `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found`; an address without a confirmed account in a speaker list has its own code ([5.5](#55-program--jwt--x-tenant-slug--edition-permission)), and so does `DELETE /auth/mfa` with no factor ([7.12](#712-two-factor-authentication)) |
 | `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`), and so does a unique constraint a concurrent request won (`tenant_memberships_account_tenant_unique` -> `member.exists`, or `invitation.already-member` on `POST /invitations/accept`; `accepted_invitations_tenant_jti_unique` -> `invitation.used`) | always a specific code |
 | `410` | an organizer invitation past its validity, or one its sender can no longer send ([7.7](#77-organizer-invitations)) | `invitation.expired`, `invitation.revoked` |
 | `415` | a request body that is not `application/json`, refused from its headers before routing ([json-body.ts](../apps/api/src/common/json-body.ts)): Express parses JSON within its size limit, and oRPC would read any other body itself, with no limit | `request.invalid` |
 | `429` | rate limit | `request.rate-limited` |
 | `500` | anything unexpected; the body carries no details, the log does | `server.error` |
-| `503` | a write that waited longer than 5 s in its tenant's queue or for its tenant's write lock ([7.3](#73-permissions)), `Retry-After: 1`; Supabase Auth or its signing keys out of reach, or a `5xx` from Supabase Auth ([5.1](#51-auth--sign-in-through-the-api), [7.4](#74-authorization)), `Retry-After: 30`, with the session cookies kept | `request.busy`, `server.unavailable` |
+| `503` | a write that waited longer than 5 s in its tenant's queue or for its tenant's write lock ([7.3](#73-permissions)), `Retry-After: 1`; Supabase Auth, its admin API or its signing keys out of reach, or a `5xx` from Supabase Auth or its admin API ([5.1](#51-auth--sign-in-through-the-api), [7.4](#74-authorization), [10](#admin-api)), `Retry-After: 30`, with the session cookies kept | `request.busy`, `server.unavailable` |
 
 `HttpExceptionFilter` ([http-exception.filter.ts](../apps/api/src/common/filters/http-exception.filter.ts))
 turns everything thrown during a request into this shape; code that has a specific code throws
@@ -880,8 +891,8 @@ document like `GET /health`. Every other route is in the contract (`contract.aut
 [7.12](#712-two-factor-authentication), each an `accountRoute`.
 
 What Supabase Auth answers a call made for a session or a sign-in reaches the client as one of
-these; `POST /auth/sign-out` answers as its row says, and the [admin API](#admin-api) has a rule of
-its own:
+these. `POST /auth/sign-out` answers as its row says, and a call to the [admin API](#admin-api)
+shares only the `503` row:
 
 | Supabase Auth answers | The API answers | Session cookies |
 |---|---|---|
@@ -889,7 +900,7 @@ its own:
 | `insufficient_aal` | `401` `session.mfa-required` ([7.12](#712-two-factor-authentication)) | kept |
 | `mfa_verification_failed` | `400` `mfa.code-invalid` ([7.12](#712-two-factor-authentication)) | kept |
 | a code the contract lists: `email_not_confirmed`, `invalid_credentials`, `weak_password`, `same_password`, `otp_expired`, `email_address_invalid`, `over_email_send_rate_limit`, `over_request_rate_limit` | `auth.<error_code>` with Supabase Auth's status | kept |
-| a transport failure or any `5xx` | `503` `server.unavailable`, `Retry-After: 30` | kept |
+| a transport failure or any `5xx`, from the admin API too | `503` `server.unavailable`, `Retry-After: 30` | kept |
 | anything else | `500` `server.error`, logged | kept |
 
 An outage of Supabase Auth signs nobody out. The client translates these like every other code,
@@ -929,6 +940,8 @@ which `/login` offers. Google sign-in needs no such step ([7.5](#75-google-oauth
 | GET | `/me/tickets` | tickets from `paid` orders placed with the account's email, across all tenants, with their codes |
 | POST | `/me/attendances` | `{ tenantSlug, editionSlug, firstName, lastName }`; `409` on a repeat sign-up, `404` for an unpublished edition |
 | DELETE | `/me/attendances/:attendeeId` | withdraw |
+
+Still to be built: `mfaEnabled` and `signInMethods` on `GET /me`.
 
 ### 5.3 `tenants` — JWT + `X-Tenant-Slug`
 
@@ -1243,7 +1256,9 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 `TenantContextMiddleware` (global) opens a request store in ALS that holds only the client's address,
 in two forms: `clientIp`, in full with an IPv4-mapped address reduced to IPv4, for `Sb-Forwarded-For`
 ([10](#api-keys-and-the-clients-address)), and `clientAddress`, an IPv6 one by its `/64`, for the
-API's own counters ([7.9](#79-rate-limiting)). Nothing reads the database before the guards
+API's own counters ([7.9](#79-rate-limiting)). Still to be built: `clientIp`.
+
+Nothing reads the database before the guards
 have run; the guards and the interceptor fill the store:
 
 | Order | Component | Puts into the store |
@@ -1440,13 +1455,14 @@ Verifying a token ends in one of three outcomes:
 | Outcome | When | The guard answers |
 |---|---|---|
 | `valid` | every rule above holds | goes on to the account |
-| `invalid` | a rule is broken or the signature is wrong: `JWTExpired`, `JWTClaimValidationFailed`, `JWTInvalid`, `JWSInvalid`, `JWSSignatureVerificationFailed`, `JOSEAlgNotAllowed`, `JWKSNoMatchingKey`, `JWKSMultipleMatchingKeys` | `401` `session.invalid`; the client refreshes |
+| `invalid` | a rule is broken or the signature is wrong: `JWTExpired`, `JWTClaimValidationFailed`, `JWTInvalid`, `JWSInvalid`, `JWSSignatureVerificationFailed`, `JOSEAlgNotAllowed`, `JOSENotSupported`, `JWKSNoMatchingKey`, `JWKSMultipleMatchingKeys` | `401` `session.invalid`; the client refreshes |
 | `unavailable` | anything else, above all a key set that cannot be fetched while no key is held | `503` `server.unavailable`, `Retry-After: 30`, the cookies kept |
 
 The keys outlast an outage: `createRemoteJWKSet` runs with `cacheMaxAge: Infinity`, a 2 s timeout and
 a 30 s cooldown, and a timer reloads the set every 10 minutes. A failed reload is logged and the last
-good keys keep verifying, however old they are. A new `kid` is fetched at once, and a key removed from
-the set stops verifying at the next reload that succeeds.
+good keys keep verifying, however old they are. The set is fetched again for an unknown `kid`, at most
+once per 30 s, so inside that cooldown an unknown `kid` is `invalid`. A key removed from the set stops
+verifying at the next reload that succeeds. Still to be built: the three outcomes and the timer.
 
 **In the browser** the panel and the portal hold no session state of their own: the API link sends
 the cookies (`credentials: 'include'`), and the account comes from `GET /me`
@@ -1456,15 +1472,16 @@ the cookies (`credentials: 'include'`), and the account comes from `GET /me`
 **Tabs of one application share its cookies.** `POST /auth/refresh` runs inside a Web Lock
 (`navigator.locks`, one name per application), so tabs refresh in turn, each with the newest cookie;
 a browser without Web Locks refreshes without one. A refresh ends in `refreshed`, in `signed-out`
-on a `401`, or in `unavailable` on a `503` or a network failure, and only `signed-out` ends the
-session in the browser. An account change — a sign-in, a sign-out, another account's session
+on a `401`, or in `unavailable` on a `429`, a `500`, a `503` or a network failure, and only
+`signed-out` ends the session in the browser. An account change — a sign-in, a sign-out, another account's session
 replacing it — is announced on a `BroadcastChannel` (`opos-panel-session`, `opos-portal-session`),
 and every other tab of the application clears its query cache.
 
 **Recent sign-in** — `DELETE /me`, `PUT /auth/password`, `POST /auth/mfa/enroll` and
 `DELETE /auth/mfa` require an `amr` entry in the JWT with a
-timestamp younger than 5 minutes; without one -> `401` `session.reauthentication-required`. A
-session that `POST /auth/verify` started carries the `amr` of that link, so a confirmation or a
+timestamp younger than 5 minutes; without one -> `401` `session.reauthentication-required`. The
+newest entry counts, `totp` included, so on an account with two-factor authentication the 5 minutes
+run from the code. A session that `POST /auth/verify` started carries the `amr` of that link, so a confirmation or a
 recovery link counts as a sign-in at the moment its button was pressed. A refresh keeps the `amr` of the
 sign-in that started the session, so the client answers that code not by refreshing but by
 confirming the password (`POST /auth/sign-in`) or by signing in with Google again, which on an
@@ -1499,8 +1516,8 @@ request ([10](#api-keys-and-the-clients-address)):
    exchange answers `302` to `<app URL>/login?error=<code>` (`auth.<error_code>`, or
    `auth.google-failed`), and `<PORTAL_URL>/login` when the cookie names no application.
 
-`opos_google` carries no signature: PKCE binds the code to the verifier, and the callback judges the
-application and the path itself.
+The API does not sign `opos_google`. The callback takes nothing from it on trust: it judges the
+application and the path again, as the start route does.
 
 `redirect_to` must match `additional_redirect_urls` exactly ([10](#10-supabase)), and the API's
 callback is the only Google entry there. Supabase Auth never redirects to an arbitrary address
@@ -1528,17 +1545,20 @@ Required behaviour when the email already exists, checked in the smoke test
    `token_hash` to `POST /auth/verify`, which signs the browser in with
    the session cookies, in whichever browser it was pressed, and the page shows the new password
    form. The
-   new password goes to `PUT /auth/password` within 5 minutes of pressing the button, or the form
-   offers a new link ([7.4](#74-authorization)):
+   new password goes to `PUT /auth/password` within 5 minutes of pressing the button, or of the code
+   on an account with two-factor authentication, or the form offers a new link
+   ([7.4](#74-authorization)):
    `updateUser({ password })`, then `signOut({ scope: 'others' })` — every
    other session ends: its refresh tokens stop working at once, and an access token it already
    holds keeps working until it expires, at most 15 minutes later ([7.4](#74-authorization)).
 3. The flow works for a Google-only account as well: completing it adds password sign-in next to
    Google.
-4. On an account with two-factor authentication the link starts at `aal1`:
-   `POST /auth/verify` sets the cookies and answers `401` `session.mfa-required`, and the password
-   form comes after the code screen ([7.12](#712-two-factor-authentication)). `updateUser` at `aal1`
-   is refused with `insufficient_aal`, so the link alone never changes the password.
+4. On an account with two-factor authentication the link starts at `aal1`: the button's
+   `POST /auth/verify` sets the cookies and answers `401` `session.mfa-required`, and the page goes
+   to `/auth/mfa` with the return path `/auth/confirm` ([7.12](#712-two-factor-authentication)).
+   `/auth/confirm` holding a session and no token shows the password form, without asking for the
+   spent token again. `updateUser` at `aal1` is refused with `insufficient_aal`, so the link alone
+   never changes the password.
 
 ### 7.7 Organizer invitations
 
@@ -1745,13 +1765,13 @@ Still to be built, in [modules/auth](../apps/api/src/modules/auth) and `contract
 Auth's factors. Each account turns it on for itself
 ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); no role requires it.
 
-| Method | Path | Requires | Does | Answers |
-|---|---|---|---|---|
-| POST | `/auth/mfa/enroll` | account, recent sign-in, no verified factor | removes a stale unverified factor, `mfa.enroll({ factorType: 'totp' })` | `200 { factorId, qrCode, secret }`; `409` `mfa.already-enabled` |
-| POST | `/auth/mfa/enable` | account, own `factorId` | `challengeAndVerify`, sets `aal2` cookies, creates recovery codes | `200 { recoveryCodes }`; `400` `mfa.code-invalid` |
-| POST | `/auth/mfa/verify` | `aal1` session with 2FA | `challengeAndVerify` on the account's own factor, sets `aal2` cookies | `204`; `400` `mfa.code-invalid` |
-| POST | `/auth/mfa/recover` | `aal1` session with 2FA | consumes a code, admin removes the factors and unused codes, sends the email | `204`; `400` `mfa.code-invalid` |
-| DELETE | `/auth/mfa` | `aal2`, recent sign-in | removes the factors and unused codes, sends the email | `204` |
+| Method | Path | Input | Requires | Does | Answers |
+|---|---|---|---|---|---|
+| POST | `/auth/mfa/enroll` | — | account, recent sign-in, no verified factor | removes a stale unverified factor, `mfa.enroll({ factorType: 'totp' })` | `200 { factorId, qrCode, secret }`; `409` `mfa.already-enabled` |
+| POST | `/auth/mfa/enable` | `{ factorId, code }` | account, own `factorId` | `challengeAndVerify`, sets `aal2` cookies, creates recovery codes | `200 { recoveryCodes }`; `400` `mfa.code-invalid`; `404` `request.not-found` for a foreign `factorId`; `409` `mfa.already-enabled` on an already verified factor |
+| POST | `/auth/mfa/verify` | `{ code }` | `aal1` session with 2FA | `challengeAndVerify` on the account's own factor, sets `aal2` cookies | `204`; `400` `mfa.code-invalid`; `409` `mfa.not-required` on an account without 2FA or at `aal2` |
+| POST | `/auth/mfa/recover` | `{ code }` | `aal1` session with 2FA | finds an unused code, admin removes the factors, then marks the code used and removes the unused ones, sends the email | `204`; `400` `mfa.code-invalid`; `409` `mfa.not-required` on an account without 2FA or at `aal2` |
+| DELETE | `/auth/mfa` | — | `aal2`, recent sign-in | removes the factors and unused codes, sends the email | `204`; `401` `session.mfa-required` below `aal2`; `404` `mfa.not-enabled` with no factor |
 
 A missing recent sign-in answers `401` `session.reauthentication-required`
 ([7.4](#74-authorization)). Factors come from the session's own `listFactors`, never from the
@@ -1759,8 +1779,10 @@ browser alone. Supabase Auth's `mfa_verification_failed` becomes `mfa.code-inval
 ([5.1](#51-auth--sign-in-through-the-api)). `verify`, `recover` and `enable` share a limit of 10
 attempts per 15 minutes per account ([7.9](#79-rate-limiting)), counted by `RouteRateLimiter`.
 
-**The assurance level.** A session below `aal2` on an account with 2FA reaches only `/auth/mfa/*` and
-`POST /auth/sign-out`, the handlers with `@AllowMfaPending()`:
+**The assurance level.** A session below `aal2` on an account with 2FA reaches only `POST /auth/mfa/*`,
+`POST /auth/refresh` and `POST /auth/sign-out`, so a person can stay on the code screen past the 15
+minutes of an access token. Refresh and sign-out are public routes that read the cookies;
+`@AllowMfaPending()` covers the account routes `POST /auth/mfa/*`:
 
 | Case | What happens |
 |---|---|
@@ -1774,10 +1796,21 @@ code.
 
 **Recovery codes.** Ten one-time codes, shown once in the answer of `enable`, each 16 base32
 characters from `crypto.randomBytes`, stored as SHA-256 hashes in the global table
-`account_recovery_codes` ([4.2](#42-global-tables)). `recover` finds a code by its hash among the
-account's own and consumes it with `update ... where usedAt is null returning`. Using one removes the
+`account_recovery_codes` ([4.2](#42-global-tables)). `recover` finds an unused code by its hash among
+the account's own. Using one removes the
 factor, so the person signs in and may turn 2FA on again, and an email tells them, in the account's
 locale ([6](#6-localization)); `DELETE /auth/mfa` sends the same email.
+
+A recovery code counts as used only once factor removal succeeds, so a failed removal spends nothing:
+`recover` removes the factors first, and then marks the code with
+`update ... where usedAt is null returning`. A failed email after a successful `recover` or
+`DELETE /auth/mfa` still answers `204` and is logged, since the removal already happened and a retry
+would fail.
+
+**A lost device and lost codes.** There is no self-service route. The admin, after checking the
+person's identity, runs `pnpm db:account:reset-2fa <email>` through `tools`
+([14](#resetting-two-factor-authentication)), which removes the factors and unused codes through the
+admin API and sends the same email. Still to be built.
 
 **The mirror.** `accounts.mfaEnabledAt` (the column `mfa_enabled_at`) mirrors whether a verified
 factor exists, through trigger `opos_on_auth_mfa_factor_changed` on `auth.mfa_factors`
@@ -1794,6 +1827,14 @@ holds the settings ([10](#supabase-auth-configuration)).
 |---|---|
 | `/auth/mfa` | takes a code or a recovery code; every `session.mfa-required` answer leads here, keeping the path to return to |
 | the two-factor card | shows the QR code and the secret, then the recovery codes once after a right code, until the person confirms they saved them; after a recovery code it shows 2FA as off. The QR code is the `data:` SVG the API returned, which the CSP's `img-src` allows ([13](#images)); it stays in component state and is never stored |
+
+The path `/auth/mfa` returns to:
+
+| The flow that left | Return path |
+|---|---|
+| a password or Google sign-in | the `?redirect=` target the flow carried |
+| a recovery or confirmation link | `/auth/confirm`, which, holding a session and no token, shows the password form without asking for the spent token again ([7.6](#76-password-reset)) |
+| a confirmation of account deletion in the portal, by password or by Google | `/account?confirm=deletion`, so `DELETE /me` runs after the code ([9](#9-appsportal)) |
 
 ---
 
@@ -1826,8 +1867,8 @@ endpoints ([5.1](#51-auth--sign-in-through-the-api)) and the two-factor screens
 | Path | Screen |
 |---|---|
 | `/login` | organizer sign-in: email + password, Google button (`GET /auth/google?app=panel&redirect=<the ?redirect= target>`); shows the code of a failed Google sign-in from `?error=` |
-| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends nothing until its button is pressed; the button sends them once to `POST /auth/verify`, then the page asks for the password ([7.7](#77-organizer-invitations)) and opens the page the round trip started on, or `/`; `auth.otp_expired` offers a new link, and a page opened without a token offers the sign-in |
-| `/auth/mfa` | the code screen of two-factor authentication: a code or a recovery code, then the `?redirect=` target ([7.12](#712-two-factor-authentication)) |
+| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends nothing until its button is pressed; the button sends them once to `POST /auth/verify`, then the page asks for the password ([7.7](#77-organizer-invitations)) and opens the page the round trip started on, or `/`; `session.mfa-required` from the button leads to `/auth/mfa` with the return path `/auth/confirm` ([7.6](#76-password-reset)); `auth.otp_expired` offers a new link; opened without a token, the page shows the password form to a browser holding a session and offers the sign-in to any other |
+| `/auth/mfa` | the code screen of two-factor authentication: a code or a recovery code, then the return path ([7.12](#712-two-factor-authentication)) |
 | `/invitation` | invitation acceptance (`?token=`): the convention and the invited email, sign-in, sign-up with email or Google, the password chosen after the address is confirmed ([7.7](#77-organizer-invitations)) |
 | `/` | convention picker; redirect when there is a single membership |
 | `/:tenantSlug` | tenant dashboard |
@@ -1857,13 +1898,14 @@ endpoints ([5.1](#51-auth--sign-in-through-the-api)) and the two-factor screens
   `opos-panel-session` channel ([7.4](#74-authorization)).
 - `401` `session.invalid` from the API -> one `POST /auth/refresh`, shared by the requests waiting
   on it and in turn with the other tabs ([7.4](#74-authorization)), and one retry. A refresh answered
-  `401`, or a second `401`, signs out. A refresh answered `503`, or stopped by the network, keeps the
-  session and hands the screen the original response.
+  `401`, or a second `401`, signs out. A refresh answered `429`, `500` or `503`, or stopped by the
+  network, keeps the session and hands the screen the original response.
   `session.reauthentication-required` goes to the screen instead ([7.4](#74-authorization)), and
   `session.mfa-required` to `/auth/mfa` ([7.12](#712-two-factor-authentication)); neither refreshes.
 - Application start asks `GET /me`, with one refresh on a `401` as above — until that resolves the
   user sees a loading view, not the sign-in screen
-  ([session.ts](../apps/panel/src/shared/lib/session.ts)). A network failure ends it in the
+  ([session.ts](../apps/panel/src/shared/lib/session.ts)). A network failure or a `503` from
+  `GET /me` ends it in the
   `unavailable` state, which offers to try again: never stuck on the loading view, never signed out.
   The panel knows it is signed in only
   from the API's answers: it reads no cookie and stores no token.
@@ -1932,8 +1974,8 @@ which the bullets below describe.
 | `/privacy` | the privacy policy ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); linked from the registration form and the footer |
 | `/register` | first and last name, email, Google button — no password; after submitting — "check your inbox", with the link sent again on request (`POST /auth/resend`) |
 | `/login` | email and password, Google button, the link to `/forgot-password`; `auth.email_not_confirmed` offers to send the link again (`POST /auth/resend`); shows the code of a failed Google sign-in from `?error=` |
-| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends nothing until its button is pressed; the button sends them once to `POST /auth/verify`, then the page shows the password form for a confirmation and a recovery link alike ([5.1](#the-password-comes-after-the-confirmation), [7.6](#76-password-reset)); saving it ends every other session and opens the page the round trip started on; `auth.otp_expired` offers a new link, and a page opened without a token offers the sign-in |
-| `/auth/mfa` | the code screen of two-factor authentication: a code or a recovery code, then the `?redirect=` target ([7.12](#712-two-factor-authentication)) |
+| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends nothing until its button is pressed; the button sends them once to `POST /auth/verify`, then the page shows the password form for a confirmation and a recovery link alike ([5.1](#the-password-comes-after-the-confirmation), [7.6](#76-password-reset)); saving it ends every other session and opens the page the round trip started on; `session.mfa-required` from the button leads to `/auth/mfa` with the return path `/auth/confirm` ([7.6](#76-password-reset)); `auth.otp_expired` offers a new link; opened without a token, the page shows the password form to a browser holding a session and offers the sign-in to any other |
+| `/auth/mfa` | the code screen of two-factor authentication: a code or a recovery code, then the return path ([7.12](#712-two-factor-authentication)) |
 | `/forgot-password` | password reset request; confirms that the message was sent whatever the address ([7.6](#76-password-reset)) |
 | `/account` | names, interface language, two-factor authentication, sign-out, account deletion |
 | `/my-conventions` | the list of editions the account is signed up for |
@@ -1973,7 +2015,7 @@ which the bullets below describe.
   `opos-portal-session` channel ([7.4](#74-authorization)).
 - Application start asks `GET /me`, with one refresh on a `401`; a page that needs the session
   shows a loading view until then ([session.ts](../apps/portal/src/shared/lib/session.ts)), and a
-  network failure ends it in the `unavailable` state, as in the panel.
+  network failure or a `503` from `GET /me` ends it in the `unavailable` state, as in the panel.
 - Signed out, the interface follows the browser's languages; signed in, the account's `locale`
   ([6](#locale-detection)). A session that ends — sign-out, account deletion, a failed refresh —
   switches the interface back to the browser's languages
@@ -1999,7 +2041,9 @@ unpublished edition under a direct URL or an unknown tenant -> `404`.
 remembered in `localStorage`
 ([deletion-confirmation.ts](../apps/portal/src/features/account/model/deletion-confirmation.ts)).
 On an account with two-factor authentication either confirmation passes through `/auth/mfa` first
-([7.12](#712-two-factor-authentication)).
+([7.12](#712-two-factor-authentication)): `POST /auth/sign-in` answers `session.mfa-required`, and the
+password confirmation also returns through `/account?confirm=deletion`, as the Google return does, so
+`DELETE /me` runs after the code.
 That return is used once and leaves the address at once: a reload or a copied link offers the
 password and Google again, another account Google signed in is told nothing was deleted, and `401`
 `session.reauthentication-required` offers both confirmations again. The methods offered follow the
@@ -2016,7 +2060,8 @@ in [4.6](#cross-tenant-queries)), then deletes the user through the Supabase Aut
 `program_item_speakers`, `program_item_likes` and `program_item_reviews` cascade from `accounts`.
 A head demoted by another request after the check makes the deferred trigger of
 [4.5](#45-invariants) refuse the cascade; Supabase Auth then answers with a failure, and the API
-checks again and answers `409`. A user already gone counts as deleted. Orders are linked by email,
+checks again and answers `409`; any other failure answers as [10](#admin-api) says. A user already
+gone counts as deleted. Orders are linked by email,
 not by account, and stay.
 
 ---
@@ -2148,7 +2193,7 @@ Supabase Auth sends no email itself. For every message it calls `POST /hooks/sen
 |---|---|
 | `signup` | address confirmation |
 | `recovery` | password reset |
-| `email_change` | confirmation of the new address, to the new address, and with secure email change (`double_confirm_changes`) a confirmation of the change to the current address; the change takes effect once both links are opened. No endpoint starts an email change in the MVP |
+| `email_change` | confirmation of the new address, to the new address, and with secure email change (`double_confirm_changes`) a confirmation of the change to the current address; the change takes effect once both links are redeemed. No endpoint starts an email change in the MVP |
 | anything else | `400` — those flows are disabled |
 
 Under secure email change the payload's token names are swapped: `token_hash_new` belongs to the
@@ -2160,10 +2205,14 @@ The secret key also authorizes Supabase Auth's admin API. The API uses it only f
 `DELETE /admin/users/:id` (account deletion) and `DELETE /admin/users/:id/factors/:factorId` (factor
 removal, [7.12](#712-two-factor-authentication)), through `@supabase/auth-js` in
 [auth-admin.client.ts](../apps/api/src/modules/auth/auth-admin.client.ts). A `404` means the user
-or the factor is already gone; any other refusal, a `401` or `403` for a wrong key included, is the API's own
+or the factor is already gone; a transport failure or a `5xx` answers `503` `server.unavailable`; any
+other refusal, a `401` or `403` for a wrong key included, is the API's own
 failure and answers `500` `server.error`, logged — never the caller's `session.invalid` or
 `permission.denied`. The seed calls `POST /admin/users` and `PUT /admin/users/:id` with the same
-key ([14](#14-demo-data-seed)). The key never reaches a frontend ([3.2](#32-frontend-application-layout)).
+key ([14](#14-demo-data-seed)), and `pnpm db:account:reset-2fa` calls `GET /admin/users/:id/factors`
+and the factor removal ([14](#resetting-two-factor-authentication)). The key never reaches a frontend
+([3.2](#32-frontend-application-layout)). Still to be built: factor removal, the `503` and that
+script.
 
 ### Rate limits
 
@@ -2227,8 +2276,9 @@ that first reads it.
 **`packages/db/.env`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL`
 (the project's `postgres` role, [4.6](#46-tenant-isolation--rls-in-postgres)) and `OPOS_ENV`,
 `db:roles` and the schema tests also `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`,
-`db:seed` also `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, and on Dev and in production every script
-also `DATABASE_CA_PATH`. Nothing has a default: a missing variable
+`db:seed` also `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, `db:account:reset-2fa` those two and the
+`SMTP_*` variables with `MAIL_FROM`, and on Dev and in production every script also
+`DATABASE_CA_PATH`. Nothing has a default: a missing variable
 stops the script, and so does a remote host without the `OPOS_ENV` of its environment
 ([13](#environments)). turbo passes
 these variables through to the tasks ([3.1](#31-turbo-tasks)).
@@ -2263,7 +2313,7 @@ compose injects into the containers ([13](#13-deployment)):
 | Variables | Read by |
 |---|---|
 | the API's variables above, with the environment's addresses and secrets; `OPOS_ENV` `dev` or `production`, `NODE_ENV=production` | `api` |
-| `DATABASE_MIGRATION_URL`, `DATABASE_CA_PATH`, `OPOS_ENV`, `OPOS_APP_PASSWORD`, `OPOS_APP_GLOBAL_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | `tools` only |
+| `DATABASE_MIGRATION_URL`, `DATABASE_CA_PATH`, `OPOS_ENV`, `OPOS_APP_PASSWORD`, `OPOS_APP_GLOBAL_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, the `SMTP_*` variables, `MAIL_FROM` | `tools` only |
 | `BACKUP_DATABASE_URL`, `RESTIC_PASSWORD`, `RESTIC_REMOTE_REPOSITORY`, `RESTIC_REMOTE_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | `backup` only, production |
 | `ROOT_DOMAIN` (`opos.land`, or the Dev domain), `ACME_EMAIL`, `CF_DNS_API_TOKEN` | `traefik` and the routers |
 | `DEV_BASIC_AUTH` | the Dev routers of the portal, the panel and Mailpit |
@@ -2513,7 +2563,7 @@ certificate, which comes from the project's database settings and is shipped in 
 
 Where `OPOS_ENV` is `dev` or `production`, `env.ts` refuses a `DATABASE_URL` or `DATABASE_GLOBAL_URL`
 on a `pooler.supabase.com` host or on port `6543` or with a `sslrootcert` parameter, and a missing
-`DATABASE_CA_PATH`.
+`DATABASE_CA_PATH`. Still to be built: `connectionOptions`, `DATABASE_CA_PATH` and these refusals.
 
 The direct connection is IPv6: the Dev VPS needs an IPv6 route for its containers,
 since a Free project has no IPv4 add-on; a production VPS without one uses the project's IPv4
@@ -2681,6 +2731,25 @@ pnpm db:tenant:rename --slug convention-c --new-slug convention-d
 - Any refusal changes nothing and exits non-zero with a `TenantError` code: `tenant.not-found`,
   `tenant.slug-invalid`, `tenant.slug-reserved`, `tenant.slug-taken`.
 
+### Resetting two-factor authentication
+
+Still to be built. A person who has lost both the device and the recovery codes has no self-service
+route ([7.12](#712-two-factor-authentication)). The admin checks the person's identity and removes
+the factor on the server with `packages/db/src/scripts/reset-2fa.ts`:
+
+```bash
+pnpm db:account:reset-2fa <email>
+```
+
+- Removes the account's factors through the admin API ([10](#admin-api)) and its unused recovery
+  codes, and sends the same email as `recover`, in the account's locale.
+- The email is matched case-insensitively against a confirmed account ([4.2](#42-global-tables)).
+- Any refusal changes nothing and exits non-zero with a code: `account.not-found`,
+  `account.unconfirmed`, `mfa.not-enabled`.
+- A failed email is reported, and the removal stands.
+- In production: `docker compose -f docker-compose.deploy.yml run --rm tools pnpm db:account:reset-2fa ...`
+  ([13](#images)).
+
 ---
 
 ## 15. Tests
@@ -2714,9 +2783,10 @@ catalog's, so a new tenant table fails the suite until its cases exist. They als
 `accounts` privileges, the runtime roles' privileges (`opos_app_global` reads only the columns its queries need, `opos_app`
 updates only the granted columns, inserts and deletes no tenant, inserts memberships and accepted
 invitations but never changes or removes an accepted invitation, writes programme items and their
-speakers but no like, `opos_app` updates only `usedAt` of a recovery code and `opos_app_global`
-reads none), the limits each runtime pool's session reads from its role and a migration pool that
-sends no limit of its own, the
+speakers but no like, and, with [7.12](#712-two-factor-authentication), `opos_app` updates only
+`usedAt` of a recovery code and `opos_app_global` reads none), the limits of each runtime pool's
+session, read from its role once `db:roles` writes them ([4.6](#database-roles)), and a migration pool
+that sends no limit of its own, the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, a tenant-level permission on a
 head, an `edition_membership` with a
@@ -2725,8 +2795,8 @@ ending after it starts, a speaker or like on another tenant's item or twice for 
 both cascading from the edition and the account, also when `opos_app` deletes the edition), an
 index starting with the tenant column on every covered table, `createTenant` and `renameTenant` with each
 of their refusals, an unconfirmed head included, the `accounts` triggers, the email
-confirmation included, the mirror of two-factor authentication and the recovery codes cascading from
-the account. Every rule of `db:verify` ([4.6](#migrations-and-verification)) has a
+confirmation included, and, with [7.12](#712-two-factor-authentication), the mirror of two-factor
+authentication and the recovery codes cascading from the account. Every rule of `db:verify` ([4.6](#migrations-and-verification)) has a
 case that breaks it inside a rolled-back transaction and expects the report. The API tests repeat
 these checks through the endpoints.
 
@@ -2761,12 +2831,12 @@ cannot run beside an API started with `pnpm dev`.
 | payment webhook | unsigned or wrongly signed -> `401`; `paid` issues the tickets and sends one email with QR codes to Mailpit; a repeated webhook sends nothing; an amount mismatch leaves the order `pending`; a payment after the hold expired still marks it `paid`; an SMTP failure after the payment leaves `ticketEmailSentAt` empty and the job sends the email later |
 | orders | the order link with a wrong token -> `404`; `GET /me/tickets` returns tickets bought with the account's email in any tenant, before the account existed included; a cancelled order's tickets are invalid at the scanner; credentials never appear in any response |
 | scanner | a pairing token used twice -> `409`; a revoked or expired device -> `401`; a device paired by an org whose access expires stops with that access; another edition's ticket -> `404`; the second redemption of a ticket -> `already-redeemed` with the first time; a device of tenant A sees nothing of tenant B |
-| JWT | an expired token, a token without `exp`, a token signed with a foreign ES256 key, an `HS256` token with any secret, `alg: none`, `aud != authenticated`, a foreign `iss`, `is_anonymous: true` and a `sub` that is not a uuid -> `401`; a token in `Authorization: Bearer` instead of the cookie -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged; signing keys that cannot be fetched at first -> `503` `server.unavailable` with `Retry-After` and the cookies kept, never `401`; a failed reload keeps verifying on the last good keys, also past 10 minutes; a new `kid` is accepted, an unknown one the key set answers without is `401`, and a key removed from the set stops verifying at the next reload |
+| JWT | an expired token, a token without `exp`, a token signed with a foreign ES256 key, an `HS256` token with any secret, `alg: none`, `aud != authenticated`, a foreign `iss`, `is_anonymous: true` and a `sub` that is not a uuid -> `401`; a token in `Authorization: Bearer` instead of the cookie -> `401`; a valid token without an `accounts` row -> `401`; parallel requests of two accounts each see their own account, and `PATCH /me` of one leaves the other unchanged; signing keys that cannot be fetched at first -> `503` `server.unavailable` with `Retry-After` and the cookies kept, never `401`; a failed reload keeps verifying on the last good keys, also past 10 minutes; a new `kid` is accepted, an unknown one the key set answers without is `401`, as is one inside the 30 s cooldown and a token with an unsupported `crit` header, and a key removed from the set stops verifying at the next reload |
 | session cookies | sign-in, verification and the Google callback set exactly the cookies of [7.4](#74-authorization) with their attributes, `Secure` when `API_URL` is `https`; no response body or header carries a token; a session of the portal is no session for a request with the panel's `Origin`, and the reverse; `POST /auth/refresh` rotates the refresh token, a dead session answers `401` `session.invalid` with the cookies cleared, and a `5xx` from Supabase Auth or Supabase Auth out of reach answers `503` `server.unavailable` with the cookies kept; sign-out and `DELETE /me` clear the cookies |
 | requests that change state | with a session cookie, a foreign `Origin`, another subdomain of the site included, or none -> `403` `request.origin-denied` and nothing changed; a form-encoded body -> `415`; the same request from `PANEL_URL` or `PORTAL_URL` goes through |
 | auth endpoints | every operation of [5.1](#51-auth--sign-in-through-the-api) against the local stack; sign-up takes no password, and after an address registered twice is confirmed only the password chosen through `/auth/confirm` signs in; sign-up and password reset answer the same for a registered and an unknown address; every row of the refusal table of [5.1](#51-auth--sign-in-through-the-api); every call to Supabase Auth carries the secret key and the client's full address in `Sb-Forwarded-For`, never the `/64` and never the visitor's `User-Agent`; two requests share no Supabase Auth session; the Google client alone runs PKCE, so a sign-up carries no challenge; `GET /auth/google` takes no `redirect` outside the application, and a callback without its `opos_google` cookie, with another browser's cookie or past 10 minutes signs nobody in |
-| account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`, and the same for `PUT /auth/password`, which accepts the session of a confirmation or recovery link redeemed less than 5 minutes before; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401` |
-| two-factor authentication | `enroll` needs a recent sign-in and answers `409` `mfa.already-enabled` with 2FA on; `enable` refuses a `factorId` of another account, and with a right code sets `aal2` and returns ten codes once, stored hashed, with no plaintext in `account_recovery_codes`; `verify` with a right code raises the session to `aal2`, a refresh keeps it, and a wrong code or one from an hour ago -> `400` `mfa.code-invalid`; the eleventh attempt in 15 minutes -> `429` `request.rate-limited`, another account unaffected; `recover` consumes a code once, removes the factor and clears `mfaEnabledAt`; a used code and one of another account are refused; `recover` and `DELETE /auth/mfa` send the email in the account's locale; `DELETE /auth/mfa` needs `aal2` and a recent sign-in; `DELETE /me` at `aal2` removes the factors and codes with the user; an `aal1` token on an account with 2FA -> `401` `session.mfa-required` on `GET /me` and on a tenant route before any permission check, `POST /auth/sign-out` works at `aal1`, an `aal2` token passes, an account without 2FA passes at `aal1`, and an access token from before `enable` loses access at once; a right password sets the cookies and answers `session.mfa-required`; a recovery link on an account with 2FA cannot change the password at `aal1`; the Google callback leads to the code screen; a refresh of an `aal1` session stays `aal1` |
+| account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`, and the same for `PUT /auth/password`, which accepts the session of a confirmation or recovery link redeemed less than 5 minutes before; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401`; a transport failure or a `5xx` from the admin API -> `503` `server.unavailable`, and a `401` or `403` from it -> `500` `server.error` |
+| two-factor authentication | `enroll` needs a recent sign-in and answers `409` `mfa.already-enabled` with 2FA on; `enable` with a `factorId` of another account -> `404` `request.not-found`, on an already verified factor -> `409` `mfa.already-enabled`, and with a right code sets `aal2` and returns ten codes once, stored hashed, with no plaintext in `account_recovery_codes`; `verify` with a right code raises the session to `aal2`, a refresh keeps it, and a wrong code or one from an hour ago -> `400` `mfa.code-invalid`; the eleventh attempt in 15 minutes -> `429` `request.rate-limited`, another account unaffected; `verify` and `recover` on an account without 2FA or at `aal2` -> `409` `mfa.not-required`; `recover` consumes a code once, removes the factor and clears `mfaEnabledAt`; a used code and one of another account are refused; a factor removal that fails spends no code; `recover` and `DELETE /auth/mfa` send the email in the account's locale, and a failed email still answers `204` and is logged; `DELETE /auth/mfa` needs a recent sign-in, answers `401` `session.mfa-required` below `aal2` and `404` `mfa.not-enabled` with no factor; `pnpm db:account:reset-2fa` removes the factors and unused codes and sends the email, and refuses an unknown or unconfirmed address and an account with no factor; `DELETE /me` at `aal2` removes the factors and codes with the user; an `aal1` token on an account with 2FA -> `401` `session.mfa-required` on `GET /me` and on a tenant route before any permission check, `POST /auth/sign-out` and `POST /auth/refresh` work at `aal1`, an `aal2` token passes, an account without 2FA passes at `aal1`, and an access token from before `enable` loses access at once; a right password sets the cookies and answers `session.mfa-required`; a recovery link on an account with 2FA cannot change the password at `aal1`; the Google callback leads to the code screen; a refresh of an `aal1` session stays `aal1` |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a link to the calling application's `/auth/confirm` that names no Supabase address, and `POST /auth/verify` redeems the `signup` and `recovery` ones; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token, and one that cannot be checked while the keys are unavailable, counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` (per address) and `POST /tenants/current/members` (per tenant) included |
 | CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, with `Access-Control-Allow-Credentials: true`; a foreign origin gets neither header; exactly the four allowed request headers; `Retry-After` exposed |
@@ -2835,7 +2905,7 @@ never changes a seeded account's password, which ends every other session of the
 | 15 | An org cancels a paid order in the panel; the scanner shows its tickets as invalid | still to come, with the `tickets` and `scanner` features |
 | 16 | A head adds a confirmed account to the team, which gets a notification, changes its permissions and removes it; an org with `settings=write` invites and raises nobody above its own permissions (`member.above-own` next to the form) and has nothing to change on a head or on itself | [team](../e2e/specs/team.spec.ts) |
 | 17 | The panel's language switcher keeps the language on the account across a reload, and the browser's language comes back when chosen | [panel-language](../e2e/specs/panel-language.spec.ts) |
-| 18 | An attendee turns on two-factor authentication in the portal, signs out, signs in with the password and a code and reaches the account; a wrong code is refused; a password reset on the account asks for the code; a recovery code turns it off; the panel on the same account asks for its own code | still to come, as `e2e/specs/two-factor.spec.ts` |
+| 18 | An attendee turns on two-factor authentication in the portal, signs out, signs in with the password and a code and reaches the account; a wrong code is refused; a password reset on the account asks for the code and then shows the password form without the link again; confirming the account's deletion with the password leads through the code and back to the deletion; a recovery code turns it off; the panel on the same account asks for its own code | still to come, as `e2e/specs/two-factor.spec.ts` |
 
 Scenarios 1, 9, 10, 11, 13 and 14 run in both the desktop and the mobile project, and so does the code screen of scenario 18.
 

@@ -422,23 +422,28 @@ one, and a page left open longer offers to send a new link. Changing the
 account's email address comes after the MVP; it takes effect once both the current and the new
 address confirm it through the links sent to them.
 
-**Opening an emailed link does nothing until the person presses the button.** A link that confirms
-an address or resets a password leads to a page in the portal or the panel, and only the button on
-that page uses it, so a mail scanner or a preview that follows the link leaves it working.
+**Opening a confirmation or password link does nothing until the person presses the button.** Such a
+link leads to a page in the portal or the panel, and only the button on that page uses it, so a mail
+scanner or a preview that follows the link leaves it working.
 
 **Two-factor authentication is each account's own choice.** A user turns it on for their own account
 in the account settings, with an authenticator app; no role requires it. From then on every sign-in
 — with a password, with Google or through a link from an email — asks for a code from the app before
-anything else, and the portal and the panel each ask for their own. A password reset asks for it too,
-before the new password. Turning it on shows ten one-time recovery codes, once, and the platform
-keeps only their hashes. A recovery code stands in for a lost device: using one turns two-factor
-authentication off, so the person signs in and may turn it on again, and an email tells them.
-Turning it off in the account settings needs the code and a sign-in from the last few minutes, and
-sends the same email.
+anything else, and the portal and the panel each ask for their own. A password reset asks for it too:
+after the code the page asks for the new password, without needing the link again. Confirming an
+account deletion asks for it as well, and the deletion goes on after the code. Turning it on shows ten
+one-time recovery codes, once, and the platform keeps only their hashes. A recovery code stands in for
+a lost device: using one turns two-factor authentication off, so the person signs in and may turn it
+on again, and an email tells them. A recovery code that could not turn it off stays usable. Turning it
+off in the account settings needs the code and a sign-in from the last few minutes, and sends the same
+email.
+
+A person who has lost both the device and the recovery codes cannot turn it off themselves. They ask
+the admin, who checks that it is them and removes it with a script, and the same email tells them.
 
 **An email address leads to an account only once it is confirmed.** Wherever the platform finds an
-account by its email address — the admin appointing a convention's first head organizer, an
-organizer invitation, a speaker on a programme item, the tickets under "my tickets" — an account that has not confirmed its
+account by its email address — the admin appointing a convention's first head organizer, the admin
+removing two-factor authentication, an organizer invitation, a speaker on a programme item, the tickets under "my tickets" — an account that has not confirmed its
 address counts as no account. The admin's script refuses it, and an invitation to it goes out as an
 invitation to a person without an account.
 

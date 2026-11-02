@@ -11,6 +11,7 @@ export const errorCodes = [
   'session.reauthentication-required',
   'permission.denied',
   'server.error',
+  'server.unavailable',
   'membership.last-head',
   'member.self',
   'member.head-only',

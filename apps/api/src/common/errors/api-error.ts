@@ -24,6 +24,17 @@ export class ApiError extends HttpException {
 export const unauthenticated = (message = 'Missing or invalid session') =>
   new ApiError(401, 'session.invalid', message)
 
+/** Supabase Auth or its signing keys are out of reach: retry soon, the session stays (PLAN.md 7.4). */
+export const unavailable = () =>
+  new ApiError(
+    503,
+    'server.unavailable',
+    'Supabase Auth is unavailable',
+    undefined,
+    { 'Retry-After': '30' },
+    { expected: true },
+  )
+
 export const forbidden = (message = 'Insufficient permissions') =>
   new ApiError(403, 'permission.denied', message)
 

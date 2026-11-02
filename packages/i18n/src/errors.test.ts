@@ -13,6 +13,16 @@ describe('errorMessage', () => {
     )
   })
 
+  it('tells an outage of Supabase Auth apart from a generic failure', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('server.unavailable')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('server.unavailable'))).toBe(
+      'Usługa jest chwilowo niedostępna. Spróbuj ponownie za chwilę.',
+    )
+  })
+
   it('tells a link opened in another browser apart from a generic failure', async () => {
     // auth-js reports a PKCE code without its verifier, as on another device (PLAN.md 7.7, step 6).
     const i18n = setupI18n()

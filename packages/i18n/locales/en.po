@@ -272,6 +272,10 @@ msgid "The password is too weak. Use at least 8 characters."
 msgstr "The password is too weak. Use at least 8 characters."
 
 #: src/errors.ts
+msgid "The service is temporarily unavailable. Try again in a moment."
+msgstr "The service is temporarily unavailable. Try again in a moment."
+
+#: src/errors.ts
 msgid "This address is already taken by another convention."
 msgstr "This address is already taken by another convention."
 

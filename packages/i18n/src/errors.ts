@@ -15,6 +15,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'session.reauthentication-required': msg`Confirm it is you: enter your password again or sign in with Google again.`,
   'permission.denied': msg`You do not have permission to do this.`,
   'server.error': unknownError,
+  'server.unavailable': msg`The service is temporarily unavailable. Try again in a moment.`,
   'membership.last-head': msg`A convention must keep at least one head organizer. Make someone else a head organizer first.`,
   'member.self': msg`You cannot change your own role or permissions, or remove yourself from the team.`,
   'member.head-only': msg`Only a head organizer can edit or remove another head organizer.`,

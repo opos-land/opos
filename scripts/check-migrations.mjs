@@ -44,7 +44,13 @@ export function checkMigrations({ journal, files, baseJournal, baseFiles }) {
     )
   }
 
-  for (const { tag } of baseJournal) {
+  const whenOf = new Map(journal.map((entry) => [entry.tag, entry.when]))
+  for (const { tag, when } of baseJournal) {
+    if (whenOf.has(tag) && whenOf.get(tag) !== when) {
+      problems.push(
+        `${tag} has timestamp ${whenOf.get(tag)}, but the base branch merged it with ${when}; Drizzle would rerun it`,
+      )
+    }
     if (files.has(tag) && files.get(tag) !== baseFiles.get(tag)) {
       problems.push(`${tag} changed after the base branch merged it; add a new migration instead`)
     }
@@ -82,7 +88,13 @@ export function main(argv, { load = loadMigrations, log = console.error } = {}) 
     return 64
   }
   const current = load(null)
-  const base = load(argv[1])
+  let base
+  try {
+    base = load(argv[1])
+  } catch {
+    log(`Cannot read the migrations of ${argv[1]}; fetch it, or check that it holds ${directory}`)
+    return 1
+  }
   const problems = checkMigrations({
     journal: current.journal,
     files: current.files,

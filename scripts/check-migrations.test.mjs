@@ -54,6 +54,12 @@ test('editing a migration the base already holds is refused', () => {
   assert.match(problems[0], /0000_a.*changed/)
 })
 
+test('changing the timestamp of a base migration is refused', () => {
+  const problems = checkMigrations(state({ when: [10, 30], baseWhen: [10, 20] }))
+  assert.equal(problems.length, 1)
+  assert.match(problems[0], /0001_b.*timestamp 30.*merged it with 20/)
+})
+
 test('removing a base migration is refused', () => {
   const problems = checkMigrations(state({ when: [10], baseWhen: [10, 20] }))
   assert.equal(problems.length, 1)
@@ -64,8 +70,9 @@ test('reordering base migrations is refused once, at the first position that dif
   const problems = checkMigrations(
     state({ when: [10, 20], tags: ['0001_b', '0000_a'], baseTags: ['0000_a', '0001_b'] }),
   )
-  assert.equal(problems.length, 1)
-  assert.match(problems[0], /0000_a.*position 0.*0001_b/)
+  const positional = problems.filter((problem) => /position/.test(problem))
+  assert.equal(positional.length, 1)
+  assert.match(positional[0], /0000_a.*position 0.*0001_b/)
 })
 
 test('a journal entry without a file is refused', () => {
@@ -121,6 +128,21 @@ test('the CLI asks the loader for the working tree, then for the base ref it was
   })
   assert.equal(code, 0)
   assert.deepEqual(refs, [null, 'origin/develop'])
+})
+
+test('an unreadable base ref prints one line naming it and exits 1', () => {
+  const lines = []
+  const input = state({ when: [10] })
+  const code = main(['--base', 'origin/develop'], {
+    load: (ref) => {
+      if (ref !== null) throw new Error('fatal: invalid object name')
+      return { journal: input.journal, files: input.files }
+    },
+    log: (line) => lines.push(line),
+  })
+  assert.equal(code, 1)
+  assert.equal(lines.length, 1)
+  assert.match(lines[0], /origin\/develop/)
 })
 
 test('a call without --base prints the usage and exits 64', () => {

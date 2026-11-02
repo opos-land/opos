@@ -96,6 +96,43 @@ test('gitleaks is a pinned release binary, checked against its checksum', () => 
   assert.match(ci, /gitleaks git \. --redact --no-banner/)
 })
 
+test('gitleaks keeps its default rules', () => {
+  const gitleaks = read('../.gitleaks.toml')
+  assert.match(gitleaks, /\[extend\]\s*\n\s*useDefault = true/)
+})
+
+test('the history allowlist needs both a listed commit and a listed path', () => {
+  const gitleaks = read('../.gitleaks.toml')
+  assert.match(gitleaks, /condition = "AND"/)
+  for (const short of [
+    '7e5f8cc',
+    '4149f7b',
+    '218ab5d',
+    '382189a',
+    '5965ad6',
+    '3321ce2',
+    '670cf95',
+  ]) {
+    assert.match(gitleaks, new RegExp(`"${short}[0-9a-f]{33}"`))
+  }
+})
+
+test('no allowlist covers a path beyond the two files the hits are in', () => {
+  const gitleaks = read('../.gitleaks.toml')
+  const allowed = new Set(['apps/api/.env.example', 'docs/PLAN.md'])
+  const lists = [...gitleaks.matchAll(/paths = \[([^\]]*)\]/g)]
+  assert.ok(lists.length > 0)
+  for (const list of lists) {
+    const entries = [...list[1].matchAll(/'''(.*?)'''|"([^"]*)"/g)].map((m) => m[1] ?? m[2])
+    assert.ok(entries.length > 0)
+    for (const entry of entries) {
+      // a path entry is a regular expression: strip its anchors and escapes before comparing
+      const literal = entry.replace(/^\^/, '').replace(/\$$/, '').replaceAll('\\', '')
+      assert.ok(allowed.has(literal), `unexpected allowlist path ${entry}`)
+    }
+  }
+})
+
 test('secrets reads the whole history', () => {
   const secrets = ci.slice(ci.search(/^ {2}secrets:$/m))
   assert.match(secrets, /fetch-depth: 0/)

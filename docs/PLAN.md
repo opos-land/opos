@@ -1907,18 +1907,45 @@ holds the settings ([10](#supabase-auth-configuration)).
 
 | Screen | Behaviour |
 |---|---|
-| `/auth/mfa` | takes a code or a recovery code; every `session.mfa-required` answer leads here, keeping the path to return to |
+| `/auth/mfa` | takes a code or a recovery code, or signs the session out; a page or an action that needs a session leads here, keeping the path to return to, and so do `/login` and, in the portal, `/register` |
 | the two-factor card | on `/account` in the portal, and in the account menu in the panel; shows the QR code and the secret, then the recovery codes once after a right code, until the person confirms they saved them; after a recovery code it shows 2FA as off. The QR code is the `data:` SVG the API returned, which the CSP's `img-src` allows ([13](#images)); it stays in component state and is never stored |
 
 A right code, or a recovery code, answers `204`; the screen then asks `GET /me` and announces the
 account to the other tabs ([7.4](#74-authorization)). A wrong code shows its message and keeps the
 form. A successful `verify` at `aal2` ends every other `aal1` session of the account at Supabase
 Auth, so two browsers cannot both wait for a code: the one that waits longer gets `401`
-`session.invalid` from the screen, which offers the sign-in. `enroll` and `DELETE /auth/mfa` answering
-`session.reauthentication-required` make the card ask for the password or Google, as the account's
-`signInMethods` allow; an answer of `enable` that is `409` `mfa.already-enabled` shows how to get
-new codes (above). The secret, the QR code and the recovery codes come from plain calls, not
-TanStack mutations, so no cache holds them once the view is gone.
+`session.invalid` from the screen.
+
+**Leaving a pending session.** The screen offers **Sign out** (`POST /auth/sign-out`, which works at
+`aal1`), so a person without the phone or the codes, or the next person on a shared computer, can
+end the session, sign in to another account and read the public pages; a failed sign-out shows its
+error. Only the pages that would start a second sign-in over the pending one lead to the screen:
+`/login`, the portal's `/register` and `/auth/confirm` opened with no `token_hash` in the address.
+Every other page renders as for a visitor with no account and no account data: in the portal the
+landing page, `/privacy` and the convention pages, where the header offers to finish signing in
+(`/auth/mfa?redirect=<this page>`) in place of "Sign in" and a like leads to the screen rather than
+to `/login`; in the panel `/scanner` and `/invitation`, whose public preview stays, accepting
+answering `session.mfa-required` and leading to the screen with the same page and token as the
+return path. A page or action that needs a session leads to the screen. `/auth/confirm` opened with
+an unspent link keeps its button; pressing it on an account with 2FA leads to the screen with the
+return path `/auth/confirm`, so a pending session never swallows a link, whichever account the link
+is for. When a session waiting for its code replaces an account a tab shows, the other tabs are
+told to drop it ([7.4](#74-authorization)).
+
+**Failures on the screen.** A right code answers `204` and the session has changed, so a repeat of
+it answers `409` `mfa.not-required`: when `GET /me` fails after the `204` the screen ends
+`unavailable`, whose view asks again, and an `mfa.not-required` answer (also when the account's 2FA
+was reset while the screen waited) makes the screen ask for the session again instead of showing
+the message. `enroll` and `DELETE /auth/mfa` answering `session.reauthentication-required` make the
+card ask for the password or Google, as the account's `signInMethods` allow, with a way back to
+the card; an answer of `enable` that is `409` `mfa.already-enabled` shows how to get new codes
+(above). The card writes `mfaEnabled` from the answer of `enable` or `DELETE /auth/mfa` into the
+cached account before it asks `GET /me`, and treats `409` `mfa.already-enabled` and `404`
+`mfa.not-enabled` as a card that was out of date, so a failed `GET /me` leaves the card true. The
+notice about recovery codes that could not be shown is kept as a flag in `sessionStorage`, set
+before the refresh that may lead to the screen, and cleared when the person dismisses it or turns
+2FA off; it holds no code. The secret, the QR code and the recovery codes come from plain calls,
+not TanStack mutations, so no cache holds them once the view is gone.
 
 The path `/auth/mfa` returns to:
 
@@ -2000,8 +2027,9 @@ headers ([13](#13-deployment)).
   A `session.mfa-required` answer ends it in the `mfa-required` state: the session is not signed
   in, no account is known and no account data is shown. `MfaGate`
   ([mfa-gate.tsx](../apps/panel/src/features/auth/components/mfa-gate.tsx)) at the root of the
-  router leads any page to `/auth/mfa`, and `RequireSession` does the same instead of sending the
-  visitor to `/login`. The path to return to follows the table of
+  router leads the sign-in page and `/auth/confirm` opened with no link to `/auth/mfa`, and
+  `RequireSession` does the same instead of sending the visitor to `/login`; the other pages,
+  `/invitation` among them, render as for a visitor ([7.12](#712-two-factor-authentication)). The path to return to follows the table of
   [7.12](#712-two-factor-authentication)
   ([mfa-return.ts](../apps/panel/src/features/auth/model/mfa-return.ts)); only a path inside the
   panel is a target.
@@ -2117,8 +2145,10 @@ image with its headers ([13](#13-deployment)).
   A `session.mfa-required` answer ends it in the `mfa-required` state: the session is not signed
   in, no account is known and no account data is shown. `MfaGate`
   ([mfa-gate.tsx](../apps/portal/src/features/auth/components/mfa-gate.tsx)) in the frame of every
-  screen leads any page to `/auth/mfa`, and `RequireSession` does the same instead of sending the
-  visitor to `/login`. The path to return to follows the table of
+  screen leads the sign-in and registration pages and `/auth/confirm` opened with no link to
+  `/auth/mfa`, and `RequireSession` does the same instead of sending the visitor to `/login`; the
+  other pages render as for a visitor, with "Finish signing in" in the header
+  ([7.12](#712-two-factor-authentication)). The path to return to follows the table of
   [7.12](#712-two-factor-authentication)
   ([mfa-return.ts](../apps/portal/src/features/auth/model/mfa-return.ts)); only a path inside the
   portal is a target.

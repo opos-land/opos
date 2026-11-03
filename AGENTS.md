@@ -184,7 +184,7 @@ rejected by `minimumReleaseAge` — that is policy, not a failure.
 
 **CI gates** ([CI](docs/PLAN.md#153-ci)): a PR into `main` needs the jobs `check`, `e2e` and `secrets`
 green. `secrets` scans the tree and the whole history for secrets and fails on a dependency with a
-high advisory, so a secret never enters a commit, not even one removed later. An action in a
+high advisory, so a secret in any commit fails the job, even one removed later. An action in a
 workflow is pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it
 goes through `env`.
 

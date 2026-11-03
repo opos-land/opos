@@ -113,7 +113,7 @@ into `dist/`),
 `@orpc/openapi` + `@orpc/zod` + `@nestjs/swagger` (OpenAPI document generated from the contract,
 Swagger UI), `jose` (Supabase access tokens verified against the project's JWKS),
 `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (the API's Supabase Auth
-client, its only consumer in the repository), `cookie-parser` (session cookies), nodemailer,
+client, its only consumer in the repository), nodemailer,
 `@nestjs/throttler`, `@nestjs/schedule` (expiring unpaid orders), `qrcode` (ticket QR codes in
 emails).
 
@@ -1573,12 +1573,13 @@ Required behaviour when the email already exists, checked in the smoke test
 
 ### 7.6 Password reset
 
-1. The portal sends `POST /auth/password/forgot`; the API calls
-   `resetPasswordForEmail(email, { redirectTo: <PORTAL_URL>/auth/confirm })`. Supabase Auth
+1. The portal or the panel sends `POST /auth/password/forgot`; the API calls
+   `resetPasswordForEmail(email, { redirectTo: <app URL>/auth/confirm })` for the application that
+   sent it. Supabase Auth
    answers the same way for an unknown address, and so does the API, so the form reveals nothing
    about registered emails. For a known address Supabase Auth calls the send-email hook with
    `email_action_type = recovery`; the API sends the link
-   `<PORTAL_URL>/auth/confirm?token_hash=...&type=recovery` in the recipient's locale. The link is
+   `<app URL>/auth/confirm?token_hash=...&type=recovery` in the recipient's locale. The link is
    valid for 1 hour (`otp_expiry = 3600`) and works once.
 2. `/auth/confirm` sends nothing until the person presses its button. The button sends the
    `token_hash` to `POST /auth/verify`, which signs the browser in with

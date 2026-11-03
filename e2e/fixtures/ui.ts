@@ -32,7 +32,7 @@ export const signInToPortal = (page: Page, email: string, password: string) =>
   signIn(page, portalUrl('/login'), email, password)
 
 /** The session auth-js keeps in the application's localStorage (PLAN.md 7.4). */
-export async function storedSession(page: Page, key: 'opos-panel-auth' | 'opos-portal-auth') {
+export async function storedSession(page: Page, key: 'opos-portal-auth') {
   const raw = await page.evaluate((name) => window.localStorage.getItem(name), key)
   return raw ? (JSON.parse(raw) as { access_token: string; refresh_token: string }) : null
 }

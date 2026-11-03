@@ -436,7 +436,8 @@ one-time recovery codes, once, and the platform keeps only their hashes. A recov
 a lost device: using one turns two-factor authentication off, so the person signs in and may turn it
 on again, and an email tells them. A recovery code that could not turn it off stays usable. Turning it
 off in the account settings needs the code and a sign-in from the last few minutes, and sends the same
-email.
+email. Turning it off removes the unused recovery codes; the hash of a code already used stays as a
+record until the account is deleted.
 
 A person who has lost both the device and the recovery codes cannot turn it off themselves. They ask
 the admin, who checks that it is them and removes it with a script, and the same email tells them.

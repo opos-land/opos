@@ -36,6 +36,17 @@ describe('PrivacyPage', () => {
     expect(text()).toContain('two-factor authentication is turned off')
   })
 
+  it('says how long unused and used recovery codes stay', () => {
+    const page = text()
+
+    expect(page).toContain(
+      'Your unused recovery codes: until you turn off two-factor authentication.',
+    )
+    expect(page).toContain(
+      'The hash of a recovery code you have used: as a record, until you delete the account.',
+    )
+  })
+
   it('lists two-factor authentication among what goes with a deleted account', () => {
     expect(text()).toContain('two-factor authentication with its recovery codes')
   })

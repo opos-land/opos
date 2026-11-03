@@ -121,6 +121,11 @@ export function PrivacyPage() {
           </li>
           <li>
             <Trans>
+              The hash of a recovery code you have used: as a record, until you delete the account.
+            </Trans>
+          </li>
+          <li>
+            <Trans>
               Orders are the conventions’ sales records: they stay after the account with the same
               address is deleted.
             </Trans>

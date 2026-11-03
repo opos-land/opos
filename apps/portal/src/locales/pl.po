@@ -376,6 +376,10 @@ msgid "The browser's language"
 msgstr "Język przeglądarki"
 
 #: src/features/landing/pages/privacy-page.tsx
+msgid "The hash of a recovery code you have used: as a record, until you delete the account."
+msgstr "Skrót kodu odzyskiwania, który został użyty: jako zapis, do usunięcia konta."
+
+#: src/features/landing/pages/privacy-page.tsx
 msgid "The number of likes of a programme item is public. Who liked it is never shown to anyone."
 msgstr "Liczba polubień punktu programu jest publiczna. To, kto go polubił, nie jest nikomu pokazywane."
 

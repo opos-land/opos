@@ -281,10 +281,11 @@ them to the repository. UI follows the designer's designs; where none exists yet
 and real copy ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)). Do not ship
 component-library defaults as a finished look.
 
-**Adding a feature.** A new table, route or screen follows the checklist in
+**Adding a feature.** Inside one feature, a new table, route or screen follows the checklist in
 [PLAN.md](docs/PLAN.md#adding-a-feature), step by step, with the `program` slice as its reference.
 
-The plan does not prescribe an order of work — it follows from dependencies between packages:
+Between the parts of the product, the plan does not prescribe an order of work — it follows from
+dependencies between packages:
 the Supabase services before `packages/db`, because the schema references
 `auth.users`; `packages/db` and `packages/contract` before the apps, the contract before the
 frontends. The scope to cover is set by [MVP scope](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp),

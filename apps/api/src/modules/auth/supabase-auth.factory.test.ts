@@ -1,7 +1,7 @@
 import { isAuthRetryableFetchError, type SupportedStorage } from '@supabase/auth-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
-import { SupabaseAuthFactory } from './supabase-auth.factory'
+import { GOOGLE_STORAGE_KEY, SupabaseAuthFactory } from './supabase-auth.factory'
 
 const SECRET = 'sb_secret_test'
 const CLIENT_IP = '2001:db8:1:2:3:4:5:6'
@@ -137,6 +137,39 @@ describe('SupabaseAuthFactory', () => {
 
     expect([...items.keys()].some((key) => key.endsWith('-code-verifier'))).toBe(true)
     expect(new URL(data.url!).searchParams.get('code_challenge_method')).toBe('s256')
+  })
+
+  it('the Google client keeps its verifier under the key the callback seeds', async () => {
+    const { storage, items } = memoryStorage()
+
+    await factory()
+      .forGoogle(storage)
+      .signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: 'http://api.test/auth/google/callback', skipBrowserRedirect: true },
+      })
+
+    const verifier = JSON.parse(
+      items.get(`${GOOGLE_STORAGE_KEY}-code-verifier`) ?? 'null',
+    ) as unknown
+    expect(typeof verifier).toBe('string')
+    expect(verifier).toMatch(/^[A-Za-z0-9._~-]{43,128}$/)
+  })
+
+  it('the Google client exchanges a code with the verifier seeded under that key', async () => {
+    const calls = stubFetch(session)
+    const { storage, items } = memoryStorage()
+    items.set(`${GOOGLE_STORAGE_KEY}-code-verifier`, JSON.stringify('seeded-verifier'))
+
+    const { error } = await inRequest(() =>
+      factory().forGoogle(storage).exchangeCodeForSession('abc'),
+    )
+
+    expect(error).toBeNull()
+    expect(JSON.parse(calls[0]!.body)).toEqual({
+      auth_code: 'abc',
+      code_verifier: 'seeded-verifier',
+    })
   })
 
   it('the request client runs no PKCE, so a sign-up carries no challenge', async () => {

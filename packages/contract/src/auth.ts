@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { accountSchema } from './me'
-import { accountRoute, publicRoute } from './common'
+import { accountRoute, publicRoute, withErrors } from './common'
 
 const name = z.string().trim().min(1).max(100)
 
@@ -36,6 +36,36 @@ export const newPasswordSchema = z
     message: 'At most 72 bytes',
   })
 
+/** The two applications that sign in through the API. */
+export const applicationSchema = z.enum(['portal', 'panel'])
+
+/** `GET /auth/google`: a `redirect` that is not a path of the application becomes its start page. */
+export const googleStartQuerySchema = z.object({
+  app: applicationSchema,
+  redirect: z.string().optional(),
+})
+
+/** `GET /auth/google/callback`: what Supabase Auth appends, a `code` or an `error`. */
+export const googleCallbackQuerySchema = z.object({
+  code: z.string().optional(),
+  error: z.string().optional(),
+  error_code: z.string().optional(),
+  error_description: z.string().optional(),
+})
+
+/** A route that answers `302`, which oRPC would not document: only the `Location` is the answer. */
+const redirect = (description: string) =>
+  ({
+    spec: (operation: Parameters<typeof withErrors>[0]) =>
+      withErrors({
+        ...operation,
+        security: [],
+        responses: {
+          '302': { description, headers: { Location: { schema: { type: 'string' } } } },
+        },
+      }),
+  }) as const
+
 export const authContract = {
   signUp: publicRoute
     .route({
@@ -70,6 +100,25 @@ export const authContract = {
     })
     .input(z.object({ body: signInSchema }))
     .output(accountSchema),
+  // A plain Nest route, documented here like GET /health: a redirect, not JSON.
+  google: publicRoute
+    .route({
+      method: 'GET',
+      path: '/auth/google',
+      summary:
+        'Start Google sign-in; a navigation that answers 302 to Supabase Auth and sets opos_google',
+      ...redirect('Redirects to Supabase Auth, which sends the browser to Google'),
+    })
+    .input(z.object({ query: googleStartQuerySchema })),
+  googleCallback: publicRoute
+    .route({
+      method: 'GET',
+      path: '/auth/google/callback',
+      summary:
+        'Finish Google sign-in; sets the session cookies and answers 302 to the application, or to its /login with an error code',
+      ...redirect('Redirects to a path of the application, or to its /login?error=<code>'),
+    })
+    .input(z.object({ query: googleCallbackQuerySchema })),
   refresh: publicRoute.route({
     method: 'POST',
     path: '/auth/refresh',

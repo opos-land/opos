@@ -27,7 +27,10 @@ export class MeController {
 
   @Implement(contract.me.get)
   get() {
-    return implement(contract.me.get).handler(() => this.context.account())
+    return implement(contract.me.get).handler(() => ({
+      ...this.context.account(),
+      signInMethods: this.context.signInMethods(),
+    }))
   }
 
   @Implement(contract.me.update)

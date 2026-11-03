@@ -44,6 +44,25 @@ describe('JwtAuthGuard', () => {
     })
   })
 
+  it.each([
+    [['email'], ['password']],
+    [['google'], ['google']],
+    [
+      ['email', 'google'],
+      ['password', 'google'],
+    ],
+    [undefined, []],
+  ])(
+    'lists the sign-in methods of the token with providers %j as %j',
+    async (providers, expected) => {
+      const res = await me()
+        .set('Authorization', `Bearer ${await mintToken({ sub: accountId, providers })}`)
+        .expect(200)
+
+      expect(res.body).toMatchObject({ id: accountId, signInMethods: expected })
+    },
+  )
+
   it('rejects a request without a token', async () => {
     const res = await me().expect(401)
 

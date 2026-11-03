@@ -3,7 +3,12 @@ import { ENV, type Env } from '../../config/env'
 import { AccountsRepository } from '../../modules/accounts/accounts.repository'
 import { TenantContextService } from '../als/tenant-context.service'
 import { unauthenticated, unavailable } from '../errors/api-error'
-import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier, lastSignInAt } from './access-token'
+import {
+  ACCESS_TOKEN_VERIFIER,
+  type AccessTokenVerifier,
+  lastSignInAt,
+  signInMethodsOf,
+} from './access-token'
 import { credentialOf, verifyOnce } from './request-credential'
 
 /**
@@ -35,7 +40,7 @@ export class JwtAuthGuard implements CanActivate {
 
     const account = await this.accounts.findForToken(check.payload.sub)
     if (!account) throw unauthenticated('No account for this token')
-    this.context.setAccount(account, lastSignInAt(check.payload))
+    this.context.setAccount(account, lastSignInAt(check.payload), signInMethodsOf(check.payload))
     return true
   }
 }

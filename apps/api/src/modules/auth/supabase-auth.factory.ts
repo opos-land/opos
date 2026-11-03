@@ -21,6 +21,12 @@ const outage = (message: string) =>
   })
 
 /**
+ * The key prefix of the Google client's storage. The callback seeds the verifier from the cookie
+ * under `<this>-code-verifier`, where auth-js looks when the redirect names no flow.
+ */
+export const GOOGLE_STORAGE_KEY = 'opos-google'
+
+/**
  * One call to Supabase Auth, with the two things auth-js loses made visible: it keeps only
  * `e.message` of a transport failure, so the cause (`ECONNREFUSED`, a TLS error) joins the message;
  * and a 5xx whose body is not JSON arrives as an error without a status. Both, and every other
@@ -100,6 +106,7 @@ export class SupabaseAuthFactory {
       detectSessionInUrl: false,
       flowType: 'pkce',
       storage,
+      storageKey: GOOGLE_STORAGE_KEY,
     })
   }
 

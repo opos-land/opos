@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common'
 import { createRemoteJWKSet, customFetch, errors, type JWTPayload, jwtVerify } from 'jose'
+import { type SignInMethod } from '@opos/contract'
 import { authUrl } from '../../config/env'
 import { isUuid } from '../uuid'
 
@@ -109,4 +110,22 @@ export function lastSignInAt(payload: JWTPayload): number | undefined {
     .map((entry: unknown) => (entry as { timestamp?: unknown } | null)?.timestamp)
     .filter((timestamp): timestamp is number => Number.isFinite(timestamp))
   return timestamps.length > 0 ? Math.max(...timestamps) : undefined
+}
+
+/** The sign-in methods `GET /me` names, in this order. */
+const SIGN_IN_METHODS = [
+  ['email', 'password'],
+  ['google', 'google'],
+] as const
+
+/**
+ * The sign-in methods of the account, from the `app_metadata.providers` Supabase Auth writes into
+ * the token: `email` is `password`, `google` is `google`, any other provider is not listed.
+ */
+export function signInMethodsOf(payload: JWTPayload): SignInMethod[] {
+  const providers = (payload.app_metadata as { providers?: unknown } | undefined)?.providers
+  if (!Array.isArray(providers)) return []
+  return SIGN_IN_METHODS.filter(([provider]) => providers.includes(provider)).map(
+    ([, method]) => method,
+  )
 }

@@ -52,13 +52,14 @@ describe('JwtAuthGuard', () => {
     const payload = {
       sub: account.id,
       amr: [{ method: 'password', timestamp: 1_900_000_000 }],
+      app_metadata: { providers: ['email', 'google'] },
     }
     const { subject, accounts, context } = guard({ status: 'valid', payload })
 
     expect(await subject.canActivate(execution('Bearer abc'))).toBe(true)
 
     expect(accounts.findForToken).toHaveBeenCalledWith(account.id)
-    expect(context.setAccount).toHaveBeenCalledWith(account, 1_900_000_000)
+    expect(context.setAccount).toHaveBeenCalledWith(account, 1_900_000_000, ['password', 'google'])
   })
 
   it('answers 401 session.invalid without a token, asking the verifier nothing', async () => {

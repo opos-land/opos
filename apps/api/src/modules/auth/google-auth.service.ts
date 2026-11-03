@@ -1,0 +1,224 @@
+import { Inject, Injectable, Logger } from '@nestjs/common'
+import { applicationSchema, type ErrorCode, errorCodes } from '@opos/contract'
+import { type SupportedStorage } from '@supabase/auth-js'
+import { TenantContextService } from '../../common/als/tenant-context.service'
+import { ApiError } from '../../common/errors/api-error'
+import { type Application } from '../../common/http/application'
+import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
+import { ENV, type Env } from '../../config/env'
+import { AccountsRepository } from '../accounts/accounts.repository'
+import {
+  type CookieRequest,
+  type CookieResponse,
+  parseCookies,
+  setSessionCookies,
+} from './session-cookies'
+import { GOOGLE_STORAGE_KEY, SupabaseAuthFactory } from './supabase-auth.factory'
+
+/** The cookie that carries a Google sign-in from its start to its callback (PLAN.md 7.4, 7.5). */
+export const GOOGLE_COOKIE = 'opos_google'
+export const GOOGLE_COOKIE_MAX_AGE_MS = 10 * 60 * 1000
+const GOOGLE_COOKIE_PATH = '/auth/google'
+
+/** What the cookie holds; `expiresAt` is in milliseconds since the epoch. */
+export interface GoogleFlow {
+  verifier: string
+  app: Application
+  path: string
+  expiresAt: number
+}
+
+/** A PKCE verifier is 43 to 128 characters of the unreserved set (RFC 7636). */
+const VERIFIER = /^[A-Za-z0-9._~-]{43,128}$/
+
+type ApplicationUrls = Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>
+
+const applicationOrigin = (app: Application, env: ApplicationUrls) =>
+  new URL(app === 'portal' ? env.PORTAL_URL : env.PANEL_URL).origin
+
+/**
+ * The path of `app` a Google sign-in returns to (PLAN.md 7.5). `redirect` counts only as a path:
+ * it starts with a single `/`, holds no backslash or control character, and still resolves to the
+ * application's own origin; anything else is the start page, `/`.
+ */
+export function returnPath(app: Application, redirect: unknown, env: ApplicationUrls): string {
+  if (typeof redirect !== 'string' || !redirect.startsWith('/')) return '/'
+  // eslint-disable-next-line no-control-regex
+  if (/[\\\u0000-\u001f\u007f]/.test(redirect)) return '/'
+  const origin = applicationOrigin(app, env)
+  try {
+    const url = new URL(redirect, origin)
+    return url.origin === origin ? `${url.pathname}${url.search}` : '/'
+  } catch {
+    return '/'
+  }
+}
+
+/** The value of `opos_google`: the flow in JSON, valid for 10 minutes from `now`. */
+export const googleCookieValue = (
+  flow: Pick<GoogleFlow, 'verifier' | 'app' | 'path'>,
+  now = Date.now(),
+): string => JSON.stringify({ ...flow, expiresAt: now + GOOGLE_COOKIE_MAX_AGE_MS })
+
+/** Whether the 10 minutes of the flow are over. */
+export const googleFlowExpired = (flow: Pick<GoogleFlow, 'expiresAt'>, now = Date.now()) =>
+  flow.expiresAt <= now
+
+/**
+ * The flow a cookie value holds, or nothing when it is absent or malformed; an expired one is
+ * still read, since its application is where the visitor returns to log in. The cookie is not
+ * signed, so the callback trusts none of it: the code binds to the verifier, and the application
+ * and the path are judged again.
+ */
+export function parseGoogleCookie(value: string | undefined): GoogleFlow | null {
+  if (value === undefined) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(value)
+  } catch {
+    return null
+  }
+  if (typeof parsed !== 'object' || parsed === null) return null
+  const { verifier, app, path, expiresAt } = parsed as Record<string, unknown>
+  const application = applicationSchema.safeParse(app)
+  if (
+    typeof verifier !== 'string' ||
+    !VERIFIER.test(verifier) ||
+    !application.success ||
+    typeof path !== 'string' ||
+    typeof expiresAt !== 'number' ||
+    !Number.isFinite(expiresAt)
+  ) {
+    return null
+  }
+  return { verifier, app: application.data, path, expiresAt }
+}
+
+const GOOGLE_FAILED = 'auth.google-failed' satisfies ErrorCode
+
+/**
+ * The `error=` code of the login page for an `error_code` Supabase Auth appended to the callback:
+ * `auth.<error_code>` when the contract lists it, `auth.google-failed` for anything else. The
+ * query is the visitor's to write, so no other text of it reaches a Location, and no code that
+ * tells a registered address from an unknown one is ever added to the list.
+ */
+export function failureCode(errorCode: unknown): ErrorCode {
+  const code = `auth.${typeof errorCode === 'string' ? errorCode : ''}`
+  return (errorCodes as readonly string[]).includes(code) ? (code as ErrorCode) : GOOGLE_FAILED
+}
+
+/** A storage that lives as long as the request: auth-js writes its verifier here. */
+const requestStorage = (items: Map<string, string>): SupportedStorage => ({
+  getItem: (key) => items.get(key) ?? null,
+  setItem: (key, value) => void items.set(key, value),
+  removeItem: (key) => void items.delete(key),
+})
+
+/** What the two routes read of the request: the `Cookie` header and the response to write. */
+export interface GoogleRequest extends CookieRequest {
+  res: CookieResponse
+}
+
+/**
+ * Google sign-in with PKCE (PLAN.md 7.5): the API is the OAuth client of Supabase Auth, and the
+ * verifier waits between the two requests in the `opos_google` cookie, never in a body, a log or
+ * a Location.
+ */
+@Injectable()
+export class GoogleAuthService {
+  private readonly logger = new Logger(GoogleAuthService.name)
+
+  constructor(
+    @Inject(ENV) private readonly env: Env,
+    private readonly auth: SupabaseAuthFactory,
+    private readonly accounts: AccountsRepository,
+    private readonly context: TenantContextService,
+    private readonly limiter: RouteRateLimiter,
+  ) {}
+
+  private cookieAttributes() {
+    return {
+      httpOnly: true as const,
+      sameSite: 'lax' as const,
+      path: GOOGLE_COOKIE_PATH,
+      secure: new URL(this.env.API_URL).protocol === 'https:',
+    }
+  }
+
+  private failure(app: Application, code: ErrorCode = GOOGLE_FAILED) {
+    return `${applicationOrigin(app, this.env)}/login?error=${code}`
+  }
+
+  /** The address `GET /auth/google` redirects to; sets `opos_google`. */
+  async start(query: { app?: unknown; redirect?: unknown }, res: CookieResponse): Promise<string> {
+    const app = applicationSchema.safeParse(query.app)
+    if (!app.success) {
+      throw new ApiError(400, 'request.invalid', 'The query names no application: portal or panel')
+    }
+    await this.limiter.consume('authentication', `ip:${this.context.clientAddress()}`)
+
+    const items = new Map<string, string>()
+    const { data, error } = await this.auth.forGoogle(requestStorage(items)).signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${this.env.API_URL.replace(/\/+$/, '')}/auth/google/callback`,
+        skipBrowserRedirect: true,
+      },
+    })
+    const stored = items.get(`${GOOGLE_STORAGE_KEY}-code-verifier`)
+    const verifier = stored === undefined ? undefined : (JSON.parse(stored) as unknown)
+    if (error || !data.url || typeof verifier !== 'string') {
+      throw new ApiError(500, 'server.error', 'Google sign-in could not be started')
+    }
+
+    res.cookie(
+      GOOGLE_COOKIE,
+      googleCookieValue({
+        verifier,
+        app: app.data,
+        path: returnPath(app.data, query.redirect, this.env),
+      }),
+      { ...this.cookieAttributes(), maxAge: GOOGLE_COOKIE_MAX_AGE_MS },
+    )
+    return data.url
+  }
+
+  /**
+   * The address `GET /auth/google/callback` redirects to. The cookie goes whatever happens, and
+   * every refusal is one redirect to a login page: a missing, expired or foreign cookie, an
+   * `error` of Supabase Auth, a refused exchange.
+   */
+  async callback(
+    query: { code?: unknown; error?: unknown; error_code?: unknown },
+    req: GoogleRequest,
+  ): Promise<string> {
+    const header = req.headers.cookie
+    const raw = typeof header === 'string' ? parseCookies(header).get(GOOGLE_COOKIE) : undefined
+    req.res.clearCookie(GOOGLE_COOKIE, this.cookieAttributes())
+
+    const flow = parseGoogleCookie(raw)
+    if (!flow) return this.failure('portal')
+    if (googleFlowExpired(flow)) return this.failure(flow.app)
+    if (query.error !== undefined) return this.failure(flow.app, failureCode(query.error_code))
+    if (typeof query.code !== 'string' || query.code === '') return this.failure(flow.app)
+
+    const items = new Map([[`${GOOGLE_STORAGE_KEY}-code-verifier`, JSON.stringify(flow.verifier)]])
+    try {
+      const { data, error } = await this.auth
+        .forGoogle(requestStorage(items))
+        .exchangeCodeForSession(query.code)
+      if (error) throw error
+      if (!(await this.accounts.findForToken(data.session.user.id))) {
+        throw new Error('no account for the session')
+      }
+      setSessionCookies(req.res, flow.app, data.session, this.env)
+    } catch (error) {
+      // Only the kind of failure: the message of a refusal may quote what was sent.
+      this.logger.warn(
+        `Google sign-in failed: ${error instanceof Error ? error.name : 'unknown failure'}`,
+      )
+      return this.failure(flow.app)
+    }
+    return `${applicationOrigin(flow.app, this.env)}${returnPath(flow.app, flow.path, this.env)}`
+  }
+}

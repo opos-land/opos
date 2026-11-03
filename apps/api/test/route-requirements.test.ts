@@ -33,6 +33,8 @@ const publicRoutes = [
   'auth.resend',
   'auth.verify',
   'auth.signIn',
+  'auth.google',
+  'auth.googleCallback',
   'auth.refresh',
   'auth.signOut',
   'auth.passwordForgot',

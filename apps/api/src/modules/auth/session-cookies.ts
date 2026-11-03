@@ -11,7 +11,7 @@ const names = (app: Application) => ({
 
 type CookieOptions = {
   httpOnly: true
-  sameSite: 'strict'
+  sameSite: 'strict' | 'lax'
   path: string
   secure: boolean
   maxAge?: number
@@ -69,7 +69,7 @@ export function clearSessionCookies(
 }
 
 /** The cookies of one `Cookie` header; the first of a repeated name wins, a bad value is skipped. */
-function parseCookies(header: string): Map<string, string> {
+export function parseCookies(header: string): Map<string, string> {
   const cookies = new Map<string, string>()
   for (const part of header.split(';')) {
     const separator = part.indexOf('=')

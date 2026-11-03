@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { Inject, Injectable, Logger } from '@nestjs/common'
-import { type Account, type Tenant } from '@opos/contract'
+import { type Account, type SignInMethod, type Tenant } from '@opos/contract'
 import {
   type Database,
   permissionLevel,
@@ -33,6 +33,8 @@ export interface RequestStore {
   account?: Account
   /** The latest sign-in the access token records, in seconds since the epoch (PLAN.md 7.4). */
   signedInAt?: number
+  /** The sign-in methods the access token names (PLAN.md 5.2). */
+  signInMethods?: SignInMethod[]
   tenant?: TenantInContext
   membership?: TenantMembership | null
   tx?: Transaction
@@ -79,10 +81,16 @@ export class TenantContextService {
     return store
   }
 
-  setAccount(account: Account, signedInAt?: number) {
+  setAccount(account: Account, signedInAt?: number, signInMethods: SignInMethod[] = []) {
     const store = TenantContextService.store()
     store.account = account
     store.signedInAt = signedInAt
+    store.signInMethods = signInMethods
+  }
+
+  /** The sign-in methods of the verified account; only behind JwtAuthGuard. */
+  signInMethods(): SignInMethod[] {
+    return TenantContextService.store().signInMethods ?? []
   }
 
   /** Whether the access token records a sign-in within the last `seconds`; behind JwtAuthGuard. */

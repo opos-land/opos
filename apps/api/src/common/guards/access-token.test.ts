@@ -7,6 +7,7 @@ import {
   bearerToken,
   createAccessTokenVerifier,
   lastSignInAt,
+  signInMethodsOf,
 } from './access-token'
 
 describe('bearerToken', () => {
@@ -39,6 +40,32 @@ describe('lastSignInAt', () => {
     ['entries without a timestamp', { amr: [{ method: 'password' }, null, { timestamp: '5' }] }],
   ])('finds no sign-in in %s', (_, payload) => {
     expect(lastSignInAt(payload)).toBeUndefined()
+  })
+})
+
+describe('signInMethodsOf', () => {
+  it.each([
+    [['email'], ['password']],
+    [['google'], ['google']],
+    [
+      ['email', 'google'],
+      ['password', 'google'],
+    ],
+    [
+      ['google', 'email'],
+      ['password', 'google'],
+    ],
+    [['github', 'email'], ['password']],
+  ])('reads providers %j as %j', (providers, expected) => {
+    expect(signInMethodsOf({ app_metadata: { providers } })).toEqual(expected)
+  })
+
+  it.each([
+    ['no app_metadata', {}],
+    ['providers that are no list', { app_metadata: { providers: 'google' } }],
+    ['a list of other things', { app_metadata: { providers: [1, null, {}] } }],
+  ])('finds no method in %s', (_, payload) => {
+    expect(signInMethodsOf(payload)).toEqual([])
   })
 })
 

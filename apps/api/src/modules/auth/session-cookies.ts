@@ -9,7 +9,7 @@ const names = (app: Application) => ({
   refresh: `opos_${app}_refresh`,
 })
 
-interface CookieOptions {
+type CookieOptions = {
   httpOnly: true
   sameSite: 'strict'
   path: string

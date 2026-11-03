@@ -53,7 +53,7 @@ export class AppModule implements NestModule, OnModuleDestroy {
           plugins: [new RethrowHandlerPlugin({ filter: () => true })],
           sendResponseInterceptors: [deferResponseInTenantTransaction],
         }),
-        rateLimitModule(verifier, rateLimit),
+        rateLimitModule(verifier, rateLimit, env),
         DatabaseModule,
         HealthModule,
         MeModule,

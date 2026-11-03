@@ -13,8 +13,8 @@
     },
     "build": {
       "dependsOn": ["^build", "i18n:compile"],
-      "env": ["VITE_API_URL"],
-      "passThroughEnv": ["SUPABASE_SECRET_KEY"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["VITE_API_URL", "SUPABASE_SECRET_KEY"],
       "outputs": ["dist/**"]
     },
     "dev": {

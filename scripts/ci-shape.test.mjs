@@ -209,10 +209,13 @@ test('check builds both applications against the control address and scans them'
   assert.ok(build < steps.indexOf('- run: node scripts/bff-boundary.mjs --dist'))
 })
 
-test('the build task reads the control address and passes the canary on, so no cache stands in', () => {
+test('the build task hashes the control address, the canary and the .env files, so no cache stands in', () => {
   const { tasks } = JSON.parse(read('../turbo.json'))
   assert.ok(tasks.build.env.includes('VITE_API_URL'))
-  assert.ok(tasks.build.passThroughEnv.includes('SUPABASE_SECRET_KEY'))
+  assert.ok(tasks.build.env.includes('SUPABASE_SECRET_KEY'))
+  assert.ok(!(tasks.build.passThroughEnv ?? []).includes('SUPABASE_SECRET_KEY'))
+  assert.ok(tasks.build.inputs.includes('$TURBO_DEFAULT$'))
+  assert.ok(tasks.build.inputs.includes('.env*'))
 })
 
 test('the BFF boundary check runs in a Claude Code hook and in lefthook pre-commit', () => {
@@ -221,13 +224,13 @@ test('the BFF boundary check runs in a Claude Code hook and in lefthook pre-comm
     hooks[event]
       .filter((entry) => entry.matcher === matcher)
       .flatMap((e) => e.hooks.map((h) => h.command))
+  const boundary = /scripts\/bff-boundary\.mjs --hook( \|\| exit 2)?$/
   for (const matcher of ['Edit|Write', 'Bash']) {
     assert.ok(
-      commands('PostToolUse', matcher).some((command) =>
-        /scripts\/bff-boundary\.mjs --hook( \|\| exit 2)?$/.test(command),
-      ),
+      commands('PostToolUse', matcher).some((command) => boundary.test(command)),
       matcher,
     )
   }
+  assert.ok(commands('PostToolUseFailure', 'Bash').some((command) => boundary.test(command)))
   assert.match(read('../lefthook.yml'), /run: node scripts\/bff-boundary\.mjs \{staged_files\}/)
 })

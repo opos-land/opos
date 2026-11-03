@@ -26,6 +26,13 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain('session.mfa-required')
   })
 
+  it.each(['mfa.code-invalid', 'mfa.already-enabled', 'mfa.not-required', 'mfa.not-enabled'])(
+    'lists %s of the two-factor routes',
+    (code) => {
+      expect(errorCodes).toContain(code)
+    },
+  )
+
   it.each(errorCodes)('%s has a message in @opos/i18n/errors', (code) => {
     expect(errorMessages[code]).toBeDefined()
   })

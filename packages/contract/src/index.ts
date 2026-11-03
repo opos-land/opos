@@ -24,6 +24,7 @@ export const contract = {
 export type Contract = typeof contract
 
 export * from './auth'
+export * from './auth-mfa'
 export * from './common'
 export * from './editions'
 export * from './engagement'

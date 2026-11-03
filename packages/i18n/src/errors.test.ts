@@ -34,6 +34,22 @@ describe('errorMessage', () => {
     )
   })
 
+  it.each([
+    [
+      'mfa.code-invalid',
+      'Kod jest nieprawidłowy lub wygasł. Sprawdź kod w aplikacji uwierzytelniającej i spróbuj ponownie.',
+    ],
+    ['mfa.already-enabled', 'Uwierzytelnianie dwuskładnikowe jest już włączone dla tego konta.'],
+    ['mfa.not-required', 'To konto nie potrzebuje teraz kodu.'],
+    ['mfa.not-enabled', 'Uwierzytelnianie dwuskładnikowe nie jest włączone dla tego konta.'],
+  ])('translates %s of the two-factor routes', async (code, expected) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage(code)).not.toBe(unknownError)
+    expect(i18n._(errorMessage(code))).toBe(expected)
+  })
+
   it('names the address of a speaker without an account, from the params of the error', async () => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

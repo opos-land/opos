@@ -142,6 +142,10 @@ msgid "If you did not create an account, ignore this message."
 msgstr "Jeśli to nie ty zakładasz konto, zignoruj tę wiadomość."
 
 #: src/emails.ts
+msgid "If you did not do this, change your password right away and turn two-factor authentication on again."
+msgstr "Jeśli to nie Ty, natychmiast zmień hasło i ponownie włącz uwierzytelnianie dwuskładnikowe."
+
+#: src/emails.ts
 msgid "If you do not expect this invitation, ignore this message."
 msgstr "Jeśli nie spodziewasz się tego zaproszenia, zignoruj tę wiadomość."
 
@@ -256,6 +260,10 @@ msgid "The address may contain only lowercase letters, digits and hyphens, 3 to 
 msgstr "Adres może zawierać tylko małe litery, cyfry i myślniki, od 3 do 40 znaków."
 
 #: src/errors.ts
+msgid "The code is wrong or has expired. Check the code in your authenticator app and try again."
+msgstr "Kod jest nieprawidłowy lub wygasł. Sprawdź kod w aplikacji uwierzytelniającej i spróbuj ponownie."
+
+#: src/errors.ts
 msgid "The link has expired. Ask for a new one."
 msgstr "Link wygasł. Poproś o nowy."
 
@@ -278,6 +286,10 @@ msgstr "Hasło jest za słabe. Użyj co najmniej 8 znaków."
 #: src/errors.ts
 msgid "The service is temporarily unavailable. Try again in a moment."
 msgstr "Usługa jest chwilowo niedostępna. Spróbuj ponownie za chwilę."
+
+#: src/errors.ts
+msgid "This account does not need a code right now."
+msgstr "To konto nie potrzebuje teraz kodu."
 
 #: src/errors.ts
 msgid "This account uses two-factor authentication. Enter the code from your authenticator app to continue."
@@ -368,6 +380,22 @@ msgstr "Wysłano zbyt wiele wiadomości. Spróbuj ponownie za kilka minut."
 msgctxt "glossary"
 msgid "two-factor authentication"
 msgstr "uwierzytelnianie dwuskładnikowe"
+
+#: src/errors.ts
+msgid "Two-factor authentication is already on for this account."
+msgstr "Uwierzytelnianie dwuskładnikowe jest już włączone dla tego konta."
+
+#: src/errors.ts
+msgid "Two-factor authentication is not on for this account."
+msgstr "Uwierzytelnianie dwuskładnikowe nie jest włączone dla tego konta."
+
+#: src/emails.ts
+msgid "Two-factor authentication was turned off"
+msgstr "Uwierzytelnianie dwuskładnikowe zostało wyłączone"
+
+#: src/emails.ts
+msgid "Two-factor authentication was turned off for your OPOS account. You can turn it on again in your account settings."
+msgstr "Uwierzytelnianie dwuskładnikowe zostało wyłączone na Twoim koncie OPOS. Możesz włączyć je ponownie w ustawieniach konta."
 
 #. Glossary term: user
 #: src/glossary.ts

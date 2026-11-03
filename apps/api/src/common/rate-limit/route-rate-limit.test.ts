@@ -58,6 +58,7 @@ describe('RouteRateLimiter', () => {
       invitations: { limit: 20, ttl: 3_600_000 },
       invitationPreview: { limit: 30, ttl: 3_600_000 },
       speakers: { limit: 100, ttl: 3_600_000 },
+      mfa: { limit: 10, ttl: 900_000 },
     })
   })
 })

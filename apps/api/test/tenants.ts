@@ -176,6 +176,31 @@ export const accountByEmail = async (email: string) =>
     )
   )[0]
 
+/** The recovery codes of an account as postgres sees them: the hash and whether it is spent. */
+export async function recoveryCodeRows(accountId: string) {
+  return db.execute<{ code_hash: string; used_at: Date | null }>(sql`
+    select code_hash, used_at from account_recovery_codes where account_id = ${accountId}
+    order by code_hash
+  `)
+}
+
+/** An unused recovery code row, as a failed marking would have left it. */
+export async function addRecoveryCodeHash(accountId: string, codeHash: string) {
+  await db.execute(sql`
+    insert into account_recovery_codes (account_id, code_hash) values (${accountId}, ${codeHash})
+  `)
+}
+
+/** What the database holds of an account's two-factor authentication. */
+export async function mfaState(accountId: string) {
+  const [row] = await db.execute<{ mirrored: boolean; factors: number }>(sql`
+    select
+      (select mfa_enabled_at is not null from accounts where id = ${accountId}) as mirrored,
+      (select count(*)::int from auth.mfa_factors where user_id = ${accountId}) as factors
+  `)
+  return { mirrored: row!.mirrored, factors: row!.factors }
+}
+
 export const closeTenantDb = () => db.$client.end()
 
 /**

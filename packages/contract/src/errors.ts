@@ -40,6 +40,10 @@ export const errorCodes = [
   'auth.over_email_send_rate_limit',
   'auth.over_request_rate_limit',
   'auth.google-failed',
+  'mfa.code-invalid',
+  'mfa.already-enabled',
+  'mfa.not-required',
+  'mfa.not-enabled',
   'program.too-many-items',
   'like.edition-ended',
 ] as const

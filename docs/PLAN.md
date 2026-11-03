@@ -186,10 +186,9 @@ opos/
                          #   account deletion), TenantsModule (tenant, team, invitations),
                          #   EditionsModule, ProgramModule (items and speakers), PublicModule and
                          #   EngagementModule (without reviews),
-                         #   AuthModule (auth endpoints and session cookies, Supabase Auth clients,
-                         #   send-email hook, admin client), MailModule (Supabase Auth and
-                         #   invitation emails), tests; still to come: the two-factor
-                         #   routes (7.12)
+                         #   AuthModule (auth endpoints and session cookies, the two-factor routes,
+                         #   Supabase Auth clients, send-email hook, admin client), MailModule (Supabase Auth and
+                         #   invitation emails), tests
       src/
         common/
           guards/scanner-device.guard.ts
@@ -211,12 +210,12 @@ opos/
   e2e/                   # built: Playwright config, fixtures (stack, Mailpit, admin API, tenants,
                          #   sign-in) with their unit tests, specs (15.2)
   packages/
-    contract/            # built: common schemas, error codes, health, auth (sign-in, sessions, password),
+    contract/            # built: common schemas, error codes, health, auth (sign-in, sessions, password,
+                         #   two-factor authentication),
                          #   me (profile, memberships, deletion),
                          #   tenants (without payment config), editions, invitations, program, public and
                          #   engagement (without reviews)
       src/
-        auth-mfa.ts
         shop.ts
         tickets.ts
         checkout.ts
@@ -850,11 +849,11 @@ and debugging — **it never reaches the UI**. Every code is listed in
 
 | Status | Meaning | Code when nothing more specific applies |
 |---|---|---|
-| `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `editions_slug_format` -> `slug`, `tenant_memberships_head_never_expires` -> `expiresAt`) | `request.invalid` |
+| `400` | validation; `params.field` names the first invalid field, an unknown one included; a violated check constraint maps by its name to its field (`editions_ends_after_start` -> `endsAt`, `editions_slug_format` -> `slug`, `tenant_memberships_head_never_expires` -> `expiresAt`); a wrong code of two-factor authentication has its own code (`mfa.code-invalid`, [7.12](#712-two-factor-authentication)) | `request.invalid` |
 | `401` | no session cookie, an expired or foreign access token in it, or no `accounts` row for it; a route that needs a recent sign-in without one has its own code (`session.reauthentication-required`, [7.4](#74-authorization)), a session below `aal2` on an account with two-factor authentication has its own (`session.mfa-required`, [7.12](#712-two-factor-authentication)), and so do the Supabase Auth refusals the API passes on ([5.1](#51-auth--sign-in-through-the-api)) | `session.invalid` |
 | `403` | insufficient permissions | `permission.denied`; anti-escalation has its own codes ([5.3](#53-tenants--jwt--x-tenant-slug)), and so does an invitation for another email ([7.7](#77-organizer-invitations)); a request that changes state with the session cookie from an `Origin` outside `PANEL_URL` and `PORTAL_URL` is `request.origin-denied` ([7.4](#74-authorization)) |
 | `404` | does not exist **or belongs to another tenant**, unknown routes included | `request.not-found`; an address without a confirmed account in a speaker list has its own code ([5.5](#55-program--jwt--x-tenant-slug--edition-permission)), and so does `DELETE /auth/mfa` with no factor ([7.12](#712-two-factor-authentication)) |
-| `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`), and so does a unique constraint a concurrent request won (`tenant_memberships_account_tenant_unique` -> `member.exists`, or `invitation.already-member` on `POST /invitations/accept`; `accepted_invitations_tenant_jti_unique` -> `invitation.used`) | always a specific code |
+| `409` | invariant conflict; a violated deferred constraint trigger, raised at COMMIT after the handler chose a `2xx`, maps by its constraint name (`*_at_least_one_head` -> `membership.last-head`), and so does a unique constraint a concurrent request won (`tenant_memberships_account_tenant_unique` -> `member.exists`, or `invitation.already-member` on `POST /invitations/accept`; `accepted_invitations_tenant_jti_unique` -> `invitation.used`); the routes of [7.12](#712-two-factor-authentication) answer `mfa.already-enabled` and `mfa.not-required` | always a specific code |
 | `410` | an organizer invitation past its validity, or one its sender can no longer send ([7.7](#77-organizer-invitations)) | `invitation.expired`, `invitation.revoked` |
 | `415` | a request body that is not `application/json`, refused from its headers before routing ([json-body.ts](../apps/api/src/common/json-body.ts)): Express parses JSON within its size limit, and oRPC would read any other body itself, with no limit | `request.invalid` |
 | `429` | rate limit | `request.rate-limited` |
@@ -1791,19 +1790,19 @@ The scanner is online only: no local ticket list, no queue of offline redemption
 
 ### 7.12 Two-factor authentication
 
-The assurance-level check of the guard is built; the routes `POST /auth/mfa/*` and `DELETE /auth/mfa`,
-in [modules/auth](../apps/api/src/modules/auth) and `contract.auth.mfa.*`
-(`packages/contract/src/auth-mfa.ts`), and the screens are still to be built. Two-factor authentication (2FA) is TOTP only, on Supabase
-Auth's factors. Each account turns it on for itself
-([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); no role requires it.
+The assurance-level check of the guard and the routes `POST /auth/mfa/*` and `DELETE /auth/mfa`
+are built ([modules/auth](../apps/api/src/modules/auth), `contract.auth.mfa.*`: request and response
+schemas in [auth-mfa.ts](../packages/contract/src/auth-mfa.ts)); the screens are still to be built.
+Two-factor authentication (2FA) is TOTP only, on Supabase Auth's factors. Each account turns it on
+for itself ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); no role requires it.
 
-| Method | Path | Input | Requires | Does | Answers |
-|---|---|---|---|---|---|
-| POST | `/auth/mfa/enroll` | — | account, recent sign-in, no verified factor | removes a stale unverified factor, `mfa.enroll({ factorType: 'totp' })` | `200 { factorId, qrCode, secret }`; `409` `mfa.already-enabled` |
-| POST | `/auth/mfa/enable` | `{ factorId, code }` | account, own `factorId` | `challengeAndVerify`, sets `aal2` cookies, creates recovery codes | `200 { recoveryCodes }`; `400` `mfa.code-invalid`; `404` `request.not-found` for a foreign `factorId`; `409` `mfa.already-enabled` on an already verified factor |
-| POST | `/auth/mfa/verify` | `{ code }` | `aal1` session with 2FA | `challengeAndVerify` on the account's own factor, sets `aal2` cookies | `204`; `400` `mfa.code-invalid`; `409` `mfa.not-required` on an account without 2FA or at `aal2` |
-| POST | `/auth/mfa/recover` | `{ code }` | `aal1` session with 2FA | finds an unused code, admin removes the factors, then marks the code used and removes the unused ones, sends the email | `204`; `400` `mfa.code-invalid`; `409` `mfa.not-required` on an account without 2FA or at `aal2` |
-| DELETE | `/auth/mfa` | — | `aal2`, recent sign-in | removes the factors and unused codes, sends the email | `204`; `401` `session.mfa-required` below `aal2`; `404` `mfa.not-enabled` with no factor |
+| Method | Path | Requires | Does | Answers |
+|---|---|---|---|---|
+| POST | `/auth/mfa/enroll` | account, recent sign-in, no verified factor | removes a stale unverified factor, `mfa.enroll({ factorType: 'totp' })` | `200` the factor, a `data:` SVG QR code and the secret; `409` `mfa.already-enabled` |
+| POST | `/auth/mfa/enable` | account, own `factorId` | stores the recovery codes, `challengeAndVerify`, sets `aal2` cookies | `200` the ten recovery codes; `400` `mfa.code-invalid`; `404` `request.not-found` for a foreign `factorId`; `409` `mfa.already-enabled` on an already verified factor |
+| POST | `/auth/mfa/verify` | `aal1` session with 2FA | `challengeAndVerify` on the account's own factor, sets `aal2` cookies | `204`; `400` `mfa.code-invalid`; `409` `mfa.not-required` on an account without 2FA or at `aal2` |
+| POST | `/auth/mfa/recover` | `aal1` session with 2FA | finds an unused code, admin removes the factors, then marks the code used and removes the unused ones, sends the email | `204`; `400` `mfa.code-invalid`; `409` `mfa.not-required` on an account without 2FA or at `aal2` |
+| DELETE | `/auth/mfa` | `aal2`, recent sign-in | removes the factors and unused codes, sends the email | `204`; `401` `session.mfa-required` below `aal2`; `404` `mfa.not-enabled` with no factor |
 
 A missing recent sign-in answers `401` `session.reauthentication-required`
 ([7.4](#74-authorization)). Factors come from the session's own `listFactors`, never from the
@@ -1816,7 +1815,8 @@ attempts per 15 minutes per account ([7.9](#79-rate-limiting)), counted by `Rout
 minutes of an access token. Refresh and sign-out are public routes that read the cookies;
 `@AllowMfaPending()`
 ([allow-mfa-pending.decorator.ts](../apps/api/src/common/decorators/allow-mfa-pending.decorator.ts))
-covers the account routes `POST /auth/mfa/*`; `JwtAuthGuard` reads it from the handler:
+stands on the handlers of the account routes `POST /auth/mfa/*`, never on `DELETE /auth/mfa`;
+`JwtAuthGuard` reads it from the handler alone:
 
 | Case | What happens |
 |---|---|
@@ -1830,8 +1830,12 @@ code.
 
 **Recovery codes.** Ten one-time codes, shown once in the answer of `enable`, each 16 base32
 characters from `crypto.randomBytes`, stored as SHA-256 hashes, lowercase hex, in the global table
-`account_recovery_codes` ([4.2](#42-global-tables)). `recover` finds an unused code by its hash among
-the account's own. Using one removes the
+`account_recovery_codes` ([4.2](#42-global-tables)), through
+[RecoveryCodesRepository](../apps/api/src/modules/auth/recovery-codes.repository.ts). `recover`
+finds an unused code by its hash among the account's own, ignoring case, spaces and hyphens. `enable`
+stores the codes before it verifies the factor, in place of any unused codes the account still holds,
+so an account never holds a verified factor without codes, and a code left unused by a failed marking
+cannot work once 2FA is back on. Using one removes the
 factor, so the person signs in and may turn 2FA on again, and an email tells them, in the account's
 locale ([6](#6-localization)); `DELETE /auth/mfa` sends the same email.
 
@@ -2249,7 +2253,7 @@ failure and answers `500` `server.error`, logged — never the caller's `session
 `permission.denied`. The seed calls `POST /admin/users`, `PUT /admin/users/:id`, `GET /admin/users/:id` and the factor
 removal with the same key ([14](#14-demo-data-seed)), and `pnpm db:account:reset-2fa` calls `GET /admin/users/:id/factors`
 and the factor removal ([14](#resetting-two-factor-authentication)). The key never reaches a frontend
-([3.2](#32-frontend-application-layout)). Still to be built: factor removal and that script.
+([3.2](#32-frontend-application-layout)). Still to be built: that script.
 
 ### Rate limits
 

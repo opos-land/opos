@@ -152,3 +152,56 @@ describe('AuthAdminClient.deleteUser', () => {
     expectUnavailable(await failureOf(client().deleteUser(USER_ID)))
   })
 })
+
+const FACTOR_ID = '00000000-0000-4000-8000-000000000002'
+
+describe('AuthAdminClient.deleteFactor', () => {
+  it('deletes the factor of the user through the gateway, on the secret key alone', async () => {
+    const fetch = answer(200, { id: FACTOR_ID })
+
+    expect(await client().deleteFactor(USER_ID, FACTOR_ID)).toBe(true)
+
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe(`http://supabase.test/auth/v1/admin/users/${USER_ID}/factors/${FACTOR_ID}`)
+    expect(init.method).toBe('DELETE')
+    const headers = new Headers(init.headers)
+    expect(headers.get('apikey')).toBe('sb_secret_test')
+    expect(headers.get('authorization')).toBeNull()
+  })
+
+  it('answers false for a factor already gone', async () => {
+    answer(404, { code: 404, error_code: 'mfa_factor_not_found', msg: 'Factor not found' })
+
+    expect(await client().deleteFactor(USER_ID, FACTOR_ID)).toBe(false)
+  })
+
+  it.each([
+    [401, 'no_authorization'],
+    [403, 'not_admin'],
+  ])('turns a %i %s into a 500 server.error', async (status, errorCode) => {
+    answer(status, { code: status, error_code: errorCode, msg: 'Refused' })
+
+    const failure = await failureOf(client().deleteFactor(USER_ID, FACTOR_ID))
+
+    expect(toErrorResponse(failure)).toEqual({
+      status: 500,
+      body: { code: 'server.error', message: 'Internal server error' },
+    })
+  })
+
+  it('turns a 5xx and a transport failure into a 503 server.unavailable', async () => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    answer(502, { code: 502, msg: 'Down' })
+    expect(
+      toErrorResponse(await failureOf(client().deleteFactor(USER_ID, FACTOR_ID))),
+    ).toMatchObject({ status: 503, body: { code: 'server.unavailable' } })
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new TypeError('fetch failed'))),
+    )
+    expect(
+      toErrorResponse(await failureOf(client().deleteFactor(USER_ID, FACTOR_ID))),
+    ).toMatchObject({ status: 503, body: { code: 'server.unavailable' } })
+  })
+})

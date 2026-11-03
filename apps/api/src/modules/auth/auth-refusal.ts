@@ -36,7 +36,8 @@ const LISTED: Readonly<Record<string, string>> = {
 
 /**
  * What Supabase Auth refused, as the error the API answers with (PLAN.md 5.1): a dead session is
- * `401` `session.invalid`, `insufficient_aal` is `401` `session.mfa-required`, a code the contract lists keeps its status, an outage is `503`, and
+ * `401` `session.invalid`, `insufficient_aal` is `401` `session.mfa-required`,
+ * `mfa_verification_failed` is `400` `mfa.code-invalid`, a code the contract lists keeps its status, an outage is `503`, and
  * anything else is a logged `500`.
  */
 export function toApiError(error: unknown): ApiError {
@@ -48,6 +49,10 @@ export function toApiError(error: unknown): ApiError {
     if (error.code && SESSION_GONE.has(error.code)) return unauthenticated()
     // The session lives and only lacks the second factor, such as `updateUser` at `aal1`.
     if (error.code === 'insufficient_aal') return mfaRequired()
+    // A wrong or replayed code; Supabase Auth answers it with a 422 (PLAN.md 7.12).
+    if (error.code === 'mfa_verification_failed') {
+      return new ApiError(400, 'mfa.code-invalid', 'The code is wrong or has expired.')
+    }
     const message = error.code && Object.hasOwn(LISTED, error.code) ? LISTED[error.code] : undefined
     if (error.code && message) {
       return new ApiError(error.status ?? 400, `auth.${error.code}` as ErrorCode, message)

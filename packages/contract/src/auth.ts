@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { mfaContract } from './auth-mfa'
 import { meSchema } from './me'
 import { accountRoute, publicRoute, withErrors } from './common'
 
@@ -148,4 +149,5 @@ export const authContract = {
         'Set the password and end every other session; needs a sign-in from the last 5 minutes',
     })
     .input(z.object({ body: z.object({ password: newPasswordSchema }).strict() })),
+  mfa: mfaContract,
 }

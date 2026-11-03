@@ -157,6 +157,20 @@ describe('contract coverage', () => {
 })
 
 describe('account routes', () => {
+  it('lists the routes of two-factor authentication', () => {
+    const names = accountRoutes.map(([name]) => name)
+
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'auth.mfa.enroll',
+        'auth.mfa.enable',
+        'auth.mfa.verify',
+        'auth.mfa.recover',
+        'auth.mfa.disable',
+      ]),
+    )
+  })
+
   it.each(accountRoutes)('%s refuses a request without a token', async (_, procedure) => {
     const res = await call(procedure, undefined)
     expect(res.status).toBe(401)

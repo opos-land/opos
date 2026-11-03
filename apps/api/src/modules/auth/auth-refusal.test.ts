@@ -29,6 +29,7 @@ describe('toApiError', () => {
     [apiError(429, 'over_email_send_rate_limit'), 429, 'auth.over_email_send_rate_limit'],
     [apiError(429, 'over_request_rate_limit'), 429, 'auth.over_request_rate_limit'],
     [apiError(401, 'insufficient_aal'), 401, 'session.mfa-required'],
+    [apiError(422, 'mfa_verification_failed'), 400, 'mfa.code-invalid'],
     [apiError(400, 'something_new'), 500, 'server.error'],
     [apiError(503, undefined), 503, 'server.unavailable'],
     [new AuthRetryableFetchError('down', 0), 503, 'server.unavailable'],

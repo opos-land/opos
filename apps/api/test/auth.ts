@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
+import { totp } from '@opos/db/totp'
 import request from 'supertest'
 import { type CryptoKey, generateKeyPair, importJWK, type JWK, SignJWT } from 'jose'
 import { type Application } from '../src/common/http/application'
@@ -174,5 +175,38 @@ export async function deleteCreatedAccounts() {
     await Promise.all(
       ids.slice(i, i + 10).map((id) => admin(`/admin/users/${id}`, { method: 'DELETE' }, [404])),
     )
+  }
+}
+
+/**
+ * An RFC 6238 code for a base32 secret, by Supabase Auth's clock. Supabase Auth refuses a code of a
+ * 30 second step it has seen, so a second code in a row asks for the next step: `stepsAhead` 1.
+ */
+export const totpCode = (secret: string, stepsAhead = 0, now = Date.now()): string =>
+  totp(secret, now + stepsAhead * 30_000)
+
+/** The agent of `signedInAgent`, or any supertest agent that holds a session. */
+type SessionAgent = ReturnType<typeof request.agent>
+
+/**
+ * Turns on two-factor authentication for the account `agent` is signed in to, through the API:
+ * `enroll`, then `enable` with a code computed from the secret. The agent ends at `aal2`.
+ */
+export async function enableMfa(
+  agent: SessionAgent,
+): Promise<{ secret: string; factorId: string; recoveryCodes: string[] }> {
+  const enrolled = await agent.post('/auth/mfa/enroll')
+  if (enrolled.status !== 200) {
+    throw new Error(`enroll: ${enrolled.status} ${JSON.stringify(enrolled.body)}`)
+  }
+  const { factorId, secret } = enrolled.body as { factorId: string; secret: string }
+  const enabled = await agent.post('/auth/mfa/enable').send({ factorId, code: totpCode(secret) })
+  if (enabled.status !== 200) {
+    throw new Error(`enable: ${enabled.status} ${JSON.stringify(enabled.body)}`)
+  }
+  return {
+    secret,
+    factorId,
+    recoveryCodes: (enabled.body as { recoveryCodes: string[] }).recoveryCodes,
   }
 }

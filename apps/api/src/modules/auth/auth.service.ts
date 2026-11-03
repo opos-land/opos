@@ -27,7 +27,7 @@ export interface AuthRequest extends CookieRequest {
 }
 
 /** Supabase Auth reports a refusal in `error`, and auth-js returns it instead of throwing. */
-function unwrap<T>(result: { data: T; error: Error | null }): T {
+export function unwrap<T>(result: { data: T; error: Error | null }): T {
   if (result.error) throw result.error
   return result.data
 }

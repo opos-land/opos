@@ -80,6 +80,44 @@ test.describe('two-factor authentication', () => {
   )
 
   test(
+    'a session waiting for its code reads the public pages, keeps an unspent link, and can sign out',
+    { tag: '@mobile' },
+    async ({ page, accounts }) => {
+      const { account } = await accountWithTwoFactor(page, accounts)
+      await signInToPortal(page, account.email, account.password)
+      await expect(page).toHaveURL(portalUrl('/auth/mfa'))
+
+      // A public page renders as for a visitor, and the header offers to finish signing in.
+      await page.goto(portalUrl('/privacy'))
+      await expect(page).toHaveURL(portalUrl('/privacy'))
+      await expect(page.getByRole('heading', { name: 'Privacy policy' })).toBeVisible()
+      await expect(page.getByRole('link', { name: 'Finish signing in' })).toHaveAttribute(
+        'href',
+        '/auth/mfa?redirect=%2Fprivacy',
+      )
+      await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toHaveCount(0)
+
+      // An unspent link opened in this browser keeps its button, whichever account it is for.
+      await page.goto(portalUrl('/forgot-password'))
+      await page.getByLabel('Email', { exact: true }).fill(account.email)
+      await page.getByRole('button', { name: 'Send the link' }).click()
+      await expect(page.getByRole('status')).toContainText(`If an account uses ${account.email}`)
+      const link = confirmLinkIn(await waitForMail(account.email))
+      await page.goto(link)
+      await expect(page).toHaveURL(link)
+      await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible()
+
+      // The code screen lets the session go, and another person can sign in.
+      await page.goto(portalUrl('/auth/mfa'))
+      await page.getByRole('button', { name: 'Sign out' }).click()
+      await expect(page).toHaveURL(portalUrl('/login'))
+      await expect(page.getByLabel('Email', { exact: true })).toBeVisible()
+      await page.goto(portalUrl('/schedule'))
+      await expect(page).toHaveURL(portalUrl('/login?redirect=%2Fschedule'))
+    },
+  )
+
+  test(
     'a password reset asks for the code, then shows the password form without the link again',
     { tag: '@mobile' },
     async ({ page, accounts }) => {

@@ -17,12 +17,7 @@ describe('mfaReturnFor', () => {
     ['a sign-in with nothing to return to', '/login', '', '/'],
     ['an address on another origin', '/login', '?redirect=https%3A%2F%2Fevil.test', '/'],
     ['an invitation, which keeps its token', '/invitation', '?token=abc', '/invitation?token=abc'],
-    [
-      'a link, which comes back without its spent token',
-      '/auth/confirm',
-      '?token_hash=a&type=recovery',
-      '/auth/confirm',
-    ],
+    ['the page of a link, which comes back without a token', '/auth/confirm', '', '/auth/confirm'],
     ['any other page', '/convention-a/team', '?page=2', '/convention-a/team?page=2'],
   ])('%s', (_name, pathname, search, expected) => {
     expect(mfaReturnFor({ pathname, search })).toBe(expected)

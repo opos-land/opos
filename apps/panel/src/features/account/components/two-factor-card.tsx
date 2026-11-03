@@ -10,6 +10,7 @@ import {
   enrollTwoFactor,
   refreshAccount,
 } from '../api/two-factor'
+import { forgetLostCodes, lostCodesRemembered, rememberLostCodes } from '../model/lost-codes'
 import { type SignInMethods } from '../model/sign-in-methods'
 import { ReauthenticateForm } from './reauthenticate-form'
 
@@ -70,7 +71,9 @@ function Enrolling({
         className="size-48 max-w-full self-center bg-white"
       />
       <p className="text-sm">
-        <Trans>Secret</Trans>: <code className="font-mono break-all">{secret}</code>
+        <Trans>
+          Secret: <code className="font-mono break-all">{secret}</code>
+        </Trans>
       </p>
       <Field
         label={t`Code from the app`}
@@ -147,14 +150,21 @@ export function TwoFactorCard({
   const [view, setView] = useState<View>({ step: 'idle' })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<unknown>(null)
-  const [lostCodes, setLostCodes] = useState(false)
+  // Read when the card mounts: the notice outlives the card, which the code screen unmounts.
+  const [lostCodes, setLostCodes] = useState(lostCodesRemembered)
 
-  // The card and `GET /me` agree: a failed refresh leaves what the card already shows.
-  const refresh = () => refreshAccount(queryClient).catch(() => undefined)
+  // The API's answer is written into the account before `GET /me` is asked, so the card is right
+  // even when that request fails (PLAN.md 7.12).
+  const refresh = (mfaEnabled: boolean) =>
+    refreshAccount(queryClient, mfaEnabled).catch(() => undefined)
+
+  const dismissLostCodes = () => {
+    forgetLostCodes()
+    setLostCodes(false)
+  }
 
   const run = async (action: Action) => {
     setError(null)
-    setLostCodes(false)
     setPending(true)
     try {
       if (action === 'enroll') {
@@ -162,16 +172,18 @@ export function TwoFactorCard({
         setView({ step: 'enrolling', factorId, qrCode, secret })
       } else {
         await disableTwoFactor()
+        dismissLostCodes()
         setView({ step: 'idle' })
-        await refresh()
+        await refresh(false)
       }
     } catch (failure) {
       if (errorCode(failure) === 'session.reauthentication-required') {
         setView({ step: 'reauthenticate', action, error: failure })
       } else {
         setError(failure)
-        // The account already has 2FA on: what the card shows was out of date.
-        if (errorCode(failure) === 'mfa.already-enabled') await refresh()
+        // What the card shows was out of date: 2FA is already on, or already off.
+        if (errorCode(failure) === 'mfa.already-enabled') await refresh(true)
+        if (errorCode(failure) === 'mfa.not-enabled') await refresh(false)
       }
     } finally {
       setPending(false)
@@ -182,14 +194,16 @@ export function TwoFactorCard({
     try {
       const { recoveryCodes } = await enableTwoFactor(factorId, code)
       setView({ step: 'codes', codes: recoveryCodes })
-      await refresh()
+      await refresh(true)
       return null
     } catch (failure) {
       if (errorCode(failure) !== 'mfa.already-enabled') return failure
       // The factor is verified but a request racing this one replaced the codes (PLAN.md 7.12).
       setView({ step: 'idle' })
+      // Set before the refresh: the refresh may want the code, which unmounts this card.
+      rememberLostCodes()
       setLostCodes(true)
-      await refresh()
+      await refresh(true)
       return null
     }
   }
@@ -222,6 +236,7 @@ export function TwoFactorCard({
           setView({ step: 'idle' })
           void run(action)
         }}
+        onCancel={() => setView({ step: 'idle' })}
       />
     )
   }
@@ -235,6 +250,9 @@ export function TwoFactorCard({
             ones, sign in with a code from your app, turn two-factor authentication off, and turn it
             on again.
           </Trans>
+          <Button variant="secondary" className="mt-2" onClick={dismissLostCodes}>
+            <Trans>Dismiss</Trans>
+          </Button>
         </Notice>
       )}
       <ErrorMessage error={error} />

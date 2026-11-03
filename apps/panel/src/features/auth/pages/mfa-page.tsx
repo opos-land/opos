@@ -1,7 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
-import { Link, Navigate, useSearchParams } from 'react-router'
+import { Navigate, useSearchParams } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
 import { startSession, useSession } from '../../../shared/lib/session'
 import {
@@ -12,7 +12,7 @@ import {
   LoadingView,
   UnavailableView,
 } from '../../../shared/ui'
-import { recoverWithCode, verifyCode } from '../api/auth'
+import { recoverWithCode, signOut, verifyCode } from '../api/auth'
 import { AuthLayout } from '../components/auth-layout'
 import { loginPath, safeRedirect } from '../model/redirect'
 
@@ -35,6 +35,8 @@ export function MfaPage() {
   const [invalid, setInvalid] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [pending, setPending] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [leaveError, setLeaveError] = useState<unknown>(null)
 
   // Nothing cached before the code may show an account to the page that follows.
   useEffect(() => {
@@ -50,13 +52,26 @@ export function MfaPage() {
     event.preventDefault()
     setError(null)
     const code = value.trim()
-    const wrong = !recovery && !SIX_DIGITS.test(code)
+    const wrong = recovery ? code === '' : !SIX_DIGITS.test(code)
     setInvalid(wrong)
     if (wrong) return
     setPending(true)
     const failure = await (recovery ? recoverWithCode(code) : verifyCode(code))
     setPending(false)
-    if (failure) setError(failure)
+    // The code is not wanted any more (the session passed, or the account's 2FA was reset): ask who
+    // is signed in rather than show a message nothing on this screen can act on.
+    if (errorCode(failure) === 'mfa.not-required') void startSession()
+    else if (failure) setError(failure)
+  }
+
+  // A pending session is the one thing that cannot be left by navigating: signing out lets the
+  // next person in, and leads to sign-in once the session shows no account.
+  const leave = async () => {
+    setLeaveError(null)
+    setLeaving(true)
+    const failure = await signOut()
+    setLeaving(false)
+    if (failure) setLeaveError(failure)
   }
 
   const switchTo = (next: boolean) => {
@@ -80,7 +95,12 @@ export function MfaPage() {
       <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-4">
         <Field
           label={recovery ? t`Recovery code` : t`Code`}
-          error={invalid && t`Enter the six digits from your authenticator app.`}
+          error={
+            invalid &&
+            (recovery
+              ? t`Enter one of your recovery codes.`
+              : t`Enter the six digits from your authenticator app.`)
+          }
         >
           {(control) => (
             <input
@@ -100,13 +120,12 @@ export function MfaPage() {
           <Trans>Continue</Trans>
         </Button>
       </form>
-      {errorCode(error) === 'session.invalid' && (
-        <Link to={loginPath(returnTo)} className="text-accent text-sm underline">
-          <Trans>Go to sign-in</Trans>
-        </Link>
-      )}
       <Button variant="secondary" onClick={() => switchTo(!recovery)}>
         {recovery ? <Trans>Use the code of the app</Trans> : <Trans>Use a recovery code</Trans>}
+      </Button>
+      <ErrorMessage error={leaveError} />
+      <Button variant="secondary" pending={leaving} onClick={() => void leave()}>
+        <Trans>Sign out</Trans>
       </Button>
     </AuthLayout>
   )

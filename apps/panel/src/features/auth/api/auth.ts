@@ -2,7 +2,9 @@ import { type verifySchema } from '@opos/contract'
 import { type z } from 'zod'
 import { env } from '../../../shared/config/env'
 import { accountClient } from '../../../shared/lib/api'
+import { isMfaRequired } from '../../../shared/lib/errors'
 import { signedIn, signedOut } from '../../../shared/lib/session'
+import { sessionUnavailable } from '../../../shared/lib/session-store'
 import { rememberAuthReturn } from '../model/auth-return'
 import { googleSignInUrl } from '../model/google-url'
 
@@ -52,19 +54,30 @@ export const sendPasswordLink = (email: string, returnTo: string) =>
 export const verifyLink = (body: VerifyLink) =>
   attempt(async () => signedIn(await accountClient.auth.verify({ body })))
 
+/**
+ * A code the API accepted has changed the session, so a retry would be refused (`mfa.not-required`):
+ * whatever fails afterwards is no failure of the code. Not knowing the account ends `unavailable`,
+ * whose view asks again (PLAN.md 7.12).
+ */
+async function afterRightCode(call: () => Promise<unknown>): Promise<unknown> {
+  const failure = await attempt(call)
+  if (failure) return failure
+  try {
+    signedIn(await accountClient.me.get())
+  } catch (error) {
+    // The API link has already moved the session to the state the answer asked for.
+    if (!isMfaRequired(error)) sessionUnavailable()
+  }
+  return null
+}
+
 /** The code of the authenticator app; the account is known once it is right (PLAN.md 7.12). */
 export const verifyCode = (code: string) =>
-  attempt(async () => {
-    await accountClient.auth.mfa.verify({ body: { code } })
-    signedIn(await accountClient.me.get())
-  })
+  afterRightCode(() => accountClient.auth.mfa.verify({ body: { code } }))
 
 /** A recovery code: two-factor authentication is off afterwards, and so is `mfaEnabled` (PLAN.md 7.12). */
 export const recoverWithCode = (code: string) =>
-  attempt(async () => {
-    await accountClient.auth.mfa.recover({ body: { code } })
-    signedIn(await accountClient.me.get())
-  })
+  afterRightCode(() => accountClient.auth.mfa.recover({ body: { code } }))
 
 /** Saves the password and ends the account's other sessions (PLAN.md 7.6). */
 export const setPassword = (password: string) =>

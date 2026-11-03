@@ -44,9 +44,19 @@ export function clearSession() {
   useSession.setState({ status: 'ready', account: null })
 }
 
-/** The session waits for its code; no account is known, and nothing is announced. */
+/**
+ * The session waits for its code and shows no account. Where an account was shown, the other tabs
+ * are told to drop it: the cookies now belong to whoever is signing in (PLAN.md 7.4).
+ */
 export function mfaRequired() {
+  const hadAccount = useSession.getState().account !== null
   useSession.setState({ status: 'mfa-required', account: null })
+  if (hadAccount) announceAccountChange(null)
+}
+
+/** The API could not be asked who is signed in; the screen offers to try again. */
+export function sessionUnavailable() {
+  useSession.setState({ status: 'unavailable', account: null })
 }
 
 const endListeners = new Set<() => void>()

@@ -3,13 +3,28 @@ import { useSession } from '../../../shared/lib/session'
 import { MFA_PATH, mfaPath, mfaReturnFor } from '../model/mfa-return'
 
 /**
- * Every `session.mfa-required` answer leads to the code screen, from whichever page it came
- * (PLAN.md 7.12), keeping the path to return to.
+ * Whether the page would let someone sign in or redeem a link over a session that waits for its
+ * code: the sign-in page, and the page of a link opened with no link in the address. A link in the
+ * address is unspent until its button is pressed, so that page stays.
+ */
+function holdsSignIn({ pathname, search }: { pathname: string; search: string }) {
+  if (pathname === '/login') return true
+  return pathname === '/auth/confirm' && !new URLSearchParams(search).has('token_hash')
+}
+
+/**
+ * A session that waits for its code (PLAN.md 7.12) is led to the code screen from the pages that
+ * would start another sign-in, keeping the path to return to; the screen's sign-out is how another
+ * person gets in. Every other page renders as for a visitor with no account: pages that need a
+ * session lead to the code screen themselves (`RequireSession`), and the invitation shows its
+ * public preview.
  */
 export function MfaGate() {
   const status = useSession((state) => state.status)
   const location = useLocation()
 
-  if (status !== 'mfa-required' || location.pathname === MFA_PATH) return null
+  if (status !== 'mfa-required' || location.pathname === MFA_PATH || !holdsSignIn(location)) {
+    return null
+  }
   return <Navigate to={mfaPath(mfaReturnFor(location))} replace />
 }

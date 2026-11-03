@@ -15,11 +15,17 @@ export const enableTwoFactor = (factorId: string, code: string) =>
 export const disableTwoFactor = () => accountClient.auth.mfa.disable()
 
 /**
- * Asks `GET /me` again and shows the answer in the account page and in the session, so the card
- * and `mfaEnabled` agree without a reload.
+ * What the API just answered about `mfaEnabled` goes into the account page and the session at
+ * once; `GET /me` is asked afterwards and its answer replaces the whole account. A `GET /me` that
+ * fails therefore leaves the card right, not stale, and rejects for the caller to see.
  */
-export async function refreshAccount(queryClient: QueryClient) {
+export async function refreshAccount(queryClient: QueryClient, mfaEnabled: boolean) {
+  const key = accountOptions().queryKey
+  queryClient.setQueryData(key, (cached) => (cached ? { ...cached, mfaEnabled } : cached))
+  const shown = useSession.getState().account
+  if (shown) useSession.setState({ account: { ...shown, mfaEnabled } })
+
   const account = await accountClient.me.get()
-  queryClient.setQueryData(accountOptions().queryKey, account)
+  queryClient.setQueryData(key, account)
   useSession.setState({ account })
 }

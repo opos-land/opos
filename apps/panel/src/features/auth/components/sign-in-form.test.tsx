@@ -19,10 +19,10 @@ beforeEach(() => {
 
 afterEach(cleanup)
 
-async function signIn(onSignedIn = vi.fn()) {
+async function signIn(onSignedIn = vi.fn(), onMfaRequired = vi.fn()) {
   render(
     <I18nProvider i18n={i18n}>
-      <SignInForm onSignedIn={onSignedIn} />
+      <SignInForm onSignedIn={onSignedIn} onMfaRequired={onMfaRequired} />
     </I18nProvider>,
   )
   const user = userEvent.setup()
@@ -50,10 +50,12 @@ describe('SignInForm', () => {
       new ORPCError('session.mfa-required', { status: 401 }),
     )
 
-    const onSignedIn = await signIn()
+    const onMfaRequired = vi.fn()
+    const onSignedIn = await signIn(vi.fn(), onMfaRequired)
 
     expect(screen.queryByRole('alert')).toBeNull()
     expect(onSignedIn).not.toHaveBeenCalled()
+    expect(onMfaRequired).toHaveBeenCalledOnce()
   })
 
   it('shows the message of a wrong password', async () => {

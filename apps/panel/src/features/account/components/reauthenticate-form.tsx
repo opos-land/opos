@@ -16,6 +16,7 @@ export function ReauthenticateForm({
   returnTo,
   error,
   onConfirmed,
+  onCancel,
 }: {
   email: string
   methods: SignInMethods
@@ -23,6 +24,8 @@ export function ReauthenticateForm({
   /** What the refused call said, shown above the form. */
   error: unknown
   onConfirmed: () => void
+  /** Back to where the person was, without confirming. */
+  onCancel: () => void
 }) {
   const { t } = useLingui()
   const [password, setPassword] = useState('')
@@ -69,6 +72,9 @@ export function ReauthenticateForm({
           <Trans>Confirm with Google</Trans>
         </GoogleButton>
       )}
+      <Button variant="secondary" className="self-start" onClick={onCancel}>
+        <Trans>Cancel</Trans>
+      </Button>
     </div>
   )
 }

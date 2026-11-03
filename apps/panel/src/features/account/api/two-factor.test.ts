@@ -66,9 +66,37 @@ describe('refreshAccount', () => {
     stubApi(json(200, me))
     const client = new QueryClient()
 
-    await refreshAccount(client)
+    await refreshAccount(client, true)
 
     expect(client.getQueryData(accountOptions().queryKey)).toEqual(me)
     expect(useSession.getState().account?.mfaEnabled).toBe(true)
+  })
+
+  it('writes what the API just confirmed before it asks, so a GET /me that fails leaves the right state', async () => {
+    stubApi(json(503, { code: 'server.unavailable' }))
+    const client = new QueryClient()
+    client.setQueryData(accountOptions().queryKey, {
+      ...me,
+      mfaEnabled: false,
+      signInMethods: ['password'],
+    })
+
+    await expect(refreshAccount(client, true)).rejects.toMatchObject({
+      code: 'server.unavailable',
+    })
+
+    expect(client.getQueryData(accountOptions().queryKey)).toMatchObject({ mfaEnabled: true })
+    expect(useSession.getState().account?.mfaEnabled).toBe(true)
+  })
+
+  it('invents no account where none is cached', async () => {
+    stubApi(json(503, { code: 'server.unavailable' }))
+    const client = new QueryClient()
+    useSession.setState({ status: 'ready', account: null })
+
+    await expect(refreshAccount(client, true)).rejects.toBeDefined()
+
+    expect(client.getQueryData(accountOptions().queryKey)).toBeUndefined()
+    expect(useSession.getState().account).toBeNull()
   })
 })

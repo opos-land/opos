@@ -3,7 +3,7 @@ import { formatDateTime } from '@opos/i18n'
 import { type InvitationPreview } from '@opos/contract'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { activeLocale } from '../../../shared/lib/i18n'
 import { errorCode } from '../../../shared/lib/errors'
 import { startSession, useSession } from '../../../shared/lib/session'
@@ -11,6 +11,7 @@ import { ErrorMessage, LoadingView, Notice, UnavailableView } from '../../../sha
 import { sendPasswordLink, signUpWithEmail } from '../api/auth'
 import { invitationPreviewOptions } from '../api/invitations'
 import { INVITATION_PATH } from '../model/auth-return'
+import { mfaPath, mfaReturnFor } from '../model/mfa-return'
 import { AcceptInvitation } from '../components/accept-invitation'
 import { AuthLayout } from '../components/auth-layout'
 import { EmailOnlyForm } from '../components/email-only-form'
@@ -48,7 +49,13 @@ function PreviewSummary({ preview }: { preview: InvitationPreview }) {
 }
 
 /** Signed out: sign in, register with email or Google, or ask for a password link. */
-function JoinOptions({ preview }: { preview: InvitationPreview }) {
+function JoinOptions({
+  preview,
+  onMfaRequired,
+}: {
+  preview: InvitationPreview
+  onMfaRequired: () => void
+}) {
   const [sentTo, setSentTo] = useState<string | null>(null)
   const signUp = async (email: string) => {
     const error = await signUpWithEmail(email, INVITATION_PATH)
@@ -96,7 +103,7 @@ function JoinOptions({ preview }: { preview: InvitationPreview }) {
         <h2 id="sign-in" className="font-semibold">
           <Trans>I already have an account</Trans>
         </h2>
-        <SignInForm defaultEmail={preview.email} />
+        <SignInForm defaultEmail={preview.email} onMfaRequired={onMfaRequired} />
         <GoogleButton returnTo={INVITATION_PATH} />
       </section>
       <section aria-labelledby="sign-up" className="border-line flex flex-col gap-3 border-t pt-6">
@@ -139,6 +146,20 @@ function JoinOptions({ preview }: { preview: InvitationPreview }) {
   )
 }
 
+/** A session that waits for its code cannot accept: the way on is the code screen, back here. */
+function FinishSigningIn({ code }: { code: string }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm">
+        <Trans>Your sign-in is not finished. Enter your code to join the team.</Trans>
+      </p>
+      <Link to={code} className="text-accent inline-flex min-h-11 items-center text-sm underline">
+        <Trans>Finish signing in</Trans>
+      </Link>
+    </div>
+  )
+}
+
 /**
  * Invitation acceptance (PLAN.md 7.7): the convention and the invited address, sign-in, sign-up
  * with email or Google, then acceptance. The password is chosen on `/auth/confirm`, which returns
@@ -147,6 +168,9 @@ function JoinOptions({ preview }: { preview: InvitationPreview }) {
 export function InvitationPage() {
   const { t } = useLingui()
   const [params] = useSearchParams()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const codeScreen = mfaPath(mfaReturnFor(location))
   const urlToken = params.get('token')
   const [invitation] = useState<StoredInvitation | null>(() =>
     urlToken ? rememberInvitation(urlToken) : storedInvitation(),
@@ -193,8 +217,13 @@ export function InvitationPage() {
       <PreviewSummary preview={preview.data} />
       {account ? (
         <AcceptInvitation token={invitation.token} email={account.email} />
+      ) : status === 'mfa-required' ? (
+        <FinishSigningIn code={codeScreen} />
       ) : (
-        <JoinOptions preview={preview.data} />
+        <JoinOptions
+          preview={preview.data}
+          onMfaRequired={() => void navigate(codeScreen, { replace: true })}
+        />
       )}
     </AuthLayout>
   )

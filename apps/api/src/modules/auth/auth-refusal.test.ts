@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common'
 import { AuthApiError, AuthRetryableFetchError, AuthSessionMissingError } from '@supabase/auth-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../../common/errors/api-error'
+import { toErrorResponse } from '../../common/filters/http-exception.filter'
 import { toApiError } from './auth-refusal'
 
 const apiError = (status: number, code: string | undefined) =>
@@ -38,6 +39,25 @@ describe('toApiError', () => {
     expect(mapped).toBeInstanceOf(ApiError)
     expect(mapped.getStatus()).toBe(status)
     expect(mapped.code).toBe(code)
+  })
+
+  it.each([
+    'email_not_confirmed',
+    'invalid_credentials',
+    'weak_password',
+    'same_password',
+    'otp_expired',
+    'email_address_invalid',
+    'over_email_send_rate_limit',
+    'over_request_rate_limit',
+  ])('answers %s with a message of its own, never the text of Supabase Auth', (code) => {
+    const theirs = `Supabase wording for ${code}: user x@example.test, hint ${'y'.repeat(20)}`
+
+    const { body } = toErrorResponse(toApiError(new AuthApiError(theirs, 400, code)))
+
+    expect(body.message).not.toContain('Supabase')
+    expect(body.message).not.toContain('x@example.test')
+    expect(body.message).toMatch(/^[A-Z][^.]*\.$/)
   })
 
   it('asks to retry in 30 seconds on an outage', () => {

@@ -18,17 +18,21 @@ const SESSION_GONE = new Set([
   'user_not_found',
 ])
 
-/** Codes of Supabase Auth that reach the client as `auth.<error_code>` with its status. */
-const LISTED: ReadonlySet<string> = new Set([
-  'email_not_confirmed',
-  'invalid_credentials',
-  'weak_password',
-  'same_password',
-  'otp_expired',
-  'email_address_invalid',
-  'over_email_send_rate_limit',
-  'over_request_rate_limit',
-])
+/**
+ * Codes of Supabase Auth that reach the client as `auth.<error_code>` with its status, each with
+ * the English message of OPOS's own the error body carries: the wording of a third party never
+ * becomes part of the API's body (PLAN.md 5).
+ */
+const LISTED: Readonly<Record<string, string>> = {
+  email_not_confirmed: 'The email address is not confirmed.',
+  invalid_credentials: 'The email address or the password is wrong.',
+  weak_password: 'The password is too weak.',
+  same_password: 'The new password equals the current one.',
+  otp_expired: 'The link has expired or has been used.',
+  email_address_invalid: 'The email address is not accepted.',
+  over_email_send_rate_limit: 'Too many emails were requested.',
+  over_request_rate_limit: 'Too many requests reached the sign-in service.',
+}
 
 /**
  * What Supabase Auth refused, as the error the API answers with (PLAN.md 5.1): a dead session is
@@ -42,8 +46,9 @@ export function toApiError(error: unknown): ApiError {
   if (isAuthError(error)) {
     if ((error.status ?? 0) >= 500) return unavailable()
     if (error.code && SESSION_GONE.has(error.code)) return unauthenticated()
-    if (error.code && LISTED.has(error.code)) {
-      return new ApiError(error.status ?? 400, `auth.${error.code}` as ErrorCode, error.message)
+    const message = error.code && Object.hasOwn(LISTED, error.code) ? LISTED[error.code] : undefined
+    if (error.code && message) {
+      return new ApiError(error.status ?? 400, `auth.${error.code}` as ErrorCode, message)
     }
   }
   logger.error(error)

@@ -222,10 +222,9 @@ opos/
         tickets.ts
         checkout.ts
         scanner.ts
-    db/                  # built: clients, rls, core schema, migrations, createTenant, seed, scripts, tests
-      .env.example       # the db:* scripts' variables (11)
+    db/                  # built: clients, roles, rls, core schema, migrations, createTenant, seed,
+                         #   scripts, tests, .env.example
       src/
-        scripts/roles.ts # db:roles, the OPOS roles and their grants (4.6)
         scripts/reset-2fa.ts # db:account:reset-2fa (14)
         schema/          # one file per table (4); still to come:
           account-recovery-codes.ts
@@ -273,8 +272,8 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   ([11](#11-environment-variables)).
 - turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
   every `db:*` task pass the database variables through (`passThroughEnv`), `test` also the local
-  Mailpit address, `db:seed` also `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `OPOS_ENV`,
-  `db:account:reset-2fa` those and the mail variables
+  Mailpit address, `test` and `db:roles` also the passwords of the runtime roles, `db:seed` also
+  `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, `db:account:reset-2fa` those and the mail variables
   ([11](#11-environment-variables)), and `dev` passes `OPOS_PANEL_PORT` and `OPOS_PORTAL_PORT` to
   the dev servers ([12](#ports)), so they reach the scripts and stay out of the hash.
 - `test:e2e` depends on the panel's and the portal's `i18n:compile`, since Playwright starts their
@@ -609,7 +608,7 @@ Every RLS-covered table has an index starting with `tenantId`.
 | `opos_app` | only the privileges the API uses (below), no `BYPASSRLS` | runtime API inside a tenant context |
 | `opos_app_global` | `select` on the columns its cross-tenant queries read, never a whole table; `BYPASSRLS` | `GlobalDbService` exclusively |
 
-The two runtime roles are created by `pnpm db:roles` (`packages/db/src/scripts/roles.ts`), which
+The two runtime roles are created by `pnpm db:roles` ([roles.ts](../packages/db/src/roles.ts)), which
 connects as `postgres` through `DATABASE_MIGRATION_URL` ([11](#11-environment-variables)) — the
 same script for the local stack and the hosted project. Supabase's own roles
 (`supabase_auth_admin`, `authenticator`, `anon`, `authenticated`, `service_role`) come with the
@@ -620,18 +619,16 @@ get `usage` on `public` from the script; their table privileges come from the mi
 `db:roles` also clears what a Supabase project starts with, and sets the limits of the runtime
 roles:
 
-| Statement | Effect |
+| It removes or sets | Effect |
 |---|---|
-| `alter default privileges for role postgres in schema public revoke all on tables, sequences, functions from anon, authenticated, service_role` | takes back everything Supabase grants the three roles on what `postgres` creates in `public` |
-| `alter default privileges for role postgres revoke execute on functions from public` | a new function gets no `execute` through `PUBLIC`, which the statement above leaves in place. It is global: a schema-scoped revoke cannot remove that default |
-| `drop event trigger if exists ensure_rls`, `drop function if exists public.rls_auto_enable()` | removes Supabase's automatic RLS, which would switch RLS on for every new table, a global table included ([project setup](#project-setup)) |
-| `alter role opos_app set ...`, `alter role opos_app_global set ...` | the limits below |
+| the default grants of `anon`, `authenticated` and `service_role` on what `postgres` creates in `public` | a new table, sequence or function of OPOS holds no grant for the three roles |
+| the default `execute` through `PUBLIC` on a new function | it is global, since a schema-scoped revoke cannot remove that default |
+| Supabase's automatic RLS, `ensure_rls` and `rls_auto_enable` | it would switch RLS on for every new table, a global table included ([project setup](#project-setup)) |
+| the role settings of `opos_app` and `opos_app_global` | the limits below |
 
 It runs before the first migration of a database, so no table, sequence or function of OPOS ever
 holds a grant for the three roles and none of its functions is executable through `PUBLIC`;
 `db:verify` reports one that is.
-
-Still to be built: `db:roles` itself ([3](#3-monorepo-structure)), with every statement of this table.
 
 **OPOS writes nothing into `auth`.** Of its privileges on the `auth` tables `postgres` may pass on
 `select` alone, so what ties `public` to `auth` — the foreign key of `accounts` to `auth.users`, the
@@ -665,8 +662,7 @@ request that needs more time than the limits allow is a bug. The runtime pools u
 connection: `env.ts` refuses a runtime URL through Supavisor where `OPOS_ENV` is `dev` or `production`
 ([13](#database-connection)).
 
-Still to be built: the limits as role settings and that refusal in `env.ts`; until `db:roles` writes
-them, [client.ts](../packages/db/src/client.ts) sends the limits as startup parameters.
+Still to be built: that refusal in `env.ts`.
 
 The migration pool `migrationDb()`, connected as `postgres`, sends no limit of its own. On a hosted
 project it runs under the server's `statement_timeout` of 2 minutes, which comes from the server's
@@ -806,11 +802,12 @@ transaction and expects the report:
   `opos_app_global`, `anon`, `authenticated` or `service_role` may execute it — its migration
   revokes `execute` from `public`, on top of the default `db:roles` removes;
 - `anon`, `authenticated` or `service_role` holds `usage` or `create` on the `public` schema;
-- `auth.users` carries a trigger other than the `opos_on_auth_user_*` triggers of the `accounts`
-  mirror, or `opos_app` or `opos_app_global` holds anything in the `auth` schema.
+- `opos_app` or `opos_app_global` holds anything in the `auth` schema.
 
 Still to be built, each with its case:
 
+- `auth.users` carries a trigger other than the `opos_on_auth_user_*` triggers of the `accounts`
+  mirror;
 - a [global table](#42-global-tables) has RLS on;
 - an event trigger runs a function in `public`;
 - a runtime role lacks one of its limits ([database roles](#database-roles));
@@ -1457,10 +1454,11 @@ Verifying a token ends in one of three outcomes:
 | `unavailable` | anything else, above all a key set that cannot be fetched while no key is held | `503` `server.unavailable`, `Retry-After: 30`, the cookies kept |
 
 The keys outlast an outage: `createRemoteJWKSet` runs with `cacheMaxAge: Infinity`, a 2 s timeout and
-a 30 s cooldown, and a timer reloads the set every 10 minutes. A failed reload is logged and the last
-good keys keep verifying, however old they are. The set is fetched again for an unknown `kid`, at most
-once per 30 s, so inside that cooldown an unknown `kid` is `invalid`. A key removed from the set stops
-verifying at the next reload that succeeds. Still to be built: the three outcomes and the timer.
+a 30 s cooldown, and a timer reloads the set every 10 minutes, for as long as the application runs. A
+failed reload is logged with its cause and the last good keys keep verifying, however old they are;
+an `unavailable` token is logged the same way, never the token itself. The set is fetched again for
+an unknown `kid`, at most once per 30 s after a successful fetch, so inside that cooldown an unknown
+`kid` is `invalid`. A key removed from the set stops verifying at the next reload that succeeds.
 
 **In the browser** the panel and the portal hold no session state of their own: the API link sends
 the cookies (`credentials: 'include'`), and the account comes from `GET /me`
@@ -2209,8 +2207,7 @@ failure and answers `500` `server.error`, logged — never the caller's `session
 `permission.denied`. The seed calls `POST /admin/users` and `PUT /admin/users/:id` with the same
 key ([14](#14-demo-data-seed)), and `pnpm db:account:reset-2fa` calls `GET /admin/users/:id/factors`
 and the factor removal ([14](#resetting-two-factor-authentication)). The key never reaches a frontend
-([3.2](#32-frontend-application-layout)). Still to be built: factor removal, the `503` and that
-script.
+([3.2](#32-frontend-application-layout)). Still to be built: factor removal and that script.
 
 ### Rate limits
 
@@ -2349,8 +2346,9 @@ pnpm dev
 #    mailpit on :54324 (UI) and :54325 (SMTP)
 ```
 
-`pnpm infra:init` (`scripts/infra-init.mjs`) does what a developer and CI would otherwise do by
-hand, in this order, and is safe to run again — it never overwrites a value already set:
+`pnpm infra:init` ([infra-init.mjs](../scripts/infra-init.mjs)) does what a developer and CI would
+otherwise do by hand, in this order, and is safe to run again — it never overwrites a value already
+set:
 
 1. writes every missing `.env` from its `.env.example` — `supabase/`, `apps/api`, `packages/db`,
    `apps/panel`, `apps/portal` — with `OPOS_ENV=local`;
@@ -2366,12 +2364,8 @@ hand, in this order, and is safe to run again — it never overwrites a value al
 It writes no `SUPABASE_PROJECT_ID` or `SUPABASE_ACCESS_TOKEN`, refuses to run where `OPOS_ENV` is
 `dev` or `production`, and never runs `supabase link`. `supabase/.gitignore`
 keeps the CLI's own state — `.temp`, `.branches`, `snippets` (the queries Studio saves) — and
-`signing_keys.json` out of git.
-
-Built so far in [infra-init.mjs](../scripts/infra-init.mjs): steps 1, 2 and 4, and the refusals
-above. Still to be built: step 3, the stable per-checkout signing key (the CLI signs ES256 with its own
-key without it), and step 5, which waits for `pnpm db:roles`; until then `pnpm infra:up`, `infra:down` and `infra:reset` stay on
-`docker-compose.yml`.
+`signing_keys.json` out of git. The CLI refuses to load `config.toml` while that file is missing, so
+a new checkout runs `pnpm infra:init` before `pnpm infra:up`.
 
 CI adds this line to its `/etc/hosts` ([15.3](#153-ci)); a developer's machine needs it only when
 the names do not resolve to the loopback interface:
@@ -2789,9 +2783,10 @@ catalog's, so a new tenant table fails the suite until its cases exist. They als
 updates only the granted columns, inserts and deletes no tenant, inserts memberships and accepted
 invitations but never changes or removes an accepted invitation, writes programme items and their
 speakers but no like, and, with [7.12](#712-two-factor-authentication), `opos_app` updates only
-`usedAt` of a recovery code and `opos_app_global` reads none), the limits of each runtime pool's
-session, read from its role once `db:roles` writes them ([4.6](#database-roles)), and a migration pool
-that sends no limit of its own, the
+`usedAt` of a recovery code and `opos_app_global` reads none), `db:roles` with each of its effects, run
+twice and on a database that holds Supabase's automatic RLS, the limits of each runtime pool's
+session, read from its role ([4.6](#database-roles)), and a migration pool that sends no limit of its
+own, the
 database-side invariants (one active edition, the last `head`, a tenant without a `head`, two
 concurrent transactions demoting different heads, a head expiry, a tenant-level permission on a
 head, an `edition_membership` with a
@@ -2853,9 +2848,9 @@ Playwright in [e2e](../e2e), through the UI of both web applications, against th
 seeded database. The configuration is [playwright.config.ts](../e2e/playwright.config.ts), the
 helpers are [e2e/fixtures](../e2e/fixtures) and the scenarios [e2e/specs](../e2e/specs).
 
-**Environment:** `pnpm infra:up` (the Supabase CLI's local stack with Mailpit), `pnpm db:roles`,
-`pnpm db:migrate && pnpm db:seed`, Chromium once (`pnpm --filter @opos/e2e exec playwright install
-chromium`), then `pnpm test:e2e`.
+**Environment:** `pnpm infra:init` (the `.env` files, the Supabase CLI's local stack with Mailpit, the
+roles), `pnpm db:migrate && pnpm db:seed`, Chromium once (`pnpm --filter @opos/e2e exec playwright
+install chromium`), then `pnpm test:e2e`.
 
 - Playwright starts the applications itself (`webServer`): the API as the bundle production runs,
   the panel and the portal as dev servers. They run with the API's configuration,
@@ -2918,15 +2913,15 @@ Scenarios 1, 9, 10, 11, 13 and 14 run in both the desktop and the mobile project
 
 GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every push to `develop` and
 `main`, with tool versions from `mise.toml`, the same source as local machines, the Supabase CLI
-included. The job runs `pnpm infra:init` as a developer does ([12](#12-local-development)); the
-CLI's local stack then serves the schema and API tests, behind
-`pnpm db:roles`, `pnpm db:migrate`, `pnpm db:verify` and two runs of `pnpm db:seed` — the second
+included. The job runs `pnpm infra:init` as a developer does ([12](#12-local-development)), which
+ends with `pnpm db:roles`; the CLI's local stack then serves the schema and API tests, behind
+`pnpm db:migrate`, `pnpm db:verify` and two runs of `pnpm db:seed` — the second
 proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
 run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
 package with `TURBO_FORCE`, so no cached result stands in for a run, and fills the turbo cache that
 PRs restore. `pnpm build` then bundles the API, and the job
-starts `dist/main.js` with `NODE_ENV=production` against the same stack: `/health` must answer
-`200`. The tests run the sources; this step runs the bundle that production runs. The
+starts `dist/main.js` from the `apps/api/.env` that `pnpm infra:init` wrote, with
+`NODE_ENV=production`, against the same stack: `/health` must answer `200`. The tests run the sources; this step runs the bundle that production runs. The
 [BFF boundary check](#32-frontend-application-layout), once built, runs on every PR over the sources
 and over `dist/` of the panel and the portal.
 `pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR, and so do
@@ -2961,8 +2956,8 @@ Branches:
 | `develop` | default branch; every feature and fix PR targets it | none |
 | `main` | released state; changes only through a PR from `develop` | ruleset `protect-main` ([protect-main.json](../.github/rulesets/protect-main.json)): PR required (0 approvals), jobs `check`, `e2e` and `secrets` must pass, no force push, no deletion |
 
-The `e2e` job runs beside `check`, on its own local Supabase stack, migrated and seeded. It
-receives `/etc/hosts` entries for `api.opos.localhost`, `panel.opos.localhost` and
+The `e2e` job runs beside `check`, on its own local Supabase stack from `pnpm infra:init`, migrated
+and seeded. It receives `/etc/hosts` entries for `api.opos.localhost`, `panel.opos.localhost` and
 `opos.localhost`, installs Chromium with its system dependencies
 (`playwright install --with-deps chromium`) and runs `pnpm test:e2e`, which starts the
 applications itself ([15.2](#152-e2e-tests)); in CI a failed test is retried once. The traces,

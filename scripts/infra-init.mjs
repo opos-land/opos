@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // `pnpm infra:init` (docs/PLAN.md, 12): writes the .env files from their templates, fills the empty
-// secrets, starts the Supabase CLI's local stack and writes the keys and addresses it reports.
-// Safe to run again: a value already set is never overwritten. It runs on the local stack only and
-// never links a hosted project.
+// secrets, creates the local signing key, starts the Supabase CLI's local stack, writes the keys and
+// addresses it reports and sets the database roles. Safe to run again: a value already set is never
+// overwritten. It runs on the local stack only and never links a hosted project.
 
 import { spawn } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
@@ -194,6 +194,17 @@ export async function initInfra({
     OPOS_APP_GLOBAL_PASSWORD: appGlobalPassword,
   })
 
+  // 3. the local signing key: config.toml names the file, and the CLI refuses when it is missing.
+  // A file an earlier run left without a key gets one, so a failed run does not stick.
+  const signingKeys = file('supabase', 'signing_keys.json')
+  if (!fs.exists(signingKeys)) fs.write(signingKeys, '[]\n')
+  if (fs.read(signingKeys).trim() === '[]') {
+    await exec('supabase', ['gen', 'signing-key', '--algorithm', 'ES256', '--append'], {
+      cwd: root,
+      env,
+    })
+  }
+
   // 4. the local stack, and the keys and addresses it reports (docs/PLAN.md, 12)
   await exec('supabase', ['start'], { cwd: root, env })
   const status = parseStatus(await exec('supabase', ['status', '-o', 'env'], { cwd: root, env }))
@@ -207,6 +218,9 @@ export async function initInfra({
   }
   fill('apps/api', reported)
   fill('packages/db', reported)
+
+  // 5. the database roles, with the passwords and the address written above (docs/PLAN.md, 4.6)
+  await exec('pnpm', ['db:roles'], { cwd: root, env })
 }
 
 /* node:coverage ignore next 6 */

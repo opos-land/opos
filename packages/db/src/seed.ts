@@ -1,4 +1,3 @@
-import { createHmac } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { migrationDb } from './client'
 import { migrationUrl } from './migration-url'
@@ -63,7 +62,6 @@ interface SeedTenant {
 }
 
 const DEV_PASSWORD = 'password123'
-const DEV_JWT_SECRET = 'dev-jwt-secret-at-least-32-characters-long'
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
 
@@ -197,34 +195,30 @@ const TENANTS: SeedTenant[] = [
   },
 ]
 
-const production = process.env.NODE_ENV === 'production'
-if (production && !process.argv.includes('--i-know-what-i-am-doing')) {
-  console.error('Refusing to seed with NODE_ENV=production without --i-know-what-i-am-doing.')
+if (process.env.OPOS_ENV !== 'local' && process.env.OPOS_ENV !== 'dev') {
+  console.error('The seed runs where OPOS_ENV is local or dev (PLAN.md 14).')
   process.exit(1)
 }
 
-const jwtSecret = process.env.JWT_SECRET ?? (production ? undefined : DEV_JWT_SECRET)
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || (jwtSecret && serviceRoleKey(jwtSecret))
-if (!serviceKey) {
-  console.error('Set SUPABASE_SERVICE_ROLE_KEY or JWT_SECRET to create accounts.')
-  process.exit(1)
+function required(name: string) {
+  const value = process.env[name]
+  if (!value) {
+    console.error(`${name} is not set; run pnpm infra:init`)
+    process.exit(1)
+  }
+  return value
 }
-const authUrl = process.env.AUTH_URL ?? `http://localhost:${process.env.OPOS_AUTH_PORT ?? '9999'}`
+
+const authUrl = `${required('SUPABASE_URL').replace(/\/+$/, '')}/auth/v1`
+const secretKey = required('SUPABASE_SECRET_KEY')
 
 const db = migrationDb(migrationUrl())
 
-/** A short-lived service_role JWT for the GoTrue admin API, signed like PLAN.md 10 describes. */
-function serviceRoleKey(secret: string) {
-  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url')
-  const now = Math.floor(Date.now() / 1000)
-  const unsigned = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ role: 'service_role', iat: now, exp: now + 600 })}`
-  return `${unsigned}.${createHmac('sha256', secret).update(unsigned).digest('base64url')}`
-}
-
+/** The Supabase Auth admin API, authorized by the secret key alone (PLAN.md 10). */
 async function authAdmin(method: 'POST' | 'PUT', path: string, body: object) {
   const response = await fetch(`${authUrl}${path}`, {
     method,
-    headers: { authorization: `Bearer ${serviceKey}`, 'content-type': 'application/json' },
+    headers: { apikey: secretKey, 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
   if (!response.ok) {

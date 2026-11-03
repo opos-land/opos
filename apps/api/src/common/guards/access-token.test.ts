@@ -1,27 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { Logger } from '@nestjs/common'
-import { type CryptoKey, exportJWK, generateKeyPair, type JWK, SignJWT } from 'jose'
+import { CompactSign, type CryptoKey, exportJWK, generateKeyPair, type JWK, SignJWT } from 'jose'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   type AccessTokenVerifier,
-  accessTokenKey,
   bearerToken,
   createAccessTokenVerifier,
   lastSignInAt,
-  verifyAccessToken,
 } from './access-token'
-
-const key = accessTokenKey({ JWT_SECRET: 'x'.repeat(32), AUTH_URL: 'http://auth.test' })
-
-const token = (claims: { sub?: string; iss?: string; exp?: string | null } = {}) => {
-  const jwt = new SignJWT({ role: 'authenticated' })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setSubject(claims.sub ?? randomUUID())
-    .setAudience('authenticated')
-    .setIssuer(claims.iss ?? 'http://auth.test')
-  if (claims.exp !== null) jwt.setExpirationTime(claims.exp ?? '5m')
-  return jwt.sign(key.key)
-}
 
 describe('bearerToken', () => {
   it.each([
@@ -33,24 +19,6 @@ describe('bearerToken', () => {
     [['Bearer abc'], undefined],
   ])('reads %o as %o', (header, expected) => {
     expect(bearerToken(header)).toBe(expected)
-  })
-})
-
-describe('verifyAccessToken', () => {
-  it('returns the payload of a valid token', async () => {
-    const sub = randomUUID()
-
-    expect(await verifyAccessToken(await token({ sub }), key)).toMatchObject({ sub })
-  })
-
-  it.each([
-    ['an expired token', () => token({ exp: '-1m' })],
-    ['a token without exp', () => token({ exp: null })],
-    ['a foreign issuer', () => token({ iss: 'http://evil.test' })],
-    ['a sub that is not a uuid', () => token({ sub: 'not-a-uuid' })],
-    ['garbage', () => Promise.resolve('not.a.jwt')],
-  ])('refuses %s', async (_, make) => {
-    expect(await verifyAccessToken(await make(), key)).toBeUndefined()
   })
 })
 
@@ -208,8 +176,22 @@ describe('createAccessTokenVerifier', () => {
     ['foreign key', async () => sign(await makePair('key-1'))],
     ['garbage', () => 'not.a.jwt'],
     ['a crit header the library does not support', forgedCrit],
+    [
+      'a payload that is not a claims object (JWTInvalid)',
+      (pair) =>
+        new CompactSign(new TextEncoder().encode('"not an object"'))
+          .setProtectedHeader({ alg: 'ES256', kid: pair.kid })
+          .sign(pair.privateKey),
+    ],
   ])('is invalid: %s', async (_, build) => {
     expect(await make().verify(await build(current))).toEqual({ status: 'invalid' })
+  })
+
+  it('is invalid when the key set holds two keys for one kid', async () => {
+    const twin = await makePair(current.kid)
+    published.keys = [current.publicJwk, twin.publicJwk]
+
+    expect(await make().verify(await sign(current))).toEqual({ status: 'invalid' })
   })
 
   it('is invalid for an unknown kid when the key set answers without it', async () => {
@@ -255,13 +237,46 @@ describe('createAccessTokenVerifier', () => {
       'the answer is not a key set',
       () => vi.fn<typeof fetch>(() => Promise.resolve(new Response('<html>'))),
     ],
+    [
+      'the request times out',
+      () =>
+        vi
+          .fn<typeof fetch>()
+          .mockRejectedValue(new DOMException('The operation timed out', 'TimeoutError')),
+    ],
   ])('is unavailable when the first key fetch fails: %s', async (_, failing) => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
     const verifier = make({ fetch: failing() })
 
     expect(await verifier.verify(await sign(current))).toEqual({ status: 'unavailable' })
   })
 
+  it('logs why a verification reads unavailable, with its cause and no token', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+    const failing = vi
+      .fn<typeof fetch>()
+      .mockRejectedValue(new TypeError('fetch failed', { cause: new Error('ECONNREFUSED') }))
+    const token = await sign(current)
+
+    await make({ fetch: failing }).verify(token)
+
+    expect(warn).toHaveBeenCalledOnce()
+    const message = String(warn.mock.calls[0]?.[0])
+    expect(message).toContain('fetch failed')
+    expect(message).toContain('ECONNREFUSED')
+    expect(message).not.toContain(token)
+  })
+
+  it('logs nothing for a token that is simply invalid', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+
+    await make().verify(await sign(current, { exp: '-1m' }))
+
+    expect(warn).not.toHaveBeenCalled()
+  })
+
   it('recovers when the keys come back after a failed first fetch', async () => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
     const flaky = vi
       .fn<typeof fetch>()
       .mockRejectedValueOnce(new TypeError('offline'))
@@ -277,13 +292,14 @@ describe('createAccessTokenVerifier', () => {
     const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
     const verifier = make({ refreshEveryMs: 600_000 })
     expect((await verifier.verify(await sign(current))).status).toBe('valid')
-    fetchStub.mockRejectedValue(new TypeError('offline'))
+    fetchStub.mockRejectedValue(new TypeError('offline', { cause: new Error('ECONNREFUSED') }))
 
     await vi.advanceTimersByTimeAsync(3_600_000)
 
     expect((await verifier.verify(await sign(current))).status).toBe('valid')
     expect(fetchStub.mock.calls.length).toBeGreaterThan(1)
     expect(warn).toHaveBeenCalled()
+    expect(String(warn.mock.calls[0]?.[0])).toContain('ECONNREFUSED')
   })
 
   it('picks up a key removed from the set at the next background refresh', async () => {

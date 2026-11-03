@@ -104,14 +104,12 @@ test('gitleaks keeps its default rules', () => {
 test('the history allowlist needs both a listed commit and a listed path', () => {
   const gitleaks = read('../.gitleaks.toml')
   assert.match(gitleaks, /condition = "AND"/)
-  // the AND condition belongs to the allowlist holding the commits; the other has no commits
+  // one allowlist, for the history: nothing lets a finding through without a listed commit
   const lists = gitleaks.split('[[allowlists]]').slice(1)
-  assert.equal(lists.length, 2)
-  const [history, tree] = lists
+  assert.equal(lists.length, 1)
+  const [history] = lists
   assert.match(history, /condition = "AND"/)
   assert.match(history, /commits = \[/)
-  assert.doesNotMatch(tree, /commits\s*=/)
-  assert.doesNotMatch(tree, /condition\s*=/)
   for (const short of [
     '7e5f8cc',
     '4149f7b',
@@ -139,6 +137,34 @@ test('no allowlist covers a path beyond the two files the hits are in', () => {
       assert.ok(allowed.has(literal), `unexpected allowlist path ${entry}`)
     }
   }
+})
+
+/** The text of one job: from its name to the next job at the same depth. */
+const job = (name) => {
+  const start = ci.search(new RegExp(`^ {2}${name}:$`, 'm'))
+  assert.notEqual(start, -1, name)
+  const rest = ci.slice(start + 1)
+  const end = rest.search(/^ {2}\S/m)
+  return end === -1 ? rest : rest.slice(0, end)
+}
+
+test('check and e2e set up the stack with infra:init, before the database steps', () => {
+  for (const name of ['check', 'e2e']) {
+    const steps = job(name)
+    const init = steps.indexOf('- run: pnpm infra:init')
+    assert.notEqual(init, -1, name)
+    assert.ok(init < steps.indexOf('- run: pnpm db:migrate'), name)
+    assert.ok(init < steps.indexOf('pnpm db:seed'), name)
+  }
+})
+
+test('no job starts the stack through compose', () => {
+  assert.doesNotMatch(ci, /docker compose/)
+})
+
+test('the built api starts from the .env that infra:init wrote', () => {
+  assert.match(job('check'), /node --env-file=apps\/api\/\.env apps\/api\/dist\/main\.js/)
+  assert.doesNotMatch(ci, /--env-file=apps\/api\/\.env\.example/)
 })
 
 test('secrets reads the whole history', () => {

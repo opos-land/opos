@@ -11,7 +11,8 @@ import {
 import { describe, expect, it } from 'vitest'
 import { renderLinkEmail } from './render'
 
-const link = 'http://localhost:9999/verify?token=abc&type=signup&redirect_to=http%3A%2F%2Fx'
+const link =
+  'http://127.0.0.1:54321/auth/v1/verify?token=abc&type=signup&redirect_to=http%3A%2F%2Fx'
 
 const render = async (locale: 'en' | 'pl', content: EmailContent, url: string) => {
   const i18n = setupI18n()

@@ -1,5 +1,5 @@
 import { Controller, HttpCode, Inject, Post, Req } from '@nestjs/common'
-import { ENV, type Env } from '../../config/env'
+import { authUrl, ENV, type Env } from '../../config/env'
 import { ApiError } from '../../common/errors/api-error'
 import { AccountsRepository } from '../accounts/accounts.repository'
 import { MailService } from '../mail/mail.service'
@@ -37,7 +37,7 @@ export class SendEmailHookController {
       throw new ApiError(400, 'request.invalid', 'Malformed send-email hook payload')
     }
     const { user, email_data: data } = parsed.data
-    const emails = hookEmails(parsed.data, this.env.AUTH_URL)
+    const emails = hookEmails(parsed.data, authUrl(this.env))
     if (!emails) {
       throw new ApiError(
         400,

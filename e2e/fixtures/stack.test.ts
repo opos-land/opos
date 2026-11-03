@@ -8,6 +8,11 @@ describe('the stack under test', () => {
     expect(new URL(stack.portal).hostname).toBe('opos.localhost')
   })
 
+  it('finds Supabase Auth under the gateway and holds the secret key', () => {
+    expect(new URL(stack.auth).pathname).toBe('/auth/v1')
+    expect(stack.secretKey).not.toBe('')
+  })
+
   it('gives the port a dev server binds for an address', () => {
     expect(portOf('http://panel.opos.localhost:5173')).toBe('5173')
     expect(portOf('http://opos.localhost')).toBe('80')

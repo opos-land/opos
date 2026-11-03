@@ -20,7 +20,7 @@ pre-commit:
       run: pnpm eslint --fix --max-warnings 0 {staged_files}
       stage_fixed: true
 
-# The API tests need the database: pnpm infra:up
+# The API tests need the local stack: pnpm infra:up
 pre-push:
   jobs:
     - name: typecheck and test

@@ -4,14 +4,14 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import { Webhook } from 'standardwebhooks'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { loadEnv } from '../src/config/env'
+import { authUrl, loadEnv } from '../src/config/env'
 import { createApp } from './app'
 import { createAccount, deleteCreatedAccounts, deleteLater, signIn, TEST_PASSWORD } from './auth'
 import { deleteMail, verifyLinkIn, waitForMail } from './mailpit'
 import { closeTenantDb, emailConfirmed } from './tenants'
 
-// Supabase Auth calls the hook at host.docker.internal:<OPOS_API_PORT>, so this file runs the API
-// on the PORT it is configured with, on every interface (PLAN.md 12, Ports).
+// Supabase Auth calls the hook at host.docker.internal:<PORT>, so this file runs the API on the
+// PORT it is configured with, on every interface (PLAN.md 12, Ports).
 
 const env = loadEnv()
 const callback = `${env.PORTAL_URL}/auth/callback`
@@ -25,7 +25,7 @@ const newAddress = () => {
 }
 
 const auth = (path: string, init: RequestInit = {}) =>
-  fetch(`${env.AUTH_URL}${path}`, {
+  fetch(`${authUrl(env)}${path}`, {
     ...init,
     headers: { 'content-type': 'application/json', ...init.headers },
   })

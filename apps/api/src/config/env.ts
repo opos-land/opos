@@ -6,13 +6,13 @@ const envSchema = z
     PORT: z.coerce.number().int().positive().default(3001),
     DATABASE_URL: z.url(),
     DATABASE_GLOBAL_URL: z.url(),
-    AUTH_URL: z.url(),
-    JWT_SECRET: z.string().min(32),
-    // A service_role JWT signed with JWT_SECRET, for the Supabase Auth admin API (PLAN.md 10).
-    SUPABASE_SERVICE_ROLE_KEY: z.jwt(),
+    // The project's gateway, with Supabase Auth at /auth/v1 (PLAN.md 10).
+    SUPABASE_URL: z.url(),
+    // The project's secret key, sent as apikey with every Supabase Auth call (PLAN.md 10).
+    SUPABASE_SECRET_KEY: z.string().min(1),
     // GoTrue's hook secret format: a Standard Webhooks `whsec_` key behind the `v1,` version.
     SEND_EMAIL_HOOK_SECRET: z.string().regex(/^v1,whsec_[A-Za-z0-9+/]+={0,2}$/),
-    // Signs organizer invitations (PLAN.md 7.7); never the same as JWT_SECRET.
+    // Signs organizer invitations (PLAN.md 7.7); never the same as SUPABASE_SECRET_KEY.
     INVITE_SECRET: z.string().min(32),
     PANEL_URL: z.url(),
     PORTAL_URL: z.url(),
@@ -23,8 +23,8 @@ const envSchema = z
     SMTP_PASS: z.string().default(''),
     MAIL_FROM: z.string().min(1),
   })
-  .refine((env) => env.INVITE_SECRET !== env.JWT_SECRET, {
-    message: 'INVITE_SECRET must differ from JWT_SECRET',
+  .refine((env) => env.INVITE_SECRET !== env.SUPABASE_SECRET_KEY, {
+    message: 'INVITE_SECRET must differ from SUPABASE_SECRET_KEY',
     path: ['INVITE_SECRET'],
   })
 
@@ -40,3 +40,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   }
   return result.data
 }
+
+/** Supabase Auth's address on the project's gateway (PLAN.md 10). */
+export const authUrl = (env: { SUPABASE_URL: string }) =>
+  `${env.SUPABASE_URL.replace(/\/+$/, '')}/auth/v1`

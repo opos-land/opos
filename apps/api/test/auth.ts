@@ -1,13 +1,26 @@
 import { randomUUID } from 'node:crypto'
-import { SignJWT } from 'jose'
-import { loadEnv } from '../src/config/env'
+import { readFileSync } from 'node:fs'
+import { type CryptoKey, generateKeyPair, importJWK, type JWK, SignJWT } from 'jose'
+import { authUrl, loadEnv } from '../src/config/env'
 
 // Test accounts go through the real Supabase Auth: the admin API creates them and the password
 // grant signs them in (PLAN.md 15.1).
 
 const env = loadEnv()
-const secret = new TextEncoder().encode(env.JWT_SECRET)
+const auth = authUrl(env)
 export const TEST_PASSWORD = 'test-password-123'
+
+/** The stack's own signing key, which pnpm infra:init wrote and Supabase Auth signs with. */
+const [localKey] = JSON.parse(
+  readFileSync(new URL('../../../supabase/signing_keys.json', import.meta.url), 'utf8'),
+) as JWK[]
+if (!localKey?.kid) throw new Error('supabase/signing_keys.json holds no key; run pnpm infra:init')
+const localKid = localKey.kid
+// The file's key names `verify` too, which WebCrypto refuses on a private key.
+const signingKey = (await importJWK({ ...localKey, key_ops: ['sign'] }, 'ES256')) as CryptoKey
+
+/** A key Supabase Auth never saw; mintToken signs with it under the stack's own `kid`. */
+export const foreignKey = async () => (await generateKeyPair('ES256')).privateKey
 
 /** A JWT shaped like Supabase Auth's, with any claim overridden. */
 export async function mintToken(
@@ -18,20 +31,22 @@ export async function mintToken(
     role?: string
     /** `null` leaves the exp claim out. */
     expiresIn?: string | null
-    alg?: 'HS256' | 'HS512'
+    alg?: 'ES256' | 'HS256'
+    is_anonymous?: boolean
     /** Supabase Auth's sign-in records, `{ method, timestamp }` with the time in seconds. */
     amr?: { method: string; timestamp: number }[]
   } = {},
-  key: Uint8Array = secret,
+  key: CryptoKey | Uint8Array = signingKey,
 ) {
   const jwt = new SignJWT({
     role: claims.role ?? 'authenticated',
     ...(claims.amr ? { amr: claims.amr } : {}),
+    ...(claims.is_anonymous === undefined ? {} : { is_anonymous: claims.is_anonymous }),
   })
-    .setProtectedHeader({ alg: claims.alg ?? 'HS256', typ: 'JWT' })
+    .setProtectedHeader({ alg: claims.alg ?? 'ES256', typ: 'JWT', kid: localKid })
     .setSubject(claims.sub ?? randomUUID())
     .setAudience(claims.aud ?? 'authenticated')
-    .setIssuer(claims.iss ?? env.AUTH_URL)
+    .setIssuer(claims.iss ?? auth)
     .setIssuedAt()
   if (claims.expiresIn !== null) jwt.setExpirationTime(claims.expiresIn ?? '5m')
   return jwt.sign(key)
@@ -41,15 +56,15 @@ export async function mintToken(
 export function unsignedToken(sub: string) {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url')
   const now = Math.floor(Date.now() / 1000)
-  const claims = { sub, aud: 'authenticated', iss: env.AUTH_URL, iat: now, exp: now + 300 }
+  const claims = { sub, aud: 'authenticated', iss: auth, iat: now, exp: now + 300 }
   return `${encode({ alg: 'none', typ: 'JWT' })}.${encode(claims)}.`
 }
 
+/** The admin API takes the secret key on `apikey` and no `Authorization` (PLAN.md 10). */
 const admin = async (path: string, init: RequestInit = {}, accept: number[] = []) => {
-  const key = await mintToken({ role: 'service_role', aud: 'authenticated' })
-  const response = await fetch(`${env.AUTH_URL}${path}`, {
+  const response = await fetch(`${auth}${path}`, {
     ...init,
-    headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+    headers: { apikey: env.SUPABASE_SECRET_KEY, 'content-type': 'application/json' },
   })
   if (!response.ok && !accept.includes(response.status)) {
     throw new Error(`${path}: ${response.status} ${await response.text()}`)
@@ -95,7 +110,7 @@ export async function createAccount(
 }
 
 export async function signIn(email: string, password = TEST_PASSWORD) {
-  const response = await fetch(`${env.AUTH_URL}/token?grant_type=password`, {
+  const response = await fetch(`${auth}/token?grant_type=password`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email, password }),

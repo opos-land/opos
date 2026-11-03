@@ -3,7 +3,7 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { DEFAULT_RATE_LIMIT } from '../src/common/rate-limit/rate-limit'
 import { createApp } from './app'
-import { createAccount, deleteCreatedAccounts, mintToken, signIn } from './auth'
+import { createAccount, deleteCreatedAccounts, foreignKey, mintToken, signIn } from './auth'
 
 // Every case sends its own X-Forwarded-For address, so the counters of one case never reach
 // another; `trust proxy` makes that header the client address (PLAN.md 7.9).
@@ -70,12 +70,35 @@ describe('rate limit', () => {
 
   it('counts a forged token against the address, never against the account it names', async () => {
     const victim = await createAccount()
-    const forged = await mintToken({ sub: victim.id }, new TextEncoder().encode('x'.repeat(32)))
+    const forged = await mintToken({ sub: victim.id }, await foreignKey())
 
     for (let i = 0; i < LIMIT; i++) await get('/me', '203.0.113.30', forged).expect(401)
 
     expectLimited(await get('/me', '203.0.113.30', forged))
     await get('/me', '203.0.113.31', await signIn(victim.email)).expect(200)
+  })
+
+  it('counts a token that cannot be checked against the address', async () => {
+    const victim = await createAccount()
+    const token = await signIn(victim.email)
+    const cut = await createApp({ SUPABASE_URL: 'http://127.0.0.1:1' }, [], {
+      limit: LIMIT,
+      ttl: 60_000,
+    })
+    await cut.listen(0, '127.0.0.1')
+    const call = (ip: string) =>
+      request(cut.getHttpServer())
+        .get('/me')
+        .set('X-Forwarded-For', ip)
+        .set('Authorization', `Bearer ${token}`)
+    try {
+      for (let i = 0; i < LIMIT; i++) await call('203.0.113.40').expect(503)
+
+      expectLimited(await call('203.0.113.40'))
+      await call('203.0.113.41').expect(503)
+    } finally {
+      await cut.close()
+    }
   })
 })
 

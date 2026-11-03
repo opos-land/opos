@@ -122,8 +122,8 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     )
   }
 
-  // RLS never applies to a view on its own: one that runs as its owner, opos_migrator with
-  // BYPASSRLS, reads every tenant. A materialized view cannot carry RLS at all.
+  // RLS never applies to a view on its own: one that runs as its owner, postgres with BYPASSRLS,
+  // reads every tenant. A materialized view cannot carry RLS at all.
   const views = await sql<{ relname: string; relkind: string }[]>`
     select c.relname, c.relkind
     from pg_class c
@@ -321,8 +321,8 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   }
 
   // A security definer function runs as its owner, which bypasses RLS: it pins its search_path,
-  // and no runtime role may call it directly. Postgres grants EXECUTE to PUBLIC on every new
-  // function, so each one is revoked in its migration (PLAN.md 4.6).
+  // and no runtime role may call it directly. Its migration revokes EXECUTE from PUBLIC, on top of
+  // the default db:roles removes (PLAN.md 4.6).
   const definers = await sql<{ name: string; pinned: boolean; callers: string[] }[]>`
     select p.proname as name,
       coalesce(exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%'), false)
@@ -361,26 +361,48 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     )
   }
 
-  // opos_migrator holds on auth.users only what the foreign key and the sync triggers need.
-  const authGrants = await sql<{ privilege: string; column: string | null }[]>`
-    select p.privilege, null as column
-    from (values ('SELECT'), ('INSERT'), ('UPDATE')) p(privilege)
-    where has_any_column_privilege('opos_migrator', 'auth.users', p.privilege)
+  // The runtime roles hold nothing in auth (PLAN.md 4.6). A function there stays executable through
+  // PUBLIC, as Supabase leaves it; without usage on the schema no role reaches it, so only a direct
+  // grant counts.
+  const authGrants = await sql<{ grant: string }[]>`
+    with runtime(role) as (values ('opos_app'), ('opos_app_global'))
+    select r.role || ' ' || p.privilege || ' on schema auth' as grant
+    from runtime r cross join (values ('USAGE'), ('CREATE')) p(privilege)
+    where has_schema_privilege(r.role, 'auth', p.privilege)
     union all
-    select p.privilege, null
-    from (values ('DELETE'), ('TRUNCATE')) p(privilege)
-    where has_table_privilege('opos_migrator', 'auth.users', p.privilege)
+    select r.role || ' ' || p.privilege || ' on auth.' || c.relname
+    from pg_class c
+    cross join runtime r
+    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) p(privilege)
+    where c.relnamespace = 'auth'::regnamespace and c.relkind in ('r', 'p', 'v', 'm')
+      and has_table_privilege(r.role, c.oid, p.privilege)
     union all
-    select 'REFERENCES', a.attname::text
-    from pg_attribute a
-    where a.attrelid = 'auth.users'::regclass and a.attnum > 0 and not a.attisdropped
-      and a.attname <> 'id'
-      and has_column_privilege('opos_migrator', 'auth.users', a.attname, 'REFERENCES')
-    order by 1, 2
+    select r.role || ' ' || p.privilege || ' (' || a.attname || ') on auth.' || c.relname
+    from pg_class c
+    join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+    cross join runtime r
+    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('REFERENCES')) p(privilege)
+    where c.relnamespace = 'auth'::regnamespace and c.relkind in ('r', 'p', 'v', 'm')
+      and has_column_privilege(r.role, c.oid, a.attnum, p.privilege)
+      and not has_table_privilege(r.role, c.oid, p.privilege)
+    union all
+    select r.role || ' ' || p.privilege || ' on auth.' || c.relname
+    from pg_class c
+    cross join runtime r
+    cross join (values ('USAGE'), ('SELECT'), ('UPDATE')) p(privilege)
+    where c.relnamespace = 'auth'::regnamespace and c.relkind = 'S'
+      and has_sequence_privilege(r.role, c.oid, p.privilege)
+    union all
+    select pg_get_userbyid(g.grantee) || ' EXECUTE on auth.' || f.proname
+    from pg_proc f
+    cross join lateral aclexplode(f.proacl) g
+    where f.pronamespace = 'auth'::regnamespace
+      and pg_get_userbyid(g.grantee) in ('opos_app', 'opos_app_global')
+    order by 1
   `
   if (authGrants.length > 0) {
     problems.push(
-      `Privileges of opos_migrator on auth.users beyond references (id) and trigger: ${authGrants.map((r) => (r.column ? `${r.privilege} (${r.column})` : r.privilege)).join(', ')}`,
+      `Privileges in the auth schema the rules forbid: ${authGrants.map((r) => r.grant).join(', ')}`,
     )
   }
 

@@ -62,7 +62,6 @@ const areas = [
       /^packages\/db\/src\/schema\//,
       /^packages\/db\/src\/(rls|verify|tenants|client|roles|migration-url)\.ts$/,
       /^packages\/db\/src\/scripts\/roles\.ts$/,
-      /^infra\/supabase\/db\//,
     ],
     tests: [/^packages\/db\/test\/.+\.test\.ts$/],
     where: 'packages/db/test',

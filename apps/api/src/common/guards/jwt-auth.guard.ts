@@ -1,14 +1,12 @@
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common'
-import { ENV, type Env } from '../../config/env'
 import { AccountsRepository } from '../../modules/accounts/accounts.repository'
 import { TenantContextService } from '../als/tenant-context.service'
-import { unauthenticated } from '../errors/api-error'
+import { unauthenticated, unavailable } from '../errors/api-error'
 import {
-  type AccessTokenKey,
-  accessTokenKey,
+  ACCESS_TOKEN_VERIFIER,
+  type AccessTokenVerifier,
   bearerToken,
   lastSignInAt,
-  verifyAccessToken,
 } from './access-token'
 
 /**
@@ -17,27 +15,26 @@ import {
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  private readonly key: AccessTokenKey
-
   constructor(
-    @Inject(ENV) env: Env,
+    @Inject(ACCESS_TOKEN_VERIFIER) private readonly verifier: AccessTokenVerifier,
     private readonly accounts: AccountsRepository,
     private readonly context: TenantContextService,
-  ) {
-    this.key = accessTokenKey(env)
-  }
+  ) {}
 
   async canActivate(ctx: ExecutionContext) {
     const { headers } = ctx.switchToHttp().getRequest<{ headers: Record<string, unknown> }>()
     const token = bearerToken(headers.authorization)
     if (!token) throw unauthenticated('Missing bearer token')
 
-    const payload = await verifyAccessToken(token, this.key)
-    if (!payload) throw unauthenticated('Invalid or expired token, or no account id in it')
+    const check = await this.verifier.verify(token)
+    if (check.status === 'unavailable') throw unavailable()
+    if (check.status === 'invalid') {
+      throw unauthenticated('Invalid or expired token, or no account id in it')
+    }
 
-    const account = await this.accounts.findForToken(payload.sub)
+    const account = await this.accounts.findForToken(check.payload.sub)
     if (!account) throw unauthenticated('No account for this token')
-    this.context.setAccount(account, lastSignInAt(payload))
+    this.context.setAccount(account, lastSignInAt(check.payload))
     return true
   }
 }

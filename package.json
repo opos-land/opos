@@ -24,6 +24,7 @@
     "db:migrate": "turbo run db:migrate",
     "db:push": "turbo run db:push",
     "db:seed": "turbo run db:seed --",
+    "db:roles": "turbo run db:roles",
     "db:studio": "turbo run db:studio",
     "db:verify": "turbo run db:verify",
     "db:tenant:create": "turbo run db:tenant:create --",
@@ -31,9 +32,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:init": "node scripts/infra-init.mjs",
-    "infra:up": "docker compose up -d --wait",
-    "infra:down": "docker compose down",
-    "infra:reset": "docker compose down -v && pnpm infra:up"
+    "infra:up": "supabase start",
+    "infra:down": "supabase stop",
+    "infra:reset": "supabase stop --no-backup && supabase start && pnpm db:roles"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

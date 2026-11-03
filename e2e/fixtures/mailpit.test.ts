@@ -5,7 +5,8 @@ const mail = (Text: string) => ({ Subject: 'Subject', Text })
 
 describe('links in a message', () => {
   it('finds the Supabase Auth verify link in the text part', () => {
-    const link = 'http://localhost:9999/verify?token=abc&type=signup&redirect_to=http://x/cb'
+    const link =
+      'http://127.0.0.1:54321/auth/v1/verify?token=abc&type=signup&redirect_to=http://x/cb'
     expect(verifyLinkIn(mail(`Confirm your address:\n${link}\n\nThanks`))).toBe(link)
   })
 

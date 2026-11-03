@@ -3,10 +3,10 @@ import { createTenant, migrationDb, tenants, type Transaction } from '@opos/db'
 import { inArray, sql } from 'drizzle-orm'
 import { createAccount, signIn } from './auth'
 
-// Tenants, editions and memberships for API tests, written as opos_migrator (PLAN.md 15.1).
+// Tenants, editions and memberships for API tests, written as postgres (PLAN.md 15.1).
 
 const url = process.env.DATABASE_MIGRATION_URL
-if (!url) throw new Error('DATABASE_MIGRATION_URL is missing from apps/api/.env.example')
+if (!url) throw new Error('DATABASE_MIGRATION_URL is missing from apps/api/.env')
 const db = migrationDb(url)
 const tenantIds: string[] = []
 
@@ -176,7 +176,7 @@ export async function holdOpen(
 }
 
 /**
- * Runs `fn` in a transaction as opos_migrator, which bypasses RLS, with `app.tenant_id` set to
+ * Runs `fn` in a transaction as postgres, which bypasses RLS, with `app.tenant_id` set to
  * `tenantId`: what a repository returns there comes from its own filters alone.
  */
 export const withoutRls = <T>(tenantId: string, fn: (tx: Transaction) => Promise<T>) =>

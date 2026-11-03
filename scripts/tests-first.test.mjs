@@ -107,7 +107,9 @@ describe('areaOf', () => {
       'packages/db/src/verify.ts',
       'packages/db/src/tenants.ts',
       'packages/db/src/client.ts',
-      'infra/supabase/db/opos-roles.sql',
+      'packages/db/src/roles.ts',
+      'packages/db/src/migration-url.ts',
+      'packages/db/src/scripts/roles.ts',
     ]) {
       assert.equal(areaOf(path), 'rls', path)
     }

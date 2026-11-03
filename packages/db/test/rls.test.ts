@@ -9,7 +9,6 @@ import {
   inTenant,
   migrator,
   supabaseAdmin,
-  superuser,
 } from './db'
 import { globalReads } from '../src/verify'
 
@@ -282,7 +281,7 @@ describe('tenant isolation', () => {
       'program_item_likes',
     ]) {
       await expect(
-        superuser.begin(async (sql) => {
+        migrator.begin(async (sql) => {
           await sql.unsafe(`set local role ${role}`)
           await sql.unsafe(`select 1 from public.${table} limit 1`)
         }),

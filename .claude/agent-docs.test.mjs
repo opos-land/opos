@@ -26,7 +26,7 @@ const citedPaths = (file) =>
     .filter(isPath)
 
 // Paths the documents cite that are not built yet.
-const absentOnPurpose = new Set(['packages/db/src/scripts/roles.ts'])
+const absentOnPurpose = new Set()
 
 test('every repository path AGENTS.md and the agent files cite exists', () => {
   const missing = new Set()

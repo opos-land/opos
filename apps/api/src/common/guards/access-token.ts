@@ -1,44 +1,11 @@
 import { Logger } from '@nestjs/common'
 import { createRemoteJWKSet, customFetch, errors, type JWTPayload, jwtVerify } from 'jose'
+import { authUrl } from '../../config/env'
 import { isUuid } from '../uuid'
-
-/** The rules every Supabase Auth access token passes (PLAN.md 7.4). */
-export interface AccessTokenKey {
-  key: Uint8Array
-  issuer: string
-}
-
-export const accessTokenKey = (env: { JWT_SECRET: string; AUTH_URL: string }): AccessTokenKey => ({
-  key: new TextEncoder().encode(env.JWT_SECRET),
-  issuer: env.AUTH_URL,
-})
 
 /** The bearer token of an `Authorization` header, if it carries one. */
 export const bearerToken = (header: unknown): string | undefined =>
   typeof header === 'string' ? /^Bearer (\S+)$/.exec(header)?.[1] : undefined
-
-/**
- * The payload of a valid access token with a uuid `sub`, or nothing: signature, `exp` and `sub`
- * required (a token without `exp` never expires), `aud = authenticated`, `iss = AUTH_URL`, HS256
- * only.
- */
-export async function verifyAccessToken(
-  token: string,
-  { key, issuer }: AccessTokenKey,
-): Promise<(JWTPayload & { sub: string }) | undefined> {
-  try {
-    const { payload } = await jwtVerify(token, key, {
-      algorithms: ['HS256'],
-      audience: 'authenticated',
-      issuer,
-      // jose checks exp only when the claim is present.
-      requiredClaims: ['exp', 'sub'],
-    })
-    return isUuid(payload.sub) ? { ...payload, sub: payload.sub } : undefined
-  } catch {
-    return undefined
-  }
-}
 
 export type AccessTokenPayload = JWTPayload & {
   sub: string
@@ -58,6 +25,9 @@ export interface AccessTokenVerifier {
   close(): void
 }
 
+/** The Nest token of the process's one verifier, which holds the keys it fetched. */
+export const ACCESS_TOKEN_VERIFIER = Symbol('ACCESS_TOKEN_VERIFIER')
+
 /** A broken rule or a wrong signature; any other failure means the keys could not be had. */
 const invalidErrors = [
   errors.JWTExpired,
@@ -74,6 +44,12 @@ const invalidErrors = [
 const KEY_REFRESH_MS = 600_000
 const logger = new Logger('AccessTokenVerifier')
 
+/** An error with its cause: a failed fetch names the network error only there. */
+const withCause = (error: unknown) => {
+  const cause = error instanceof Error ? error.cause : undefined
+  return cause instanceof Error ? `${String(error)}: ${String(cause)}` : String(error)
+}
+
 /**
  * Verifies Supabase Auth access tokens against the project's JWKS (PLAN.md 7.4). The keys are held
  * for good and reloaded on a timer, so an outage of Supabase Auth leaves tokens verifying on the
@@ -83,8 +59,7 @@ export function createAccessTokenVerifier(
   env: { SUPABASE_URL: string },
   options: { fetch?: typeof fetch; refreshEveryMs?: number } = {},
 ): AccessTokenVerifier {
-  const base = env.SUPABASE_URL.replace(/\/+$/, '')
-  const issuer = `${base}/auth/v1`
+  const issuer = authUrl(env)
   const keys = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`), {
     cacheMaxAge: Infinity,
     timeoutDuration: 2000,
@@ -94,7 +69,9 @@ export function createAccessTokenVerifier(
 
   const timer = setInterval(() => {
     keys.reload().catch((error: unknown) => {
-      logger.warn(`Reloading the signing keys failed, keeping the last good ones: ${String(error)}`)
+      logger.warn(
+        `Reloading the signing keys failed, keeping the last good ones: ${withCause(error)}`,
+      )
     })
   }, options.refreshEveryMs ?? KEY_REFRESH_MS)
   timer.unref()
@@ -112,9 +89,9 @@ export function createAccessTokenVerifier(
         if (!isUuid(payload.sub) || payload.is_anonymous === true) return { status: 'invalid' }
         return { status: 'valid', payload: { ...payload, sub: payload.sub } }
       } catch (error) {
-        return invalidErrors.some((type) => error instanceof type)
-          ? { status: 'invalid' }
-          : { status: 'unavailable' }
+        if (invalidErrors.some((type) => error instanceof type)) return { status: 'invalid' }
+        logger.warn(`A token could not be checked: ${withCause(error)}`)
+        return { status: 'unavailable' }
       }
     },
     close: () => clearInterval(timer),

@@ -1,8 +1,16 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier } from '../src/common/guards/access-token'
 import { createApp } from './app'
-import { createAccount, deleteCreatedAccounts, mintToken, signIn, unsignedToken } from './auth'
+import {
+  createAccount,
+  deleteCreatedAccounts,
+  foreignKey,
+  mintToken,
+  signIn,
+  unsignedToken,
+} from './auth'
 
 let app: NestExpressApplication
 let token: string
@@ -44,17 +52,29 @@ describe('JwtAuthGuard', () => {
     expect(typeof body.message).toBe('string')
   })
 
+  it('accepts a token signed with the local key the stack publishes', async () => {
+    const res = await me()
+      .set('Authorization', `Bearer ${await mintToken({ sub: accountId })}`)
+      .expect(200)
+
+    expect(res.body).toMatchObject({ id: accountId })
+  })
+
   it.each([
     ['an expired token', () => mintToken({ sub: accountId, expiresIn: '-1m' })],
     [
-      'a token signed with another secret',
-      () => mintToken({ sub: accountId }, new TextEncoder().encode('x'.repeat(32))),
+      'a token signed with a foreign ES256 key',
+      async () => mintToken({ sub: accountId }, await foreignKey()),
+    ],
+    [
+      'an HS256 token with any secret',
+      () => mintToken({ sub: accountId, alg: 'HS256' }, new TextEncoder().encode('x'.repeat(32))),
     ],
     ['a token for another audience', () => mintToken({ sub: accountId, aud: 'anon' })],
     ['a token from another issuer', () => mintToken({ sub: accountId, iss: 'https://evil.test' })],
     ['a valid token without an accounts row', () => mintToken()],
     ['a token without exp', () => mintToken({ sub: accountId, expiresIn: null })],
-    ['a token signed with HS512', () => mintToken({ sub: accountId, alg: 'HS512' })],
+    ['an anonymous token', () => mintToken({ sub: accountId, is_anonymous: true })],
     ['an unsigned token', () => Promise.resolve(unsignedToken(accountId))],
     ['a sub that is not a uuid', () => mintToken({ sub: 'not-a-uuid' })],
   ])('rejects %s', async (_, makeToken) => {
@@ -63,6 +83,31 @@ describe('JwtAuthGuard', () => {
       .expect(401)
 
     expect(res.body).toMatchObject({ code: 'session.invalid' })
+  })
+
+  it('answers 503 with Retry-After when the signing keys cannot be fetched', async () => {
+    const cut = await createApp({ SUPABASE_URL: 'http://127.0.0.1:1' })
+    try {
+      const res = await request(cut.getHttpServer())
+        .get('/me')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(503)
+
+      expect(res.body).toMatchObject({ code: 'server.unavailable' })
+      expect(res.headers['retry-after']).toBe('30')
+    } finally {
+      await cut.close()
+    }
+  })
+
+  it('closes the signing key refresh with the application', async () => {
+    const closing = await createApp()
+    const verifier = closing.get<AccessTokenVerifier>(ACCESS_TOKEN_VERIFIER)
+    const close = vi.spyOn(verifier, 'close')
+
+    await closing.close()
+
+    expect(close).toHaveBeenCalledOnce()
   })
 })
 

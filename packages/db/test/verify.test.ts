@@ -1,13 +1,13 @@
 import type postgres from 'postgres'
 import { describe, expect, it } from 'vitest'
 import { verifyDatabase } from '../src/verify'
-import { migrator, supabaseAdmin, superuser } from './db'
+import { migrator, supabaseAdmin } from './db'
 
 class Rollback extends Error {}
 
 /**
- * Runs `change` as opos_migrator, or as a more privileged role for what the migrator may not
- * grant, verifies the result, then rolls everything back.
+ * Runs `change` as postgres, or as a more privileged role for what postgres may not grant,
+ * verifies the result, then rolls everything back.
  */
 async function problemsAfter(
   change: (sql: postgres.TransactionSql) => Promise<unknown>,
@@ -185,8 +185,13 @@ describe('verifyDatabase', () => {
       expect(problems.join('\n')).toMatch(/without a pinned search_path: verify_probe/)
     })
 
-    it('reports one that every role may execute, as Postgres grants by default', async () => {
-      const problems = await problemsAfter((sql) => sql.unsafe(definer(`set search_path = ''`)))
+    it('reports one that every role may execute through PUBLIC', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`
+          ${definer(`set search_path = ''`)}
+          grant execute on function public.verify_probe() to public;
+        `),
+      )
       expect(problems.join('\n')).toMatch(
         /executable by opos_app, opos_app_global, .*: verify_probe/,
       )
@@ -356,29 +361,59 @@ describe('verifyDatabase', () => {
       'reports %s as a member of another role',
       async (role) => {
         const problems = await problemsAfter(
-          (sql) => sql.unsafe(`grant opos_migrator to ${role}`),
+          (sql) => sql.unsafe(`grant anon to ${role}`),
           supabaseAdmin,
         )
-        expect(problems.join('\n')).toMatch(
-          new RegExp(`members of other roles: ${role} in opos_migrator`),
-        )
+        expect(problems.join('\n')).toMatch(new RegExp(`members of other roles: ${role} in anon`))
       },
     )
 
     it('reports opos_app able to bypass RLS', async () => {
-      const problems = await problemsAfter(
-        (sql) => sql.unsafe(`alter role opos_app bypassrls`),
-        superuser,
-      )
+      const problems = await problemsAfter((sql) => sql.unsafe(`alter role opos_app bypassrls`))
       expect(problems.join('\n')).toMatch(/opos_app must not bypass RLS/)
     })
 
     it('reports usage on schema public for a Supabase API role', async () => {
-      const problems = await problemsAfter(
-        (sql) => sql.unsafe(`grant usage on schema public to anon`),
-        superuser,
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant usage on schema public to anon`),
       )
       expect(problems.join('\n')).toMatch(/schema public the rules forbid: anon USAGE/)
+    })
+
+    it.each([
+      [
+        'usage on the schema',
+        'grant usage on schema auth to opos_app',
+        /opos_app USAGE on schema auth/,
+      ],
+      [
+        'create on the schema',
+        'grant create on schema auth to opos_app_global',
+        /opos_app_global CREATE on schema auth/,
+      ],
+      [
+        'a table',
+        'grant select on auth.users to opos_app_global',
+        /opos_app_global SELECT on auth\.users/,
+      ],
+      [
+        'a column',
+        'grant update (email) on auth.users to opos_app',
+        /opos_app UPDATE \(email\) on auth\.users/,
+      ],
+      [
+        'a sequence',
+        'grant usage on sequence auth.refresh_tokens_id_seq to opos_app',
+        /opos_app USAGE on auth\.refresh_tokens_id_seq/,
+      ],
+      [
+        'a function',
+        'grant execute on function auth.uid() to opos_app',
+        /opos_app EXECUTE on auth\.uid/,
+      ],
+    ])('reports a runtime role holding %s in auth', async (_, grant, report) => {
+      const problems = await problemsAfter((sql) => sql.unsafe(grant), supabaseAdmin)
+      expect(problems.join('\n')).toMatch(report)
     })
   })
 })

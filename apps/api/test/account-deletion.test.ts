@@ -105,6 +105,23 @@ describe('DELETE /me', () => {
     expect(await countHeads(tenantId)).toBe(1)
   })
 
+  it('answers 500 when Supabase Auth refuses the secret key, and deletes nothing', async () => {
+    const refused = await createApp({ SUPABASE_SECRET_KEY: 'sb_secret_wrong' })
+    try {
+      const account = await member()
+
+      const res = await request(refused.getHttpServer())
+        .delete('/me')
+        .set('Authorization', `Bearer ${account.token}`)
+        .expect(500)
+
+      expect(res.body).toEqual({ code: 'server.error', message: 'Internal server error' })
+      expect(await authUserExists(account.id)).toBe(true)
+    } finally {
+      await refused.close()
+    }
+  })
+
   it('deletes a head the tenant has another one besides', async () => {
     const { id: tenantId, head } = await tenantWithHead()
     await addHead(tenantId, await member())

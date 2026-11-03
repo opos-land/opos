@@ -31,7 +31,7 @@ export interface HookEmail {
   link: string
 }
 
-/** `<AUTH_URL>/verify?token=<token_hash>&type=<email_action_type>&redirect_to=<redirect_to>` */
+/** `<Supabase Auth>/verify?token=<token_hash>&type=<email_action_type>&redirect_to=<redirect_to>` */
 export function verifyLink(authUrl: string, tokenHash: string, type: string, redirectTo?: string) {
   const query = new URLSearchParams({ token: tokenHash, type })
   if (redirectTo) query.set('redirect_to', redirectTo)

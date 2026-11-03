@@ -9,7 +9,6 @@ import {
   createTenant,
   createUser,
   migrator,
-  superuser,
   unique,
 } from './db'
 
@@ -99,7 +98,7 @@ describe('invariants', () => {
 
       // The second check waits for the tenant lock held by the first transaction.
       for (let i = 0; i < 50 && !checked; i++) {
-        const [waiting] = await superuser<{ count: number }[]>`
+        const [waiting] = await migrator<{ count: number }[]>`
           select count(*)::int as count from pg_stat_activity
           where application_name = 'opos-test-demote' and wait_event_type = 'Lock'
         `

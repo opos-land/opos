@@ -46,6 +46,10 @@ const STATUS = [
   '',
 ].join('\n')
 
+const SIGNING_KEYS = 'supabase/signing_keys.json'
+const GEN_KEY = 'supabase gen signing-key --algorithm ES256 --append'
+const KEY = '[{"kid":"local","alg":"ES256"}]\n'
+
 /** In-memory files and a recorded list of events, for `initInfra`. */
 function setup({ env = {}, files = {}, status = STATUS, templates = TEMPLATES } = {}) {
   const store = new Map(
@@ -68,6 +72,11 @@ function setup({ env = {}, files = {}, status = STATUS, templates = TEMPLATES } 
     const line = [file, ...args].join(' ')
     events.push(`exec ${line}`)
     snapshots[line] = { files: new Map(store), options }
+    // The CLI appends to the file its config names, and refuses when that file is missing.
+    if (line === GEN_KEY) {
+      assert.ok(store.has(at(SIGNING_KEYS)), 'gen signing-key needs the keys file')
+      store.set(at(SIGNING_KEYS), KEY)
+    }
     return line === 'supabase status -o env' ? status : ''
   }
   const warnings = []
@@ -248,23 +257,66 @@ test('initInfra never overwrites a value already set', async () => {
   assert.equal(ctx.value('apps/api/.env', 'EXTRA'), '1')
 })
 
-test('initInfra runs in order: env files, secrets, start, status', async () => {
+test('initInfra runs in order: env files, secrets, signing key, start, status, roles', async () => {
   const ctx = setup()
   await ctx.run()
   assert.deepEqual(
     ctx.events.filter((event) => event.startsWith('exec ')),
-    ['exec supabase start', 'exec supabase status -o env'],
+    [`exec ${GEN_KEY}`, 'exec supabase start', 'exec supabase status -o env', 'exec pnpm db:roles'],
   )
+  const gen = ctx.snapshots[GEN_KEY].files
+  assert.match(gen.get(at('supabase/.env')), /SEND_EMAIL_HOOK_SECRET=v1,whsec_/)
+  assert.match(gen.get(at('packages/db/.env')), /OPOS_APP_PASSWORD=[0-9a-f]{64}/)
+  assert.equal(gen.get(at(SIGNING_KEYS)).trim(), '[]')
   const start = ctx.snapshots['supabase start'].files
   assert.match(start.get(at('supabase/.env')), /SEND_EMAIL_HOOK_SECRET=v1,whsec_/)
   assert.match(start.get(at('apps/api/.env')), /INVITE_SECRET=[0-9a-f]{64}/)
   assert.match(start.get(at('packages/db/.env')), /OPOS_APP_PASSWORD=[0-9a-f]{64}/)
   assert.match(start.get(at('apps/api/.env')), /SUPABASE_SECRET_KEY=\n/)
+  assert.equal(start.get(at(SIGNING_KEYS)), KEY)
   const status = ctx.snapshots['supabase status -o env'].files
   assert.match(status.get(at('apps/api/.env')), /SUPABASE_SECRET_KEY=\n/)
   assert.ok(
     ctx.events.indexOf('exec supabase start') < ctx.events.lastIndexOf('write apps/api/.env'),
   )
+  // db:roles reads what the status gave, so it comes last
+  const roles = ctx.snapshots['pnpm db:roles'].files
+  assert.match(roles.get(at('packages/db/.env')), /DATABASE_MIGRATION_URL=postgresql:/)
+  assert.match(roles.get(at('packages/db/.env')), /OPOS_APP_PASSWORD=[0-9a-f]{64}/)
+  assert.equal(ctx.events.at(-1), 'exec pnpm db:roles')
+})
+
+test('initInfra creates the signing key file when it is missing', async () => {
+  const ctx = setup()
+  await ctx.run()
+  assert.equal(ctx.text(SIGNING_KEYS), KEY)
+  assert.ok(ctx.events.includes(`write ${SIGNING_KEYS}`))
+})
+
+test('initInfra keeps a signing key already there', async () => {
+  const mine = '[{"kid":"mine"}]\n'
+  const ctx = setup({ files: { [SIGNING_KEYS]: mine } })
+  await ctx.run()
+  assert.equal(ctx.text(SIGNING_KEYS), mine)
+  assert.ok(!ctx.events.includes(`exec ${GEN_KEY}`))
+  assert.ok(!ctx.events.includes(`write ${SIGNING_KEYS}`))
+})
+
+test('initInfra generates a key when an earlier run left the file empty', async () => {
+  const ctx = setup({ files: { [SIGNING_KEYS]: ' []\n' } })
+  await ctx.run()
+  assert.equal(ctx.text(SIGNING_KEYS), KEY)
+  assert.ok(!ctx.events.includes(`write ${SIGNING_KEYS}`))
+})
+
+test('config.toml names the signing key file, which git and prettier never see', () => {
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8')
+  const auth = read('../supabase/config.toml')
+    .split('\n[')
+    .find((part) => part.startsWith('auth]'))
+  assert.match(auth, /^signing_keys_path = "\.\/signing_keys\.json"$/m)
+  assert.match(read('../supabase/.gitignore'), /^signing_keys\.json$/m)
+  assert.match(read('../.prettierignore'), /^supabase\/signing_keys\.json$/m)
 })
 
 test('initInfra runs the CLI in the repository root with the caller environment', async () => {
@@ -369,7 +421,11 @@ test('initInfra does not rewrite an .env that has nothing to fill', async () => 
   await ctx.run()
   ctx.events.length = 0
   await ctx.run()
-  assert.deepEqual(ctx.events, ['exec supabase start', 'exec supabase status -o env'])
+  assert.deepEqual(ctx.events, [
+    'exec supabase start',
+    'exec supabase status -o env',
+    'exec pnpm db:roles',
+  ])
 })
 
 test('initInfra warns about an address that differs from the template, naming no value', async () => {

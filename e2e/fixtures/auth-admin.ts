@@ -2,17 +2,14 @@ import { randomUUID } from 'node:crypto'
 import { stack } from './stack'
 
 // Accounts a scenario starts from are made through Supabase Auth's admin API with the API's
-// service role key (PLAN.md 10, Admin API), as the seed makes them.
+// secret key on `apikey` (PLAN.md 10, Admin API), as the seed makes them.
 
 export const PASSWORD = 'e2e-password-123'
 
 async function admin(path: string, init: RequestInit = {}, accept: number[] = []) {
   const response = await fetch(`${stack.auth}${path}`, {
     ...init,
-    headers: {
-      authorization: `Bearer ${stack.serviceRoleKey}`,
-      'content-type': 'application/json',
-    },
+    headers: { apikey: stack.secretKey, 'content-type': 'application/json' },
   })
   if (!response.ok && !accept.includes(response.status)) {
     throw new Error(`${path}: ${response.status} ${await response.text()}`)

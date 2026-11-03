@@ -1441,6 +1441,12 @@ the two has no session; the Google routes take the application as in
 `opos.localhost` locally, [12](#12-local-development)), so `SameSite=Strict` cookies travel with
 their requests.
 
+A page on a sibling subdomain can set a cookie of the same name for the API's host, which the API
+may read before its own. The cookies therefore stay safe only while no subdomain of the site serves
+content a tenant controls. The feature that first serves such content, a public convention website
+on `<convention>.opos.land` ([PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains)), moves the session cookies and
+`opos_google` to `__Host-` names first.
+
 **Requests that change state.** A `POST`, `PUT`, `PATCH` or `DELETE` that carries a session cookie
 needs an `Origin` equal to `PANEL_URL` or `PORTAL_URL` — `403` `request.origin-denied` otherwise,
 also from another subdomain of the same site — and, with a body, `application/json`, which no HTML
@@ -1531,12 +1537,16 @@ request ([10](#api-keys-and-the-clients-address)):
    expired `opos_google`, an `error` from Supabase Auth or a failed
    exchange answers `302` to `<app URL>/login?error=<code>`, and `<PORTAL_URL>/login` when the
    cookie names no application. The code is `auth.<error_code>` for the `error_code` of Supabase
-   Auth's `error` when the contract lists that code ([5.1](#51-auth--sign-in-through-the-api)),
+   Auth's `error` when it is `otp_expired` or `over_request_rate_limit`, the two codes of the
+   contract ([5.1](#51-auth--sign-in-through-the-api)) a redirect from Google sign-in can carry,
    and `auth.google-failed` for every other case, a failed exchange included: no text of the
-   query reaches the address, and no failure tells a registered email from an unknown one.
+   query reaches the address, and a code of the password or mail routes, `auth.email_not_confirmed`
+   among them, is never passed on.
 
-The API does not sign `opos_google`. The callback takes nothing from it on trust: it judges the
-application and the path again, as the start route does.
+The API does not sign `opos_google`. The callback judges the application and the path from it
+again, as the start route does, and PKCE binds the code to the verifier; it does not judge whether
+the cookie was issued to this browser. Whoever can write a cookie for the API's host
+([7.4](#74-authorization)) can sign the visitor in as an account of their own.
 `GET /auth/google` spends the limit of [7.9](#79-rate-limiting). The steps are in
 [google-auth.service.ts](../apps/api/src/modules/auth/google-auth.service.ts).
 

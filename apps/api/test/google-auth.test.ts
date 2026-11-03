@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
+import { Logger } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -376,6 +377,38 @@ describe('GET /auth/google/callback', () => {
     const res = await callback({ code: 'never-issued' }, cookie).expect(302)
 
     expect(res.headers.location).toBe(`${panel}/login?error=auth.google-failed`)
+  })
+
+  it('logs the code and status of a failed exchange, and nothing the flow keeps secret', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const started = await startedFlow('panel')
+    const { verifier } = readGoogleCookie(started.res)
+
+    await callback({ code: 'never-issued-code' }, started.cookie).expect(302)
+
+    const logged = warn.mock.calls.map((call) => String(call[0])).join('\n')
+    expect(logged).toContain('flow_state_not_found')
+    expect(logged).toContain('400')
+    expect(logged).not.toContain(verifier)
+    expect(logged).not.toContain('never-issued-code')
+  })
+
+  it('logs the error_code Supabase Auth sent, and not what else the query holds', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const { cookie } = await startedFlow('panel')
+
+    await callback(
+      {
+        error: 'server_error',
+        error_code: 'unexpected_failure',
+        error_description: 'Denied for a@b.test',
+      },
+      cookie,
+    ).expect(302)
+
+    const logged = warn.mock.calls.map((call) => String(call[0])).join('\n')
+    expect(logged).toContain('unexpected_failure')
+    expect(logged).not.toContain('a@b.test')
   })
 
   it('answers a session of an account the API has no row for with the failure', async () => {

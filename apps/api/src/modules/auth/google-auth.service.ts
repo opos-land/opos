@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { applicationSchema, type ErrorCode } from '@opos/contract'
-import { type SupportedStorage } from '@supabase/auth-js'
+import { isAuthError, type SupportedStorage } from '@supabase/auth-js'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError } from '../../common/errors/api-error'
 import { type Application } from '../../common/http/application'
@@ -119,6 +119,21 @@ export function failureCode(errorCode: unknown): ErrorCode {
     : GOOGLE_FAILED
 }
 
+/** A short machine code such as `flow_state_not_found`; anything else is not worth a log line. */
+const LOGGABLE_CODE = /^[a-z0-9_]{1,64}$/
+
+/**
+ * Which refusal this is, for a log: the code and the status, never the message, which may quote
+ * the address, the verifier or the auth code that was sent.
+ */
+function describeFailure(error: unknown): string {
+  if (isAuthError(error)) {
+    const code = typeof error.code === 'string' && LOGGABLE_CODE.test(error.code) ? error.code : '-'
+    return `${error.name} code=${code} status=${error.status ?? '-'}`
+  }
+  return error instanceof Error ? error.name : 'unknown failure'
+}
+
 /** A storage that lives as long as the request: auth-js writes its verifier here. */
 const requestStorage = (items: Map<string, string>): SupportedStorage => ({
   getItem: (key) => items.get(key) ?? null,
@@ -180,6 +195,9 @@ export class GoogleAuthService {
     const stored = items.get(`${GOOGLE_STORAGE_KEY}-code-verifier`)
     const verifier = stored === undefined ? undefined : (JSON.parse(stored) as unknown)
     if (error || !data.url || typeof verifier !== 'string') {
+      this.logger.warn(
+        `Google sign-in could not be started: ${error ? describeFailure(error) : 'no address or verifier'}`,
+      )
       throw new ApiError(500, 'server.error', 'Google sign-in could not be started')
     }
 
@@ -211,7 +229,13 @@ export class GoogleAuthService {
     const flow = parseGoogleCookie(raw)
     if (!flow) return this.failure('portal')
     if (googleFlowExpired(flow)) return this.failure(flow.app)
-    if (query.error !== undefined) return this.failure(flow.app, failureCode(query.error_code))
+    if (query.error !== undefined) {
+      const sent = typeof query.error_code === 'string' ? query.error_code : ''
+      this.logger.warn(
+        `Supabase Auth sent Google sign-in back with error_code=${LOGGABLE_CODE.test(sent) ? sent : '-'}`,
+      )
+      return this.failure(flow.app, failureCode(query.error_code))
+    }
     if (typeof query.code !== 'string' || query.code === '') return this.failure(flow.app)
 
     const items = new Map([[`${GOOGLE_STORAGE_KEY}-code-verifier`, JSON.stringify(flow.verifier)]])
@@ -225,10 +249,8 @@ export class GoogleAuthService {
       }
       setSessionCookies(req.res, flow.app, data.session, this.env)
     } catch (error) {
-      // Only the kind of failure: the message of a refusal may quote what was sent.
-      this.logger.warn(
-        `Google sign-in failed: ${error instanceof Error ? error.name : 'unknown failure'}`,
-      )
+      // The code and the status only: the message of a refusal may quote what was sent.
+      this.logger.warn(`Google sign-in failed: ${describeFailure(error)}`)
       return this.failure(flow.app)
     }
     return `${applicationOrigin(flow.app, this.env)}${returnPath(flow.app, flow.path, this.env)}`

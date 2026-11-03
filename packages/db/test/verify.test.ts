@@ -1,5 +1,6 @@
 import type postgres from 'postgres'
 import { describe, expect, it } from 'vitest'
+import { RUNTIME_TIMEOUTS } from '../src/client'
 import { verifyDatabase } from '../src/verify'
 import { migrator, supabaseAdmin } from './db'
 
@@ -25,6 +26,23 @@ async function problemsAfter(
     })
   return problems
 }
+
+/** Expects the verification, after `change`, to report a problem matching `pattern`. */
+async function expectProblem(
+  change: (sql: postgres.TransactionSql) => Promise<unknown>,
+  pattern: RegExp,
+  as: postgres.Sql = migrator,
+) {
+  expect((await problemsAfter(change, as)).join('\n')).toMatch(pattern)
+}
+
+/** What a Supabase project starts with: an event trigger running a function that lives in public. */
+const installEnsureRls = (sql: postgres.TransactionSql) =>
+  sql.unsafe(`
+    create function public.rls_auto_enable() returns event_trigger
+      language plpgsql as 'begin end';
+    create event trigger ensure_rls on ddl_command_end execute function public.rls_auto_enable();
+  `)
 
 const tenantTable = (name: string) => `
   create table public.${name} (
@@ -414,6 +432,156 @@ describe('verifyDatabase', () => {
     ])('reports a runtime role holding %s in auth', async (_, grant, report) => {
       const problems = await problemsAfter((sql) => sql.unsafe(grant), supabaseAdmin)
       expect(problems.join('\n')).toMatch(report)
+    })
+  })
+  describe('traps of a hosted Supabase project', () => {
+    it('reports a global table with RLS on and names it', async () => {
+      await expectProblem(
+        (sql) => sql.unsafe('alter table accounts enable row level security'),
+        /Global tables with RLS on: accounts/,
+      )
+    })
+
+    it('reports an event trigger whose function lives in public', async () => {
+      await expectProblem(
+        installEnsureRls,
+        /Event triggers running a function in public: ensure_rls/,
+        supabaseAdmin,
+      )
+    })
+
+    it.each(['opos_app', 'opos_app_global'])('reports %s without a limit', async (role) => {
+      await expectProblem(
+        (sql) => sql.unsafe(`alter role ${role} reset statement_timeout`),
+        new RegExp(`${role} lacks statement_timeout=15s`),
+      )
+    })
+
+    it.each(Object.entries(RUNTIME_TIMEOUTS))(
+      'reports opos_app with %s set to another value than %s',
+      async (setting, value) => {
+        await expectProblem(
+          (sql) => sql.unsafe(`alter role opos_app set ${setting} = '1min'`),
+          new RegExp(`opos_app lacks ${setting}=${value}`),
+        )
+      },
+    )
+
+    it.each([
+      ['opos_app', 'createrole', 'CREATEROLE'],
+      ['opos_app', 'createdb', 'CREATEDB'],
+      ['opos_app_global', 'replication', 'REPLICATION'],
+      ['opos_app_global', 'createdb', 'CREATEDB'],
+    ])('reports %s holding %s', async (role, attribute, label) => {
+      await expectProblem(
+        (sql) => sql.unsafe(`alter role ${role} ${attribute}`),
+        new RegExp(`attributes they must not hold: .*${role} \\(.*${label}`),
+      )
+    })
+
+    it.each(['opos_app', 'opos_app_global'])('reports %s holding SUPERUSER', async (role) => {
+      await expectProblem(
+        (sql) => sql.unsafe(`alter role ${role} superuser`),
+        new RegExp(`attributes they must not hold: .*${role} \\(.*SUPERUSER`),
+        supabaseAdmin,
+      )
+    })
+
+    it.each(['opos_app', 'opos_app_global'])(
+      'reports CREATE on schema public held by %s',
+      async (role) => {
+        await expectProblem(
+          (sql) => sql.unsafe(`grant create on schema public to ${role}`),
+          new RegExp(`schema public the rules forbid: ${role} CREATE`),
+        )
+      },
+    )
+
+    it.each([
+      'opos_on_auth_user_created',
+      'opos_on_auth_user_email_updated',
+      'opos_on_auth_user_email_confirmed',
+    ])('reports a missing %s on auth.users', async (trigger) => {
+      await expectProblem(
+        (sql) => sql.unsafe(`drop trigger ${trigger} on auth.users`),
+        new RegExp(`auth\\.users lacks ${trigger}`),
+        supabaseAdmin,
+      )
+    })
+
+    it('reports a required trigger that is disabled', async () => {
+      await expectProblem(
+        (sql) => sql.unsafe('alter table auth.users disable trigger opos_on_auth_user_created'),
+        /auth\.users lacks opos_on_auth_user_created/,
+        supabaseAdmin,
+      )
+    })
+
+    it.each([
+      ['users', 'opos_extra'],
+      ['refresh_tokens', 'someone_elses'],
+    ])('reports a trigger on auth.%s outside the required list', async (table, trigger) => {
+      await expectProblem(
+        (sql) =>
+          sql.unsafe(`
+            create function public.verify_probe_fn() returns trigger language plpgsql
+              set search_path = '' as 'begin return new; end';
+            create trigger ${trigger} after update on auth.${table}
+              for each row execute function public.verify_probe_fn();
+          `),
+        new RegExp(
+          `Triggers in the auth schema outside the required list: .*auth\\.${table}\\.${trigger}`,
+        ),
+        supabaseAdmin,
+      )
+    })
+
+    it('reports any function in public a forbidden role may execute, definer or not', async () => {
+      await expectProblem(
+        (sql) =>
+          sql.unsafe(`
+            create function public.t_any() returns int language sql as 'select 1';
+            grant execute on function public.t_any() to anon
+          `),
+        /executable by anon: t_any/,
+      )
+    })
+
+    it('reports a function in public that every role may execute through PUBLIC', async () => {
+      await expectProblem(
+        (sql) =>
+          sql.unsafe(`
+            create function public.t_any() returns int language sql as 'select 1';
+            grant execute on function public.t_any() to public
+          `),
+        /executable by anon, authenticated, service_role: t_any/,
+      )
+    })
+
+    it('accepts a function in public that only the runtime roles may execute', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`
+          create function public.t_any() returns int language sql as 'select 1';
+          revoke execute on function public.t_any() from public;
+          grant execute on function public.t_any() to opos_app, opos_app_global;
+        `),
+      )
+      expect(problems).toEqual([])
+    })
+
+    it('reports a definer function once for each role that may execute it', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`
+          create function public.t_any() returns int language sql security definer
+            set search_path = '' as 'select 1';
+          grant execute on function public.t_any() to anon;
+          revoke execute on function public.t_any() from public;
+          grant execute on function public.t_any() to anon;
+        `),
+      )
+      expect(problems.filter((problem) => problem.includes('t_any'))).toEqual([
+        'Security definer function executable by anon: t_any',
+      ])
     })
   })
 })

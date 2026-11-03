@@ -1,4 +1,5 @@
 import type postgres from 'postgres'
+import { RUNTIME_TIMEOUTS } from './client'
 
 /**
  * The tenant_isolation condition of PLAN.md 4.6 as Postgres deparses it, for both USING and
@@ -47,6 +48,17 @@ export const globalReads = [
 
 /** The public tables outside tenant isolation (PLAN.md 4.2). */
 const globalTables = ['accounts']
+
+/**
+ * The triggers OPOS attaches to the tables of the auth schema (PLAN.md 4.6), as `table.trigger`.
+ * Each must exist and be enabled; a trigger on an auth table outside this list is a violation. A
+ * trigger the API starts relying on joins this list in the PR of its migration.
+ */
+const authTriggers = [
+  'users.opos_on_auth_user_created',
+  'users.opos_on_auth_user_email_updated',
+  'users.opos_on_auth_user_email_confirmed',
+]
 
 /**
  * The columns opos_app updates (PLAN.md 4.6): never `id`, `tenant_id` or a column that points a
@@ -306,6 +318,35 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   if (appRole[0]?.bypasses !== false) {
     problems.push('opos_app must not bypass RLS: it must exist without SUPERUSER and BYPASSRLS')
   }
+  // Neither runtime role manages roles or databases, replicates or is a superuser.
+  const attributes = await sql<{ role: string; held: string[] }[]>`
+    select r.rolname as role, array_remove(array[
+      case when r.rolsuper then 'SUPERUSER' end,
+      case when r.rolcreaterole then 'CREATEROLE' end,
+      case when r.rolcreatedb then 'CREATEDB' end,
+      case when r.rolreplication then 'REPLICATION' end
+    ], null) as held
+    from pg_roles r
+    where r.rolname in ('opos_app', 'opos_app_global')
+      and (r.rolsuper or r.rolcreaterole or r.rolcreatedb or r.rolreplication)
+    order by 1
+  `
+  if (attributes.length > 0) {
+    problems.push(
+      `Runtime roles with attributes they must not hold: ${attributes.map((r) => `${r.role} (${r.held.join(', ')})`).join(', ')}`,
+    )
+  }
+  // The limits live in the role's settings, so they reach a session from its first query.
+  const limits = await sql<{ role: string; config: string[] | null }[]>`
+    select rolname as role, rolconfig as config from pg_roles
+    where rolname in ('opos_app', 'opos_app_global') order by 1
+  `
+  for (const { role, config } of limits) {
+    for (const [setting, value] of Object.entries(RUNTIME_TIMEOUTS)) {
+      if (!config?.includes(`${setting}=${value}`))
+        problems.push(`${role} lacks ${setting}=${value}`)
+    }
+  }
   const owned = await sql<{ relname: string; owner: string }[]>`
     select c.relname, pg_get_userbyid(c.relowner) as owner
     from pg_class c
@@ -322,37 +363,46 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
 
   // A security definer function runs as its owner, which bypasses RLS: it pins its search_path,
   // and no runtime role may call it directly. Its migration revokes EXECUTE from PUBLIC, on top of
-  // the default db:roles removes (PLAN.md 4.6).
-  const definers = await sql<{ name: string; pinned: boolean; callers: string[] }[]>`
-    select p.proname as name,
+  // the default db:roles removes (PLAN.md 4.6). Any other function in public stays out of reach of
+  // the Supabase API roles, which would call it through /rest/v1/rpc.
+  const functions = await sql<
+    { name: string; definer: boolean; pinned: boolean; callers: string[] }[]
+  >`
+    select p.proname as name, p.prosecdef as definer,
       coalesce(exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%'), false)
         as pinned,
       array(
-        select r.role from (values ('opos_app'), ('opos_app_global'), ('anon'), ('authenticated'), ('service_role')) r(role)
-        where has_function_privilege(r.role, p.oid, 'EXECUTE')
+        select r.role
+        from (values ('opos_app', true), ('opos_app_global', true), ('anon', false), ('authenticated', false), ('service_role', false)) r(role, definer_only)
+        where (p.prosecdef or not r.definer_only)
+          and has_function_privilege(r.role, p.oid, 'EXECUTE')
       ) as callers
     from pg_proc p
-    where p.pronamespace = 'public'::regnamespace and p.prosecdef
+    where p.pronamespace = 'public'::regnamespace
     order by 1
   `
-  const unpinned = definers.filter((fn) => !fn.pinned)
+  const unpinned = functions.filter((fn) => fn.definer && !fn.pinned)
   if (unpinned.length > 0) {
     problems.push(
       `Security definer functions without a pinned search_path: ${unpinned.map((fn) => fn.name).join(', ')}`,
     )
   }
-  for (const fn of definers) {
+  for (const fn of functions) {
     if (fn.callers.length > 0) {
-      problems.push(`Security definer function executable by ${fn.callers.join(', ')}: ${fn.name}`)
+      problems.push(
+        `${fn.definer ? 'Security definer function' : 'Function'} executable by ${fn.callers.join(', ')}: ${fn.name}`,
+      )
     }
   }
 
-  // Supabase's API roles reach nothing in public, not even the schema (PLAN.md 4.6).
+  // Supabase's API roles reach nothing in public, not even the schema, and the runtime roles use it
+  // without creating in it (PLAN.md 4.6).
   const schemaGrants = await sql<{ role: string; privilege: string }[]>`
     select r.role, p.privilege
-    from (values ('anon'), ('authenticated'), ('service_role')) r(role)
+    from (values ('anon', true), ('authenticated', true), ('service_role', true), ('opos_app', false), ('opos_app_global', false)) r(role, api)
     cross join (values ('USAGE'), ('CREATE')) p(privilege)
-    where has_schema_privilege(r.role, 'public', p.privilege)
+    where (r.api or p.privilege = 'CREATE')
+      and has_schema_privilege(r.role, 'public', p.privilege)
     order by 1, 2
   `
   if (schemaGrants.length > 0) {
@@ -403,6 +453,48 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   if (authGrants.length > 0) {
     problems.push(
       `Privileges in the auth schema the rules forbid: ${authGrants.map((r) => r.grant).join(', ')}`,
+    )
+  }
+
+  // Supabase's automatic RLS would switch RLS on for a global table too, which then has no policy.
+  const rlsOnGlobal = await sql<{ relname: string }[]>`
+    select c.relname from pg_class c
+    where c.relnamespace = 'public'::regnamespace and c.relname = any(${globalTables})
+      and c.relrowsecurity
+    order by 1
+  `
+  if (rlsOnGlobal.length > 0) {
+    problems.push(`Global tables with RLS on: ${rlsOnGlobal.map((r) => r.relname).join(', ')}`)
+  }
+  const eventTriggers = await sql<{ name: string }[]>`
+    select e.evtname as name from pg_event_trigger e
+    join pg_proc p on p.oid = e.evtfoid
+    where p.pronamespace = 'public'::regnamespace
+    order by 1
+  `
+  if (eventTriggers.length > 0) {
+    problems.push(
+      `Event triggers running a function in public: ${eventTriggers.map((r) => r.name).join(', ')}`,
+    )
+  }
+
+  // OPOS ties public to auth through triggers on auth tables, and through nothing else.
+  const authFound = await sql<{ trigger: string; enabled: boolean }[]>`
+    select c.relname || '.' || t.tgname as trigger, t.tgenabled in ('O', 'A') as enabled
+    from pg_trigger t
+    join pg_class c on c.oid = t.tgrelid
+    where c.relnamespace = 'auth'::regnamespace and not t.tgisinternal
+    order by 1
+  `
+  for (const trigger of authTriggers) {
+    if (!authFound.some((found) => found.trigger === trigger && found.enabled)) {
+      problems.push(`auth.${trigger.split('.')[0]} lacks ${trigger.split('.')[1]}`)
+    }
+  }
+  const foreign = authFound.filter((found) => !authTriggers.includes(found.trigger))
+  if (foreign.length > 0) {
+    problems.push(
+      `Triggers in the auth schema outside the required list: ${foreign.map((r) => `auth.${r.trigger}`).join(', ')}`,
     )
   }
 

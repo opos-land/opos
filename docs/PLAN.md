@@ -628,7 +628,8 @@ roles:
 
 It runs before the first migration of a database, so no table, sequence or function of OPOS ever
 holds a grant for the three roles and none of its functions is executable through `PUBLIC`;
-`db:verify` reports one that is.
+`db:verify` reports a function in `public` that `anon`, `authenticated` or `service_role` may
+execute, directly or through `PUBLIC`.
 
 **OPOS writes nothing into `auth`.** Of its privileges on the `auth` tables `postgres` may pass on
 `select` alone, so what ties `public` to `auth` — the foreign key of `accounts` to `auth.users`, the
@@ -801,24 +802,26 @@ transaction and expects the report:
   updates only the columns on the list in `verify.ts`;
 - `opos_app` has `SUPERUSER` or `BYPASSRLS`, a runtime role owns a relation in `public` or is a
   member of another role, or any of the five roles holds anything on a `public` sequence;
-- a `security definer` function in `public` has no pinned `search_path`, or `opos_app`,
-  `opos_app_global`, `anon`, `authenticated` or `service_role` may execute it — its migration
-  revokes `execute` from `public`, on top of the default `db:roles` removes;
-- `anon`, `authenticated` or `service_role` holds `usage` or `create` on the `public` schema;
-- `opos_app` or `opos_app_global` holds anything in the `auth` schema.
-
-Still to be built, each with its case:
-
-- `auth.users` carries a trigger other than the `opos_on_auth_user_*` triggers of the `accounts`
-  mirror;
+- a `security definer` function in `public` has no pinned `search_path`, or `opos_app` or
+  `opos_app_global` may execute it — its migration revokes `execute` from `public`, on top of the
+  default `db:roles` removes;
+- `anon`, `authenticated` or `service_role` may execute a function in `public`, `security definer`
+  or not, directly or through `PUBLIC`; a definer function that any of the five roles may execute
+  is reported once, naming every such role;
+- `anon`, `authenticated` or `service_role` holds `usage` or `create` on the `public` schema, or
+  `opos_app` or `opos_app_global` holds `create` on it;
+- `opos_app` or `opos_app_global` holds anything in the `auth` schema;
 - a [global table](#42-global-tables) has RLS on;
 - an event trigger runs a function in `public`;
-- a runtime role lacks one of its limits ([database roles](#database-roles));
-- `auth.users` lacks `opos_on_auth_user_created`, `opos_on_auth_user_email_updated` or
-  `opos_on_auth_user_email_confirmed`, or `auth.mfa_factors` lacks
-  `opos_on_auth_mfa_factor_changed`;
-- `opos_app`, `opos_app_global`, `anon`, `authenticated` or `service_role` may execute a function in
-  `public`, `security definer` or not.
+- a runtime role lacks one of its limits ([database roles](#database-roles)): each setting of
+  `RUNTIME_TIMEOUTS` with its value;
+- `auth.users` lacks one of `opos_on_auth_user_created`, `opos_on_auth_user_email_updated` and
+  `opos_on_auth_user_email_confirmed`, or has it disabled; a table of the `auth` schema carries a
+  trigger outside the list of required triggers in `verify.ts`, which a trigger OPOS attaches
+  joins in the PR of its migration.
+
+Still to be built, with its case: `auth.mfa_factors` lacks `opos_on_auth_mfa_factor_changed`; the
+trigger joins the list of required triggers together with its migration.
 
 ---
 
@@ -2357,7 +2360,7 @@ set:
    `apps/panel`, `apps/portal` — with `OPOS_ENV=local`;
 2. fills the empty secrets: `SEND_EMAIL_HOOK_SECRET` (`v1,whsec_` and 32 random bytes in base64),
    the same value in `supabase/.env` and `apps/api/.env`; `INVITE_SECRET`, `OPOS_APP_PASSWORD` and
-   `OPOS_APP_GLOBAL_PASSWORD` (`openssl rand -hex 32`), and the database URLs built from them;
+   `OPOS_APP_GLOBAL_PASSWORD` (32 random bytes in hex), and the database URLs built from them;
 3. creates `supabase/signing_keys.json` when it is missing or holds only `[]`: `[]`, then
    `supabase gen signing-key --algorithm ES256 --append`;
 4. runs `supabase start`, reads `supabase status -o env` and writes the secret key and the

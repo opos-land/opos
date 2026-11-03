@@ -86,9 +86,9 @@ const mfaEnabledAt = async (id: string) =>
     `
   )[0]!.mfa_enabled_at
 
-/** A TOTP factor as Supabase Auth stores it; written as postgres, which may write auth. */
+/** A TOTP factor as Supabase Auth stores it; written as supabase_auth_admin, the role Supabase Auth writes with. */
 const addFactor = async (userId: string, status: 'unverified' | 'verified') => {
-  const [factor] = await migrator<{ id: string }[]>`
+  const [factor] = await authAdmin<{ id: string }[]>`
     insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
     values (gen_random_uuid(), ${userId}, gen_random_uuid()::text, 'totp', ${status}, now(), now(), 'JBSWY3DPEHPK3PXP')
     returning id
@@ -111,7 +111,7 @@ describe('accounts mirror auth.mfa_factors', () => {
     const factor = await addFactor(user.id, 'unverified')
     expect(await mfaEnabledAt(user.id)).toBeNull()
 
-    await migrator`update auth.mfa_factors set status = 'verified' where id = ${factor}`
+    await authAdmin`update auth.mfa_factors set status = 'verified' where id = ${factor}`
 
     expect(await mfaEnabledAt(user.id)).toBeInstanceOf(Date)
   })
@@ -128,7 +128,7 @@ describe('accounts mirror auth.mfa_factors', () => {
     const user = await createUser()
     const factor = await addFactor(user.id, 'verified')
 
-    await migrator`delete from auth.mfa_factors where id = ${factor}`
+    await authAdmin`delete from auth.mfa_factors where id = ${factor}`
 
     expect(await mfaEnabledAt(user.id)).toBeNull()
   })
@@ -140,7 +140,7 @@ describe('accounts mirror auth.mfa_factors', () => {
 
     await addFactor(user.id, 'verified')
     expect(await mfaEnabledAt(user.id)).toEqual(before)
-    await migrator`delete from auth.mfa_factors where id = ${first}`
+    await authAdmin`delete from auth.mfa_factors where id = ${first}`
 
     expect(await mfaEnabledAt(user.id)).toEqual(before)
   })
@@ -149,7 +149,7 @@ describe('accounts mirror auth.mfa_factors', () => {
     const user = await createUser()
     const factor = await addFactor(user.id, 'verified')
 
-    await migrator`update auth.mfa_factors set status = 'unverified' where id = ${factor}`
+    await authAdmin`update auth.mfa_factors set status = 'unverified' where id = ${factor}`
 
     expect(await mfaEnabledAt(user.id)).toBeNull()
   })

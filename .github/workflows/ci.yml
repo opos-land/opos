@@ -53,7 +53,8 @@ jobs:
       - run: pnpm infra:init
       - run: pnpm db:migrate
       - run: pnpm db:verify
-      # The second run proves the seed is idempotent
+      # The second run fails where a constraint refuses a row; packages/db/test/seed.test.ts holds
+      # the row counts across two runs
       - run: pnpm db:seed && pnpm db:seed
       - run: pnpm turbo run typecheck lint $TURBO_ARGS
         env:

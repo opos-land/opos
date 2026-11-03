@@ -191,7 +191,8 @@ goes through `env`.
 **The seed follows the schema.** A change that adds a table, a column without a default, a
 permission or a role, or a data state the tests rely on updates
 [packages/db/src/seed.ts](packages/db/src/seed.ts) and the [demo data](docs/PLAN.md#14-demo-data-seed)
-in the same PR. Run `pnpm db:seed` twice before the PR: the second run proves it is idempotent.
+in the same PR. Run `pnpm db:seed` twice before the PR; `packages/db/test/seed.test.ts` fails when
+the second run changes the row count of any `public` table.
 
 **Tests sit by what they need** ([tests](docs/PLAN.md#15-tests)). A unit test, which needs nothing
 outside the process, goes next to the file it tests as `<name>.test.ts` (`<name>.test.js` in the

@@ -11,6 +11,13 @@ const seed = (env: Record<string, string | undefined>) =>
     encoding: 'utf8',
   })
 
+/** The whole seed against the local stack, with the environment of the test run. */
+const runSeed = (opos: 'local' | 'dev') =>
+  spawnSync(process.execPath, ['--import', 'tsx', 'src/seed.ts'], {
+    env: { ...process.env, OPOS_ENV: opos },
+    encoding: 'utf8',
+  })
+
 // Each case starts tsx in a process of its own, which takes seconds on a loaded machine.
 describe('db:seed', { timeout: 30_000 }, () => {
   it.each([{}, { OPOS_ENV: 'production' }, { OPOS_ENV: 'staging' }])(
@@ -61,12 +68,6 @@ describe('db:seed two-factor account', () => {
   const authUrl = `${process.env.SUPABASE_URL?.replace(/\/+$/, '')}/auth/v1`
   const admin = (method: string, path: string) =>
     fetch(`${authUrl}${path}`, { method, headers: { apikey: process.env.SUPABASE_SECRET_KEY! } })
-
-  const runSeed = (opos: 'local' | 'dev') =>
-    spawnSync(process.execPath, ['--import', 'tsx', 'src/seed.ts'], {
-      env: { ...process.env, OPOS_ENV: opos },
-      encoding: 'utf8',
-    })
 
   const accountId = async () =>
     (await migrator<{ id: string }[]>`select id from accounts where email = ${email}`)[0]!.id
@@ -155,4 +156,36 @@ describe('db:seed two-factor account', () => {
       expect(after[0]!.id).not.toBe(staleId)
     },
   )
+})
+
+// A second run refuses only what a constraint refuses, so a plain insert into a table with no
+// unique key would pass and double its rows. Every table of `public` counts, so a future table is
+// covered with no change here.
+describe('db:seed run twice', () => {
+  const rowCounts = async () => {
+    const tables = await migrator<{ tablename: string }[]>`
+      select tablename from pg_tables where schemaname = 'public'
+    `
+    const counts: Record<string, number> = {}
+    for (const { tablename } of tables) {
+      const [row] = await migrator<{ count: number }[]>`
+        select count(*)::int as count from ${migrator(tablename)}
+      `
+      counts[tablename] = row!.count
+    }
+    return counts
+  }
+
+  it('adds no row to any table of public on the second run', { timeout: 120_000 }, async () => {
+    const first = runSeed('local')
+    expect(first.status, first.stderr).toBe(0)
+    const before = await rowCounts()
+    // The migrator sees through row-level security, so a tenant table counts its real rows.
+    expect(before.program_items).toBeGreaterThan(0)
+
+    const second = runSeed('local')
+
+    expect(second.status, second.stderr).toBe(0)
+    expect(await rowCounts()).toEqual(before)
+  })
 })

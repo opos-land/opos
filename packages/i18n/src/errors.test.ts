@@ -37,7 +37,7 @@ describe('errorMessage', () => {
   it.each([
     [
       'mfa.code-invalid',
-      'Kod jest nieprawidłowy lub wygasł. Sprawdź kod w aplikacji uwierzytelniającej i spróbuj ponownie.',
+      'Kod jest nieprawidłowy, wygasł lub został już użyty. Sprawdź kod w aplikacji uwierzytelniającej albo kody odzyskiwania i spróbuj ponownie.',
     ],
     ['mfa.already-enabled', 'Uwierzytelnianie dwuskładnikowe jest już włączone dla tego konta.'],
     ['mfa.not-required', 'To konto nie potrzebuje teraz kodu.'],

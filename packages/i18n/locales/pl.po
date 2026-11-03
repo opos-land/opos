@@ -143,7 +143,7 @@ msgstr "Jeśli to nie ty zakładasz konto, zignoruj tę wiadomość."
 
 #: src/emails.ts
 msgid "If you did not do this, change your password right away and turn two-factor authentication on again."
-msgstr "Jeśli to nie Ty, natychmiast zmień hasło i ponownie włącz uwierzytelnianie dwuskładnikowe."
+msgstr "Jeśli to nie ty, natychmiast zmień hasło i ponownie włącz uwierzytelnianie dwuskładnikowe."
 
 #: src/emails.ts
 msgid "If you do not expect this invitation, ignore this message."
@@ -260,8 +260,8 @@ msgid "The address may contain only lowercase letters, digits and hyphens, 3 to 
 msgstr "Adres może zawierać tylko małe litery, cyfry i myślniki, od 3 do 40 znaków."
 
 #: src/errors.ts
-msgid "The code is wrong or has expired. Check the code in your authenticator app and try again."
-msgstr "Kod jest nieprawidłowy lub wygasł. Sprawdź kod w aplikacji uwierzytelniającej i spróbuj ponownie."
+msgid "The code is wrong, has expired or was already used. Check the code in your authenticator app or your recovery codes and try again."
+msgstr "Kod jest nieprawidłowy, wygasł lub został już użyty. Sprawdź kod w aplikacji uwierzytelniającej albo kody odzyskiwania i spróbuj ponownie."
 
 #: src/errors.ts
 msgid "The link has expired. Ask for a new one."
@@ -395,7 +395,7 @@ msgstr "Uwierzytelnianie dwuskładnikowe zostało wyłączone"
 
 #: src/emails.ts
 msgid "Two-factor authentication was turned off for your OPOS account. You can turn it on again in your account settings."
-msgstr "Uwierzytelnianie dwuskładnikowe zostało wyłączone na Twoim koncie OPOS. Możesz włączyć je ponownie w ustawieniach konta."
+msgstr "Uwierzytelnianie dwuskładnikowe zostało wyłączone na twoim koncie OPOS. Możesz włączyć je ponownie w ustawieniach konta."
 
 #. Glossary term: user
 #: src/glossary.ts

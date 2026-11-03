@@ -91,7 +91,8 @@ describe('renderNoticeEmail', () => {
     const email = await notice('pl')
 
     expect(email.subject).toBe('Uwierzytelnianie dwuskładnikowe zostało wyłączone')
-    expect(email.text).toContain('natychmiast zmień hasło')
+    expect(email.text).toContain('Jeśli to nie ty, natychmiast zmień hasło')
+    expect(email.text).toContain('na twoim koncie OPOS')
     expect(email.html).toContain('lang="pl"')
   })
 })

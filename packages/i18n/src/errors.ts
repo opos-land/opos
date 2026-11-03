@@ -15,7 +15,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'session.invalid': msg`Your session has ended. Sign in again.`,
   'session.reauthentication-required': msg`Confirm it is you: enter your password again or sign in with Google again.`,
   'session.mfa-required': msg`This account uses two-factor authentication. Enter the code from your authenticator app to continue.`,
-  'mfa.code-invalid': msg`The code is wrong or has expired. Check the code in your authenticator app and try again.`,
+  'mfa.code-invalid': msg`The code is wrong, has expired or was already used. Check the code in your authenticator app or your recovery codes and try again.`,
   'mfa.already-enabled': msg`Two-factor authentication is already on for this account.`,
   'mfa.not-required': msg`This account does not need a code right now.`,
   'mfa.not-enabled': msg`Two-factor authentication is not on for this account.`,

@@ -1,8 +1,9 @@
 import { accountClient } from './api'
-import { isSessionInvalid } from './errors'
+import { isMfaRequired, isSessionInvalid } from './errors'
 import {
   announceAccountChange,
   clearSession,
+  mfaRequired,
   onSessionEnded,
   type SessionState,
   sessionChannel,
@@ -15,7 +16,7 @@ export { announceAccountChange, signedIn, signedOut, useSession }
 export type { SessionState }
 
 /**
- * Asks who is signed in and shows the answer. `announce` tells the other tabs which account was
+ * Asks who is signed in and shows the answer. A session waiting for its code ends `mfa-required`. `announce` tells the other tabs which account was
  * found (a Google return is a page load, PLAN.md 7.4); a tab following an announcement does not.
  * A `401` that stands is a session that is over only when a request of this tab ended it; one the
  * refresh could not settle is `unavailable`.
@@ -30,7 +31,8 @@ async function load(announce: boolean) {
     useSession.setState({ status: 'ready', account })
     if (announce && account.id !== shown) announceAccountChange(account.id)
   } catch (error) {
-    if (isSessionInvalid(error) && ended) clearSession()
+    if (isMfaRequired(error)) mfaRequired()
+    else if (isSessionInvalid(error) && ended) clearSession()
     else useSession.setState({ status: 'unavailable' })
   } finally {
     stop()

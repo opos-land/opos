@@ -61,6 +61,10 @@ msgstr "Wróć do logowania"
 msgid "By creating an account you confirm that you have read the <0>privacy policy</0>."
 msgstr "Zakładając konto, potwierdzasz, że znasz <0>politykę prywatności</0>."
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Cancel"
+msgstr "Anuluj"
+
 #: src/features/auth/pages/register-page.tsx
 msgid "Check your inbox"
 msgstr "Sprawdź skrzynkę pocztową"
@@ -69,7 +73,20 @@ msgstr "Sprawdź skrzynkę pocztową"
 msgid "Choose your password"
 msgstr "Wybierz hasło"
 
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Code"
+msgstr "Kod"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Code from the app"
+msgstr "Kod z aplikacji"
+
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Confirm"
+msgstr "Potwierdź"
+
 #: src/features/account/components/delete-account.tsx
+#: src/features/account/components/reauthenticate-form.tsx
 msgid "Confirm with Google"
 msgstr "Potwierdź przez Google"
 
@@ -82,6 +99,7 @@ msgid "Confirmation link"
 msgstr "Link potwierdzający"
 
 #: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Continue"
 msgstr "Dalej"
 
@@ -138,8 +156,22 @@ msgid "Enter a valid email address."
 msgstr "Podaj prawidłowy adres e-mail."
 
 #: src/features/account/components/delete-account.tsx
+#: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
 msgstr "Wpisz je ponownie, aby potwierdzić, że to ty."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter one of the recovery codes you saved. It turns two-factor authentication off."
+msgstr "Wpisz jeden z zapisanych kodów odzyskiwania. Wyłączy on uwierzytelnianie dwuskładnikowe."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the code from your authenticator app to finish signing in."
+msgstr "Wpisz kod z aplikacji uwierzytelniającej, aby dokończyć logowanie."
+
+#: src/features/account/components/two-factor-card.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the six digits from your authenticator app."
+msgstr "Wpisz sześć cyfr z aplikacji uwierzytelniającej."
 
 #: src/features/account/components/profile-form.tsx
 msgid "Enter up to 100 characters."
@@ -171,6 +203,7 @@ msgid "Forgot your password?"
 msgstr "Nie pamiętasz hasła?"
 
 #: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Go to sign-in"
 msgstr "Przejdź do logowania"
 
@@ -193,6 +226,10 @@ msgstr "Jak długo je przechowujemy"
 #: src/features/landing/pages/privacy-page.tsx
 msgid "How OPOS handles your personal data."
 msgstr "Jak OPOS postępuje z twoimi danymi osobowymi."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "I have saved my codes"
+msgstr "Kody są zapisane"
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
@@ -310,6 +347,14 @@ msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
 msgid "Privacy policy"
 msgstr "Polityka prywatności"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "QR code for your authenticator app"
+msgstr "Kod QR dla aplikacji uwierzytelniającej"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Recovery code"
+msgstr "Kod odzyskiwania"
+
 #: src/features/conventions/components/like-button.tsx
 msgid "Remove the like"
 msgstr "Usuń polubienie"
@@ -331,9 +376,21 @@ msgstr "Zapisz"
 msgid "Save the password"
 msgstr "Zapisz hasło"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
+msgstr "Zapisz tych dziesięć kodów odzyskiwania w bezpiecznym miejscu. Każdy działa raz, zamiast kodu z aplikacji, a użycie któregokolwiek wyłącza uwierzytelnianie dwuskładnikowe. Widzisz je tylko teraz."
+
 #: src/features/account/components/language-form.tsx
 msgid "Saved on your account."
 msgstr "Zapisywany na twoim koncie."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
+msgstr "Zeskanuj kod QR aplikacją uwierzytelniającą albo wpisz do niej sekret. Następnie wpisz sześciocyfrowy kod, który pokaże aplikacja."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Secret"
+msgstr "Sekret"
 
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
@@ -407,13 +464,50 @@ msgstr "Od otwarcia linku minęło zbyt dużo czasu. Poproś o nowy."
 msgid "Try again"
 msgstr "Spróbuj ponownie"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn off two-factor authentication"
+msgstr "Wyłącz uwierzytelnianie dwuskładnikowe"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on"
+msgstr "Włącz"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on two-factor authentication"
+msgstr "Włącz uwierzytelnianie dwuskładnikowe"
+
+#: src/features/account/pages/account-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Two-factor authentication"
+msgstr "Uwierzytelnianie dwuskładnikowe"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
+msgstr "Uwierzytelnianie dwuskładnikowe jest wyłączone. Włącz je, aby przy każdym logowaniu podawać kod z aplikacji uwierzytelniającej."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
+msgstr "Uwierzytelnianie dwuskładnikowe jest włączone, ale nie udało się pokazać kodów odzyskiwania. Aby dostać nowe, zaloguj się kodem z aplikacji, wyłącz uwierzytelnianie dwuskładnikowe i włącz je ponownie."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
+msgstr "Uwierzytelnianie dwuskładnikowe jest włączone. Przy każdym logowaniu podajesz kod z aplikacji uwierzytelniającej."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 msgstr "Na podstawie RODO masz prawo dostępu do swoich danych, ich sprostowania, usunięcia, ograniczenia przetwarzania lub wniesienia sprzeciwu wobec niego, a także prawo wniesienia skargi do organu nadzorczego; w Polsce jest nim Prezes Urzędu Ochrony Danych Osobowych (UODO). Imię i nazwisko poprawiasz, a konto usuwasz samodzielnie w ustawieniach konta."
 
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use a recovery code"
+msgstr "Użyj kodu odzyskiwania"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Use at least 8 characters."
 msgstr "Użyj co najmniej 8 znaków."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use the code of the app"
+msgstr "Użyj kodu z aplikacji"
 
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
@@ -471,6 +565,10 @@ msgstr "Po co je przechowujemy"
 msgid "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
 msgstr "Jesteś ostatnim głównym organizatorem konwentu, a każdy konwent musi mieć co najmniej jednego. W panelu organizatora ustanów głównym organizatorem inną osobę z zespołu tego konwentu, a potem usuń konto."
 
+#: src/features/account/components/delete-account.tsx
+msgid "You confirmed it is you again. Delete the account within 5 minutes."
+msgstr "Ponownie potwierdzono, że to ty. Usuń konto w ciągu 5 minut."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
 msgstr "Konto usuwasz samodzielnie w ustawieniach konta, po ponownym potwierdzeniu, że to ty: hasłem albo przez Google. Razem z nim znikają twoje metody logowania, sesje, uwierzytelnianie dwuskładnikowe wraz z kodami odzyskiwania, polubienia, opinie, zapisy na edycje i członkostwa w zespołach konwentów. Ostatni główny organizator konwentu najpierw przekazuje tę rolę, aby konwent nie został bez właściciela."
@@ -478,10 +576,6 @@ msgstr "Konto usuwasz samodzielnie w ustawieniach konta, po ponownym potwierdzen
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "You have not liked any programme items yet."
 msgstr "Nie masz jeszcze polubionych punktów programu."
-
-#: src/features/account/components/delete-account.tsx
-msgid "You signed in with Google again. Delete the account within 5 minutes."
-msgstr "Zalogowano ponownie przez Google. Usuń konto w ciągu 5 minut."
 
 #: src/features/account/pages/account-page.tsx
 msgid "Your account"
@@ -516,6 +610,7 @@ msgid "Your name is saved."
 msgstr "Imię i nazwisko zostały zapisane."
 
 #: src/features/account/components/delete-account.tsx
+#: src/features/account/components/reauthenticate-form.tsx
 msgid "Your password"
 msgstr "Twoje hasło"
 

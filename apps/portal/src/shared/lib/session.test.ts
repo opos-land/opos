@@ -94,6 +94,15 @@ describe('startSession', () => {
     expect(useSession.getState()).toMatchObject({ status: 'ready', account: null })
   })
 
+  it('ends mfa-required, neither unavailable nor signed out, when GET /me wants the code', async () => {
+    const calls = stubApi({ 'GET /me': [json(401, { code: 'session.mfa-required' })] })
+
+    await startSession()
+
+    expect(calls).toEqual(['GET /me'])
+    expect(useSession.getState()).toMatchObject({ status: 'mfa-required', account: null })
+  })
+
   it('ends unavailable on a network failure, never stuck loading', async () => {
     stubApi({})
 

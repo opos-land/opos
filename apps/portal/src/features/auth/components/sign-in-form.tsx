@@ -26,6 +26,8 @@ export function SignInForm({ returnTo, onSignedIn }: { returnTo: string; onSigne
   const submit = form.handleSubmit(async (values) => {
     setFailure(null)
     const error = await signInWithPassword(values)
+    // An account with two-factor authentication goes on to the code screen, which is no error.
+    if (errorCode(error) === 'session.mfa-required') return
     if (error) setFailure({ error, email: values.email })
     else onSignedIn()
   })

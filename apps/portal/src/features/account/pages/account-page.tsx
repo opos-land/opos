@@ -7,9 +7,13 @@ import { accountOptions } from '../api/account'
 import { DeleteAccount } from '../components/delete-account'
 import { LanguageForm } from '../components/language-form'
 import { ProfileForm } from '../components/profile-form'
+import { TwoFactorCard } from '../components/two-factor-card'
 import { signInMethods } from '../model/sign-in-methods'
 
-/** Account settings (PLAN.md 9): the names, the interface language, sign-out and deletion. */
+/**
+ * Account settings (PLAN.md 9): the names, the interface language, two-factor authentication,
+ * sign-out and deletion.
+ */
 export function AccountPage() {
   const account = useQuery(accountOptions())
   // A failed sign-out leaves the cookies set, so it is shown rather than dropped.
@@ -27,6 +31,13 @@ export function AccountPage() {
       </Section>
       <Section title={<Trans>Language</Trans>}>
         <LanguageForm account={account.data} />
+      </Section>
+      <Section title={<Trans>Two-factor authentication</Trans>}>
+        <TwoFactorCard
+          email={email}
+          mfaEnabled={account.data.mfaEnabled}
+          methods={signInMethods(methods)}
+        />
       </Section>
       <Section title={<Trans>Sign out</Trans>}>
         <p className="text-sm">

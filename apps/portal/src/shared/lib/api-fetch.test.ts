@@ -7,7 +7,7 @@ const json = (status: number, body: unknown) =>
 const invalid = () => json(401, { code: 'session.invalid' })
 
 function setup(refresh: () => Promise<RefreshResult> = () => Promise.resolve('refreshed')) {
-  return { refresh: vi.fn(refresh), onSignedOut: vi.fn() }
+  return { refresh: vi.fn(refresh), onSignedOut: vi.fn(), onMfaRequired: vi.fn() }
 }
 
 function recorder(...responses: Response[]) {
@@ -126,6 +126,35 @@ describe('createApiFetch', () => {
     expect(options.onSignedOut).not.toHaveBeenCalled()
   })
 
+  it('session.mfa-required never refreshes and tells the application', async () => {
+    const { fetch, requests } = recorder(json(401, { code: 'session.mfa-required' }))
+    const options = setup()
+
+    const response = await createApiFetch({ ...options, locale: () => 'pl', fetch })(
+      new Request('http://api.test/me'),
+    )
+
+    expect(response.status).toBe(401)
+    expect(requests).toHaveLength(1)
+    expect(options.refresh).not.toHaveBeenCalled()
+    expect(options.onSignedOut).not.toHaveBeenCalled()
+    expect(options.onMfaRequired).toHaveBeenCalledOnce()
+  })
+
+  it('tells the application nothing for any other answer', async () => {
+    const { fetch } = recorder(
+      json(401, { code: 'session.reauthentication-required' }),
+      json(200, {}),
+    )
+    const options = setup()
+    const apiFetch = createApiFetch({ ...options, locale: () => 'pl', fetch })
+
+    await apiFetch(new Request('http://api.test/me', { method: 'DELETE' }))
+    await apiFetch(new Request('http://api.test/me'))
+
+    expect(options.onMfaRequired).not.toHaveBeenCalled()
+  })
+
   it('passes other errors through without a refresh', async () => {
     const { fetch } = recorder(json(403, { code: 'permission.denied' }))
     const options = setup()
@@ -196,6 +225,7 @@ describe('createApiFetch', () => {
         createApiFetch({
           refresh: shared(acrossTabs('opos-portal-refresh', rotate)),
           onSignedOut,
+          onMfaRequired: vi.fn(),
           locale: () => 'en',
           fetch: vi.fn().mockResolvedValueOnce(invalid()).mockResolvedValueOnce(json(200, {})),
         })
@@ -218,6 +248,7 @@ describe('createApiFetch', () => {
         createApiFetch({
           refresh: shared(rotate),
           onSignedOut,
+          onMfaRequired: vi.fn(),
           locale: () => 'en',
           fetch: vi.fn().mockResolvedValueOnce(invalid()).mockResolvedValueOnce(json(200, {})),
         })
@@ -252,6 +283,7 @@ describe('requests of one tab', () => {
     const apiFetch = createApiFetch({
       refresh: shared(refresh),
       onSignedOut: vi.fn(),
+      onMfaRequired: vi.fn(),
       locale: () => 'en',
       fetch,
     })

@@ -4,6 +4,7 @@ import {
   ConfirmPage,
   ForgotPasswordPage,
   LoginPage,
+  MfaPage,
   RegisterPage,
   RequireSession,
 } from '../features/auth'
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
       { path: '/register', element: <RegisterPage /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/auth/confirm', element: <ConfirmPage /> },
+      { path: '/auth/mfa', element: <MfaPage /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
       {
         path: '/account',

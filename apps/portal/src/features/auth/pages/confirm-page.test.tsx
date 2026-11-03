@@ -183,6 +183,18 @@ describe('ConfirmPage with a token', () => {
     expect(await screen.findByText('at /schedule')).toBeTruthy()
   })
 
+  it('an account with two-factor authentication shows no error: the code screen follows', async () => {
+    const user = userEvent.setup()
+    vi.mocked(verifyLink).mockResolvedValue(new ORPCError('session.mfa-required', { status: 401 }))
+    renderConfirm('?token_hash=hash-a&type=recovery')
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Go to sign-in' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy()
+  })
+
   it('otp_expired offers a new link, a confirmation for a signup link', async () => {
     const user = userEvent.setup()
     vi.mocked(verifyLink).mockResolvedValue(new ORPCError('auth.otp_expired', { status: 422 }))

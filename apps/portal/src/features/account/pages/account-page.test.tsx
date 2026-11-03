@@ -16,6 +16,7 @@ const me = vi.hoisted(() => ({
     firstName: null,
     lastName: null,
     locale: null,
+    mfaEnabled: false,
     signInMethods: ['password'] as string[],
   },
 }))
@@ -38,7 +39,7 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
-  me.current = { ...me.current, signInMethods: ['password'] }
+  me.current = { ...me.current, mfaEnabled: false, signInMethods: ['password'] }
   vi.mocked(signOut).mockReset()
 })
 
@@ -86,6 +87,22 @@ describe('AccountPage sign-out', () => {
     await openPage()
 
     expect(screen.getByText('Signing out ends your session on this device.')).toBeTruthy()
+  })
+})
+
+describe('AccountPage two-factor authentication', () => {
+  it('shows the card off for an account without it', async () => {
+    await openPage()
+
+    expect(screen.getByRole('heading', { name: 'Two-factor authentication' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Turn on two-factor authentication' })).toBeTruthy()
+  })
+
+  it('shows the card on for an account with it, as GET /me says', async () => {
+    me.current = { ...me.current, mfaEnabled: true }
+    await openPage()
+
+    expect(screen.getByRole('button', { name: 'Turn off two-factor authentication' })).toBeTruthy()
   })
 })
 

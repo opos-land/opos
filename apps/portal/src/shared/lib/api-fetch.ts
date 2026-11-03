@@ -6,6 +6,8 @@ export interface ApiFetchOptions {
   refresh(): Promise<RefreshResult>
   /** The session is over: a refresh answered `401`, or the retry was refused again. */
   onSignedOut(): void
+  /** A `401` `session.mfa-required` came back: the code screen is next (PLAN.md 7.12). */
+  onMfaRequired(): void
   /** Sent as X-Tenant-Slug; the API ignores it on routes outside a tenant (PLAN.md 7.2). */
   tenantSlug?: string
   /** The active interface language, sent as Accept-Language. */
@@ -22,9 +24,14 @@ async function errorCodeOf(response: Response) {
   }
 }
 
-/** Only a `401` `session.invalid` asks for a refresh; `session.reauthentication-required` does not (7.4). */
-const answersSessionInvalid = async (response: Response) =>
-  response.status === 401 && (await errorCodeOf(response)) === 'session.invalid'
+const answers = async (response: Response, code: string) =>
+  response.status === 401 && (await errorCodeOf(response)) === code
+
+/**
+ * Only a `401` `session.invalid` asks for a refresh; `session.reauthentication-required` and
+ * `session.mfa-required` do not (7.4, 7.12).
+ */
+const answersSessionInvalid = (response: Response) => answers(response, 'session.invalid')
 
 /**
  * The fetch of the portal's API link (PLAN.md 9): it sends the session cookies, the tenant and the
@@ -45,6 +52,10 @@ export function createApiFetch(options: ApiFetchOptions) {
   return async (request: Request): Promise<Response> => {
     const retry = request.clone()
     const response = await send(withHeaders(request))
+    if (await answers(response, 'session.mfa-required')) {
+      options.onMfaRequired()
+      return response
+    }
     if (!(await answersSessionInvalid(response))) return response
 
     const result = await options.refresh().catch((): RefreshResult => 'unavailable')
@@ -55,7 +66,8 @@ export function createApiFetch(options: ApiFetchOptions) {
     }
 
     const second = await send(withHeaders(retry))
-    if (await answersSessionInvalid(second)) options.onSignedOut()
+    if (await answers(second, 'session.mfa-required')) options.onMfaRequired()
+    else if (await answersSessionInvalid(second)) options.onSignedOut()
     return second
   }
 }

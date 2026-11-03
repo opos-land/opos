@@ -2,7 +2,15 @@ import { i18n } from '@lingui/core'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
 import { AUTH_RETURN_STORAGE_KEY } from '../model/auth-return'
-import { resendConfirmation, sendPasswordLink, signOut, signUp, verifyLink } from './auth'
+import {
+  recoverWithCode,
+  resendConfirmation,
+  sendPasswordLink,
+  signOut,
+  signUp,
+  verifyCode,
+  verifyLink,
+} from './auth'
 
 const me = {
   id: 'a',
@@ -123,5 +131,37 @@ describe('signOut', () => {
 
     expect(await signOut()).toMatchObject({ code: 'server.unavailable' })
     expect(useSession.getState().account?.id).toBe('a')
+  })
+})
+
+describe('verifyCode and recoverWithCode', () => {
+  it.each([
+    ['verifyCode', verifyCode, '/auth/mfa/verify'],
+    ['recoverWithCode', recoverWithCode, '/auth/mfa/recover'],
+  ])(
+    '%s sends the code, then asks who is signed in and shows the account',
+    async (_n, call, path) => {
+      const requests = stubApi(new Response(null, { status: 204 }), json(200, me))
+      useSession.setState({ status: 'mfa-required', account: null })
+
+      const failure = await call('123456')
+
+      expect(failure).toBeNull()
+      expect(
+        requests.map((request) => `${request.method} ${new URL(request.url).pathname}`),
+      ).toEqual([`POST ${path}`, 'GET /me'])
+      expect(await requests[0]!.json()).toEqual({ code: '123456' })
+      expect(useSession.getState()).toMatchObject({ status: 'ready', account: { id: 'a' } })
+    },
+  )
+
+  it('returns the failure of a wrong code and leaves the session waiting', async () => {
+    stubApi(json(400, { code: 'mfa.code-invalid' }))
+    useSession.setState({ status: 'mfa-required', account: null })
+
+    const failure = await verifyCode('123456')
+
+    expect(failure).toMatchObject({ code: 'mfa.code-invalid' })
+    expect(useSession.getState().status).toBe('mfa-required')
   })
 })

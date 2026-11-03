@@ -429,7 +429,7 @@ scanner or a preview that follows the link leaves it working.
 **Two-factor authentication is each account's own choice.** A user turns it on for their own account
 in the account settings, with an authenticator app; no role requires it. From then on every sign-in
 — with a password, with Google or through a link from an email — asks for a code from the app before
-anything else, and the portal and the panel each ask for their own. A password reset asks for it too:
+anything else, and the portal and the panel each ask for their own. A code entered in one browser ends the account's other sessions that are still waiting for one, so the other browser asks to sign in again. A password reset asks for it too:
 after the code the page asks for the new password, without needing the link again. Confirming an
 account deletion asks for it as well, and the deletion goes on after the code. Turning it on shows ten
 one-time recovery codes, once, and the platform keeps only their hashes. A recovery code stands in for

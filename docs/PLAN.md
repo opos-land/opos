@@ -204,8 +204,7 @@ opos/
     portal/              # built: Vite and Lingui config, catalogs, app/ (router, layout, providers,
                          #   query client), features landing, auth, account, shared/ (API link,
                          #   auth client, session, i18n, UI), .env.example, tests (9); the auth
-                         #   client gives way to the API's auth endpoints (5.1); still to come:
-                         #   the two-factor screens (7.12)
+                         #   client gives way to the API's auth endpoints (5.1)
       src/features/      # still to come: attendances, speaking, tickets
       Dockerfile
   e2e/                   # built: Playwright config, fixtures (stack, Mailpit, admin API, tenants,
@@ -1799,7 +1798,8 @@ The scanner is online only: no local ticket list, no queue of offline redemption
 
 The assurance-level check of the guard and the routes `POST /auth/mfa/*` and `DELETE /auth/mfa`
 are built ([modules/auth](../apps/api/src/modules/auth), `contract.auth.mfa.*`: request and response
-schemas in [auth-mfa.ts](../packages/contract/src/auth-mfa.ts)); the screens are still to be built.
+schemas in [auth-mfa.ts](../packages/contract/src/auth-mfa.ts)), and so are the screens of the
+portal ([9](#9-appsportal)); those of the panel are still to be built.
 Two-factor authentication (2FA) is TOTP only, on Supabase Auth's factors. Each account turns it on
 for itself ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); no role requires it.
 
@@ -1909,7 +1909,17 @@ holds the settings ([10](#supabase-auth-configuration)).
 | Screen | Behaviour |
 |---|---|
 | `/auth/mfa` | takes a code or a recovery code; every `session.mfa-required` answer leads here, keeping the path to return to |
-| the two-factor card | shows the QR code and the secret, then the recovery codes once after a right code, until the person confirms they saved them; after a recovery code it shows 2FA as off. The QR code is the `data:` SVG the API returned, which the CSP's `img-src` allows ([13](#images)); it stays in component state and is never stored |
+| the two-factor card | on `/account` in the portal, and in the account menu in the panel; shows the QR code and the secret, then the recovery codes once after a right code, until the person confirms they saved them; after a recovery code it shows 2FA as off. The QR code is the `data:` SVG the API returned, which the CSP's `img-src` allows ([13](#images)); it stays in component state and is never stored |
+
+A right code, or a recovery code, answers `204`; the screen then asks `GET /me` and announces the
+account to the other tabs ([7.4](#74-authorization)). A wrong code shows its message and keeps the
+form. A successful `verify` at `aal2` ends every other `aal1` session of the account at Supabase
+Auth, so two browsers cannot both wait for a code: the one that waits longer gets `401`
+`session.invalid` from the screen, which offers the sign-in. `enroll` and `DELETE /auth/mfa` answering
+`session.reauthentication-required` make the card ask for the password or Google, as the account's
+`signInMethods` allow; an answer of `enable` that is `409` `mfa.already-enabled` shows how to get
+new codes (above). The secret, the QR code and the recovery codes come from plain calls, not
+TanStack mutations, so no cache holds them once the view is gone.
 
 The path `/auth/mfa` returns to:
 
@@ -2034,8 +2044,7 @@ platform's name, the way to the account or to sign-in, the privacy policy in the
 [layout.tsx](../apps/portal/src/app/layout.tsx). Still to be built: on the convention pages the
 "Sign up" button, ratings, comments and the review form, which wait for their modules;
 `attendances`, `speaking`, `tickets` and their screens, which wait for their modules in the API, the
-image with its headers ([13](#13-deployment)), and the two-factor screens
-([7.12](#712-two-factor-authentication)), which the bullets below describe.
+image with its headers ([13](#13-deployment)).
 
 | Feature | Scope |
 |---|---|
@@ -2096,6 +2105,14 @@ image with its headers ([13](#13-deployment)), and the two-factor screens
 - Application start asks `GET /me`, with one refresh on a `401`; a page that needs the session
   shows a loading view until then ([session.ts](../apps/portal/src/shared/lib/session.ts)), and a
   network failure or a `503` from `GET /me` ends it in the `unavailable` state, as in the panel.
+  A `session.mfa-required` answer ends it in the `mfa-required` state: the session is not signed
+  in, no account is known and no account data is shown. `MfaGate`
+  ([mfa-gate.tsx](../apps/portal/src/features/auth/components/mfa-gate.tsx)) in the frame of every
+  screen leads any page to `/auth/mfa`, and `RequireSession` does the same instead of sending the
+  visitor to `/login`. The path to return to follows the table of
+  [7.12](#712-two-factor-authentication)
+  ([mfa-return.ts](../apps/portal/src/features/auth/model/mfa-return.ts)); only a path inside the
+  portal is a target.
 - Signed out, the interface follows the browser's languages; signed in, the account's `locale`
   ([6](#locale-detection)). A session that ends — sign-out, account deletion, a failed refresh —
   switches the interface back to the browser's languages
@@ -2117,8 +2134,8 @@ unpublished edition under a direct URL or an unknown tenant -> `404`.
 ([7.4](#74-authorization)). On `/account` the user confirms with the password
 (`POST /auth/sign-in` with the account's email, then `DELETE /me` at once) or with Google
 (`GET /auth/google?app=portal&redirect=/account?confirm=deletion`), which returns to
-`/account?confirm=deletion` and offers the deletion there only to the account that left for Google,
-remembered in `localStorage`
+`/account?confirm=deletion` and offers the deletion there only to the account that left for Google
+or for the code screen, remembered in `localStorage`
 ([deletion-confirmation.ts](../apps/portal/src/features/account/model/deletion-confirmation.ts)).
 On an account with two-factor authentication either confirmation passes through `/auth/mfa` first
 ([7.12](#712-two-factor-authentication)): `POST /auth/sign-in` answers `session.mfa-required`, and the

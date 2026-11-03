@@ -62,6 +62,17 @@ describe('SignInForm', () => {
     )
   })
 
+  it('shows no error when the account wants its code: the code screen follows', async () => {
+    vi.mocked(signInWithPassword).mockResolvedValue(
+      new ORPCError('session.mfa-required', { status: 401 }),
+    )
+
+    const { onSignedIn } = await signIn()
+
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(onSignedIn).not.toHaveBeenCalled()
+  })
+
   it('offers no link for wrong credentials', async () => {
     vi.mocked(signInWithPassword).mockResolvedValue(
       new ORPCError('auth.invalid_credentials', { status: 400 }),

@@ -61,6 +61,10 @@ msgstr "Back to sign-in"
 msgid "By creating an account you confirm that you have read the <0>privacy policy</0>."
 msgstr "By creating an account you confirm that you have read the <0>privacy policy</0>."
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Cancel"
+msgstr "Cancel"
+
 #: src/features/auth/pages/register-page.tsx
 msgid "Check your inbox"
 msgstr "Check your inbox"
@@ -69,7 +73,20 @@ msgstr "Check your inbox"
 msgid "Choose your password"
 msgstr "Choose your password"
 
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Code"
+msgstr "Code"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Code from the app"
+msgstr "Code from the app"
+
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Confirm"
+msgstr "Confirm"
+
 #: src/features/account/components/delete-account.tsx
+#: src/features/account/components/reauthenticate-form.tsx
 msgid "Confirm with Google"
 msgstr "Confirm with Google"
 
@@ -82,6 +99,7 @@ msgid "Confirmation link"
 msgstr "Confirmation link"
 
 #: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Continue"
 msgstr "Continue"
 
@@ -138,8 +156,22 @@ msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
 
 #: src/features/account/components/delete-account.tsx
+#: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
 msgstr "Enter it again to confirm it is you."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter one of the recovery codes you saved. It turns two-factor authentication off."
+msgstr "Enter one of the recovery codes you saved. It turns two-factor authentication off."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the code from your authenticator app to finish signing in."
+msgstr "Enter the code from your authenticator app to finish signing in."
+
+#: src/features/account/components/two-factor-card.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the six digits from your authenticator app."
+msgstr "Enter the six digits from your authenticator app."
 
 #: src/features/account/components/profile-form.tsx
 msgid "Enter up to 100 characters."
@@ -171,6 +203,7 @@ msgid "Forgot your password?"
 msgstr "Forgot your password?"
 
 #: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Go to sign-in"
 msgstr "Go to sign-in"
 
@@ -193,6 +226,10 @@ msgstr "How long we keep it"
 #: src/features/landing/pages/privacy-page.tsx
 msgid "How OPOS handles your personal data."
 msgstr "How OPOS handles your personal data."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "I have saved my codes"
+msgstr "I have saved my codes"
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
@@ -310,6 +347,14 @@ msgstr "Press the button to confirm your address. Then you choose your password.
 msgid "Privacy policy"
 msgstr "Privacy policy"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "QR code for your authenticator app"
+msgstr "QR code for your authenticator app"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Recovery code"
+msgstr "Recovery code"
+
 #: src/features/conventions/components/like-button.tsx
 msgid "Remove the like"
 msgstr "Remove the like"
@@ -331,9 +376,21 @@ msgstr "Save"
 msgid "Save the password"
 msgstr "Save the password"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
+msgstr "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
+
 #: src/features/account/components/language-form.tsx
 msgid "Saved on your account."
 msgstr "Saved on your account."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
+msgstr "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Secret"
+msgstr "Secret"
 
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
@@ -407,13 +464,50 @@ msgstr "Too much time has passed since you opened the link. Ask for a new one."
 msgid "Try again"
 msgstr "Try again"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn off two-factor authentication"
+msgstr "Turn off two-factor authentication"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on"
+msgstr "Turn on"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on two-factor authentication"
+msgstr "Turn on two-factor authentication"
+
+#: src/features/account/pages/account-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Two-factor authentication"
+msgstr "Two-factor authentication"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
+msgstr "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
+msgstr "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
+msgstr "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 msgstr "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use a recovery code"
+msgstr "Use a recovery code"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Use at least 8 characters."
 msgstr "Use at least 8 characters."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use the code of the app"
+msgstr "Use the code of the app"
 
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
@@ -471,6 +565,10 @@ msgstr "Why we store it"
 msgid "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
 msgstr "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
 
+#: src/features/account/components/delete-account.tsx
+msgid "You confirmed it is you again. Delete the account within 5 minutes."
+msgstr "You confirmed it is you again. Delete the account within 5 minutes."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
 msgstr "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
@@ -478,10 +576,6 @@ msgstr "You delete your account yourself in the account settings, after confirmi
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "You have not liked any programme items yet."
 msgstr "You have not liked any programme items yet."
-
-#: src/features/account/components/delete-account.tsx
-msgid "You signed in with Google again. Delete the account within 5 minutes."
-msgstr "You signed in with Google again. Delete the account within 5 minutes."
 
 #: src/features/account/pages/account-page.tsx
 msgid "Your account"
@@ -516,6 +610,7 @@ msgid "Your name is saved."
 msgstr "Your name is saved."
 
 #: src/features/account/components/delete-account.tsx
+#: src/features/account/components/reauthenticate-form.tsx
 msgid "Your password"
 msgstr "Your password"
 

@@ -26,12 +26,18 @@ function LoginProbe() {
   return <p>login {location.search}</p>
 }
 
+function MfaProbe() {
+  const location = useLocation()
+  return <p>mfa {location.search}</p>
+}
+
 const renderAt = (path: string) =>
   render(
     <I18nProvider i18n={i18n}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/login" element={<LoginProbe />} />
+          <Route path="/auth/mfa" element={<MfaProbe />} />
           <Route
             path="*"
             element={
@@ -76,6 +82,15 @@ describe('RequireSession', () => {
     act(() => useSession.setState({ status: 'ready', account: null }))
 
     expect(screen.getByText('login ?redirect=%2Faccount%3Ftab%3Dprofile')).toBeTruthy()
+  })
+
+  it('sends a session waiting for its code to the code screen, not to sign-in, and shows nothing', () => {
+    renderAt('/account?tab=profile')
+    act(() => useSession.setState({ status: 'mfa-required', account: null }))
+
+    expect(screen.getByText('mfa ?redirect=%2Faccount%3Ftab%3Dprofile')).toBeTruthy()
+    expect(screen.queryByText(/login/)).toBeNull()
+    expect(screen.queryByText('the page')).toBeNull()
   })
 
   it('offers to try again when the API could not be reached, and signs nobody out', async () => {

@@ -1,6 +1,7 @@
 import { Trans } from '@lingui/react/macro'
 import { Link, Outlet } from 'react-router'
 import { AccountLocale } from '../features/account'
+import { MfaGate } from '../features/auth'
 import { PRIVACY_PATH } from '../shared/config/routes'
 import { useSession } from '../shared/lib/session'
 import { linkClass } from '../shared/ui'
@@ -17,6 +18,7 @@ export function Layout() {
   return (
     <div className="flex min-h-screen flex-col">
       {account && <AccountLocale />}
+      <MfaGate />
       <header className="border-line bg-surface border-b">
         <nav className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="text-lg font-semibold tracking-wide">

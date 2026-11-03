@@ -72,7 +72,8 @@ function RedeemLink({
     setError(null)
     const failure = await verifyLink(link)
     if (failure) {
-      setError(failure)
+      // An account with two-factor authentication goes on to the code screen, which is no error.
+      if (errorCode(failure) !== 'session.mfa-required') setError(failure)
       setPending(false)
     } else {
       onRedeemed()

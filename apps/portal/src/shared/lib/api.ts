@@ -7,7 +7,7 @@ import { env } from '../config/env'
 import { acrossTabs, createApiFetch, requestRefresh, shared } from './api-fetch'
 import { decodeApiError } from './errors'
 import { activeLocale } from './i18n'
-import { signedOut } from './session-store'
+import { mfaRequired, signedOut } from './session-store'
 
 export type ApiClient = ContractRouterClient<Contract>
 export type Api = RouterUtils<ApiClient>
@@ -19,6 +19,7 @@ function client(tenantSlug?: string): ApiClient {
   const apiFetch = createApiFetch({
     refresh,
     onSignedOut: signedOut,
+    onMfaRequired: mfaRequired,
     tenantSlug,
     locale: activeLocale,
   })

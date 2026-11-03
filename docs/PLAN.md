@@ -634,7 +634,7 @@ holds a grant for the three roles and none of its functions is executable throug
 `db:verify` reports a function in `public` that `anon`, `authenticated` or `service_role` may
 execute, directly or through `PUBLIC`.
 
-**OPOS writes nothing into `auth`**, except the one factor row of the dev seed ([14](#14-demo-data-seed)). Of its privileges on the `auth` tables `postgres` may pass on
+**OPOS writes nothing into `auth`.** Of its privileges on the `auth` tables `postgres` may pass on
 `select` alone, so what ties `public` to `auth` — the foreign key of `accounts` to `auth.users`, the
 `accounts` triggers on `auth.users` and the trigger on `auth.mfa_factors`
 ([4.2](#42-global-tables)) — comes from migrations running as `postgres`, and no other OPOS role
@@ -1826,7 +1826,7 @@ The portal and the panel hold separate sessions ([7.4](#74-authorization)), so e
 code.
 
 **Recovery codes.** Ten one-time codes, shown once in the answer of `enable`, each 16 base32
-characters from `crypto.randomBytes`, stored as SHA-256 hashes in the global table
+characters from `crypto.randomBytes`, stored as SHA-256 hashes, lowercase hex, in the global table
 `account_recovery_codes` ([4.2](#42-global-tables)). `recover` finds an unused code by its hash among
 the account's own. Using one removes the
 factor, so the person signs in and may turn 2FA on again, and an email tells them, in the account's
@@ -2243,8 +2243,8 @@ removal, [7.12](#712-two-factor-authentication)), through `@supabase/auth-js` in
 or the factor is already gone; a transport failure or a `5xx` answers `503` `server.unavailable`; any
 other refusal, a `401` or `403` for a wrong key included, is the API's own
 failure and answers `500` `server.error`, logged — never the caller's `session.invalid` or
-`permission.denied`. The seed calls `POST /admin/users` and `PUT /admin/users/:id` with the same
-key ([14](#14-demo-data-seed)), and `pnpm db:account:reset-2fa` calls `GET /admin/users/:id/factors`
+`permission.denied`. The seed calls `POST /admin/users`, `PUT /admin/users/:id`, `GET /admin/users/:id` and the factor
+removal with the same key ([14](#14-demo-data-seed)), and `pnpm db:account:reset-2fa` calls `GET /admin/users/:id/factors`
 and the factor removal ([14](#resetting-two-factor-authentication)). The key never reaches a frontend
 ([3.2](#32-frontend-application-layout)). Still to be built: factor removal and that script.
 
@@ -2704,10 +2704,16 @@ stays in the future.
   `speaker@example.com`, `attendee@example.com`, `mfa@example.com`. Dev password: `password123`. One
   organizer account has `locale=en`.
 - **Two-factor authentication:** `mfa@example.com` holds a verified TOTP factor and ten unused
-  recovery codes ([seed.ts](../packages/db/src/seed.ts) holds the secret and the codes). The seed
-  writes the factor row into `auth.mfa_factors` as `postgres`, the one thing it writes into `auth`
-  directly, so the trigger sets `mfaEnabledAt` as it does for a person; it never writes
-  `mfaEnabledAt`. A rerun restores the codes to unused.
+  recovery codes. The seed enrolls the factor through Supabase Auth as a person would: it signs in
+  with the dev password, enrolls a TOTP factor and verifies it with the code it computes from the
+  returned secret ([totp.ts](../packages/db/src/totp.ts)), so the trigger sets `mfaEnabledAt`; the
+  seed writes nothing into `auth` and never writes `mfaEnabledAt`. An account that already holds a
+  verified factor keeps it, so a rerun enrolls nothing; a stale unverified factor is removed through
+  the admin API first. Supabase Auth generates the secret, so a run that enrolled prints it when
+  `OPOS_ENV` is `local`, and never on Dev, where the output lands in the deploy log. A developer gets
+  in with the code from that output's secret, or with a recovery code from
+  [seed.ts](../packages/db/src/seed.ts), which turns the factor off until the next seed. Every run
+  converges on exactly those ten codes, unused, and removes the account's other codes.
 - **Tenant `convention-a`** — "Convention A", `defaultLocale=pl`, `timezone=Europe/Warsaw`.
   - Edition `2025` — `isPublished=true`, `isActive=false`, 8 programme items, all in the past.
     `speaker@example.com` speaks at two of them; one has a public review and a speakers-only

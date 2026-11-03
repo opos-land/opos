@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, notInArray } from 'drizzle-orm'
 import { migrationDb } from './client'
 import { migrationUrl } from './migration-url'
 import {
@@ -14,6 +14,7 @@ import {
   tenants,
 } from './schema'
 import { createTenant } from './tenants'
+import { totp } from './totp'
 
 // Demo data (PLAN.md 14). Idempotent: every run converges on the same rows.
 
@@ -96,12 +97,9 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'mfa@example.com', firstName: 'Maria', lastName: 'Zielinska' },
 ]
 
-// The account with two-factor authentication (PLAN.md 14): a verified TOTP factor on a fixed
-// secret, which any authenticator app or the RFC 6238 algorithm turns into the code, and ten
-// recovery codes of the length the API issues.
+// The account with two-factor authentication (PLAN.md 14): a TOTP factor enrolled and verified
+// through Supabase Auth, and ten recovery codes of the length the API issues.
 const MFA_EMAIL = 'mfa@example.com'
-const MFA_FACTOR_ID = '5f0c2b9e-7a4d-4f1e-9a63-0d2e8c1b7a40'
-const MFA_SECRET = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ'
 const RECOVERY_CODES = Array.from(
   { length: 10 },
   (_, index) => `DEMORECOVERYCOD${'ABCDEFGHIJ'[index]}`,
@@ -228,17 +226,34 @@ const secretKey = required('SUPABASE_SECRET_KEY')
 
 const db = migrationDb(migrationUrl())
 
-/** The Supabase Auth admin API, authorized by the secret key alone (PLAN.md 10). */
-async function authAdmin(method: 'POST' | 'PUT', path: string, body: object) {
+/** A call to Supabase Auth, authorized by the secret key alone, or by a session on top of it. */
+async function authCall<T = object>(
+  method: string,
+  path: string,
+  body?: object,
+  accessToken?: string,
+) {
   const response = await fetch(`${authUrl}${path}`, {
     method,
-    headers: { apikey: secretKey, 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: {
+      apikey: secretKey,
+      ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
+      ...(body ? { 'content-type': 'application/json' } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
   })
   if (!response.ok) {
     throw new Error(`${method} ${path} failed: ${response.status} ${await response.text()}`)
   }
+  return (await response.json().catch(() => ({}))) as T
 }
+
+/** The Supabase Auth admin API (PLAN.md 10). */
+const authAdmin = <T = object>(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  path: string,
+  body?: object,
+) => authCall<T>(method, path, body)
 
 async function ensureAccount(account: SeedAccount) {
   const [existing] = await db
@@ -267,20 +282,32 @@ async function ensureAccount(account: SeedAccount) {
 }
 
 /**
- * Gives the account a verified factor and unused recovery codes. The factor is a row of Supabase
- * Auth's table, written as postgres, so the trigger sets `mfaEnabledAt` as it does for a person.
+ * Gives the account a verified TOTP factor and ten unused recovery codes. The factor is enrolled
+ * and verified through Supabase Auth as a person would, so its trigger sets `mfaEnabledAt`; a
+ * verified factor is kept, so a rerun enrolls nothing.
  */
 async function ensureTwoFactor(email: string) {
   const id = await accountId(email)
+  const { factors: held = [] } = await authAdmin<{ factors?: { id: string; status: string }[] }>(
+    'GET',
+    `/admin/users/${id}`,
+  )
+  for (const factor of held.filter((factor) => factor.status !== 'verified')) {
+    await authAdmin('DELETE', `/admin/users/${id}/factors/${factor.id}`)
+  }
+  if (!held.some((factor) => factor.status === 'verified')) await enrollFactor(email)
+
+  const hashes = RECOVERY_CODES.map((code) => createHash('sha256').update(code).digest('hex'))
   await db.transaction(async (tx) => {
-    await tx.execute(sql`
-      insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
-      values (${MFA_FACTOR_ID}, ${id}, 'Authenticator', 'totp', 'verified', now(), now(), ${MFA_SECRET})
-      on conflict (id) do update
-        set friendly_name = excluded.friendly_name, secret = excluded.secret
-    `)
-    for (const code of RECOVERY_CODES) {
-      const codeHash = createHash('sha256').update(code).digest('hex')
+    await tx
+      .delete(accountRecoveryCodes)
+      .where(
+        and(
+          eq(accountRecoveryCodes.accountId, id),
+          notInArray(accountRecoveryCodes.codeHash, hashes),
+        ),
+      )
+    for (const codeHash of hashes) {
       await tx
         .insert(accountRecoveryCodes)
         .values({ accountId: id, codeHash })
@@ -290,6 +317,36 @@ async function ensureTwoFactor(email: string) {
         })
     }
   })
+}
+
+/** Signs in with the dev password, enrolls a TOTP factor and verifies it with its own code. */
+async function enrollFactor(email: string) {
+  const session = await authCall<{ access_token: string }>('POST', '/token?grant_type=password', {
+    email,
+    password: DEV_PASSWORD,
+  })
+  const token = session.access_token
+  const factor = await authCall<{ id: string; totp: { secret: string } }>(
+    'POST',
+    '/factors',
+    { factor_type: 'totp', friendly_name: 'Authenticator' },
+    token,
+  )
+  const secret = factor.totp.secret
+  const challenge = await authCall<{ id: string }>(
+    'POST',
+    `/factors/${factor.id}/challenge`,
+    {},
+    token,
+  )
+  await authCall(
+    'POST',
+    `/factors/${factor.id}/verify`,
+    { challenge_id: challenge.id, code: totp(secret, Date.now()) },
+    token,
+  )
+  // The output of a local run stays on the developer's machine; on Dev it lands in the deploy log.
+  if (process.env.OPOS_ENV === 'local') console.log(`${email} TOTP secret: ${secret}`)
 }
 
 async function accountId(email: string) {

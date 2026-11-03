@@ -156,7 +156,8 @@ describe('sendWithDeadline', () => {
       sendWithDeadline(options(server.port), 'opos@example.test', message, 800),
     ).rejects.toThrow(/within 800 ms/)
 
-    expect(Date.now() - started).toBeLessThan(1_000)
+    // A send that ran its course takes 1.5 s: five replies, 300 ms each.
+    expect(Date.now() - started).toBeLessThan(1_400)
     await expect.poll(() => server.state.closed).toBe(true)
     expect(server.commands).not.toContain('DATA')
     expect(server.commands).not.toContain('<message>')

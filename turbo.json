@@ -39,6 +39,16 @@
         "SUPABASE_LOCAL_SMTP_PORT"
       ]
     },
+    "@opos/api#test": {
+      "dependsOn": ["transit", "i18n:compile", "^i18n:compile", "@opos/db#test"],
+      "passThroughEnv": [
+        "DATABASE_MIGRATION_URL",
+        "OPOS_ENV",
+        "OPOS_APP_PASSWORD",
+        "OPOS_APP_GLOBAL_PASSWORD",
+        "SUPABASE_LOCAL_SMTP_PORT"
+      ]
+    },
     "test:e2e": {
       "dependsOn": ["@opos/panel#i18n:compile", "@opos/portal#i18n:compile"],
       "cache": false,

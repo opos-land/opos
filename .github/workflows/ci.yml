@@ -55,12 +55,19 @@ jobs:
       - run: pnpm db:verify
       # The second run proves the seed is idempotent
       - run: pnpm db:seed && pnpm db:seed
-      - run: pnpm turbo run typecheck lint test $TURBO_ARGS
+      - run: pnpm turbo run typecheck lint $TURBO_ARGS
         env:
           # A pull request runs what it affects, a push runs everything and runs it uncached
           TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
           TURBO_FORCE: ${{ github.event_name == 'push' }}
           # --affected diffs against the PR base branch, not always main
+          TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+      # In a step of their own: this runner also hosts the stack, and the type checker and the linter
+      # would take the time the tests' deadlines count on (docs/PLAN.md, 15.3)
+      - run: pnpm turbo run test $TURBO_ARGS
+        env:
+          TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+          TURBO_FORCE: ${{ github.event_name == 'push' }}
           TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
       # The control address and the canary make the bundle scan below prove something: a bundle
       # without the address was not built from this tree, and one with the secret leaks it

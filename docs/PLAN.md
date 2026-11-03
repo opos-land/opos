@@ -254,6 +254,8 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
 
 - `build`, `dev` and `test` depend on `i18n:compile` (`test` also on `^i18n:compile`), so nothing
   runs with stale or missing catalogs.
+- `@opos/api#test` repeats the settings of `test` and also depends on `@opos/db#test`, so the two
+  suites never share the stack at once ([15.1](#151-api-integration-tests)).
 - The files outside every package that shape the environment the tests run in — `supabase/config.toml`,
   `supabase/.env.example`, `scripts/infra-init.mjs`, `mise.toml` and `.github/workflows/` — are `globalDependencies`: a change to them misses every task's cache,
   and `--affected` counts every package as affected.
@@ -2979,8 +2981,13 @@ audience, issuer or expiry are signed in the test with `jose` and sent as the ac
 send-email hook test triggers real sign-ups, recoveries and email changes and reads the messages
 from Mailpit's HTTP API; it runs the API on its `PORT`, where Supabase Auth sends the hook, so it
 cannot run beside an API started with `pnpm dev`. The auth endpoint tests do the same, and a test
-file that finds the port taken waits for the one holding it
-([hook-port.ts](../apps/api/test/hook-port.ts)).
+file that finds the port taken waits for the one holding it, for as long as the other files on the
+port can run ([hook-port.ts](../apps/api/test/hook-port.ts)).
+
+The schema suite and the API suite share one stack and run one after the other: `@opos/api#test`
+depends on `@opos/db#test` in [turbo.json](../turbo.json), because the schema suite holds exclusive
+table locks that would stall the API's queries past their deadlines. A test of the API gets 15 s and
+a hook 30 s ([vitest.config.ts](../apps/api/vitest.config.ts)).
 
 | Area | What we check |
 |---|---|
@@ -3094,7 +3101,8 @@ GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) on every PR and every pus
 included. The job runs `pnpm infra:init` as a developer does ([12](#12-local-development)), which
 ends with `pnpm db:roles`; the CLI's local stack then serves the schema and API tests, behind
 `pnpm db:migrate`, `pnpm db:verify` and two runs of `pnpm db:seed` — the second
-proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
+proves the seed idempotent. On a PR, `typecheck` and `lint` and then, in a step of its own on the
+runner that also hosts the stack, `test`
 run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
 package with `TURBO_FORCE`, so no cached result stands in for a run, and fills the turbo cache that
 PRs restore. `pnpm build` then bundles the API and both applications, with the control address and the canary of the

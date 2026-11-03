@@ -202,12 +202,45 @@ test('a push runs the tests uncached', () => {
   assert.match(ci, /TURBO_FORCE: \$\{\{ github\.event_name == 'push' \}\}/)
 })
 
-test('a pull request runs the tests on what it affects', () => {
-  assert.match(ci, /pnpm turbo run typecheck lint test \$TURBO_ARGS/)
-  assert.match(
-    ci,
-    /TURBO_ARGS: \$\{\{ github\.event_name == 'pull_request' && '--affected' \|\| '' \}\}/,
+test('a pull request runs the tests on what it affects, and a push uncached, in each turbo step', () => {
+  const steps = job('check')
+  for (const tasks of ['typecheck lint', 'test']) {
+    const start = steps.indexOf(`- run: pnpm turbo run ${tasks} $TURBO_ARGS`)
+    assert.notEqual(start, -1, tasks)
+    const step = steps.slice(start, steps.indexOf('\n      - ', start + 1))
+    assert.match(
+      step,
+      /TURBO_ARGS: \$\{\{ github\.event_name == 'pull_request' && '--affected' \|\| '' \}\}/,
+      tasks,
+    )
+    assert.match(step, /TURBO_FORCE: \$\{\{ github\.event_name == 'push' \}\}/, tasks)
+    assert.match(step, /TURBO_SCM_BASE: /, tasks)
+  }
+})
+
+test('the tests get a step of their own, on a runner that also hosts the stack', () => {
+  assert.doesNotMatch(ci, /turbo run [^\n]*\btest\b[^\n]*\b(typecheck|lint)\b/)
+  assert.doesNotMatch(ci, /turbo run [^\n]*\b(typecheck|lint)\b[^\n]*\btest\b/)
+  const steps = job('check')
+  assert.ok(
+    steps.indexOf('pnpm turbo run typecheck lint') < steps.indexOf('pnpm turbo run test'),
+    'the tests run after typecheck and lint',
   )
+})
+
+test('the API tests wait for the schema tests, which hold table locks, with the settings of test', () => {
+  const { tasks } = JSON.parse(read('../turbo.json'))
+  const { dependsOn, ...settings } = tasks['@opos/api#test']
+  assert.ok(dependsOn.includes('@opos/db#test'))
+  const { dependsOn: shared, ...rest } = tasks.test
+  for (const task of shared) assert.ok(dependsOn.includes(task), task)
+  assert.deepEqual(settings, rest)
+})
+
+test('the API tests have time for several real sign-ins and for a hook that starts the API', () => {
+  const config = read('../apps/api/vitest.config.ts')
+  assert.match(config, /testTimeout: 15_000/)
+  assert.match(config, /hookTimeout: 30_000/)
 })
 
 test('the ruleset requires check, e2e and secrets', () => {

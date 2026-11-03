@@ -11,7 +11,8 @@ const seed = (env: Record<string, string | undefined>) =>
     encoding: 'utf8',
   })
 
-describe('db:seed', () => {
+// Each case starts tsx in a process of its own, which takes seconds on a loaded machine.
+describe('db:seed', { timeout: 30_000 }, () => {
   it.each([{}, { OPOS_ENV: 'production' }, { OPOS_ENV: 'staging' }])(
     'refuses where OPOS_ENV is not local or dev: %o',
     (env) => {

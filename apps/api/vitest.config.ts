@@ -17,5 +17,9 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
     env: { ...readEnv('.env.example'), ...readEnv('.env'), NODE_ENV: 'test' },
+    // A test signs in through the real stack several times and waits for its email; a hook starts
+    // the API (PLAN.md 15.1).
+    testTimeout: 15_000,
+    hookTimeout: 30_000,
   },
 })

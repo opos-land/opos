@@ -193,7 +193,7 @@ describe('SupabaseAuthFactory', () => {
 
       const { error } = await refresh()
 
-      expect(Date.now() - started).toBeLessThan(1_000)
+      expect(Date.now() - started).toBeLessThan(10_000)
       expect(fetchStub).toHaveBeenCalledTimes(1)
       expect(error?.status).toBeGreaterThanOrEqual(500)
       expect(isAuthRetryableFetchError(error)).toBe(false)

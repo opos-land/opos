@@ -3,6 +3,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { errorCode } from '../../../shared/lib/errors'
 import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
 import { signInWithPassword } from '../api/auth'
 
@@ -26,6 +27,8 @@ export function SignInForm({
   const submit = form.handleSubmit(async (values) => {
     setError(null)
     const error = await signInWithPassword(values)
+    // An account with two-factor authentication goes on to the code screen, which is no error.
+    if (errorCode(error) === 'session.mfa-required') return
     if (error) setError(error)
     else onSignedIn?.()
   })

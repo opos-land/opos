@@ -6,10 +6,15 @@ import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
 import { ErrorMessage, Field, inputClass } from '../../../shared/ui'
 import { signOut } from '../../auth'
 import { accountKey, accountOptions, updateAccountOptions } from '../api/account'
+import { signInMethods } from '../model/sign-in-methods'
+import { TwoFactorCard } from './two-factor-card'
 
 const BROWSER = 'browser'
 
-/** The account menu (PLAN.md 8): who is signed in, the interface language, sign-out. */
+/**
+ * The account menu (PLAN.md 8): who is signed in, the interface language, two-factor
+ * authentication, sign-out.
+ */
 export function AccountMenu() {
   const { t } = useLingui()
   const queryClient = useQueryClient()
@@ -34,7 +39,7 @@ export function AccountMenu() {
       <summary className="rounded-box border-line bg-surface cursor-pointer border px-3 py-1.5 text-sm">
         {account.data?.email ?? <Trans>Account</Trans>}
       </summary>
-      <div className="rounded-box border-line bg-surface absolute right-0 z-10 mt-2 flex w-72 flex-col gap-4 border p-4 shadow-sm">
+      <div className="rounded-box border-line bg-surface absolute right-0 z-10 mt-2 flex w-80 flex-col gap-4 border p-4 shadow-sm">
         <Field label={t`Interface language`} hint={t`Saved on your account.`}>
           {(control) => (
             <select
@@ -54,6 +59,18 @@ export function AccountMenu() {
           )}
         </Field>
         <ErrorMessage error={update.error} />
+        {account.data && (
+          <section className="border-line flex flex-col gap-2 border-t pt-4">
+            <h2 className="text-sm font-medium">
+              <Trans>Two-factor authentication</Trans>
+            </h2>
+            <TwoFactorCard
+              email={account.data.email}
+              mfaEnabled={account.data.mfaEnabled}
+              methods={signInMethods(account.data.signInMethods)}
+            />
+          </section>
+        )}
         <ErrorMessage error={signOutError} />
         <button
           type="button"

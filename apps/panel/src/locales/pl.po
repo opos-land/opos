@@ -117,6 +117,7 @@ msgstr "Wróć do edycji"
 msgid "Back to the invitation"
 msgstr "Wróć do zaproszenia"
 
+#: src/features/account/components/two-factor-card.tsx
 #: src/features/editions/pages/edition-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/member-row.tsx
@@ -139,6 +140,22 @@ msgstr "Wybierz strefę czasową z listy."
 msgid "Choose your password"
 msgstr "Wybierz hasło"
 
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Code"
+msgstr "Kod"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Code from the app"
+msgstr "Kod z aplikacji"
+
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Confirm"
+msgstr "Potwierdź"
+
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Confirm with Google"
+msgstr "Potwierdź przez Google"
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Confirm your address"
 msgstr "Potwierdź swój adres"
@@ -148,6 +165,7 @@ msgid "Confirmation link"
 msgstr "Link potwierdzający"
 
 #: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Continue"
 msgstr "Dalej"
 
@@ -263,10 +281,27 @@ msgstr "Podaj prawidłową datę i godzinę."
 msgid "Enter a valid email address."
 msgstr "Podaj prawidłowy adres e-mail."
 
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Enter it again to confirm it is you."
+msgstr "Wpisz je ponownie, aby potwierdzić, że to ty."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter one of the recovery codes you saved. It turns two-factor authentication off."
+msgstr "Wpisz jeden z zapisanych kodów odzyskiwania. Wyłączy on uwierzytelnianie dwuskładnikowe."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the code from your authenticator app to finish signing in."
+msgstr "Wpisz kod z aplikacji uwierzytelniającej, aby dokończyć logowanie."
+
 #: src/features/editions/components/edition-form.tsx
 #: src/features/program/components/program-item-form.tsx
 msgid "Enter the end date and time."
 msgstr "Podaj datę i godzinę zakończenia."
+
+#: src/features/account/components/two-factor-card.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the six digits from your authenticator app."
+msgstr "Wpisz sześć cyfr z aplikacji uwierzytelniającej."
 
 #: src/features/editions/components/edition-form.tsx
 #: src/features/program/components/program-item-form.tsx
@@ -283,6 +318,7 @@ msgstr "wygasł"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/invitation-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Go to sign-in"
 msgstr "Przejdź do logowania"
 
@@ -307,6 +343,10 @@ msgstr "Mam już konto"
 #: src/features/auth/pages/invitation-page.tsx
 msgid "I am new to OPOS"
 msgstr "Jestem w OPOS po raz pierwszy"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "I have saved my codes"
+msgstr "Kody są zapisane"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "If no message arrives within a few minutes, the address may already have an account: sign in, or ask for a password link."
@@ -490,10 +530,18 @@ msgstr "Opublikuj"
 msgid "Published"
 msgstr "Opublikowana"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "QR code for your authenticator app"
+msgstr "Kod QR dla aplikacji uwierzytelniającej"
+
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/member-row.tsx
 msgid "Read"
 msgstr "Odczyt"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Recovery code"
+msgstr "Kod odzyskiwania"
 
 #: src/features/program/components/speakers-editor.tsx
 msgid "Remove"
@@ -540,9 +588,21 @@ msgstr "Zapisz hasło"
 msgid "Save the password and join the team"
 msgstr "Zapisz hasło i dołącz do zespołu"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
+msgstr "Zapisz tych dziesięć kodów odzyskiwania w bezpiecznym miejscu. Każdy działa raz, zamiast kodu z aplikacji, a użycie któregokolwiek wyłącza uwierzytelnianie dwuskładnikowe. Widzisz je tylko teraz."
+
 #: src/features/account/components/account-menu.tsx
 msgid "Saved on your account."
 msgstr "Zapisywany na twoim koncie."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
+msgstr "Zeskanuj kod QR aplikacją uwierzytelniającą albo wpisz do niej sekret. Następnie wpisz sześciocyfrowy kod, który pokaże aplikacja."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Secret"
+msgstr "Sekret"
 
 #: src/features/tenants/pages/dashboard-page.tsx
 msgid "See the editions"
@@ -714,6 +774,35 @@ msgstr "Od otwarcia linku minęło zbyt dużo czasu. Poproś o nowy."
 msgid "Try again"
 msgstr "Spróbuj ponownie"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn off two-factor authentication"
+msgstr "Wyłącz uwierzytelnianie dwuskładnikowe"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on"
+msgstr "Włącz"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on two-factor authentication"
+msgstr "Włącz uwierzytelnianie dwuskładnikowe"
+
+#: src/features/account/components/account-menu.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Two-factor authentication"
+msgstr "Uwierzytelnianie dwuskładnikowe"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
+msgstr "Uwierzytelnianie dwuskładnikowe jest wyłączone. Włącz je, aby przy każdym logowaniu podawać kod z aplikacji uwierzytelniającej."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
+msgstr "Uwierzytelnianie dwuskładnikowe jest włączone, ale nie udało się pokazać kodów odzyskiwania. Aby dostać nowe, zaloguj się kodem z aplikacji, wyłącz uwierzytelnianie dwuskładnikowe i włącz je ponownie."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
+msgstr "Uwierzytelnianie dwuskładnikowe jest włączone. Przy każdym logowaniu podajesz kod z aplikacji uwierzytelniającej."
+
 #: src/features/editions/pages/edition-page.tsx
 msgid "Unpublish"
 msgstr "Wycofaj publikację"
@@ -722,9 +811,17 @@ msgstr "Wycofaj publikację"
 msgid "Use 1 to 40 lowercase letters, digits and hyphens."
 msgstr "Użyj od 1 do 40 małych liter, cyfr i myślników."
 
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use a recovery code"
+msgstr "Użyj kodu odzyskiwania"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Use at least 8 characters."
 msgstr "Użyj co najmniej 8 znaków."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use the code of the app"
+msgstr "Użyj kodu z aplikacji"
 
 #: src/features/program/components/program-item-form.tsx
 msgid "Use up to 5000 characters."
@@ -807,3 +904,7 @@ msgstr "Twój adres {email} jest potwierdzony. Wybierz hasło, którym będziesz
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "Your conventions"
 msgstr "Twoje konwenty"
+
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Your password"
+msgstr "Twoje hasło"

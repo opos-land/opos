@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ORPCError } from '@orpc/client'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { signOut } from '../../auth'
 import { AccountMenu } from './account-menu'
@@ -13,7 +14,14 @@ vi.mock('../api/account', () => ({
   accountKey: () => ['account'],
   accountOptions: () => ({
     queryKey: ['account'],
-    queryFn: () => Promise.resolve({ email: 'a@x.test', locale: null }),
+    queryFn: () =>
+      Promise.resolve({
+        id: 'a',
+        email: 'a@x.test',
+        locale: null,
+        mfaEnabled: false,
+        signInMethods: ['password'],
+      }),
   }),
   updateAccountOptions: () => ({ mutationFn: () => Promise.resolve({}) }),
 }))
@@ -28,7 +36,9 @@ function renderMenu() {
   return render(
     <I18nProvider i18n={i18n}>
       <QueryClientProvider client={new QueryClient()}>
-        <AccountMenu />
+        <MemoryRouter>
+          <AccountMenu />
+        </MemoryRouter>
       </QueryClientProvider>
     </I18nProvider>,
   )
@@ -54,5 +64,15 @@ describe('AccountMenu sign-out', () => {
 
     expect(signOut).toHaveBeenCalled()
     expect(screen.queryByRole('alert')).toBeNull()
+  })
+})
+
+describe('AccountMenu two-factor authentication', () => {
+  it('holds the two-factor card, off for an account without it', async () => {
+    renderMenu()
+
+    expect(
+      await screen.findByRole('button', { name: 'Turn on two-factor authentication' }),
+    ).toBeTruthy()
   })
 })

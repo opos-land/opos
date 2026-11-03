@@ -67,3 +67,6 @@ export const isNotFound = (error: unknown) =>
 
 export const isSessionInvalid = (error: unknown) =>
   error instanceof ORPCError && error.code === 'session.invalid'
+
+export const isMfaRequired = (error: unknown) =>
+  error instanceof ORPCError && error.code === 'session.mfa-required'

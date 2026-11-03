@@ -198,8 +198,7 @@ opos/
     panel/               # built: Vite and Lingui config, catalogs, app/ (router, providers, query
                          #   client), features auth, tenants, editions, program, team, account, shared/
                          #   (API link, auth client, session, i18n, UI), .env.example, tests (8);
-                         #   the auth client gives way to the API's auth endpoints (5.1);
-                         #   still to come: the two-factor screens (7.12)
+                         #   the auth client gives way to the API's auth endpoints (5.1)
       Dockerfile
     portal/              # built: Vite and Lingui config, catalogs, app/ (router, layout, providers,
                          #   query client), features landing, auth, account, shared/ (API link,
@@ -1798,8 +1797,8 @@ The scanner is online only: no local ticket list, no queue of offline redemption
 
 The assurance-level check of the guard and the routes `POST /auth/mfa/*` and `DELETE /auth/mfa`
 are built ([modules/auth](../apps/api/src/modules/auth), `contract.auth.mfa.*`: request and response
-schemas in [auth-mfa.ts](../packages/contract/src/auth-mfa.ts)), and so are the screens of the
-portal ([9](#9-appsportal)); those of the panel are still to be built.
+schemas in [auth-mfa.ts](../packages/contract/src/auth-mfa.ts)), and so are the screens of both
+applications ([8](#8-appspanel), [9](#9-appsportal)).
 Two-factor authentication (2FA) is TOTP only, on Supabase Auth's factors. Each account turns it on
 for itself ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); no role requires it.
 
@@ -1940,9 +1939,8 @@ forms with `react-hook-form` + zod using schemas from `packages/contract`. Featu
 
 Built: the features `auth`, `tenants`, `editions`, `program`, `team` and `account` with their screens
 below; the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be built: review
-moderation in `program`, `shop`, `tickets`, `scanner` and their screens, the image with its headers
-([13](#13-deployment)), and the two-factor screens ([7.12](#712-two-factor-authentication)), which
-the bullets below describe.
+moderation in `program`, `shop`, `tickets`, `scanner` and their screens, and the image with its
+headers ([13](#13-deployment)).
 
 | Feature | Scope |
 |---|---|
@@ -1999,6 +1997,14 @@ the bullets below describe.
   ([session.ts](../apps/panel/src/shared/lib/session.ts)). A network failure or a `503` from
   `GET /me` ends it in the
   `unavailable` state, which offers to try again: never stuck on the loading view, never signed out.
+  A `session.mfa-required` answer ends it in the `mfa-required` state: the session is not signed
+  in, no account is known and no account data is shown. `MfaGate`
+  ([mfa-gate.tsx](../apps/panel/src/features/auth/components/mfa-gate.tsx)) at the root of the
+  router leads any page to `/auth/mfa`, and `RequireSession` does the same instead of sending the
+  visitor to `/login`. The path to return to follows the table of
+  [7.12](#712-two-factor-authentication)
+  ([mfa-return.ts](../apps/panel/src/features/auth/model/mfa-return.ts)); only a path inside the
+  panel is a target.
   The panel knows it is signed in only
   from the API's answers: it reads no cookie and stores no token.
 - `GET /me/memberships` after sign-in populates the permission store
@@ -2013,6 +2019,9 @@ the bullets below describe.
   ([query-client.ts](../apps/panel/src/app/query-client.ts)). An anti-escalation refusal, which has
   a code of its own, shows next to the form that caused it.
 - An error is shown by its code through the catalog, never by its `message` ([6](#api-errors)).
+- The two-factor card has no page of its own: it sits in the account menu with the other settings
+  ([account-menu.tsx](../apps/panel/src/features/account/components/account-menu.tsx)), so no
+  top-level path is added.
 - Language switcher in the account menu; the choice — a language, or the browser's — goes to
   `PATCH /me` and stays on the account. The compiled Lingui catalog is loaded through a dynamic
   import when the locale changes ([i18n.ts](../apps/panel/src/shared/lib/i18n.ts)).

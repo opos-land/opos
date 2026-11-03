@@ -4,9 +4,11 @@ import { create } from 'zustand'
 export interface SessionState {
   /**
    * `loading` until `GET /me` has answered; `unavailable` when it could not be asked, so the panel
-   * offers to try again and signs nobody out.
+   * offers to try again and signs nobody out; `mfa-required` for a session below `aal2` on an
+   * account with two-factor authentication, which is not signed in until the code screen is done
+   * (PLAN.md 7.12).
    */
-  status: 'loading' | 'ready' | 'unavailable'
+  status: 'loading' | 'ready' | 'unavailable' | 'mfa-required'
   /** The signed-in account; known only from the API's answers (PLAN.md 8). */
   account: Account | null
 }
@@ -40,6 +42,11 @@ export function signedIn(account: Account) {
 /** This tab no longer shows an account; nothing is announced (the other tabs settle on their own). */
 export function clearSession() {
   useSession.setState({ status: 'ready', account: null })
+}
+
+/** The session waits for its code; no account is known, and nothing is announced. */
+export function mfaRequired() {
+  useSession.setState({ status: 'mfa-required', account: null })
 }
 
 const endListeners = new Set<() => void>()

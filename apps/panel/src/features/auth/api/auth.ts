@@ -52,6 +52,20 @@ export const sendPasswordLink = (email: string, returnTo: string) =>
 export const verifyLink = (body: VerifyLink) =>
   attempt(async () => signedIn(await accountClient.auth.verify({ body })))
 
+/** The code of the authenticator app; the account is known once it is right (PLAN.md 7.12). */
+export const verifyCode = (code: string) =>
+  attempt(async () => {
+    await accountClient.auth.mfa.verify({ body: { code } })
+    signedIn(await accountClient.me.get())
+  })
+
+/** A recovery code: two-factor authentication is off afterwards, and so is `mfaEnabled` (PLAN.md 7.12). */
+export const recoverWithCode = (code: string) =>
+  attempt(async () => {
+    await accountClient.auth.mfa.recover({ body: { code } })
+    signedIn(await accountClient.me.get())
+  })
+
 /** Saves the password and ends the account's other sessions (PLAN.md 7.6). */
 export const setPassword = (password: string) =>
   attempt(() => accountClient.auth.password({ body: { password } }))

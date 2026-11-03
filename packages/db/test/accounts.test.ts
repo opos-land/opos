@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { app, authAdmin, createUser, global, migrator } from './db'
 
@@ -170,6 +171,44 @@ describe('accounts mirror auth.mfa_factors', () => {
     await authAdmin`delete from auth.users where id = ${user.id}`
 
     expect(await account(user.id)).toBeUndefined()
+  })
+})
+
+describe('the mfa_enabled_at backfill', () => {
+  const backfill = readFileSync(
+    new URL('../drizzle/0022_backfill_mfa_enabled_at.sql', import.meta.url),
+    'utf8',
+  )
+
+  it('sets it for an account holding a verified factor and leaves the others', async () => {
+    const holder = await createUser()
+    const pending = await createUser()
+    const none = await createUser()
+    await addFactor(holder.id, 'verified')
+    await addFactor(pending.id, 'unverified')
+    // The state of an account whose factor predates the trigger.
+    await migrator`update accounts set mfa_enabled_at = null where id = ${holder.id}`
+    expect(await mfaEnabledAt(holder.id)).toBeNull()
+
+    await migrator.unsafe(backfill)
+
+    expect(await mfaEnabledAt(holder.id)).toBeInstanceOf(Date)
+    expect(await mfaEnabledAt(pending.id)).toBeNull()
+    expect(await mfaEnabledAt(none.id)).toBeNull()
+  })
+
+  it('keeps the time of an account that is already set', async () => {
+    const user = await createUser()
+    await addFactor(user.id, 'verified')
+    const before = await mfaEnabledAt(user.id)
+
+    await migrator.unsafe(backfill)
+
+    expect(await mfaEnabledAt(user.id)).toEqual(before)
+  })
+
+  it('writes nothing into auth', () => {
+    expect(backfill).not.toMatch(/\b(insert\s+into|delete\s+from|update)\s+auth\./i)
   })
 })
 

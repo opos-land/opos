@@ -453,6 +453,9 @@ through `public.opos_handle_mfa_factor_change()`
 `security definer`, `search_path = ''`, owned by `postgres`, with `execute` revoked. A factor
 reaching `verified` sets it, removing the last verified factor clears it, a second verified factor
 or the removal of one of two changes nothing, and an unverified factor leaves it `null`.
+For an account that held a verified factor before the trigger,
+[0022_backfill_mfa_enabled_at.sql](../packages/db/drizzle/0022_backfill_mfa_enabled_at.sql) sets
+`mfaEnabledAt` once; it only reads `auth`.
 
 **Matching an account by email counts only a confirmed one.** Wherever OPOS looks an account up by
 an email address — `createTenant` ([14](#creating-a-tenant)),
@@ -822,7 +825,6 @@ transaction and expects the report:
   or has it disabled, or its definition — timing, events, columns, condition, level and function —
   differs from the one in `verify.ts`; a table of the `auth` schema carries a trigger outside that
   list, which a trigger OPOS attaches joins in the PR of its migration.
-
 
 ---
 

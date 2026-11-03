@@ -5,6 +5,17 @@
       "Read(./packages/*/.env)",
       "Read(./supabase/.env)",
       "Read(./supabase/signing_keys.json)"
+    ],
+    "ask": [
+      "Edit(./.claude/settings.json)",
+      "Edit(./.claude/agents/**)",
+      "Edit(./.claude/hooks/**)",
+      "Edit(./scripts/tests-first.mjs)",
+      "Edit(./scripts/check-migrations.mjs)",
+      "Edit(./scripts/bff-boundary.mjs)",
+      "Edit(./lefthook.yml)",
+      "Edit(./.github/workflows/**)",
+      "Edit(./.github/rulesets/**)"
     ]
   },
   "hooks": {

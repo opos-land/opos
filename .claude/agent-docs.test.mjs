@@ -152,6 +152,21 @@ test('settings deny the real .env files and leave templates readable', () => {
   )
 })
 
+test('settings ask before an edit of a gate', () => {
+  const { ask } = JSON.parse(read('.claude/settings.json')).permissions
+  assert.deepEqual(ask, [
+    'Edit(./.claude/settings.json)',
+    'Edit(./.claude/agents/**)',
+    'Edit(./.claude/hooks/**)',
+    'Edit(./scripts/tests-first.mjs)',
+    'Edit(./scripts/check-migrations.mjs)',
+    'Edit(./scripts/bff-boundary.mjs)',
+    'Edit(./lefthook.yml)',
+    'Edit(./.github/workflows/**)',
+    'Edit(./.github/rulesets/**)',
+  ])
+})
+
 test('settings run the migration reminder after an edit or a write', () => {
   const entries = JSON.parse(read('.claude/settings.json')).hooks.PostToolUse
   const entry = entries.find(({ matcher }) => matcher === 'Edit|Write')

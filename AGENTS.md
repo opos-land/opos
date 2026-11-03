@@ -242,7 +242,10 @@ refuses every edit, the user restores it with `! git restore scripts/tests-first
 After an `Edit` or `Write` of a migration, the hook [.claude/hooks/migration-reminder.mjs](.claude/hooks/migration-reminder.mjs)
 hands the agent the rules of a migration as context; it never blocks. The project permissions in
 [.claude/settings.json](.claude/settings.json) deny a read of the real `.env` files and of
-the Supabase signing keys file; the `.env.example` templates stay readable.
+the Supabase signing keys file; the `.env.example` templates stay readable. They ask the user before
+an edit of a gate: the settings themselves, `.claude/agents`, `.claude/hooks`,
+`scripts/tests-first.mjs`, `scripts/check-migrations.mjs`, `scripts/bff-boundary.mjs`, `lefthook.yml`,
+`.github/workflows` and `.github/rulesets`.
 
 A change that needs no test — a rename, a comment, a moved import — says why in a
 `No-Test-Reason: <reason>` trailer of its commit message, read as git reads trailers — in the last

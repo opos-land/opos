@@ -136,19 +136,18 @@ export const originOf = (app: Application) =>
   new URL(app === 'portal' ? env.PORTAL_URL : env.PANEL_URL).origin
 
 /**
- * The headers a browser of `app` sends for `token`: its access cookie and the application's
- * Origin. The API reads no other credential (PLAN.md 7.4).
+ * The headers the portal's browser sends for `token`: its access cookie and the portal's Origin.
+ * The API reads no other credential (PLAN.md 7.4).
  */
-export const sessionHeaders = (token: string, app: Application = 'portal') => ({
-  origin: originOf(app),
-  cookie: `opos_${app}_access=${token}`,
+export const sessionHeaders = (token: string) => ({
+  origin: originOf('portal'),
+  cookie: `opos_portal_access=${token}`,
 })
 
 /** The same for supertest's `.use()`. */
 export const session =
-  (token: string, app: Application = 'portal') =>
-  (req: { set(headers: Record<string, string>): unknown }) =>
-    req.set(sessionHeaders(token, app))
+  (token: string) => (req: { set(headers: Record<string, string>): unknown }) =>
+    req.set(sessionHeaders(token))
 
 /**
  * A supertest agent signed in to `app` through `POST /auth/sign-in`: it holds the session cookies

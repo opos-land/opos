@@ -20,10 +20,10 @@ beforeEach(() => {
 
 afterEach(cleanup)
 
-const renderForm = (onDone = vi.fn()) => {
+const renderForm = (onDone = vi.fn(), returnTo = '/invitation') => {
   render(
     <I18nProvider i18n={i18n}>
-      <ChoosePasswordForm email="a@x.test" returnTo="/invitation" onDone={onDone} />
+      <ChoosePasswordForm email="a@x.test" returnTo={returnTo} onDone={onDone} />
     </I18nProvider>,
   )
   return onDone
@@ -42,6 +42,13 @@ async function submit(user: ReturnType<typeof userEvent.setup>, password: string
 }
 
 describe('ChoosePasswordForm', () => {
+  it('says "join the team" only where a team is joined', () => {
+    renderForm(vi.fn(), '/')
+
+    expect(screen.getByRole('button', { name: 'Save the password' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /join the team/ })).toBeNull()
+  })
+
   it('saves the password, then goes on', async () => {
     const user = userEvent.setup()
     const onDone = renderForm()

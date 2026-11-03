@@ -23,7 +23,7 @@ async function errorCodeOf(response: Response) {
 }
 
 /** Only a `401` `session.invalid` asks for a refresh; `session.reauthentication-required` does not (7.4). */
-const isSessionInvalid = async (response: Response) =>
+const answersSessionInvalid = async (response: Response) =>
   response.status === 401 && (await errorCodeOf(response)) === 'session.invalid'
 
 /**
@@ -45,7 +45,7 @@ export function createApiFetch(options: ApiFetchOptions) {
   return async (request: Request): Promise<Response> => {
     const retry = request.clone()
     const response = await send(withHeaders(request))
-    if (!(await isSessionInvalid(response))) return response
+    if (!(await answersSessionInvalid(response))) return response
 
     const result = await options.refresh().catch((): RefreshResult => 'unavailable')
     if (result === 'unavailable') return response
@@ -55,7 +55,7 @@ export function createApiFetch(options: ApiFetchOptions) {
     }
 
     const second = await send(withHeaders(retry))
-    if (await isSessionInvalid(second)) options.onSignedOut()
+    if (await answersSessionInvalid(second)) options.onSignedOut()
     return second
   }
 }

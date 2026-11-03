@@ -1,10 +1,10 @@
 import { Trans } from '@lingui/react/macro'
 import { verifySchema } from '@opos/contract'
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
-import { useSession } from '../../../shared/lib/session'
-import { Button, ErrorMessage, LoadingView, Notice } from '../../../shared/ui'
+import { startSession, useSession } from '../../../shared/lib/session'
+import { Button, ErrorMessage, LoadingView, Notice, UnavailableView } from '../../../shared/ui'
 import { resendConfirmation, sendPasswordLink, verifyLink } from '../api/auth'
 import { AuthLayout } from '../components/auth-layout'
 import { ChoosePasswordForm } from '../components/choose-password-form'
@@ -80,16 +80,6 @@ function RedeemLink({
       </AuthLayout>
     )
   }
-  if (error) {
-    return (
-      <AuthLayout title={<Trans>We could not sign you in</Trans>}>
-        <ErrorMessage error={error} />
-        <Link to={loginPath(returnTo)} className="text-accent text-sm underline">
-          <Trans>Go to sign-in</Trans>
-        </Link>
-      </AuthLayout>
-    )
-  }
   return (
     <AuthLayout
       title={
@@ -107,9 +97,15 @@ function RedeemLink({
           <Trans>Press the button to choose a new password.</Trans>
         )}
       </p>
+      <ErrorMessage error={error} />
       <Button pending={pending} onClick={() => void redeem()}>
         <Trans>Continue</Trans>
       </Button>
+      {error ? (
+        <Link to={loginPath(returnTo)} className="text-accent text-sm underline">
+          <Trans>Go to sign-in</Trans>
+        </Link>
+      ) : null}
     </AuthLayout>
   )
 }
@@ -123,6 +119,7 @@ function RedeemLink({
  */
 export function ConfirmPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [params] = useSearchParams()
   const [link] = useState(() => readLink(params))
   const [returnTo] = useState(authReturn)
@@ -130,6 +127,12 @@ export function ConfirmPage() {
   const account = useSession((state) => state.account)
   // A session held before the button is no reason to skip it: the link may be for another account.
   const [redeemed, setRedeemed] = useState(false)
+
+  // The address no longer carries the spent link, so a reload cannot press it again (PLAN.md 7.6).
+  const redeemedLink = () => {
+    setRedeemed(true)
+    void navigate({ pathname: location.pathname }, { replace: true })
+  }
 
   const done = () => {
     forgetAuthReturn()
@@ -139,7 +142,7 @@ export function ConfirmPage() {
   if (status === 'loading') return <LoadingView />
 
   if (link && !redeemed) {
-    return <RedeemLink link={link} returnTo={returnTo} onRedeemed={() => setRedeemed(true)} />
+    return <RedeemLink link={link} returnTo={returnTo} onRedeemed={redeemedLink} />
   }
   if (account) {
     return (
@@ -148,6 +151,7 @@ export function ConfirmPage() {
       </AuthLayout>
     )
   }
+  if (status === 'unavailable') return <UnavailableView onRetry={() => void startSession()} />
   return (
     <AuthLayout title={<Trans>Confirmation link</Trans>}>
       <p className="text-sm">

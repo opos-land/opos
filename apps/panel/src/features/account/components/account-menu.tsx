@@ -1,6 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { SUPPORTED_LOCALES, isLocale } from '@opos/i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
 import { ErrorMessage, Field, inputClass } from '../../../shared/ui'
 import { signOut } from '../../auth'
@@ -13,6 +14,8 @@ export function AccountMenu() {
   const { t } = useLingui()
   const queryClient = useQueryClient()
   const account = useQuery(accountOptions())
+  // A failed sign-out leaves the cookies set, so it is shown rather than dropped.
+  const [signOutError, setSignOutError] = useState<unknown>(null)
   const update = useMutation({
     ...updateAccountOptions(),
     onSuccess: async (saved) => {
@@ -20,6 +23,8 @@ export function AccountMenu() {
       await loadLocale(pickLocale(saved.locale))
     },
   })
+
+  const leave = async () => setSignOutError(await signOut())
 
   const changeLanguage = (value: string) =>
     update.mutate({ body: { locale: isLocale(value) ? value : null } })
@@ -49,10 +54,11 @@ export function AccountMenu() {
           )}
         </Field>
         <ErrorMessage error={update.error} />
+        <ErrorMessage error={signOutError} />
         <button
           type="button"
           className="text-accent self-start text-sm underline"
-          onClick={() => void signOut()}
+          onClick={() => void leave()}
         >
           <Trans>Sign out</Trans>
         </button>

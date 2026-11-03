@@ -158,8 +158,11 @@ describe('createApiFetch', () => {
     /** A Web Locks stand-in that hands the lock to one holder at a time, in arrival order. */
     function fakeLocks() {
       let tail: Promise<unknown> = Promise.resolve()
+      const requested: string[] = []
       return {
-        request: <T>(_name: string, callback: () => Promise<T>) => {
+        requested,
+        request: <T>(name: string, callback: () => Promise<T>) => {
+          requested.push(name)
           const held = tail.then(callback)
           tail = held.catch(() => undefined)
           return held
@@ -167,21 +170,26 @@ describe('createApiFetch', () => {
       }
     }
 
-    /** The API's rotation: a refresh cookie works once, then the next one replaces it. */
+    /**
+     * The API's rotation: a refresh cookie works once. The cookie is read, the request takes a
+     * while, and only then does it rotate; a cookie that was spent meanwhile ends the session.
+     */
     function cookieJar() {
       const jar = { cookie: 'a', calls: [] as string[] }
-      const rotate = (): Promise<RefreshResult> => {
+      const rotate = async (): Promise<RefreshResult> => {
         const presented = jar.cookie
         jar.calls.push(presented)
-        if (presented !== 'a' && presented !== 'b') return Promise.resolve('signed-out')
-        jar.cookie = presented === 'a' ? 'b' : 'c'
-        return Promise.resolve('refreshed')
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        if (jar.cookie !== presented) return 'signed-out'
+        jar.cookie = `${presented}'`
+        return 'refreshed'
       }
       return { jar, rotate }
     }
 
     it('two tabs refreshing take the lock in turn and both stay signed in', async () => {
-      Object.defineProperty(navigator, 'locks', { value: fakeLocks(), configurable: true })
+      const locks = fakeLocks()
+      Object.defineProperty(navigator, 'locks', { value: locks, configurable: true })
       const { jar, rotate } = cookieJar()
       const onSignedOut = vi.fn()
       const tab = () =>
@@ -197,9 +205,29 @@ describe('createApiFetch', () => {
         tab()(new Request('http://api.test/me')),
       ])
 
+      expect(locks.requested).toEqual(['opos-panel-refresh', 'opos-panel-refresh'])
+      expect(jar.calls).toEqual(['a', "a'"])
       expect(responses.map((response) => response.status)).toEqual([200, 200])
-      expect(jar.calls).toEqual(['a', 'b'])
       expect(onSignedOut).not.toHaveBeenCalled()
+    })
+
+    it('without the lock the second tab presents a spent cookie and is signed out', async () => {
+      const { rotate } = cookieJar()
+      const onSignedOut = vi.fn()
+      const tab = () =>
+        createApiFetch({
+          refresh: shared(rotate),
+          onSignedOut,
+          locale: () => 'en',
+          fetch: vi.fn().mockResolvedValueOnce(invalid()).mockResolvedValueOnce(json(200, {})),
+        })
+
+      await Promise.all([
+        tab()(new Request('http://api.test/me')),
+        tab()(new Request('http://api.test/me')),
+      ])
+
+      expect(onSignedOut).toHaveBeenCalledOnce()
     })
 
     it('works without navigator.locks', async () => {
@@ -209,6 +237,34 @@ describe('createApiFetch', () => {
       expect(await acrossTabs('opos-panel-refresh', run)()).toBe('refreshed')
       expect(run).toHaveBeenCalledOnce()
     })
+  })
+})
+
+describe('requests of one tab', () => {
+  it('two requests refused together share one refresh', async () => {
+    let resolve!: (value: RefreshResult) => void
+    const refresh = vi.fn(() => new Promise<RefreshResult>((r) => (resolve = r)))
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(invalid())
+      .mockResolvedValueOnce(invalid())
+      .mockResolvedValue(json(200, {}))
+    const apiFetch = createApiFetch({
+      refresh: shared(refresh),
+      onSignedOut: vi.fn(),
+      locale: () => 'en',
+      fetch,
+    })
+
+    const both = Promise.all([
+      apiFetch(new Request('http://api.test/a')),
+      apiFetch(new Request('http://api.test/b')),
+    ])
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
+    resolve('refreshed')
+
+    expect((await both).map((response) => response.status)).toEqual([200, 200])
+    expect(refresh).toHaveBeenCalledOnce()
   })
 })
 

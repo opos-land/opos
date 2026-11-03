@@ -533,6 +533,10 @@ msgid "Save"
 msgstr "Save"
 
 #: src/features/auth/components/choose-password-form.tsx
+msgid "Save the password"
+msgstr "Save the password"
+
+#: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password and join the team"
 msgstr "Save the password and join the team"
 

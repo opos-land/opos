@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { activeLocale } from '../../../shared/lib/i18n'
 import { errorCode } from '../../../shared/lib/errors'
-import { useSession } from '../../../shared/lib/session'
-import { ErrorMessage, LoadingView, Notice } from '../../../shared/ui'
+import { startSession, useSession } from '../../../shared/lib/session'
+import { ErrorMessage, LoadingView, Notice, UnavailableView } from '../../../shared/ui'
 import { sendPasswordLink, signUpWithEmail } from '../api/auth'
 import { invitationPreviewOptions } from '../api/invitations'
 import { INVITATION_PATH } from '../model/auth-return'
@@ -174,6 +174,7 @@ export function InvitationPage() {
     )
   }
 
+  if (status === 'unavailable') return <UnavailableView onRetry={() => void startSession()} />
   if (status === 'loading' || preview.isPending) return <LoadingView />
 
   if (preview.isError) {

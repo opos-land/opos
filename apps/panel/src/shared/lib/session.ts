@@ -2,6 +2,8 @@ import { accountClient } from './api'
 import { isSessionInvalid } from './errors'
 import {
   announceAccountChange,
+  clearSession,
+  onSessionEnded,
   type SessionState,
   sessionChannel,
   signedIn,
@@ -12,31 +14,38 @@ import {
 export { announceAccountChange, signedIn, signedOut, useSession }
 export type { SessionState }
 
-/** Asks the API who is signed in: the account, or null for a session that is over. */
-async function loadAccount() {
+/**
+ * Asks who is signed in and shows the answer. `announce` tells the other tabs which account was
+ * found (a Google return is a page load, PLAN.md 7.4); a tab following an announcement does not.
+ * A `401` that stands is a session that is over only when a request of this tab ended it; one the
+ * refresh could not settle is `unavailable`.
+ */
+async function load(announce: boolean) {
+  let ended = false
+  const stop = onSessionEnded(() => (ended = true))
+  useSession.setState({ status: 'loading' })
   try {
-    return await accountClient.me.get()
+    const shown = useSession.getState().account?.id
+    const account = await accountClient.me.get()
+    useSession.setState({ status: 'ready', account })
+    if (announce && account.id !== shown) announceAccountChange(account.id)
   } catch (error) {
-    // A 401 that stands is a session that is over; one the refresh could not settle is not.
-    if (isSessionInvalid(error) && useSession.getState().status === 'ready') return null
-    throw error
+    if (isSessionInvalid(error) && ended) clearSession()
+    else useSession.setState({ status: 'unavailable' })
+  } finally {
+    stop()
   }
 }
 
 /**
  * Application start (PLAN.md 8): `GET /me`, with the API link's one refresh on a `401`. It ends
  * `ready`, with the account or without one, or `unavailable` when the answer could not be had; a
- * failed refresh does not sign anyone out. Calling it again retries.
+ * failed refresh does not sign anyone out. Calling it again retries. An account it finds is
+ * announced to the other tabs; finding none is not.
  */
-export async function startSession() {
+export function startSession() {
   followOtherTabs()
-  useSession.setState({ status: 'loading' })
-  try {
-    const account = await loadAccount()
-    useSession.setState({ status: 'ready', account })
-  } catch {
-    useSession.setState({ status: 'unavailable' })
-  }
+  return load(true)
 }
 
 let following = false
@@ -54,11 +63,9 @@ function followOtherTabs() {
 async function applyAnnouncement(message: unknown) {
   if (typeof message !== 'object' || message === null || !('accountId' in message)) return
   const { accountId } = message
-  if (accountId === null) return signedOut()
+  if (accountId === null) return clearSession()
   if (typeof accountId !== 'string' || accountId === useSession.getState().account?.id) return
-  try {
-    useSession.setState({ status: 'ready', account: await accountClient.me.get() })
-  } catch {
-    // The next request settles who is signed in; until then the screen keeps what it shows.
-  }
+  // The old account's data goes at once, not when the new account's answer arrives.
+  useSession.setState({ status: 'loading', account: null })
+  await load(false)
 }

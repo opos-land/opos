@@ -37,9 +37,26 @@ export function signedIn(account: Account) {
   announceAccountChange(account.id)
 }
 
-/** The session is over; the other tabs are told only when there was an account to lose. */
+/** This tab no longer shows an account; nothing is announced (the other tabs settle on their own). */
+export function clearSession() {
+  useSession.setState({ status: 'ready', account: null })
+}
+
+const endListeners = new Set<() => void>()
+
+/** Calls `listener` whenever a request of this tab ends the session; returns the way to stop. */
+export function onSessionEnded(listener: () => void) {
+  endListeners.add(listener)
+  return () => void endListeners.delete(listener)
+}
+
+/**
+ * The session is over, ended by a request of this tab; the other tabs are told only when there was
+ * an account to lose.
+ */
 export function signedOut() {
   const hadAccount = useSession.getState().account !== null
-  useSession.setState({ status: 'ready', account: null })
+  clearSession()
+  for (const listener of endListeners) listener()
   if (hadAccount) announceAccountChange(null)
 }

@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { errorCode } from '../../../shared/lib/errors'
 import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
 import { sendPasswordLink, setPassword } from '../api/auth'
+import { INVITATION_PATH } from '../model/auth-return'
 
 const schema = z
   .object({ password: z.string().min(8), repeat: z.string() })
@@ -105,7 +106,11 @@ export function ChoosePasswordForm({
         <ErrorMessage error={error} />
       )}
       <Button type="submit" pending={isSubmitting}>
-        <Trans>Save the password and join the team</Trans>
+        {returnTo === INVITATION_PATH ? (
+          <Trans>Save the password and join the team</Trans>
+        ) : (
+          <Trans>Save the password</Trans>
+        )}
       </Button>
     </form>
   )

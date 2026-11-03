@@ -1,4 +1,7 @@
+import { errorMessage } from '@opos/i18n/errors'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { accountClient } from './api'
+import { describeError } from './errors'
 import { announceAccountChange, signedIn, signedOut, startSession, useSession } from './session'
 
 const account = (id: string) => ({
@@ -199,5 +202,130 @@ describe('across tabs', () => {
 
     expect(calls).toEqual(['GET /me'])
     expect(useSession.getState().account?.id).toBe('a')
+  })
+
+  it('a sign-in found at start is announced; a start that finds nobody announces nothing', async () => {
+    const observer = otherTab()
+    stubApi({ 'GET /me': [json(200, account('a'))] })
+
+    await startSession()
+    await Promise.resolve()
+    expect(observer.received).toEqual([{ accountId: 'a' }])
+
+    observer.received.length = 0
+    stubApi({ 'GET /me': [invalid()], 'POST /auth/refresh': [invalid()] })
+    useSession.setState({ status: 'loading', account: null })
+    await startSession()
+    await Promise.resolve()
+    expect(observer.received).toEqual([])
+  })
+
+  it('following an announcement does not announce again', async () => {
+    stubApi({ 'GET /me': [json(200, account('a')), json(200, account('b'))] })
+    await startSession()
+    const observer = otherTab()
+    const sender = otherTab()
+    observer.received.length = 0
+
+    sender.channel.postMessage({ accountId: 'b' })
+    await vi.waitFor(() => expect(useSession.getState().account?.id).toBe('b'))
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    // Only the sender's own message: this tab said nothing back.
+    expect(observer.received).toEqual([{ accountId: 'b' }])
+  })
+
+  it('hearing a sign-out does not announce it again', async () => {
+    stubApi({ 'GET /me': [json(200, account('a'))] })
+    await startSession()
+    const observer = otherTab()
+    const sender = otherTab()
+    observer.received.length = 0
+
+    sender.channel.postMessage({ accountId: null })
+    await vi.waitFor(() => expect(useSession.getState().account).toBeNull())
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(observer.received).toEqual([{ accountId: null }])
+  })
+
+  it('clears the old account at once on another id, and ends unavailable when GET /me fails', async () => {
+    stubApi({ 'GET /me': [json(200, account('a'))] })
+    await startSession()
+    const { channel } = otherTab()
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        await gate
+        return json(503, { code: 'server.unavailable' })
+      }),
+    )
+
+    channel.postMessage({ accountId: 'b' })
+
+    await vi.waitFor(() =>
+      expect(useSession.getState()).toMatchObject({ status: 'loading', account: null }),
+    )
+    release()
+    await vi.waitFor(() =>
+      expect(useSession.getState()).toMatchObject({ status: 'unavailable', account: null }),
+    )
+  })
+
+  it('an announcement during a start whose refresh failed leaves it unavailable, not signed out', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (request: Request) => {
+        if (new URL(request.url).pathname === '/auth/refresh') {
+          await gate
+          return json(503, { code: 'server.unavailable' })
+        }
+        return invalid()
+      }),
+    )
+    const { channel } = otherTab()
+    const start = startSession()
+    await Promise.resolve()
+
+    channel.postMessage({ accountId: null })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    release()
+    await start
+
+    expect(useSession.getState().status).toBe('unavailable')
+  })
+})
+
+describe('what the screen says about a 401', () => {
+  const failure = async () => {
+    stubApi({
+      'GET /me': [invalid()],
+      'POST /auth/refresh': [json(503, { code: 'server.unavailable' })],
+    })
+    return accountClient.me.get().then(
+      () => undefined,
+      (error: unknown) => error,
+    )
+  }
+
+  it('a refresh that was unavailable shows "try again" while the session is kept', async () => {
+    useSession.setState({ status: 'ready', account: account('a') })
+
+    const error = await failure()
+
+    expect(describeError(error).message).toBe(errorMessage('server.unavailable'))
+    expect(useSession.getState().account?.id).toBe('a')
+  })
+
+  it('a session that really ended keeps its own text', async () => {
+    useSession.setState({ status: 'ready', account: null })
+
+    const error = await failure()
+
+    expect(describeError(error).message).toBe(errorMessage('session.invalid'))
   })
 })

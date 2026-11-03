@@ -1,6 +1,7 @@
 import { type MessageDescriptor } from '@lingui/core'
 import { errorMessage, unknownError } from '@opos/i18n/errors'
 import { ORPCError } from '@orpc/client'
+import { useSession } from './session-store'
 
 export interface DescribedError {
   message: MessageDescriptor
@@ -34,6 +35,15 @@ export function errorCode(error: unknown): string | undefined {
 }
 
 /**
+ * `signedOut()` leaves `ready` with no account. Any other state keeps a session the refresh could
+ * not settle (PLAN.md 8): a `401` shown then means "try again", not "sign in again".
+ */
+function sessionReallyEnded() {
+  const { status, account } = useSession.getState()
+  return status === 'ready' && account === null
+}
+
+/**
  * The message to show for an error, picked by its code from the catalog (PLAN.md 6). The English
  * `message` the API sends never reaches the screen; an unknown code, or an error
  * without one, shows the generic message.
@@ -41,6 +51,9 @@ export function errorCode(error: unknown): string | undefined {
 export function describeError(error: unknown): DescribedError {
   const code = errorCode(error)
   if (!code) return { message: unknownError, values: {} }
+  if (code === 'session.invalid' && !sessionReallyEnded()) {
+    return { message: errorMessage('server.unavailable'), values: {} }
+  }
   const values = error instanceof ORPCError && isParams(error.data) ? error.data : {}
   return { message: errorMessage(code), values }
 }

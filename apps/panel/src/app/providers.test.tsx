@@ -1,7 +1,11 @@
+import { i18n } from '@lingui/core'
+import { type QueryClient, useQueryClient } from '@tanstack/react-query'
 import { act, cleanup, render } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startSession, useSession } from '../shared/lib/session'
-import { AccountChangeCleanup } from './providers'
+import { setMemberships } from '../features/tenants'
+import { usePermissionStore } from '../features/tenants/model/permissions'
+import { AccountChangeCleanup, Providers } from './providers'
 
 const accountOf = (id: string) => ({
   id,
@@ -27,6 +31,10 @@ class FakeChannel {
     }
   }
 }
+
+beforeAll(() => {
+  i18n.loadAndActivate({ locale: 'en', messages: {} })
+})
 
 beforeEach(() => {
   useSession.setState({ status: 'ready', account: null })
@@ -71,7 +79,7 @@ describe('AccountChangeCleanup', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
-  it('an account change announced by another tab clears the query cache', async () => {
+  it('an account change announced by another tab clears the query cache and the permissions', async () => {
     vi.stubGlobal('BroadcastChannel', FakeChannel)
     vi.stubGlobal(
       'fetch',
@@ -84,15 +92,28 @@ describe('AccountChangeCleanup', () => {
         ),
       ),
     )
+    let queryClient!: QueryClient
+    function Capture() {
+      queryClient = useQueryClient()
+      return null
+    }
     useSession.setState({ status: 'ready', account: accountOf('a') })
-    const onChange = setup()
+    render(
+      <Providers>
+        <Capture />
+      </Providers>,
+    )
     await startSession()
     // The tab shows account a again; account b signs in elsewhere.
     useSession.setState({ account: accountOf('a') })
-    onChange.mockClear()
+    queryClient.setQueryData(['tenant', 'con-a'], { name: 'a' })
+    setMemberships([])
+    expect(queryClient.getQueryData(['tenant', 'con-a'])).toBeDefined()
+
     new FakeChannel('opos-panel-session').postMessage({ accountId: 'b' })
 
-    await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
-    expect(useSession.getState().account?.id).toBe('b')
+    await vi.waitFor(() => expect(useSession.getState().account?.id).toBe('b'))
+    expect(queryClient.getQueryData(['tenant', 'con-a'])).toBeUndefined()
+    expect(usePermissionStore.getState().memberships).toBeNull()
   })
 })

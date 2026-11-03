@@ -4,8 +4,8 @@ import { type Account, type Me } from '@opos/contract'
 import { detectLocale } from '@opos/i18n'
 import { AuthApiError, type GoTrueClient, isAuthError, type Session } from '@supabase/auth-js'
 import { TenantContextService } from '../../common/als/tenant-context.service'
-import { ApiError, originDenied, unauthenticated } from '../../common/errors/api-error'
-import { meOf, signInMethodsOf } from '../../common/guards/access-token'
+import { ApiError, mfaRequired, originDenied, unauthenticated } from '../../common/errors/api-error'
+import { isAal2, meOf, signInMethodsOf } from '../../common/guards/access-token'
 import { type Application, applicationFromOrigin } from '../../common/http/application'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
@@ -93,11 +93,16 @@ export class AuthService {
     return account
   }
 
-  /** Sets the cookies of a session just issued and answers the account it belongs to. */
+  /**
+   * Sets the cookies of a session just issued and answers the account it belongs to. On an account
+   * with two-factor authentication the cookies are set all the same, at `aal1`, and the answer is
+   * `session.mfa-required`: the person finishes signing in on the code screen (PLAN.md 7.12).
+   */
   private async signedIn(req: AuthRequest, app: Application, session: Session | null): Promise<Me> {
     if (!session) throw new ApiError(500, 'server.error', 'Supabase Auth issued no session')
     const account = await this.accountOf(session)
     setSessionCookies(req.res, app, session, this.env)
+    if (account.mfaEnabled && !isAal2(session.access_token)) throw mfaRequired()
     return meOf(account, signInMethodsOf(session.user))
   }
 

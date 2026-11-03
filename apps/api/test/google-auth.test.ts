@@ -7,6 +7,7 @@ import { RouteRateLimiter } from '../src/common/rate-limit/route-rate-limit'
 import { authUrl, loadEnv } from '../src/config/env'
 import { createApp } from './app'
 import { createAccount, deleteCreatedAccounts, mintToken, originOf } from './auth'
+import { addVerifiedFactor, closeTenantDb } from './tenants'
 
 // Google sign-in (PLAN.md 7.5) against the real API, with a stub standing in for Supabase Auth: no
 // Google client exists locally, so the stub plays the authorize redirect and the PKCE exchange. It
@@ -22,6 +23,8 @@ const realFetch = globalThis.fetch
 let app: NestExpressApplication
 let server: ReturnType<NestExpressApplication['getHttpServer']>
 let accountId: string
+/** The level of the token the stub issues: the exchange of Google sign-in gives `aal1`. */
+let issuedAal: 'aal1' | 'aal2' = 'aal1'
 
 const challengeOf = (verifier: string) =>
   createHash('sha256').update(verifier).digest().toString('base64url')
@@ -54,6 +57,7 @@ async function stubbedFetch(input: string | URL | Request, init?: RequestInit) {
       access_token: await mintToken({
         sub: accountId,
         providers: ['google'],
+        aal: issuedAal,
         amr: [{ method: 'oauth', timestamp: now }],
         expiresIn: '1h',
       }),
@@ -86,6 +90,7 @@ beforeAll(async () => {
 })
 
 afterEach(() => {
+  issuedAal = 'aal1'
   issued.clear()
   exchanges = []
   signUps = []
@@ -95,6 +100,7 @@ afterEach(() => {
 afterAll(async () => {
   vi.unstubAllGlobals()
   await deleteCreatedAccounts()
+  await closeTenantDb()
   await app.close()
 })
 
@@ -254,6 +260,48 @@ describe('GET /auth/google/callback', () => {
     expect(cleared).toMatch(/^opos_google=;/)
     expect(cleared).toContain('Path=/auth/google')
     expect(cleared).toMatch(/Expires=Thu, 01 Jan 1970/)
+  })
+
+  describe('on an account with 2FA', () => {
+    let plainAccountId: string
+
+    beforeAll(async () => {
+      plainAccountId = accountId
+      accountId = (await createAccount()).id
+      await addVerifiedFactor(accountId)
+    })
+
+    afterAll(() => {
+      accountId = plainAccountId
+    })
+
+    it('leads to the code screen, keeping the path, with the aal1 cookies set', async () => {
+      const { code, cookie } = await startedFlow('panel', '/editions?tab=1')
+
+      const res = await callback({ code }, cookie).expect(302)
+
+      expect(res.headers.location).toBe(`${panel}/auth/mfa?redirect=%2Feditions%3Ftab%3D1`)
+      expect(cookieNamed(res, 'opos_panel_access')).toBeDefined()
+      expect(cookieNamed(res, 'opos_panel_refresh')).toBeDefined()
+      expect(cookieNamed(res, 'opos_portal_access')).toBeUndefined()
+    })
+
+    it('judges the path again before it goes into the redirect', async () => {
+      const { code, cookie } = await startedFlow('portal', 'https://evil.example/x')
+
+      const res = await callback({ code }, cookie).expect(302)
+
+      expect(res.headers.location).toBe(`${portal}/auth/mfa?redirect=%2F`)
+    })
+
+    it('does not send a session that is already aal2 to the code screen', async () => {
+      issuedAal = 'aal2'
+      const { code, cookie } = await startedFlow('portal', '/account')
+
+      const res = await callback({ code }, cookie).expect(302)
+
+      expect(res.headers.location).toBe(`${portal}/account`)
+    })
   })
 
   it('sends nothing of the verifier or the tokens in a body or a Location', async () => {

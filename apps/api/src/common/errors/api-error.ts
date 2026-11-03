@@ -24,6 +24,14 @@ export class ApiError extends HttpException {
 export const unauthenticated = (message = 'Missing or invalid session') =>
   new ApiError(401, 'session.invalid', message)
 
+/** The account turned on two-factor authentication and the session is below `aal2` (PLAN.md 7.12). */
+export const mfaRequired = () =>
+  new ApiError(
+    401,
+    'session.mfa-required',
+    'The session needs the code of two-factor authentication',
+  )
+
 /** Supabase Auth or its signing keys are out of reach: retry soon, the session stays (PLAN.md 7.4). */
 export const unavailable = () =>
   new ApiError(

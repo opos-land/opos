@@ -6,6 +6,7 @@ import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { TenantContextService } from '../src/common/als/tenant-context.service'
 import { GlobalDbService } from '../src/common/database/global-db.service'
+import { AllowMfaPending } from '../src/common/decorators/allow-mfa-pending.decorator'
 import { RequireEdition } from '../src/common/decorators/require-edition.decorator'
 import { RequireTenant } from '../src/common/decorators/require-tenant.decorator'
 import { ApiError } from '../src/common/errors/api-error'
@@ -45,6 +46,7 @@ export const probeContract = {
   outside: route.route({ method: 'GET', path: '/probe/outside' }).output(z.object({})),
   demoteHeads: route.route({ method: 'POST', path: '/probe/demote-heads' }).output(z.object({})),
   slowWrite: route.route({ method: 'POST', path: '/probe/slow-write' }).output(z.object({})),
+  mfaPending: route.route({ method: 'GET', path: '/probe/mfa-pending' }).output(z.object({})),
   nested: route.route({ method: 'GET', path: '/probe/nested' }).output(z.object({})),
   withTenant: route
     .route({ method: 'GET', path: '/probe/with-tenant/{slug}' })
@@ -150,6 +152,13 @@ class ProbeController {
       await this.editions()
       return {}
     })
+  }
+
+  @Implement(probeContract.mfaPending)
+  @UseGuards(JwtAuthGuard)
+  @AllowMfaPending()
+  mfaPending() {
+    return implement(probeContract.mfaPending).handler(() => ({}))
   }
 
   @Implement(probeContract.withTenant)

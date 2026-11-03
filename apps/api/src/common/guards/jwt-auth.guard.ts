@@ -1,8 +1,10 @@
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
 import { ENV, type Env } from '../../config/env'
 import { AccountsRepository } from '../../modules/accounts/accounts.repository'
 import { TenantContextService } from '../als/tenant-context.service'
-import { unauthenticated, unavailable } from '../errors/api-error'
+import { ALLOW_MFA_PENDING } from '../decorators/allow-mfa-pending.decorator'
+import { mfaRequired, unauthenticated, unavailable } from '../errors/api-error'
 import {
   ACCESS_TOKEN_VERIFIER,
   type AccessTokenVerifier,
@@ -22,6 +24,7 @@ export class JwtAuthGuard implements CanActivate {
     private readonly accounts: AccountsRepository,
     private readonly context: TenantContextService,
     @Inject(ENV) private readonly env: Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>,
+    private readonly reflector: Reflector,
   ) {}
 
   async canActivate(ctx: ExecutionContext) {
@@ -39,7 +42,21 @@ export class JwtAuthGuard implements CanActivate {
 
     const account = await this.accounts.findForToken(check.payload.sub)
     if (!account) throw unauthenticated('No account for this token')
+    // Read from the mirror, not from Supabase Auth: a token issued before `enable` loses access
+    // at once (PLAN.md 7.12). The routes that finish a sign-in carry @AllowMfaPending.
+    if (account.mfaEnabled && check.payload.aal !== 'aal2' && !this.mfaPendingAllowed(ctx)) {
+      throw mfaRequired()
+    }
     this.context.setAccount(account, lastSignInAt(check.payload), signInMethodsOf(check.payload))
     return true
+  }
+
+  private mfaPendingAllowed(ctx: ExecutionContext) {
+    return (
+      this.reflector.getAllAndOverride<boolean | undefined>(ALLOW_MFA_PENDING, [
+        ctx.getHandler(),
+        ctx.getClass(),
+      ]) === true
+    )
   }
 }

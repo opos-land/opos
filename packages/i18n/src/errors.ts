@@ -14,6 +14,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'request.origin-denied': msg`This request cannot be made from this address. Reload the page and try again.`,
   'session.invalid': msg`Your session has ended. Sign in again.`,
   'session.reauthentication-required': msg`Confirm it is you: enter your password again or sign in with Google again.`,
+  'session.mfa-required': msg`This account uses two-factor authentication. Enter the code from your authenticator app to continue.`,
   'permission.denied': msg`You do not have permission to do this.`,
   'server.error': unknownError,
   'server.unavailable': msg`The service is temporarily unavailable. Try again in a moment.`,

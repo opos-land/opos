@@ -5,7 +5,7 @@ import {
   isAuthRetryableFetchError,
   isAuthSessionMissingError,
 } from '@supabase/auth-js'
-import { ApiError, unauthenticated, unavailable } from '../../common/errors/api-error'
+import { ApiError, mfaRequired, unauthenticated, unavailable } from '../../common/errors/api-error'
 
 const logger = new Logger('AuthRefusal')
 
@@ -36,7 +36,7 @@ const LISTED: Readonly<Record<string, string>> = {
 
 /**
  * What Supabase Auth refused, as the error the API answers with (PLAN.md 5.1): a dead session is
- * `401` `session.invalid`, a code the contract lists keeps its status, an outage is `503`, and
+ * `401` `session.invalid`, `insufficient_aal` is `401` `session.mfa-required`, a code the contract lists keeps its status, an outage is `503`, and
  * anything else is a logged `500`.
  */
 export function toApiError(error: unknown): ApiError {
@@ -46,6 +46,8 @@ export function toApiError(error: unknown): ApiError {
   if (isAuthError(error)) {
     if ((error.status ?? 0) >= 500) return unavailable()
     if (error.code && SESSION_GONE.has(error.code)) return unauthenticated()
+    // The session lives and only lacks the second factor, such as `updateUser` at `aal1`.
+    if (error.code === 'insufficient_aal') return mfaRequired()
     const message = error.code && Object.hasOwn(LISTED, error.code) ? LISTED[error.code] : undefined
     if (error.code && message) {
       return new ApiError(error.status ?? 400, `auth.${error.code}` as ErrorCode, message)

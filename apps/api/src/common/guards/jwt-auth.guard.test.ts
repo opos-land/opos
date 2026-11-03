@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { type ExecutionContext } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
 import { describe, expect, it, vi } from 'vitest'
 import { type AccountsRepository } from '../../modules/accounts/accounts.repository'
+import { AllowMfaPending } from '../decorators/allow-mfa-pending.decorator'
 import { type TenantContextService } from '../als/tenant-context.service'
 import { ApiError } from '../errors/api-error'
 import { toErrorResponse } from '../filters/http-exception.filter'
@@ -29,12 +31,29 @@ function guard(check: TokenCheck, found: unknown = account) {
       accounts as unknown as AccountsRepository,
       context as unknown as TenantContextService,
       env,
+      new Reflector(),
     ),
   }
 }
 
-const execution = (request: object) =>
-  ({ switchToHttp: () => ({ getRequest: () => request }) }) as unknown as ExecutionContext
+class Plain {
+  open() {}
+}
+
+class Pending {
+  @AllowMfaPending()
+  open() {}
+}
+
+/** The method a route would be: the decorator's metadata sits on it. */
+const handlerOf = (type: { prototype: object }) => Reflect.get(type.prototype, 'open') as object
+
+const execution = (request: object, handler: object = handlerOf(Plain)) =>
+  ({
+    switchToHttp: () => ({ getRequest: () => request }),
+    getHandler: () => handler,
+    getClass: () => Plain,
+  }) as unknown as ExecutionContext
 
 const withCookie = (headers: Record<string, string | undefined>) => execution({ headers })
 
@@ -171,5 +190,71 @@ describe('JwtAuthGuard', () => {
       body: { code: 'server.unavailable' },
     })
     expect(verifier.verify).toHaveBeenCalledTimes(1)
+  })
+
+  describe('two-factor authentication', () => {
+    const withFactor = { id: account.id, mfaEnabled: true }
+    // The verification is kept on the request, so each test builds its own.
+    const portalRequest = () => ({
+      headers: { cookie: 'opos_portal_access=t', origin: 'https://opos.land' },
+    })
+
+    it.each([undefined, 'aal1'] as const)(
+      'answers 401 session.mfa-required at level %s on an account with 2FA',
+      async (aal) => {
+        const { subject, context } = guard(
+          { status: 'valid', payload: { sub: account.id, aal } },
+          withFactor,
+        )
+
+        const failure = await refusal(subject.canActivate(execution(portalRequest())))
+
+        expect(failure).toBeInstanceOf(ApiError)
+        expect(toErrorResponse(failure)).toMatchObject({
+          status: 401,
+          body: { code: 'session.mfa-required' },
+        })
+        expect(context.setAccount).not.toHaveBeenCalled()
+      },
+    )
+
+    it('lets aal2 through', async () => {
+      const { subject } = guard(
+        { status: 'valid', payload: { sub: account.id, aal: 'aal2' } },
+        withFactor,
+      )
+
+      expect(await subject.canActivate(execution(portalRequest()))).toBe(true)
+    })
+
+    it('lets aal1 through on an account without 2FA', async () => {
+      const { subject } = guard(
+        { status: 'valid', payload: { sub: account.id, aal: 'aal1' } },
+        { id: account.id, mfaEnabled: false },
+      )
+
+      expect(await subject.canActivate(execution(portalRequest()))).toBe(true)
+    })
+
+    it('lets aal1 through on a handler marked @AllowMfaPending, and still sets the account', async () => {
+      const { subject, context } = guard(
+        { status: 'valid', payload: { sub: account.id, aal: 'aal1' } },
+        withFactor,
+      )
+
+      expect(await subject.canActivate(execution(portalRequest(), handlerOf(Pending)))).toBe(true)
+      expect(context.setAccount).toHaveBeenCalledTimes(1)
+    })
+
+    it('answers session.invalid before session.mfa-required when no account exists', async () => {
+      const { subject } = guard(
+        { status: 'valid', payload: { sub: account.id, aal: 'aal1' } },
+        null,
+      )
+
+      const failure = await refusal(subject.canActivate(execution(portalRequest())))
+
+      expect(toErrorResponse(failure)).toMatchObject({ body: { code: 'session.invalid' } })
+    })
   })
 })

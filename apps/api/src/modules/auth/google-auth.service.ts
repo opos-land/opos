@@ -3,6 +3,7 @@ import { applicationSchema, type ErrorCode } from '@opos/contract'
 import { isAuthError, type SupportedStorage } from '@supabase/auth-js'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError } from '../../common/errors/api-error'
+import { isAal2 } from '../../common/guards/access-token'
 import { type Application } from '../../common/http/application'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
@@ -239,20 +240,26 @@ export class GoogleAuthService {
     if (typeof query.code !== 'string' || query.code === '') return this.failure(flow.app)
 
     const items = new Map([[`${GOOGLE_STORAGE_KEY}-code-verifier`, JSON.stringify(flow.verifier)]])
+    let mfaPending: boolean
     try {
       const { data, error } = await this.auth
         .forGoogle(requestStorage(items))
         .exchangeCodeForSession(query.code)
       if (error) throw error
-      if (!(await this.accounts.findForToken(data.session.user.id))) {
-        throw new Error('no account for the session')
-      }
+      const account = await this.accounts.findForToken(data.session.user.id)
+      if (!account) throw new Error('no account for the session')
       setSessionCookies(req.res, flow.app, data.session, this.env)
+      mfaPending = account.mfaEnabled && !isAal2(data.session.access_token)
     } catch (error) {
       // The code and the status only: the message of a refusal may quote what was sent.
       this.logger.warn(`Google sign-in failed: ${describeFailure(error)}`)
       return this.failure(flow.app)
     }
-    return `${applicationOrigin(flow.app, this.env)}${returnPath(flow.app, flow.path, this.env)}`
+    const origin = applicationOrigin(flow.app, this.env)
+    const path = returnPath(flow.app, flow.path, this.env)
+    // The session starts at aal1 on an account with 2FA: the code screen finishes it (PLAN.md 7.12).
+    return mfaPending
+      ? `${origin}/auth/mfa?redirect=${encodeURIComponent(path)}`
+      : `${origin}${path}`
   }
 }

@@ -10,6 +10,7 @@ export const errorCodes = [
   'request.origin-denied',
   'session.invalid',
   'session.reauthentication-required',
+  'session.mfa-required',
   'permission.denied',
   'server.error',
   'server.unavailable',

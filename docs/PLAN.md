@@ -189,7 +189,7 @@ opos/
                          #   AuthModule (auth endpoints and session cookies, Supabase Auth clients,
                          #   send-email hook, admin client), MailModule (Supabase Auth and
                          #   invitation emails), tests; still to come: Google sign-in (7.5),
-                         #   two-factor authentication (7.12)
+                         #   the two-factor routes (7.12)
       src/
         common/
           guards/scanner-device.guard.ts
@@ -1791,8 +1791,9 @@ The scanner is online only: no local ticket list, no queue of offline redemption
 
 ### 7.12 Two-factor authentication
 
-Still to be built, in [modules/auth](../apps/api/src/modules/auth) and `contract.auth.mfa.*`
-(`packages/contract/src/auth-mfa.ts`). Two-factor authentication (2FA) is TOTP only, on Supabase
+The assurance-level check of the guard is built; the routes `POST /auth/mfa/*` and `DELETE /auth/mfa`,
+in [modules/auth](../apps/api/src/modules/auth) and `contract.auth.mfa.*`
+(`packages/contract/src/auth-mfa.ts`), and the screens are still to be built. Two-factor authentication (2FA) is TOTP only, on Supabase
 Auth's factors. Each account turns it on for itself
 ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); no role requires it.
 
@@ -1813,7 +1814,9 @@ attempts per 15 minutes per account ([7.9](#79-rate-limiting)), counted by `Rout
 **The assurance level.** A session below `aal2` on an account with 2FA reaches only `POST /auth/mfa/*`,
 `POST /auth/refresh` and `POST /auth/sign-out`, so a person can stay on the code screen past the 15
 minutes of an access token. Refresh and sign-out are public routes that read the cookies;
-`@AllowMfaPending()` covers the account routes `POST /auth/mfa/*`:
+`@AllowMfaPending()`
+([allow-mfa-pending.decorator.ts](../apps/api/src/common/decorators/allow-mfa-pending.decorator.ts))
+covers the account routes `POST /auth/mfa/*`; `JwtAuthGuard` reads it from the handler:
 
 | Case | What happens |
 |---|---|

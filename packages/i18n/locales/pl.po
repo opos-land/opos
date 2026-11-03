@@ -280,6 +280,10 @@ msgid "The service is temporarily unavailable. Try again in a moment."
 msgstr "Usługa jest chwilowo niedostępna. Spróbuj ponownie za chwilę."
 
 #: src/errors.ts
+msgid "This account uses two-factor authentication. Enter the code from your authenticator app to continue."
+msgstr "To konto używa uwierzytelniania dwuskładnikowego. Wpisz kod z aplikacji uwierzytelniającej, aby kontynuować."
+
+#: src/errors.ts
 msgid "This address is already taken by another convention."
 msgstr "Ten adres jest już zajęty przez inny konwent."
 
@@ -358,6 +362,12 @@ msgstr "Zbyt wiele prób. Spróbuj ponownie później."
 #: src/errors.ts
 msgid "Too many emails sent. Try again in a few minutes."
 msgstr "Wysłano zbyt wiele wiadomości. Spróbuj ponownie za kilka minut."
+
+#. Glossary term: two-factor authentication
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "two-factor authentication"
+msgstr "uwierzytelnianie dwuskładnikowe"
 
 #. Glossary term: user
 #: src/glossary.ts

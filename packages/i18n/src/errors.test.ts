@@ -85,6 +85,16 @@ describe('errorMessage', () => {
     )
   })
 
+  it('asks for the code of two-factor authentication when a session is below aal2', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('session.mfa-required')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('session.mfa-required'))).toBe(
+      'To konto używa uwierzytelniania dwuskładnikowego. Wpisz kod z aplikacji uwierzytelniającej, aby kontynuować.',
+    )
+  })
+
   it('falls back to the generic message for an unknown code', () => {
     expect(errorMessage('no.such-code')).toBe(unknownError)
   })

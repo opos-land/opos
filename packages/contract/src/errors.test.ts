@@ -22,6 +22,10 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain(code)
   })
 
+  it('lists the code of a session below aal2 on an account with 2FA', () => {
+    expect(errorCodes).toContain('session.mfa-required')
+  })
+
   it.each(errorCodes)('%s has a message in @opos/i18n/errors', (code) => {
     expect(errorMessages[code]).toBeDefined()
   })

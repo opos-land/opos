@@ -61,7 +61,7 @@ describe('JwtAuthGuard', () => {
     const other = await createAccount()
     await addVerifiedFactor(other.id)
     const res = await me()
-      .use(session(await mintToken({ sub: other.id })))
+      .use(session(await mintToken({ sub: other.id, aal: 'aal2' })))
       .expect(200)
 
     expect(res.body).toMatchObject({ id: other.id, mfaEnabled: true })

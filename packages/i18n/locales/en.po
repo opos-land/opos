@@ -280,6 +280,10 @@ msgid "The service is temporarily unavailable. Try again in a moment."
 msgstr "The service is temporarily unavailable. Try again in a moment."
 
 #: src/errors.ts
+msgid "This account uses two-factor authentication. Enter the code from your authenticator app to continue."
+msgstr "This account uses two-factor authentication. Enter the code from your authenticator app to continue."
+
+#: src/errors.ts
 msgid "This address is already taken by another convention."
 msgstr "This address is already taken by another convention."
 
@@ -358,6 +362,12 @@ msgstr "Too many attempts. Try again later."
 #: src/errors.ts
 msgid "Too many emails sent. Try again in a few minutes."
 msgstr "Too many emails sent. Try again in a few minutes."
+
+#. Glossary term: two-factor authentication
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "two-factor authentication"
+msgstr "two-factor authentication"
 
 #. Glossary term: user
 #: src/glossary.ts

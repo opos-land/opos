@@ -1,5 +1,12 @@
 import { Logger } from '@nestjs/common'
-import { createRemoteJWKSet, customFetch, errors, type JWTPayload, jwtVerify } from 'jose'
+import {
+  createRemoteJWKSet,
+  customFetch,
+  decodeJwt,
+  errors,
+  type JWTPayload,
+  jwtVerify,
+} from 'jose'
 import { type Account, type Me, type SignInMethod } from '@opos/contract'
 import { authUrl } from '../../config/env'
 import { isUuid } from '../uuid'
@@ -106,6 +113,19 @@ export function lastSignInAt(payload: JWTPayload): number | undefined {
     .map((entry: unknown) => (entry as { timestamp?: unknown } | null)?.timestamp)
     .filter((timestamp): timestamp is number => Number.isFinite(timestamp))
   return timestamps.length > 0 ? Math.max(...timestamps) : undefined
+}
+
+/**
+ * Whether a session Supabase Auth has just issued is at `aal2`. The token comes straight from
+ * Supabase Auth, so its claims are read without checking the signature; a token that cannot be
+ * read counts as below `aal2`.
+ */
+export function isAal2(accessToken: string): boolean {
+  try {
+    return decodeJwt(accessToken).aal === 'aal2'
+  } catch {
+    return false
+  }
 }
 
 /** The sign-in methods `GET /me` names, in this order. */

@@ -39,12 +39,15 @@ export async function mintToken(
     amr?: { method: string; timestamp: number }[]
     /** Supabase Auth's `app_metadata.providers`: `email`, `google`. */
     providers?: string[]
+    /** Supabase Auth's assurance level: `aal2` after the second factor. */
+    aal?: 'aal1' | 'aal2'
   } = {},
   key: CryptoKey | Uint8Array = signingKey,
 ) {
   const jwt = new SignJWT({
     role: claims.role ?? 'authenticated',
     ...(claims.amr ? { amr: claims.amr } : {}),
+    ...(claims.aal ? { aal: claims.aal } : {}),
     ...(claims.providers ? { app_metadata: { providers: claims.providers } } : {}),
     ...(claims.is_anonymous === undefined ? {} : { is_anonymous: claims.is_anonymous }),
   })

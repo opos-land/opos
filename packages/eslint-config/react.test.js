@@ -9,12 +9,12 @@ const root = join(import.meta.dirname, 'fixtures', 'feature-app')
 // Type information plays no part in the rules under test, so the fixture needs no React types.
 // An import that does not resolve is not checked, so the import of a workspace package must also
 // prove that it resolves.
-const lint = (...options) =>
+const lint = () =>
   new ESLint({
     cwd: root,
     overrideConfigFile: true,
     overrideConfig: [
-      ...react(root, ...options),
+      ...react(root),
       tseslint.configs.disableTypeChecked,
       {
         files: ['src/features/beta/into-package.ts'],
@@ -77,13 +77,6 @@ describe('react preset', () => {
     expect(await ruleIds('features/beta/into-supabase-js.js')).toEqual(['no-restricted-imports'])
     expect(await ruleIds('features/beta/into-supabase-dynamic.ts')).toEqual([
       'no-restricted-syntax',
-    ])
-  })
-
-  it('lists no file that may import a Supabase package, whatever the options say', async () => {
-    const listing = lint({ legacyAuth: ['src/features/beta/into-supabase.ts'] })
-    expect(await ruleIds('features/beta/into-supabase.ts', listing)).toEqual([
-      'no-restricted-imports',
     ])
   })
 

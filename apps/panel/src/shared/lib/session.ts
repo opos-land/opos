@@ -15,23 +15,30 @@ import {
 export { announceAccountChange, signedIn, signedOut, useSession }
 export type { SessionState }
 
+/** The number of the latest `load`, which only its own answer may settle (PLAN.md 7.4). */
+let newestLoad = 0
+
 /**
  * Asks who is signed in and shows the answer. A session waiting for its code ends `mfa-required`.
  * `announce` tells the other tabs which account was found (a Google return is a page load,
  * PLAN.md 7.4); a tab following an announcement does not. A `401` that stands is a session that
  * is over only when a request of this tab ended it; one the refresh could not settle is
- * `unavailable`.
+ * `unavailable`. The answer to a load a newer one overtook counts for nothing, and neither does an
+ * account that arrives after the session was settled meanwhile: it may be the one just signed out.
  */
 async function load(announce: boolean) {
+  const generation = ++newestLoad
   let ended = false
   const stop = onSessionEnded(() => (ended = true))
   useSession.setState({ status: 'loading' })
   try {
     const shown = useSession.getState().account?.id
     const account = await accountClient.me.get()
+    if (generation !== newestLoad || useSession.getState().status !== 'loading') return
     useSession.setState({ status: 'ready', account })
     if (announce && account.id !== shown) announceAccountChange(account.id)
   } catch (error) {
+    if (generation !== newestLoad) return
     if (isMfaRequired(error)) mfaRequired()
     else if (isSessionInvalid(error) && ended) clearSession()
     else useSession.setState({ status: 'unavailable' })

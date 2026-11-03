@@ -1503,7 +1503,8 @@ a browser without Web Locks refreshes without one. A refresh ends in `refreshed`
 on a `401`, or in `unavailable` on a `429`, a `500`, a `503` or a network failure, and only
 `signed-out` ends the session in the browser. An account change — a sign-in, a sign-out, another account's session
 replacing it — is announced on a `BroadcastChannel` (`opos-panel-session`, `opos-portal-session`),
-and every other tab of the application clears its query cache.
+and every other tab of the application clears its query cache. A `GET /me` answered after such a
+change, or after a newer `GET /me` of the tab, shows no account and announces nothing.
 
 **Recent sign-in** — `DELETE /me`, `PUT /auth/password`, `POST /auth/mfa/enroll` and
 `DELETE /auth/mfa` require an `amr` entry in the JWT with a

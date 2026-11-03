@@ -104,6 +104,19 @@ export class AuthService {
     return account
   }
 
+  /**
+   * The three routes that mail an address promise to reveal nothing about it (PLAN.md 5.1). An
+   * empty mail bucket is a `202` for that reason: Supabase Auth's window per address exists only
+   * for an address it knows, and the code cannot tell it from the project's bucket.
+   */
+  private mailRefused(error: unknown, route: string): void {
+    if (isAuthError(error) && error.code === 'over_email_send_rate_limit') {
+      this.logger.warn(`Supabase Auth refused a mail for ${route}: over_email_send_rate_limit`)
+      return
+    }
+    throw addressRefusal(error)
+  }
+
   async signUp(
     req: CookieRequest,
     body: { email: string; firstName?: string; lastName?: string },
@@ -125,7 +138,7 @@ export class AuthService {
       },
     })
     // The same answer for an address already registered, so the form reveals nothing about it.
-    if (error && !(error.code && REGISTERED.has(error.code))) throw addressRefusal(error)
+    if (error && !(error.code && REGISTERED.has(error.code))) this.mailRefused(error, 'sign-up')
   }
 
   async resend(req: CookieRequest, email: string): Promise<void> {
@@ -135,7 +148,7 @@ export class AuthService {
       email,
       options: { emailRedirectTo: this.confirmUrl(app) },
     })
-    if (error) throw addressRefusal(error)
+    if (error) this.mailRefused(error, 'resend')
   }
 
   async forgotPassword(req: CookieRequest, email: string): Promise<void> {
@@ -143,7 +156,7 @@ export class AuthService {
     const { error } = await this.auth
       .forRequest()
       .resetPasswordForEmail(email, { redirectTo: this.confirmUrl(app) })
-    if (error) throw addressRefusal(error)
+    if (error) this.mailRefused(error, 'password reset')
   }
 
   async verify(

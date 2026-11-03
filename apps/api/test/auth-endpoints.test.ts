@@ -231,6 +231,59 @@ describe('a malformed address', () => {
   })
 })
 
+describe('the mail routes and the mail rate limit', () => {
+  const routes = ['/auth/sign-up', '/auth/resend', '/auth/password/forgot']
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it.each(routes)(
+    'answers %s alike for a known and an unknown address, however often it is called',
+    async (route) => {
+      const known = await confirmedAccount()
+      const unknown = newAddress()
+
+      const statuses = []
+      for (const email of [known.email, unknown]) {
+        for (let call = 0; call < 3; call++) {
+          statuses.push((await post(route, { email })).status)
+        }
+      }
+
+      expect(statuses).toEqual([202, 202, 202, 202, 202, 202])
+      const unknownAccount = await accountByEmail(unknown)
+      if (unknownAccount) deleteLater(unknownAccount.id)
+    },
+  )
+
+  it.each(routes)(
+    'answers 202 on %s when Supabase Auth has no mail left, and logs a warning naming nobody',
+    async (route) => {
+      const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+      const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+      const stub = await stubbedSupabaseAuth(429, {
+        error_code: 'over_email_send_rate_limit',
+        msg: 'email rate limit exceeded',
+      })
+      try {
+        const res = await request(stub.app.getHttpServer())
+          .post(route)
+          .set('Origin', portal)
+          .send({ email: 'anna.secret@example.test' })
+
+        expect(res.status).toBe(202)
+        expect(res.text).toBe('')
+        expect(warned).toHaveBeenCalledTimes(1)
+        expect(JSON.stringify(warned.mock.calls)).not.toMatch(/anna|secret|example/)
+        expect(logged).not.toHaveBeenCalled()
+      } finally {
+        await stub.close()
+      }
+    },
+  )
+})
+
 describe('verify', () => {
   it('sets the pair of the calling application and answers the account', async () => {
     const address = newAddress()

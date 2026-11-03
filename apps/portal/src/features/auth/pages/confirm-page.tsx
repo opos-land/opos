@@ -17,6 +17,7 @@ import { AuthCard } from '../components/auth-card'
 import { ChoosePasswordForm } from '../components/choose-password-form'
 import { EmailOnlyForm } from '../components/email-only-form'
 import { authReturn, forgetAuthReturn } from '../model/auth-return'
+import { mfaPath } from '../model/mfa-return'
 import { loginPath } from '../model/redirect'
 
 type EmailLink = NonNullable<ReturnType<typeof readLink>>
@@ -45,7 +46,7 @@ function ExpiredLink({ type, returnTo }: { type: EmailLink['type']; returnTo: st
   if (sentTo) {
     return (
       <Notice>
-        <Trans>We sent a new link to {sentTo}. Open it in this browser.</Trans>
+        <Trans>We sent a new link to {sentTo}.</Trans>
       </Notice>
     )
   }
@@ -64,6 +65,7 @@ function RedeemLink({
   returnTo: string
   onRedeemed: () => void
 }) {
+  const navigate = useNavigate()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<unknown>(null)
 
@@ -72,9 +74,14 @@ function RedeemLink({
     setError(null)
     const failure = await verifyLink(link)
     if (failure) {
-      // An account with two-factor authentication goes on to the code screen, which is no error.
-      if (errorCode(failure) !== 'session.mfa-required') setError(failure)
-      setPending(false)
+      // An account with two-factor authentication goes on to the code screen, which is no error;
+      // the page of a link is not held by the gate while the address carries the link.
+      if (errorCode(failure) === 'session.mfa-required') {
+        void navigate(mfaPath('/auth/confirm'), { replace: true })
+      } else {
+        setError(failure)
+        setPending(false)
+      }
     } else {
       onRedeemed()
     }
@@ -110,7 +117,10 @@ function RedeemLink({
         <Trans>Continue</Trans>
       </Button>
       {error ? (
-        <Link to={loginPath(returnTo)} className={`${linkClass} text-sm`}>
+        <Link
+          to={loginPath(returnTo)}
+          className={`${linkClass} inline-flex min-h-11 items-center text-sm`}
+        >
           <Trans>Go to sign-in</Trans>
         </Link>
       ) : null}
@@ -165,7 +175,10 @@ export function ConfirmPage() {
       <p className="text-sm">
         <Trans>Open the link from your email to confirm your address or reset your password.</Trans>
       </p>
-      <Link to={loginPath(returnTo)} className={`${linkClass} text-sm`}>
+      <Link
+        to={loginPath(returnTo)}
+        className={`${linkClass} inline-flex min-h-11 items-center text-sm`}
+      >
         <Trans>Go to sign-in</Trans>
       </Link>
     </AuthCard>

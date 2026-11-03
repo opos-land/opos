@@ -183,7 +183,7 @@ describe('ConfirmPage with a token', () => {
     expect(await screen.findByText('at /schedule')).toBeTruthy()
   })
 
-  it('an account with two-factor authentication shows no error: the code screen follows', async () => {
+  it('an account with two-factor authentication shows no error: the code screen follows, and returns here without the spent token', async () => {
     const user = userEvent.setup()
     vi.mocked(verifyLink).mockResolvedValue(new ORPCError('session.mfa-required', { status: 401 }))
     renderConfirm('?token_hash=hash-a&type=recovery')
@@ -191,8 +191,39 @@ describe('ConfirmPage with a token', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
     expect(screen.queryByRole('alert')).toBeNull()
-    expect(screen.queryByRole('link', { name: 'Go to sign-in' })).toBeNull()
+    expect(await screen.findByText('at /auth/mfa?redirect=%2Fauth%2Fconfirm')).toBeTruthy()
+  })
+
+  it('a browser holding a session that waits for its code still shows the button of an unspent link', () => {
+    useSession.setState({ status: 'mfa-required', account: null })
+    renderConfirm('?token_hash=hash-a&type=recovery')
+
+    expect(verifyLink).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy()
+  })
+
+  it('a new link is not tied to one browser', async () => {
+    const user = userEvent.setup()
+    vi.mocked(verifyLink).mockResolvedValue(new ORPCError('auth.otp_expired', { status: 422 }))
+    renderConfirm('?token_hash=hash-a&type=signup')
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.type(await screen.findByLabelText('Email'), 'reader@x.test')
+    await user.click(screen.getByRole('button', { name: 'Send a new link' }))
+
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'We sent a new link to reader@x.test.',
+    )
+  })
+
+  it('the sign-in link after a failure is at least 44 px tall', async () => {
+    const user = userEvent.setup()
+    vi.mocked(verifyLink).mockResolvedValue(new ORPCError('server.unavailable', { status: 503 }))
+    renderConfirm('?token_hash=hash-a&type=signup')
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.getByRole('link', { name: 'Go to sign-in' }).className).toContain('min-h-11')
   })
 
   it('otp_expired offers a new link, a confirmation for a signup link', async () => {
@@ -242,9 +273,9 @@ describe('ConfirmPage with a token', () => {
       expect((await screen.findByRole('alert')).textContent).toBe(text)
       expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy()
       expect(screen.queryByLabelText('Email')).toBeNull()
-      expect(screen.getByRole('link', { name: 'Go to sign-in' }).getAttribute('href')).toBe(
-        '/login',
-      )
+      const link = screen.getByRole('link', { name: 'Go to sign-in' })
+      expect(link.getAttribute('href')).toBe('/login')
+      expect(link.className).toContain('min-h-11')
     },
   )
 
@@ -272,9 +303,9 @@ describe('ConfirmPage without a token', () => {
     (search) => {
       renderConfirm(search)
 
-      expect(screen.getByRole('link', { name: 'Go to sign-in' }).getAttribute('href')).toBe(
-        '/login',
-      )
+      const link = screen.getByRole('link', { name: 'Go to sign-in' })
+      expect(link.getAttribute('href')).toBe('/login')
+      expect(link.className).toContain('min-h-11')
       expect(verifyLink).not.toHaveBeenCalled()
       expect(screen.queryByLabelText(/New password/)).toBeNull()
     },

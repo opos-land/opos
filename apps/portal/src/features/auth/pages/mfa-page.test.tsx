@@ -7,10 +7,14 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
-import { recoverWithCode, verifyCode } from '../api/auth'
+import { recoverWithCode, signOut, verifyCode } from '../api/auth'
 import { MfaPage } from './mfa-page'
 
-vi.mock('../api/auth', () => ({ verifyCode: vi.fn(), recoverWithCode: vi.fn() }))
+vi.mock('../api/auth', () => ({
+  verifyCode: vi.fn(),
+  recoverWithCode: vi.fn(),
+  signOut: vi.fn(),
+}))
 
 const account = {
   id: 'a',
@@ -59,6 +63,7 @@ beforeEach(() => {
   useSession.setState({ status: 'mfa-required', account: null })
   vi.mocked(verifyCode).mockReset().mockResolvedValue(null)
   vi.mocked(recoverWithCode).mockReset().mockResolvedValue(null)
+  vi.mocked(signOut).mockReset().mockResolvedValue(null)
 })
 
 afterEach(cleanup)
@@ -139,19 +144,6 @@ describe('MfaPage', () => {
     expect(screen.getByLabelText('Code')).toBeTruthy()
   })
 
-  it('after a recovery code the account it shows has two-factor authentication off', async () => {
-    answerSignsIn(recoverWithCode, { ...account, mfaEnabled: false })
-    useSession.setState({ status: 'mfa-required', account: null })
-    const user = renderAt()
-
-    await user.click(screen.getByRole('button', { name: 'Use a recovery code' }))
-    await user.type(screen.getByLabelText('Recovery code'), 'abcdefghijklmnop')
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
-
-    await screen.findByText('at /account')
-    expect(useSession.getState().account?.mfaEnabled).toBe(false)
-  })
-
   it('forgets the answers cached before the code, so none shows an account without it', () => {
     const client = new QueryClient()
     client.setQueryData(['account', 'me'], { mfaEnabled: true })
@@ -161,15 +153,50 @@ describe('MfaPage', () => {
     expect(client.getQueryData(['account', 'me'])).toBeUndefined()
   })
 
-  it('offers the sign-in when the session has ended, and keeps where to return', async () => {
+  it('offers no way back to sign-in that the pending session would bounce: sign out is the way', async () => {
     vi.mocked(verifyCode).mockResolvedValue(new ORPCError('session.invalid', { status: 401 }))
     const user = renderAt('?redirect=%2Fschedule')
 
     await user.type(screen.getByLabelText('Code'), '123456')
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
-    const link = await screen.findByRole('link', { name: 'Go to sign-in' })
-    expect(link.getAttribute('href')).toBe('/login?redirect=%2Fschedule')
+    await screen.findByRole('alert')
+    expect(screen.queryByRole('link', { name: 'Go to sign-in' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
+  })
+
+  it('signs out from the code screen and leads to sign-in', async () => {
+    vi.mocked(signOut).mockImplementation(() => {
+      useSession.setState({ status: 'ready', account: null })
+      return Promise.resolve(null)
+    })
+    const user = renderAt('?redirect=%2Fschedule')
+
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+
+    expect(signOut).toHaveBeenCalledOnce()
+    expect(await screen.findByText('at /login?redirect=%2Fschedule')).toBeTruthy()
+  })
+
+  it('shows why a sign-out failed and stays on the code screen', async () => {
+    vi.mocked(signOut).mockResolvedValue(new ORPCError('server.unavailable', { status: 503 }))
+    const user = renderAt()
+
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+
+    expect((await screen.findByRole('alert')).textContent).toContain('Try again')
+    expect(screen.getByLabelText('Code')).toBeTruthy()
+  })
+
+  it('sends nothing for an empty recovery code and says so', async () => {
+    const user = renderAt()
+
+    await user.click(screen.getByRole('button', { name: 'Use a recovery code' }))
+    await user.type(screen.getByLabelText('Recovery code'), '  ')
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(recoverWithCode).not.toHaveBeenCalled()
+    expect(screen.getByText('Enter one of your recovery codes.')).toBeTruthy()
   })
 
   it('shows nothing of the form while the session is asked for', () => {

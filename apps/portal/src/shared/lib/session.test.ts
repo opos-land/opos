@@ -3,6 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { accountClient } from './api'
 import { describeError } from './errors'
 import { announceAccountChange, signedIn, signedOut, startSession, useSession } from './session'
+import { mfaRequired } from './session-store'
 
 const account = (id: string) => ({
   id,
@@ -159,6 +160,27 @@ describe('across tabs', () => {
 
     expect(received).toEqual([{ accountId: 'a' }, { accountId: null }])
     expect(useSession.getState()).toMatchObject({ status: 'ready', account: null })
+  })
+
+  it('a session that now waits for its code tells the other tabs to drop the account they show', async () => {
+    const { received } = otherTab()
+    signedIn(account('a'))
+
+    mfaRequired()
+    await Promise.resolve()
+
+    expect(received).toEqual([{ accountId: 'a' }, { accountId: null }])
+    expect(useSession.getState()).toMatchObject({ status: 'mfa-required', account: null })
+  })
+
+  it('a session that waits for its code with no account to lose says nothing', async () => {
+    const { received } = otherTab()
+    useSession.setState({ status: 'ready', account: null })
+
+    mfaRequired()
+    await Promise.resolve()
+
+    expect(received).toEqual([])
   })
 
   it('says nothing when there was no account to sign out', async () => {

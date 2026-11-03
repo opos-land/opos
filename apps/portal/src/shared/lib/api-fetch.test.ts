@@ -141,6 +141,21 @@ describe('createApiFetch', () => {
     expect(options.onMfaRequired).toHaveBeenCalledOnce()
   })
 
+  it('a retry after a refresh that wants the code tells the application, and signs nobody out', async () => {
+    const { fetch, requests } = recorder(invalid(), json(401, { code: 'session.mfa-required' }))
+    const options = setup()
+
+    const response = await createApiFetch({ ...options, locale: () => 'pl', fetch })(
+      new Request('http://api.test/me'),
+    )
+
+    expect(response.status).toBe(401)
+    expect(requests).toHaveLength(2)
+    expect(options.refresh).toHaveBeenCalledTimes(1)
+    expect(options.onMfaRequired).toHaveBeenCalledOnce()
+    expect(options.onSignedOut).not.toHaveBeenCalled()
+  })
+
   it('tells the application nothing for any other answer', async () => {
     const { fetch } = recorder(
       json(401, { code: 'session.reauthentication-required' }),

@@ -84,6 +84,19 @@ describe('LikeButton', () => {
     expect(api.liked).not.toHaveBeenCalled()
   })
 
+  it('leads a session waiting for its code to the code screen, not to sign-in', () => {
+    api.session.status = 'mfa-required'
+    api.session.account = null
+    view()
+
+    const link = screen.getByRole('link', { name: 'Finish signing in to like this item' })
+    expect(link.getAttribute('href')).toBe(
+      `/auth/mfa?redirect=${encodeURIComponent('/conventions/a/2027/program/item-1')}`,
+    )
+    expect(screen.queryByRole('link', { name: 'Sign in to like this item' })).toBeNull()
+    expect(api.liked).not.toHaveBeenCalled()
+  })
+
   it('keeps the way to sign-in while the API could not say who is signed in', () => {
     api.session.status = 'unavailable'
     api.session.account = null

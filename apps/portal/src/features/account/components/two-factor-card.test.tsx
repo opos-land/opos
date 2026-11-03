@@ -113,7 +113,7 @@ describe('TwoFactorCard', () => {
     for (const code of CODES) expect(await screen.findByText(code)).toBeTruthy()
     expect(screen.queryByAltText('QR code for your authenticator app')).toBeNull()
     expect(screen.queryByText(SECRET)).toBeNull()
-    expect(refreshAccount).toHaveBeenCalledOnce()
+    expect(refreshAccount).toHaveBeenCalledExactlyOnceWith(client, true)
   })
 
   it('the codes view stays until the person confirms they saved them', async () => {
@@ -200,7 +200,7 @@ describe('TwoFactorCard', () => {
 
     expect(disableTwoFactor).toHaveBeenCalledOnce()
     expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
-    expect(refreshAccount).toHaveBeenCalledOnce()
+    expect(refreshAccount).toHaveBeenCalledExactlyOnceWith(client, false)
   })
 
   it('tells how to get new codes when the codes of a turn-on were lost to a racing request', async () => {
@@ -215,8 +215,25 @@ describe('TwoFactorCard', () => {
     const notice = await screen.findByRole('status')
     expect(notice.textContent).toContain('recovery codes could not be shown')
     expect(notice.textContent).toContain('turn two-factor authentication off')
-    expect(refreshAccount).toHaveBeenCalledOnce()
+    expect(refreshAccount).toHaveBeenCalledExactlyOnceWith(client, true)
     expect(screen.queryByAltText('QR code for your authenticator app')).toBeNull()
+  })
+
+  it('shows the secret as one message with its label', async () => {
+    const user = renderCard(false)
+
+    await startEnrolling(user)
+
+    expect(screen.getByText(SECRET).parentElement?.textContent).toBe(`Secret: ${SECRET}`)
+  })
+
+  it('refreshes at once when turning off finds 2FA already off, and shows it as off', async () => {
+    vi.mocked(disableTwoFactor).mockRejectedValue(new ORPCError('mfa.not-enabled', { status: 404 }))
+    const user = renderCard(true)
+
+    await user.click(screen.getByRole('button', { name: 'Turn off two-factor authentication' }))
+
+    await vi.waitFor(() => expect(refreshAccount).toHaveBeenCalledExactlyOnceWith(client, false))
   })
 
   describe('when the sign-in is too old', () => {
@@ -249,6 +266,17 @@ describe('TwoFactorCard', () => {
 
       expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
       expect(disableTwoFactor).toHaveBeenCalledTimes(2)
+    })
+
+    it('lets the person step back from the confirmation to the card', async () => {
+      vi.mocked(enrollTwoFactor).mockRejectedValueOnce(tooOld())
+      const user = renderCard(false)
+
+      await user.click(screen.getByRole('button', { name: 'Turn on two-factor authentication' }))
+      await user.click(await screen.findByRole('button', { name: 'Cancel' }))
+
+      expect(screen.queryByLabelText('Your password')).toBeNull()
+      expect(screen.getByRole('button', { name: 'Turn on two-factor authentication' })).toBeTruthy()
     })
 
     it('shows a wrong password and keeps the form', async () => {

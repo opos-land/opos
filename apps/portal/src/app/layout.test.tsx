@@ -17,10 +17,10 @@ const account = {
   mfaEnabled: false,
 }
 
-const view = () =>
+const view = (path = '/') =>
   render(
     <I18nProvider i18n={i18n}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
         <Layout />
       </MemoryRouter>
     </I18nProvider>,
@@ -41,6 +41,25 @@ describe('Layout', () => {
     view()
 
     expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/login')
+  })
+
+  it('offers to finish signing in, not to sign in, to a session waiting for its code', () => {
+    useSession.setState({ status: 'mfa-required', account: null })
+    view('/conventions/convention-a?day=2')
+
+    const link = screen.getByRole('link', { name: 'Finish signing in' })
+    expect(link.getAttribute('href')).toBe(
+      '/auth/mfa?redirect=%2Fconventions%2Fconvention-a%3Fday%3D2',
+    )
+    expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Account' })).toBeNull()
+  })
+
+  it('offers nothing to finish on the code screen itself', () => {
+    useSession.setState({ status: 'mfa-required', account: null })
+    view('/auth/mfa')
+
+    expect(screen.queryByRole('link', { name: 'Finish signing in' })).toBeNull()
   })
 
   it('keeps the sign-in reachable while the API cannot be asked who is signed in', () => {

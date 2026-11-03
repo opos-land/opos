@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro'
-import { Link, Outlet } from 'react-router'
+import { Link, Outlet, useLocation } from 'react-router'
 import { AccountLocale } from '../features/account'
-import { MfaGate } from '../features/auth'
+import { MFA_PATH, MfaGate, mfaPath, mfaReturnFor } from '../features/auth'
 import { PRIVACY_PATH } from '../shared/config/routes'
 import { useSession } from '../shared/lib/session'
 import { linkClass } from '../shared/ui'
@@ -14,6 +14,7 @@ import { linkClass } from '../shared/ui'
 export function Layout() {
   const status = useSession((state) => state.status)
   const account = useSession((state) => state.account)
+  const location = useLocation()
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -34,6 +35,13 @@ export function Layout() {
                   <Trans>Account</Trans>
                 </Link>
               </div>
+            ) : status === 'mfa-required' ? (
+              // A session that waits for its code is not signed in; the way on is the code screen.
+              location.pathname !== MFA_PATH && (
+                <Link to={mfaPath(mfaReturnFor(location))} className={linkClass}>
+                  <Trans>Finish signing in</Trans>
+                </Link>
+              )
             ) : (
               <Link to="/login" className={linkClass}>
                 <Trans>Sign in</Trans>

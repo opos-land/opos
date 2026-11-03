@@ -16,10 +16,11 @@ export { announceAccountChange, signedIn, signedOut, useSession }
 export type { SessionState }
 
 /**
- * Asks who is signed in and shows the answer. A session waiting for its code ends `mfa-required`. `announce` tells the other tabs which account was
- * found (a Google return is a page load, PLAN.md 7.4); a tab following an announcement does not.
- * A `401` that stands is a session that is over only when a request of this tab ended it; one the
- * refresh could not settle is `unavailable`.
+ * Asks who is signed in and shows the answer. A session waiting for its code ends `mfa-required`.
+ * `announce` tells the other tabs which account was found (a Google return is a page load,
+ * PLAN.md 7.4); a tab following an announcement does not. A `401` that stands is a session that
+ * is over only when a request of this tab ended it; one the refresh could not settle is
+ * `unavailable`.
  */
 async function load(announce: boolean) {
   let ended = false

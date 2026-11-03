@@ -61,6 +61,7 @@ msgstr "Back to sign-in"
 msgid "By creating an account you confirm that you have read the <0>privacy policy</0>."
 msgstr "By creating an account you confirm that you have read the <0>privacy policy</0>."
 
+#: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
 msgid "Cancel"
 msgstr "Cancel"
@@ -133,6 +134,10 @@ msgstr "Deleting your account"
 msgid "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
 msgstr "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Dismiss"
+msgstr "Dismiss"
+
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
@@ -165,6 +170,10 @@ msgid "Enter one of the recovery codes you saved. It turns two-factor authentica
 msgstr "Enter one of the recovery codes you saved. It turns two-factor authentication off."
 
 #: src/features/auth/pages/mfa-page.tsx
+msgid "Enter one of your recovery codes."
+msgstr "Enter one of your recovery codes."
+
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Enter the code from your authenticator app to finish signing in."
 msgstr "Enter the code from your authenticator app to finish signing in."
 
@@ -185,6 +194,14 @@ msgstr "Enter your password."
 msgid "Fantasy conventions, in one place"
 msgstr "Fantasy conventions, in one place"
 
+#: src/app/layout.tsx
+msgid "Finish signing in"
+msgstr "Finish signing in"
+
+#: src/features/conventions/components/like-button.tsx
+msgid "Finish signing in to like this item"
+msgstr "Finish signing in to like this item"
+
 #: src/features/account/components/profile-form.tsx
 #: src/features/auth/components/register-form.tsx
 msgid "First name"
@@ -203,7 +220,6 @@ msgid "Forgot your password?"
 msgstr "Forgot your password?"
 
 #: src/features/auth/pages/confirm-page.tsx
-#: src/features/auth/pages/mfa-page.tsx
 msgid "Go to sign-in"
 msgstr "Go to sign-in"
 
@@ -389,8 +405,8 @@ msgid "Scan the QR code with an authenticator app, or type the secret into it. T
 msgstr "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
 
 #: src/features/account/components/two-factor-card.tsx
-msgid "Secret"
-msgstr "Secret"
+msgid "Secret: <0>{secret}</0>"
+msgstr "Secret: <0>{secret}</0>"
 
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
@@ -417,6 +433,7 @@ msgid "Sign in to like this item"
 msgstr "Sign in to like this item"
 
 #: src/features/account/pages/account-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Sign out"
 msgstr "Sign out"
 
@@ -530,8 +547,8 @@ msgid "We sent a new link to {email}. Open it to choose your password."
 msgstr "We sent a new link to {email}. Open it to choose your password."
 
 #: src/features/auth/pages/confirm-page.tsx
-msgid "We sent a new link to {sentTo}. Open it in this browser."
-msgstr "We sent a new link to {sentTo}. Open it in this browser."
+msgid "We sent a new link to {sentTo}."
+msgstr "We sent a new link to {sentTo}."
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."

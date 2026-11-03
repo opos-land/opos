@@ -96,7 +96,13 @@ describe('SupabaseAuthFactory', () => {
       factory().forRequest().signInWithPassword({ email: 'a@b.test', password: 'x' }),
     )
 
-    expect(calls[0]!.headers.get('user-agent') ?? '').not.toMatch(/Mozilla/)
+    // An exact set, so any header added later, a User-Agent above all, fails here.
+    expect([...calls[0]!.headers.keys()].sort()).toEqual([
+      'apikey',
+      'content-type',
+      'sb-forwarded-for',
+      'x-supabase-api-version',
+    ])
   })
 
   it('sends no Authorization on an admin call', async () => {

@@ -38,7 +38,9 @@ try {
   )
   console.log(`Removed ${result.factors} factor(s) of account ${result.accountId}.`)
   if (!result.emailSent) {
-    console.error('The email was not sent; the removal stands. Tell the person yourself.')
+    console.error(
+      `The email was not sent (${result.emailError ?? 'no reason given'}); the removal stands. Tell the person yourself.`,
+    )
   }
 } catch (error) {
   if (!(error instanceof ResetError)) throw error

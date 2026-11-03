@@ -19,7 +19,13 @@ import {
   testEmail,
 } from './auth'
 import { deleteMail, waitForMail } from './mailpit'
-import { closeTenantDb, mfaState, recoveryCodeRows } from './tenants'
+import {
+  addRecoveryCodeHash,
+  addVerifiedFactor,
+  closeTenantDb,
+  mfaState,
+  recoveryCodeRows,
+} from './tenants'
 
 // `pnpm db:account:reset-2fa` (PLAN.md 14): what an admin runs for a person who lost both the
 // device and the recovery codes. It works as postgres and on the admin API, with no session.
@@ -96,19 +102,25 @@ describe('resetTwoFactor', () => {
     expect((await mfaState(id)).mirrored).toBe(false)
   })
 
-  it('refuses an unknown address with account.not-found, changing nothing', async () => {
+  it('refuses an unknown address with account.not-found, leaving another account alone', async () => {
+    const bystander = await personWith2fa()
+
     const failure = await failureOf(resetTwoFactor(deps, testEmail('nobody')))
 
     expect(failure).toBeInstanceOf(ResetError)
     expect(failure).toMatchObject({ code: 'account.not-found' })
+    expect(await mfaState(bystander.id)).toEqual({ mirrored: true, factors: 1 })
+    expect(await recoveryCodeRows(bystander.id)).toHaveLength(10)
   })
 
-  it('refuses an unconfirmed account with account.unconfirmed', async () => {
-    const { email } = await createAccount({}, { confirmed: false })
+  it('refuses an unconfirmed account with account.unconfirmed, changing nothing', async () => {
+    const { id, email } = await createAccount({}, { confirmed: false })
+    await addRecoveryCodeHash(id, 'c'.repeat(64))
 
     const failure = await failureOf(resetTwoFactor(deps, email))
 
     expect(failure).toMatchObject({ code: 'account.unconfirmed' })
+    expect(await recoveryCodeRows(id)).toHaveLength(1)
   })
 
   it('refuses an account with no factor with mfa.not-enabled, sending nothing', async () => {
@@ -122,13 +134,29 @@ describe('resetTwoFactor', () => {
     await expect(waitForMail(email, 1, 500)).rejects.toThrow(/no email/)
   })
 
-  it('refuses without touching the codes of an account with no factor', async () => {
-    const person = await personWith2fa()
-    await resetTwoFactor(deps, person.email)
+  it('refuses an account with only an unverified factor, as 2FA is not on, and removes nothing', async () => {
+    const { id, email } = await createAccount()
+    addresses.push(email)
+    await addVerifiedFactor(id, 'unverified')
 
-    const failure = await failureOf(resetTwoFactor(deps, person.email))
+    const failure = await failureOf(resetTwoFactor(deps, email))
 
     expect(failure).toMatchObject({ code: 'mfa.not-enabled' })
+    expect(await mfaState(id)).toEqual({ mirrored: false, factors: 1 })
+    await expect(waitForMail(email, 1, 500)).rejects.toThrow(/no email/)
+  })
+
+  it('leaves the codes of an account with no factor where they are', async () => {
+    const { id, email } = await createAccount()
+    addresses.push(email)
+    await addRecoveryCodeHash(id, 'd'.repeat(64))
+
+    const failure = await failureOf(resetTwoFactor(deps, email))
+
+    expect(failure).toMatchObject({ code: 'mfa.not-enabled' })
+    const rows = await recoveryCodeRows(id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ code_hash: 'd'.repeat(64), used_at: null })
   })
 
   it('reports a failed email and leaves the removal standing', async () => {
@@ -139,7 +167,7 @@ describe('resetTwoFactor', () => {
 
     const result = await resetTwoFactor({ ...deps, mail: failing }, email)
 
-    expect(result).toMatchObject({ factors: 1, emailSent: false })
+    expect(result).toMatchObject({ factors: 1, emailSent: false, emailError: 'smtp down' })
     expect(await mfaState(id)).toEqual({ mirrored: false, factors: 0 })
   })
 })

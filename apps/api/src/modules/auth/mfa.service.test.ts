@@ -497,11 +497,15 @@ describe('MfaService.disable', () => {
   })
 
   it('still answers when the email fails', async () => {
-    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
     const { service, mail } = setup()
     mail.sendNoticeEmail.mockRejectedValueOnce(new Error('smtp down'))
 
     await expect(service.disable(request('aal2'))).resolves.toBeUndefined()
+
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('smtp down')
+    expect(String(warn.mock.calls[0]![0])).not.toContain('person@example.test')
   })
 
   it('ends the other sessions once the factors are gone, and still answers when that fails', async () => {

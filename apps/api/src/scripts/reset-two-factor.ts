@@ -31,6 +31,8 @@ export interface ResetResult {
   factors: number
   /** `false` when the email failed; the removal stands all the same. */
   emailSent: boolean
+  /** Why the email failed, for the admin to see; absent when it was sent. */
+  emailError?: string
 }
 
 /**
@@ -46,6 +48,7 @@ export async function resetTwoFactor(deps: ResetDeps, address: string): Promise<
       id: accounts.id,
       locale: accounts.locale,
       emailConfirmedAt: accounts.emailConfirmedAt,
+      mfaEnabledAt: accounts.mfaEnabledAt,
     })
     .from(accounts)
     .where(eq(accounts.email, email))
@@ -57,9 +60,14 @@ export async function resetTwoFactor(deps: ResetDeps, address: string): Promise<
     )
   }
 
-  const factorIds = await deps.admin.factorIds(account.id)
+  // 2FA is on when a verified factor exists, which the mirror says; a leftover unverified factor
+  // is not 2FA (PLAN.md 7.12), and a reset of that account would tell a person a lie.
+  const factorIds = account.mfaEnabledAt ? await deps.admin.factorIds(account.id) : []
   if (factorIds.length === 0) {
-    throw new ResetError('mfa.not-enabled', `The account with the email ${email} has no factor`)
+    throw new ResetError(
+      'mfa.not-enabled',
+      `The account with the email ${email} has no verified factor`,
+    )
   }
   for (const factorId of factorIds) await deps.admin.deleteFactor(account.id, factorId)
   await deps.db
@@ -73,7 +81,12 @@ export async function resetTwoFactor(deps: ResetDeps, address: string): Promise<
       content: mfaDisabledEmail,
     })
     return { accountId: account.id, factors: factorIds.length, emailSent: true }
-  } catch {
-    return { accountId: account.id, factors: factorIds.length, emailSent: false }
+  } catch (error) {
+    return {
+      accountId: account.id,
+      factors: factorIds.length,
+      emailSent: false,
+      emailError: error instanceof Error ? error.message : 'unknown error',
+    }
   }
 }

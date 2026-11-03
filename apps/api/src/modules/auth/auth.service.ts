@@ -249,7 +249,9 @@ export class AuthService {
       if (othersError) throw othersError
       if (error) throw error
     } catch (error) {
-      throw toApiError(error)
+      const refusal = toApiError(error)
+      if (refusal.code === 'session.invalid') clearSessionCookies(req.res, app, this.env)
+      throw refusal
     } finally {
       await this.keepCookiesCurrent(req, app, client, access)
     }

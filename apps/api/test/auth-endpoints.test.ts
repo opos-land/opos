@@ -73,6 +73,19 @@ const cookiesOf = (res: request.Response): string[] => {
 const cookieNamed = (res: request.Response, name: string) =>
   cookiesOf(res).find((cookie) => cookie.startsWith(`${name}=`))
 
+/** Both cookies of `application` expired by this response, and no other cookie touched. */
+const expectCleared = (res: request.Response, application: 'portal' | 'panel') => {
+  expect(
+    cookiesOf(res)
+      .map((cookie) => cookie.split('=')[0])
+      .sort(),
+  ).toEqual([`opos_${application}_access`, `opos_${application}_refresh`])
+  for (const cookie of cookiesOf(res)) {
+    expect(cookie).toMatch(/^[^=]+=;/)
+    expect(cookie).toMatch(/Expires=Thu, 01 Jan 1970/)
+  }
+}
+
 const valueOf = (cookie: string | undefined) => cookie?.split(';')[0]?.split('=').slice(1).join('=')
 
 /** The token hash and type of the newest confirmation email to `address`; Mailpit lists it first. */
@@ -702,6 +715,7 @@ describe('password', () => {
 
     expect(res.status).toBe(401)
     expect(res.body).toMatchObject({ code: 'session.invalid' })
+    expectCleared(res, 'portal')
   })
 
   it('after a registered address is confirmed, only the password chosen through confirm signs in', async () => {
@@ -738,6 +752,31 @@ describe('password', () => {
     await agent.put('/auth/password').send({ password: 'recovered-pass-1' }).expect(204)
 
     await post('/auth/sign-in', { email, password: 'recovered-pass-1' }).expect(200)
+  })
+})
+
+describe('DELETE /me', () => {
+  it('clears the cookies of the calling application only', async () => {
+    const { email } = await confirmedAccount()
+    const inPortal = await signedInAgent('portal', email)
+
+    const res = await inPortal.delete('/me')
+
+    expect(res.status).toBe(204)
+    expectCleared(res, 'portal')
+    expect((await inPortal.get('/me')).status).toBe(401)
+    expect(await accountByEmail(email)).toBeUndefined()
+  })
+
+  it('sets no cookie for a Bearer call without the Origin of an application', async () => {
+    const { email } = await confirmedAccount()
+
+    const res = await request(server)
+      .delete('/me')
+      .set('Authorization', `Bearer ${await signIn(email)}`)
+
+    expect(res.status).toBe(204)
+    expect(cookiesOf(res)).toEqual([])
   })
 })
 

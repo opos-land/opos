@@ -1,9 +1,16 @@
-import { Controller, UseGuards } from '@nestjs/common'
+import { Controller, Inject, Req, UseGuards } from '@nestjs/common'
 import { contract } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { GlobalDbService } from '../../common/database/global-db.service'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
+import { applicationFromOrigin } from '../../common/http/application'
+import { ENV, type Env } from '../../config/env'
+import {
+  clearSessionCookies,
+  type CookieRequest,
+  type CookieResponse,
+} from '../auth/session-cookies'
 import { AccountDeletionService } from './account-deletion.service'
 import { AccountsRepository } from './accounts.repository'
 
@@ -15,6 +22,7 @@ export class MeController {
     private readonly accounts: AccountsRepository,
     private readonly global: GlobalDbService,
     private readonly deletion: AccountDeletionService,
+    @Inject(ENV) private readonly env: Env,
   ) {}
 
   @Implement(contract.me.get)
@@ -30,8 +38,14 @@ export class MeController {
   }
 
   @Implement(contract.me.delete)
-  delete() {
-    return implement(contract.me.delete).handler(() => this.deletion.deleteCurrent())
+  delete(@Req() req: CookieRequest & { res: CookieResponse }) {
+    return implement(contract.me.delete).handler(async () => {
+      await this.deletion.deleteCurrent()
+      // The session died with the account: the pair of the calling application goes (PLAN.md 5.2).
+      // A Bearer call without the Origin of an application has no cookies to clear.
+      const app = applicationFromOrigin(req.headers.origin, this.env)
+      if (app) clearSessionCookies(req.res, app, this.env)
+    })
   }
 
   @Implement(contract.me.memberships)

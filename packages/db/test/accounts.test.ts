@@ -164,6 +164,34 @@ describe('accounts mirror auth.mfa_factors', () => {
     expect(await mfaEnabledAt(other.id)).toBeNull()
   })
 
+  // Supabase Auth runs each removal in a transaction of its own (PLAN.md 4.2, invariant 12): without
+  // a lock on the account row, two removals that overlap each see the other's factor still there.
+  it('clears mfa_enabled_at when two overlapping transactions remove the last two verified factors', async () => {
+    const user = await createUser()
+    const first = await addFactor(user.id, 'verified')
+    const second = await addFactor(user.id, 'verified')
+    expect(await mfaEnabledAt(user.id)).toBeInstanceOf(Date)
+    let firstRemoved!: () => void
+    const removed = new Promise<void>((resolve) => (firstRemoved = resolve))
+    let release!: () => void
+    const released = new Promise<void>((resolve) => (release = resolve))
+
+    const earlier = authAdmin.begin(async (tx) => {
+      await tx`delete from auth.mfa_factors where id = ${first}`
+      firstRemoved()
+      await released
+    })
+    await removed
+    const later = authAdmin.begin(async (tx) => {
+      await tx`delete from auth.mfa_factors where id = ${second}`
+    })
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    release()
+    await Promise.all([earlier, later])
+
+    expect(await mfaEnabledAt(user.id)).toBeNull()
+  })
+
   it('lets the user be deleted with a verified factor', async () => {
     const user = await createUser()
     await addFactor(user.id, 'verified')

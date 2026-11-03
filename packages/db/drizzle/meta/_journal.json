@@ -162,6 +162,13 @@
       "when": 1793716534741,
       "tag": "0022_backfill_mfa_enabled_at",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793723785687,
+      "tag": "0023_mfa_mirror_lock",
+      "breakpoints": true
     }
   ]
 }

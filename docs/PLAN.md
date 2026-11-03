@@ -605,8 +605,8 @@ Every RLS-covered table has an index starting with `tenantId`.
 | Role | Attributes | Used by |
 |---|---|---|
 | `postgres` | the project's own admin role, not a superuser: `BYPASSRLS`, `CREATEROLE`; owner of the `public` tables and the `drizzle` journal; every privilege Supabase gives it on the `auth` tables | `pnpm db:roles`, `pnpm db:migrate`, `pnpm db:seed`, the tenant scripts, `pnpm db:account:reset-2fa`, the backup |
-| `opos_app` | only the privileges the API uses (below), no `BYPASSRLS` | runtime API inside a tenant context |
-| `opos_app_global` | `select` on the columns its cross-tenant queries read, never a whole table; `BYPASSRLS` | `GlobalDbService` exclusively |
+| `opos_app` | only the privileges the API uses (below), no `BYPASSRLS`, `SUPERUSER`, `CREATEROLE`, `CREATEDB` or `REPLICATION` | runtime API inside a tenant context |
+| `opos_app_global` | `select` on the columns its cross-tenant queries read, never a whole table; `BYPASSRLS`, but none of `SUPERUSER`, `CREATEROLE`, `CREATEDB` and `REPLICATION` | `GlobalDbService` exclusively |
 
 The two runtime roles are created by `pnpm db:roles` ([roles.ts](../packages/db/src/roles.ts)), which
 connects as `postgres` through `DATABASE_MIGRATION_URL` ([11](#11-environment-variables)) — the
@@ -800,7 +800,8 @@ transaction and expects the report:
   API starts doing joins that list in the PR of its migration), anything at all for `anon`,
   `authenticated` and `service_role` — table-level and column-level grants alike, so `opos_app`
   updates only the columns on the list in `verify.ts`;
-- `opos_app` has `SUPERUSER` or `BYPASSRLS`, a runtime role owns a relation in `public` or is a
+- `opos_app` has `SUPERUSER` or `BYPASSRLS`, a runtime role has `SUPERUSER`, `CREATEROLE`,
+  `CREATEDB` or `REPLICATION`, a runtime role owns a relation in `public` or is a
   member of another role, or any of the five roles holds anything on a `public` sequence;
 - a `security definer` function in `public` has no pinned `search_path`, or `opos_app` or
   `opos_app_global` may execute it — its migration revokes `execute` from `public`, on top of the

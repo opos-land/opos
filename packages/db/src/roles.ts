@@ -5,8 +5,16 @@ import { scramVerifier } from './scram'
 const API_ROLES = 'anon, authenticated, service_role'
 
 const RUNTIME_ROLES = [
-  { name: 'opos_app', attributes: 'login nobypassrls', password: 'app' },
-  { name: 'opos_app_global', attributes: 'login bypassrls', password: 'appGlobal' },
+  {
+    name: 'opos_app',
+    attributes: 'login nobypassrls nocreaterole nocreatedb noreplication',
+    password: 'app',
+  },
+  {
+    name: 'opos_app_global',
+    attributes: 'login bypassrls nocreaterole nocreatedb noreplication',
+    password: 'appGlobal',
+  },
 ] as const
 
 /**

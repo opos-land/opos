@@ -149,8 +149,8 @@ describe('applyRoles', () => {
   it('sets the attributes of a role that holds others', async () => {
     await rolledBack(async (tx) => {
       await tx.unsafe(`
-        alter role opos_app bypassrls nologin;
-        alter role opos_app_global nobypassrls;
+        alter role opos_app bypassrls nologin createrole;
+        alter role opos_app_global nobypassrls createdb replication;
         set local role postgres;
       `)
 
@@ -158,12 +158,26 @@ describe('applyRoles', () => {
 
       expect(
         await tx`
-          select rolname, rolcanlogin, rolbypassrls from pg_roles
-          where rolname = any(${runtimeRoles}) order by 1
+          select rolname, rolcanlogin, rolbypassrls, rolcreaterole, rolcreatedb, rolreplication
+          from pg_roles where rolname = any(${runtimeRoles}) order by 1
         `,
       ).toEqual([
-        { rolname: 'opos_app', rolcanlogin: true, rolbypassrls: false },
-        { rolname: 'opos_app_global', rolcanlogin: true, rolbypassrls: true },
+        {
+          rolname: 'opos_app',
+          rolcanlogin: true,
+          rolbypassrls: false,
+          rolcreaterole: false,
+          rolcreatedb: false,
+          rolreplication: false,
+        },
+        {
+          rolname: 'opos_app_global',
+          rolcanlogin: true,
+          rolbypassrls: true,
+          rolcreaterole: false,
+          rolcreatedb: false,
+          rolreplication: false,
+        },
       ])
     }, supabaseAdmin)
   })

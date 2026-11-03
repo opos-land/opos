@@ -377,29 +377,39 @@ describe('POST /auth/mfa/recover', () => {
     expect((await mfaState(id)).mirrored).toBe(false)
   })
 
-  it('refuses a used code, and a code of another account', async () => {
+  it('refuses a used code', async () => {
     const first = await personWith2fa()
-    const stranger = await personWith2fa()
     const browser = await passwordBrowser(first.email)
     await browser.agent.post('/auth/mfa/recover').send({ code: first.recoveryCodes[0] }).expect(204)
     // Two-factor authentication back on: the spent code must not work again.
-    const again = await signedInAgent('portal', first.email)
-    await enableMfa(again)
+    await enableMfa(await signedInAgent('portal', first.email))
     const returning = await passwordBrowser(first.email)
-    const strangerBrowser = await passwordBrowser(stranger.email)
 
     const used = await returning.agent
       .post('/auth/mfa/recover')
       .send({ code: first.recoveryCodes[0] })
+
+    expect(used.status).toBe(400)
+    expect(used.body).toMatchObject({ code: 'mfa.code-invalid' })
+    expect((await mfaState(first.id)).mirrored).toBe(true)
+  })
+
+  it('refuses an unused code of another account, and leaves it unused', async () => {
+    const owner = await personWith2fa()
+    const stranger = await personWith2fa()
+    const strangerBrowser = await passwordBrowser(stranger.email)
+
     const foreign = await strangerBrowser.agent
       .post('/auth/mfa/recover')
-      .send({ code: first.recoveryCodes[1] })
+      .send({ code: owner.recoveryCodes[1] })
 
-    for (const res of [used, foreign]) {
-      expect(res.status).toBe(400)
-      expect(res.body).toMatchObject({ code: 'mfa.code-invalid' })
-    }
+    expect(foreign.status).toBe(400)
+    expect(foreign.body).toMatchObject({ code: 'mfa.code-invalid' })
     expect((await mfaState(stranger.id)).mirrored).toBe(true)
+    const rows = await recoveryCodeRows(owner.id)
+    expect(rows).toHaveLength(10)
+    expect(rows.every((row) => row.used_at === null)).toBe(true)
+    expect(await recoveryCodeRows(stranger.id)).toHaveLength(10)
   })
 
   it('answers 409 mfa.not-required at aal2 and on an account without 2FA', async () => {

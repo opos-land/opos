@@ -179,8 +179,9 @@ export async function deleteCreatedAccounts() {
 }
 
 /**
- * An RFC 6238 code for a base32 secret, by Supabase Auth's clock. Supabase Auth refuses a code of a
- * 30 second step it has seen, so a second code in a row asks for the next step: `stepsAhead` 1.
+ * An RFC 6238 code for a base32 secret, by Supabase Auth's clock. `stepsAhead` moves it by 30
+ * second steps. Supabase Auth accepts a code again within its own step (PLAN.md 7.12), and a code
+ * an hour old is refused.
  */
 export const totpCode = (secret: string, stepsAhead = 0, now = Date.now()): string =>
   totp(secret, now + stepsAhead * 30_000)

@@ -49,7 +49,7 @@ export function toApiError(error: unknown): ApiError {
     if (error.code && SESSION_GONE.has(error.code)) return unauthenticated()
     // The session lives and only lacks the second factor, such as `updateUser` at `aal1`.
     if (error.code === 'insufficient_aal') return mfaRequired()
-    // A wrong or replayed code; Supabase Auth answers it with a 422 (PLAN.md 7.12).
+    // A wrong code or one outside its window; Supabase Auth answers it with a 422 (PLAN.md 7.12).
     if (error.code === 'mfa_verification_failed') {
       return new ApiError(400, 'mfa.code-invalid', 'The code is wrong or has expired.')
     }

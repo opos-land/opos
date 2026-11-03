@@ -233,6 +233,33 @@ describe('POST /auth/mfa/enable', () => {
     expect(rows.map((row) => row.code_hash)).not.toContain(sha256('LEFTOVERLEFTOVER'))
   })
 
+  it('never hands out codes that are not stored, when two enables race', async () => {
+    for (let round = 0; round < 5; round++) {
+      const { agent, id } = await newPerson()
+      const { factorId, secret } = enrolledOf(await agent.post('/auth/mfa/enroll').expect(200))
+      const code = totpCode(secret)
+
+      const answers = await Promise.all([
+        agent.post('/auth/mfa/enable').send({ factorId, code }),
+        agent.post('/auth/mfa/enable').send({ factorId, code }),
+      ])
+
+      const stored = new Set((await recoveryCodeRows(id)).map((row) => row.code_hash))
+      const successes = answers.filter((res) => res.status === 200)
+      // Supabase Auth may refuse the second of two challenges of one factor at once with a 503.
+      for (const res of answers) {
+        expect([200, 409, 503], `round ${round}`).toContain(res.status)
+        if (res.status === 409) expect(res.body).toMatchObject({ code: 'mfa.already-enabled' })
+      }
+      for (const res of successes) {
+        for (const returned of codesOf(res)) {
+          expect(stored.has(sha256(returned)), `round ${round}`).toBe(true)
+        }
+      }
+      expect((await mfaState(id)).mirrored).toBe(true)
+    }
+  }, 30_000)
+
   it('an access token from before enable loses access at once', async () => {
     const { agent, email } = await newPerson()
     const before = await request(server)
@@ -292,6 +319,21 @@ describe('POST /auth/mfa/verify', () => {
 
     expect(res.status).toBe(400)
     expect(res.body).toMatchObject({ code: 'mfa.code-invalid' })
+  })
+
+  // Pinned, not wished for: Supabase Auth accepts a code again within its own 30 second step
+  // (PLAN.md 7.12). A Supabase Auth upgrade that changes this should be noticed here.
+  it('accepts a code a second time within its step', async () => {
+    const { email, secret } = await personWith2fa()
+    const code = totpCode(secret, 1)
+    // Verifying ends the other sessions below aal2, so the second browser signs in afterwards.
+    const first = await passwordBrowser(email)
+    const once = await first.agent.post('/auth/mfa/verify').send({ code })
+    const second = await passwordBrowser(email)
+    const again = await second.agent.post('/auth/mfa/verify').send({ code })
+
+    expect(once.status).toBe(204)
+    expect(again.status).toBe(204)
   })
 
   it('answers 409 mfa.not-required at aal2 and on an account without 2FA', async () => {
@@ -365,6 +407,20 @@ describe('POST /auth/mfa/recover', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ code_hash: sha256(recoveryCodes[3]!) })
     expect(rows[0]!.used_at).not.toBeNull()
+  })
+
+  it('ends the other sessions of the account, and keeps the one that recovered', async () => {
+    const { agent: other, email, recoveryCodes } = await personWith2fa()
+    const { agent } = await passwordBrowser(email)
+    expect((await other.get('/me')).status).toBe(200)
+
+    await agent.post('/auth/mfa/recover').send({ code: recoveryCodes[0] }).expect(204)
+
+    const refreshed = await other.post('/auth/refresh')
+    expect(refreshed.status).toBe(401)
+    expect(refreshed.body).toMatchObject({ code: 'session.invalid' })
+    expect((await agent.get('/me')).status).toBe(200)
+    expect((await agent.post('/auth/refresh')).status).toBe(204)
   })
 
   it('reads a code as typed, in groups and in lower case', async () => {
@@ -489,6 +545,23 @@ describe('DELETE /auth/mfa', () => {
     expect(await recoveryCodeRows(id)).toHaveLength(0)
     const [mail] = await waitForMail(email)
     expect(mail!.Subject).toBe('Uwierzytelnianie dwuskładnikowe zostało wyłączone')
+  })
+
+  it('ends the other sessions of the account, and keeps the one that turned 2FA off', async () => {
+    const { agent: other, email, secret } = await personWith2fa()
+    const { agent } = await passwordBrowser(email)
+    await agent
+      .post('/auth/mfa/verify')
+      .send({ code: totpCode(secret, 1) })
+      .expect(204)
+
+    await agent.delete('/auth/mfa').expect(204)
+
+    const refreshed = await other.post('/auth/refresh')
+    expect(refreshed.status).toBe(401)
+    expect(refreshed.body).toMatchObject({ code: 'session.invalid' })
+    expect((await agent.get('/me')).status).toBe(200)
+    expect((await agent.post('/auth/refresh')).status).toBe(204)
   })
 
   it('answers 404 mfa.not-enabled for an account with no factor', async () => {

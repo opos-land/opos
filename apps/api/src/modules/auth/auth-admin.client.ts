@@ -44,7 +44,7 @@ export class AuthAdminClient {
 
   /**
    * `DELETE /admin/users/:id/factors/:factorId`. `false` when the user or the factor was already
-   * gone. Removing a verified factor ends the user's sessions at Supabase Auth.
+   * gone. It ends no session: the caller ends the others with `signOut({ scope: 'others' })`.
    */
   async deleteFactor(userId: string, factorId: string): Promise<boolean> {
     const { error } = await this.api.mfa.deleteFactor({ id: factorId, userId })

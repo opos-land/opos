@@ -10,7 +10,7 @@ import { type MailService } from '../mail/mail.service'
 import { type AuthAdminClient } from './auth-admin.client'
 import { MfaService } from './mfa.service'
 import { hashRecoveryCode } from './recovery-code'
-import { type RecoveryCodesRepository } from './recovery-codes.repository'
+import { RecoveryCodeStoreError, type RecoveryCodesRepository } from './recovery-codes.repository'
 import { type SupabaseAuthFactory } from './supabase-auth.factory'
 
 // The order of the calls is what these tests pin: a failed removal spends no recovery code, a
@@ -51,6 +51,8 @@ function setup(
       calls.push(name)
       return Promise.resolve(value)
     })
+  // The session the client holds: the request's own until a call replaces it.
+  const held = { current: { ...session, access_token: token('aal1') } as typeof session | null }
   const mfa = {
     listFactors: log('listFactors', {
       data: { all: options.factors ?? [{ id: factorId, status: 'verified' }] },
@@ -64,10 +66,19 @@ function setup(
       },
       error: null,
     }),
-    challengeAndVerify: log('challengeAndVerify', { data: session, error: null }),
+    challengeAndVerify: vi.fn((..._args: unknown[]) => {
+      calls.push('challengeAndVerify')
+      held.current = session
+      return Promise.resolve({ data: session, error: null })
+    }),
   }
   const client = {
     setSession: log('setSession', { data: { session: null }, error: null }),
+    getSession: vi.fn(() => {
+      calls.push('getSession')
+      return Promise.resolve({ data: { session: held.current }, error: null })
+    }),
+    signOut: log('signOut', { error: null }),
     mfa,
   }
   const admin = {
@@ -76,6 +87,7 @@ function setup(
   const codes = {
     replaceUnused: log('replaceUnused', undefined),
     hasUnused: log('hasUnused', true),
+    holdsUnused: log('holdsUnused', true),
     markUsed: log('markUsed', true),
     deleteUnused: log('deleteUnused', undefined),
   }
@@ -99,7 +111,7 @@ function setup(
     limiter as unknown as RouteRateLimiter,
     mail as unknown as MailService,
   )
-  return { service, calls, mfa, client, admin, codes, mail, limiter, context }
+  return { service, calls, mfa, client, admin, codes, mail, limiter, context, held }
 }
 
 const failureOf = (promise: Promise<unknown>) =>
@@ -132,8 +144,10 @@ describe('MfaService.recover', () => {
       'listFactors',
       'deleteFactor',
       'deleteFactor',
+      'signOut',
       'markUsed',
       'deleteUnused',
+      'getSession',
       'sendNoticeEmail',
     ])
     expect(admin.deleteFactor).toHaveBeenCalledWith(accountId, factorId)
@@ -215,6 +229,83 @@ describe('MfaService.recover', () => {
     })
     expect(codes.hasUnused).not.toHaveBeenCalled()
     expect(admin.deleteFactor).not.toHaveBeenCalled()
+  })
+
+  it('ends the other sessions of the account once the factors are gone, and keeps this one', async () => {
+    const { service, client, calls } = setup()
+
+    await service.recover(request(), body)
+
+    expect(client.signOut).toHaveBeenCalledWith({ scope: 'others' })
+    expect(calls.indexOf('signOut')).toBeGreaterThan(calls.lastIndexOf('deleteFactor'))
+  })
+
+  it('answers 204 when ending the other sessions fails, logging it', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const { service, client, codes } = setup()
+    client.signOut.mockResolvedValueOnce({ error: new Error('gotrue down') } as never)
+
+    await expect(service.recover(request(), body)).resolves.toBeUndefined()
+
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(codes.markUsed).toHaveBeenCalled()
+  })
+
+  it('does not end any session when the removal fails', async () => {
+    vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const { service, client, admin } = setup()
+    admin.deleteFactor.mockRejectedValueOnce(new Error('refused'))
+
+    await failureOf(service.recover(request(), body))
+
+    expect(client.signOut).not.toHaveBeenCalled()
+  })
+
+  it.each(['markUsed', 'deleteUnused'] as const)(
+    'mails the notice although %s throws after the factors are gone',
+    async (step) => {
+      const { service, codes, mail } = setup()
+      const outage = new RecoveryCodeStoreError(step, new Error('database down'))
+      codes[step].mockRejectedValueOnce(outage)
+
+      const failure = await failureOf(service.recover(request(), body))
+
+      expect(failure).toBe(outage)
+      expect(mail.sendNoticeEmail).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it('lets a failure of the code store through as it is, not as a Supabase Auth answer', async () => {
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const { service, codes } = setup()
+    const failure = new RecoveryCodeStoreError('hasUnused', new Error('database down'))
+    codes.hasUnused.mockRejectedValueOnce(failure)
+
+    expect(await failureOf(service.recover(request(), body))).toBe(failure)
+    expect(error).not.toHaveBeenCalled()
+  })
+
+  it('writes the cookies of a session the client refreshed on the way, although the code is wrong', async () => {
+    const { service, mfa, held } = setup()
+    held.current = session
+    mfa.listFactors.mockResolvedValueOnce({
+      data: null,
+      error: new AuthApiError('Invalid TOTP code entered', 422, 'mfa_verification_failed'),
+    } as never)
+    const req = request()
+
+    await failureOf(service.recover(req, body))
+
+    expect(req.res.cookie).toHaveBeenCalledWith(
+      'opos_portal_access',
+      session.access_token,
+      expect.anything(),
+    )
+    expect(req.res.cookie).toHaveBeenCalledWith(
+      'opos_portal_refresh',
+      session.refresh_token,
+      expect.anything(),
+    )
   })
 
   it('counts the attempt before anything else', async () => {
@@ -300,6 +391,48 @@ describe('MfaService.enable', () => {
     expect(req.res.cookie).not.toHaveBeenCalled()
   })
 
+  it('answers 409 mfa.already-enabled when the codes it stored were replaced, still setting the aal2 cookies', async () => {
+    const { service, codes } = setup({
+      mfaEnabled: false,
+      factors: [{ id: factorId, status: 'unverified' }],
+    })
+    codes.holdsUnused.mockResolvedValueOnce(false)
+    const req = request()
+
+    const failure = await failureOf(service.enable(req, body))
+
+    expect(toErrorResponse(failure)).toMatchObject({
+      status: 409,
+      body: { code: 'mfa.already-enabled' },
+    })
+    expect(req.res.cookie).toHaveBeenCalledWith(
+      'opos_portal_access',
+      session.access_token,
+      expect.anything(),
+    )
+    const stored = codes.replaceUnused.mock.calls[0]![0] as string[]
+    expect(codes.holdsUnused).toHaveBeenCalledWith(stored)
+  })
+
+  it('writes the cookies of a refreshed session when the code is wrong', async () => {
+    const { service, mfa, held } = setup({
+      mfaEnabled: false,
+      factors: [{ id: factorId, status: 'unverified' }],
+    })
+    mfa.challengeAndVerify.mockImplementationOnce(() => {
+      held.current = { ...session, access_token: token('aal1') + 'x' }
+      return Promise.resolve({
+        data: null,
+        error: new AuthApiError('Invalid TOTP code entered', 422, 'mfa_verification_failed'),
+      }) as never
+    })
+    const req = request()
+
+    await failureOf(service.enable(req, body))
+
+    expect(req.res.cookie).toHaveBeenCalledTimes(2)
+  })
+
   it('shares its limit with verify and recover', async () => {
     const { service, limiter } = setup({
       mfaEnabled: false,
@@ -338,6 +471,15 @@ describe('MfaService.disable', () => {
     expect(admin.deleteFactor).not.toHaveBeenCalled()
   })
 
+  it('ends the other sessions after the factors are gone', async () => {
+    const { service, client, calls } = setup()
+
+    await service.disable(request('aal2'))
+
+    expect(client.signOut).toHaveBeenCalledWith({ scope: 'others' })
+    expect(calls.indexOf('signOut')).toBeGreaterThan(calls.lastIndexOf('deleteFactor'))
+  })
+
   it('removes the factors, drops the unused codes and mails', async () => {
     const { service, calls } = setup()
 
@@ -347,7 +489,9 @@ describe('MfaService.disable', () => {
       'setSession',
       'listFactors',
       'deleteFactor',
+      'signOut',
       'deleteUnused',
+      'getSession',
       'sendNoticeEmail',
     ])
   })
@@ -358,6 +502,28 @@ describe('MfaService.disable', () => {
     mail.sendNoticeEmail.mockRejectedValueOnce(new Error('smtp down'))
 
     await expect(service.disable(request('aal2'))).resolves.toBeUndefined()
+  })
+
+  it('ends the other sessions once the factors are gone, and still answers when that fails', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const { service, client } = setup()
+    client.signOut.mockRejectedValueOnce(new Error('gotrue down'))
+
+    await expect(service.disable(request('aal2'))).resolves.toBeUndefined()
+
+    expect(client.signOut).toHaveBeenCalledWith({ scope: 'others' })
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('mails the notice although dropping the codes throws after the factors are gone', async () => {
+    const { service, codes, mail } = setup()
+    codes.deleteUnused.mockRejectedValueOnce(
+      new RecoveryCodeStoreError('deleteUnused', new Error('database down')),
+    )
+
+    await failureOf(service.disable(request('aal2')))
+
+    expect(mail.sendNoticeEmail).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -370,6 +536,37 @@ describe('MfaService.verify', () => {
 
     expect(mfa.challengeAndVerify).toHaveBeenCalledWith({ factorId, code: '123456' })
     expect(req.res.cookie).toHaveBeenCalledTimes(2)
+  })
+
+  it('writes the cookies of a refreshed session when the code is wrong', async () => {
+    const { service, mfa, held } = setup()
+    mfa.challengeAndVerify.mockImplementationOnce(() => {
+      held.current = session
+      return Promise.resolve({
+        data: null,
+        error: new AuthApiError('Invalid TOTP code entered', 422, 'mfa_verification_failed'),
+      }) as never
+    })
+    const req = request()
+
+    const failure = await failureOf(service.verify(req, { code: '123456' }))
+
+    expect(toErrorResponse(failure)).toMatchObject({ status: 400 })
+    expect(req.res.cookie).toHaveBeenCalledTimes(2)
+    expect(req.res.clearCookie).not.toHaveBeenCalled()
+  })
+
+  it('writes no cookie when the session is the request’s own', async () => {
+    const { service, mfa } = setup()
+    mfa.challengeAndVerify.mockResolvedValueOnce({
+      data: null,
+      error: new AuthApiError('Invalid TOTP code entered', 422, 'mfa_verification_failed'),
+    } as never)
+    const req = request()
+
+    await failureOf(service.verify(req, { code: '123456' }))
+
+    expect(req.res.cookie).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -401,7 +598,7 @@ describe('MfaService.enroll', () => {
 
     const result = await service.enroll(request())
 
-    expect(calls).toEqual(['setSession', 'listFactors', 'unenroll', 'enroll'])
+    expect(calls).toEqual(['setSession', 'listFactors', 'unenroll', 'enroll', 'getSession'])
     expect(result).toEqual({
       factorId,
       qrCode: 'data:image/svg+xml;utf8,<svg/>',

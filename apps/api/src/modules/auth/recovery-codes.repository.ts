@@ -1,8 +1,29 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { accountRecoveryCodes, type Database } from '@opos/db'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { APP_DB } from '../../common/database/tokens'
+import { postgresCode } from '../../common/filters/http-exception.filter'
+
+/**
+ * A failed query of the store. drizzle's own error carries the query with its parameters, which
+ * here are the hashes of recovery codes, so this one names the operation and the SQLSTATE only and
+ * keeps no `cause`.
+ */
+export class RecoveryCodeStoreError extends Error {
+  constructor(operation: string, cause: unknown) {
+    super(`Recovery code store: ${operation} failed (${postgresCode(cause) ?? 'no SQLSTATE'})`)
+    this.name = 'RecoveryCodeStoreError'
+  }
+}
+
+async function guarded<T>(operation: string, query: () => Promise<T>): Promise<T> {
+  try {
+    return await query()
+  } catch (error) {
+    throw new RecoveryCodeStoreError(operation, error)
+  }
+}
 
 /**
  * `account_recovery_codes` has no RLS (PLAN.md 4.2): it is read and written on the opos_app pool
@@ -24,60 +45,85 @@ export class RecoveryCodesRepository {
    * Replaces the account's unused codes with `hashes`, in one transaction. A code already used
    * stays, as a record.
    */
-  async replaceUnused(hashes: string[]): Promise<void> {
+  replaceUnused(hashes: string[]): Promise<void> {
     const accountId = this.accountId
-    await this.db.transaction(async (tx) => {
-      await tx
-        .delete(accountRecoveryCodes)
+    return guarded('replaceUnused', () =>
+      this.db.transaction(async (tx) => {
+        await tx
+          .delete(accountRecoveryCodes)
+          .where(
+            and(eq(accountRecoveryCodes.accountId, accountId), isNull(accountRecoveryCodes.usedAt)),
+          )
+        await tx
+          .insert(accountRecoveryCodes)
+          .values(hashes.map((codeHash) => ({ accountId, codeHash })))
+      }),
+    )
+  }
+
+  /** Whether the account still holds every one of these hashes unused, as `enable` stored them. */
+  holdsUnused(hashes: string[]): Promise<boolean> {
+    return guarded('holdsUnused', async () => {
+      const [row] = await this.db
+        .select({ held: sql<number>`count(*)::int` })
+        .from(accountRecoveryCodes)
         .where(
-          and(eq(accountRecoveryCodes.accountId, accountId), isNull(accountRecoveryCodes.usedAt)),
+          and(
+            eq(accountRecoveryCodes.accountId, this.accountId),
+            inArray(accountRecoveryCodes.codeHash, hashes),
+            isNull(accountRecoveryCodes.usedAt),
+          ),
         )
-      await tx
-        .insert(accountRecoveryCodes)
-        .values(hashes.map((codeHash) => ({ accountId, codeHash })))
+      return row?.held === hashes.length
     })
   }
 
   /** Whether the account holds an unused code with this hash; the unique index serves the lookup. */
-  async hasUnused(hash: string): Promise<boolean> {
-    const [row] = await this.db
-      .select({ id: accountRecoveryCodes.id })
-      .from(accountRecoveryCodes)
-      .where(
-        and(
-          eq(accountRecoveryCodes.accountId, this.accountId),
-          eq(accountRecoveryCodes.codeHash, hash),
-          isNull(accountRecoveryCodes.usedAt),
-        ),
-      )
-    return row !== undefined
+  hasUnused(hash: string): Promise<boolean> {
+    return guarded('hasUnused', async () => {
+      const [row] = await this.db
+        .select({ id: accountRecoveryCodes.id })
+        .from(accountRecoveryCodes)
+        .where(
+          and(
+            eq(accountRecoveryCodes.accountId, this.accountId),
+            eq(accountRecoveryCodes.codeHash, hash),
+            isNull(accountRecoveryCodes.usedAt),
+          ),
+        )
+      return row !== undefined
+    })
   }
 
   /** Spends the code; `false` when another request spent it first. */
-  async markUsed(hash: string): Promise<boolean> {
-    const rows = await this.db
-      .update(accountRecoveryCodes)
-      .set({ usedAt: sql`now()` })
-      .where(
-        and(
-          eq(accountRecoveryCodes.accountId, this.accountId),
-          eq(accountRecoveryCodes.codeHash, hash),
-          isNull(accountRecoveryCodes.usedAt),
-        ),
-      )
-      .returning({ id: accountRecoveryCodes.id })
-    return rows.length > 0
+  markUsed(hash: string): Promise<boolean> {
+    return guarded('markUsed', async () => {
+      const rows = await this.db
+        .update(accountRecoveryCodes)
+        .set({ usedAt: sql`now()` })
+        .where(
+          and(
+            eq(accountRecoveryCodes.accountId, this.accountId),
+            eq(accountRecoveryCodes.codeHash, hash),
+            isNull(accountRecoveryCodes.usedAt),
+          ),
+        )
+        .returning({ id: accountRecoveryCodes.id })
+      return rows.length > 0
+    })
   }
 
   /** Removes the account's unused codes. */
-  async deleteUnused(): Promise<void> {
-    await this.db
-      .delete(accountRecoveryCodes)
-      .where(
-        and(
-          eq(accountRecoveryCodes.accountId, this.accountId),
-          isNull(accountRecoveryCodes.usedAt),
-        ),
-      )
+  deleteUnused(): Promise<void> {
+    return guarded('deleteUnused', async () => {
+      await this.db
+        .delete(accountRecoveryCodes)
+        .where(
+          and(
+            eq(accountRecoveryCodes.accountId, this.accountId),
+            isNull(accountRecoveryCodes.usedAt),
+          ),
+        )
+    })
   }
 }

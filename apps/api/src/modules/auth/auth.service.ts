@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { type Account } from '@opos/contract'
 import { detectLocale } from '@opos/i18n'
-import { type GoTrueClient, AuthApiError, isAuthError, type Session } from '@supabase/auth-js'
+import { AuthApiError, type GoTrueClient, isAuthError, type Session } from '@supabase/auth-js'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError, originDenied, unauthenticated } from '../../common/errors/api-error'
 import { type Application, applicationFromOrigin } from '../../common/http/application'
@@ -267,21 +267,6 @@ export class AuthService {
       const refusal = toApiError(error)
       if (refusal.code === 'session.invalid') clearSessionCookies(req.res, app, this.env)
       throw refusal
-    } finally {
-      await this.keepCookiesCurrent(req, app, client, access)
-    }
-  }
-
-  /** `setSession` refreshes a token about to expire; the browser then needs the new pair. */
-  private async keepCookiesCurrent(
-    req: AuthRequest,
-    app: Application,
-    client: GoTrueClient,
-    sent: string,
-  ) {
-    const { data } = await client.getSession()
-    if (data.session && data.session.access_token !== sent) {
-      setSessionCookies(req.res, app, data.session, this.env)
     }
   }
 }

@@ -724,6 +724,17 @@ describe('password', () => {
     await post('/auth/sign-in', { email, password: 'brand-new-pass-1' }).expect(200)
   })
 
+  it('leaves the caller cookies as they are: a change of the password sets none', async () => {
+    const { email } = await confirmedAccount()
+    const caller = await signedInAgent('portal', email)
+
+    const res = await caller.put('/auth/password').send({ password: 'brand-new-pass-4' })
+
+    expect(res.status).toBe(204)
+    expect(cookiesOf(res)).toEqual([])
+    expect((await caller.get('/me')).status).toBe(200)
+  })
+
   it('still ends the other sessions on same_password', async () => {
     const { email } = await confirmedAccount()
     const caller = await signedInAgent('portal', email)

@@ -523,13 +523,12 @@ describe('Origin', () => {
 describe('refresh', () => {
   it('rotates both cookies and answers 204', async () => {
     const { email } = await confirmedAccount()
-    const first = await post('/auth/sign-in', { email, password: TEST_PASSWORD }, portal)
-    const before = {
-      access: valueOf(cookieNamed(first, 'opos_portal_access')),
-      refresh: valueOf(cookieNamed(first, 'opos_portal_refresh')),
-    }
     const agent = request.agent(server).set('Origin', portal)
-    await agent.post('/auth/sign-in').send({ email, password: TEST_PASSWORD })
+    const signedIn = await agent.post('/auth/sign-in').send({ email, password: TEST_PASSWORD })
+    const before = {
+      access: valueOf(cookieNamed(signedIn, 'opos_portal_access')),
+      refresh: valueOf(cookieNamed(signedIn, 'opos_portal_refresh')),
+    }
 
     const res = await agent.post('/auth/refresh')
 
@@ -540,9 +539,13 @@ describe('refresh', () => {
         .map((cookie) => cookie.split('=')[0])
         .sort(),
     ).toEqual(['opos_portal_access', 'opos_portal_refresh'])
-    expect(valueOf(cookieNamed(res, 'opos_portal_refresh'))).not.toBe(before.refresh)
-    expect((await agent.get('/me')).status).toBe(200)
     expect(before.access).toBeTruthy()
+    expect(before.refresh).toBeTruthy()
+    expect(valueOf(cookieNamed(res, 'opos_portal_refresh'))).toBeTruthy()
+    expect(valueOf(cookieNamed(res, 'opos_portal_refresh'))).not.toBe(before.refresh)
+    expect(valueOf(cookieNamed(res, 'opos_portal_access'))).toBeTruthy()
+    expect(valueOf(cookieNamed(res, 'opos_portal_access'))).not.toBe(before.access)
+    expect((await agent.get('/me')).status).toBe(200)
   })
 
   it('answers 401 session.invalid and clears the cookies on a dead session', async () => {

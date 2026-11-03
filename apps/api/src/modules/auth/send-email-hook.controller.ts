@@ -37,7 +37,11 @@ export class SendEmailHookController {
       throw new ApiError(400, 'request.invalid', 'Malformed send-email hook payload')
     }
     const { user, email_data: data } = parsed.data
-    const emails = hookEmails(parsed.data, authUrl(this.env))
+    const emails = hookEmails(parsed.data, {
+      authUrl: authUrl(this.env),
+      portalUrl: this.env.PORTAL_URL,
+      panelUrl: this.env.PANEL_URL,
+    })
     if (!emails) {
       throw new ApiError(
         400,

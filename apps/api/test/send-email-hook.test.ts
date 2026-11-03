@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { authUrl, loadEnv } from '../src/config/env'
 import { createApp } from './app'
 import { createAccount, deleteCreatedAccounts, deleteLater, signIn, TEST_PASSWORD } from './auth'
-import { deleteMail, verifyLinkIn, waitForMail } from './mailpit'
+import { confirmLinkIn, deleteMail, verifyLinkIn, waitForMail } from './mailpit'
 import { closeTenantDb, emailConfirmed } from './tenants'
 
 // Supabase Auth calls the hook at host.docker.internal:<PORT>, so this file runs the API on the
@@ -98,6 +98,26 @@ describe('emails from Supabase Auth', () => {
     await expect(signIn(email)).resolves.toBeTypeOf('string')
     expect(await emailConfirmed(id)).toBe(true)
   })
+
+  it.each([env.PORTAL_URL, env.PANEL_URL])(
+    'links a sign-up to /auth/confirm of %s without naming Supabase Auth',
+    async (origin) => {
+      const email = newAddress()
+      const redirectTo = `${origin}/auth/confirm`
+      const response = await auth(`/signup?redirect_to=${encodeURIComponent(redirectTo)}`, {
+        method: 'POST',
+        body: JSON.stringify({ email, password: TEST_PASSWORD }),
+      })
+      deleteLater(((await response.json()) as { id: string }).id)
+
+      const [mail] = await waitForMail(email)
+      const link = confirmLinkIn(mail!)
+      expect(`${link.origin}${link.pathname}`).toBe(redirectTo)
+      expect(link.searchParams.get('type')).toBe('signup')
+      expect(link.searchParams.get('token_hash')).toBeTruthy()
+      expect(mail?.Text).not.toContain('/verify')
+    },
+  )
 
   it('writes in the default locale when nothing else decides', async () => {
     const email = newAddress()

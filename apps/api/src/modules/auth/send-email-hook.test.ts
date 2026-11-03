@@ -6,9 +6,20 @@ import {
   signupEmail,
 } from '@opos/i18n/emails'
 import { describe, expect, it } from 'vitest'
-import { hookEmails, type SendEmailHookPayload, verifyLink } from './send-email-hook'
+import {
+  confirmLink,
+  hookEmails,
+  type HookUrls,
+  type SendEmailHookPayload,
+  verifyLink,
+} from './send-email-hook'
 
 const authUrl = 'https://auth.opos.land'
+const urls: HookUrls = {
+  authUrl,
+  portalUrl: 'https://opos.land',
+  panelUrl: 'https://panel.opos.land',
+}
 
 const payload = (
   type: string,
@@ -41,9 +52,39 @@ describe('verifyLink', () => {
   })
 })
 
+describe('confirmLink', () => {
+  it.each(['https://opos.land/auth/confirm', 'https://panel.opos.land/auth/confirm'])(
+    'leads %s to itself with the token hash and the type, naming no Supabase address',
+    (redirectTo) => {
+      const link = new URL(confirmLink(urls, 'hash-a', 'signup', redirectTo))
+
+      expect(`${link.origin}${link.pathname}`).toBe(redirectTo)
+      expect(Object.fromEntries(link.searchParams)).toEqual({
+        token_hash: 'hash-a',
+        type: 'signup',
+      })
+      expect(link.href).not.toContain(authUrl)
+    },
+  )
+
+  it('sends any other address to the confirmation page of the portal', () => {
+    for (const redirectTo of ['https://evil.example/auth/confirm', '', undefined]) {
+      expect(confirmLink(urls, 'h', 'recovery', redirectTo)).toBe(
+        'https://opos.land/auth/confirm?token_hash=h&type=recovery',
+      )
+    }
+  })
+
+  it('keeps the legacy Supabase link for another path of an application, until the frontends move', () => {
+    expect(confirmLink(urls, 'h', 'signup', 'https://panel.opos.land/auth/callback')).toBe(
+      verifyLink(authUrl, 'h', 'signup', 'https://panel.opos.land/auth/callback'),
+    )
+  })
+})
+
 describe('hookEmails', () => {
   it('sends the address confirmation on signup', () => {
-    expect(hookEmails(payload('signup'), authUrl)).toEqual([
+    expect(hookEmails(payload('signup'), urls)).toEqual([
       {
         to: 'anna@example.test',
         content: signupEmail,
@@ -52,15 +93,25 @@ describe('hookEmails', () => {
     ])
   })
 
+  it('links a signup to /auth/confirm of the application that asked', () => {
+    const [email] =
+      hookEmails(
+        payload('signup', { redirect_to: 'https://panel.opos.land/auth/confirm' }),
+        urls,
+      ) ?? []
+
+    expect(email?.link).toBe('https://panel.opos.land/auth/confirm?token_hash=hash-a&type=signup')
+  })
+
   it('sends the reset link on recovery', () => {
-    const [email] = hookEmails(payload('recovery'), authUrl) ?? []
+    const [email] = hookEmails(payload('recovery'), urls) ?? []
 
     expect(email).toMatchObject({ to: 'anna@example.test', content: recoveryEmail })
     expect(email?.link).toContain('type=recovery')
   })
 
   it('confirms the new address of an email change', () => {
-    const emails = hookEmails(payload('email_change', {}, 'new@example.test'), authUrl)
+    const emails = hookEmails(payload('email_change', {}, 'new@example.test'), urls)
 
     expect(emails).toEqual([
       {
@@ -74,7 +125,7 @@ describe('hookEmails', () => {
   it('asks both addresses with their own tokens under secure email change', () => {
     const emails = hookEmails(
       payload('email_change', { token_hash_new: 'hash-b' }, 'new@example.test'),
-      authUrl,
+      urls,
     )
 
     expect(emails?.map(({ to, link }) => [to, new URL(link).searchParams.get('token')])).toEqual([
@@ -87,13 +138,13 @@ describe('hookEmails', () => {
   })
 
   it('refuses an email change without the new address', () => {
-    expect(hookEmails(payload('email_change'), authUrl)).toBeUndefined()
+    expect(hookEmails(payload('email_change'), urls)).toBeUndefined()
   })
 
   it.each(['magiclink', 'invite', 'reauthentication', 'email', 'password_changed_notification'])(
     'refuses %s, a flow OPOS does not send',
     (type) => {
-      expect(hookEmails(payload(type), authUrl)).toBeUndefined()
+      expect(hookEmails(payload(type), urls)).toBeUndefined()
     },
   )
 })

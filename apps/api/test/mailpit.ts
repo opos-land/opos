@@ -37,6 +37,13 @@ export function verifyLinkIn(mail: Mail) {
   return link
 }
 
+/** The first link to an application's `/auth/confirm` in the text part of a message. */
+export function confirmLinkIn(mail: Mail) {
+  const link = /https?:\/\/\S+\/auth\/confirm\?\S+/.exec(mail.Text)?.[0]
+  if (!link) throw new Error(`no confirm link in "${mail.Subject}"`)
+  return new URL(link)
+}
+
 /** Removes the messages to `address`, so Mailpit keeps no test mail behind. */
 export async function deleteMail(address: string) {
   const query = encodeURIComponent(`to:"${address}"`)

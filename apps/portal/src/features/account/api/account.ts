@@ -1,3 +1,5 @@
+import { type Account } from '@opos/contract'
+import { type QueryClient } from '@tanstack/react-query'
 import { accountApi } from '../../../shared/lib/api'
 import { signedOut } from '../../../shared/lib/session'
 
@@ -7,7 +9,15 @@ export const updateAccountOptions = () => accountApi.me.update.mutationOptions()
 
 export const deleteAccountOptions = () => accountApi.me.delete.mutationOptions()
 
-export const accountKey = () => accountApi.me.get.key()
+/**
+ * Puts what `PATCH /me` answered into the cached `GET /me`. The answer names no `signInMethods`,
+ * which only the session's token knows, so it merges into what is cached.
+ */
+export function mergeSavedAccount(queryClient: QueryClient, saved: Account) {
+  queryClient.setQueryData(accountOptions().queryKey, (cached) =>
+    cached ? { ...cached, ...saved } : cached,
+  )
+}
 
 /**
  * Forgets the session in this browser and tells the other tabs: after `DELETE /me` the account is

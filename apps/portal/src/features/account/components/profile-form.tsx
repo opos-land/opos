@@ -4,7 +4,7 @@ import { type Account } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
-import { accountKey, updateAccountOptions } from '../api/account'
+import { mergeSavedAccount, updateAccountOptions } from '../api/account'
 import { profileSchema, profileUpdate, profileValues } from '../model/profile'
 
 /** The account's first and last name (`PATCH /me`). */
@@ -14,7 +14,7 @@ export function ProfileForm({ account }: { account: Account }) {
   const form = useForm({ resolver: zodResolver(profileSchema), values: profileValues(account) })
   const update = useMutation({
     ...updateAccountOptions(),
-    onSuccess: (saved) => queryClient.setQueryData(accountKey(), saved),
+    onSuccess: (saved) => mergeSavedAccount(queryClient, saved),
   })
   const { errors } = form.formState
 

@@ -27,7 +27,7 @@ vi.mock('../../auth', () => ({
   GoogleButton: () => <button type="button">Confirm with Google</button>,
 }))
 vi.mock('../api/account', () => ({
-  accountKey: () => ['account'],
+  mergeSavedAccount: vi.fn(),
   accountOptions: () => ({ queryKey: ['account'], queryFn: () => Promise.resolve(me.current) }),
   updateAccountOptions: () => ({ mutationFn: () => Promise.resolve(me.current) }),
   deleteAccountOptions: () => ({ mutationFn: () => Promise.resolve() }),

@@ -4,7 +4,7 @@ import { isLocale, SUPPORTED_LOCALES } from '@opos/i18n'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
 import { ErrorMessage, Field, inputClass } from '../../../shared/ui'
-import { accountKey, updateAccountOptions } from '../api/account'
+import { mergeSavedAccount, updateAccountOptions } from '../api/account'
 
 const BROWSER = 'browser'
 
@@ -18,7 +18,7 @@ export function LanguageForm({ account }: { account: Account }) {
   const update = useMutation({
     ...updateAccountOptions(),
     onSuccess: async (saved) => {
-      queryClient.setQueryData(accountKey(), saved)
+      mergeSavedAccount(queryClient, saved)
       await loadLocale(pickLocale(saved.locale))
     },
   })

@@ -6,6 +6,8 @@ import { PRIVACY_PATH } from '../shared/config/routes'
 import { useSession } from '../shared/lib/session'
 import { linkClass } from '../shared/ui'
 
+const holdsToken = (search: string) => new URLSearchParams(search).has('token_hash')
+
 /**
  * The frame of every portal screen, laid out for a 360 px phone first (PLAN.md 9): the platform's
  * name, the way to the account or to sign-in, the content in one column and the privacy policy in
@@ -37,7 +39,9 @@ export function Layout() {
               </div>
             ) : status === 'mfa-required' ? (
               // A session that waits for its code is not signed in; the way on is the code screen.
-              location.pathname !== MFA_PATH && (
+              // On a link's page the token is unspent and its own button leads there.
+              location.pathname !== MFA_PATH &&
+              !(location.pathname === '/auth/confirm' && holdsToken(location.search)) && (
                 <Link to={mfaPath(mfaReturnFor(location))} className={linkClass}>
                   <Trans>Finish signing in</Trans>
                 </Link>

@@ -279,6 +279,19 @@ describe('TwoFactorCard', () => {
       expect(screen.getByRole('button', { name: 'Turn on two-factor authentication' })).toBeTruthy()
     })
 
+    it('does not let the person cancel while the password is being confirmed', async () => {
+      vi.mocked(enrollTwoFactor).mockRejectedValueOnce(tooOld())
+      vi.mocked(signInWithPassword).mockReturnValue(new Promise(() => undefined))
+      const user = renderCard(false)
+
+      await user.click(screen.getByRole('button', { name: 'Turn on two-factor authentication' }))
+      await user.type(await screen.findByLabelText('Your password'), 'secret password')
+      await user.click(screen.getByRole('button', { name: 'Confirm' }))
+
+      const cancel = await screen.findByRole('button', { name: 'Cancel' })
+      expect(cancel.hasAttribute('disabled')).toBe(true)
+    })
+
     it('shows a wrong password and keeps the form', async () => {
       vi.mocked(enrollTwoFactor).mockRejectedValueOnce(tooOld())
       vi.mocked(signInWithPassword).mockResolvedValue(

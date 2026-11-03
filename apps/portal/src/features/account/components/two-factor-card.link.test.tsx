@@ -145,6 +145,33 @@ describe('TwoFactorCard through the API link', () => {
     expect(sessionStorage.getItem('opos-recovery-codes-lost')).toBeNull()
   })
 
+  it('does not tell of lost codes beside an account whose 2FA is off', async () => {
+    sessionStorage.setItem('opos-recovery-codes-lost', '1')
+    stubApi({ 'GET /me': [json(200, me(false))] })
+    renderPage()
+
+    expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(sessionStorage.getItem('opos-recovery-codes-lost')).toBeNull()
+  })
+
+  it('stops telling of the lost codes when turning off finds 2FA already off', async () => {
+    sessionStorage.setItem('opos-recovery-codes-lost', '1')
+    stubApi({
+      'GET /me': [json(200, me(true)), json(200, me(false))],
+      'DELETE /auth/mfa': [json(404, { code: 'mfa.not-enabled' })],
+    })
+    const user = renderPage()
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Turn off two-factor authentication' }),
+    )
+
+    expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
+    expect(screen.queryByText(/recovery codes could not be shown/)).toBeNull()
+    expect(sessionStorage.getItem('opos-recovery-codes-lost')).toBeNull()
+  })
+
   it('shows 2FA as off once the API turned it off, though the GET /me after it failed', async () => {
     stubApi({
       'GET /me': [json(200, me(true)), json(503, { code: 'server.unavailable' })],

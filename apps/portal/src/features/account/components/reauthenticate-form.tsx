@@ -72,7 +72,7 @@ export function ReauthenticateForm({
           <Trans>Confirm with Google</Trans>
         </GoogleButton>
       )}
-      <Button variant="secondary" className="self-start" onClick={onCancel}>
+      <Button variant="secondary" className="self-start" disabled={pending} onClick={onCancel}>
         <Trans>Cancel</Trans>
       </Button>
     </div>

@@ -20,6 +20,12 @@ describe('mfaReturnFor', () => {
     ['a registration', '/register', '?redirect=%2Fprivacy', '/privacy'],
     ['an address on another origin', '/login', '?redirect=https%3A%2F%2Fevil.test', '/account'],
     ['the page of a link, which comes back without a token', '/auth/confirm', '', '/auth/confirm'],
+    [
+      'the page of a link with its token, which never reaches the path',
+      '/auth/confirm',
+      '?token_hash=abc123&type=email',
+      '/auth/confirm',
+    ],
     ['any other page', '/schedule', '?day=2', '/schedule?day=2'],
   ])('%s', (_name, pathname, search, expected) => {
     expect(mfaReturnFor({ pathname, search })).toBe(expected)

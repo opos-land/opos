@@ -50,6 +50,8 @@ export function MfaPage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    // A code sent after Sign out could set the cookies again.
+    if (leaving) return
     setError(null)
     const code = value.trim()
     const wrong = recovery ? code === '' : !SIX_DIGITS.test(code)
@@ -118,7 +120,7 @@ export function MfaPage() {
           )}
         </Field>
         <ErrorMessage error={error} />
-        <Button type="submit" pending={pending}>
+        <Button type="submit" pending={pending} disabled={leaving}>
           <Trans>Continue</Trans>
         </Button>
       </form>
@@ -126,7 +128,7 @@ export function MfaPage() {
         {recovery ? <Trans>Use the code of the app</Trans> : <Trans>Use a recovery code</Trans>}
       </Button>
       <ErrorMessage error={leaveError} />
-      <Button variant="secondary" pending={leaving} onClick={() => void leave()}>
+      <Button variant="secondary" pending={leaving} disabled={pending} onClick={() => void leave()}>
         <Trans>Sign out</Trans>
       </Button>
     </AuthCard>

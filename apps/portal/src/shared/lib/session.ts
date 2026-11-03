@@ -66,7 +66,11 @@ function followOtherTabs() {
 async function applyAnnouncement(message: unknown) {
   if (typeof message !== 'object' || message === null || !('accountId' in message)) return
   const { accountId } = message
-  if (accountId === null) return clearSession()
+  if (accountId === null) {
+    // A tab on the code screen never held the account; its cookies are still pending, not gone.
+    if (useSession.getState().status !== 'mfa-required') clearSession()
+    return
+  }
   if (typeof accountId !== 'string' || accountId === useSession.getState().account?.id) return
   // The old account's data goes at once, not when the new account's answer arrives.
   useSession.setState({ status: 'loading', account: null })

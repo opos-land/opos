@@ -62,6 +62,13 @@ describe('Layout', () => {
     expect(screen.queryByRole('link', { name: 'Finish signing in' })).toBeNull()
   })
 
+  it('offers nothing to finish on the page of a link that still holds its token', () => {
+    useSession.setState({ status: 'mfa-required', account: null })
+    view('/auth/confirm?token_hash=abc123&type=email')
+
+    expect(screen.queryByRole('link', { name: 'Finish signing in' })).toBeNull()
+  })
+
   it('keeps the sign-in reachable while the API cannot be asked who is signed in', () => {
     useSession.setState({ status: 'unavailable', account: null })
     view()

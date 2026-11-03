@@ -6,7 +6,7 @@ export interface ApiFetchOptions {
   refresh(): Promise<RefreshResult>
   /** The session is over: a refresh answered `401`, or the retry was refused again. */
   onSignedOut(): void
-  /** A `401` `session.mfa-required` came back: the code screen is next (PLAN.md 7.12). */
+  /** A `401` `session.mfa-required` came back: the session waits for its code (PLAN.md 7.12). */
   onMfaRequired(): void
   /** Sent as X-Tenant-Slug; the API ignores it on routes outside a tenant (PLAN.md 7.2). */
   tenantSlug?: string

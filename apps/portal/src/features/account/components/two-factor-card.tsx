@@ -1,6 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useQueryClient } from '@tanstack/react-query'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
 import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
@@ -150,8 +150,17 @@ export function TwoFactorCard({
   const [view, setView] = useState<View>({ step: 'idle' })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<unknown>(null)
-  // Read when the card mounts: the notice outlives the card, which the code screen unmounts.
-  const [lostCodes, setLostCodes] = useState(lostCodesRemembered)
+  // Read when the card mounts: the notice outlives the card, which the code screen unmounts. It
+  // belongs to an account whose 2FA is on: seen off, it is out of date.
+  const [lostCodes, setLostCodes] = useState(() => mfaEnabled && lostCodesRemembered())
+  const [wasEnabled, setWasEnabled] = useState(mfaEnabled)
+  if (mfaEnabled !== wasEnabled) {
+    setWasEnabled(mfaEnabled)
+    if (!mfaEnabled) setLostCodes(false)
+  }
+  useEffect(() => {
+    if (!mfaEnabled) forgetLostCodes()
+  }, [mfaEnabled])
 
   // The API's answer is written into the account before `GET /me` is asked, so the card is right
   // even when that request fails (PLAN.md 7.12).
@@ -183,7 +192,10 @@ export function TwoFactorCard({
         setError(failure)
         // What the card shows was out of date: 2FA is already on, or already off.
         if (errorCode(failure) === 'mfa.already-enabled') await refresh(true)
-        if (errorCode(failure) === 'mfa.not-enabled') await refresh(false)
+        if (errorCode(failure) === 'mfa.not-enabled') {
+          dismissLostCodes()
+          await refresh(false)
+        }
       }
     } finally {
       setPending(false)
@@ -243,7 +255,7 @@ export function TwoFactorCard({
 
   return (
     <div className="flex flex-col gap-4">
-      {lostCodes && (
+      {lostCodes && mfaEnabled && (
         <Notice>
           <Trans>
             Two-factor authentication is on, but the recovery codes could not be shown. To get new

@@ -342,6 +342,105 @@ describe('across tabs', () => {
 
     expect(useSession.getState().status).toBe('unavailable')
   })
+
+  describe('an answer that arrives after a newer change', () => {
+    /** The first `GET /me` waits for the release it returns; the next ones answer at once. */
+    function holdFirstAnswer(first: Response, ...later: Response[]) {
+      let release!: () => void
+      const gate = new Promise<void>((resolve) => (release = resolve))
+      const answers = [gate.then(() => first), ...later.map((answer) => Promise.resolve(answer))]
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => answers.shift() ?? Promise.reject(new TypeError('no answer'))),
+      )
+      return release
+    }
+
+    const settled = () => new Promise((resolve) => setTimeout(resolve, 10))
+
+    it('a 200 after another tab signed out shows no account and announces nothing', async () => {
+      const release = holdFirstAnswer(json(200, account('a')))
+      const observer = otherTab()
+      const sender = otherTab()
+      const start = startSession()
+
+      sender.channel.postMessage({ accountId: null })
+      await vi.waitFor(() => expect(useSession.getState().status).toBe('ready'))
+      release()
+      await start
+      await settled()
+
+      expect(useSession.getState()).toMatchObject({ status: 'ready', account: null })
+      expect(observer.received).toEqual([{ accountId: null }])
+    })
+
+    it('a 200 after another tab switched accounts keeps the new account and announces nothing', async () => {
+      const release = holdFirstAnswer(json(200, account('a')), json(200, account('b')))
+      const observer = otherTab()
+      const sender = otherTab()
+      const start = startSession()
+
+      sender.channel.postMessage({ accountId: 'b' })
+      await vi.waitFor(() => expect(useSession.getState().account?.id).toBe('b'))
+      release()
+      await start
+      await settled()
+
+      expect(useSession.getState()).toMatchObject({ status: 'ready', account: { id: 'b' } })
+      expect(observer.received).toEqual([{ accountId: 'b' }])
+    })
+
+    it('a failure after another tab switched accounts leaves the new account ready', async () => {
+      const release = holdFirstAnswer(
+        json(503, { code: 'server.unavailable' }),
+        json(200, account('b')),
+      )
+      const sender = otherTab()
+      const start = startSession()
+
+      sender.channel.postMessage({ accountId: 'b' })
+      await vi.waitFor(() => expect(useSession.getState().account?.id).toBe('b'))
+      release()
+      await start
+      await settled()
+
+      expect(useSession.getState()).toMatchObject({ status: 'ready', account: { id: 'b' } })
+    })
+
+    it('a 200 after this tab signed out shows no account', async () => {
+      const release = holdFirstAnswer(json(200, account('a')))
+      const start = startSession()
+
+      signedOut()
+      release()
+      await start
+
+      expect(useSession.getState()).toMatchObject({ status: 'ready', account: null })
+    })
+
+    it('a 200 after this tab signed in as someone else keeps that account', async () => {
+      const release = holdFirstAnswer(json(200, account('a')))
+      const start = startSession()
+
+      signedIn(account('b'))
+      release()
+      await start
+
+      expect(useSession.getState()).toMatchObject({ status: 'ready', account: { id: 'b' } })
+    })
+
+    it('the answer to the newer of two starts is the one that counts', async () => {
+      const release = holdFirstAnswer(json(200, account('a')), json(200, account('b')))
+      const first = startSession()
+      const second = startSession()
+
+      await second
+      release()
+      await first
+
+      expect(useSession.getState()).toMatchObject({ status: 'ready', account: { id: 'b' } })
+    })
+  })
 })
 
 describe('what the screen says about a 401', () => {

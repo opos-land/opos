@@ -99,6 +99,18 @@ describe('GET /tenants/current', () => {
     expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'x-tenant-slug' } })
   })
 
+  it('answers 401 to Authorization: Bearer before it looks the tenant up', async () => {
+    for (const slug of [a.slug, 'no-such-tenant']) {
+      const res = await request(app.getHttpServer())
+        .get('/tenants/current')
+        .set('Authorization', `Bearer ${a.head.token}`)
+        .set('X-Tenant-Slug', slug)
+        .expect(401)
+
+      expect(res.body).toMatchObject({ code: 'session.invalid' })
+    }
+  })
+
   it('ignores the header on a route that is not a tenant route', async () => {
     await as(a.head, 'no-such-tenant').get('/me').expect(200)
   })

@@ -7,6 +7,7 @@
     "dev": "tsdown --watch --on-success \"node --env-file-if-exists=.env --enable-source-maps dist/main.js\"",
     "build": "tsdown",
     "start": "node --env-file-if-exists=.env --enable-source-maps dist/main.js",
+    "db:account:reset-2fa": "tsdown && node --env-file-if-exists=.env --enable-source-maps dist/scripts/reset-2fa.js",
     "typecheck": "tsc",
     "lint": "eslint --max-warnings 0 .",
     "test": "vitest run"

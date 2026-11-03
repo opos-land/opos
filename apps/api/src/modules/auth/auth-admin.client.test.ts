@@ -205,3 +205,34 @@ describe('AuthAdminClient.deleteFactor', () => {
     ).toMatchObject({ status: 503, body: { code: 'server.unavailable' } })
   })
 })
+
+describe('AuthAdminClient.factorIds', () => {
+  it('lists the ids of the factors of the user', async () => {
+    const fetch = answer(200, [
+      { id: FACTOR_ID, factor_type: 'totp', status: 'verified' },
+      { id: USER_ID, factor_type: 'totp', status: 'unverified' },
+    ])
+
+    expect(await client().factorIds(USER_ID)).toEqual([FACTOR_ID, USER_ID])
+
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe(`http://supabase.test/auth/v1/admin/users/${USER_ID}/factors`)
+    expect(init.method).toBe('GET')
+  })
+
+  it('answers no ids for a user already gone', async () => {
+    answer(404, { code: 404, error_code: 'user_not_found', msg: 'User not found' })
+
+    expect(await client().factorIds(USER_ID)).toEqual([])
+  })
+
+  it('turns a 5xx into a 503 server.unavailable', async () => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    answer(503, { code: 503, msg: 'Down' })
+
+    expect(toErrorResponse(await failureOf(client().factorIds(USER_ID)))).toMatchObject({
+      status: 503,
+      body: { code: 'server.unavailable' },
+    })
+  })
+})

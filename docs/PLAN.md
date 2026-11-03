@@ -188,7 +188,7 @@ opos/
                          #   EngagementModule (without reviews),
                          #   AuthModule (auth endpoints and session cookies, the two-factor routes,
                          #   Supabase Auth clients, send-email hook, admin client), MailModule (Supabase Auth and
-                         #   invitation emails), tests
+                         #   invitation emails), scripts/reset-2fa.ts (db:account:reset-2fa, 14), tests
       src/
         common/
           guards/scanner-device.guard.ts
@@ -223,7 +223,6 @@ opos/
     db/                  # built: clients, roles, rls, core schema, migrations, createTenant, seed,
                          #   scripts, tests, .env.example
       src/
-        scripts/reset-2fa.ts # db:account:reset-2fa (14)
         schema/          # one file per table (4); still to come:
           program-item-reviews.ts
           tenant-payment-configs.ts
@@ -260,7 +259,8 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   and `--affected` counts every package as affected.
 - A task with side effects is not cached: `test:e2e`, `i18n:extract` and every `db:*` task.
   Persistent tasks (`dev`, `db:studio`) set `persistent: true`.
-- The `db:*` tasks exist only in `packages/db`, `test:e2e` only in `e2e`.
+- The `db:*` tasks exist only in `packages/db`, except `db:account:reset-2fa`, which runs in
+  `apps/api` after `i18n:compile` and builds the script with the API; `test:e2e` only in `e2e`.
 - Only `apps/*` have a `build` script. `apps/api` builds with tsdown, which inlines the
   `@opos/*` packages (their `src/index.ts`) into `dist/main.js` and keeps the rest of
   `node_modules` external.
@@ -1848,7 +1848,8 @@ would fail.
 **A lost device and lost codes.** There is no self-service route. The admin, after checking the
 person's identity, runs `pnpm db:account:reset-2fa <email>` through `tools`
 ([14](#resetting-two-factor-authentication)), which removes the factors and unused codes through the
-admin API and sends the same email. Still to be built.
+admin API and sends the same email
+([reset-2fa.ts](../apps/api/src/scripts/reset-2fa.ts)).
 
 **The mirror.** `accounts.mfaEnabledAt` (the column `mfa_enabled_at`) mirrors whether a verified
 factor exists, through trigger `opos_on_auth_mfa_factor_changed` on `auth.mfa_factors`
@@ -2253,7 +2254,7 @@ failure and answers `500` `server.error`, logged — never the caller's `session
 `permission.denied`. The seed calls `POST /admin/users`, `PUT /admin/users/:id`, `GET /admin/users/:id` and the factor
 removal with the same key ([14](#14-demo-data-seed)), and `pnpm db:account:reset-2fa` calls `GET /admin/users/:id/factors`
 and the factor removal ([14](#resetting-two-factor-authentication)). The key never reaches a frontend
-([3.2](#32-frontend-application-layout)). Still to be built: that script.
+([3.2](#32-frontend-application-layout)).
 
 ### Rate limits
 
@@ -2316,14 +2317,15 @@ that first reads it.
 | `INVITE_SECRET` | at least 32 characters, never equal to another secret |
 | `API_URL`, `PANEL_URL`, `PORTAL_URL` | `http://api.opos.localhost:3001`, `http://panel.opos.localhost:5173`, `http://opos.localhost:5174` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | the local Mailpit (`127.0.0.1:54325`, no credentials); Mailpit on Dev, the mail provider in production |
-| `DATABASE_MIGRATION_URL` | for the API and e2e tests only, which write their fixtures as `postgres`; `env.ts` does not read it, and the deployed `api` never receives it |
+| `DATABASE_MIGRATION_URL` | for the API and e2e tests, which write their fixtures as `postgres`, and for `pnpm db:account:reset-2fa` ([14](#resetting-two-factor-authentication)); `env.ts` does not read it, and the deployed `api` never receives it |
 
 **`packages/db/.env`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL`
 (the project's `postgres` role, [4.6](#46-tenant-isolation--rls-in-postgres)) and `OPOS_ENV`,
 `db:roles` and the schema tests also `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD`,
-`db:seed` also `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, `db:account:reset-2fa` those two and the
-`SMTP_*` variables with `MAIL_FROM`, and on Dev and in production every script also
-`DATABASE_CA_PATH`. Nothing has a default: a missing variable
+`db:seed` also `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, and on Dev and in production every script
+also `DATABASE_CA_PATH`. `pnpm db:account:reset-2fa` runs in `apps/api` and reads the variables of
+`apps/api/.env` that it names: `DATABASE_MIGRATION_URL`, `OPOS_ENV`, `SUPABASE_URL`,
+`SUPABASE_SECRET_KEY`, the `SMTP_*` variables and `MAIL_FROM`. Nothing has a default: a missing variable
 stops the script, and so does a remote host without the `OPOS_ENV` of its environment
 ([13](#environments)). turbo passes
 these variables through to the tasks ([3.1](#31-turbo-tasks)).
@@ -2792,9 +2794,9 @@ pnpm db:tenant:rename --slug convention-c --new-slug convention-d
 
 ### Resetting two-factor authentication
 
-Still to be built. A person who has lost both the device and the recovery codes has no self-service
-route ([7.12](#712-two-factor-authentication)). The admin checks the person's identity and removes
-the factor on the server with `packages/db/src/scripts/reset-2fa.ts`:
+A person who has lost both the device and the recovery codes has no self-service route
+([7.12](#712-two-factor-authentication)). The admin checks the person's identity and removes the
+factor on the server with [apps/api/src/scripts/reset-2fa.ts](../apps/api/src/scripts/reset-2fa.ts):
 
 ```bash
 pnpm db:account:reset-2fa <email>
@@ -2804,7 +2806,7 @@ pnpm db:account:reset-2fa <email>
   codes, and sends the same email as `recover`, in the account's locale.
 - The email is matched case-insensitively against a confirmed account ([4.2](#42-global-tables)).
 - Any refusal changes nothing and exits non-zero with a code: `account.not-found`,
-  `account.unconfirmed`, `mfa.not-enabled`.
+  `account.unconfirmed`, `mfa.not-enabled` (an account with no factor).
 - A failed email is reported, and the removal stands.
 - In production: `docker compose -f docker-compose.deploy.yml run --rm tools pnpm db:account:reset-2fa ...`
   ([13](#images)).

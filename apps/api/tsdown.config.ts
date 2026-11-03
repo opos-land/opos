@@ -30,7 +30,9 @@ function linguiMacros(): Rolldown.Plugin {
 }
 
 export default defineConfig({
-  entry: ['src/main.ts'],
+  // The scripts of `tools` (PLAN.md 14) are built with the API: the Lingui macros of the email
+  // content need the same plugin.
+  entry: { main: 'src/main.ts', 'scripts/reset-2fa': 'src/scripts/reset-2fa.ts' },
   format: 'esm',
   platform: 'node',
   target: 'node24',

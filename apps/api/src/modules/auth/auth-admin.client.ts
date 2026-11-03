@@ -52,4 +52,14 @@ export class AuthAdminClient {
     if (error.status === 404) return false
     throw this.refused('deleteFactor', error)
   }
+
+  /** `GET /admin/users/:id/factors`: the ids of the user's factors, none for a user already gone. */
+  async factorIds(userId: string): Promise<string[]> {
+    const { data, error } = await this.api.mfa.listFactors({ userId })
+    if (error) {
+      if (error.status === 404) return []
+      throw this.refused('listFactors', error)
+    }
+    return data.factors.map((factor) => factor.id)
+  }
 }

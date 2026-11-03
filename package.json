@@ -29,6 +29,7 @@
     "db:verify": "turbo run db:verify",
     "db:tenant:create": "turbo run db:tenant:create --",
     "db:tenant:rename": "turbo run db:tenant:rename --",
+    "db:account:reset-2fa": "turbo run db:account:reset-2fa --",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:init": "node scripts/infra-init.mjs",

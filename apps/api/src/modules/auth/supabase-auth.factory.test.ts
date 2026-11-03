@@ -1,4 +1,4 @@
-import { type SupportedStorage } from '@supabase/auth-js'
+import { isAuthRetryableFetchError, type SupportedStorage } from '@supabase/auth-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { SupabaseAuthFactory } from './supabase-auth.factory'
@@ -145,5 +145,56 @@ describe('SupabaseAuthFactory', () => {
     await factory().forRequest().signUp({ email: 'a@b.test', password: 'x' })
 
     expect(JSON.parse(calls[0]!.body)).toMatchObject({ code_challenge: null })
+  })
+
+  describe('an outage of Supabase Auth', () => {
+    const refresh = () =>
+      inRequest(() => factory().forRequest().refreshSession({ refresh_token: 'token' }))
+
+    it('fails a refresh at once, where auth-js would back off for 25 seconds', async () => {
+      const fetchStub = vi.fn(() =>
+        Promise.reject(new TypeError('fetch failed', { cause: new Error('ECONNREFUSED') })),
+      )
+      vi.stubGlobal('fetch', fetchStub)
+      const started = Date.now()
+
+      const { error } = await refresh()
+
+      expect(Date.now() - started).toBeLessThan(1_000)
+      expect(fetchStub).toHaveBeenCalledTimes(1)
+      expect(error?.status).toBeGreaterThanOrEqual(500)
+      expect(isAuthRetryableFetchError(error)).toBe(false)
+      expect(error?.message).toContain('ECONNREFUSED')
+    })
+
+    it.each([500, 502, 503, 504])('fails a refresh at once on a %s, as a 5xx', async (status) => {
+      const fetchStub = vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ msg: 'bad gateway' }), {
+            status,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        ),
+      )
+      vi.stubGlobal('fetch', fetchStub)
+
+      const { error } = await refresh()
+
+      expect(fetchStub).toHaveBeenCalledTimes(1)
+      expect(error?.status).toBeGreaterThanOrEqual(500)
+      expect(isAuthRetryableFetchError(error)).toBe(false)
+    })
+
+    it('treats a 5xx whose body is not JSON as the same outage', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve(new Response('<html>bad gateway</html>', { status: 500 }))),
+      )
+
+      const { error } = await refresh()
+
+      expect(error?.status).toBeGreaterThanOrEqual(500)
+      expect(error?.message).toContain('not JSON')
+    })
   })
 })

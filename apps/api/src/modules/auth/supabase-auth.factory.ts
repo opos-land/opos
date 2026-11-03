@@ -7,11 +7,25 @@ import { authUrl, ENV, type Env } from '../../config/env'
 const AUTH_TIMEOUT_MS = 10_000
 
 /**
+ * auth-js treats every 5xx up to 530, and any thrown transport failure, as retryable, and a refresh
+ * retries those with a backoff for about 25 seconds. An outage has to answer at once, so it comes
+ * back as a response with a status outside that list: an `AuthApiError` whose status (>= 500)
+ * tells `toApiError` it is an outage.
+ */
+const OUTAGE_STATUS = 599
+
+const outage = (message: string) =>
+  new Response(JSON.stringify({ code: 'unexpected_failure', msg: message }), {
+    status: OUTAGE_STATUS,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+/**
  * One call to Supabase Auth, with the two things auth-js loses made visible: it keeps only
  * `e.message` of a transport failure, so the cause (`ECONNREFUSED`, a TLS error) joins the message;
- * and a 5xx outside its own list whose body is not JSON arrives as an error without a status, so
- * it is raised here as a failure that carries the status and counts as an outage. The client's
- * full address goes along in `Sb-Forwarded-For` (PLAN.md 10); the visitor's `User-Agent` never does.
+ * and a 5xx whose body is not JSON arrives as an error without a status. Both, and every other
+ * 5xx, come back as an `outage`. The client's full address goes along in `Sb-Forwarded-For`
+ * (PLAN.md 10); the visitor's `User-Agent` never does.
  */
 async function callAuth(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers)
@@ -28,9 +42,9 @@ async function callAuth(input: string | URL | Request, init?: RequestInit): Prom
   } catch (error) {
     const cause = error instanceof Error ? error.cause : undefined
     if (error instanceof Error && cause instanceof Error) {
-      throw new Error(`${error.message}: ${cause.message}`, { cause: error })
+      return outage(`${error.message}: ${cause.message}`)
     }
-    throw error
+    return outage(error instanceof Error ? error.message : String(error))
   }
   if (response.status >= 500) {
     const isJson = await response
@@ -40,7 +54,7 @@ async function callAuth(input: string | URL | Request, init?: RequestInit): Prom
         () => true,
         () => false,
       )
-    if (!isJson) throw new Error(`HTTP ${response.status} with a body that is not JSON`)
+    return outage(`HTTP ${response.status}${isJson ? '' : ' with a body that is not JSON'}`)
   }
   return response
 }

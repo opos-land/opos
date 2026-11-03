@@ -3,6 +3,8 @@ import { z } from 'zod'
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    // The one switch between environments (PLAN.md 13): `NODE_ENV` is `production` on Dev too.
+    OPOS_ENV: z.enum(['local', 'dev', 'production']),
     PORT: z.coerce.number().int().positive().default(3001),
     DATABASE_URL: z.url(),
     DATABASE_GLOBAL_URL: z.url(),
@@ -14,6 +16,8 @@ const envSchema = z
     SEND_EMAIL_HOOK_SECRET: z.string().regex(/^v1,whsec_[A-Za-z0-9+/]+={0,2}$/),
     // Signs organizer invitations (PLAN.md 7.7); never the same as SUPABASE_SECRET_KEY.
     INVITE_SECRET: z.string().min(32),
+    // The API's own address, the one browsers and Supabase Auth reach it at (PLAN.md 7.4, 7.5).
+    API_URL: z.url(),
     PANEL_URL: z.url(),
     PORTAL_URL: z.url(),
     SMTP_HOST: z.string().min(1),

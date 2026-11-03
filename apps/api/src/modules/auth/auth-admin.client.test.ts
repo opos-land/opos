@@ -1,16 +1,18 @@
 import { Logger } from '@nestjs/common'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { toErrorResponse } from '../../common/filters/http-exception.filter'
-import { type Env } from '../../config/env'
 import { AuthAdminClient } from './auth-admin.client'
+import { SupabaseAuthFactory } from './supabase-auth.factory'
 
 const USER_ID = '00000000-0000-4000-8000-000000000001'
 
 const client = () =>
-  new AuthAdminClient({
-    SUPABASE_URL: 'http://supabase.test',
-    SUPABASE_SECRET_KEY: 'sb_secret_test',
-  } as Env)
+  new AuthAdminClient(
+    new SupabaseAuthFactory({
+      SUPABASE_URL: 'http://supabase.test',
+      SUPABASE_SECRET_KEY: 'sb_secret_test',
+    }),
+  )
 
 /** Supabase Auth answers every request with this status and body. */
 function answer(status: number, body: unknown = {}) {

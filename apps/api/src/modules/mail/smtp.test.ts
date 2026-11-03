@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { sendWithDeadline, smtpOptions } from './smtp'
 
 const mailpit = {
-  NODE_ENV: 'development',
+  OPOS_ENV: 'local',
   SMTP_HOST: 'localhost',
   SMTP_PORT: 1025,
   SMTP_USER: '',
@@ -85,15 +85,25 @@ describe('smtpOptions', () => {
     expect(options).toMatchObject({ secure: false, requireTLS: true })
   })
 
-  it('requires STARTTLS in production even without credentials', () => {
-    expect(smtpOptions({ ...mailpit, NODE_ENV: 'production', SMTP_PORT: 25 })).toMatchObject({
-      secure: false,
-      requireTLS: true,
-    })
+  it('requires TLS when OPOS_ENV is production, whatever NODE_ENV says', () => {
+    const env = {
+      ...mailpit,
+      OPOS_ENV: 'production',
+      SMTP_PORT: 25,
+      NODE_ENV: 'development',
+    } as const
+
+    expect(smtpOptions(env)).toMatchObject({ secure: false, requireTLS: true })
+  })
+
+  it('takes plaintext on Dev, where NODE_ENV is production and OPOS_ENV is dev', () => {
+    const env = { ...mailpit, OPOS_ENV: 'dev', NODE_ENV: 'production' } as const
+
+    expect(smtpOptions(env)).toMatchObject({ secure: false, requireTLS: false })
   })
 
   it('uses implicit TLS on port 465', () => {
-    expect(smtpOptions({ ...mailpit, NODE_ENV: 'production', SMTP_PORT: 465 })).toMatchObject({
+    expect(smtpOptions({ ...mailpit, OPOS_ENV: 'production', SMTP_PORT: 465 })).toMatchObject({
       secure: true,
       requireTLS: false,
     })

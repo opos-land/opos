@@ -28,6 +28,8 @@ export type TenantInContext = Tenant
 export interface RequestStore {
   /** The client address, an IPv6 one by its /64, as the rate limit counts it (PLAN.md 7.9). */
   clientAddress?: string
+  /** The client address in full, IPv4-mapped reduced to IPv4: `Sb-Forwarded-For` (PLAN.md 10). */
+  clientIp?: string
   account?: Account
   /** The latest sign-in the access token records, in seconds since the epoch (PLAN.md 7.4). */
   signedInAt?: number
@@ -54,9 +56,9 @@ export class TenantContextService {
 
   constructor(@Inject(APP_DB) private readonly db: Database) {}
 
-  /** Runs `fn` with a fresh request store that knows only the client address. */
-  run<T>(fn: () => T, clientAddress?: string): T {
-    return storage.run({ clientAddress }, fn)
+  /** Runs `fn` with a fresh request store that knows only the client address, in both forms. */
+  run<T>(fn: () => T, clientAddress?: string, clientIp?: string): T {
+    return storage.run({ clientAddress, clientIp }, fn)
   }
 
   /** The client address of the request. */

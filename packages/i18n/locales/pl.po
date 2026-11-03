@@ -234,6 +234,10 @@ msgid "Sign-up is closed at the moment."
 msgstr "Rejestracja jest teraz zamknięta."
 
 #: src/errors.ts
+msgid "Signing in with Google failed. Try again."
+msgstr "Logowanie przez Google nie powiodło się. Spróbuj ponownie."
+
+#: src/errors.ts
 msgid "Something went wrong. Try again."
 msgstr "Coś poszło nie tak. Spróbuj ponownie."
 
@@ -326,6 +330,10 @@ msgstr "Ten język nie jest obsługiwany."
 #: src/errors.ts
 msgid "This person is already in the team. Change their membership on the team screen."
 msgstr "Ta osoba już należy do zespołu. Zmień jej członkostwo na ekranie zespołu."
+
+#: src/errors.ts
+msgid "This request cannot be made from this address. Reload the page and try again."
+msgstr "Tego żądania nie można wykonać z tego adresu. Odśwież stronę i spróbuj ponownie."
 
 #. Glossary term: ticket
 #: src/glossary.ts

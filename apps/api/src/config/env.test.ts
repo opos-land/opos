@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { authUrl, loadEnv } from './env'
 
 const valid = {
+  OPOS_ENV: 'local',
   DATABASE_URL: 'postgres://opos_app:a@127.0.0.1:54322/postgres',
   DATABASE_GLOBAL_URL: 'postgres://opos_app_global:b@127.0.0.1:54322/postgres',
   SUPABASE_URL: 'http://127.0.0.1:54321',
   SUPABASE_SECRET_KEY: 'sb_secret_local',
   SEND_EMAIL_HOOK_SECRET: `v1,whsec_${Buffer.alloc(32, 1).toString('base64')}`,
   INVITE_SECRET: 'c'.repeat(64),
+  API_URL: 'http://api.opos.localhost:3001',
   PANEL_URL: 'http://panel.opos.localhost:5173',
   PORTAL_URL: 'http://opos.localhost:5174',
   SMTP_HOST: '127.0.0.1',
@@ -24,17 +26,29 @@ describe('loadEnv', () => {
     })
   })
 
-  it.each(['SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'INVITE_SECRET', 'DATABASE_URL'])(
-    'refuses a missing %s, naming it',
-    (key) => {
-      const source: Record<string, string | undefined> = { ...valid, [key]: undefined }
+  it.each([
+    'SUPABASE_URL',
+    'SUPABASE_SECRET_KEY',
+    'INVITE_SECRET',
+    'DATABASE_URL',
+    'OPOS_ENV',
+    'API_URL',
+  ])('refuses a missing %s, naming it', (key) => {
+    const source: Record<string, string | undefined> = { ...valid, [key]: undefined }
 
-      expect(() => loadEnv(source)).toThrow(new RegExp(key))
-    },
-  )
+    expect(() => loadEnv(source)).toThrow(new RegExp(key))
+  })
 
   it('refuses a SUPABASE_URL that is not an address', () => {
     expect(() => loadEnv({ ...valid, SUPABASE_URL: 'not an address' })).toThrow(/SUPABASE_URL/)
+  })
+
+  it('refuses an OPOS_ENV that names no environment', () => {
+    expect(() => loadEnv({ ...valid, OPOS_ENV: 'staging' })).toThrow(/OPOS_ENV/)
+  })
+
+  it.each(['local', 'dev', 'production'])('takes OPOS_ENV %s', (OPOS_ENV) => {
+    expect(loadEnv({ ...valid, OPOS_ENV })).toMatchObject({ OPOS_ENV })
   })
 
   it('refuses an INVITE_SECRET equal to the secret key, naming no value', () => {

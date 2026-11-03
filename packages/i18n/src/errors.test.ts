@@ -73,6 +73,18 @@ describe('errorMessage', () => {
     )
   })
 
+  it('names the two refusals of the sign-in routes', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(i18n._(errorMessage('request.origin-denied'))).toBe(
+      'Tego żądania nie można wykonać z tego adresu. Odśwież stronę i spróbuj ponownie.',
+    )
+    expect(i18n._(errorMessage('auth.google-failed'))).toBe(
+      'Logowanie przez Google nie powiodło się. Spróbuj ponownie.',
+    )
+  })
+
   it('falls back to the generic message for an unknown code', () => {
     expect(errorMessage('no.such-code')).toBe(unknownError)
   })

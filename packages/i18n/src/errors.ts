@@ -11,6 +11,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'request.not-found': msg`We could not find what you are looking for.`,
   'request.rate-limited': msg`Too many attempts. Try again later.`,
   'request.busy': msg`This convention is being changed right now. Try again in a moment.`,
+  'request.origin-denied': msg`This request cannot be made from this address. Reload the page and try again.`,
   'session.invalid': msg`Your session has ended. Sign in again.`,
   'session.reauthentication-required': msg`Confirm it is you: enter your password again or sign in with Google again.`,
   'permission.denied': msg`You do not have permission to do this.`,
@@ -57,6 +58,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'auth.pkce_code_verifier_not_found': msg`Open the link in the browser where you asked for it, or ask for a new link there.`,
   'auth.over_email_send_rate_limit': msg`Too many emails sent. Try again in a few minutes.`,
   'auth.over_request_rate_limit': msg`Too many attempts. Try again in a few minutes.`,
+  'auth.google-failed': msg`Signing in with Google failed. Try again.`,
   'auth.signup_disabled': msg`Sign-up is closed at the moment.`,
 }
 

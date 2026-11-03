@@ -7,6 +7,21 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain('server.unavailable')
   })
 
+  it.each([
+    'request.origin-denied',
+    'auth.invalid_credentials',
+    'auth.email_not_confirmed',
+    'auth.weak_password',
+    'auth.same_password',
+    'auth.otp_expired',
+    'auth.email_address_invalid',
+    'auth.over_email_send_rate_limit',
+    'auth.over_request_rate_limit',
+    'auth.google-failed',
+  ])('lists %s of the sign-in routes', (code) => {
+    expect(errorCodes).toContain(code)
+  })
+
   it.each(errorCodes)('%s has a message in @opos/i18n/errors', (code) => {
     expect(errorMessages[code]).toBeDefined()
   })

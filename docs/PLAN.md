@@ -1260,7 +1260,7 @@ Each module lives in `apps/api/src/modules/<name>/`, named after the module in l
 `TenantContextMiddleware` (global) opens a request store in ALS that holds only the client's address,
 in two forms: `clientIp`, in full with an IPv4-mapped address reduced to IPv4, for `Sb-Forwarded-For`
 ([10](#api-keys-and-the-clients-address)), and `clientAddress`, an IPv6 one by its `/64`, for the
-API's own counters ([7.9](#79-rate-limiting)). Still to be built: `clientIp`.
+API's own counters ([7.9](#79-rate-limiting)).
 
 Nothing reads the database before the guards
 have run; the guards and the interceptor fill the store:
@@ -2160,15 +2160,21 @@ request store ([7.2](#72-tenant-context)), so Supabase Auth's per-IP limits coun
 address forwarding is on. It ignores a value that is not an address, such as a `/64`, with no error,
 and the session then records the caller's own address, so the header never carries `clientAddress`.
 
-The API creates its Supabase Auth clients per request (`SupabaseAuthFactory`, on
+The API creates its Supabase Auth clients per request
+([supabase-auth.factory.ts](../apps/api/src/modules/auth/supabase-auth.factory.ts), on
 `@supabase/auth-js`, all with `autoRefreshToken: false`), so nothing of one request's session
-reaches another:
+reaches another. The same file holds the one wrapper around `fetch` that every client shares: the
+`Sb-Forwarded-For` header, a timeout, the transport cause in the message and a `5xx` whose body is
+not JSON raised as an outage.
 
-| Client | Options | Used for |
-|---|---|---|
-| `forRequest()` | `persistSession: false`, implicit flow | every call but those of Google sign-in |
-| `forGoogle(storage)` | `flowType: 'pkce'`, `persistSession: true`, a storage that lives as long as the request; auth-js ignores `storage` while `persistSession` is false | the two requests of Google sign-in, whose PKCE verifier travels in the `opos_google` cookie between them ([7.5](#75-google-oauth)) |
-| `admin()` | the secret key alone | the [admin API](#admin-api) |
+| Client | Used for |
+|---|---|
+| `forRequest()` | every call but those of Google sign-in; implicit flow, `persistSession: false` |
+| `forGoogle(storage)` | the two requests of Google sign-in, whose PKCE verifier travels in the `opos_google` cookie between them ([7.5](#75-google-oauth)); `flowType: 'pkce'` and `persistSession: true`, since auth-js ignores `storage` while `persistSession` is false |
+| `admin()` | the [admin API](#admin-api); the secret key alone |
+
+[auth-refusal.ts](../apps/api/src/modules/auth/auth-refusal.ts) turns what these clients report into
+the answers of [5.1](#51-auth--sign-in-through-the-api).
 
 ### Send-email hook
 

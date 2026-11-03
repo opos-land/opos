@@ -39,7 +39,7 @@ const applicationOrigin = (app: Application, env: ApplicationUrls) =>
 /**
  * The path of `app` a Google sign-in returns to (PLAN.md 7.5). `redirect` counts only as a path:
  * it starts with a single `/`, holds no backslash or control character, and still resolves to the
- * application's own origin; anything else is the start page, `/`.
+ * application's own origin with a path that starts with a single `/`; anything else is the start page, `/`.
  */
 export function returnPath(app: Application, redirect: unknown, env: ApplicationUrls): string {
   if (typeof redirect !== 'string' || !redirect.startsWith('/')) return '/'
@@ -48,7 +48,9 @@ export function returnPath(app: Application, redirect: unknown, env: Application
   const origin = applicationOrigin(app, env)
   try {
     const url = new URL(redirect, origin)
-    return url.origin === origin ? `${url.pathname}${url.search}` : '/'
+    // Dot segments collapse during resolution and can leave a path that opens with `//`.
+    if (url.origin !== origin || url.pathname.startsWith('//')) return '/'
+    return `${url.pathname}${url.search}`
   } catch {
     return '/'
   }

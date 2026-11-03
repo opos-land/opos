@@ -251,6 +251,39 @@ describe('verifyDatabase', () => {
       expect(problems.join('\n')).toMatch(/opos_app_global SELECT on accounts/)
     })
 
+    it('reports a read of account_recovery_codes granted to opos_app_global', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant select on public.account_recovery_codes to opos_app_global`),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app_global SELECT on account_recovery_codes/)
+    })
+
+    it.each(['code_hash', 'account_id', 'created_at'])(
+      'reports opos_app holding update on account_recovery_codes.%s, which is not used_at',
+      async (column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant update (${column}) on public.account_recovery_codes to opos_app`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app UPDATE \\(${column}\\) on account_recovery_codes`),
+        )
+      },
+    )
+
+    it('reports a table-level update on account_recovery_codes granted to opos_app', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update on public.account_recovery_codes to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app UPDATE on account_recovery_codes/)
+    })
+
+    it('reports opos_app holding update on accounts.mfa_enabled_at', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (mfa_enabled_at) on public.accounts to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app UPDATE \(mfa_enabled_at\) on accounts/)
+    })
+
     it('reports a delete opos_app does not need', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`grant delete on public.tenants to opos_app`),
@@ -442,6 +475,13 @@ describe('verifyDatabase', () => {
       )
     })
 
+    it('reports RLS on account_recovery_codes, a global table', async () => {
+      await expectProblem(
+        (sql) => sql.unsafe('alter table account_recovery_codes enable row level security'),
+        /Global tables with RLS on: account_recovery_codes/,
+      )
+    })
+
     it('reports an event trigger whose function lives in public', async () => {
       await expectProblem(
         installEnsureRls,
@@ -535,6 +575,38 @@ describe('verifyDatabase', () => {
       )
     })
 
+    it('reports a missing opos_on_auth_mfa_factor_changed on auth.mfa_factors', async () => {
+      await expectProblem(
+        (sql) => sql.unsafe('drop trigger opos_on_auth_mfa_factor_changed on auth.mfa_factors'),
+        /auth\.mfa_factors lacks opos_on_auth_mfa_factor_changed/,
+        supabaseAdmin,
+      )
+    })
+
+    it('reports opos_on_auth_mfa_factor_changed disabled', async () => {
+      await expectProblem(
+        (sql) =>
+          sql.unsafe(
+            'alter table auth.mfa_factors disable trigger opos_on_auth_mfa_factor_changed',
+          ),
+        /auth\.mfa_factors lacks opos_on_auth_mfa_factor_changed/,
+        supabaseAdmin,
+      )
+    })
+
+    it('reports opos_on_auth_mfa_factor_changed recreated with other events', async () => {
+      await expectProblem(
+        (sql) =>
+          sql.unsafe(`
+            drop trigger opos_on_auth_mfa_factor_changed on auth.mfa_factors;
+            create trigger opos_on_auth_mfa_factor_changed after insert on auth.mfa_factors
+              for each row execute function public.opos_handle_mfa_factor_change();
+          `),
+        /auth\.mfa_factors\.opos_on_auth_mfa_factor_changed differs from its definition/,
+        supabaseAdmin,
+      )
+    })
+
     it('reports a required trigger that is disabled', async () => {
       await expectProblem(
         (sql) => sql.unsafe('alter table auth.users disable trigger opos_on_auth_user_created'),
@@ -584,6 +656,7 @@ describe('verifyDatabase', () => {
     it.each([
       ['users', 'opos_extra'],
       ['refresh_tokens', 'someone_elses'],
+      ['mfa_factors', 'opos_extra'],
     ])('reports a trigger on auth.%s outside the required list', async (table, trigger) => {
       await expectProblem(
         (sql) =>

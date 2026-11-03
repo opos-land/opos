@@ -8,7 +8,14 @@ import { Layout } from './layout'
 
 vi.mock('../features/account', () => ({ AccountLocale: () => null }))
 
-const account = { id: 'a', email: 'a@x.test', firstName: null, lastName: null, locale: null }
+const account = {
+  id: 'a',
+  email: 'a@x.test',
+  firstName: null,
+  lastName: null,
+  locale: null,
+  mfaEnabled: false,
+}
 
 const view = () =>
   render(

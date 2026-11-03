@@ -57,7 +57,14 @@ describe('signInMethodsOf', () => {
 })
 
 describe('meOf', () => {
-  const account = { id: 'a', email: 'a@b.test', firstName: null, lastName: null, locale: null }
+  const account = {
+    id: 'a',
+    email: 'a@b.test',
+    firstName: null,
+    lastName: null,
+    locale: null,
+    mfaEnabled: false,
+  }
 
   it('adds the sign-in methods of the session user to the account', () => {
     expect(

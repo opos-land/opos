@@ -13,6 +13,7 @@ import {
   signIn,
   unsignedToken,
 } from './auth'
+import { addVerifiedFactor, closeTenantDb } from './tenants'
 
 let app: NestExpressApplication
 let token: string
@@ -30,6 +31,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await deleteCreatedAccounts()
   await app.close()
+  await closeTenantDb()
 })
 
 const me = () => request(app.getHttpServer()).get('/me')
@@ -44,6 +46,18 @@ describe('JwtAuthGuard', () => {
       lastName: 'Nowak',
       locale: null,
     })
+  })
+
+  it('reports mfaEnabled for an account with a verified factor only', async () => {
+    expect((await me().use(session(token)).expect(200)).body).toMatchObject({ mfaEnabled: false })
+
+    const other = await createAccount()
+    await addVerifiedFactor(other.id)
+    const res = await me()
+      .use(session(await mintToken({ sub: other.id })))
+      .expect(200)
+
+    expect(res.body).toMatchObject({ id: other.id, mfaEnabled: true })
   })
 
   it.each([

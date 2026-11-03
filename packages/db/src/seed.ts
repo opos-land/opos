@@ -1,7 +1,9 @@
-import { and, eq } from 'drizzle-orm'
+import { createHash } from 'node:crypto'
+import { and, eq, sql } from 'drizzle-orm'
 import { migrationDb } from './client'
 import { migrationUrl } from './migration-url'
 import {
+  accountRecoveryCodes,
   accounts,
   editionMemberships,
   editions,
@@ -91,7 +93,19 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'head@convention-b.test', firstName: 'Jana', lastName: 'Novak' },
   { email: 'speaker@example.com', firstName: 'Kasia', lastName: 'Mazur' },
   { email: 'attendee@example.com', firstName: 'Jan', lastName: 'Kowal' },
+  { email: 'mfa@example.com', firstName: 'Maria', lastName: 'Zielinska' },
 ]
+
+// The account with two-factor authentication (PLAN.md 14): a verified TOTP factor on a fixed
+// secret, which any authenticator app or the RFC 6238 algorithm turns into the code, and ten
+// recovery codes of the length the API issues.
+const MFA_EMAIL = 'mfa@example.com'
+const MFA_FACTOR_ID = '5f0c2b9e-7a4d-4f1e-9a63-0d2e8c1b7a40'
+const MFA_SECRET = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ'
+const RECOVERY_CODES = Array.from(
+  { length: 10 },
+  (_, index) => `DEMORECOVERYCOD${'ABCDEFGHIJ'[index]}`,
+)
 
 const TENANTS: SeedTenant[] = [
   {
@@ -250,6 +264,32 @@ async function ensureAccount(account: SeedAccount) {
       locale: account.locale ?? null,
     })
     .where(eq(accounts.email, account.email))
+}
+
+/**
+ * Gives the account a verified factor and unused recovery codes. The factor is a row of Supabase
+ * Auth's table, written as postgres, so the trigger sets `mfaEnabledAt` as it does for a person.
+ */
+async function ensureTwoFactor(email: string) {
+  const id = await accountId(email)
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`
+      insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
+      values (${MFA_FACTOR_ID}, ${id}, 'Authenticator', 'totp', 'verified', now(), now(), ${MFA_SECRET})
+      on conflict (id) do update
+        set friendly_name = excluded.friendly_name, secret = excluded.secret
+    `)
+    for (const code of RECOVERY_CODES) {
+      const codeHash = createHash('sha256').update(code).digest('hex')
+      await tx
+        .insert(accountRecoveryCodes)
+        .values({ accountId: id, codeHash })
+        .onConflictDoUpdate({
+          target: [accountRecoveryCodes.accountId, accountRecoveryCodes.codeHash],
+          set: { usedAt: null },
+        })
+    }
+  })
 }
 
 async function accountId(email: string) {
@@ -411,6 +451,7 @@ async function seedTenant(spec: SeedTenant) {
 
 try {
   for (const account of ACCOUNTS) await ensureAccount(account)
+  await ensureTwoFactor(MFA_EMAIL)
   for (const tenant of TENANTS) await seedTenant(tenant)
   console.log(
     `Seeded ${TENANTS.length} tenants and ${ACCOUNTS.length} accounts; password ${DEV_PASSWORD}.`,

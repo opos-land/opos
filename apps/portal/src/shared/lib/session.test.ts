@@ -10,6 +10,7 @@ const account = (id: string) => ({
   firstName: null,
   lastName: null,
   locale: null,
+  mfaEnabled: false,
   signInMethods: ['password'],
 })
 

@@ -226,7 +226,6 @@ opos/
       src/
         scripts/reset-2fa.ts # db:account:reset-2fa (14)
         schema/          # one file per table (4); still to come:
-          account-recovery-codes.ts
           program-item-reviews.ts
           tenant-payment-configs.ts
           ticket-types.ts
@@ -433,7 +432,7 @@ two-factor authentication ([7.12](#712-two-factor-authentication)).
 and `auth.users.id`; `email` is unique and lowercase (check `accounts_email_lowercase`);
 `emailConfirmedAt` is `auth.users.email_confirmed_at`, `null` until the address is confirmed;
 `locale` is the user's choice, `null` means detect from `Accept-Language`; `mfaEnabledAt`
-(timestamptz) mirrors whether the account holds a verified factor, `null` while it holds none.
+mirrors whether the account holds a verified factor, `null` while it holds none.
 
 Triggers on `auth.users`, `security definer` functions owned by `postgres`, keep it in step
 with Supabase Auth: an insert creates the `accounts` row with `emailConfirmedAt`, and with
@@ -449,9 +448,11 @@ only email and Google sign-in are enabled ([10](#10-supabase)). Deleting a user 
 removes `accounts`, and with it every row that references it.
 
 Trigger `opos_on_auth_mfa_factor_changed` on `auth.mfa_factors` keeps `mfaEnabledAt` in step,
-through `public.opos_handle_mfa_factor_change()`: `security definer`, `search_path = ''`, owned by
-`postgres`, with `execute` revoked. A factor reaching `verified` sets it, removing the last verified
-factor clears it, and an unverified factor leaves it `null`.
+through `public.opos_handle_mfa_factor_change()`
+([0021_mfa_mirror_and_recovery_codes.sql](../packages/db/drizzle/0021_mfa_mirror_and_recovery_codes.sql)):
+`security definer`, `search_path = ''`, owned by `postgres`, with `execute` revoked. A factor
+reaching `verified` sets it, removing the last verified factor clears it, a second verified factor
+or the removal of one of two changes nothing, and an unverified factor leaves it `null`.
 
 **Matching an account by email counts only a confirmed one.** Wherever OPOS looks an account up by
 an email address — `createTenant` ([14](#creating-a-tenant)),
@@ -467,12 +468,12 @@ column and update only `firstName`, `lastName` and `locale` — never `email`, `
 cross-tenant query ([4.6](#46-tenant-isolation--rls-in-postgres)) reads it. Rows are inserted and
 deleted by the triggers and the cascade alone, both running as `postgres`.
 
-**`account_recovery_codes`** — the one-time recovery codes of two-factor authentication
-([7.12](#712-two-factor-authentication)): `accountId` (FK `accounts`, cascade), `codeHash` (text, the
-SHA-256 of the code), `usedAt` (timestamptz, nullable). It has no RLS either: `opos_app` may select,
-insert and delete, and update `usedAt` alone; `opos_app_global` has no access.
-
-Still to be built: the column `mfaEnabledAt`, its trigger and the table `account_recovery_codes`.
+**`account_recovery_codes`** ([account-recovery-codes.ts](../packages/db/src/schema/account-recovery-codes.ts))
+— the one-time recovery codes of two-factor authentication
+([7.12](#712-two-factor-authentication)); a row belongs to an account and cascades with it, holds
+the SHA-256 of a code and never the code, and a code is unique within its account. It has no RLS
+either: `opos_app` may select, insert and delete, and update `usedAt` alone; `opos_app_global` has
+no access.
 
 ### 4.3 Tenant-level tables
 
@@ -595,8 +596,7 @@ Every RLS-covered table has an index starting with `tenantId`.
 11. **A scanner works only inside its edition** — every scanner query filters on the device's
     `editionId`; a ticket from another edition is `404`.
 12. **`accounts.mfaEnabledAt` is set exactly while the account holds a verified factor** — trigger
-    `opos_on_auth_mfa_factor_changed` ([4.2](#42-global-tables)). Still to be built: this invariant,
-    with its column and trigger.
+    `opos_on_auth_mfa_factor_changed` ([4.2](#42-global-tables)).
 
 ### 4.6 Tenant isolation — RLS in Postgres
 
@@ -631,7 +631,7 @@ holds a grant for the three roles and none of its functions is executable throug
 `db:verify` reports a function in `public` that `anon`, `authenticated` or `service_role` may
 execute, directly or through `PUBLIC`.
 
-**OPOS writes nothing into `auth`.** Of its privileges on the `auth` tables `postgres` may pass on
+**OPOS writes nothing into `auth`**, except the one factor row of the dev seed ([14](#14-demo-data-seed)). Of its privileges on the `auth` tables `postgres` may pass on
 `select` alone, so what ties `public` to `auth` — the foreign key of `accounts` to `auth.users`, the
 `accounts` triggers on `auth.users` and the trigger on `auth.mfa_factors`
 ([4.2](#42-global-tables)) — comes from migrations running as `postgres`, and no other OPOS role
@@ -818,13 +818,11 @@ transaction and expects the report:
   `RUNTIME_TIMEOUTS` with its value, or a setting of the role in one database gives it another value,
   which takes precedence over the role's own;
 - `auth.users` lacks one of `opos_on_auth_user_created`, `opos_on_auth_user_email_updated` and
-  `opos_on_auth_user_email_confirmed`, or has it disabled, or its definition — timing, events,
-  columns, condition, level and function — differs from the one in `verify.ts`; a table of the
-  `auth` schema carries a trigger outside that list, which a trigger OPOS attaches joins in the PR
-  of its migration.
+  `opos_on_auth_user_email_confirmed`, or `auth.mfa_factors` lacks `opos_on_auth_mfa_factor_changed`,
+  or has it disabled, or its definition — timing, events, columns, condition, level and function —
+  differs from the one in `verify.ts`; a table of the `auth` schema carries a trigger outside that
+  list, which a trigger OPOS attaches joins in the PR of its migration.
 
-Still to be built, with its case: `auth.mfa_factors` lacks `opos_on_auth_mfa_factor_changed`; the
-trigger joins the list of required triggers together with its migration.
 
 ---
 
@@ -953,7 +951,7 @@ which `/login` offers. Google sign-in needs no such step ([7.5](#75-google-oauth
 | POST | `/me/attendances` | `{ tenantSlug, editionSlug, firstName, lastName }`; `409` on a repeat sign-up, `404` for an unpublished edition |
 | DELETE | `/me/attendances/:attendeeId` | withdraw |
 
-Still to be built: `mfaEnabled` on `GET /me`. The schema of the answer, `signInMethods` included, is [me.ts](../packages/contract/src/me.ts).
+The schema of the answer, `mfaEnabled` and `signInMethods` included, is [me.ts](../packages/contract/src/me.ts).
 
 ### 5.3 `tenants` — JWT + `X-Tenant-Slug`
 
@@ -2688,8 +2686,8 @@ payments or the deployment itself: in full on Dev, its production part on produc
 data below. It runs where `OPOS_ENV` is `local` or `dev` and refuses `production`, with no flag to
 override it ([13](#environments)); on Dev the deploy workflow runs it after every migration. The
 seed covers the built tables; the rows of a table still to be built (reviews, payment config,
-ticket types, orders, attendees) join the seed in the PR that builds the table, and so does a demo
-account with two-factor authentication and its recovery codes. `accepted_invitations` holds no demo rows: a seeded team is written directly.
+ticket types, orders, attendees) join the seed in the PR that builds the table.
+`accepted_invitations` holds no demo rows: a seeded team is written directly.
 
 Accounts are created through the Supabase Auth admin API (`POST /admin/users` with
 `email_confirm: true` and the dev password, authorized by `SUPABASE_SECRET_KEY`,
@@ -2701,8 +2699,13 @@ tenant](#creating-a-tenant)). The active editions start 60 days after the run, s
 stays in the future.
 
 - **Accounts:** `head@convention-a.test`, five organizer accounts, `head@convention-b.test`,
-  `speaker@example.com`, `attendee@example.com`. Dev password: `password123`. One organizer
-  account has `locale=en`.
+  `speaker@example.com`, `attendee@example.com`, `mfa@example.com`. Dev password: `password123`. One
+  organizer account has `locale=en`.
+- **Two-factor authentication:** `mfa@example.com` holds a verified TOTP factor and ten unused
+  recovery codes ([seed.ts](../packages/db/src/seed.ts) holds the secret and the codes). The seed
+  writes the factor row into `auth.mfa_factors` as `postgres`, the one thing it writes into `auth`
+  directly, so the trigger sets `mfaEnabledAt` as it does for a person; it never writes
+  `mfaEnabledAt`. A rerun restores the codes to unused.
 - **Tenant `convention-a`** — "Convention A", `defaultLocale=pl`, `timezone=Europe/Warsaw`.
   - Edition `2025` — `isPublished=true`, `isActive=false`, 8 programme items, all in the past.
     `speaker@example.com` speaks at two of them; one has a public review and a speakers-only

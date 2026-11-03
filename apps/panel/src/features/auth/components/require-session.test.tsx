@@ -18,6 +18,7 @@ const account = {
   firstName: null,
   lastName: null,
   locale: null,
+  mfaEnabled: false,
 }
 
 function LoginProbe() {

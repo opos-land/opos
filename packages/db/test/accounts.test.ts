@@ -79,6 +79,174 @@ describe('accounts mirror auth.users', () => {
   })
 })
 
+const mfaEnabledAt = async (id: string) =>
+  (
+    await migrator<{ mfa_enabled_at: Date | null }[]>`
+      select mfa_enabled_at from accounts where id = ${id}
+    `
+  )[0]!.mfa_enabled_at
+
+/** A TOTP factor as Supabase Auth stores it; written as postgres, which may write auth. */
+const addFactor = async (userId: string, status: 'unverified' | 'verified') => {
+  const [factor] = await migrator<{ id: string }[]>`
+    insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
+    values (gen_random_uuid(), ${userId}, gen_random_uuid()::text, 'totp', ${status}, now(), now(), 'JBSWY3DPEHPK3PXP')
+    returning id
+  `
+  return factor!.id
+}
+
+describe('accounts mirror auth.mfa_factors', () => {
+  it('sets mfa_enabled_at when a factor is inserted verified', async () => {
+    const user = await createUser()
+    expect(await mfaEnabledAt(user.id)).toBeNull()
+
+    await addFactor(user.id, 'verified')
+
+    expect(await mfaEnabledAt(user.id)).toBeInstanceOf(Date)
+  })
+
+  it('sets mfa_enabled_at when a factor reaches verified', async () => {
+    const user = await createUser()
+    const factor = await addFactor(user.id, 'unverified')
+    expect(await mfaEnabledAt(user.id)).toBeNull()
+
+    await migrator`update auth.mfa_factors set status = 'verified' where id = ${factor}`
+
+    expect(await mfaEnabledAt(user.id)).toBeInstanceOf(Date)
+  })
+
+  it('leaves mfa_enabled_at null for an unverified factor', async () => {
+    const user = await createUser()
+
+    await addFactor(user.id, 'unverified')
+
+    expect(await mfaEnabledAt(user.id)).toBeNull()
+  })
+
+  it('clears mfa_enabled_at when the last verified factor is removed', async () => {
+    const user = await createUser()
+    const factor = await addFactor(user.id, 'verified')
+
+    await migrator`delete from auth.mfa_factors where id = ${factor}`
+
+    expect(await mfaEnabledAt(user.id)).toBeNull()
+  })
+
+  it('keeps mfa_enabled_at while another verified factor remains', async () => {
+    const user = await createUser()
+    const first = await addFactor(user.id, 'verified')
+    const before = await mfaEnabledAt(user.id)
+
+    await addFactor(user.id, 'verified')
+    expect(await mfaEnabledAt(user.id)).toEqual(before)
+    await migrator`delete from auth.mfa_factors where id = ${first}`
+
+    expect(await mfaEnabledAt(user.id)).toEqual(before)
+  })
+
+  it('clears mfa_enabled_at when a verified factor goes back to unverified', async () => {
+    const user = await createUser()
+    const factor = await addFactor(user.id, 'verified')
+
+    await migrator`update auth.mfa_factors set status = 'unverified' where id = ${factor}`
+
+    expect(await mfaEnabledAt(user.id)).toBeNull()
+  })
+
+  it('leaves another account alone', async () => {
+    const user = await createUser()
+    const other = await createUser()
+
+    await addFactor(user.id, 'verified')
+
+    expect(await mfaEnabledAt(other.id)).toBeNull()
+  })
+
+  it('lets the user be deleted with a verified factor', async () => {
+    const user = await createUser()
+    await addFactor(user.id, 'verified')
+
+    await authAdmin`delete from auth.users where id = ${user.id}`
+
+    expect(await account(user.id)).toBeUndefined()
+  })
+})
+
+describe('account_recovery_codes', () => {
+  const addCodes = async (accountId: string, hashes: string[]) => {
+    for (const hash of hashes) {
+      await migrator`insert into account_recovery_codes (account_id, code_hash) values (${accountId}, ${hash})`
+    }
+  }
+
+  it('disappear with the account', async () => {
+    const user = await createUser()
+    await addCodes(user.id, ['a'.repeat(64), 'b'.repeat(64)])
+
+    await authAdmin`delete from auth.users where id = ${user.id}`
+
+    const rows = await migrator`select 1 from account_recovery_codes where account_id = ${user.id}`
+    expect(rows).toHaveLength(0)
+  })
+
+  it('refuses the same hash twice for one account', async () => {
+    const user = await createUser()
+    await addCodes(user.id, ['c'.repeat(64)])
+
+    await expect(addCodes(user.id, ['c'.repeat(64)])).rejects.toThrow(/duplicate key/)
+  })
+
+  it('lets opos_app select, insert and delete, and update only used_at', async () => {
+    const user = await createUser()
+    const hash = 'd'.repeat(64)
+
+    await app`insert into account_recovery_codes (account_id, code_hash) values (${user.id}, ${hash})`
+    expect(
+      await app`select used_at from account_recovery_codes where account_id = ${user.id}`,
+    ).toHaveLength(1)
+    await app`update account_recovery_codes set used_at = now() where account_id = ${user.id}`
+    const [row] = await migrator<{ moved: boolean; used: boolean }[]>`
+      select updated_at > created_at as moved, used_at is not null as used
+      from account_recovery_codes where account_id = ${user.id}
+    `
+    expect(row).toEqual({ moved: true, used: true })
+    for (const query of [
+      app`update account_recovery_codes set code_hash = 'x' where account_id = ${user.id}`,
+      app`update account_recovery_codes set account_id = gen_random_uuid() where account_id = ${user.id}`,
+      app`update account_recovery_codes set updated_at = now() where account_id = ${user.id}`,
+    ]) {
+      await expect(query).rejects.toThrow(/permission denied/)
+    }
+    await app`delete from account_recovery_codes where account_id = ${user.id}`
+    expect(
+      await app`select 1 from account_recovery_codes where account_id = ${user.id}`,
+    ).toHaveLength(0)
+  })
+
+  it('gives opos_app_global no access', async () => {
+    const user = await createUser()
+    await addCodes(user.id, ['e'.repeat(64)])
+
+    for (const query of [
+      global`select 1 from account_recovery_codes`,
+      global`update account_recovery_codes set used_at = now()`,
+      global`delete from account_recovery_codes`,
+      global`insert into account_recovery_codes (account_id, code_hash) values (${user.id}, 'x')`,
+    ]) {
+      await expect(query).rejects.toThrow(/permission denied/)
+    }
+  })
+
+  it('is out of reach of the Supabase API roles', async () => {
+    const [row] = await migrator<{ held: boolean }[]>`
+      select bool_or(has_table_privilege(r.role, 'account_recovery_codes', 'SELECT')) as held
+      from (values ('anon'), ('authenticated'), ('service_role')) r(role)
+    `
+    expect(row!.held).toBe(false)
+  })
+})
+
 describe('accounts constraints', () => {
   it('refuses an email that is not lowercase', async () => {
     const user = await createUser()
@@ -104,6 +272,7 @@ describe('accounts on the runtime roles', () => {
       app`update accounts set email = 'other@example.test' where id = ${user.id}`,
       app`update accounts set updated_at = now() where id = ${user.id}`,
       app`update accounts set email_confirmed_at = now() where id = ${user.id}`,
+      app`update accounts set mfa_enabled_at = now() where id = ${user.id}`,
       app`delete from accounts where id = ${user.id}`,
       app`insert into accounts (id, email) values (gen_random_uuid(), 'x@example.test')`,
     ]) {

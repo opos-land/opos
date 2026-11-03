@@ -13,14 +13,16 @@ const columns = {
   firstName: accounts.firstName,
   lastName: accounts.lastName,
   locale: accounts.locale,
+  mfaEnabledAt: accounts.mfaEnabledAt,
 }
 
 type Row = { [K in keyof typeof columns]: (typeof accounts.$inferSelect)[K] }
 
 // A locale written by the sign-up trigger is not validated; an unsupported one means "detect".
-const toAccount = (row: Row): Account => ({
+const toAccount = ({ mfaEnabledAt, ...row }: Row): Account => ({
   ...row,
   locale: isLocale(row.locale) ? row.locale : null,
+  mfaEnabled: mfaEnabledAt !== null,
 })
 
 /**

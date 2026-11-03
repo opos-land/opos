@@ -6,7 +6,14 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
 import { LandingPage } from './landing-page'
 
-const account = { id: 'a', email: 'a@x.test', firstName: null, lastName: null, locale: null }
+const account = {
+  id: 'a',
+  email: 'a@x.test',
+  firstName: null,
+  lastName: null,
+  locale: null,
+  mfaEnabled: false,
+}
 
 const view = () =>
   render(

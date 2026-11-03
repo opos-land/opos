@@ -26,6 +26,7 @@ describe('profileValues', () => {
         firstName: null,
         lastName: 'Nowak',
         locale: null,
+        mfaEnabled: false,
       }),
     ).toEqual({ firstName: '', lastName: 'Nowak' })
   })

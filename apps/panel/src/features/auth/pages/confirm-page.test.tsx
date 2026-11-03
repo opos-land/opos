@@ -17,7 +17,14 @@ vi.mock('../api/auth', () => ({
   sendPasswordLink: vi.fn(),
 }))
 
-const account = { id: 'a', email: 'invitee@x.test', firstName: null, lastName: null, locale: null }
+const account = {
+  id: 'a',
+  email: 'invitee@x.test',
+  firstName: null,
+  lastName: null,
+  locale: null,
+  mfaEnabled: false,
+}
 
 function Probe() {
   const location = useLocation()

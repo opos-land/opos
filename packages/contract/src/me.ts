@@ -11,6 +11,8 @@ export const accountSchema = z.object({
   lastName: z.string().nullable(),
   /** The account's interface language; `null` means detect it from Accept-Language. */
   locale: z.enum(SUPPORTED_LOCALES).nullable(),
+  /** Whether the account holds a verified two-factor factor (PLAN.md 7.12). */
+  mfaEnabled: z.boolean(),
 })
 
 export type Account = z.infer<typeof accountSchema>

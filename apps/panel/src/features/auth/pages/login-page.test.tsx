@@ -65,7 +65,14 @@ describe('LoginPage ?error=', () => {
   it('leaves a browser holding a session for the page it asked for', () => {
     useSession.setState({
       status: 'ready',
-      account: { id: 'a', email: 'a@x.test', firstName: null, lastName: null, locale: null },
+      account: {
+        id: 'a',
+        email: 'a@x.test',
+        firstName: null,
+        lastName: null,
+        locale: null,
+        mfaEnabled: false,
+      },
     })
     renderLogin('?redirect=%2Fconvention-a')
 

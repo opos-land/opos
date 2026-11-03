@@ -47,7 +47,7 @@ export const globalReads = [
 ]
 
 /** The public tables outside tenant isolation (PLAN.md 4.2). */
-const globalTables = ['accounts']
+const globalTables = ['accounts', 'account_recovery_codes']
 
 /**
  * The triggers OPOS attaches to the tables of the auth schema (PLAN.md 4.6): table, then trigger,
@@ -64,6 +64,10 @@ const authTriggers: Record<string, Record<string, string>> = {
     opos_on_auth_user_email_confirmed:
       'CREATE TRIGGER opos_on_auth_user_email_confirmed AFTER UPDATE OF email_confirmed_at ON auth.users FOR EACH ROW WHEN ((old.email_confirmed_at IS DISTINCT FROM new.email_confirmed_at)) EXECUTE FUNCTION handle_auth_user_email_confirmed()',
   },
+  mfa_factors: {
+    opos_on_auth_mfa_factor_changed:
+      'CREATE TRIGGER opos_on_auth_mfa_factor_changed AFTER INSERT OR DELETE OR UPDATE OF status ON auth.mfa_factors FOR EACH ROW EXECUTE FUNCTION opos_handle_mfa_factor_change()',
+  },
 }
 
 /**
@@ -72,6 +76,7 @@ const authTriggers: Record<string, Record<string, string>> = {
  * of the migration that grants it.
  */
 const appUpdates = [
+  'account_recovery_codes.used_at',
   'accounts.first_name',
   'accounts.last_name',
   'accounts.locale',
@@ -216,6 +221,8 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   // column-level updates opos_app holds pass. opos_app inserts and deletes only where the API
   // creates and removes rows: a write the API starts doing joins this list with its migration.
   const appWrites = [
+    ['account_recovery_codes', 'INSERT'],
+    ['account_recovery_codes', 'DELETE'],
     ['tenant_memberships', 'INSERT'],
     ['tenant_memberships', 'DELETE'],
     ['editions', 'INSERT'],

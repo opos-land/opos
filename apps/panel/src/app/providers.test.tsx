@@ -13,6 +13,7 @@ const accountOf = (id: string) => ({
   firstName: null,
   lastName: null,
   locale: null,
+  mfaEnabled: false,
 })
 
 class FakeChannel {

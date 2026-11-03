@@ -70,23 +70,34 @@ export async function resetTwoFactor(deps: ResetDeps, address: string): Promise<
     )
   }
   for (const factorId of factorIds) await deps.admin.deleteFactor(account.id, factorId)
-  await deps.db
-    .delete(accountRecoveryCodes)
-    .where(and(eq(accountRecoveryCodes.accountId, account.id), isNull(accountRecoveryCodes.usedAt)))
+  // The factors are gone, so the person is told whatever happens to the codes.
+  let codesFailure: Error | undefined
+  try {
+    await deps.db
+      .delete(accountRecoveryCodes)
+      .where(
+        and(eq(accountRecoveryCodes.accountId, account.id), isNull(accountRecoveryCodes.usedAt)),
+      )
+  } catch (error) {
+    codesFailure = error instanceof Error ? error : new Error(String(error))
+  }
 
+  let result: ResetResult
   try {
     await deps.mail.sendNoticeEmail({
       to: email,
       locale: recipientLocale({ account: account.locale }),
       content: mfaDisabledEmail,
     })
-    return { accountId: account.id, factors: factorIds.length, emailSent: true }
+    result = { accountId: account.id, factors: factorIds.length, emailSent: true }
   } catch (error) {
-    return {
+    result = {
       accountId: account.id,
       factors: factorIds.length,
       emailSent: false,
       emailError: error instanceof Error ? error.message : 'unknown error',
     }
   }
+  if (codesFailure) throw codesFailure
+  return result
 }

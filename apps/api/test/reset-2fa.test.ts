@@ -159,6 +159,24 @@ describe('resetTwoFactor', () => {
     expect(rows[0]).toMatchObject({ code_hash: 'd'.repeat(64), used_at: null })
   })
 
+  it('sends the notice when removing the codes fails after the factors are gone', async () => {
+    const { id, email } = await personWith2fa()
+    const failing = new Proxy(db, {
+      get: (target, property) =>
+        property === 'delete'
+          ? () => {
+              throw new Error('codes store down')
+            }
+          : (Reflect.get(target, property) as unknown),
+    })
+
+    const failure = await failureOf(resetTwoFactor({ ...deps, db: failing }, email))
+
+    expect(failure).toMatchObject({ message: 'codes store down' })
+    expect(await mfaState(id)).toEqual({ mirrored: false, factors: 0 })
+    expect(await waitForMail(email)).toHaveLength(1)
+  })
+
   it('reports a failed email and leaves the removal standing', async () => {
     const { id, email } = await personWith2fa()
     const failing = {

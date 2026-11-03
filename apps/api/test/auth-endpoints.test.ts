@@ -1,8 +1,9 @@
 import { createServer, type IncomingHttpHeaders, type Server } from 'node:http'
 import { type AddressInfo } from 'node:net'
+import { Logger } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { authUrl, loadEnv } from '../src/config/env'
 import { createApp } from './app'
 import {
@@ -85,6 +86,24 @@ async function linkFor(address: string, count = 1) {
   }
 }
 
+/** An API whose Supabase Auth answers every call with `status` and `body`; the stub closes both. */
+async function stubbedSupabaseAuth(status: number, body: object) {
+  const stub = createServer((_, res) => {
+    res.writeHead(status, { 'content-type': 'application/json' })
+    res.end(JSON.stringify(body))
+  })
+  await new Promise<void>((resolve) => stub.listen(0, '127.0.0.1', resolve))
+  const url = `http://127.0.0.1:${(stub.address() as AddressInfo).port}`
+  const stubbed = await createApp({ SUPABASE_URL: url })
+  return {
+    app: stubbed,
+    close: async () => {
+      await stubbed.close()
+      stub.close()
+    },
+  }
+}
+
 describe('sign-up', () => {
   it('answers 202 for a new and for a registered address alike, and takes no password', async () => {
     const address = newAddress()
@@ -151,6 +170,64 @@ describe('resend and forgot', () => {
       expect(res.text).toBe('')
     }
     expect((await linkFor(known.email)).type).toBe('recovery')
+  })
+})
+
+describe('a malformed address', () => {
+  const routes = ['/auth/sign-up', '/auth/resend', '/auth/password/forgot']
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it.each(
+    routes.flatMap((route) =>
+      ['not-an-email', `${'x'.repeat(300)}@example.test`].map((email) => [
+        route,
+        email.slice(0, 20),
+        email,
+      ]),
+    ),
+  )('answers 400 request.invalid on %s for %s, without a logged error', async (route, _, email) => {
+    const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+
+    const res = await post(route, { email })
+
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'email' } })
+    expect(logged).not.toHaveBeenCalled()
+  })
+
+  it('answers auth.email_address_invalid when Supabase Auth still answers validation_failed', async () => {
+    const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const stub = await stubbedSupabaseAuth(400, { error_code: 'validation_failed', msg: 'nope' })
+    try {
+      for (const route of routes) {
+        const res = await request(stub.app.getHttpServer())
+          .post(route)
+          .set('Origin', portal)
+          .send({ email: 'anna@example.test' })
+
+        expect(res.status).toBe(422)
+        expect(res.body).toMatchObject({ code: 'auth.email_address_invalid' })
+      }
+      expect(logged).not.toHaveBeenCalled()
+    } finally {
+      await stub.close()
+    }
+  })
+
+  it('counts the bytes of a new password: 72 of them pass, 74 are a 400', async () => {
+    const { email } = await confirmedAccount()
+    const caller = await signedInAgent('portal', email)
+
+    const tooLong = await caller.put('/auth/password').send({ password: 'ą'.repeat(37) })
+    const fits = await caller.put('/auth/password').send({ password: 'ą'.repeat(36) })
+
+    expect(tooLong.status).toBe(400)
+    expect(tooLong.body).toMatchObject({ code: 'request.invalid', params: { field: 'password' } })
+    expect(fits.status).toBe(204)
+    await post('/auth/sign-in', { email, password: 'ą'.repeat(36) }).expect(200)
   })
 })
 

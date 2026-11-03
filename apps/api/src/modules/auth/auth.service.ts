@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { type Account } from '@opos/contract'
 import { detectLocale } from '@opos/i18n'
-import { type GoTrueClient, isAuthError, type Session } from '@supabase/auth-js'
+import { type GoTrueClient, AuthApiError, isAuthError, type Session } from '@supabase/auth-js'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError, originDenied, unauthenticated } from '../../common/errors/api-error'
 import { type Application, applicationFromOrigin } from '../../common/http/application'
@@ -40,6 +40,15 @@ const REGISTERED = new Set(['user_already_exists', 'email_exists'])
  */
 const refreshRefusal = (error: unknown) =>
   isAuthError(error) && error.code === 'validation_failed' ? unauthenticated() : toApiError(error)
+
+/**
+ * What Supabase Auth refused on a route that takes an address. The contract already refuses a
+ * malformed one, so a remaining `validation_failed` is an address Supabase Auth judges otherwise.
+ */
+const addressRefusal = (error: unknown) =>
+  isAuthError(error) && error.code === 'validation_failed'
+    ? toApiError(new AuthApiError(error.message, 422, 'email_address_invalid'))
+    : toApiError(error)
 
 /**
  * The `auth` endpoints (PLAN.md 5.1): the API calls Supabase Auth for the person and keeps the
@@ -116,7 +125,7 @@ export class AuthService {
       },
     })
     // The same answer for an address already registered, so the form reveals nothing about it.
-    if (error && !(error.code && REGISTERED.has(error.code))) throw toApiError(error)
+    if (error && !(error.code && REGISTERED.has(error.code))) throw addressRefusal(error)
   }
 
   async resend(req: CookieRequest, email: string): Promise<void> {
@@ -126,7 +135,7 @@ export class AuthService {
       email,
       options: { emailRedirectTo: this.confirmUrl(app) },
     })
-    if (error) throw toApiError(error)
+    if (error) throw addressRefusal(error)
   }
 
   async forgotPassword(req: CookieRequest, email: string): Promise<void> {
@@ -134,7 +143,7 @@ export class AuthService {
     const { error } = await this.auth
       .forRequest()
       .resetPasswordForEmail(email, { redirectTo: this.confirmUrl(app) })
-    if (error) throw toApiError(error)
+    if (error) throw addressRefusal(error)
   }
 
   async verify(

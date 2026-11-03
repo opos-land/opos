@@ -52,4 +52,24 @@ describe('the other inputs', () => {
     expect(newPasswordSchema.safeParse('x'.repeat(73)).success).toBe(false)
     expect(newPasswordSchema.safeParse('x'.repeat(72)).success).toBe(true)
   })
+
+  it('refuses what is no address, and an address Supabase Auth would refuse for its length', () => {
+    for (const bad of [
+      'not-an-email',
+      'a@',
+      '@b.test',
+      'a b@c.test',
+      `${'x'.repeat(250)}@b.test`,
+    ]) {
+      expect(emailSchema.safeParse(bad).success).toBe(false)
+    }
+    expect(emailSchema.safeParse(`${'x'.repeat(245)}@b.test`).success).toBe(true)
+    expect(emailSchema.parse(' Anna@Example.test ')).toBe('Anna@Example.test')
+  })
+
+  it('counts the bytes of a password, not its characters', () => {
+    expect(newPasswordSchema.safeParse('ą'.repeat(36)).success).toBe(true)
+    expect(newPasswordSchema.safeParse('ą'.repeat(37)).success).toBe(false)
+    expect(newPasswordSchema.safeParse('x'.repeat(71) + 'ą').success).toBe(false)
+  })
 })

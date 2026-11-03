@@ -4,8 +4,11 @@ import { accountRoute, publicRoute } from './common'
 
 const name = z.string().trim().min(1).max(100)
 
-/** Supabase Auth judges the address itself and answers `auth.email_address_invalid`. */
-export const emailSchema = z.string().trim().min(1).max(320)
+/**
+ * An address Supabase Auth would answer `validation_failed` for is `400` `request.invalid` here:
+ * a format check and the 255 characters it accepts.
+ */
+export const emailSchema = z.string().trim().min(1).max(255).pipe(z.email())
 
 /** A sign-up takes no password: the person chooses it once the link proves the address. */
 export const signUpSchema = z
@@ -25,8 +28,13 @@ export const verifySchema = z
   .object({ tokenHash: z.string().min(1).max(1000), type: confirmationTypeSchema })
   .strict()
 
-/** Supabase Auth hashes at most 72 bytes of a password and enforces the minimum itself. */
-export const newPasswordSchema = z.string().min(1).max(72)
+/** Supabase Auth hashes at most 72 bytes, not characters, and enforces the minimum itself. */
+export const newPasswordSchema = z
+  .string()
+  .min(1)
+  .refine((password) => new TextEncoder().encode(password).length <= 72, {
+    message: 'At most 72 bytes',
+  })
 
 export const authContract = {
   signUp: publicRoute

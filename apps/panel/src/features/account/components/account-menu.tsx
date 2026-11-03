@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
 import { ErrorMessage, Field, inputClass } from '../../../shared/ui'
 import { signOut } from '../../auth'
-import { accountKey, accountOptions, updateAccountOptions } from '../api/account'
+import { accountOptions, mergeSavedAccount, updateAccountOptions } from '../api/account'
 import { signInMethods } from '../model/sign-in-methods'
 import { TwoFactorCard } from './two-factor-card'
 
@@ -24,7 +24,7 @@ export function AccountMenu() {
   const update = useMutation({
     ...updateAccountOptions(),
     onSuccess: async (saved) => {
-      queryClient.setQueryData(accountKey(), saved)
+      mergeSavedAccount(queryClient, saved)
       await loadLocale(pickLocale(saved.locale))
     },
   })

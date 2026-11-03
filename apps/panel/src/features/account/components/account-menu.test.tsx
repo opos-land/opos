@@ -11,7 +11,7 @@ import { AccountMenu } from './account-menu'
 
 vi.mock('../../auth', () => ({ signOut: vi.fn() }))
 vi.mock('../api/account', () => ({
-  accountKey: () => ['account'],
+  mergeSavedAccount: vi.fn(),
   accountOptions: () => ({
     queryKey: ['account'],
     queryFn: () =>

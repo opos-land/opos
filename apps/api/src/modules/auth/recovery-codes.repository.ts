@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { accountRecoveryCodes, type Database } from '@opos/db'
+import { accountRecoveryCodes, accounts, type Database } from '@opos/db'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { APP_DB } from '../../common/database/tokens'
@@ -42,13 +42,22 @@ export class RecoveryCodesRepository {
   }
 
   /**
-   * Replaces the account's unused codes with `hashes`, in one transaction. A code already used
-   * stays, as a record.
+   * Replaces the account's unused codes with `hashes`, in one transaction, and says whether it did.
+   * A code already used stays, as a record. The first statement locks the account row, the lock
+   * the mirror trigger takes when a factor is verified, and `false` comes back with nothing
+   * deleted when 2FA is already on: a request that races a verified `enable` can neither destroy
+   * its codes nor be handed codes that the other then replaces.
    */
-  replaceUnused(hashes: string[]): Promise<void> {
+  replaceUnused(hashes: string[]): Promise<boolean> {
     const accountId = this.accountId
     return guarded('replaceUnused', () =>
       this.db.transaction(async (tx) => {
+        const [account] = await tx
+          .select({ mfaEnabledAt: accounts.mfaEnabledAt })
+          .from(accounts)
+          .where(eq(accounts.id, accountId))
+          .for('no key update')
+        if (account?.mfaEnabledAt) return false
         await tx
           .delete(accountRecoveryCodes)
           .where(
@@ -57,6 +66,7 @@ export class RecoveryCodesRepository {
         await tx
           .insert(accountRecoveryCodes)
           .values(hashes.map((codeHash) => ({ accountId, codeHash })))
+        return true
       }),
     )
   }

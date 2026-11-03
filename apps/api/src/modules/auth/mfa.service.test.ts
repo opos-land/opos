@@ -85,7 +85,7 @@ function setup(
     deleteFactor: log('deleteFactor', true),
   }
   const codes = {
-    replaceUnused: log('replaceUnused', undefined),
+    replaceUnused: log('replaceUnused', true),
     hasUnused: log('hasUnused', true),
     holdsUnused: log('holdsUnused', true),
     markUsed: log('markUsed', true),
@@ -369,6 +369,22 @@ describe('MfaService.enable', () => {
       body: { code: 'mfa.already-enabled' },
     })
     expect(codes.replaceUnused).not.toHaveBeenCalled()
+  })
+
+  it('answers 409 mfa.already-enabled when the store refuses the replacement, verifying nothing', async () => {
+    const { service, codes, mfa } = setup({
+      mfaEnabled: false,
+      factors: [{ id: factorId, status: 'unverified' }],
+    })
+    codes.replaceUnused.mockResolvedValueOnce(false)
+
+    const failure = await failureOf(service.enable(request(), body))
+
+    expect(toErrorResponse(failure)).toMatchObject({
+      status: 409,
+      body: { code: 'mfa.already-enabled' },
+    })
+    expect(mfa.challengeAndVerify).not.toHaveBeenCalled()
   })
 
   it('answers mfa.code-invalid for a wrong code and sets no cookie', async () => {

@@ -18,7 +18,15 @@ import {
   totpCode,
 } from './auth'
 import { deleteMail, waitForMail } from './mailpit'
-import { addRecoveryCodeHash, closeTenantDb, mfaState, recoveryCodeRows } from './tenants'
+import { TenantContextService } from '../src/common/als/tenant-context.service'
+import { RecoveryCodesRepository } from '../src/modules/auth/recovery-codes.repository'
+import {
+  addRecoveryCodeHash,
+  addVerifiedFactor,
+  closeTenantDb,
+  mfaState,
+  recoveryCodeRows,
+} from './tenants'
 
 // Two-factor authentication against the real local Supabase Auth (PLAN.md 7.12, 15.1): TOTP
 // factors, the recovery codes, the assurance level of the session and the email.
@@ -234,6 +242,7 @@ describe('POST /auth/mfa/enable', () => {
   })
 
   it('never hands out codes that are not stored, when two enables race', async () => {
+    let rounds = 0
     for (let round = 0; round < 5; round++) {
       const { agent, id } = await newPerson()
       const { factorId, secret } = enrolledOf(await agent.post('/auth/mfa/enroll').expect(200))
@@ -244,7 +253,11 @@ describe('POST /auth/mfa/enable', () => {
         agent.post('/auth/mfa/enable').send({ factorId, code }),
       ])
 
-      const stored = new Set((await recoveryCodeRows(id)).map((row) => row.code_hash))
+      const stored = new Set(
+        (await recoveryCodeRows(id))
+          .filter((row) => row.used_at === null)
+          .map((row) => row.code_hash),
+      )
       const successes = answers.filter((res) => res.status === 200)
       // Supabase Auth may refuse the second of two challenges of one factor at once with a 503.
       for (const res of answers) {
@@ -257,8 +270,47 @@ describe('POST /auth/mfa/enable', () => {
         }
       }
       expect((await mfaState(id)).mirrored).toBe(true)
+      if (successes.length > 0) rounds++
     }
+    // A run of only 409 and 503 checks nothing about the codes.
+    expect(rounds).toBeGreaterThan(0)
   }, 30_000)
+
+  describe('RecoveryCodesRepository on the database', () => {
+    /** Runs `fn` as the request of an account, as the guards would have set it up. */
+    const asAccount = <T>(
+      accountId: string,
+      fn: (repository: RecoveryCodesRepository) => Promise<T>,
+    ) =>
+      app.get(TenantContextService).run(() => {
+        TenantContextService.store().account = { id: accountId } as never
+        return fn(app.get(RecoveryCodesRepository))
+      })
+
+    it('replaceUnused refuses an account that holds a verified factor, deleting nothing', async () => {
+      const { id } = await newPerson()
+      await addVerifiedFactor(id)
+      await addRecoveryCodeHash(id, sha256('HELDHELDHELDHELD'))
+
+      const replaced = await asAccount(id, (r) => r.replaceUnused([sha256('INTRUDERINTRUDER')]))
+
+      expect(replaced).toBe(false)
+      expect((await recoveryCodeRows(id)).map((row) => row.code_hash)).toEqual([
+        sha256('HELDHELDHELDHELD'),
+      ])
+    })
+
+    it('markUsed refuses the hash of another account', async () => {
+      const owner = await newPerson()
+      const stranger = await newPerson()
+      await addRecoveryCodeHash(owner.id, sha256('OWNEROWNEROWNER1'))
+
+      const spent = await asAccount(stranger.id, (r) => r.markUsed(sha256('OWNEROWNEROWNER1')))
+
+      expect(spent).toBe(false)
+      expect((await recoveryCodeRows(owner.id))[0]!.used_at).toBeNull()
+    })
+  })
 
   it('an access token from before enable loses access at once', async () => {
     const { agent, email } = await newPerson()

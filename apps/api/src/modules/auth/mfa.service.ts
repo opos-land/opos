@@ -209,7 +209,7 @@ export class MfaService {
 
       const recoveryCodes = newRecoveryCodes()
       const hashes = recoveryCodes.map(hashRecoveryCode)
-      await this.codes.replaceUnused(hashes)
+      if (!(await this.codes.replaceUnused(hashes))) throw alreadyEnabled()
       data(await client.mfa.challengeAndVerify({ factorId: body.factorId, code: body.code }))
       if (!(await this.codes.holdsUnused(hashes))) throw alreadyEnabled()
       return { recoveryCodes }

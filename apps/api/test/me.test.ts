@@ -65,8 +65,11 @@ describe('JwtAuthGuard', () => {
     },
   )
 
-  it('refuses Authorization: Bearer on an account route, a valid token or not', async () => {
-    const withHeader = () => me().set('Authorization', `Bearer ${token}`)
+  it.each([
+    ['a valid token', () => token],
+    ['a token that is not valid', () => 'not-a-token'],
+  ])('refuses Authorization: Bearer on an account route, with %s', async (_what, bearer) => {
+    const withHeader = () => me().set('Authorization', `Bearer ${bearer()}`)
 
     expect((await withHeader().expect(401)).body).toMatchObject({ code: 'session.invalid' })
     expect((await withHeader().set('Origin', originOf('portal')).expect(401)).body).toMatchObject({

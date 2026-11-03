@@ -13,7 +13,8 @@ import {
   type SendEmailHookPayload,
 } from './send-email-hook'
 
-const authUrl = 'https://auth.opos.land'
+/** The path Supabase Auth redeems a token hash on: no link of the hook goes through it. */
+const verifyPath = '/auth/v1/verify'
 const urls: HookUrls = {
   portalUrl: 'https://opos.land',
   panelUrl: 'https://panel.opos.land',
@@ -44,7 +45,8 @@ describe('confirmLink', () => {
         token_hash: 'hash-a',
         type: 'signup',
       })
-      expect(link.href).not.toContain(authUrl)
+      expect(link.pathname).not.toBe(verifyPath)
+      expect(link.origin).toBe(new URL(redirectTo).origin)
     },
   )
 
@@ -65,7 +67,7 @@ describe('confirmLink', () => {
     const link = confirmLink(urls, 'h', 'signup', redirectTo)
 
     expect(link).toBe('https://opos.land/auth/confirm?token_hash=h&type=signup')
-    expect(link).not.toContain(authUrl)
+    expect(link).not.toContain(verifyPath)
   })
 })
 

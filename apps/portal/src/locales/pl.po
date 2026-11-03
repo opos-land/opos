@@ -202,6 +202,10 @@ msgstr "Jeśli adres {sentTo} należy do konta, wysłaliśmy na niego link do us
 msgid "If you sign in with Google, Google confirms your email address and gives us your name."
 msgstr "Jeśli logujesz się przez Google, Google potwierdza twój adres e-mail i przekazuje nam twoje imię i nazwisko."
 
+#: src/features/landing/pages/privacy-page.tsx
+msgid "If you turn on two-factor authentication: the secret of your authenticator app, kept by our sign-in service, and ten one-time recovery codes, of which we keep only their hashes: nobody can read a code back, you included."
+msgstr "Jeśli włączysz uwierzytelnianie dwuskładnikowe: sekret twojej aplikacji uwierzytelniającej, przechowywany przez nasz serwis logowania, oraz dziesięć jednorazowych kodów odzyskiwania, z których przechowujemy wyłącznie skróty: nikt nie odczyta kodu z powrotem, ty również."
+
 #: src/features/account/components/language-form.tsx
 msgid "Interface language"
 msgstr "Język interfejsu"
@@ -388,8 +392,8 @@ msgid "There is no programme yet."
 msgstr "Nie ma jeszcze programu."
 
 #: src/features/landing/pages/privacy-page.tsx
-msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, tickets and invitations to a convention’s team."
-msgstr "Aby prowadzić twoje konto i umożliwiać logowanie; aby konwenty mogły sprzedawać ci akredytacje, wysyłać je i sprawdzać na miejscu; aby przechowywać twoje zapisy na edycje, twój plan i twoje opinie; oraz aby wysyłać wiadomości e-mail, których wymaga twoje konto: potwierdzenie adresu, reset hasła, akredytacje i zaproszenia do zespołu konwentu."
+msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
+msgstr "Aby prowadzić twoje konto i umożliwiać logowanie; aby konwenty mogły sprzedawać ci akredytacje, wysyłać je i sprawdzać na miejscu; aby przechowywać twoje zapisy na edycje, twój plan i twoje opinie; oraz aby wysyłać wiadomości e-mail, których wymaga twoje konto: potwierdzenie adresu, reset hasła, powiadomienie o wyłączeniu uwierzytelniania dwuskładnikowego, akredytacje i zaproszenia do zespołu konwentu."
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Too much time has passed since you opened the link. Ask for a new one."
@@ -464,8 +468,8 @@ msgid "You are the last head organizer of a convention, and a convention must ke
 msgstr "Jesteś ostatnim głównym organizatorem konwentu, a każdy konwent musi mieć co najmniej jednego. W panelu organizatora ustanów głównym organizatorem inną osobę z zespołu tego konwentu, a potem usuń konto."
 
 #: src/features/landing/pages/privacy-page.tsx
-msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
-msgstr "Konto usuwasz samodzielnie w ustawieniach konta, po ponownym potwierdzeniu, że to ty: hasłem albo przez Google. Razem z nim znikają twoje metody logowania, sesje, polubienia, opinie, zapisy na edycje i członkostwa w zespołach konwentów. Ostatni główny organizator konwentu najpierw przekazuje tę rolę, aby konwent nie został bez właściciela."
+msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
+msgstr "Konto usuwasz samodzielnie w ustawieniach konta, po ponownym potwierdzeniu, że to ty: hasłem albo przez Google. Razem z nim znikają twoje metody logowania, sesje, uwierzytelnianie dwuskładnikowe wraz z kodami odzyskiwania, polubienia, opinie, zapisy na edycje i członkostwa w zespołach konwentów. Ostatni główny organizator konwentu najpierw przekazuje tę rolę, aby konwent nie został bez właściciela."
 
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "You have not liked any programme items yet."
@@ -514,3 +518,7 @@ msgstr "Twoje hasło"
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your rights"
 msgstr "Twoje prawa"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Your unused recovery codes: until you turn off two-factor authentication."
+msgstr "Twoje niewykorzystane kody odzyskiwania: do wyłączenia uwierzytelniania dwuskładnikowego."

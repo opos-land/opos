@@ -1,3 +1,4 @@
+import { createServer } from 'node:net'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 
 // Supabase Auth sends its send-email hook to host.docker.internal:<PORT>, so a test file that
@@ -5,6 +6,14 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 // that finds the port taken waits for the file holding it to close its API.
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** Whether nothing listens on `port`: asked of a bare socket, since Nest logs an error for each refusal. */
+const isFree = (port: number) =>
+  new Promise<boolean>((resolve) => {
+    const probe = createServer()
+    probe.once('error', () => resolve(false))
+    probe.listen(port, () => probe.close(() => resolve(true)))
+  })
 
 /** Listens on `port`, retrying while another test file holds it. */
 export async function listenOnHookPort(
@@ -15,14 +24,18 @@ export async function listenOnHookPort(
   const deadline = Date.now() + waitMs
   for (;;) {
     try {
-      await app.listen(port)
-      return
+      if (await isFree(port)) {
+        await app.listen(port)
+        return
+      }
+      if (Date.now() > deadline) throw new Error(`port ${port} stayed taken for ${waitMs} ms`)
     } catch (error) {
+      // Another file took the port between the probe and the listen.
       if ((error as { code?: unknown } | null)?.code !== 'EADDRINUSE' || Date.now() > deadline) {
         throw error
       }
-      await sleep(250)
     }
+    await sleep(250)
   }
 }
 

@@ -20,13 +20,22 @@ const roots = ['apps', 'packages', 'docs', 'scripts', 'infra', 'supabase', 'e2e'
 const isPath = (text) =>
   !/[\s*{}<>$=:@|]/.test(text) && text.includes('/') && roots.includes(text.split('/')[0])
 
-const citedPaths = (file) =>
-  [...read(file).matchAll(/`([^`\n]+)`/g)]
-    .map(([, text]) => text.replace(/#.*$/, '').replace(/\/$/, ''))
+const pathsIn = (text) =>
+  [...text.matchAll(/`([^`\n]+)`/g)]
+    .map(([, cited]) => cited.replace(/#.*$/, '').replace(/\/$/, ''))
     .filter(isPath)
+
+const citedPaths = (file) => pathsIn(read(file))
 
 // Paths the documents cite that are not built yet.
 const absentOnPurpose = new Set()
+
+/** The section "Adding a feature" of PLAN.md, up to the next heading of its level or above. */
+const recipe = () => {
+  const [, section] = read('docs/PLAN.md').split('\n### Adding a feature\n')
+  assert.ok(section, 'PLAN.md has the section "Adding a feature"')
+  return section.split(/\n#{1,3} /)[0]
+}
 
 test('every repository path AGENTS.md and the agent files cite exists', () => {
   const missing = new Set()
@@ -45,6 +54,70 @@ test('every path absent on purpose is still absent and still cited', () => {
   for (const path of absentOnPurpose) {
     assert.equal(existsSync(join(root, path)), false, `${path} exists now: drop it from the list`)
     assert.ok(cited.has(path), `${path} is no longer cited: drop it from the list`)
+  }
+})
+
+test('every repository path the recipe for adding a feature cites exists', () => {
+  const cited = pathsIn(recipe())
+  assert.ok(cited.length > 10, 'the recipe names the files of a feature')
+  assert.deepEqual(
+    cited.filter((path) => !existsSync(join(root, path))),
+    [],
+  )
+})
+
+test('the recipe for adding a feature is linked from the contents and from AGENTS.md', () => {
+  assert.match(read('docs/PLAN.md').split('\n---\n')[0], /\(#adding-a-feature\)/)
+  assert.match(read('AGENTS.md'), /\(docs\/PLAN\.md#adding-a-feature\)/)
+})
+
+test('every step of the recipe for adding a feature says its test and what enforces it', () => {
+  const steps = recipe()
+    .split('\n')
+    .filter((line) => /^\| \d+ \|/.test(line))
+    .map((line) =>
+      line
+        .split(/(?<!\\)\|/)
+        .slice(1, -1)
+        .map((cell) => cell.trim()),
+    )
+  assert.ok(steps.length >= 10, 'the recipe is a table of numbered steps')
+  for (const [order, , testFirst, enforcedBy] of steps) {
+    assert.ok(testFirst, `step ${order} names its test, or says that it needs none`)
+    assert.ok(enforcedBy, `step ${order} names what enforces it, or says that nothing does`)
+  }
+  assert.deepEqual(
+    steps.map(([order]) => Number(order)),
+    steps.map((_, index) => index + 1),
+    'the steps are numbered in order',
+  )
+})
+
+test('the recipe for adding a feature names every gate and what a route and a screen inherit', () => {
+  const text = recipe()
+  for (const name of [
+    'pnpm db:verify',
+    'scripts/check-migrations.mjs',
+    '.claude/hooks/migration-reminder.mjs',
+    'apps/api/test/route-needs.ts',
+    'apps/api/test/route-requirements.test.ts',
+    'apps/api/test/tenant-routes.test.ts',
+    'apps/api/test/tenant-filters.test.ts',
+    'apps/api/test/mfa-guard.test.ts',
+    'packages/contract/src/errors.test.ts',
+    'pnpm db:seed',
+    'pnpm i18n:check',
+    'scripts/bff-boundary.mjs',
+    'pnpm test:e2e',
+    'tenant-isolation-reviewer',
+    'i18n-reviewer',
+    '@RequireTenant',
+    '`session.mfa-required`',
+    'RequireSession',
+    '`mfa-required`',
+    '`unavailable`',
+  ]) {
+    assert.ok(text.includes(name), `the recipe names ${name}`)
   }
 })
 

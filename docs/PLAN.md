@@ -26,6 +26,7 @@ invariants, security rules and conventions; its details live in the code this do
 15. [Tests](#15-tests)
 16. [Smoke test](#16-smoke-test)
 17. [Execution rules](#17-execution-rules)
+    - [Adding a feature](#adding-a-feature)
 
 ---
 
@@ -3244,3 +3245,73 @@ for `opos.land`. Production runs the items marked **(production)**, on a smoke t
    addresses: tenant isolation and permissions with tests in fixed places, any other code with a
    test of its own package; the areas, the enforcement and the `No-Test-Reason:` exemption are in
    [AGENTS.md](../AGENTS.md#tests-first).
+
+### Adding a feature
+
+The order of work for a feature that adds a tenant table, a route and a screen; a feature that needs
+less skips the steps it has no use for. The `program` slice is the reference at every step: its
+[table](../packages/db/src/schema/program-items.ts), its
+[generated](../packages/db/drizzle/0016_program_items.sql) and
+[hand-written](../packages/db/drizzle/0017_program_items_privileges.sql) migrations, its
+[routes](../packages/contract/src/program.ts), [module](../apps/api/src/modules/program) and
+[integration tests](../apps/api/test/program.test.ts), and its
+[panel feature](../apps/panel/src/features/program).
+
+Work on a branch `feat/<name>` from `develop`, with the local stack up (`pnpm infra:up`) and migrated
+(`pnpm db:migrate`).
+
+- **Test first** names the test to change before the step's code
+  ([tests first](../AGENTS.md#tests-first)). Until a test of the code's area has changed in the
+  working tree, a Claude Code hook refuses the edit; until one is staged, lefthook `commit-msg`
+  refuses the commit. A commit leaves the working tree clean, so the next edit of that area needs a
+  test changed again. Watch it fail for the reason of the step. [15](#15-tests) says where a kind of
+  test lives.
+- **Enforced by** names what refuses a skipped step and where it runs. "Nothing" means that only the
+  author and the reviewer stand behind it.
+- A migration travels in the commit of its schema change and a `.po` catalog in the commit of its
+  messages ([commits](../AGENTS.md#commits)).
+
+| Order | Step | Test first | Enforced by |
+|---|---|---|---|
+| 1 | Table in `packages/db/src/schema/<table>.ts`, exported from `packages/db/src/schema/index.ts`, with `id()` and `timestamps` of `packages/db/src/schema/columns.ts`: a `tenant_id` column, a composite foreign key to the parent's `(id, tenant_id)`, an index that starts with `tenant_id`, and a unique `(id, tenant_id)` when another table will point at it | `packages/db/test/rls.test.ts`: the table in `covered`, a row of it in `populated()`, what `opos_app` may not do in `lets opos_app update only the columns the API changes`; a foreign parent in `packages/db/test/invariants.test.ts` | `rls.test.ts`, in `pnpm test`, fails on a tenant table missing from `covered` or without that index. The composite foreign key: nothing but its own case and the `tenant-isolation-reviewer` agent |
+| 2 | `pnpm --filter @opos/db db:generate --name=<table>`: Drizzle writes the migration, its snapshot and its journal entry | the test of step 1 | `scripts/check-migrations.mjs`, in lefthook `pre-push` and CI, never on a commit: a timestamp not newer than the one before it, a merged migration changed or moved. By hand: `node scripts/check-migrations.mjs --base origin/develop`. A conflict: [below](#a-migration-applied-or-in-conflict) |
+| 3 | `pnpm --filter @opos/db db:generate --custom --name=<table>_privileges`, then by hand: `enable` and `force row level security`, the `tenant_isolation` policy ([shape](#policy-shape)), `revoke all` from `anon`, `authenticated` and `service_role`, the narrowest grants ([rules](#migrations-and-verification)) and the `<table>_set_updated_at` trigger. Complete it before applying it: an applied migration is not applied again ([below](#a-migration-applied-or-in-conflict)) | the test of step 1 | `pnpm db:verify`, by hand and in CI: `Tables without enabled and forced RLS: <table>`, a missing or different policy, a privilege outside the lists of step 4. `.claude/hooks/migration-reminder.mjs` repeats the rules after an edit and refuses nothing |
+| 4 | The lists of `packages/db/src/verify.ts`, for every new privilege: `appWrites` for an `insert` or `delete` of `opos_app`, `appUpdates` for a column it updates, `globalReads` for a column `opos_app_global` reads, with its query in [cross-tenant queries](#cross-tenant-queries). A table `opos_app` only selects needs none. Then `pnpm db:migrate` and `pnpm db:verify` | `rls.test.ts`: each new write, and a row of the table in `rejects an insert with another tenant id` | `pnpm db:verify` refuses a privilege missing from the lists, and `rls.test.ts` holds `opos_app_global` to `globalReads`. A write missing from `rejects an insert with another tenant id`: nothing |
+| 5 | Route in `packages/contract/src/<module>.ts` from `publicRoute`, `accountRoute` or `tenantRoute` of `packages/contract/src/common.ts`, with its router in `contract` and its exports in `packages/contract/src/index.ts`. A new error code goes into `packages/contract/src/errors.ts`, its message into `packages/i18n/src/errors.ts` and its translation into `packages/i18n/locales/pl.po` | `apps/api/test/<module>.test.ts` for the route file, whose area is `rbac`: `apps/api/test/route-needs.ts` is a helper and counts as no test. `packages/contract/src/<module>.test.ts` or `packages/contract/src/errors.test.ts` for `index.ts` and `errors.ts`, whose area is `contract` | `packages/contract/src/errors.test.ts` fails on a code without a message, `apps/api/test/tenant-routes.test.ts` on a route the API does not serve |
+| 6 | What the route needs, under its router path such as `program.list`. A tenant route: `tenantRequirements` of `apps/api/test/route-needs.ts`. A route without sign-in: `publicRoutes` of `apps/api/test/route-requirements.test.ts`. An account route is found on its own. A write route also gets a request in `writes` of `apps/api/test/tenants-editions.test.ts`, and a table it writes a query in `tenantState` of `apps/api/test/tenants.ts` | these lists are the test | `apps/api/test/route-requirements.test.ts` fails until a new route is listed, naming it, and then sends it every actor ([15.1](#151-api-integration-tests)); `tenants-editions.test.ts` fails until a write route is in `writes`. A table missing from `tenantState`: nothing, and a refused write would look as if it had changed nothing |
+| 7 | Module in `apps/api/src/modules/<name>` ([7.1](#71-modules)): controller, repository and module, registered in `apps/api/src/app.module.ts`; a service only where a route does more than call a repository, as in `apps/api/src/modules/tenants`. Every route is a method of its own with `@Implement` and one of `@RequireTenant`, `@RequireEdition` or, as the exception, `@InTenant` ([7.3](#73-permissions)). These apply `JwtAuthGuard`, so the route inherits `401` `session.invalid` and `session.mfa-required` ([7.12](#712-two-factor-authentication)), and the `write` level brings the tenant's queue and write lock with no code in the handler. A repository takes its transaction from `TenantContextService.tx()` ([7.2](#72-tenant-context)) and looks a row up inside the parent the path names | `apps/api/test/<module>.test.ts`: what the route does, and the identifiers of another tenant and another edition answering `403` or `404`; a helper in `apps/api/test/tenants.ts` writes the table's rows as `postgres` | `apps/api/test/tenant-routes.test.ts`, `route-requirements.test.ts` and `apps/api/test/mfa-guard.test.ts` read the contract and fail on a route without the decorators or open below `aal2`. `apps/api/test/tenant-filters.test.ts` holds the queries [that decide access](#tenant-context), listed by hand, and no new repository: one that decides access adds its case there. A query that forgets the parent of the path: nothing but the module's test and the `tenant-isolation-reviewer` agent |
+| 8 | Seed in `packages/db/src/seed.ts` and demo data in [14](#14-demo-data-seed), then `pnpm db:seed` twice. A table with no unique key looks its row up first, as the programme items do | any test of `packages/db`; a table with no unique key gets a case in `packages/db/test/seed.test.ts` that counts its rows across two runs | CI runs `pnpm db:seed` twice, and the second run fails only where a constraint refuses: a plain `insert` into a table with no unique key passes and doubles the rows. That, and a seed left out altogether: nothing |
+| 9 | Every user-facing string in a Lingui macro ([6](#6-localization)), then `pnpm i18n:extract` and its translation in `apps/panel/src/locales/pl.po` or `apps/portal/src/locales/pl.po`, in the same commit, reusing the [glossary renderings](#catalogs). A new domain term enters [PRODUCT.md 3](PRODUCT.md#3-glossary) and `packages/i18n/src/glossary.ts` first | none: a catalog is not code | `pnpm i18n:check`, by hand and in CI, never on a commit: catalogs out of sync, a message without `pl`. A bare literal in JSX: nothing but the `i18n-reviewer` agent |
+| 10 | Feature folder in `apps/panel/src/features` or `apps/portal/src/features` ([3.2](#32-frontend-application-layout)): `api/` with its query options, `pages/`, `index.ts`, and the route in `apps/panel/src/app/router.tsx` or `apps/portal/src/app/router.tsx`. A panel page takes the API client and the permissions from `useCurrentTenant()` and ends on `NoPermissionView` below its level. A panel page under `/:tenantSlug` sits inside `RequireSession`, which answers the session states `mfa-required` and `unavailable`; a portal page that needs a session is wrapped in `RequireSession` in the router. A new top-level panel path joins `RESERVED_TENANT_SLUGS` ([8](#8-appspanel)) | `pages/<name>-page.test.tsx` beside the page, as `apps/panel/src/features/program/pages/program-page.test.tsx` | ESLint, on a commit and in CI: `@supabase/*`, an import of another feature's internals. `scripts/bff-boundary.mjs`, in a Claude Code hook, lefthook `pre-commit` and CI: the rest of [the boundary](#32-frontend-application-layout). A page left outside `RequireSession`: nothing but a scenario of step 11, and the API still answers it `401` |
+| 11 | Scenario in `e2e/specs` with its row in [15.2](#152-e2e-tests), when the plan lists one or the feature brings a new flow; it starts from its own rows through the `tenants` and `db` fixtures of `e2e/fixtures/index.ts`. `pnpm test:e2e` needs `pnpm db:migrate && pnpm db:seed` and does not run beside the API tests | the scenario is the test | The `e2e` job of CI runs what exists and is required on a PR into `main` ([15.3](#153-ci)). A feature without a scenario: nothing |
+| 12 | Documents, with the `docs-sync` skill: the table in [4](#4-database-schema) and in [covered tables](#covered-tables), the route in [5](#5-api-contract), the module in [7.1](#71-modules), the feature and its paths in [8](#8-appspanel) or [9](#9-appsportal), the cases in [15](#15-tests), and [PRODUCT.md](PRODUCT.md) when the product changes | none: a document is not code | `.claude/skills/docs-sync/scripts/check-doc-links.mjs` in CI: a broken link or anchor. That the text is true: nothing |
+| 13 | Before the PR: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:scripts`, `pnpm db:verify`, `pnpm i18n:check`, `pnpm format:check`, and the agents `tenant-isolation-reviewer` when the change touches `packages/db` or `apps/api` and `i18n-reviewer` when it touches user-facing text, a `.po` catalog or `packages/i18n`. Both only report: fix what they find | none | The `check` job of CI runs all but the agents ([15.3](#153-ci)). Running the agents: nothing |
+
+Claude Code runs the hooks of the checkout a session was opened in, not of the branch being edited: a
+session opened in another checkout than the worktree it works in runs that checkout's
+`.claude/settings.json`, which may lack `scripts/bff-boundary.mjs` and the migration reminder.
+Lefthook and CI run the branch's own.
+
+#### A migration applied or in conflict
+
+Drizzle applies a migration only when its journal timestamp is newer than the last one applied and
+compares no text, so a later edit of an applied migration never reaches the database. Until the
+migration is merged, apply the edit with `pnpm infra:reset`, `pnpm db:migrate` and `pnpm db:seed`,
+which rebuild the local stack; once merged it never changes, and a change is a new migration.
+
+Two branches that each add a migration conflict in `packages/db/drizzle/meta/_journal.json` and in
+the snapshot of that number. Keeping both entries leaves yours older than the merged one, which
+`scripts/check-migrations.mjs` refuses:
+`<tag> has a timestamp older than or equal to <tag>; Drizzle would skip it`. Drop yours instead, at
+the commit where the rebase stops:
+
+1. Set your hand-written SQL aside.
+2. `git rm -f` your `.sql` files and your snapshots in `packages/db/drizzle/meta`, then
+   `git checkout <base> -- packages/db/drizzle/meta` for the journal and the snapshot of the base.
+3. Generate again with the same names (steps 2 and 3) and put the SQL back. The tests-first hook
+   stands aside while git resolves a rebase.
+4. `git add packages/db/drizzle`, `git rebase --continue`, and
+   `node scripts/check-migrations.mjs --base origin/develop`.
+5. `pnpm infra:reset`, `pnpm db:migrate`, `pnpm db:seed`: the local journal still holds what you
+   dropped, so without the reset `pnpm db:migrate` exits 1 on your own table, printing no cause and
+   rolling back, and a merged migration older than it would be skipped without a word.

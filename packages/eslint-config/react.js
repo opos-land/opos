@@ -13,18 +13,18 @@ import { base } from './index.js'
 const sourceFiles = ['**/*.{ts,tsx}']
 const scriptFiles = ['**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}']
 
-/** Refuses an import of a Supabase package, static or dynamic, but of `except` when given. */
-function supabaseImports(except) {
-  const message = 'The API is the only backend: sign-in goes through its auth endpoints.'
-  const group = except ? ['@supabase/*', `!${except}`] : ['@supabase/*']
-  const name = except ? `(?!${except.replace('@supabase/', '')}$)` : ''
-  return {
-    'no-restricted-imports': ['error', { patterns: [{ group, message }] }],
-    'no-restricted-syntax': [
-      'error',
-      { selector: `ImportExpression[source.value=/^@supabase\\u002F${name}/]`, message },
-    ],
-  }
+const supabaseMessage = 'The API is the only backend: sign-in goes through its auth endpoints.'
+
+/** Refuses an import of a Supabase package, static or dynamic. */
+const supabaseImports = {
+  'no-restricted-imports': [
+    'error',
+    { patterns: [{ group: ['@supabase/*'], message: supabaseMessage }] },
+  ],
+  'no-restricted-syntax': [
+    'error',
+    { selector: 'ImportExpression[source.value=/^@supabase\\u002F/]', message: supabaseMessage },
+  ],
 }
 
 /**
@@ -85,11 +85,9 @@ export function featureBoundaries(root) {
 
 /**
  * A browser application built with React: the panel and the portal. Neither imports a Supabase
- * package, since the API is its only backend (PLAN.md 3.2); `legacyAuth` lists the files that
- * still import the `@supabase/auth-js` client until sign-in moves to the API, and nothing joins
- * that list.
+ * package, since the API is its only backend (PLAN.md 3.2).
  */
-export function react(root, { legacyAuth = [] } = {}) {
+export function react(root) {
   return tseslint.config(
     base,
     {
@@ -113,8 +111,7 @@ export function react(root, { legacyAuth = [] } = {}) {
         'react/prop-types': 'off',
       },
     },
-    { files: scriptFiles, rules: supabaseImports() },
-    legacyAuth.length > 0 ? { files: legacyAuth, rules: supabaseImports('@supabase/auth-js') } : {},
+    { files: scriptFiles, rules: supabaseImports },
     featureBoundaries(root),
   )
 }

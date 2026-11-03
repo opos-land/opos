@@ -73,6 +73,21 @@ describe('CORS', () => {
     expect(foreign.headers.vary).toMatch(/origin/i)
   })
 
+  it('varies on Origin for the refusals made before routing too', async () => {
+    const notJson = await request(app.getHttpServer())
+      .post('/auth/sign-in')
+      .set('Content-Type', 'text/plain')
+      .send('x')
+    const noOrigin = await request(app.getHttpServer())
+      .post('/auth/sign-out')
+      .set('Cookie', 'opos_portal_access=x')
+
+    expect(notJson.status).toBe(415)
+    expect(notJson.headers.vary).toMatch(/origin/i)
+    expect(noOrigin.status).toBe(403)
+    expect(noOrigin.headers.vary).toMatch(/origin/i)
+  })
+
   it('exposes Retry-After, which a browser hides from a script otherwise', async () => {
     const res = await request(app.getHttpServer()).get('/health').set('Origin', env.PANEL_URL)
 

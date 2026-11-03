@@ -3,41 +3,60 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
-import { setPassword, signOutOtherSessions } from '../api/auth'
+import { errorCode } from '../../../shared/lib/errors'
+import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
+import { sendPasswordLink, setPassword } from '../api/auth'
 
 const schema = z
   .object({ password: z.string().min(8), repeat: z.string() })
   .refine((v) => v.password === v.repeat, { path: ['repeat'] })
 
 /**
- * The password of an account whose address has just been confirmed (PLAN.md 7.7, step 5). It
- * replaces any password set on the address before, and ends every other session, as a password
- * reset does.
+ * The password of an account whose address has just been confirmed (PLAN.md 7.7, step 4). Saving
+ * it ends every other session of the account. A sign-in older than 5 minutes cannot change the
+ * password (7.4); the form then offers a new link by email instead.
  */
-export function ChoosePasswordForm({ email, onDone }: { email: string; onDone: () => void }) {
+export function ChoosePasswordForm({
+  email,
+  returnTo,
+  onDone,
+}: {
+  email: string
+  /** The page the new link returns to once it is opened. */
+  returnTo: string
+  onDone: () => void
+}) {
   const { t } = useLingui()
   const [error, setError] = useState<unknown>(null)
-  // Set once updateUser has taken it: a retry after a failed signOut does not set it again, which
-  // Supabase Auth would refuse as `same_password`.
-  const [savedPassword, setSavedPassword] = useState<string | null>(null)
+  const [linkSent, setLinkSent] = useState(false)
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: { password: '', repeat: '' },
   })
   const { errors, isSubmitting } = form.formState
+  const tooOld = errorCode(error) === 'session.reauthentication-required'
 
   const submit = form.handleSubmit(async ({ password }) => {
     setError(null)
-    if (savedPassword !== password) {
-      const updateError = await setPassword(password)
-      if (updateError) return setError(updateError)
-      setSavedPassword(password)
-    }
-    const signOutError = await signOutOtherSessions()
-    if (signOutError) return setError(signOutError)
+    const failure = await setPassword(password)
+    if (failure) return setError(failure)
     onDone()
   })
+
+  const sendLink = async () => {
+    setError(null)
+    const failure = await sendPasswordLink(email, returnTo)
+    if (failure) setError(failure)
+    else setLinkSent(true)
+  }
+
+  if (linkSent) {
+    return (
+      <Notice>
+        <Trans>We sent a new link to {email}. Open it to choose your password.</Trans>
+      </Notice>
+    )
+  }
 
   return (
     <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-3">
@@ -70,7 +89,21 @@ export function ChoosePasswordForm({ email, onDone }: { email: string; onDone: (
           />
         )}
       </Field>
-      <ErrorMessage error={error} />
+      {tooOld ? (
+        <>
+          <p
+            role="alert"
+            className="rounded-box border-danger text-danger border px-3 py-2 text-sm"
+          >
+            <Trans>Too much time has passed since you opened the link. Ask for a new one.</Trans>
+          </p>
+          <Button variant="secondary" onClick={() => void sendLink()}>
+            <Trans>Send a new link</Trans>
+          </Button>
+        </>
+      ) : (
+        <ErrorMessage error={error} />
+      )}
       <Button type="submit" pending={isSubmitting}>
         <Trans>Save the password and join the team</Trans>
       </Button>

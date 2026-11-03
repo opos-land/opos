@@ -3,7 +3,8 @@ import { SUPPORTED_LOCALES, isLocale } from '@opos/i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
 import { ErrorMessage, Field, inputClass } from '../../../shared/ui'
-import { accountKey, accountOptions, signOut, updateAccountOptions } from '../api/account'
+import { signOut } from '../../auth'
+import { accountKey, accountOptions, updateAccountOptions } from '../api/account'
 
 const BROWSER = 'browser'
 

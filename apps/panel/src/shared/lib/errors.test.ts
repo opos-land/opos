@@ -1,8 +1,14 @@
 import { errorMessages, unknownError } from '@opos/i18n/errors'
 import { ORPCError } from '@orpc/client'
-import { AuthApiError } from '@supabase/auth-js'
 import { describe, expect, it } from 'vitest'
-import { decodeApiError, describeError, errorCode, isNotFound, isPermissionDenied } from './errors'
+import {
+  decodeApiError,
+  describeError,
+  errorCode,
+  isNotFound,
+  isPermissionDenied,
+  isSessionInvalid,
+} from './errors'
 
 describe('decodeApiError', () => {
   it('reads the code, the params and the status of the API error body', () => {
@@ -37,8 +43,8 @@ describe('describeError', () => {
     expect(describeError(error).values).toEqual({ field: 'endsAt' })
   })
 
-  it('maps a Supabase Auth error code under auth.', () => {
-    const error = new AuthApiError('Invalid login credentials', 400, 'invalid_credentials')
+  it('shows the code the API gives a refused sign-in, in the catalog', () => {
+    const error = new ORPCError('auth.invalid_credentials', { status: 400 })
 
     expect(errorCode(error)).toBe('auth.invalid_credentials')
     expect(describeError(error).message).toBe(errorMessages['auth.invalid_credentials'])
@@ -49,7 +55,6 @@ describe('describeError', () => {
       unknownError,
     )
     expect(describeError(new TypeError('Failed to fetch')).message).toBe(unknownError)
-    expect(describeError(new AuthApiError('boom', 500, undefined)).message).toBe(unknownError)
   })
 })
 
@@ -58,5 +63,7 @@ describe('error kinds', () => {
     expect(isPermissionDenied(new ORPCError('permission.denied', { status: 403 }))).toBe(true)
     expect(isPermissionDenied(new ORPCError('member.self', { status: 403 }))).toBe(false)
     expect(isNotFound(new ORPCError('request.not-found', { status: 404 }))).toBe(true)
+    expect(isSessionInvalid(new ORPCError('session.invalid', { status: 401 }))).toBe(true)
+    expect(isSessionInvalid(new TypeError('Failed to fetch'))).toBe(false)
   })
 })

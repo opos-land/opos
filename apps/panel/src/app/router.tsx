@@ -1,6 +1,6 @@
 import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale } from '../features/account'
-import { AuthCallbackPage, InvitationPage, LoginPage, RequireSession } from '../features/auth'
+import { ConfirmPage, InvitationPage, LoginPage, RequireSession } from '../features/auth'
 import { EditionPage, EditionsPage } from '../features/editions'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionAccessPage, TeamPage } from '../features/team'
@@ -29,7 +29,7 @@ function SignedIn() {
 // shadows them.
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
-  { path: '/auth/callback', element: <AuthCallbackPage /> },
+  { path: '/auth/confirm', element: <ConfirmPage /> },
   { path: '/invitation', element: <InvitationPage /> },
   {
     element: <SignedIn />,

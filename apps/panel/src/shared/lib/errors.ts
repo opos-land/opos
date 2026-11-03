@@ -1,7 +1,6 @@
 import { type MessageDescriptor } from '@lingui/core'
 import { errorMessage, unknownError } from '@opos/i18n/errors'
 import { ORPCError } from '@orpc/client'
-import { isAuthError } from '@supabase/auth-js'
 
 export interface DescribedError {
   message: MessageDescriptor
@@ -28,16 +27,15 @@ export function decodeApiError(body: unknown, status: number): ORPCError<string,
   })
 }
 
-/** The error code of an API or Supabase Auth error (`auth.<error_code>`), if it carries one. */
+/** The error code of an API error, if it carries one. */
 export function errorCode(error: unknown): string | undefined {
   if (error instanceof ORPCError) return String(error.code)
-  if (isAuthError(error) && error.code) return `auth.${error.code}`
   return undefined
 }
 
 /**
  * The message to show for an error, picked by its code from the catalog (PLAN.md 6). The English
- * `message` the API or Supabase Auth sends never reaches the screen; an unknown code, or an error
+ * `message` the API sends never reaches the screen; an unknown code, or an error
  * without one, shows the generic message.
  */
 export function describeError(error: unknown): DescribedError {
@@ -53,3 +51,6 @@ export const isPermissionDenied = (error: unknown) =>
 
 export const isNotFound = (error: unknown) =>
   error instanceof ORPCError && error.code === 'request.not-found'
+
+export const isSessionInvalid = (error: unknown) =>
+  error instanceof ORPCError && error.code === 'session.invalid'

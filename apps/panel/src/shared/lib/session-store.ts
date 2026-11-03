@@ -1,0 +1,45 @@
+import { type Account } from '@opos/contract'
+import { create } from 'zustand'
+
+export interface SessionState {
+  /**
+   * `loading` until `GET /me` has answered; `unavailable` when it could not be asked, so the panel
+   * offers to try again and signs nobody out.
+   */
+  status: 'loading' | 'ready' | 'unavailable'
+  /** The signed-in account; known only from the API's answers (PLAN.md 8). */
+  account: Account | null
+}
+
+export const useSession = create<SessionState>(() => ({ status: 'loading', account: null }))
+
+/** What the other tabs of the panel are told on an account change (PLAN.md 7.4). */
+export const SESSION_CHANNEL = 'opos-panel-session'
+
+let channel: BroadcastChannel | null | undefined
+
+/** The one channel of this tab, or null where there is no BroadcastChannel. */
+export function sessionChannel(): BroadcastChannel | null {
+  if (channel === undefined) {
+    channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(SESSION_CHANNEL)
+  }
+  return channel
+}
+
+/** Tells the other tabs which account this tab now shows, `null` for none. */
+export function announceAccountChange(accountId: string | null) {
+  sessionChannel()?.postMessage({ accountId })
+}
+
+/** This tab signed in: the account is known, and the other tabs are told. */
+export function signedIn(account: Account) {
+  useSession.setState({ status: 'ready', account })
+  announceAccountChange(account.id)
+}
+
+/** The session is over; the other tabs are told only when there was an account to lose. */
+export function signedOut() {
+  const hadAccount = useSession.getState().account !== null
+  useSession.setState({ status: 'ready', account: null })
+  if (hadAccount) announceAccountChange(null)
+}

@@ -11,7 +11,7 @@ import { MemberRow } from '../components/member-row'
 export function TeamPage() {
   const { t } = useLingui()
   const { access, api } = useCurrentTenant()
-  const accountId = useSession((state) => state.session?.user.id)
+  const accountId = useSession((state) => state.account?.id)
   const members = useQuery({
     ...membersOptions(api),
     enabled: atLeast(access.settings, 'read'),

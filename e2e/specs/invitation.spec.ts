@@ -2,7 +2,7 @@ import { type Page } from '@playwright/test'
 import { accessToken, callApi } from '../fixtures/api'
 import { passwordGrant } from '../fixtures/auth-admin'
 import { expect, test } from '../fixtures'
-import { invitationLinkIn, verifyLinkIn, waitForMail } from '../fixtures/mailpit'
+import { confirmLinkIn, invitationLinkIn, waitForMail } from '../fixtures/mailpit'
 import { panelUrl, signInToPanel, signOutOfPanel } from '../fixtures/ui'
 
 // PLAN.md 15.2, scenario 6: an invitee without an account registers in the panel on
@@ -24,7 +24,9 @@ async function signUpAndJoin(page: Page, email: string, tenant: { slug: string; 
   await expect(page.getByRole('status')).toContainText(`We sent a link to ${email}.`)
 
   // The second message: the invitation came first, then the confirmation of the address.
-  await page.goto(verifyLinkIn(await waitForMail(email, 2)))
+  // Opening the link spends nothing; its button signs the browser in, then the password follows.
+  await page.goto(confirmLinkIn(await waitForMail(email, 2)))
+  await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByText(`Your address ${email} is confirmed.`)).toBeVisible()
   await page.getByLabel('New password').fill(INVITEE_PASSWORD)
   await page.getByLabel('Repeat the password').fill(INVITEE_PASSWORD)

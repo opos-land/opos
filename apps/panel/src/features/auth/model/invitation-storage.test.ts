@@ -4,9 +4,7 @@ import {
   forgetInvitation,
   INVITATION_STORAGE_KEY,
   rememberInvitation,
-  setAwaitingPassword,
   storedInvitation,
-  throwawayPassword,
 } from './invitation-storage'
 
 beforeEach(() => {
@@ -23,31 +21,20 @@ describe('the stored invitation', () => {
 
     expect(JSON.parse(localStorage.getItem(INVITATION_STORAGE_KEY)!)).toEqual({
       token: 'token-a',
-      awaitingPassword: false,
     })
-    expect(storedInvitation()).toEqual({ token: 'token-a', awaitingPassword: false })
+    expect(storedInvitation()).toEqual({ token: 'token-a' })
   })
 
-  it('survives the confirmation round trip waiting for a password', () => {
+  it('survives the confirmation link opening the page again with the same token', () => {
     rememberInvitation('token-a')
-    setAwaitingPassword(true)
 
-    // The confirmation link opens the page again with the same token.
-    expect(rememberInvitation('token-a')).toEqual({ token: 'token-a', awaitingPassword: true })
-    expect(storedInvitation()?.awaitingPassword).toBe(true)
+    expect(rememberInvitation('token-a')).toEqual({ token: 'token-a' })
   })
 
   it('starts over for another token', () => {
     rememberInvitation('token-a')
-    setAwaitingPassword(true)
 
-    expect(rememberInvitation('token-b')).toEqual({ token: 'token-b', awaitingPassword: false })
-  })
-
-  it('marks nothing when no invitation is stored', () => {
-    setAwaitingPassword(true)
-
-    expect(storedInvitation()).toBeNull()
+    expect(rememberInvitation('token-b')).toEqual({ token: 'token-b' })
   })
 
   it('is gone once accepted', () => {
@@ -61,7 +48,7 @@ describe('the stored invitation', () => {
     localStorage.setItem(INVITATION_STORAGE_KEY, 'not json')
     expect(storedInvitation()).toBeNull()
 
-    localStorage.setItem(INVITATION_STORAGE_KEY, JSON.stringify({ awaitingPassword: true }))
+    localStorage.setItem(INVITATION_STORAGE_KEY, JSON.stringify({ other: true }))
     expect(storedInvitation()).toBeNull()
   })
 })
@@ -83,13 +70,4 @@ describe('endsInvitation', () => {
       expect(endsInvitation(code)).toBe(false)
     },
   )
-})
-
-describe('throwawayPassword', () => {
-  it('is long and different every time', () => {
-    const a = throwawayPassword()
-
-    expect(a.length).toBeGreaterThanOrEqual(40)
-    expect(throwawayPassword()).not.toBe(a)
-  })
 })

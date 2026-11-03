@@ -20,7 +20,7 @@ import { ProgramLabel, TicketsLabel } from '../components/permission-labels'
 export function EditionAccessPage() {
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
-  const accountId = useSession((state) => state.session?.user.id)
+  const accountId = useSession((state) => state.account?.id)
   const allowed = atLeast(access.settings, 'read')
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
   const members = useQuery({ ...membersOptions(api), enabled: allowed })

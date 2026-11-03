@@ -42,7 +42,7 @@ export async function openPanelAccountMenu(page: Page, email: string) {
   await page.locator('summary', { hasText: email }).click()
 }
 
-/** Signs out of the panel from the account menu: every session of the account ends. */
+/** Signs out of the panel from the account menu: this session ends, the account's others stay. */
 export async function signOutOfPanel(page: Page, email: string) {
   await openPanelAccountMenu(page, email)
   await page.getByRole('button', { name: 'Sign out' }).click()

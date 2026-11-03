@@ -1879,9 +1879,8 @@ forms with `react-hook-form` + zod using schemas from `packages/contract`. Featu
 Built: the features `auth`, `tenants`, `editions`, `program`, `team` and `account` with their screens
 below; the routes are in [router.tsx](../apps/panel/src/app/router.tsx). Still to be built: review
 moderation in `program`, `shop`, `tickets`, `scanner` and their screens, the image with its headers
-([13](#13-deployment)), and the move of `auth` from `@supabase/auth-js` to the API's `auth`
-endpoints ([5.1](#51-auth--sign-in-through-the-api)) and the two-factor screens
-([7.12](#712-two-factor-authentication)), which the bullets below describe.
+([13](#13-deployment)), and the two-factor screens ([7.12](#712-two-factor-authentication)), which
+the bullets below describe.
 
 | Feature | Scope |
 |---|---|

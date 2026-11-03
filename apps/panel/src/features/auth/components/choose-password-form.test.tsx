@@ -1,13 +1,13 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
-import { AuthError } from '@supabase/auth-js'
+import { ORPCError } from '@orpc/client'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { setPassword, signOutOtherSessions } from '../api/auth'
+import { sendPasswordLink, setPassword } from '../api/auth'
 import { ChoosePasswordForm } from './choose-password-form'
 
-vi.mock('../api/auth', () => ({ setPassword: vi.fn(), signOutOtherSessions: vi.fn() }))
+vi.mock('../api/auth', () => ({ setPassword: vi.fn(), sendPasswordLink: vi.fn() }))
 
 beforeAll(() => {
   i18n.loadAndActivate({ locale: 'en', messages: {} })
@@ -15,10 +15,19 @@ beforeAll(() => {
 
 beforeEach(() => {
   vi.mocked(setPassword).mockReset().mockResolvedValue(null)
-  vi.mocked(signOutOtherSessions).mockReset().mockResolvedValue(null)
+  vi.mocked(sendPasswordLink).mockReset().mockResolvedValue(null)
 })
 
 afterEach(cleanup)
+
+const renderForm = (onDone = vi.fn()) => {
+  render(
+    <I18nProvider i18n={i18n}>
+      <ChoosePasswordForm email="a@x.test" returnTo="/invitation" onDone={onDone} />
+    </I18nProvider>,
+  )
+  return onDone
+}
 
 async function submit(user: ReturnType<typeof userEvent.setup>, password: string) {
   const fields = [
@@ -33,42 +42,42 @@ async function submit(user: ReturnType<typeof userEvent.setup>, password: string
 }
 
 describe('ChoosePasswordForm', () => {
-  it('sets the password, ends the other sessions, then goes on', async () => {
+  it('saves the password, then goes on', async () => {
     const user = userEvent.setup()
-    const onDone = vi.fn()
-    render(
-      <I18nProvider i18n={i18n}>
-        <ChoosePasswordForm email="a@x.test" onDone={onDone} />
-      </I18nProvider>,
-    )
+    const onDone = renderForm()
 
     await submit(user, 'correct horse')
 
     expect(setPassword).toHaveBeenCalledWith('correct horse')
-    expect(signOutOtherSessions).toHaveBeenCalledOnce()
     expect(onDone).toHaveBeenCalledOnce()
   })
 
-  it('retries only the sign-out once the password is saved', async () => {
+  it('shows the refusal by its code and stays', async () => {
     const user = userEvent.setup()
-    const onDone = vi.fn()
-    vi.mocked(signOutOtherSessions).mockResolvedValueOnce(
-      new AuthError('rate limited', 429, 'over_request_rate_limit'),
+    vi.mocked(setPassword).mockResolvedValueOnce(
+      new ORPCError('auth.weak_password', { status: 422 }),
     )
-    render(
-      <I18nProvider i18n={i18n}>
-        <ChoosePasswordForm email="a@x.test" onDone={onDone} />
-      </I18nProvider>,
-    )
+    const onDone = renderForm()
 
     await submit(user, 'correct horse')
+
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(onDone).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Send a new link' })).toBeNull()
+  })
+
+  it('offers a new link by email once the sign-in is too old to change the password', async () => {
+    const user = userEvent.setup()
+    vi.mocked(setPassword).mockResolvedValueOnce(
+      new ORPCError('session.reauthentication-required', { status: 401 }),
+    )
+    const onDone = renderForm()
 
     await submit(user, 'correct horse')
+    await user.click(await screen.findByRole('button', { name: 'Send a new link' }))
 
-    expect(setPassword).toHaveBeenCalledOnce()
-    expect(signOutOtherSessions).toHaveBeenCalledTimes(2)
-    expect(onDone).toHaveBeenCalledOnce()
+    expect(sendPasswordLink).toHaveBeenCalledWith('a@x.test', '/invitation')
+    expect(await screen.findByRole('status')).toBeTruthy()
+    expect(onDone).not.toHaveBeenCalled()
   })
 })

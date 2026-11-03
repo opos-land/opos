@@ -1,8 +1,10 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type ReactNode } from 'react'
+import { errorMessage } from '@opos/i18n/errors'
 import { describeError } from '../lib/errors'
+import { Button } from './button'
 
-/** An API or Supabase Auth error, shown by its code through the catalog (PLAN.md 6). */
+/** An API error, shown by its code through the catalog (PLAN.md 6). */
 export function ErrorMessage({ error }: { error: unknown }) {
   const { i18n } = useLingui()
   if (!error) return null
@@ -28,6 +30,21 @@ export function LoadingView() {
     <div className="text-muted p-8 text-sm" role="status" aria-busy="true">
       <Trans>Loading…</Trans>
     </div>
+  )
+}
+
+/** Shown when the account could not be asked for (PLAN.md 8): nobody is signed out meanwhile. */
+export function UnavailableView({ onRetry }: { onRetry: () => void }) {
+  const { i18n } = useLingui()
+  return (
+    <section className="flex max-w-xl flex-col items-start gap-3 p-8">
+      <p role="alert" className="text-sm">
+        {i18n._(errorMessage('server.unavailable'))}
+      </p>
+      <Button variant="secondary" onClick={onRetry}>
+        <Trans>Try again</Trans>
+      </Button>
+    </section>
   )
 }
 

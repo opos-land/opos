@@ -62,6 +62,13 @@ function linkIn(mail: Pick<Mail, 'Subject' | 'Text'>, pattern: RegExp, kind: str
 export const verifyLinkIn = (mail: Pick<Mail, 'Subject' | 'Text'>) =>
   linkIn(mail, /https?:\/\/\S+\/verify\?\S+/, 'verify')
 
+/**
+ * The `/auth/confirm` link of a confirmation or password message to an application that has moved
+ * to the API (PLAN.md 5.1): the page's button redeems it.
+ */
+export const confirmLinkIn = (mail: Pick<Mail, 'Subject' | 'Text'>) =>
+  linkIn(mail, /https?:\/\/\S+\/auth\/confirm\?\S+/, 'confirm')
+
 /** The organizer invitation link, `<PANEL_URL>/invitation?token=...` (PLAN.md 7.7). */
 export const invitationLinkIn = (mail: Pick<Mail, 'Subject' | 'Text'>) =>
   linkIn(mail, /https?:\/\/\S+\/invitation\?token=\S+/, 'invitation')

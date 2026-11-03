@@ -109,15 +109,10 @@ msgstr "Zaproszenie zostało wysłane na adres {email}. Link w nim działa jeden
 msgid "At least 8 characters."
 msgstr "Co najmniej 8 znaków."
 
-#: src/features/auth/pages/auth-callback-page.tsx
-msgid "Back to sign-in"
-msgstr "Wróć do logowania"
-
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Back to the edition"
 msgstr "Wróć do edycji"
 
-#: src/features/auth/pages/auth-callback-page.tsx
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Back to the invitation"
 msgstr "Wróć do zaproszenia"
@@ -139,6 +134,22 @@ msgstr "Wybierz konwent"
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Choose a time zone from the list."
 msgstr "Wybierz strefę czasową z listy."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Choose your password"
+msgstr "Wybierz hasło"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Confirm your address"
+msgstr "Potwierdź swój adres"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Confirmation link"
+msgstr "Link potwierdzający"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Continue"
+msgstr "Dalej"
 
 #: src/features/auth/components/google-button.tsx
 msgid "Continue with Google"
@@ -270,6 +281,7 @@ msgstr "Podaj hasło."
 msgid "expired"
 msgstr "wygasł"
 
+#: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Go to sign-in"
 msgstr "Przejdź do logowania"
@@ -384,6 +396,10 @@ msgstr "Nieopublikowana"
 msgid "Open the invitation link from your email to join a convention's team."
 msgstr "Otwórz link z zaproszenia w wiadomości e-mail, aby dołączyć do zespołu konwentu."
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Open the link from your email to confirm your address or reset your password."
+msgstr "Otwórz link z wiadomości e-mail, aby potwierdzić adres lub ustawić nowe hasło."
+
 #: src/features/auth/components/auth-layout.tsx
 #: src/features/tenants/components/panel-header.tsx
 msgid "OPOS panel"
@@ -426,6 +442,14 @@ msgstr "Hasło"
 #: src/features/team/pages/team-page.tsx
 msgid "Permissions in each edition are set on the edition's access page."
 msgstr "Uprawnienia w poszczególnych edycjach ustawia się na stronie dostępu danej edycji."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Press the button to choose a new password."
+msgstr "Naciśnij przycisk, aby wybrać nowe hasło."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Press the button to confirm your address. Then you choose your password."
+msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
 
 #: src/features/editions/pages/edition-page.tsx
 #: src/features/program/pages/program-page.tsx
@@ -491,6 +515,10 @@ msgstr "Usuń z zespołu"
 msgid "Repeat the password"
 msgstr "Powtórz hasło"
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Reset your password"
+msgstr "Ustaw nowe hasło"
+
 #: src/features/team/components/invite-form.tsx
 #: src/features/team/components/member-row.tsx
 msgid "Role"
@@ -515,6 +543,11 @@ msgstr "Zapisywany na twoim koncie."
 #: src/features/tenants/pages/dashboard-page.tsx
 msgid "See the editions"
 msgstr "Zobacz edycje"
+
+#: src/features/auth/components/choose-password-form.tsx
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Send a new link"
+msgstr "Wyślij nowy link"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Send a password link"
@@ -668,7 +701,12 @@ msgstr "Strefa czasowa"
 msgid "Title"
 msgstr "Tytuł"
 
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Too much time has passed since you opened the link. Ask for a new one."
+msgstr "Od otwarcia linku minęło zbyt dużo czasu. Poproś o nowy."
+
 #: src/features/auth/components/accept-invitation.tsx
+#: src/shared/ui/messages.tsx
 msgid "Try again"
 msgstr "Spróbuj ponownie"
 
@@ -692,13 +730,21 @@ msgstr "Użyj najwyżej 5000 znaków."
 msgid "We could not find what you are looking for."
 msgstr "Nie znaleźliśmy tego, czego szukasz."
 
-#: src/features/auth/pages/auth-callback-page.tsx
+#: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"
 msgstr "Nie udało się zalogować"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "We sent a link to {sentTo}. Open it in this browser to choose your password and join the team."
 msgstr "Wysłaliśmy link na adres {sentTo}. Otwórz go w tej przeglądarce, aby wybrać hasło i dołączyć do zespołu."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "We sent a new link to {email}. Open it to choose your password."
+msgstr "Wysłaliśmy nowy link na adres {email}. Otwórz go, aby wybrać hasło."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "We sent a new link to {sentTo}. Open it in this browser."
+msgstr "Wysłaliśmy nowy link na adres {sentTo}. Otwórz go w tej przeglądarce."
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "We will send a confirmation link to your address. Once you open it, you choose your password here and join the team. You can also continue with Google above."

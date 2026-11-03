@@ -117,6 +117,46 @@ async function stubbedSupabaseAuth(status: number, body: object) {
   }
 }
 
+/** An API whose Supabase Auth is the real one, except that changing a user fails. */
+async function failingUserUpdate() {
+  const real = authUrl(env).replace(/\/auth\/v1$/, '')
+  const proxy = createServer((req, res) => {
+    const chunks: Buffer[] = []
+    req.on('data', (chunk: Buffer) => chunks.push(chunk))
+    req.on('end', () => {
+      void (async () => {
+        if (req.method === 'PUT' && req.url?.startsWith('/auth/v1/user')) {
+          res.writeHead(400, { 'content-type': 'application/json' })
+          res.end(JSON.stringify({ error_code: 'something_new', msg: 'refused' }))
+          return
+        }
+        const headers = Object.fromEntries(
+          Object.entries(req.headers).filter(
+            ([name]) => !['host', 'content-length'].includes(name),
+          ),
+        ) as Record<string, string>
+        const upstream = await fetch(`${real}${req.url}`, {
+          method: req.method,
+          headers,
+          body: chunks.length ? Buffer.concat(chunks) : undefined,
+        })
+        res.writeHead(upstream.status, { 'content-type': 'application/json' })
+        res.end(Buffer.from(await upstream.arrayBuffer()))
+      })()
+    })
+  })
+  await new Promise<void>((resolve) => proxy.listen(0, '127.0.0.1', resolve))
+  const url = `http://127.0.0.1:${(proxy.address() as AddressInfo).port}`
+  const app = await createApp({ SUPABASE_URL: url })
+  return {
+    app,
+    close: async () => {
+      await app.close()
+      proxy.close()
+    },
+  }
+}
+
 describe('sign-up', () => {
   it('answers 202 for a new and for a registered address alike, and takes no password', async () => {
     const address = newAddress()
@@ -718,28 +758,70 @@ describe('password', () => {
     expectCleared(res, 'portal')
   })
 
-  it('after a registered address is confirmed, only the password chosen through confirm signs in', async () => {
+  it('refuses a password set before the confirmation as soon as verify answers', async () => {
     const address = newAddress()
     // Someone registered the address first, with a password of their own, straight at Supabase Auth.
-    const attacker = await fetch(`${authUrl(env)}/signup`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: address, password: 'attacker-pass-1' }),
-    })
+    const attacker = await fetch(
+      `${authUrl(env)}/signup?redirect_to=${encodeURIComponent(`${portal}/auth/confirm`)}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: address, password: 'attacker-pass-1' }),
+      },
+    )
     expect(attacker.status).toBe(200)
     deleteLater(((await attacker.json()) as { id: string }).id)
-    await waitForMail(address)
-    await new Promise((resolve) => setTimeout(resolve, 1_100))
-    await post('/auth/sign-up', { email: address }).expect(202)
-    const { tokenHash, type } = await linkFor(address, 2)
+    const { tokenHash, type } = await linkFor(address)
 
     const agent = request.agent(server).set('Origin', portal)
     await agent.post('/auth/verify').send({ tokenHash, type }).expect(200)
-    await agent.put('/auth/password').send({ password: 'chosen-pass-1' }).expect(204)
 
+    // Before any PUT /auth/password: the owner may leave the form.
     const old = await post('/auth/sign-in', { email: address, password: 'attacker-pass-1' })
     expect(old.body).toMatchObject({ code: 'auth.invalid_credentials' })
+    await agent.put('/auth/password').send({ password: 'chosen-pass-1' }).expect(204)
     await post('/auth/sign-in', { email: address, password: 'chosen-pass-1' }).expect(200)
+  })
+
+  it('leaves a recovery verification alone: the password stays', async () => {
+    const { email } = await confirmedAccount()
+    await post('/auth/password/forgot', { email }).expect(202)
+    const { tokenHash, type } = await linkFor(email)
+
+    await post('/auth/verify', { tokenHash, type }).expect(200)
+
+    await post('/auth/sign-in', { email, password: TEST_PASSWORD }).expect(200)
+  })
+
+  it('hands out no session when the old password cannot be replaced', async () => {
+    const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const address = newAddress()
+    const signedUp = await fetch(
+      `${authUrl(env)}/signup?redirect_to=${encodeURIComponent(`${portal}/auth/confirm`)}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: address, password: 'attacker-pass-1' }),
+      },
+    )
+    deleteLater(((await signedUp.json()) as { id: string }).id)
+    const { tokenHash, type } = await linkFor(address)
+    const failing = await failingUserUpdate()
+    try {
+      const res = await request(failing.app.getHttpServer())
+        .post('/auth/verify')
+        .set('Origin', portal)
+        .send({ tokenHash, type })
+
+      expect(res.status).toBe(500)
+      expect(res.body).toMatchObject({ code: 'server.error' })
+      expect(cookiesOf(res)).toEqual([])
+      expect(warned).toHaveBeenCalledTimes(1)
+      expect(JSON.stringify(warned.mock.calls)).not.toContain(address)
+    } finally {
+      await failing.close()
+    }
   })
 
   it('lets a recovery link sign in and set the password within 5 minutes', async () => {

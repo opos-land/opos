@@ -164,11 +164,26 @@ export class AuthService {
     body: { tokenHash: string; type: 'signup' | 'recovery' },
   ): Promise<Account> {
     const app = await this.publicRoute(req)
-    const result = await this.auth
-      .forRequest()
-      .verifyOtp({ token_hash: body.tokenHash, type: body.type })
+    const client = this.auth.forRequest()
+    const result = await client.verifyOtp({ token_hash: body.tokenHash, type: body.type })
     if (result.error) throw toApiError(result.error)
+    if (body.type === 'signup') await this.replacePassword(client)
     return this.signedIn(req, app, result.data.session)
+  }
+
+  /**
+   * Whoever registered the address first chose its password before the owner confirmed it, so
+   * the confirmation replaces it with a random one nobody knows (PLAN.md 5.1). The session the
+   * confirmation opened is not handed out while the old password may still work.
+   */
+  private async replacePassword(client: GoTrueClient): Promise<void> {
+    try {
+      const { error } = await client.updateUser({ password: randomBytes(32).toString('base64url') })
+      if (error) throw error
+    } catch (error) {
+      this.logger.warn('Could not replace the password of an account at its confirmation')
+      throw toApiError(error)
+    }
   }
 
   async signIn(req: AuthRequest, body: { email: string; password: string }): Promise<Account> {

@@ -45,12 +45,7 @@ msgstr "Masz już konto? <0>Zaloguj się</0>"
 msgid "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
 msgstr "Zaproszenie do zespołu konwentu niczego nie zapisuje, dopóki nie zostanie przyjęte: zaproszony adres jest zawarty wyłącznie w wysłanym na niego linku."
 
-#: src/features/auth/pages/reset-password-page.tsx
-msgid "Ask for a new link"
-msgstr "Poproś o nowy link"
-
-#: src/features/auth/components/new-password-form.tsx
-#: src/features/auth/components/register-form.tsx
+#: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
 msgstr "Co najmniej 8 znaków."
 
@@ -70,9 +65,25 @@ msgstr "Zakładając konto, potwierdzasz, że znasz <0>politykę prywatności</0
 msgid "Check your inbox"
 msgstr "Sprawdź skrzynkę pocztową"
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Choose your password"
+msgstr "Wybierz hasło"
+
 #: src/features/account/components/delete-account.tsx
 msgid "Confirm with Google"
 msgstr "Potwierdź przez Google"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Confirm your address"
+msgstr "Potwierdź swój adres"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Confirmation link"
+msgstr "Link potwierdzający"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Continue"
+msgstr "Dalej"
 
 #: src/features/auth/components/google-button.tsx
 msgid "Continue with Google"
@@ -104,6 +115,7 @@ msgstr "Usunięcie konta"
 msgid "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
 msgstr "Usunięcia konta nie można cofnąć. Razem z nim znikają twoje polubienia, opinie, zapisy na edycje i członkostwa w zespołach konwentów. Zamówienia złożone z twoim adresem zostają w konwentach jako ich dokumentacja sprzedaży."
 
+#: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -118,6 +130,7 @@ msgstr "Wiadomości e-mail trafiają z platformy do dostawcy poczty wyłącznie 
 msgid "Enter 1 to 100 characters."
 msgstr "Wpisz od 1 do 100 znaków."
 
+#: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -157,7 +170,7 @@ msgstr "Dla organizatorów"
 msgid "Forgot your password?"
 msgstr "Nie pamiętasz hasła?"
 
-#: src/features/auth/pages/auth-callback-page.tsx
+#: src/features/auth/pages/confirm-page.tsx
 msgid "Go to sign-in"
 msgstr "Przejdź do logowania"
 
@@ -165,7 +178,6 @@ msgstr "Przejdź do logowania"
 msgid "Go to the home page"
 msgstr "Przejdź na stronę główną"
 
-#: src/features/auth/pages/reset-password-page.tsx
 #: src/features/landing/pages/landing-page.tsx
 msgid "Go to your account"
 msgstr "Przejdź do swojego konta"
@@ -185,10 +197,6 @@ msgstr "Jak OPOS postępuje z twoimi danymi osobowymi."
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
 msgstr "Jeśli adres {sentTo} należy do konta, wysłaliśmy na niego link do ustawienia nowego hasła. Link działa jeden raz, przez godzinę."
-
-#: src/features/auth/pages/auth-callback-page.tsx
-msgid "If you opened a confirmation link, your address may be confirmed already."
-msgstr "Jeśli otwierasz link potwierdzający, twój adres może być już potwierdzony."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "If you sign in with Google, Google confirms your email address and gives us your name."
@@ -224,7 +232,7 @@ msgstr "Wczytywanie…"
 msgid "My schedule"
 msgstr "Mój plan"
 
-#: src/features/auth/components/new-password-form.tsx
+#: src/features/auth/components/choose-password-form.tsx
 msgid "New password"
 msgstr "Nowe hasło"
 
@@ -244,6 +252,10 @@ msgstr "Jedno konto na wszystkie konwenty w OPOS."
 msgid "One account for every convention: sign up for an edition, like programme items to build your personal schedule, review the ones you attended and find your tickets in one place. It works in a phone browser, with no app to install."
 msgstr "Jedno konto na wszystkie konwenty: zapisz się na edycję, polub punkty programu, aby ułożyć swój własny plan, wystaw opinię tym, które już za tobą, i miej swoje akredytacje w jednym miejscu. Wszystko działa w przeglądarce telefonu, bez instalowania aplikacji."
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Open the link from your email to confirm your address or reset your password."
+msgstr "Otwórz link z wiadomości e-mail, aby potwierdzić adres lub ustawić nowe hasło."
+
 #: src/app/layout.tsx
 msgid "OPOS"
 msgstr "OPOS"
@@ -257,8 +269,8 @@ msgid "OPOS is the platform conventions use for their programme, tickets and att
 msgstr "OPOS to platforma, na której konwenty prowadzą swój program, akredytacje i zapisy uczestników. Dla konwentów jest bezpłatna."
 
 #: src/features/landing/pages/privacy-page.tsx
-msgid "OPOS uses no tracking or advertising cookies. Your sign-in session is kept in your browser’s local storage, for this site only."
-msgstr "OPOS nie używa śledzących ani reklamowych plików cookie. Twoja sesja logowania jest przechowywana w pamięci lokalnej przeglądarki, tylko dla tej strony."
+msgid "OPOS uses no tracking or advertising cookies. Your sign-in session is kept in cookies that your browser sends to OPOS alone, which no script of the page can read. Signing out removes them."
+msgstr "OPOS nie używa śledzących ani reklamowych plików cookie. Twoja sesja logowania jest przechowywana w plikach cookie, które przeglądarka wysyła wyłącznie do OPOS i których nie odczyta żaden skrypt strony. Wylogowanie je usuwa."
 
 #: src/features/auth/pages/login-page.tsx
 #: src/features/auth/pages/register-page.tsx
@@ -277,10 +289,17 @@ msgstr "Inne edycje"
 msgid "Page not found"
 msgstr "Nie znaleziono strony"
 
-#: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Password"
 msgstr "Hasło"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Press the button to choose a new password."
+msgstr "Naciśnij przycisk, aby wybrać nowe hasło."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Press the button to confirm your address. Then you choose your password."
+msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
 
 #: src/app/layout.tsx
 #: src/features/landing/pages/privacy-page.tsx
@@ -291,12 +310,12 @@ msgstr "Polityka prywatności"
 msgid "Remove the like"
 msgstr "Usuń polubienie"
 
-#: src/features/auth/components/new-password-form.tsx
+#: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
 msgstr "Powtórz hasło"
 
+#: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
-#: src/features/auth/pages/reset-password-page.tsx
 msgid "Reset your password"
 msgstr "Zresetuj hasło"
 
@@ -304,13 +323,18 @@ msgstr "Zresetuj hasło"
 msgid "Save"
 msgstr "Zapisz"
 
-#: src/features/auth/components/new-password-form.tsx
-msgid "Save the new password"
-msgstr "Zapisz nowe hasło"
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Save the password"
+msgstr "Zapisz hasło"
 
 #: src/features/account/components/language-form.tsx
 msgid "Saved on your account."
 msgstr "Zapisywany na twoim koncie."
+
+#: src/features/auth/components/choose-password-form.tsx
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Send a new link"
+msgstr "Wyślij nowy link"
 
 #: src/features/auth/components/resend-confirmation.tsx
 msgid "Send the confirmation link again"
@@ -319,10 +343,6 @@ msgstr "Wyślij link potwierdzający ponownie"
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Send the link"
 msgstr "Wyślij link"
-
-#: src/features/auth/pages/reset-password-page.tsx
-msgid "Set a new password"
-msgstr "Ustaw nowe hasło"
 
 #: src/app/layout.tsx
 #: src/features/auth/components/sign-in-form.tsx
@@ -344,8 +364,8 @@ msgid "Signed in as {email}"
 msgstr "Zalogowano jako {email}"
 
 #: src/features/account/pages/account-page.tsx
-msgid "Signing out ends your sessions on every device."
-msgstr "Wylogowanie kończy twoje sesje na wszystkich urządzeniach."
+msgid "Signing out ends your session on this device."
+msgstr "Wylogowanie kończy twoją sesję na tym urządzeniu."
 
 #: src/features/account/components/language-form.tsx
 msgid "The browser's language"
@@ -355,7 +375,7 @@ msgstr "Język przeglądarki"
 msgid "The number of likes of a programme item is public. Who liked it is never shown to anyone."
 msgstr "Liczba polubień punktu programu jest publiczna. To, kto go polubił, nie jest nikomu pokazywane."
 
-#: src/features/auth/components/new-password-form.tsx
+#: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "Hasła się różnią."
 
@@ -371,12 +391,19 @@ msgstr "Nie ma jeszcze programu."
 msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, tickets and invitations to a convention’s team."
 msgstr "Aby prowadzić twoje konto i umożliwiać logowanie; aby konwenty mogły sprzedawać ci akredytacje, wysyłać je i sprawdzać na miejscu; aby przechowywać twoje zapisy na edycje, twój plan i twoje opinie; oraz aby wysyłać wiadomości e-mail, których wymaga twoje konto: potwierdzenie adresu, reset hasła, akredytacje i zaproszenia do zespołu konwentu."
 
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Too much time has passed since you opened the link. Ask for a new one."
+msgstr "Od otwarcia linku minęło zbyt dużo czasu. Poproś o nowy."
+
+#: src/shared/ui/messages.tsx
+msgid "Try again"
+msgstr "Spróbuj ponownie"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 msgstr "Na podstawie RODO masz prawo dostępu do swoich danych, ich sprostowania, usunięcia, ograniczenia przetwarzania lub wniesienia sprzeciwu wobec niego, a także prawo wniesienia skargi do organu nadzorczego; w Polsce jest nim Prezes Urzędu Ochrony Danych Osobowych (UODO). Imię i nazwisko poprawiasz, a konto usuwasz samodzielnie w ustawieniach konta."
 
-#: src/features/auth/components/new-password-form.tsx
-#: src/features/auth/components/register-form.tsx
+#: src/features/auth/components/choose-password-form.tsx
 msgid "Use at least 8 characters."
 msgstr "Użyj co najmniej 8 znaków."
 
@@ -384,17 +411,25 @@ msgstr "Użyj co najmniej 8 znaków."
 msgid "We could not find what you are looking for."
 msgstr "Nie znaleźliśmy tego, czego szukasz."
 
-#: src/features/auth/pages/auth-callback-page.tsx
+#: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"
 msgstr "Nie udało się zalogować"
 
 #: src/features/auth/pages/register-page.tsx
-msgid "We sent a confirmation link to {sentTo}. Open it to start using your account. The link works for one hour."
-msgstr "Wysłaliśmy link potwierdzający na adres {sentTo}. Otwórz go, aby zacząć korzystać z konta. Link działa przez godzinę."
+msgid "We sent a confirmation link to {sentTo}. Open it to confirm your address and choose your password. The link works for one hour."
+msgstr "Wysłaliśmy link potwierdzający na adres {sentTo}. Otwórz go, aby potwierdzić adres i wybrać hasło. Link działa przez godzinę."
 
 #: src/features/auth/components/resend-confirmation.tsx
 msgid "We sent a new confirmation link to {email}."
 msgstr "Wysłaliśmy nowy link potwierdzający na adres {email}."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "We sent a new link to {email}. Open it to choose your password."
+msgstr "Wysłaliśmy nowy link na adres {email}. Otwórz go, aby wybrać hasło."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "We sent a new link to {sentTo}. Open it in this browser."
+msgstr "Wysłaliśmy nowy link na adres {sentTo}. Otwórz go w tej przeglądarce."
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."
@@ -456,6 +491,10 @@ msgstr "Twoje konto zostało usunięte."
 msgid "Your account: your first name, last name, email address and the interface language you choose."
 msgstr "Twoje konto: imię, nazwisko, adres e-mail i wybrany język interfejsu."
 
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Your address {email} is confirmed. Choose the password you will sign in with."
+msgstr "Twój adres {email} jest potwierdzony. Wybierz hasło, którym będziesz się logować."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your browser"
 msgstr "Twoja przeglądarka"
@@ -467,10 +506,6 @@ msgstr "Imię i nazwisko"
 #: src/features/account/components/profile-form.tsx
 msgid "Your name is saved."
 msgstr "Imię i nazwisko zostały zapisane."
-
-#: src/features/auth/pages/reset-password-page.tsx
-msgid "Your new password is saved. You are signed out on every other device."
-msgstr "Nowe hasło zostało zapisane. Wylogowano cię na wszystkich innych urządzeniach."
 
 #: src/features/account/components/delete-account.tsx
 msgid "Your password"

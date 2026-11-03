@@ -1,12 +1,11 @@
 import { createBrowserRouter } from 'react-router'
 import { AccountPage } from '../features/account'
 import {
-  AuthCallbackPage,
+  ConfirmPage,
   ForgotPasswordPage,
   LoginPage,
   RegisterPage,
   RequireSession,
-  ResetPasswordPage,
 } from '../features/auth'
 import { ConventionPage, EditionPage, ProgramItemPage } from '../features/conventions'
 import { LandingPage, PrivacyPage } from '../features/landing'
@@ -23,9 +22,8 @@ export const router = createBrowserRouter([
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '/login', element: <LoginPage /> },
-      { path: '/auth/callback', element: <AuthCallbackPage /> },
+      { path: '/auth/confirm', element: <ConfirmPage /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
-      { path: '/reset-password', element: <ResetPasswordPage /> },
       {
         path: '/account',
         element: (

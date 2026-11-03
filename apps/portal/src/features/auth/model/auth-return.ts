@@ -2,9 +2,8 @@ import { readStorage, removeStorage, writeStorage } from '../../../shared/lib/st
 import { safeRedirect } from './redirect'
 
 /**
- * The page a round trip through Supabase Auth started on (PLAN.md 7.5, 9): set before leaving for
- * Google or sending a confirmation link, read by `/auth/callback`. Kept in localStorage, since an
- * email link opens in another tab.
+ * The page a round trip by email started on (PLAN.md 9): set before sending a link, read by
+ * `/auth/confirm`. Kept in localStorage, since an email link opens in another tab.
  */
 export const AUTH_RETURN_STORAGE_KEY = 'opos-portal-auth-return'
 
@@ -16,5 +15,5 @@ export function forgetAuthReturn() {
   removeStorage(AUTH_RETURN_STORAGE_KEY)
 }
 
-/** Where `/auth/callback` goes once it has a session: the page the round trip started on. */
+/** Where `/auth/confirm` goes once the password is saved: the page the round trip started on, or the account. */
 export const authReturn = (): string => safeRedirect(readStorage(AUTH_RETURN_STORAGE_KEY))

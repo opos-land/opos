@@ -97,9 +97,8 @@ describe('DeleteAccount', () => {
   })
 
   it('deletes nothing when the password is wrong', async () => {
-    const { AuthApiError } = await import('@supabase/auth-js')
     vi.mocked(signInWithPassword).mockResolvedValue(
-      new AuthApiError('Invalid login credentials', 400, 'invalid_credentials'),
+      new ORPCError('auth.invalid_credentials', { status: 400 }),
     )
     const user = renderAt('/account')
 

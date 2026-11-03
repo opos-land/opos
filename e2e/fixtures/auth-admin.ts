@@ -65,12 +65,16 @@ export async function passwordGrant(email: string, password: string) {
   return { status: response.status, ...body }
 }
 
-/** Supabase Auth's refresh grant: whether a session can still be extended. */
+/**
+ * Supabase Auth's refresh grant: whether a session can still be extended. A session that ended
+ * answers `refresh_token_not_found` in `code`.
+ */
 export async function refreshGrant(refreshToken: string) {
   const response = await fetch(`${stack.auth}/token?grant_type=refresh_token`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ refresh_token: refreshToken }),
   })
-  return response.status
+  const body = (await response.json()) as { error_code?: string }
+  return { status: response.status, code: body.error_code }
 }

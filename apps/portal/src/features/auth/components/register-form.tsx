@@ -8,7 +8,10 @@ import { Button, ErrorMessage, Field, inputClass, linkClass } from '../../../sha
 import { signUp } from '../api/auth'
 import { registrationSchema } from '../model/registration'
 
-/** Registration with a password (PLAN.md 9); `onRegistered` gets the address the link went to. */
+/**
+ * Registration (PLAN.md 9): the names and the address, no password; it is chosen once the link
+ * proves the address. `onRegistered` gets the address the link went to.
+ */
 export function RegisterForm({
   returnTo,
   onRegistered,
@@ -20,7 +23,7 @@ export function RegisterForm({
   const [error, setError] = useState<unknown>(null)
   const form = useForm({
     resolver: zodResolver(registrationSchema),
-    defaultValues: { firstName: '', lastName: '', email: '', password: '' },
+    defaultValues: { firstName: '', lastName: '', email: '' },
   })
   const { errors, isSubmitting } = form.formState
 
@@ -61,21 +64,6 @@ export function RegisterForm({
             type="email"
             autoComplete="email"
             inputMode="email"
-            className={inputClass}
-          />
-        )}
-      </Field>
-      <Field
-        label={t`Password`}
-        hint={t`At least 8 characters.`}
-        error={errors.password && t`Use at least 8 characters.`}
-      >
-        {(control) => (
-          <input
-            {...control}
-            {...form.register('password')}
-            type="password"
-            autoComplete="new-password"
             className={inputClass}
           />
         )}

@@ -20,6 +20,10 @@ test.describe('account deletion in the portal', () => {
 
       await expect(page).toHaveURL(portalUrl('/'))
       await expect(page.getByRole('status')).toHaveText('Your account has been deleted.')
+      // The 204 cleared the session cookies, and the portal shows nobody signed in.
+      expect(
+        (await page.context().cookies()).filter((cookie) => cookie.name.startsWith('opos_portal_')),
+      ).toEqual([])
       await expect(page.getByRole('link', { name: 'Sign in' }).first()).toBeVisible()
       expect(await accountIds(db, [account.email])).toEqual([])
       expect((await passwordGrant(account.email, account.password)).status).toBe(400)

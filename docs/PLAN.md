@@ -1982,10 +1982,8 @@ platform's name, the way to the account or to sign-in, the privacy policy in the
 [layout.tsx](../apps/portal/src/app/layout.tsx). Still to be built: on the convention pages the
 "Sign up" button, ratings, comments and the review form, which wait for their modules;
 `attendances`, `speaking`, `tickets` and their screens, which wait for their modules in the API, the
-image with its headers ([13](#13-deployment)), and the move of `auth` and `account` from
-`@supabase/auth-js` to the API's `auth` endpoints ([5.1](#51-auth--sign-in-through-the-api)) and the
-two-factor screens ([7.12](#712-two-factor-authentication)),
-which the bullets below describe.
+image with its headers ([13](#13-deployment)), and the two-factor screens
+([7.12](#712-two-factor-authentication)), which the bullets below describe.
 
 | Feature | Scope |
 |---|---|
@@ -2954,7 +2952,7 @@ never changes a seeded account's password, which ends every other session of the
 | 16 | A head adds a confirmed account to the team, which gets a notification, changes its permissions and removes it; an org with `settings=write` invites and raises nobody above its own permissions (`member.above-own` next to the form) and has nothing to change on a head or on itself | [team](../e2e/specs/team.spec.ts) |
 | 17 | The panel's language switcher keeps the language on the account across a reload, and the browser's language comes back when chosen | [panel-language](../e2e/specs/panel-language.spec.ts) |
 | 18 | An attendee turns on two-factor authentication in the portal, signs out, signs in with the password and a code and reaches the account; a wrong code is refused; a password reset on the account asks for the code and then shows the password form without the link again; confirming the account's deletion with the password leads through the code and back to the deletion; a recovery code turns it off; the panel on the same account asks for its own code | still to come, as `e2e/specs/two-factor.spec.ts` |
-| 19 | The panel's session in one browser: an expired access cookie is renewed by `POST /auth/refresh` and the panel stays signed in; two tabs refreshing together both stay signed in; signing out in one tab takes the other off the account screens without a reload; a refresh answered `503` keeps the account signed in and the screen says to try again, not that the session has ended | [session](../e2e/specs/session.spec.ts) |
+| 19 | The session of the panel and of the portal in one browser: an expired access cookie is renewed by `POST /auth/refresh` and the application stays signed in; two tabs refreshing together both stay signed in; signing out in one tab takes the other off the account screens without a reload; a refresh answered `503` keeps the account signed in and the screen says to try again, not that the session has ended | [session](../e2e/specs/session.spec.ts) |
 
 Scenarios 1, 9, 10, 11, 13 and 14 run in both the desktop and the mobile project, and so does the code screen of scenario 18.
 

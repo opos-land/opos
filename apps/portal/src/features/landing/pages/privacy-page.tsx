@@ -143,8 +143,9 @@ export function PrivacyPage() {
       <Part title={<Trans>Your browser</Trans>}>
         <p>
           <Trans>
-            OPOS uses no tracking or advertising cookies. Your sign-in session is kept in your
-            browser’s local storage, for this site only.
+            OPOS uses no tracking or advertising cookies. Your sign-in session is kept in cookies
+            that your browser sends to OPOS alone, which no script of the page can read. Signing out
+            removes them.
           </Trans>
         </p>
       </Part>

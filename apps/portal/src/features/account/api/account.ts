@@ -1,5 +1,5 @@
 import { accountApi } from '../../../shared/lib/api'
-import { auth } from '../../../shared/lib/auth'
+import { signedOut } from '../../../shared/lib/session'
 
 export const accountOptions = () => accountApi.me.get.queryOptions()
 
@@ -10,9 +10,9 @@ export const deleteAccountOptions = () => accountApi.me.delete.mutationOptions()
 export const accountKey = () => accountApi.me.get.key()
 
 /**
- * Forgets the session in this browser only: after `DELETE /me` the user is gone, and Supabase
- * Auth has no session left to end.
+ * Forgets the session in this browser and tells the other tabs: after `DELETE /me` the account is
+ * gone and the API has cleared the cookies, so there is no session left to end.
  */
-export async function forgetSession() {
-  await auth.signOut({ scope: 'local' })
+export function forgetSession() {
+  signedOut()
 }

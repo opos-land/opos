@@ -4,27 +4,24 @@ import { type ContractRouterClient } from '@orpc/contract'
 import { OpenAPILink } from '@orpc/openapi-client/fetch'
 import { createTanstackQueryUtils, type RouterUtils } from '@orpc/tanstack-query'
 import { env } from '../config/env'
-import { type ApiSession, createApiFetch, shared } from './api-fetch'
-import { auth } from './auth'
+import { acrossTabs, createApiFetch, requestRefresh, shared } from './api-fetch'
 import { decodeApiError } from './errors'
 import { activeLocale } from './i18n'
+import { signedOut } from './session-store'
 
 export type ApiClient = ContractRouterClient<Contract>
 export type Api = RouterUtils<ApiClient>
 
-const session: ApiSession = {
-  accessToken: async () => (await auth.getSession()).data.session?.access_token ?? null,
-  refresh: shared(async () => {
-    const { data, error } = await auth.refreshSession()
-    return error ? null : (data.session?.access_token ?? null)
-  }),
-  signOut: async () => {
-    await auth.signOut({ scope: 'local' })
-  },
-}
+/** One refresh at a time: for the requests of this tab, then in turn with the other tabs (PLAN.md 7.4). */
+const refresh = shared(acrossTabs('opos-portal-refresh', () => requestRefresh(env.VITE_API_URL)))
 
 function client(tenantSlug?: string): ApiClient {
-  const apiFetch = createApiFetch({ session, locale: activeLocale, tenantSlug })
+  const apiFetch = createApiFetch({
+    refresh,
+    onSignedOut: signedOut,
+    tenantSlug,
+    locale: activeLocale,
+  })
   const link = new OpenAPILink(contract, {
     url: env.VITE_API_URL,
     fetch: (request) => apiFetch(request),
@@ -33,8 +30,11 @@ function client(tenantSlug?: string): ApiClient {
   return createORPCClient<ApiClient>(link)
 }
 
+/** The client of the routes outside a tenant, for calls that are not queries: `auth` and `me`. */
+export const accountClient: ApiClient = client()
+
 /** Routes outside a tenant: `me`. */
-export const accountApi: Api = createTanstackQueryUtils(client(), { path: ['account'] })
+export const accountApi: Api = createTanstackQueryUtils(accountClient, { path: ['account'] })
 
 const tenantApis = new Map<string, Api>()
 

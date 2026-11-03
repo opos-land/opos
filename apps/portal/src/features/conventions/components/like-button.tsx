@@ -25,7 +25,7 @@ export function LikeButton({
   const location = useLocation()
   const queryClient = useQueryClient()
   const status = useSession((state) => state.status)
-  const signedIn = useSession((state) => Boolean(state.session))
+  const signedIn = useSession((state) => Boolean(state.account))
   const schedule = useQuery({ ...scheduleOptions(), enabled: signedIn })
   const refresh = () =>
     Promise.all([
@@ -36,7 +36,7 @@ export function LikeButton({
   const unlike = useMutation({ ...unlikeOptions(tenantSlug), onSuccess: refresh })
   const params = { editionId, programItemId }
 
-  if (status !== 'ready') return null
+  if (status === 'loading') return null
   if (!signedIn) {
     if (ended) return null
     return (

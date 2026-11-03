@@ -103,8 +103,11 @@ export function DeleteAccount({
       return
     }
     const state: AccountDeletedState = { accountDeleted: true }
-    await navigate('/', { replace: true, state })
-    await forgetSession()
+    // Rendered before the session is forgotten: the account page, which needs a session, must be
+    // gone by then, or it would send the visitor to sign-in instead of the home page. `flushSync`
+    // needs the `RouterProvider` of `react-router/dom`, which main.tsx mounts.
+    await navigate('/', { replace: true, state, flushSync: true })
+    forgetSession()
   }
 
   const confirmWithPassword = async (event: FormEvent) => {

@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
-import { AuthApiError } from '@supabase/auth-js'
+import { ORPCError } from '@orpc/client'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -48,7 +48,7 @@ describe('SignInForm', () => {
 
   it('offers a new confirmation link to an address not confirmed yet', async () => {
     vi.mocked(signInWithPassword).mockResolvedValue(
-      new AuthApiError('Email not confirmed', 400, 'email_not_confirmed'),
+      new ORPCError('auth.email_not_confirmed', { status: 400 }),
     )
     vi.mocked(resendConfirmation).mockResolvedValue(null)
 
@@ -64,7 +64,7 @@ describe('SignInForm', () => {
 
   it('offers no link for wrong credentials', async () => {
     vi.mocked(signInWithPassword).mockResolvedValue(
-      new AuthApiError('Invalid login credentials', 400, 'invalid_credentials'),
+      new ORPCError('auth.invalid_credentials', { status: 400 }),
     )
 
     await signIn()

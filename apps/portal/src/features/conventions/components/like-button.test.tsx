@@ -8,7 +8,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { LikeButton } from './like-button'
 
 const api = vi.hoisted(() => {
-  const session: { status: string; session: object | null } = { status: 'ready', session: {} }
+  const session: { status: string; account: object | null } = { status: 'ready', account: {} }
   return { like: vi.fn(), unlike: vi.fn(), liked: vi.fn(), session }
 })
 
@@ -44,7 +44,8 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
-  api.session.session = {}
+  api.session.status = 'ready'
+  api.session.account = {}
   api.like.mockReset().mockResolvedValue(undefined)
   api.unlike.mockReset().mockResolvedValue(undefined)
   api.liked.mockReset().mockResolvedValue([])
@@ -73,7 +74,7 @@ describe('LikeButton', () => {
   })
 
   it('sends a signed-out visitor to sign in, and back to this page', () => {
-    api.session.session = null
+    api.session.account = null
     view()
 
     const link = screen.getByRole('link', { name: 'Sign in to like this item' })
@@ -81,6 +82,23 @@ describe('LikeButton', () => {
       `/login?redirect=${encodeURIComponent('/conventions/a/2027/program/item-1')}`,
     )
     expect(api.liked).not.toHaveBeenCalled()
+  })
+
+  it('keeps the way to sign-in while the API could not say who is signed in', () => {
+    api.session.status = 'unavailable'
+    api.session.account = null
+    view()
+
+    expect(screen.getByRole('link', { name: 'Sign in to like this item' })).toBeTruthy()
+  })
+
+  it('shows nothing while the account is still being asked for', () => {
+    api.session.status = 'loading'
+    api.session.account = null
+    view()
+
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('offers no new like once the edition has ended', async () => {
@@ -98,7 +116,7 @@ describe('LikeButton', () => {
   })
 
   it('asks a signed-out visitor nothing once the edition has ended', () => {
-    api.session.session = null
+    api.session.account = null
     view({ ended: true })
 
     expect(screen.queryByRole('link')).toBeNull()

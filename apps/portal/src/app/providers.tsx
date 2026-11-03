@@ -8,14 +8,15 @@ import { createQueryClient } from './query-client'
 
 /**
  * Nothing of one account survives its sign-out, or another account's session replacing it (a
- * confirmation or recovery link for another address): no cached answer.
+ * confirmation or recovery link for another address), here or in another tab of the portal
+ * (PLAN.md 7.4): no cached answer.
  */
 export function AccountChangeCleanup({ onChange }: { onChange: () => void }) {
   useEffect(
     () =>
       useSession.subscribe((state, previous) => {
-        const before = previous.session?.user.id
-        if (before && before !== state.session?.user.id) onChange()
+        const before = previous.account?.id
+        if (before && before !== state.account?.id) onChange()
       }),
     [onChange],
   )
@@ -23,15 +24,15 @@ export function AccountChangeCleanup({ onChange }: { onChange: () => void }) {
 }
 
 /**
- * A session that ends — sign-out, account deletion, a failed refresh — takes the account's language
- * with it: the signed-out portal follows the browser's languages again (PLAN.md 6, locale
- * detection).
+ * A session that ends — sign-out, account deletion, a failed refresh, the end announced by another
+ * tab — takes the account's language with it: the signed-out portal follows the browser's
+ * languages again (PLAN.md 6, locale detection).
  */
 export function SignedOutLocale() {
   useEffect(
     () =>
       useSession.subscribe((state, previous) => {
-        if (previous.session && !state.session) void loadLocale(pickLocale())
+        if (previous.account && !state.account) void loadLocale(pickLocale())
       }),
     [],
   )

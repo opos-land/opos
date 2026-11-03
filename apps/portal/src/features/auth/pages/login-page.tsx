@@ -1,24 +1,36 @@
 import { Trans } from '@lingui/react/macro'
+import { errorCodes } from '@opos/contract'
+import { ORPCError } from '@orpc/client'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { useSession } from '../../../shared/lib/session'
-import { linkClass, LoadingView } from '../../../shared/ui'
+import { ErrorMessage, linkClass, LoadingView } from '../../../shared/ui'
 import { AuthCard } from '../components/auth-card'
 import { GoogleButton } from '../components/google-button'
 import { SignInForm } from '../components/sign-in-form'
 import { safeRedirect, withRedirect } from '../model/redirect'
 
+/**
+ * The code a failed Google sign-in puts in `?error=` (PLAN.md 7.5), as an error the catalog can
+ * show. A value that is no code of the API shows nothing: no text of the address reaches the page.
+ */
+function returnedError(value: string | null) {
+  const code = errorCodes.find((known) => known === value)
+  return code ? new ORPCError(code, { status: 400 }) : null
+}
+
 export function LoginPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const status = useSession((state) => state.status)
-  const session = useSession((state) => state.session)
+  const account = useSession((state) => state.account)
   const returnTo = safeRedirect(params.get('redirect'))
 
   if (status === 'loading') return <LoadingView />
-  if (session) return <Navigate to={returnTo} replace />
+  if (account) return <Navigate to={returnTo} replace />
 
   return (
     <AuthCard title={<Trans>Sign in</Trans>}>
+      <ErrorMessage error={returnedError(params.get('error'))} />
       <SignInForm
         returnTo={returnTo}
         onSignedIn={() => void navigate(returnTo, { replace: true })}

@@ -1,78 +1,70 @@
-import { AUTH_CALLBACK_PATH, portalUrl, RESET_PASSWORD_PATH } from '../../../shared/config/routes'
-import { auth } from '../../../shared/lib/auth'
-import { activeLocale } from '../../../shared/lib/i18n'
-import { forgetAuthReturn, rememberAuthReturn } from '../model/auth-return'
+import { type verifySchema } from '@opos/contract'
+import { type z } from 'zod'
+import { env } from '../../../shared/config/env'
+import { accountClient } from '../../../shared/lib/api'
+import { signedIn, signedOut } from '../../../shared/lib/session'
+import { rememberAuthReturn } from '../model/auth-return'
+import { googleSignInUrl } from '../model/google-url'
 import { type Registration } from '../model/registration'
 
-// The feature's calls to Supabase Auth (PLAN.md 5.1, 7.5, 7.6). Each one resolves to the AuthError
-// it failed with, or null. A call that comes back through /auth/callback takes the page to return
-// to.
+// The feature's calls to the API's `auth` endpoints (PLAN.md 5.1). Each one resolves to the error
+// it failed with, or null. A call that sends a link takes the page to return to once it is opened.
 
-/** Where the Google return and the confirmation link come back to. */
-const callbackUrl = () => portalUrl(AUTH_CALLBACK_PATH)
+/** The link of an email: its `token_hash` and `type`. */
+export type VerifyLink = z.infer<typeof verifySchema>
 
-export async function signInWithPassword(credentials: { email: string; password: string }) {
-  return (await auth.signInWithPassword(credentials)).error
+async function attempt(call: () => Promise<unknown>): Promise<unknown> {
+  try {
+    await call()
+    return null
+  } catch (error) {
+    return error
+  }
 }
 
-/** Leaves for Google; on success the browser is already navigating away. */
-export async function signInWithGoogle(returnTo: string) {
-  rememberAuthReturn(returnTo)
-  const { error } = await auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: callbackUrl() },
+export const signInWithPassword = (body: { email: string; password: string }) =>
+  attempt(async () => signedIn(await accountClient.auth.signIn({ body })))
+
+/** Leaves for Google: a navigation of the browser, not a request of the API link (PLAN.md 7.5). */
+export function signInWithGoogle(returnTo: string) {
+  window.location.assign(googleSignInUrl(env.VITE_API_URL, returnTo))
+}
+
+/**
+ * Registration takes no password: the person chooses it once the link proves the address
+ * (PLAN.md 5.1). The names and the active language reach the account through the API.
+ */
+export const signUp = ({ email, firstName, lastName }: Registration, returnTo: string) =>
+  attempt(async () => {
+    await accountClient.auth.signUp({ body: { email, firstName, lastName } })
+    rememberAuthReturn(returnTo)
   })
-  if (error) forgetAuthReturn()
-  return error
-}
 
-/** Registration with a password; the account works once the link sent to the address is opened. */
-export async function signUp(registration: Registration, returnTo: string) {
-  const { email, password, firstName, lastName } = registration
-  const { error } = await auth.signUp({
-    email,
-    password,
-    options: {
-      data: { first_name: firstName, last_name: lastName, locale: activeLocale() },
-      emailRedirectTo: callbackUrl(),
-    },
+/** A new confirmation link, for a sign-in refused with `auth.email_not_confirmed`. */
+export const resendConfirmation = (email: string, returnTo: string) =>
+  attempt(async () => {
+    await accountClient.auth.resend({ body: { email } })
+    rememberAuthReturn(returnTo)
   })
-  if (!error) rememberAuthReturn(returnTo)
-  return error
-}
 
-/** A new confirmation link, for a sign-in refused with `email_not_confirmed`. */
-export async function resendConfirmation(email: string, returnTo: string) {
-  const { error } = await auth.resend({
-    type: 'signup',
-    email,
-    options: { emailRedirectTo: callbackUrl() },
+/** The API answers an unknown address as it answers a known one (PLAN.md 7.6). */
+export const sendPasswordLink = (email: string, returnTo: string) =>
+  attempt(async () => {
+    await accountClient.auth.passwordForgot({ body: { email } })
+    rememberAuthReturn(returnTo)
   })
-  if (!error) rememberAuthReturn(returnTo)
-  return error
-}
 
-/** Supabase Auth answers an unknown address as it answers a known one (PLAN.md 7.6). */
-export async function sendPasswordReset(email: string) {
-  const { error } = await auth.resetPasswordForEmail(email, {
-    redirectTo: portalUrl(RESET_PASSWORD_PATH),
+/** The button of `/auth/confirm`: redeems the link of an email and signs in (PLAN.md 5.1). */
+export const verifyLink = (body: VerifyLink) =>
+  attempt(async () => signedIn(await accountClient.auth.verify({ body })))
+
+/** Saves the password and ends the account's other sessions (PLAN.md 7.6). */
+export const setPassword = (password: string) =>
+  attempt(() => accountClient.auth.password({ body: { password } }))
+
+/** Ends this session only (PLAN.md 5.1). */
+export const signOut = () =>
+  attempt(async () => {
+    await accountClient.auth.signOut()
+    signedOut()
   })
-  return error
-}
-
-export async function exchangeCode(code: string) {
-  return (await auth.exchangeCodeForSession(code)).error
-}
-
-export async function setPassword(password: string) {
-  return (await auth.updateUser({ password })).error
-}
-
-/** Ends every session of the account but this one (PLAN.md 7.6). */
-export async function signOutOtherSessions() {
-  return (await auth.signOut({ scope: 'others' })).error
-}
-
-export async function signOut() {
-  return (await auth.signOut()).error
-}

@@ -19,7 +19,7 @@ const deleted = (state: unknown) =>
 export function LandingPage() {
   const location = useLocation()
   const status = useSession((state) => state.status)
-  const session = useSession((state) => state.session)
+  const account = useSession((state) => state.account)
 
   return (
     <div className="flex flex-col gap-8 py-8">
@@ -38,9 +38,9 @@ export function LandingPage() {
             It is free for conventions.
           </Trans>
         </p>
-        {status === 'ready' && (
+        {status !== 'loading' && (
           <div className="flex flex-col gap-3 sm:flex-row">
-            {session ? (
+            {account ? (
               <Link to={SIGNED_IN_HOME} className={primaryLink}>
                 <Trans>Go to your account</Trans>
               </Link>

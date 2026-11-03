@@ -12,18 +12,18 @@ import { linkClass } from '../shared/ui'
  */
 export function Layout() {
   const status = useSession((state) => state.status)
-  const session = useSession((state) => state.session)
+  const account = useSession((state) => state.account)
 
   return (
     <div className="flex min-h-screen flex-col">
-      {session && <AccountLocale />}
+      {account && <AccountLocale />}
       <header className="border-line bg-surface border-b">
         <nav className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="text-lg font-semibold tracking-wide">
             <Trans>OPOS</Trans>
           </Link>
-          {status === 'ready' &&
-            (session ? (
+          {status !== 'loading' &&
+            (account ? (
               <div className="flex items-center gap-4">
                 <Link to="/schedule" className={linkClass}>
                   <Trans>My schedule</Trans>

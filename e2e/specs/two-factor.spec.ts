@@ -1,9 +1,16 @@
 import { totp } from '@opos/db/totp'
 import { type Page } from '@playwright/test'
 import { type Accounts, expect, test } from '../fixtures'
-import { confirmLinkIn, waitForMail } from '../fixtures/mailpit'
+import { confirmLinkIn, invitationLinkIn, waitForMail } from '../fixtures/mailpit'
 import { accountIds } from '../fixtures/tenants'
-import { panelUrl, portalUrl, signInToPanel, signInToPortal, signOutOfPortal } from '../fixtures/ui'
+import {
+  panelUrl,
+  portalUrl,
+  signInToPanel,
+  signInToPortal,
+  signOutOfPanel,
+  signOutOfPortal,
+} from '../fixtures/ui'
 
 // PLAN.md 15.2, scenario 18: two-factor authentication through the screens of the portal and the
 // panel (PLAN.md 7.12). The code of the authenticator app is computed from the secret the card
@@ -190,6 +197,56 @@ test.describe('two-factor authentication', () => {
       await expect(page).toHaveURL(portalUrl('/account'))
     },
   )
+
+  test('a panel session waiting for its code reads /invitation, keeps an unspent link, and can sign out', async ({
+    page,
+    accounts,
+    tenants,
+  }) => {
+    // An invitation and an unspent confirmation link, both for an address of nobody's.
+    const head = await accounts.create()
+    const tenant = await tenants.create({ headEmail: head.email })
+    const edition = await tenants.addEdition(tenant.id, { name: 'Spring edition' })
+    const invitee = accounts.freshEmail('invitee')
+    await signInToPanel(page, head.email, head.password)
+    await page.goto(panelUrl(`/${tenant.slug}/team`))
+    const invite = page.getByRole('region', { name: 'Invite to the team' })
+    await invite.getByLabel('Email').fill(invitee)
+    await invite.getByLabel(`Programme in ${edition.name}`).selectOption('write')
+    await invite.getByRole('button', { name: 'Invite' }).click()
+    await expect(invite.getByRole('status')).toContainText(`An invitation has gone to ${invitee}.`)
+    await signOutOfPanel(page, head.email)
+    const invitation = invitationLinkIn(await waitForMail(invitee))
+    await page.goto(invitation)
+    const signUp = page.getByRole('region', { name: 'I am new to OPOS' })
+    await signUp.getByRole('button', { name: 'Create an account' }).click()
+    await expect(page.getByRole('status')).toContainText(`We sent a link to ${invitee}.`)
+    const link = confirmLinkIn(await waitForMail(invitee, 2))
+
+    // Another person's browser now waits for its code in the panel.
+    const { account } = await accountWithTwoFactor(page, accounts)
+    await signInToPanel(page, account.email, account.password)
+    await expect(page).toHaveURL(panelUrl('/auth/mfa'))
+
+    // The invitation keeps its preview and offers to finish signing in in place of joining.
+    await page.goto(invitation)
+    await expect(page.getByRole('heading', { name: 'Join the organizing team' })).toBeVisible()
+    await expect(
+      page.getByText(`You are invited to the organizing team of ${tenant.name}.`),
+    ).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Finish signing in' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'I am new to OPOS' })).toHaveCount(0)
+
+    // An unspent link keeps its button.
+    await page.goto(link)
+    await expect(page).toHaveURL(link)
+    await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible()
+
+    // The code screen lets the session go.
+    await page.goto(panelUrl('/auth/mfa'))
+    await page.getByRole('button', { name: 'Sign out' }).click()
+    await expect(page).toHaveURL(panelUrl('/login'))
+  })
 
   test('the panel on the same account asks for its own code', async ({ page, accounts }) => {
     const account = await accounts.create()

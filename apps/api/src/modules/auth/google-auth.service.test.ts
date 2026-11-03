@@ -103,6 +103,13 @@ describe('failureCode', () => {
   })
 
   it.each([
+    'invalid_credentials',
+    'email_not_confirmed',
+    'weak_password',
+    'same_password',
+    'email_address_invalid',
+    'over_email_send_rate_limit',
+    'google-failed',
     'unexpected_failure',
     'user_already_exists',
     'email_exists',
@@ -112,7 +119,7 @@ describe('failureCode', () => {
     '',
     undefined,
     ['otp_expired'],
-  ])('answers auth.google-failed to %j, which no code of the contract names', (code) => {
+  ])('answers auth.google-failed to %j, which a Google redirect does not carry', (code) => {
     expect(failureCode(code)).toBe('auth.google-failed')
   })
 })

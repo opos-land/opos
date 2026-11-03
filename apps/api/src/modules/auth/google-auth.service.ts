@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
-import { applicationSchema, type ErrorCode, errorCodes } from '@opos/contract'
+import { applicationSchema, type ErrorCode } from '@opos/contract'
 import { type SupportedStorage } from '@supabase/auth-js'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError } from '../../common/errors/api-error'
@@ -99,14 +99,24 @@ export function parseGoogleCookie(value: string | undefined): GoogleFlow | null 
 const GOOGLE_FAILED = 'auth.google-failed' satisfies ErrorCode
 
 /**
+ * The codes of the contract a redirect from Google sign-in can carry: Supabase Auth's expired
+ * flow and its request limit. The codes of the password and mail routes never reach it.
+ */
+const GOOGLE_REDIRECT_CODES = [
+  'auth.otp_expired',
+  'auth.over_request_rate_limit',
+] as const satisfies readonly ErrorCode[]
+
+/**
  * The `error=` code of the login page for an `error_code` Supabase Auth appended to the callback:
- * `auth.<error_code>` when the contract lists it, `auth.google-failed` for anything else. The
- * query is the visitor's to write, so no other text of it reaches a Location, and no code that
- * tells a registered address from an unknown one is ever added to the list.
+ * `auth.<error_code>` when it is one of `GOOGLE_REDIRECT_CODES`, `auth.google-failed` for anything
+ * else. The query is the visitor's to write, so no other text of it reaches a Location.
  */
 export function failureCode(errorCode: unknown): ErrorCode {
   const code = `auth.${typeof errorCode === 'string' ? errorCode : ''}`
-  return (errorCodes as readonly string[]).includes(code) ? (code as ErrorCode) : GOOGLE_FAILED
+  return (GOOGLE_REDIRECT_CODES as readonly string[]).includes(code)
+    ? (code as ErrorCode)
+    : GOOGLE_FAILED
 }
 
 /** A storage that lives as long as the request: auth-js writes its verifier here. */

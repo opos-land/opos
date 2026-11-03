@@ -375,7 +375,7 @@ msgstr "Too many attempts. Try again later."
 msgid "Too many emails sent. Try again in a few minutes."
 msgstr "Too many emails sent. Try again in a few minutes."
 
-#. Glossary term: two-factor authentication
+#. Glossary term: mfa
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "two-factor authentication"

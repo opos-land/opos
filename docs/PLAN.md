@@ -107,7 +107,8 @@ with typed `typescript-eslint` rules; for the frontends also `eslint-plugin-reac
 `config-conventional`, prettier.
 
 **Backend:** NestJS 11, Drizzle ORM + postgres-js, oRPC (`@orpc/nest`, `@orpc/server`) with zod 4,
-tsdown (bundles `src/main.ts` together with the workspace packages into `dist/main.js`),
+tsdown (bundles `src/main.ts` and the scripts of `tools` together with the workspace packages
+into `dist/`),
 `@orpc/openapi` + `@orpc/zod` + `@nestjs/swagger` (OpenAPI document generated from the contract,
 Swagger UI), `jose` (Supabase access tokens verified against the project's JWKS),
 `standardwebhooks` (send-email hook signatures), `@supabase/auth-js` (the API's Supabase Auth
@@ -262,8 +263,9 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
 - The `db:*` tasks exist only in `packages/db`, except `db:account:reset-2fa`, which runs in
   `apps/api` after `i18n:compile` and builds the script with the API; `test:e2e` only in `e2e`.
 - Only `apps/*` have a `build` script. `apps/api` builds with tsdown, which inlines the
-  `@opos/*` packages (their `src/index.ts`) into `dist/main.js` and keeps the rest of
-  `node_modules` external.
+  `@opos/*` packages (their `src/index.ts`) into `dist/`: one entry per program, `dist/main.js` and
+  `dist/scripts/*.js`, with the code they share in a chunk beside them; the rest of `node_modules`
+  stays external.
 - Frontend build-time variables (`VITE_*`) enter task hashes through turbo's framework inference.
   The API's variables are read at runtime and stay out of the hash
   ([11](#11-environment-variables)).
@@ -449,7 +451,11 @@ removes `accounts`, and with it every row that references it.
 Trigger `opos_on_auth_mfa_factor_changed` on `auth.mfa_factors` keeps `mfaEnabledAt` in step,
 through `public.opos_handle_mfa_factor_change()`
 ([0021_mfa_mirror_and_recovery_codes.sql](../packages/db/drizzle/0021_mfa_mirror_and_recovery_codes.sql)):
-`security definer`, `search_path = ''`, owned by `postgres`, with `execute` revoked. A factor
+`security definer`, `search_path = ''`, owned by `postgres`, with `execute` revoked. It starts
+with `perform 1 from public.accounts where id = account_id for no key update`, as invariant 2's
+trigger does, so two overlapping transactions that remove two verified factors serialise on the
+account and the later one reads the earlier one's commit
+([0023_mfa_mirror_lock.sql](../packages/db/drizzle/0023_mfa_mirror_lock.sql)). A factor
 reaching `verified` sets it, removing the last verified factor clears it, a second verified factor
 or the removal of one of two changes nothing, and an unverified factor leaves it `null`.
 For an account that held a verified factor before the trigger,
@@ -598,7 +604,8 @@ Every RLS-covered table has an index starting with `tenantId`.
 11. **A scanner works only inside its edition** — every scanner query filters on the device's
     `editionId`; a ticket from another edition is `404`.
 12. **`accounts.mfaEnabledAt` is set exactly while the account holds a verified factor** — trigger
-    `opos_on_auth_mfa_factor_changed` ([4.2](#42-global-tables)).
+    `opos_on_auth_mfa_factor_changed` ([4.2](#42-global-tables)), which locks the account row before
+    it counts the factors, so two overlapping removals cannot both leave it set.
 
 ### 4.6 Tenant isolation — RLS in Postgres
 
@@ -1799,10 +1806,10 @@ for itself ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); no role r
 | Method | Path | Requires | Does | Answers |
 |---|---|---|---|---|
 | POST | `/auth/mfa/enroll` | account, recent sign-in, no verified factor | removes a stale unverified factor, `mfa.enroll({ factorType: 'totp' })` | `200` the factor, a `data:` SVG QR code and the secret; `409` `mfa.already-enabled` |
-| POST | `/auth/mfa/enable` | account, own `factorId` | stores the recovery codes, `challengeAndVerify`, sets `aal2` cookies | `200` the ten recovery codes; `400` `mfa.code-invalid`; `404` `request.not-found` for a foreign `factorId`; `409` `mfa.already-enabled` on an already verified factor |
+| POST | `/auth/mfa/enable` | account, own `factorId` | stores the recovery codes, `challengeAndVerify`, reads the codes back, sets `aal2` cookies | `200` the ten recovery codes; `400` `mfa.code-invalid`; `404` `request.not-found` for a foreign `factorId`; `409` `mfa.already-enabled` on an already verified factor, or when a request racing this one replaced its codes |
 | POST | `/auth/mfa/verify` | `aal1` session with 2FA | `challengeAndVerify` on the account's own factor, sets `aal2` cookies | `204`; `400` `mfa.code-invalid`; `409` `mfa.not-required` on an account without 2FA or at `aal2` |
-| POST | `/auth/mfa/recover` | `aal1` session with 2FA | finds an unused code, admin removes the factors, then marks the code used and removes the unused ones, sends the email | `204`; `400` `mfa.code-invalid`; `409` `mfa.not-required` on an account without 2FA or at `aal2` |
-| DELETE | `/auth/mfa` | `aal2`, recent sign-in | removes the factors and unused codes, sends the email | `204`; `401` `session.mfa-required` below `aal2`; `404` `mfa.not-enabled` with no factor |
+| POST | `/auth/mfa/recover` | `aal1` session with 2FA | finds an unused code, admin removes the factors, ends the account's other sessions, then marks the code used and removes the unused ones, sends the email | `204`; `400` `mfa.code-invalid`; `409` `mfa.not-required` on an account without 2FA or at `aal2` |
+| DELETE | `/auth/mfa` | `aal2`, recent sign-in | removes the factors, ends the account's other sessions, removes the unused codes, sends the email | `204`; `401` `session.mfa-required` below `aal2`; `404` `mfa.not-enabled` with no factor |
 
 A missing recent sign-in answers `401` `session.reauthentication-required`
 ([7.4](#74-authorization)). Factors come from the session's own `listFactors`, never from the
@@ -1834,8 +1841,18 @@ characters from `crypto.randomBytes`, stored as SHA-256 hashes, lowercase hex, i
 [RecoveryCodesRepository](../apps/api/src/modules/auth/recovery-codes.repository.ts). `recover`
 finds an unused code by its hash among the account's own, ignoring case, spaces and hyphens. `enable`
 stores the codes before it verifies the factor, in place of any unused codes the account still holds,
-so an account never holds a verified factor without codes, and a code left unused by a failed marking
-cannot work once 2FA is back on. Using one removes the
+so a code left unused by a failed marking cannot work once 2FA is back on. A failed store leaves
+nothing verified and a retry works, whereas verifying first would leave a verified factor with no
+codes and a `409` on the retry. A wrong code leaves hashes nobody holds: `recover` needs the mirror
+on, and the next `enable` replaces them. Two requests that race each replace the other's codes, so
+`enable` reads its own codes back once the factor is verified and answers `409`
+`mfa.already-enabled` when they are gone, still setting the `aal2` cookies; every code an answer
+returns is stored and unused.
+
+**When the answer of `enable` never arrives,** the factor is verified and the codes are held by
+nobody, a retry answers `409`, and no route issues codes again. The person signs in, enters a code
+from the app (`verify`), turns 2FA off (`DELETE /auth/mfa`), and starts again with `enroll` and
+`enable`. Using one removes the
 factor, so the person signs in and may turn 2FA on again, and an email tells them, in the account's
 locale ([6](#6-localization)); `DELETE /auth/mfa` sends the same email.
 
@@ -1843,7 +1860,30 @@ A recovery code counts as used only once factor removal succeeds, so a failed re
 `recover` removes the factors first, and then marks the code with
 `update ... where usedAt is null returning`. A failed email after a successful `recover` or
 `DELETE /auth/mfa` still answers `204` and is logged, since the removal already happened and a retry
-would fail.
+would fail. The notice goes out once the factors are gone, whatever fails after that.
+
+**Sessions.** Removing a factor, through the admin API or by any other means, ends no session at
+Supabase Auth, and a session at `aal2` from before keeps that claim; once a new factor is enabled
+the guard would admit it by the token's `aal` without that session ever proving the new factor.
+So `recover` and `DELETE /auth/mfa` call `signOut({ scope: 'others' })` once the factors are gone,
+from the caller's own session, which stays, as a password change does
+([7.6](#76-password-reset)). A failed sign-out is logged and neither undoes the removal nor
+changes the `204`. An access token already issued works until it expires, as after a password
+change. `pnpm db:account:reset-2fa` has no session to call it with, and the admin API cannot sign
+a user out without one's token: the account's other sessions stay until the person changes the
+password ([14](#resetting-two-factor-authentication)).
+
+**A replayed code.** A TOTP code used again within its own 30 second step is accepted: Supabase
+Auth does not remember codes, and the API cannot tell a step from a bare code. A code outside its
+window, such as one from an hour ago, is refused with `mfa.code-invalid`. The integration tests pin
+the behaviour against the real server, so an upgrade that changes it is noticed.
+
+**The browser's cookies.** Every call to Supabase Auth of these routes runs on one client that
+holds the request's session, and whatever session that client ends with replaces the browser's
+cookies whenever its access token differs from the request's, on success and on failure alike: a
+refresh inside the client spends the refresh token the browser holds, near the end of an access
+token, and a wrong code must not leave the browser with a spent one. A session Supabase Auth no
+longer knows clears them instead.
 
 **A lost device and lost codes.** There is no self-service route. The admin, after checking the
 person's identity, runs `pnpm db:account:reset-2fa <email>` through `tools`
@@ -2806,8 +2846,13 @@ pnpm db:account:reset-2fa <email>
   codes, and sends the same email as `recover`, in the account's locale.
 - The email is matched case-insensitively against a confirmed account ([4.2](#42-global-tables)).
 - Any refusal changes nothing and exits non-zero with a code: `account.not-found`,
-  `account.unconfirmed`, `mfa.not-enabled` (an account with no factor).
-- A failed email is reported, and the removal stands.
+  `account.unconfirmed`, `mfa.not-enabled` (an account with no verified factor, which includes one
+  that holds only an unverified factor: 2FA is not on there).
+- A failed email is reported with its reason, and the removal stands.
+- The account's other sessions stay: the script has no session to sign out from, and the admin API
+  cannot sign a user out without one's token. A session at `aal2` from before keeps that claim until
+  its refresh token ends, which the person does by changing the password
+  ([7.12](#712-two-factor-authentication)).
 - In production: `docker compose -f docker-compose.deploy.yml run --rm tools pnpm db:account:reset-2fa ...`
   ([13](#images)).
 
@@ -2900,7 +2945,7 @@ file that finds the port taken waits for the one holding it
 | requests that change state | with a session cookie, a foreign `Origin`, another subdomain of the site included, or none -> `403` `request.origin-denied` and nothing changed; a form-encoded body -> `415`; the same request from `PANEL_URL` or `PORTAL_URL` goes through |
 | auth endpoints | every operation of [5.1](#51-auth--sign-in-through-the-api) against the local stack; sign-up takes no password, and a password set on an address before its confirmation is refused as soon as `POST /auth/verify` answers, before any `PUT /auth/password`, and a failed replacement hands out no session; sign-up, resend and password reset answer `202` on every call for a registered and for an unknown address alike, an empty mail bucket included; every row of the refusal table of [5.1](#51-auth--sign-in-through-the-api); every call to Supabase Auth carries the secret key and the client's full address in `Sb-Forwarded-For`, never the `/64` and never the visitor's `User-Agent`; two requests share no Supabase Auth session; the Google client alone runs PKCE, so a sign-up carries no challenge; `GET /auth/google` takes no `redirect` outside the application and no `app` but the two, and a callback without its `opos_google` cookie, with another browser's cookie or past 10 minutes signs nobody in; a cookie whose path was tampered with still returns to the application's own start page; the `error` of Supabase Auth reaches the login page as a code the contract lists or as `auth.google-failed`, nothing else of the query; neither a body nor a `Location` carries the verifier; `GET /me` names `password` for `email` and `google` among the token's providers |
 | account lifecycle | a new `auth.users` row creates `accounts` with the metadata; an email change updates it; the confirmation link of a sign-up sets `emailConfirmedAt`; `DELETE /me` without a recent sign-in, or with only an older one in `amr` -> `401` `session.reauthentication-required`, and the same for `PUT /auth/password`, which accepts the session of a confirmation or recovery link redeemed less than 5 minutes before; the last `head` of any of its tenants -> `409` and nothing deleted; otherwise `204`, and the user, `accounts`, memberships and `attendees` are gone and the old token gets `401`; a transport failure or a `5xx` from the admin API -> `503` `server.unavailable`, and a `401` or `403` from it -> `500` `server.error` |
-| two-factor authentication | `enroll` needs a recent sign-in and answers `409` `mfa.already-enabled` with 2FA on; `enable` with a `factorId` of another account -> `404` `request.not-found`, on an already verified factor -> `409` `mfa.already-enabled`, and with a right code sets `aal2` and returns ten codes once, stored hashed, with no plaintext in `account_recovery_codes`; `verify` with a right code raises the session to `aal2`, a refresh keeps it, and a wrong code or one from an hour ago -> `400` `mfa.code-invalid`; the eleventh attempt in 15 minutes -> `429` `request.rate-limited`, another account unaffected; `verify` and `recover` on an account without 2FA or at `aal2` -> `409` `mfa.not-required`; `recover` consumes a code once, removes the factor and clears `mfaEnabledAt`; a used code and one of another account are refused; a factor removal that fails spends no code; `recover` and `DELETE /auth/mfa` send the email in the account's locale, and a failed email still answers `204` and is logged; `DELETE /auth/mfa` needs a recent sign-in, answers `401` `session.mfa-required` below `aal2` and `404` `mfa.not-enabled` with no factor; `pnpm db:account:reset-2fa` removes the factors and unused codes and sends the email, and refuses an unknown or unconfirmed address and an account with no factor; `DELETE /me` at `aal2` removes the factors and codes with the user; an `aal1` token on an account with 2FA -> `401` `session.mfa-required` on `GET /me` and on a tenant route before any permission check, `POST /auth/sign-out` and `POST /auth/refresh` work at `aal1`, an `aal2` token passes, an account without 2FA passes at `aal1`, and an access token from before `enable` loses access at once; a right password sets the cookies and answers `session.mfa-required`; a recovery link on an account with 2FA cannot change the password at `aal1`; the Google callback leads to the code screen; a refresh of an `aal1` session stays `aal1` |
+| two-factor authentication | `enroll` needs a recent sign-in and answers `409` `mfa.already-enabled` with 2FA on; `enable` with a `factorId` of another account -> `404` `request.not-found`, on an already verified factor -> `409` `mfa.already-enabled`, and with a right code sets `aal2` and returns ten codes once, stored hashed, with no plaintext in `account_recovery_codes`; `verify` with a right code raises the session to `aal2`, a refresh keeps it, and a wrong code or one from an hour ago -> `400` `mfa.code-invalid`; the eleventh attempt in 15 minutes -> `429` `request.rate-limited`, another account unaffected; `verify` and `recover` on an account without 2FA or at `aal2` -> `409` `mfa.not-required`; `recover` consumes a code once, removes the factor and clears `mfaEnabledAt`; a used code and one of another account are refused; a factor removal that fails spends no code; `recover` and `DELETE /auth/mfa` send the email in the account's locale, and a failed email still answers `204` and is logged, and the notice goes out although marking or removing the codes fails after the factors are gone; `recover` and `DELETE /auth/mfa` end the account's other sessions (a browser at `aal2` from before gets `401` `session.invalid` on refresh) and keep the caller's, and a failed sign-out changes nothing; `recover` with an unused code of another account is refused and leaves that code unused (the account condition of the code lookup and of the marking is mutation-tested); a wrong code or a refresh inside the client still sets the refreshed session's cookies; two racing `enable` requests never return a code that is not stored and unused; a code is accepted a second time within its step; a failure of the code store leaks no hash; `DELETE /auth/mfa` needs a recent sign-in, answers `401` `session.mfa-required` below `aal2` and `404` `mfa.not-enabled` with no factor; `pnpm db:account:reset-2fa` removes the factors and unused codes and sends the email, and refuses an unknown or unconfirmed address and an account with no verified factor, an unverified-only one included; `DELETE /me` at `aal2` removes the factors and codes with the user; an `aal1` token on an account with 2FA -> `401` `session.mfa-required` on `GET /me` and on a tenant route before any permission check, `POST /auth/sign-out` and `POST /auth/refresh` work at `aal1`, an `aal2` token passes, an account without 2FA passes at `aal1`, and an access token from before `enable` loses access at once; a right password sets the cookies and answers `session.mfa-required`; a recovery link on an account with 2FA cannot change the password at `aal1`; the Google callback leads to the code screen; a refresh of an `aal1` session stays `aal1` |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a link to the calling application's `/auth/confirm` that names no Supabase address, and `POST /auth/verify` redeems the `signup` and `recovery` ones; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per account across routes, and per address without a valid token; a forged token, and one that cannot be checked while the keys are unavailable, counts against the address, never the account it names; another address or account is unaffected; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` (per address) and `POST /tenants/current/members` (per tenant) included |
 | CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, with `Access-Control-Allow-Credentials: true`; a foreign origin gets neither header; exactly the four allowed request headers; `Retry-After` exposed |

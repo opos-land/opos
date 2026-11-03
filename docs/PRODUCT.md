@@ -434,13 +434,16 @@ after the code the page asks for the new password, without needing the link agai
 account deletion asks for it as well, and the deletion goes on after the code. Turning it on shows ten
 one-time recovery codes, once, and the platform keeps only their hashes. A recovery code stands in for
 a lost device: using one turns two-factor authentication off, so the person signs in and may turn it
-on again, and an email tells them. A recovery code that could not turn it off stays usable. Turning it
+on again, and an email tells them. Turning it off, either way, signs the account out on every other
+device. A recovery code that could not turn it off stays usable. Turning it
 off in the account settings needs the code and a sign-in from the last few minutes, and sends the same
 email. Turning it off removes the unused recovery codes; the hash of a code already used stays as a
 record until the account is deleted.
 
 A person who has lost both the device and the recovery codes cannot turn it off themselves. They ask
 the admin, who checks that it is them and removes it with a script, and the same email tells them.
+The script cannot sign the account out elsewhere: a device that was signed in keeps its session until
+the person changes the password.
 
 **An email address leads to an account only once it is confirmed.** Wherever the platform finds an
 account by its email address — the admin appointing a convention's first head organizer, the admin

@@ -6,7 +6,7 @@ if (existsSync('.env')) process.loadEnvFile('.env')
 
 export default defineConfig({
   test: {
-    include: ['test/**/*.test.ts'],
+    include: ['test/**/*.test.ts', 'src/**/*.test.ts'],
     globalSetup: ['test/global-setup.ts'],
     fileParallelism: false,
   },

@@ -24,3 +24,24 @@ paths = [
   '''^apps/api/\.env\.example$''',
   '''^docs/PLAN\.md$''',
 ]
+
+# History scan. This commit carried a fixed demo TOTP secret in the seed, the RFC 6238 test vector;
+# the seed no longer holds it.
+[[allowlists]]
+description = "the RFC 6238 test vector as the seed's demo secret, in one past commit"
+condition = "AND"
+commits = [
+  "293b97a64e90b8010c05b606334040e8ed2085da",
+]
+paths = [
+  '''^packages/db/src/seed\.ts$''',
+]
+
+# Tree and history scans. Test fixtures, by path alone: a squash merge gives their commits a new
+# hash. The first holds the RFC 6238 test vector, the second a made-up key its check must refuse.
+[[allowlists]]
+description = "test fixtures: the RFC 6238 vector and the boundary check's fake key"
+paths = [
+  '''^packages/db/src/totp\.test\.ts$''',
+  '''^scripts/bff-boundary\.test\.mjs$''',
+]

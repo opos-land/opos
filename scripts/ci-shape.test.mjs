@@ -101,15 +101,29 @@ test('gitleaks keeps its default rules', () => {
   assert.match(gitleaks, /\[extend\]\s*\n\s*useDefault = true/)
 })
 
-test('the history allowlist needs both a listed commit and a listed path', () => {
+/** The `[[allowlists]]` tables of the gitleaks configuration, each as its text and path entries. */
+function gitleaksAllowlists() {
+  return read('../.gitleaks.toml')
+    .split('[[allowlists]]')
+    .slice(1)
+    .map((text) => {
+      const list = /paths = \[([^\]]*)\]/.exec(text)
+      assert.ok(list, 'an allowlist names its paths')
+      const entries = [...list[1].matchAll(/'''(.*?)'''|"([^"]*)"/g)].map((m) => m[1] ?? m[2])
+      assert.ok(entries.length > 0)
+      // a path entry is a regular expression: strip its anchors and escapes before comparing
+      const paths = entries.map((entry) =>
+        entry.replace(/^\^/, '').replace(/\$$/, '').replaceAll('\\', ''),
+      )
+      return { text, paths }
+    })
+}
+
+test('a history allowlist needs both a listed commit and a listed path', () => {
+  const histories = gitleaksAllowlists().filter(({ text }) => text.includes('commits = ['))
+  assert.equal(histories.length, 2)
+  for (const { text } of histories) assert.match(text, /condition = "AND"/)
   const gitleaks = read('../.gitleaks.toml')
-  assert.match(gitleaks, /condition = "AND"/)
-  // one allowlist, for the history: nothing lets a finding through without a listed commit
-  const lists = gitleaks.split('[[allowlists]]').slice(1)
-  assert.equal(lists.length, 1)
-  const [history] = lists
-  assert.match(history, /condition = "AND"/)
-  assert.match(history, /commits = \[/)
   for (const short of [
     '7e5f8cc',
     '4149f7b',
@@ -118,24 +132,36 @@ test('the history allowlist needs both a listed commit and a listed path', () =>
     '5965ad6',
     '3321ce2',
     '670cf95',
+    '293b97a',
   ]) {
     assert.match(gitleaks, new RegExp(`"${short}[0-9a-f]{33}"`))
   }
 })
 
-test('no allowlist covers a path beyond the two files the hits are in', () => {
-  const gitleaks = read('../.gitleaks.toml')
-  const allowed = new Set(['apps/api/.env.example', 'docs/PLAN.md'])
-  const lists = [...gitleaks.matchAll(/paths = \[([^\]]*)\]/g)]
-  assert.ok(lists.length > 0)
-  for (const list of lists) {
-    const entries = [...list[1].matchAll(/'''(.*?)'''|"([^"]*)"/g)].map((m) => m[1] ?? m[2])
-    assert.ok(entries.length > 0)
-    for (const entry of entries) {
-      // a path entry is a regular expression: strip its anchors and escapes before comparing
-      const literal = entry.replace(/^\^/, '').replace(/\$$/, '').replaceAll('\\', '')
-      assert.ok(allowed.has(literal), `unexpected allowlist path ${entry}`)
-    }
+test('the commit that once held the demo secret is allowed for the seed alone', () => {
+  const seed = gitleaksAllowlists().find(({ text }) => text.includes('293b97a'))
+  assert.deepEqual(seed.paths, ['packages/db/src/seed.ts'])
+})
+
+test('only the test fixtures are allowed by path alone, wherever a squash merge puts them', () => {
+  const fixtures = gitleaksAllowlists().filter(({ text }) => !text.includes('commits = ['))
+  assert.equal(fixtures.length, 1)
+  assert.deepEqual(fixtures[0].paths.sort(), [
+    'packages/db/src/totp.test.ts',
+    'scripts/bff-boundary.test.mjs',
+  ])
+})
+
+test('no allowlist covers a path beyond the files the hits are in', () => {
+  const allowed = new Set([
+    'apps/api/.env.example',
+    'docs/PLAN.md',
+    'packages/db/src/seed.ts',
+    'packages/db/src/totp.test.ts',
+    'scripts/bff-boundary.test.mjs',
+  ])
+  for (const { paths } of gitleaksAllowlists()) {
+    for (const path of paths) assert.ok(allowed.has(path), `unexpected allowlist path ${path}`)
   }
 })
 

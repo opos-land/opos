@@ -155,6 +155,19 @@ export const emailConfirmed = async (accountId: string) =>
     )
   )[0]?.confirmed
 
+/** The account row an address has, the unconfirmed ones included. */
+export const accountByEmail = async (email: string) =>
+  (
+    await db.execute<{
+      id: string
+      firstName: string | null
+      lastName: string | null
+      locale: string | null
+    }>(
+      sql`select id, first_name as "firstName", last_name as "lastName", locale from accounts where email = ${email}`,
+    )
+  )[0]
+
 export const closeTenantDb = () => db.$client.end()
 
 /**

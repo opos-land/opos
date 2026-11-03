@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { authUrl, loadEnv } from '../src/config/env'
 import { createApp } from './app'
 import { createAccount, deleteCreatedAccounts, deleteLater, signIn, TEST_PASSWORD } from './auth'
+import { HOOK_PORT_TIMEOUT_MS, listenOnHookPort } from './hook-port'
 import { confirmLinkIn, deleteMail, verifyLinkIn, waitForMail } from './mailpit'
 import { closeTenantDb, emailConfirmed } from './tenants'
 
@@ -66,8 +67,8 @@ const hookBody = (type: string, email = newAddress()) => ({
 
 beforeAll(async () => {
   app = await createApp()
-  await app.listen(env.PORT)
-})
+  await listenOnHookPort(app, env.PORT)
+}, HOOK_PORT_TIMEOUT_MS)
 
 afterAll(async () => {
   await deleteCreatedAccounts()

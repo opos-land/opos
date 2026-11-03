@@ -9,6 +9,8 @@ import { type RateLimit } from './rate-limit'
  * names.
  */
 export const ROUTE_RATE_LIMITS = {
+  /** Sign-up, resend, sign-in, verify, forgot and Google: one counter, per client address. */
+  authentication: { limit: 300, ttl: 300_000 },
   /** `POST /tenants/current/members`, per tenant. */
   invitations: { limit: 20, ttl: 3_600_000 },
   /** `GET /invitations/preview`, per client address. */

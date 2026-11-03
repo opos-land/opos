@@ -54,6 +54,7 @@ describe('RouteRateLimiter', () => {
 
   it('sets the limits of PLAN.md 7.9', () => {
     expect(ROUTE_RATE_LIMITS).toEqual({
+      authentication: { limit: 300, ttl: 300_000 },
       invitations: { limit: 20, ttl: 3_600_000 },
       invitationPreview: { limit: 30, ttl: 3_600_000 },
       speakers: { limit: 100, ttl: 3_600_000 },

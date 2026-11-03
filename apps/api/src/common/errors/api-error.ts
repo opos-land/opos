@@ -39,3 +39,11 @@ export const forbidden = (message = 'Insufficient permissions') =>
   new ApiError(403, 'permission.denied', message)
 
 export const notFound = (what: string) => new ApiError(404, 'request.not-found', `Unknown ${what}`)
+
+/** The request did not come from the panel or the portal (PLAN.md 5.1, 7.4). */
+export const originDenied = () =>
+  new ApiError(
+    403,
+    'request.origin-denied',
+    'The Origin of this request is not the panel or the portal',
+  )

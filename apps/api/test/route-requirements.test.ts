@@ -29,6 +29,13 @@ import { type Level, type Need, tenantRequirements } from './route-needs'
 /** Routes without sign-in; every other route that is not a tenant route needs an account. */
 const publicRoutes = [
   'health.check',
+  'auth.signUp',
+  'auth.resend',
+  'auth.verify',
+  'auth.signIn',
+  'auth.refresh',
+  'auth.signOut',
+  'auth.passwordForgot',
   'invitations.preview',
   'public.tenant',
   'public.editions',

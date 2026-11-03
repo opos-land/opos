@@ -187,9 +187,9 @@ opos/
                          #   account deletion), TenantsModule (tenant, team, invitations),
                          #   EditionsModule, ProgramModule (items and speakers), PublicModule and
                          #   EngagementModule (without reviews),
-                         #   AuthModule (send-email hook, Supabase Auth admin
-                         #   client), MailModule (Supabase Auth and invitation emails), tests;
-                         #   still to come: the auth endpoints and session cookies (5.1, 7.4),
+                         #   AuthModule (auth endpoints and session cookies, Supabase Auth clients,
+                         #   send-email hook, admin client), MailModule (Supabase Auth and
+                         #   invitation emails), tests; still to come: Google sign-in (7.5),
                          #   two-factor authentication (7.12)
       src/
         common/
@@ -212,11 +212,11 @@ opos/
   e2e/                   # built: Playwright config, fixtures (stack, Mailpit, admin API, tenants,
                          #   sign-in) with their unit tests, specs (15.2)
   packages/
-    contract/            # built: common schemas, error codes, health, me (profile, memberships, deletion),
+    contract/            # built: common schemas, error codes, health, auth (sign-in, sessions, password),
+                         #   me (profile, memberships, deletion),
                          #   tenants (without payment config), editions, invitations, program, public and
                          #   engagement (without reviews)
       src/
-        auth.ts
         auth-mfa.ts
         shop.ts
         tickets.ts
@@ -876,18 +876,26 @@ application the email links lead to. The two Google routes are navigations, whic
 `Origin`: `GET /auth/google` takes the application from its `app` query and the callback from the
 `opos_google` cookie. No endpoint returns a token.
 
-| Method | Path | Input | Does | Answers |
-|---|---|---|---|---|
-| POST | `/auth/sign-up` | `{ email, firstName?, lastName? }`, no password | `signUp` with a random password the API never returns or keeps, `data: { first_name, last_name, locale }`, the locale detected from `Accept-Language` ([6](#locale-detection)), and `emailRedirectTo = <app URL>/auth/confirm`; the person chooses the password only after the link proves the address ([below](#the-password-comes-after-the-confirmation)) | `202`, the same for an address already registered |
-| POST | `/auth/resend` | `{ email }` | `resend({ type: 'signup' })` with the same `emailRedirectTo` | `202` |
-| POST | `/auth/verify` | `{ tokenHash, type }`, `type` one of `signup`, `recovery` | `verifyOtp({ token_hash, type })` for the link from an email ([10](#send-email-hook)), called by the button of `/auth/confirm`, never on opening the link; sets the session cookies | `200` the account as `GET /me`; `401` `session.mfa-required` on an account with two-factor authentication, its `aal1` cookies set |
-| POST | `/auth/sign-in` | `{ email, password }` | `signInWithPassword`; sets the session cookies | `200` the account as `GET /me`; `401` `session.mfa-required` on an account with two-factor authentication, its `aal1` cookies set |
-| GET | `/auth/google` | query `app` (`portal`, `panel`), `redirect` (a path of that application) | starts Google sign-in ([7.5](#75-google-oauth)) | `302` to Supabase Auth |
-| GET | `/auth/google/callback` | query `code` or `error` | finishes Google sign-in; sets the session cookies | `302` to the application; on an account with two-factor authentication to its `/auth/mfa` |
-| POST | `/auth/refresh` | — | `refreshSession` with the refresh token from the cookie; sets the new cookies | `204`; `401` `session.invalid` with both cookies cleared; `503` `server.unavailable` with both cookies kept |
-| POST | `/auth/sign-out` | — | `signOut({ scope: 'local' })` — this session only, so signing out of the portal leaves the panel signed in; with only the refresh cookie left, refreshes first to get the access token `signOut` needs; clears the cookies | `204`, also without a session or when the refresh fails |
-| POST | `/auth/password/forgot` | `{ email }` | `resetPasswordForEmail(email, { redirectTo: <app URL>/auth/confirm })` ([7.6](#76-password-reset)) | `202` whatever the address |
-| PUT | `/auth/password` | `{ password }` | requires a session with a recent sign-in ([7.4](#74-authorization)), else `401` `session.reauthentication-required`; `updateUser({ password })`, then `signOut({ scope: 'others' })`; a `same_password` refusal still ends the other sessions, so a retry after a failed sign-out completes the change | `204` |
+Request and response schemas: [auth.ts](../packages/contract/src/auth.ts). A sign-up takes no
+password, and a body with any field the schema does not name, a password included, is `400`
+`request.invalid`.
+
+| Method | Path | Does | Answers |
+|---|---|---|---|
+| POST | `/auth/sign-up` | `signUp` with a random password the API never returns or keeps, `data: { first_name, last_name, locale }`, the locale detected from `Accept-Language` ([6](#locale-detection)), and `emailRedirectTo = <app URL>/auth/confirm`; the person chooses the password only after the link proves the address ([below](#the-password-comes-after-the-confirmation)) | `202`, the same for an address already registered |
+| POST | `/auth/resend` | `resend({ type: 'signup' })` with the same `emailRedirectTo` | `202` |
+| POST | `/auth/verify` | `verifyOtp({ token_hash, type })` for the link from an email ([10](#send-email-hook)), `type` one of `signup`, `recovery`, called by the button of `/auth/confirm`, never on opening the link; sets the session cookies | `200` the account as `GET /me`; `401` `session.mfa-required` on an account with two-factor authentication, its `aal1` cookies set |
+| POST | `/auth/sign-in` | `signInWithPassword`; sets the session cookies | `200` the account as `GET /me`; `401` `session.mfa-required` on an account with two-factor authentication, its `aal1` cookies set |
+| GET | `/auth/google` | starts Google sign-in ([7.5](#75-google-oauth)); query `app` (`portal`, `panel`), `redirect` (a path of that application) | `302` to Supabase Auth |
+| GET | `/auth/google/callback` | finishes Google sign-in; query `code` or `error`; sets the session cookies | `302` to the application; on an account with two-factor authentication to its `/auth/mfa` |
+| POST | `/auth/refresh` | `refreshSession` with the refresh token from the cookie; sets the new cookies | `204`; `401` `session.invalid` with both cookies cleared; `503` `server.unavailable` with both cookies kept |
+| POST | `/auth/sign-out` | `signOut({ scope: 'local' })` — this session only, so signing out of the portal leaves the panel signed in; with only the refresh cookie left, refreshes first to get the access token `signOut` needs; clears the cookies | `204`, also without a session or when the refresh fails |
+| POST | `/auth/password/forgot` | `resetPasswordForEmail(email, { redirectTo: <app URL>/auth/confirm })` ([7.6](#76-password-reset)) | `202` whatever the address |
+| PUT | `/auth/password` | requires a session with a recent sign-in ([7.4](#74-authorization)), else `401` `session.reauthentication-required`; `updateUser({ password })`, then `signOut({ scope: 'others' })`; a `same_password` refusal still ends the other sessions, so a retry after a failed sign-out completes the change | `204` |
+
+Every `auth` route but the two Google ones reads the application from the `Origin` and answers `403`
+`request.origin-denied` without the `Origin` of one. The six routes of the limit in
+[7.9](#79-rate-limiting) count it before they call Supabase Auth.
 
 The two `GET` routes are plain Nest routes — a redirect, not JSON — documented in the OpenAPI
 document like `GET /health`. Every other route is in the contract (`contract.auth.*`), built from
@@ -900,12 +908,12 @@ shares only the `503` row:
 
 | Supabase Auth answers | The API answers | Session cookies |
 |---|---|---|
-| the session is gone: `session_not_found`, `refresh_token_not_found`, `refresh_token_already_used`, `bad_jwt`, `user_not_found`, or `AuthSessionMissingError` from auth-js, which carries no code | `401` `session.invalid` | cleared |
+| the session is gone: `session_not_found`, `refresh_token_not_found`, `refresh_token_already_used`, `bad_jwt`, `user_not_found`, or `AuthSessionMissingError` from auth-js, which carries no code; on `POST /auth/refresh` and `POST /auth/sign-out` also `validation_failed`, a refresh cookie that is no token at all | `401` `session.invalid` | cleared |
 | `insufficient_aal` | `401` `session.mfa-required` ([7.12](#712-two-factor-authentication)) | kept |
 | `mfa_verification_failed` | `400` `mfa.code-invalid` ([7.12](#712-two-factor-authentication)) | kept |
-| a code the contract lists: `email_not_confirmed`, `invalid_credentials`, `weak_password`, `same_password`, `otp_expired`, `email_address_invalid`, `over_email_send_rate_limit`, `over_request_rate_limit` | `auth.<error_code>` with Supabase Auth's status | kept |
-| a transport failure or any `5xx`, from the admin API too | `503` `server.unavailable`, `Retry-After: 30` | kept |
-| anything else | `500` `server.error`, logged | kept |
+| a code the contract lists: `email_not_confirmed`, `invalid_credentials`, `weak_password`, `same_password`, `otp_expired`, `email_address_invalid`, `over_email_send_rate_limit`, `over_request_rate_limit` | `auth.<error_code>` with Supabase Auth's status and a fixed English `message` of the API's own, never Supabase Auth's text ([auth-refusal.ts](../apps/api/src/modules/auth/auth-refusal.ts)) | kept |
+| a transport failure or any `5xx`, from the admin API too, answered at once and never retried ([10](#api-keys-and-the-clients-address)) | `503` `server.unavailable`, `Retry-After: 30` | kept |
+| anything else, `user_already_exists` and `email_exists` on a sign-up excepted: those answer `202` like a new address | `500` `server.error`, logged | kept |
 
 An outage of Supabase Auth signs nobody out. The client translates these like every other code,
 through [errors.ts](../packages/i18n/src/errors.ts) ([6](#api-errors)).
@@ -1452,7 +1460,10 @@ database, not from the token. A valid token without an `accounts` row -> `401`. 
 two-factor authentication a token below `aal2` -> `401` `session.mfa-required`
 ([7.12](#712-two-factor-authentication)). The JWT holds no
 `tenantId`. The scanner sends its device token as `Authorization: Bearer` ([7.11](#711-scanner));
-no other route reads that header.
+no other route reads that header. Until the panel and the portal send the cookies, the guard and the
+rate limit also accept an access token in `Authorization: Bearer` when the application's access
+cookie is missing; both read the credential through one function and share one verification per
+request ([request-credential.ts](../apps/api/src/common/guards/request-credential.ts)).
 
 Verifying a token ends in one of three outcomes:
 
@@ -2164,8 +2175,9 @@ The API creates its Supabase Auth clients per request
 ([supabase-auth.factory.ts](../apps/api/src/modules/auth/supabase-auth.factory.ts), on
 `@supabase/auth-js`, all with `autoRefreshToken: false`), so nothing of one request's session
 reaches another. The same file holds the one wrapper around `fetch` that every client shares: the
-`Sb-Forwarded-For` header, a timeout, the transport cause in the message and a `5xx` whose body is
-not JSON raised as an outage.
+`Sb-Forwarded-For` header, a timeout, the transport cause in the message, and every outage — a thrown
+transport failure or any `5xx` — returned at once as a response outside auth-js's retry list:
+auth-js backs off for about 25 seconds on a refresh otherwise.
 
 | Client | Used for |
 |---|---|
@@ -2192,7 +2204,9 @@ Supabase Auth sends no email itself. For every message it calls `POST /hooks/sen
    `redirect_to` is one of the two `/auth/confirm` addresses the API itself asked for
    ([5.1](#51-auth--sign-in-through-the-api)); any other `redirect_to` becomes
    `<PORTAL_URL>/auth/confirm`. The link never names Supabase: the button of `/auth/confirm` redeems
-   it through `POST /auth/verify`. The template is rendered through Lingui.
+   it through `POST /auth/verify`. Until the frontends move to `/auth/confirm`, another path of
+   either application keeps the link through Supabase Auth's `/verify`. The template is rendered
+   through Lingui.
 4. It sends the message through `MailModule` and answers `200 {}`. An SMTP failure -> `500`, which
    Supabase Auth reports to the API as a failed send. Supabase Auth waits 5 s for the hook and
    does not retry, so a send has a 4 s deadline as a whole
@@ -2823,7 +2837,9 @@ the API checks real Supabase Auth tokens from real cookies; tokens with a wrong 
 audience, issuer or expiry are signed in the test with `jose` and sent as the access cookie. The
 send-email hook test triggers real sign-ups, recoveries and email changes and reads the messages
 from Mailpit's HTTP API; it runs the API on its `PORT`, where Supabase Auth sends the hook, so it
-cannot run beside an API started with `pnpm dev`.
+cannot run beside an API started with `pnpm dev`. The auth endpoint tests do the same, and a test
+file that finds the port taken waits for the one holding it
+([hook-port.ts](../apps/api/test/hook-port.ts)).
 
 | Area | What we check |
 |---|---|

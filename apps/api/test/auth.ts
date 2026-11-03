@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
+import request from 'supertest'
 import { type CryptoKey, generateKeyPair, importJWK, type JWK, SignJWT } from 'jose'
+import { type Application } from '../src/common/http/application'
 import { authUrl, loadEnv } from '../src/config/env'
 
 // Test accounts go through the real Supabase Auth: the admin API creates them and the password
@@ -117,6 +119,29 @@ export async function signIn(email: string, password = TEST_PASSWORD) {
   })
   if (!response.ok) throw new Error(`sign-in: ${response.status} ${await response.text()}`)
   return ((await response.json()) as { access_token: string }).access_token
+}
+
+let apiServer: Parameters<typeof request>[0] | undefined
+
+/** The API under test, which signedInAgent signs in to; a file calls it once in beforeAll. */
+export function bindApi(server: Parameters<typeof request>[0]) {
+  apiServer = server
+}
+
+/** The Origin of an application, as a browser sends it. */
+export const originOf = (app: Application) =>
+  new URL(app === 'portal' ? env.PORTAL_URL : env.PANEL_URL).origin
+
+/**
+ * A supertest agent signed in to `app` through `POST /auth/sign-in`: it holds the session cookies
+ * the API set and sends the application's Origin with every request (PLAN.md 15.1).
+ */
+export async function signedInAgent(app: Application, email: string, password = TEST_PASSWORD) {
+  if (!apiServer) throw new Error('bindApi(app.getHttpServer()) first')
+  const agent = request.agent(apiServer).set('Origin', originOf(app))
+  const res = await agent.post('/auth/sign-in').send({ email, password })
+  if (res.status !== 200) throw new Error(`sign-in: ${res.status} ${JSON.stringify(res.body)}`)
+  return agent
 }
 
 /**

@@ -17,12 +17,12 @@ type CookieOptions = {
   maxAge?: number
 }
 
-interface CookieResponse {
+export interface CookieResponse {
   cookie(name: string, value: string, options: CookieOptions): unknown
   clearCookie(name: string, options: Omit<CookieOptions, 'maxAge'>): unknown
 }
 
-interface CookieRequest {
+export interface CookieRequest {
   headers: Record<string, string | string[] | undefined>
 }
 

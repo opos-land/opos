@@ -37,6 +37,10 @@ type ApplicationUrls = Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>
 const applicationOrigin = (app: Application, env: ApplicationUrls) =>
   new URL(app === 'portal' ? env.PORTAL_URL : env.PANEL_URL).origin
 
+/** The login page of `app`, which shows the code of a Google sign-in that did not go through. */
+export const googleFailureUrl = (app: Application, code: ErrorCode, env: ApplicationUrls) =>
+  `${applicationOrigin(app, env)}/login?error=${code}`
+
 /**
  * The path of `app` a Google sign-in returns to (PLAN.md 7.5). `redirect` counts only as a path:
  * it starts with a single `/`, holds no backslash or control character, and still resolves to the
@@ -174,7 +178,7 @@ export class GoogleAuthService {
   }
 
   private failure(app: Application, code: ErrorCode = GOOGLE_FAILED) {
-    return `${applicationOrigin(app, this.env)}/login?error=${code}`
+    return googleFailureUrl(app, code, this.env)
   }
 
   /** The address `GET /auth/google` redirects to; sets `opos_google`. */

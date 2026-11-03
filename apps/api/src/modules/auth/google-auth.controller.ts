@@ -1,5 +1,6 @@
-import { Controller, Get, Query, Req, Res } from '@nestjs/common'
+import { Controller, Get, Query, Req, Res, UseFilters } from '@nestjs/common'
 import { GoogleAuthService, type GoogleRequest } from './google-auth.service'
+import { GoogleStartFilter } from './google-start.filter'
 import { type CookieResponse } from './session-cookies'
 
 type Redirecting = CookieResponse & { redirect(status: number, url: string): void }
@@ -11,6 +12,7 @@ export class GoogleAuthController {
   constructor(private readonly google: GoogleAuthService) {}
 
   @Get()
+  @UseFilters(GoogleStartFilter)
   async start(
     @Query() query: { app?: unknown; redirect?: unknown },
     @Res() res: Redirecting,

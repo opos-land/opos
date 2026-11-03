@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { RouteRateLimiter } from '../src/common/rate-limit/route-rate-limit'
+import { ROUTE_RATE_LIMITS, RouteRateLimiter } from '../src/common/rate-limit/route-rate-limit'
 import { authUrl, loadEnv } from '../src/config/env'
 import { createApp } from './app'
 import { createAccount, deleteCreatedAccounts, mintToken, originOf } from './auth'
@@ -215,6 +215,78 @@ describe('GET /auth/google', () => {
     const res = await start({ app: 'portal' }).expect(302)
 
     expect(res.text).not.toContain(readGoogleCookie(res).verifier)
+  })
+})
+
+// A navigation over a limit lands on a page; each case has an API and an address of its own, so its
+// counters reach no other case.
+describe('GET /auth/google over a limit', () => {
+  const from = (api: NestExpressApplication, ip: string, query: Record<string, string>) =>
+    request(api.getHttpServer()).get('/auth/google').query(query).set('X-Forwarded-For', ip)
+
+  it('redirects to the login page of the application over the limit of the auth routes', async () => {
+    const roomy = await createApp({}, [], { limit: 100_000, ttl: 60_000 })
+    try {
+      const ip = '198.51.100.21'
+      const { limit } = ROUTE_RATE_LIMITS.authentication
+      for (let spent = 0; spent < limit; spent += 25) {
+        await Promise.all(
+          Array.from({ length: 25 }, () => from(roomy, ip, { app: 'panel' }).expect(302)),
+        )
+      }
+
+      const res = await from(roomy, ip, { app: 'panel' }).expect(302)
+
+      expect(res.headers.location).toBe(`${panel}/login?error=auth.over_request_rate_limit`)
+      expect(cookieNamed(res, 'opos_google')).toBeUndefined()
+    } finally {
+      await roomy.close()
+    }
+  }, 60_000)
+
+  it.each([
+    ['portal', portal],
+    ['panel', panel],
+  ])(
+    'redirects to the login page of the %s over the default limit',
+    async (application, origin) => {
+      const tight = await createApp({}, [], { limit: 1, ttl: 60_000 })
+      try {
+        const ip = '198.51.100.22'
+        await from(tight, ip, { app: application }).expect(302)
+
+        const res = await from(tight, ip, { app: application }).expect(302)
+
+        expect(res.headers.location).toBe(`${origin}/login?error=auth.over_request_rate_limit`)
+        expect(cookieNamed(res, 'opos_google')).toBeUndefined()
+      } finally {
+        await tight.close()
+      }
+    },
+  )
+
+  it('answers 429 in the error shape to a query that names no application', async () => {
+    const tight = await createApp({}, [], { limit: 1, ttl: 60_000 })
+    try {
+      const ip = '198.51.100.23'
+      await from(tight, ip, {}).expect(400)
+
+      const res = await from(tight, ip, {}).expect(429)
+
+      expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+      expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
+    } finally {
+      await tight.close()
+    }
+  })
+
+  it('answers any other failure of the route as every route does', async () => {
+    vi.spyOn(RouteRateLimiter.prototype, 'consume').mockRejectedValueOnce(new Error('broken'))
+    vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+
+    const res = await start({ app: 'portal' }).expect(500)
+
+    expect(res.body).toMatchObject({ code: 'server.error' })
   })
 })
 

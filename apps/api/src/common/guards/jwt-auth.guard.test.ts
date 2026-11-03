@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { type ExecutionContext } from '@nestjs/common'
+import { type ExecutionContext, SetMetadata } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { describe, expect, it, vi } from 'vitest'
 import { type AccountsRepository } from '../../modules/accounts/accounts.repository'
-import { AllowMfaPending } from '../decorators/allow-mfa-pending.decorator'
+import { ALLOW_MFA_PENDING, AllowMfaPending } from '../decorators/allow-mfa-pending.decorator'
 import { type TenantContextService } from '../als/tenant-context.service'
 import { ApiError } from '../errors/api-error'
 import { toErrorResponse } from '../filters/http-exception.filter'
@@ -52,7 +52,6 @@ const execution = (request: object, handler: object = handlerOf(Plain)) =>
   ({
     switchToHttp: () => ({ getRequest: () => request }),
     getHandler: () => handler,
-    getClass: () => Plain,
   }) as unknown as ExecutionContext
 
 const withCookie = (headers: Record<string, string | undefined>) => execution({ headers })
@@ -244,6 +243,24 @@ describe('JwtAuthGuard', () => {
 
       expect(await subject.canActivate(execution(portalRequest(), handlerOf(Pending)))).toBe(true)
       expect(context.setAccount).toHaveBeenCalledTimes(1)
+    })
+
+    it('reads the exemption from the handler alone, never from the controller class', async () => {
+      const { subject } = guard(
+        { status: 'valid', payload: { sub: account.id, aal: 'aal1' } },
+        withFactor,
+      )
+      @SetMetadata(ALLOW_MFA_PENDING, true)
+      class Marked {}
+      const onClass = {
+        switchToHttp: () => ({ getRequest: () => portalRequest() }),
+        getHandler: () => handlerOf(Plain),
+        getClass: () => Marked,
+      } as unknown as ExecutionContext
+
+      const failure = await refusal(subject.canActivate(onClass))
+
+      expect(toErrorResponse(failure)).toMatchObject({ body: { code: 'session.mfa-required' } })
     })
 
     it('answers session.invalid before session.mfa-required when no account exists', async () => {

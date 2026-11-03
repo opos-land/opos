@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { Logger } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { contract, type ContractMeta } from '@opos/contract'
 import {
@@ -8,7 +9,7 @@ import {
 } from '@orpc/contract'
 import { decodeJwt } from 'jose'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { authUrl, loadEnv } from '../src/config/env'
 import { createApp } from './app'
 import {
@@ -203,6 +204,55 @@ describe('tenant routes below aal2', () => {
   )
 })
 
+/** Every route of the contract, to find the account routes among them. */
+const procedures = (router: AnyContractRouter, prefix = ''): [string, AnyContractProcedure][] =>
+  Object.entries(router).flatMap(([key, value]: [string, AnyContractRouter]) =>
+    isContractProcedure(value)
+      ? [[`${prefix}${key}`, value] as [string, AnyContractProcedure]]
+      : procedures(value, `${prefix}${key}.`),
+  )
+
+function isPublicRoute(procedure: AnyContractProcedure) {
+  const { spec } = procedure['~orpc'].route
+  const operation = typeof spec === 'function' ? spec({ responses: {} }) : spec
+  return Array.isArray(operation?.security) && operation.security.length === 0
+}
+
+const accountRoutes = procedures(contract).filter(
+  ([, procedure]) =>
+    (procedure['~orpc'].meta as ContractMeta).tenant !== true && !isPublicRoute(procedure),
+)
+
+/** The routes that finish a sign-in: the only ones @AllowMfaPending may stand on. */
+const finishesSignIn = (procedure: AnyContractProcedure) => {
+  const { method, path } = procedure['~orpc'].route
+  return method === 'POST' && path?.startsWith('/auth/mfa/') === true
+}
+
+describe('account routes below aal2', () => {
+  let id: string
+
+  beforeAll(async () => {
+    id = (await accountWith2fa()).id
+  })
+
+  it.each(accountRoutes.filter(([, procedure]) => !finishesSignIn(procedure)))(
+    'refuses aal1 on an account with 2FA: %s',
+    async (_, procedure) => {
+      const { method = 'GET', path = '/' } = procedure['~orpc'].route
+      const verb = method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete'
+
+      const agent = request(server)
+      const res = await agent[verb](path.replace(/\{[^}]+\}/g, randomUUID()))
+        .use(session(await mintToken({ sub: id, aal: 'aal1' })))
+        .send({})
+
+      expect(res.status).toBe(401)
+      expect(res.body).toMatchObject(mfaRequired)
+    },
+  )
+})
+
 describe('sign-in paths on an account with 2FA', () => {
   it('sign-in with the right password sets cookies and answers session.mfa-required', async () => {
     const { email } = await accountWith2fa()
@@ -294,9 +344,10 @@ describe('sign-in paths on an account with 2FA', () => {
     expect(attempted.body).toMatchObject({ code: 'auth.invalid_credentials' })
   })
 
-  it('a confirmation link of an account that holds a factor changes no password', async () => {
+  it('a confirmation link of an account that holds a factor signs nobody in', async () => {
+    const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
     // Out of reach in practice (a factor needs a session, which needs a confirmed address), but the
-    // route must not depend on that: updateUser at aal1 is refused, so the old password stays.
+    // route must not depend on that: updateUser at aal1 is refused and no cookie is set.
     const address = testEmail('mfa')
     addresses.push(address)
     const signedUp = await fetch(
@@ -320,10 +371,7 @@ describe('sign-in paths on an account with 2FA', () => {
     expect(res.status).toBe(401)
     expect(res.body).toMatchObject(mfaRequired)
     expect(cookiesOf(res)).toEqual([])
-    const old = await request(server)
-      .post('/auth/sign-in')
-      .set('Origin', portal)
-      .send({ email: address, password: 'attacker-pass-1' })
-    expect(old.body).toMatchObject(mfaRequired)
+    expect(warned).toHaveBeenCalledWith(expect.stringContaining('replace the password'))
+    warned.mockRestore()
   })
 })

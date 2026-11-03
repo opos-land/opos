@@ -5,10 +5,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   type AccessTokenVerifier,
   createAccessTokenVerifier,
+  isAal2,
   lastSignInAt,
   meOf,
   signInMethodsOf,
 } from './access-token'
+
+describe('isAal2', () => {
+  const unsigned = (claims: object) =>
+    `${Buffer.from('{"alg":"none"}').toString('base64url')}.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.`
+
+  it('is true for a token at aal2', () => {
+    expect(isAal2(unsigned({ aal: 'aal2' }))).toBe(true)
+  })
+
+  it.each([
+    ['aal1', unsigned({ aal: 'aal1' })],
+    ['no level', unsigned({})],
+    ['a token that cannot be read', 'not-a-token'],
+    ['an empty string', ''],
+  ])('is false for %s', (_, token) => {
+    expect(isAal2(token)).toBe(false)
+  })
+})
 
 describe('lastSignInAt', () => {
   it('takes the newest amr timestamp', () => {

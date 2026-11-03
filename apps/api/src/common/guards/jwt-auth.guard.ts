@@ -52,11 +52,7 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   private mfaPendingAllowed(ctx: ExecutionContext) {
-    return (
-      this.reflector.getAllAndOverride<boolean | undefined>(ALLOW_MFA_PENDING, [
-        ctx.getHandler(),
-        ctx.getClass(),
-      ]) === true
-    )
+    // The handler alone: metadata on a controller would open every route of it (PLAN.md 7.12).
+    return this.reflector.get<boolean | undefined>(ALLOW_MFA_PENDING, ctx.getHandler()) === true
   }
 }

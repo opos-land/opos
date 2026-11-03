@@ -188,8 +188,8 @@ opos/
                          #   EngagementModule (without reviews),
                          #   AuthModule (auth endpoints and session cookies, Supabase Auth clients,
                          #   send-email hook, admin client), MailModule (Supabase Auth and
-                         #   invitation emails), tests; still to come: Google sign-in (7.5),
-                         #   the two-factor routes (7.12)
+                         #   invitation emails), tests; still to come: the two-factor
+                         #   routes (7.12)
       src/
         common/
           guards/scanner-device.guard.ts

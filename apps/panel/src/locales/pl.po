@@ -517,7 +517,7 @@ msgstr "Powtórz hasło"
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Reset your password"
-msgstr "Ustaw nowe hasło"
+msgstr "Zresetuj hasło"
 
 #: src/features/team/components/invite-form.tsx
 #: src/features/team/components/member-row.tsx

@@ -346,7 +346,11 @@ describe('verify', () => {
     const res = await post('/auth/verify', { tokenHash, type })
 
     expect(res.status).toBe(200)
-    expect(res.body).toMatchObject({ email: address, firstName: 'Ola' })
+    expect(res.body).toMatchObject({
+      email: address,
+      firstName: 'Ola',
+      signInMethods: ['password'],
+    })
     deleteLater((res.body as { id: string }).id)
     expect(cookieNamed(res, 'opos_portal_access')).toBeDefined()
     expect(cookieNamed(res, 'opos_portal_refresh')).toBeDefined()
@@ -386,7 +390,7 @@ describe('sign-in', () => {
     const res = await post('/auth/sign-in', { email, password: TEST_PASSWORD })
 
     expect(res.status).toBe(200)
-    expect(res.body).toMatchObject({ email })
+    expect(res.body).toMatchObject({ email, signInMethods: ['password'] })
     const access = cookieNamed(res, 'opos_portal_access')!
     const refresh = cookieNamed(res, 'opos_portal_refresh')!
     expect(access).toMatch(/; Path=\/;/)

@@ -7,6 +7,7 @@ import {
   bearerToken,
   createAccessTokenVerifier,
   lastSignInAt,
+  meOf,
   signInMethodsOf,
 } from './access-token'
 
@@ -66,6 +67,23 @@ describe('signInMethodsOf', () => {
     ['a list of other things', { app_metadata: { providers: [1, null, {}] } }],
   ])('finds no method in %s', (_, payload) => {
     expect(signInMethodsOf(payload)).toEqual([])
+  })
+})
+
+describe('meOf', () => {
+  const account = { id: 'a', email: 'a@b.test', firstName: null, lastName: null, locale: null }
+
+  it('adds the sign-in methods of the session user to the account', () => {
+    expect(
+      meOf(account, signInMethodsOf({ app_metadata: { providers: ['email', 'google'] } })),
+    ).toEqual({
+      ...account,
+      signInMethods: ['password', 'google'],
+    })
+  })
+
+  it('lists no method for a user without providers', () => {
+    expect(meOf(account, signInMethodsOf({}))).toEqual({ ...account, signInMethods: [] })
   })
 })
 

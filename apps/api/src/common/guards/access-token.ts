@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common'
 import { createRemoteJWKSet, customFetch, errors, type JWTPayload, jwtVerify } from 'jose'
-import { type SignInMethod } from '@opos/contract'
+import { type Account, type Me, type SignInMethod } from '@opos/contract'
 import { authUrl } from '../../config/env'
 import { isUuid } from '../uuid'
 
@@ -120,12 +120,18 @@ const SIGN_IN_METHODS = [
 
 /**
  * The sign-in methods of the account, from the `app_metadata.providers` Supabase Auth writes into
- * the token: `email` is `password`, `google` is `google`, any other provider is not listed.
+ * the token or the session user: `email` is `password`, `google` is `google`, any other provider is not listed.
  */
-export function signInMethodsOf(payload: JWTPayload): SignInMethod[] {
-  const providers = (payload.app_metadata as { providers?: unknown } | undefined)?.providers
+export function signInMethodsOf(source: object): SignInMethod[] {
+  const providers = (source as { app_metadata?: { providers?: unknown } }).app_metadata?.providers
   if (!Array.isArray(providers)) return []
   return SIGN_IN_METHODS.filter(([provider]) => providers.includes(provider)).map(
     ([, method]) => method,
   )
 }
+
+/** The answer of `GET /me`, `POST /auth/sign-in` and `POST /auth/verify`: the one place that builds it. */
+export const meOf = (account: Account, signInMethods: SignInMethod[]): Me => ({
+  ...account,
+  signInMethods,
+})

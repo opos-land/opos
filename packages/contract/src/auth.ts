@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { accountSchema } from './me'
+import { meSchema } from './me'
 import { accountRoute, publicRoute, withErrors } from './common'
 
 const name = z.string().trim().min(1).max(100)
@@ -91,7 +91,7 @@ export const authContract = {
       summary: 'Redeem the link of an email and sign in; sets the session cookies',
     })
     .input(z.object({ body: verifySchema }))
-    .output(accountSchema),
+    .output(meSchema),
   signIn: publicRoute
     .route({
       method: 'POST',
@@ -99,7 +99,7 @@ export const authContract = {
       summary: 'Sign in with email and password; sets the session cookies',
     })
     .input(z.object({ body: signInSchema }))
-    .output(accountSchema),
+    .output(meSchema),
   // A plain Nest route, documented here like GET /health: a redirect, not JSON.
   google: publicRoute
     .route({

@@ -3,6 +3,7 @@ import { contract } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { GlobalDbService } from '../../common/database/global-db.service'
+import { meOf } from '../../common/guards/access-token'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 import { applicationFromOrigin } from '../../common/http/application'
 import { ENV, type Env } from '../../config/env'
@@ -27,10 +28,9 @@ export class MeController {
 
   @Implement(contract.me.get)
   get() {
-    return implement(contract.me.get).handler(() => ({
-      ...this.context.account(),
-      signInMethods: this.context.signInMethods(),
-    }))
+    return implement(contract.me.get).handler(() =>
+      meOf(this.context.account(), this.context.signInMethods()),
+    )
   }
 
   @Implement(contract.me.update)

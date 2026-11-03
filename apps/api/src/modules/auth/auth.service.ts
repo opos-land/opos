@@ -1,10 +1,11 @@
 import { randomBytes } from 'node:crypto'
 import { Inject, Injectable, Logger } from '@nestjs/common'
-import { type Account } from '@opos/contract'
+import { type Account, type Me } from '@opos/contract'
 import { detectLocale } from '@opos/i18n'
 import { AuthApiError, type GoTrueClient, isAuthError, type Session } from '@supabase/auth-js'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError, originDenied, unauthenticated } from '../../common/errors/api-error'
+import { meOf, signInMethodsOf } from '../../common/guards/access-token'
 import { type Application, applicationFromOrigin } from '../../common/http/application'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
@@ -93,15 +94,11 @@ export class AuthService {
   }
 
   /** Sets the cookies of a session just issued and answers the account it belongs to. */
-  private async signedIn(
-    req: AuthRequest,
-    app: Application,
-    session: Session | null,
-  ): Promise<Account> {
+  private async signedIn(req: AuthRequest, app: Application, session: Session | null): Promise<Me> {
     if (!session) throw new ApiError(500, 'server.error', 'Supabase Auth issued no session')
     const account = await this.accountOf(session)
     setSessionCookies(req.res, app, session, this.env)
-    return account
+    return meOf(account, signInMethodsOf(session.user))
   }
 
   /**
@@ -162,7 +159,7 @@ export class AuthService {
   async verify(
     req: AuthRequest,
     body: { tokenHash: string; type: 'signup' | 'recovery' },
-  ): Promise<Account> {
+  ): Promise<Me> {
     const app = await this.publicRoute(req)
     const client = this.auth.forRequest()
     const result = await client.verifyOtp({ token_hash: body.tokenHash, type: body.type })
@@ -186,7 +183,7 @@ export class AuthService {
     }
   }
 
-  async signIn(req: AuthRequest, body: { email: string; password: string }): Promise<Account> {
+  async signIn(req: AuthRequest, body: { email: string; password: string }): Promise<Me> {
     const app = await this.publicRoute(req)
     const result = await this.auth.forRequest().signInWithPassword(body)
     if (result.error) throw toApiError(result.error)

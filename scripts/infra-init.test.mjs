@@ -80,7 +80,11 @@ function setup({ env = {}, files = {}, status = STATUS, templates = TEMPLATES } 
     return line === 'supabase status -o env' ? status : ''
   }
   const warnings = []
-  const run = () => initInfra({ exec, fs, env, root: ROOT, warn: (line) => warnings.push(line) })
+  const warn = (line) => {
+    events.push(`warn ${line}`)
+    warnings.push(line)
+  }
+  const run = () => initInfra({ exec, fs, env, root: ROOT, warn })
   const text = (path) => store.get(at(path))
   const value = (path, key) => new RegExp(`^${key}=(.*)$`, 'm').exec(text(path))?.[1]
   return { run, store, events, snapshots, text, value, warnings }
@@ -445,6 +449,72 @@ test('initInfra does not warn about an address that is empty or equal to the tem
   const ctx = setup({ files: { 'apps/api/.env': 'PANEL_URL=\nAPI_URL=\n' } })
   await ctx.run()
   assert.deepEqual(ctx.warnings, [])
+})
+
+test('initInfra warns about a database URL on another port than the stack reports, naming no value', async () => {
+  const ctx = setup({
+    files: {
+      'apps/api/.env': [
+        'DATABASE_URL=postgres://old_role:hunter2@127.0.0.1:5432/opos',
+        'DATABASE_GLOBAL_URL=postgres://old_global:hunter2@127.0.0.1:54322/postgres',
+        'DATABASE_MIGRATION_URL=postgres://old_migrator:hunter2@db.example/opos',
+        '',
+      ].join('\n'),
+      'packages/db/.env': 'DATABASE_MIGRATION_URL=not a url hunter2\n',
+    },
+  })
+  await ctx.run()
+  const advice =
+    'on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm infra:init (docs/PLAN.md, 12)'
+  assert.deepEqual(ctx.warnings, [
+    `apps/api/.env: DATABASE_URL is ${advice}`,
+    `apps/api/.env: DATABASE_MIGRATION_URL is ${advice}`,
+    `packages/db/.env: DATABASE_MIGRATION_URL is ${advice}`,
+  ])
+  for (const warning of ctx.warnings) {
+    assert.doesNotMatch(warning, /hunter2|old_|5432|db\.example|postgres:/)
+  }
+})
+
+test('initInfra warns before it runs db:roles, which a stale URL makes fail', async () => {
+  const ctx = setup({
+    files: { 'packages/db/.env': 'DATABASE_MIGRATION_URL=postgres://x:y@127.0.0.1:5432/opos\n' },
+  })
+  await ctx.run()
+  const warned = ctx.events.findIndex((event) => event.startsWith('warn packages/db/.env:'))
+  assert.notEqual(warned, -1)
+  assert.ok(warned < ctx.events.indexOf('exec pnpm db:roles'))
+})
+
+test('initInfra does not warn about a database URL the file does not hold', async () => {
+  const ctx = setup({
+    templates: {
+      ...TEMPLATES,
+      'apps/api/.env.example': TEMPLATES['apps/api/.env.example'].replace(
+        'DATABASE_MIGRATION_URL=\n',
+        '',
+      ),
+    },
+  })
+  await ctx.run()
+  assert.deepEqual(ctx.warnings, [])
+})
+
+test('initInfra does not warn about the database URLs it wrote, or a moved port the stack reports', async () => {
+  const fresh = setup()
+  await fresh.run()
+  await fresh.run()
+  assert.deepEqual(fresh.warnings, [])
+
+  const moved = setup({
+    status: STATUS.replace('54322', '25432'),
+    files: { 'packages/db/.env': 'DATABASE_MIGRATION_URL=postgres://x:y@127.0.0.1:25432/opos\n' },
+  })
+  await moved.run()
+  assert.deepEqual(
+    moved.warnings.filter((line) => line.startsWith('packages/db')),
+    [],
+  )
 })
 
 test('initInfra refuses two different hook secrets, naming the key and no value', async () => {

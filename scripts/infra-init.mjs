@@ -18,7 +18,22 @@ const ENV_DIRS = ['supabase', 'apps/api', 'packages/db', 'apps/panel', 'apps/por
 
 const ADDRESS_KEYS = ['API_URL', 'PANEL_URL', 'PORTAL_URL', 'VITE_API_URL']
 
+// The database URLs of each .env; a value already set is never overwritten, so an old one stays.
+const DATABASE_KEYS = {
+  'apps/api': ['DATABASE_URL', 'DATABASE_GLOBAL_URL', 'DATABASE_MIGRATION_URL'],
+  'packages/db': ['DATABASE_MIGRATION_URL'],
+}
+
 const isSet = (value) => (value ?? '').trim() !== ''
+
+/** The port of a database URL, with Postgres's own as the default; null for what is no URL. */
+function databasePort(value) {
+  try {
+    return new URL(value).port || '5432'
+  } catch {
+    return null
+  }
+}
 
 const KEY_LINE = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/
 // What may follow `=` on the line of an empty value: nothing, a quoted nothing, and a comment.
@@ -222,6 +237,18 @@ export async function initInfra({
   }
   fill('apps/api', reported)
   fill('packages/db', reported)
+
+  // Before db:roles, which such a URL makes fail with an authentication error of whatever holds
+  // that port. The key alone: a URL holds a password.
+  for (const [dir, keys] of Object.entries(DATABASE_KEYS)) {
+    for (const key of keys) {
+      if (isSet(known(dir, key)) && databasePort(known(dir, key)) !== databasePort(status.DB_URL)) {
+        warn(
+          `${dir}/.env: ${key} is on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm infra:init (docs/PLAN.md, 12)`,
+        )
+      }
+    }
+  }
 
   // 5. the database roles, with the passwords and the address written above (docs/PLAN.md, 4.6)
   await exec('pnpm', ['db:roles'], { cwd: root, env, showOutputOnFailure: true })

@@ -2514,8 +2514,13 @@ set:
 3. creates `supabase/signing_keys.json` when it is missing or holds only `[]`: `[]`, then
    `supabase gen signing-key --algorithm ES256 --append`;
 4. runs `supabase start`, reads `supabase status -o env` and writes the secret key and the
-   addresses it reports into `apps/api/.env` and `packages/db/.env`;
+   addresses it reports into `apps/api/.env` and `packages/db/.env`, and warns, naming the key and
+   never its value, about a database URL on another port than the stack reports;
 5. runs `pnpm db:roles`.
+
+A checkout from before this stack removes its `.env` files and runs `pnpm infra:init`: the old
+values stay otherwise, and a stale database URL fails with an authentication error from whatever
+holds that port.
 
 It writes no `SUPABASE_PROJECT_ID` or `SUPABASE_ACCESS_TOKEN`, refuses to run where `OPOS_ENV` is
 `dev` or `production`, and never runs `supabase link`. `supabase/.gitignore`

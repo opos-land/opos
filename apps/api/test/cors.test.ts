@@ -63,6 +63,16 @@ describe('CORS', () => {
     expect(res.headers.vary).toMatch(/origin/i)
   })
 
+  it('varies on Origin for a request without one and for a foreign one, so no cache mixes them', async () => {
+    const plain = await request(app.getHttpServer()).get('/health')
+    const foreign = await request(app.getHttpServer())
+      .get('/health')
+      .set('Origin', 'https://evil.example')
+
+    expect(plain.headers.vary).toMatch(/origin/i)
+    expect(foreign.headers.vary).toMatch(/origin/i)
+  })
+
   it('exposes Retry-After, which a browser hides from a script otherwise', async () => {
     const res = await request(app.getHttpServer()).get('/health').set('Origin', env.PANEL_URL)
 

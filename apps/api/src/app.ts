@@ -15,6 +15,12 @@ export async function configureApp(app: NestExpressApplication, env: Env) {
   app.set('trust proxy', 1)
   app.use(requireJsonBody)
   app.use(requireOriginForSession(env))
+  // The answer depends on the Origin whether or not CORS names it, and `cors` varies only for the
+  // origins it allows.
+  app.use((_req: unknown, res: { vary(field: string): unknown }, next: () => void) => {
+    res.vary('Origin')
+    next()
+  })
   // The credentials header goes out for the two origins only: `cors` sets it for any request when
   // `credentials` is fixed, so the options are chosen per request.
   app.enableCors((req, callback) => {

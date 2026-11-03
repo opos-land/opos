@@ -1,8 +1,9 @@
 import { passwordGrant } from './auth-admin'
 import { stack } from './stack'
 
-// A direct request to the API, as a client other than the panel or the portal would send it
-// (PLAN.md 5).
+// A direct request to the API, as an application would send it once signed in (PLAN.md 7.4): the
+// access token in the cookie of the application, with the application's Origin. The API reads
+// nothing else.
 
 export async function accessToken(email: string, password: string) {
   const grant = await passwordGrant(email, password)
@@ -14,15 +15,24 @@ export async function callApi(
   path: string,
   {
     token,
+    app = 'panel',
     tenantSlug,
     method = 'GET',
     body,
-  }: { token?: string; tenantSlug?: string; method?: string; body?: unknown } = {},
+  }: {
+    token?: string
+    app?: 'panel' | 'portal'
+    tenantSlug?: string
+    method?: string
+    body?: unknown
+  } = {},
 ) {
   const response = await fetch(new URL(path, stack.api), {
     method,
     headers: {
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(token
+        ? { cookie: `opos_${app}_access=${token}`, origin: new URL(stack[app]).origin }
+        : {}),
       ...(tenantSlug ? { 'x-tenant-slug': tenantSlug } : {}),
       ...(body === undefined ? {} : { 'content-type': 'application/json' }),
     },

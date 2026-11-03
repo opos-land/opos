@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { confirmLinkIn, invitationLinkIn, verifyLinkIn } from './mailpit'
+import { confirmLinkIn, invitationLinkIn } from './mailpit'
 
 const mail = (Text: string) => ({ Subject: 'Subject', Text })
 
 describe('links in a message', () => {
-  it('finds the Supabase Auth verify link in the text part', () => {
-    const link =
-      'http://127.0.0.1:54321/auth/v1/verify?token=abc&type=signup&redirect_to=http://x/cb'
-    expect(verifyLinkIn(mail(`Confirm your address:\n${link}\n\nThanks`))).toBe(link)
-  })
-
   it('finds the /auth/confirm link of an application in the text part', () => {
     const link = 'http://panel.opos.localhost:5173/auth/confirm?token_hash=abc&type=signup'
     expect(confirmLinkIn(mail(`Confirm your address:\n${link}\n\nThanks`))).toBe(link)

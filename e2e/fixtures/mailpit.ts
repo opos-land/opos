@@ -58,13 +58,9 @@ function linkIn(mail: Pick<Mail, 'Subject' | 'Text'>, pattern: RegExp, kind: str
   return link
 }
 
-/** The Supabase Auth `/verify` link of a confirmation or password reset message. */
-export const verifyLinkIn = (mail: Pick<Mail, 'Subject' | 'Text'>) =>
-  linkIn(mail, /https?:\/\/\S+\/verify\?\S+/, 'verify')
-
 /**
- * The `/auth/confirm` link of a confirmation or password message to an application that has moved
- * to the API (PLAN.md 5.1): the page's button redeems it.
+ * The `/auth/confirm` link of a confirmation or password message (PLAN.md 5.1): the page's button
+ * redeems it.
  */
 export const confirmLinkIn = (mail: Pick<Mail, 'Subject' | 'Text'>) =>
   linkIn(mail, /https?:\/\/\S+\/auth\/confirm\?\S+/, 'confirm')

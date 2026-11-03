@@ -1,6 +1,7 @@
 import { type Database, migrationDb } from '@opos/db'
-import { test as base } from '@playwright/test'
+import { expect, test as base } from '@playwright/test'
 import { type Account, createAuthUser, deleteAuthUser, freshEmail } from './auth-admin'
+import { requestsOutside } from './boundary'
 import { deleteMail } from './mailpit'
 import { stack } from './stack'
 import { accountIds, TenantFactory } from './tenants'
@@ -16,6 +17,8 @@ export interface Accounts {
 interface ScenarioFixtures {
   accounts: Accounts
   tenants: TenantFactory
+  /** Fails the scenario whose pages request anything outside the applications and the API. */
+  boundary: void
 }
 
 interface WorkerFixtures {
@@ -25,6 +28,22 @@ interface WorkerFixtures {
 // Scenarios share no data (PLAN.md 15.2): each one makes its own accounts and tenants, and
 // leaves nothing behind in the database or in Mailpit.
 export const test = base.extend<ScenarioFixtures, WorkerFixtures>({
+  // The BFF boundary (PLAN.md 3.2): the browser talks to the panel, the portal and the API alone.
+  // A request to Supabase or to anything else, from any page of the scenario, fails it.
+  boundary: [
+    async ({ context }, use) => {
+      const urls: string[] = []
+      context.on('request', (request) => urls.push(request.url()))
+      await use()
+      const origins = [stack.api, stack.panel, stack.portal].map((url) => new URL(url).origin)
+      expect(
+        requestsOutside(urls, origins),
+        'requests outside the panel, the portal and the API',
+      ).toEqual([])
+    },
+    { auto: true },
+  ],
+
   db: [
     // Playwright reads a fixture's dependencies from the first parameter's pattern.
     // eslint-disable-next-line no-empty-pattern

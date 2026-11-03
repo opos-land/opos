@@ -21,11 +21,11 @@ export async function member(): Promise<Member> {
   return { ...account, token: await signIn(account.email) }
 }
 
-/** A verified TOTP factor, written to Supabase Auth's table as postgres; the mirror trigger follows. */
-export async function addVerifiedFactor(accountId: string) {
+/** A TOTP factor, written to Supabase Auth's table as postgres; the mirror trigger follows. */
+export async function addVerifiedFactor(accountId: string, status = 'verified') {
   await db.execute(sql`
     insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
-    values (${randomUUID()}, ${accountId}, 'Authenticator', 'totp', 'verified', now(), now(), 'JBSWY3DPEHPK3PXP')
+    values (${randomUUID()}, ${accountId}, 'Authenticator', 'totp', ${status}, now(), now(), 'JBSWY3DPEHPK3PXP')
   `)
 }
 

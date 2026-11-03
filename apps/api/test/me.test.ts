@@ -51,6 +51,13 @@ describe('JwtAuthGuard', () => {
   it('reports mfaEnabled for an account with a verified factor only', async () => {
     expect((await me().use(session(token)).expect(200)).body).toMatchObject({ mfaEnabled: false })
 
+    const pending = await createAccount()
+    await addVerifiedFactor(pending.id, 'unverified')
+    const unverified = await me()
+      .use(session(await mintToken({ sub: pending.id })))
+      .expect(200)
+    expect(unverified.body).toMatchObject({ id: pending.id, mfaEnabled: false })
+
     const other = await createAccount()
     await addVerifiedFactor(other.id)
     const res = await me()

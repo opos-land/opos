@@ -344,14 +344,15 @@ The `react` ESLint preset refuses an import of `@supabase/*`, static or dynamic,
 file ([react.js](../packages/eslint-config/react.js)), so the editor and the `lint` task in CI show
 it. [bff-boundary.mjs](../scripts/bff-boundary.mjs) holds all the rules of the table and enforces
 them where the tests-first check runs: a Claude Code hook after every `Edit`, `Write` and `Bash`
-([.claude/settings.json](../.claude/settings.json)), lefthook `pre-commit` on the staged files, and
-CI on every PR, which builds both applications with `VITE_API_URL=https://opos-control.invalid` and
-`SUPABASE_SECRET_KEY=opos-canary-secret-x` and scans `dist/` as well (`--dist`). A bundle without
-the control address was not built from the tree scanned and fails; a bundle that holds the canary
-leaks a secret of the build and fails. A breach names the file and the rule, never the text that
-matched: a hook's output reaches an agent's context. The one place a Supabase address reaches a
-browser is the redirect of Google sign-in, sent by the API ([7.5](#75-google-oauth)); it is never
-written in a frontend.
+([.claude/settings.json](../.claude/settings.json)), lefthook `pre-commit` on the staged files
+([lefthook.yml](../lefthook.yml)), and CI on every PR, which builds both applications against a
+control address and a canary secret and scans `dist/` as well
+([ci.yml](../.github/workflows/ci.yml)). Each application's own `dist/` must exist and hold the
+control address: a bundle without it was not built from the tree scanned and fails, and a bundle
+that holds the canary leaks a secret of the build and fails. A breach names the file and the rule,
+never the text that matched: a hook's output reaches an agent's context. The one place a Supabase
+address reaches a browser is the redirect of Google sign-in, sent by the API
+([7.5](#75-google-oauth)); it is never written in a frontend.
 
 `shared/ui` holds components with no domain knowledge, built on native elements and styled only
 through the tokens of the application's `src/styles.css` (colours, typography, spacing, radii),
@@ -1474,11 +1475,11 @@ Verifying a token ends in one of three outcomes:
 | Outcome | When | The guard answers |
 |---|---|---|
 | `valid` | every rule above holds | goes on to the account |
-| `invalid` | a rule is broken or the signature is wrong: `JWTExpired`, `JWTClaimValidationFailed`, `JWTInvalid`, `JWSInvalid`, `JWSSignatureVerificationFailed`, `JOSEAlgNotAllowed`, `JOSENotSupported`, `JWKSNoMatchingKey`, `JWKSMultipleMatchingKeys` | `401` `session.invalid`; the client refreshes |
+| `invalid` | a rule is broken or the signature is wrong: the errors of `jose` that name a token or a key set that does not verify ([access-token.ts](../apps/api/src/common/guards/access-token.ts)) | `401` `session.invalid`; the client refreshes |
 | `unavailable` | anything else, above all a key set that cannot be fetched while no key is held | `503` `server.unavailable`, `Retry-After: 30`, the cookies kept |
 
-The keys outlast an outage: `createRemoteJWKSet` runs with `cacheMaxAge: Infinity`, a 2 s timeout and
-a 30 s cooldown, and a timer reloads the set every 10 minutes, for as long as the application runs. A
+The keys outlast an outage: the cached set never expires, a timer reloads it for as long as the
+application runs (timeout, cooldown and interval in [access-token.ts](../apps/api/src/common/guards/access-token.ts)). A
 failed reload is logged with its cause and the last good keys keep verifying, however old they are;
 an `unavailable` token is logged the same way, never the token itself. The set is fetched again for
 an unknown `kid`, at most once per 30 s after a successful fetch, so inside that cooldown an unknown
@@ -1527,8 +1528,9 @@ request ([10](#api-keys-and-the-clients-address)):
    address ([PRODUCT.md 6](PRODUCT.md#6-addresses-and-domains)).
 4. Supabase Auth creates or links the user and redirects to `<API_URL>/auth/google/callback` with
    `?code=`.
-5. The API seeds the storage from `opos_google` under auth-js's `<storageKey>-code-verifier`,
-   exchanges the code with that verifier (`exchangeCodeForSession`),
+5. The API seeds auth-js's storage with the verifier from `opos_google`
+   ([google-auth.service.ts](../apps/api/src/modules/auth/google-auth.service.ts)),
+   exchanges the code with it (`exchangeCodeForSession`),
    clears that cookie, sets the application's session cookies and answers `302` to the stored path
    of the application, judged again as in step 2; on an account with two-factor authentication to
    `<app URL>/auth/mfa?redirect=<path>` ([7.12](#712-two-factor-authentication)). A missing or

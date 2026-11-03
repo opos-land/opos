@@ -815,11 +815,13 @@ transaction and expects the report:
 - a [global table](#42-global-tables) has RLS on;
 - an event trigger runs a function in `public`;
 - a runtime role lacks one of its limits ([database roles](#database-roles)): each setting of
-  `RUNTIME_TIMEOUTS` with its value;
+  `RUNTIME_TIMEOUTS` with its value, or a setting of the role in one database gives it another value,
+  which takes precedence over the role's own;
 - `auth.users` lacks one of `opos_on_auth_user_created`, `opos_on_auth_user_email_updated` and
-  `opos_on_auth_user_email_confirmed`, or has it disabled; a table of the `auth` schema carries a
-  trigger outside the list of required triggers in `verify.ts`, which a trigger OPOS attaches
-  joins in the PR of its migration.
+  `opos_on_auth_user_email_confirmed`, or has it disabled, or its definition — timing, events,
+  columns, condition, level and function — differs from the one in `verify.ts`; a table of the
+  `auth` schema carries a trigger outside that list, which a trigger OPOS attaches joins in the PR
+  of its migration.
 
 Still to be built, with its case: `auth.mfa_factors` lacks `opos_on_auth_mfa_factor_changed`; the
 trigger joins the list of required triggers together with its migration.

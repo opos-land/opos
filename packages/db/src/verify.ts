@@ -50,15 +50,21 @@ export const globalReads = [
 const globalTables = ['accounts']
 
 /**
- * The triggers OPOS attaches to the tables of the auth schema (PLAN.md 4.6), as `table.trigger`.
- * Each must exist and be enabled; a trigger on an auth table outside this list is a violation. A
- * trigger the API starts relying on joins this list in the PR of its migration.
+ * The triggers OPOS attaches to the tables of the auth schema (PLAN.md 4.6): table, then trigger,
+ * then its definition as `pg_get_triggerdef` deparses it with the schema of the function left out.
+ * Each must exist, be enabled and match; a trigger on an auth table outside this structure is a
+ * violation. A trigger the API starts relying on joins it in the PR of its migration.
  */
-const authTriggers = [
-  'users.opos_on_auth_user_created',
-  'users.opos_on_auth_user_email_updated',
-  'users.opos_on_auth_user_email_confirmed',
-]
+const authTriggers: Record<string, Record<string, string>> = {
+  users: {
+    opos_on_auth_user_created:
+      'CREATE TRIGGER opos_on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_auth_user_created()',
+    opos_on_auth_user_email_updated:
+      'CREATE TRIGGER opos_on_auth_user_email_updated AFTER UPDATE OF email ON auth.users FOR EACH ROW WHEN (((old.email)::text IS DISTINCT FROM (new.email)::text)) EXECUTE FUNCTION handle_auth_user_email_updated()',
+    opos_on_auth_user_email_confirmed:
+      'CREATE TRIGGER opos_on_auth_user_email_confirmed AFTER UPDATE OF email_confirmed_at ON auth.users FOR EACH ROW WHEN ((old.email_confirmed_at IS DISTINCT FROM new.email_confirmed_at)) EXECUTE FUNCTION handle_auth_user_email_confirmed()',
+  },
+}
 
 /**
  * The columns opos_app updates (PLAN.md 4.6): never `id`, `tenant_id` or a column that points a
@@ -347,6 +353,23 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
         problems.push(`${role} lacks ${setting}=${value}`)
     }
   }
+  // A setting of a role in one database beats the setting of the role itself.
+  const overrides = await sql<{ role: string; database: string; config: string[] }[]>`
+    select r.rolname as role, d.datname as database, s.setconfig as config
+    from pg_db_role_setting s
+    join pg_roles r on r.oid = s.setrole
+    join pg_database d on d.oid = s.setdatabase
+    where r.rolname in ('opos_app', 'opos_app_global') and s.setdatabase <> 0
+    order by 1, 2
+  `
+  for (const { role, database, config } of overrides) {
+    for (const [setting, value] of Object.entries(RUNTIME_TIMEOUTS)) {
+      const found = config.find((entry) => entry.startsWith(`${setting}=`))
+      if (found !== undefined && found !== `${setting}=${value}`) {
+        problems.push(`${role} has ${found} in database ${database}, not ${value}`)
+      }
+    }
+  }
   const owned = await sql<{ relname: string; owner: string }[]>`
     select c.relname, pg_get_userbyid(c.relowner) as owner
     from pg_class c
@@ -478,23 +501,40 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     )
   }
 
-  // OPOS ties public to auth through triggers on auth tables, and through nothing else.
-  const authFound = await sql<{ trigger: string; enabled: boolean }[]>`
-    select c.relname || '.' || t.tgname as trigger, t.tgenabled in ('O', 'A') as enabled
+  // OPOS ties public to auth through triggers on auth tables, and through nothing else. The
+  // function schema is left out of the definition when the search_path shows it, so it is
+  // compared apart.
+  const authFound = await sql<
+    { table: string; name: string; enabled: boolean; definition: string; schema: string }[]
+  >`
+    select c.relname as table, t.tgname as name, t.tgenabled in ('O', 'A') as enabled,
+      regexp_replace(pg_get_triggerdef(t.oid), 'EXECUTE FUNCTION public\.', 'EXECUTE FUNCTION ')
+        as definition,
+      f.pronamespace::regnamespace::text as schema
     from pg_trigger t
     join pg_class c on c.oid = t.tgrelid
+    join pg_proc f on f.oid = t.tgfoid
     where c.relnamespace = 'auth'::regnamespace and not t.tgisinternal
-    order by 1
+    order by 1, 2
   `
-  for (const trigger of authTriggers) {
-    if (!authFound.some((found) => found.trigger === trigger && found.enabled)) {
-      problems.push(`auth.${trigger.split('.')[0]} lacks ${trigger.split('.')[1]}`)
+  for (const [table, triggers] of Object.entries(authTriggers)) {
+    for (const [name, expected] of Object.entries(triggers)) {
+      const found = authFound.find((t) => t.table === table && t.name === name)
+      if (!found?.enabled) {
+        problems.push(`auth.${table} lacks ${name}`)
+      } else if (found.definition !== expected || found.schema !== 'public') {
+        problems.push(
+          `auth.${table}.${name} differs from its definition ${expected} (found ${found.definition} in schema ${found.schema})`,
+        )
+      }
     }
   }
-  const foreign = authFound.filter((found) => !authTriggers.includes(found.trigger))
+  const foreign = authFound.filter(
+    (found) => !Object.hasOwn(authTriggers[found.table] ?? {}, found.name),
+  )
   if (foreign.length > 0) {
     problems.push(
-      `Triggers in the auth schema outside the required list: ${foreign.map((r) => `auth.${r.trigger}`).join(', ')}`,
+      `Triggers in the auth schema outside the required list: ${foreign.map((r) => `auth.${r.table}.${r.name}`).join(', ')}`,
     )
   }
 

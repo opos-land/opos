@@ -467,6 +467,32 @@ describe('verifyDatabase', () => {
       },
     )
 
+    const inDatabase = async (sql: postgres.TransactionSql, role: string, value: string) => {
+      const [row] = await sql<{ name: string }[]>`select current_database() as name`
+      await sql.unsafe(
+        `alter role ${role} in database ${row!.name} set statement_timeout = '${value}'`,
+      )
+    }
+
+    it.each(['opos_app', 'opos_app_global'])(
+      'reports %s with a per-database override of a limit, which beats the role setting',
+      async (role) => {
+        await expectProblem(
+          (sql) => inDatabase(sql, role, '0'),
+          new RegExp(`${role} has statement_timeout=0 in database \\w+, not 15s`),
+          supabaseAdmin,
+        )
+      },
+    )
+
+    it('accepts a per-database setting equal to the limit', async () => {
+      const problems = await problemsAfter(
+        (sql) => inDatabase(sql, 'opos_app', '15s'),
+        supabaseAdmin,
+      )
+      expect(problems).toEqual([])
+    })
+
     it.each([
       ['opos_app', 'createrole', 'CREATEROLE'],
       ['opos_app', 'createdb', 'CREATEDB'],
@@ -515,6 +541,44 @@ describe('verifyDatabase', () => {
         /auth\.users lacks opos_on_auth_user_created/,
         supabaseAdmin,
       )
+    })
+
+    it('reports a required trigger recreated with other events', async () => {
+      await expectProblem(
+        (sql) =>
+          sql.unsafe(`
+            drop trigger opos_on_auth_user_email_updated on auth.users;
+            create trigger opos_on_auth_user_email_updated before delete on auth.users
+              for each row execute function public.handle_auth_user_email_updated();
+          `),
+        /auth\.users\.opos_on_auth_user_email_updated differs from its definition/,
+        supabaseAdmin,
+      )
+    })
+
+    it('reports a required trigger recreated to call another function', async () => {
+      await expectProblem(
+        (sql) =>
+          sql.unsafe(`
+            drop trigger opos_on_auth_user_email_updated on auth.users;
+            create trigger opos_on_auth_user_email_updated
+              after update of email on auth.users
+              for each row when (old.email is distinct from new.email)
+              execute function public.handle_auth_user_created();
+          `),
+        /auth\.users\.opos_on_auth_user_email_updated differs from its definition/,
+        supabaseAdmin,
+      )
+    })
+
+    it('accepts the required triggers through any role and search_path', async () => {
+      for (const as of [migrator, supabaseAdmin]) {
+        const problems = await problemsAfter(
+          (sql) => sql.unsafe(`set local search_path = pg_catalog`),
+          as,
+        )
+        expect(problems).toEqual([])
+      }
     })
 
     it.each([

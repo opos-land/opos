@@ -1923,10 +1923,10 @@ error. Only the pages that would start a second sign-in over the pending one lea
 `/login`, the portal's `/register` and `/auth/confirm` opened with no `token_hash` in the address.
 Every other page renders as for a visitor with no account and no account data: in the portal the
 landing page, `/privacy` and the convention pages, where the header offers to finish signing in
-(`/auth/mfa?redirect=<this page>`) in place of "Sign in" and a like leads to the screen rather than
-to `/login`; in the panel `/scanner` and `/invitation`, whose public preview stays, accepting
-answering `session.mfa-required` and leading to the screen with the same page and token as the
-return path. A page or action that needs a session leads to the screen. `/auth/confirm` opened with
+(`/auth/mfa?redirect=<this page>`; not on `/auth/confirm` holding a token, where the button leads there) in place of "Sign in" and a like leads to the screen rather than
+to `/login`; in the panel `/scanner` and `/invitation`, whose public preview stays and shows "Finish
+signing in" in place of the join options, a sign-in or an accept there answering `session.mfa-required` and
+leading to the screen with the same page and token as the return path. A page or action that needs a session leads to the screen. `/auth/confirm` opened with
 an unspent link keeps its button; pressing it on an account with 2FA leads to the screen with the
 return path `/auth/confirm`, so a pending session never swallows a link, whichever account the link
 is for. When a session waiting for its code replaces an account a tab shows, the other tabs are
@@ -2018,7 +2018,8 @@ headers ([13](#13-deployment)).
   `401`, or a second `401`, signs out. A refresh answered `429`, `500` or `503`, or stopped by the
   network, keeps the session and hands the screen the original response.
   `session.reauthentication-required` goes to the screen instead ([7.4](#74-authorization)), and
-  `session.mfa-required` to `/auth/mfa` ([7.12](#712-two-factor-authentication)); neither refreshes.
+  `session.mfa-required` is handed to the application, which leads a page or an action that needs a
+  session to `/auth/mfa` ([7.12](#712-two-factor-authentication)); neither refreshes.
 - Application start asks `GET /me`, with one refresh on a `401` as above — until that resolves the
   user sees a loading view, not the sign-in screen
   ([session.ts](../apps/panel/src/shared/lib/session.ts)). A network failure or a `503` from
@@ -2028,8 +2029,9 @@ headers ([13](#13-deployment)).
   in, no account is known and no account data is shown. `MfaGate`
   ([mfa-gate.tsx](../apps/panel/src/features/auth/components/mfa-gate.tsx)) at the root of the
   router leads the sign-in page and `/auth/confirm` opened with no link to `/auth/mfa`, and
-  `RequireSession` does the same instead of sending the visitor to `/login`; the other pages,
-  `/invitation` among them, render as for a visitor ([7.12](#712-two-factor-authentication)). The path to return to follows the table of
+  `RequireSession` does the same instead of sending the visitor to `/login`; the other pages render
+  as for a visitor ([7.12](#712-two-factor-authentication)), `/invitation` with its preview and
+  "Finish signing in" in place of the join options. The path to return to follows the table of
   [7.12](#712-two-factor-authentication)
   ([mfa-return.ts](../apps/panel/src/features/auth/model/mfa-return.ts)); only a path inside the
   panel is a target.
@@ -2135,8 +2137,8 @@ image with its headers ([13](#13-deployment)).
 - The API link ([api-fetch.ts](../apps/portal/src/shared/lib/api-fetch.ts)) works as the panel's
   ([8](#8-appspanel)): the session cookies and `Accept-Language` from the active locale, one shared
   `POST /auth/refresh` and one retry on a `401`, an outage that keeps the session,
-  `session.reauthentication-required` left to the screen and `session.mfa-required` leading to
-  `/auth/mfa`. A sign-out, or another account's session replacing it, clears the query cache
+  `session.reauthentication-required` left to the screen and `session.mfa-required` handed to the
+  application, which leads a page or an action that needs a session to `/auth/mfa`. A sign-out, or another account's session replacing it, clears the query cache
   ([providers.tsx](../apps/portal/src/app/providers.tsx)), in every tab through the
   `opos-portal-session` channel ([7.4](#74-authorization)).
 - Application start asks `GET /me`, with one refresh on a `401`; a page that needs the session

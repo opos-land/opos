@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import * as root from '../src/index'
 import { migrationUrl } from '../src/migration-url'
 
 // Every db:* script connects through this variable, with no default: a missing one and a remote
@@ -69,5 +70,9 @@ describe('migrationUrl', () => {
     const url = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
 
     expect(migrationUrl({ DATABASE_MIGRATION_URL: url, OPOS_ENV: 'local' })).toBe(url)
+  })
+
+  it('is exported from the package root, so tests and fixtures read the URL through the guard', () => {
+    expect(root.migrationUrl).toBe(migrationUrl)
   })
 })

@@ -1,13 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import { createTenant, migrationDb, tenants, type Transaction } from '@opos/db'
+import { createTenant, migrationDb, migrationUrl, tenants, type Transaction } from '@opos/db'
 import { inArray, sql } from 'drizzle-orm'
 import { createAccount, signIn } from './auth'
 
 // Tenants, editions and memberships for API tests, written as postgres (PLAN.md 15.1).
 
-const url = process.env.DATABASE_MIGRATION_URL
-if (!url) throw new Error('DATABASE_MIGRATION_URL is missing from apps/api/.env')
-const db = migrationDb(url)
+const db = migrationDb(migrationUrl())
 const tenantIds: string[] = []
 
 type Level = 'none' | 'read' | 'write'

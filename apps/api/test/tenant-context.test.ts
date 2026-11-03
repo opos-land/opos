@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { migrationUrl } from '@opos/db'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -193,7 +194,7 @@ describe('tenant transaction', () => {
   })
 
   it('serves no tenant when DATABASE_URL names a role that bypasses RLS', async () => {
-    const migrator = new URL(process.env.DATABASE_MIGRATION_URL!)
+    const migrator = new URL(migrationUrl())
     const bypassing = await createApp({ DATABASE_URL: migrator.toString() })
     try {
       for (const path of ['/tenants/current', '/editions']) {

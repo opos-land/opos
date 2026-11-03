@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { parseEnv } from 'node:util'
+import { migrationUrl } from '@opos/db'
 
 // The addresses and credentials of the stack under test come from the API's own configuration,
 // apps/api/.env over its template, as in the API tests (PLAN.md 15.1). Mailpit's port is the shell's
@@ -33,7 +34,7 @@ export const stack = {
   portal: required('PORTAL_URL'),
   auth: `${required('SUPABASE_URL').replace(/\/+$/, '')}/auth/v1`,
   mailpit: `http://localhost:${process.env.SUPABASE_LOCAL_SMTP_PORT ?? '54324'}`,
-  databaseUrl: required('DATABASE_MIGRATION_URL'),
+  databaseUrl: migrationUrl(apiEnv),
   secretKey: required('SUPABASE_SECRET_KEY'),
 }
 

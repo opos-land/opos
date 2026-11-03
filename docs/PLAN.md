@@ -165,12 +165,11 @@ opos/
   package.json, pnpm-workspace.yaml, turbo.json, mise.toml, lefthook.yml,
   commitlint.config.mjs, .prettierrc, .github/   # built: root tooling (3.1, 12, 15.3)
   .claude/                    # built: docs-sync skill, tenant isolation and i18n reviewers, the
-                              #   tests-first hooks in settings.json (AGENTS.md); still to come: the
-                              #   BFF boundary hook (3.2)
-  scripts/                    # built: tests-first.mjs, the test-first check of every change, and its
-                              #   test, infra-init.mjs (12) and its test; still to come:
-                              #   bff-boundary.mjs, supabase-push.mjs and the remote block check
-                              #   (10), their tests
+                              #   tests-first and BFF boundary hooks in settings.json (AGENTS.md, 3.2)
+  scripts/                    # built: tests-first.mjs, the test-first check of every change,
+                              #   bff-boundary.mjs (3.2), infra-init.mjs (12), check-migrations.mjs
+                              #   and their tests; still to come: supabase-push.mjs and the remote
+                              #   block check (10), their tests
   .github/workflows/deploy.yml  # the deployment to Dev and production (13)
   docker-compose.deploy.yml   # traefik, api, panel, portal, tools; backup (production), mailpit (Dev) (13)
   docs/
@@ -342,17 +341,17 @@ their production bundles nothing names Supabase:
 | a `sb_publishable_` or `sb_secret_` key, a JWT, a `VITE_*` variable whose name contains `SUPABASE` | a key in a bundle is a key for everyone |
 
 The `react` ESLint preset refuses an import of `@supabase/*`, static or dynamic, in every script
-file ([react.js](../packages/eslint-config/react.js)), so the editor, lefthook `pre-commit` and the
-`lint` task in CI show it. The files that still hold the `@supabase/auth-js` client are listed in
-each application's `eslint.config.js` ([panel](../apps/panel/eslint.config.js),
-[portal](../apps/portal/eslint.config.js)) and may import that package alone; nothing joins the
-list, and the move of sign-in to the API empties it. Still to be built: `scripts/bff-boundary.mjs`, which holds all the rules of the
-table and enforces them where the tests-first check runs — a Claude Code hook after every `Edit`,
-`Write` and `Bash` that touches the two applications
+file ([react.js](../packages/eslint-config/react.js)), so the editor and the `lint` task in CI show
+it. [bff-boundary.mjs](../scripts/bff-boundary.mjs) holds all the rules of the table and enforces
+them where the tests-first check runs: a Claude Code hook after every `Edit`, `Write` and `Bash`
 ([.claude/settings.json](../.claude/settings.json)), lefthook `pre-commit` on the staged files, and
-CI on every PR, where it also scans `dist/` of both builds. The one place a
-Supabase address reaches a browser is the redirect of Google sign-in, sent by the API
-([7.5](#75-google-oauth)); it is never written in a frontend.
+CI on every PR, which builds both applications with `VITE_API_URL=https://opos-control.invalid` and
+`SUPABASE_SECRET_KEY=opos-canary-secret-x` and scans `dist/` as well (`--dist`). A bundle without
+the control address was not built from the tree scanned and fails; a bundle that holds the canary
+leaks a secret of the build and fails. A breach names the file and the rule, never the text that
+matched: a hook's output reaches an agent's context. The one place a Supabase address reaches a
+browser is the redirect of Google sign-in, sent by the API ([7.5](#75-google-oauth)); it is never
+written in a frontend.
 
 `shared/ui` holds components with no domain knowledge, built on native elements and styled only
 through the tokens of the application's `src/styles.css` (colours, typography, spacing, radii),
@@ -2493,7 +2492,7 @@ and commented with the advisory id. The override leaves once the parent ships th
 ### Git hooks
 
 [lefthook.yml](../lefthook.yml), installed by `prepare`, so `pnpm install` is enough: prettier,
-`eslint --fix` and, once built, the [BFF boundary check](#32-frontend-application-layout) on staged files before
+`eslint --fix` and the [BFF boundary check](#32-frontend-application-layout) on staged files before
 a commit, commitlint and the [tests-first check](../AGENTS.md#tests-first) on the
 message, and `turbo run typecheck test` on the packages changed against `origin/develop` before a
 push (the API tests need `pnpm infra:init` once in a new checkout, then `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
@@ -2966,11 +2965,12 @@ ends with `pnpm db:roles`; the CLI's local stack then serves the schema and API 
 proves the seed idempotent. On a PR, `typecheck`, `lint` and `test`
 run with `--affected` against the PR base branch; a push to `develop` or `main` runs them on every
 package with `TURBO_FORCE`, so no cached result stands in for a run, and fills the turbo cache that
-PRs restore. `pnpm build` then bundles the API, and the job
+PRs restore. `pnpm build` then bundles the API and both applications, with the control address and the canary of the
+[BFF boundary check](#32-frontend-application-layout), and the job
 starts `dist/main.js` from the `apps/api/.env` that `pnpm infra:init` wrote, with
 `NODE_ENV=production`, against the same stack: `/health` must answer `200`. The tests run the sources; this step runs the bundle that production runs. The
-[BFF boundary check](#32-frontend-application-layout), once built, runs on every PR over the sources
-and over `dist/` of the panel and the portal.
+[BFF boundary check](#32-frontend-application-layout) runs on every PR, right after that build, over
+the sources and over `dist/` of the panel and the portal.
 `pnpm format:check`, `pnpm i18n:check` and `pnpm test:e2e` run in full on every PR, and so do
 `pnpm test:scripts` (the tests of the root `scripts/` and of `.claude/`, on `node --test`; it fails
 below full line, branch and function coverage of the root scripts, each imported by a test beside

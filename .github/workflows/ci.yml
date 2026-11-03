@@ -62,7 +62,14 @@ jobs:
           TURBO_FORCE: ${{ github.event_name == 'push' }}
           # --affected diffs against the PR base branch, not always main
           TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+      # The control address and the canary make the bundle scan below prove something: a bundle
+      # without the address was not built from this tree, and one with the secret leaks it
       - run: pnpm build
+        env:
+          VITE_API_URL: https://opos-control.invalid
+          SUPABASE_SECRET_KEY: opos-canary-secret-x
+      # The sources and the bundles of the panel and the portal name nothing of Supabase
+      - run: node scripts/bff-boundary.mjs --dist
       # The tests run the sources; this starts the bundle that production runs
       - name: start the built api
         run: |

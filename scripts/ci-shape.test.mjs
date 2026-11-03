@@ -198,3 +198,36 @@ test('the ruleset targets main, forbids deletion and force pushes and requires a
   const pullRequest = ruleset.rules.find((rule) => rule.type === 'pull_request')
   assert.equal(pullRequest.parameters.required_approving_review_count, 0)
 })
+
+test('check builds both applications against the control address and scans them', () => {
+  const steps = job('check')
+  const build = steps.indexOf('- run: pnpm build')
+  assert.notEqual(build, -1)
+  const environment = steps.slice(build, steps.indexOf('- name: start the built api'))
+  assert.match(environment, /VITE_API_URL: https:\/\/opos-control\.invalid/)
+  assert.match(environment, /SUPABASE_SECRET_KEY: opos-canary-secret-x/)
+  assert.ok(build < steps.indexOf('- run: node scripts/bff-boundary.mjs --dist'))
+})
+
+test('the build task reads the control address and passes the canary on, so no cache stands in', () => {
+  const { tasks } = JSON.parse(read('../turbo.json'))
+  assert.ok(tasks.build.env.includes('VITE_API_URL'))
+  assert.ok(tasks.build.passThroughEnv.includes('SUPABASE_SECRET_KEY'))
+})
+
+test('the BFF boundary check runs in a Claude Code hook and in lefthook pre-commit', () => {
+  const { hooks } = JSON.parse(read('../.claude/settings.json'))
+  const commands = (event, matcher) =>
+    hooks[event]
+      .filter((entry) => entry.matcher === matcher)
+      .flatMap((e) => e.hooks.map((h) => h.command))
+  for (const matcher of ['Edit|Write', 'Bash']) {
+    assert.ok(
+      commands('PostToolUse', matcher).some((command) =>
+        /scripts\/bff-boundary\.mjs --hook( \|\| exit 2)?$/.test(command),
+      ),
+      matcher,
+    )
+  }
+  assert.match(read('../lefthook.yml'), /run: node scripts\/bff-boundary\.mjs \{staged_files\}/)
+})

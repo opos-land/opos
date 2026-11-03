@@ -262,11 +262,10 @@ those of the script.
 **The panel and the portal never talk to Supabase.** The API is their only backend (BFF): no
 `@supabase/*` package, no Supabase address or key and no `VITE_*` variable naming Supabase in either
 application; every sign-in operation goes through the API's `auth` endpoints
-([BFF boundary](docs/PLAN.md#32-frontend-application-layout)). Until the move of sign-in to the API
-is built, the existing `@supabase/auth-js` clients of the two applications are the only exception,
-and nothing new is built on them: the `react` ESLint preset refuses any other import of
-`@supabase/*`, static or dynamic, and the files of the exception, listed in each application's
-`eslint.config.js`, may import `@supabase/auth-js` alone.
+([BFF boundary](docs/PLAN.md#32-frontend-application-layout)). The `react` ESLint preset refuses an
+import of `@supabase/*`, static or dynamic, and [scripts/bff-boundary.mjs](scripts/bff-boundary.mjs)
+refuses the rest, in a Claude Code hook, in lefthook `pre-commit` and in CI, which scans the built
+bundles too. A breach is fixed in the application, never allowed by an exception.
 
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`,
 and no remote database URL, Supabase project reference or access token in a `.env` or

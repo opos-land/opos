@@ -19,6 +19,9 @@ pre-commit:
       glob: '*.{ts,tsx,astro}'
       run: pnpm eslint --fix --max-warnings 0 {staged_files}
       stage_fixed: true
+    # Nothing in the panel or the portal names Supabase (docs/PLAN.md 3.2); other staged files pass
+    - name: bff-boundary
+      run: node scripts/bff-boundary.mjs {staged_files}
 
 # The API tests need the local stack: pnpm infra:init once in a new checkout, then pnpm infra:up
 pre-push:

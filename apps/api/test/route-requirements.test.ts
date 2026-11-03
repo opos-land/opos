@@ -179,9 +179,10 @@ describe('account routes', () => {
 })
 
 describe('tenant routes', () => {
-  const routes = tenantRoutes.map(
-    ([name, procedure]) => [name, procedure, tenantRequirements[name]!] as const,
-  )
+  // A route missing from the needs is the coverage test's to name, not a crash of this file.
+  const routes = tenantRoutes
+    .filter(([name]) => name in tenantRequirements)
+    .map(([name, procedure]) => [name, procedure, tenantRequirements[name]!] as const)
 
   it.each(routes)('%s refuses a request without a token', async (_, procedure, need) => {
     const res = await call(procedure, need)

@@ -141,6 +141,13 @@
       "when": 1793565368664,
       "tag": "0019_likes_and_schedule",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793692154817,
+      "tag": "0020_revoke_api_roles_from_core",
+      "breakpoints": true
     }
   ]
 }

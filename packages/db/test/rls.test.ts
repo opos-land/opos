@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createEdition,
@@ -268,25 +270,48 @@ describe('tenant isolation', () => {
     }
   })
 
-  it.each(['anon', 'authenticated'])('gives %s no access to public tables', async (role) => {
-    for (const table of [
-      'accounts',
-      'tenants',
-      'tenant_memberships',
-      'editions',
-      'edition_memberships',
-      'accepted_invitations',
-      'program_items',
-      'program_item_speakers',
-      'program_item_likes',
-    ]) {
-      await expect(
-        migrator.begin(async (sql) => {
-          await sql.unsafe(`set local role ${role}`)
-          await sql.unsafe(`select 1 from public.${table} limit 1`)
-        }),
-      ).rejects.toThrow(/permission denied/)
-    }
+  it.each(['anon', 'authenticated', 'service_role'])(
+    'gives %s no privilege on any public table',
+    async (role) => {
+      const held = await migrator`
+        select c.relname, p.privilege
+        from pg_class c
+        cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) p(privilege)
+        where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p')
+          and has_table_privilege(${role}, c.oid, p.privilege)
+      `
+      expect(held).toEqual([])
+    },
+  )
+
+  it('revokes the Supabase API roles from the core tables in its own migration', async () => {
+    const statements = readFileSync(
+      join(import.meta.dirname, '../drizzle/0020_revoke_api_roles_from_core.sql'),
+      'utf8',
+    ).split('--> statement-breakpoint')
+    const held = await migrator
+      .begin(async (sql) => {
+        // What a project that ran no db:roles before the first migration hands out by default.
+        for (const role of ['anon', 'authenticated', 'service_role']) {
+          await sql.unsafe(
+            `grant all on accounts, tenants, tenant_memberships, editions, edition_memberships to ${role}`,
+          )
+        }
+        for (const statement of statements) await sql.unsafe(statement)
+        const rows = await sql`
+          select r.role, c.relname from pg_class c
+          cross join (values ('anon'), ('authenticated'), ('service_role')) r(role)
+          where c.relnamespace = 'public'::regnamespace and c.relkind = 'r'
+            and c.relname in ('accounts', 'tenants', 'tenant_memberships', 'editions', 'edition_memberships')
+            and has_table_privilege(r.role, c.oid, 'SELECT')
+        `
+        throw Object.assign(new Rollback(), { rows })
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Rollback) return (error as Rollback & { rows: unknown[] }).rows
+        throw error
+      })
+    expect(held).toEqual([])
   })
 })
 

@@ -3,7 +3,7 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { deleteCreatedAccounts } from './auth'
+import { deleteCreatedAccounts, session } from './auth'
 import {
   addEdition,
   addLike,
@@ -48,17 +48,17 @@ const likePath = (editionId: string, itemId: string) =>
 const like = (who: Member, editionId: string, itemId: string, slug = a.slug) =>
   request(app.getHttpServer())
     .put(likePath(editionId, itemId))
-    .set('Authorization', `Bearer ${who.token}`)
+    .use(session(who.token))
     .set('X-Tenant-Slug', slug)
 
 const unlike = (who: Member, editionId: string, itemId: string, slug = a.slug) =>
   request(app.getHttpServer())
     .delete(likePath(editionId, itemId))
-    .set('Authorization', `Bearer ${who.token}`)
+    .use(session(who.token))
     .set('X-Tenant-Slug', slug)
 
 const schedule = (who: Member) =>
-  request(app.getHttpServer()).get('/me/schedule').set('Authorization', `Bearer ${who.token}`)
+  request(app.getHttpServer()).get('/me/schedule').use(session(who.token))
 
 const DAY = 24 * 3600 * 1000
 const days = (count: number) => new Date(Date.now() + count * DAY).toISOString()
@@ -270,7 +270,7 @@ describe('the personal schedule', () => {
 
     await request(app.getHttpServer())
       .patch(`/editions/${editionId}`)
-      .set('Authorization', `Bearer ${t.head.token}`)
+      .use(session(t.head.token))
       .set('X-Tenant-Slug', t.slug)
       .send({ isPublished: false })
       .expect(200)

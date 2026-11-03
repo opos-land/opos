@@ -8,6 +8,8 @@ import {
   deleteCreatedAccounts,
   foreignKey,
   mintToken,
+  originOf,
+  session,
   signIn,
   unsignedToken,
 } from './auth'
@@ -34,7 +36,7 @@ const me = () => request(app.getHttpServer()).get('/me')
 
 describe('JwtAuthGuard', () => {
   it('accepts a Supabase Auth session and returns the account', async () => {
-    const res = await me().set('Authorization', `Bearer ${token}`).expect(200)
+    const res = await me().use(session(token)).expect(200)
 
     expect(res.body).toMatchObject({
       id: accountId,
@@ -56,12 +58,21 @@ describe('JwtAuthGuard', () => {
     'lists the sign-in methods of the token with providers %j as %j',
     async (providers, expected) => {
       const res = await me()
-        .set('Authorization', `Bearer ${await mintToken({ sub: accountId, providers })}`)
+        .use(session(await mintToken({ sub: accountId, providers })))
         .expect(200)
 
       expect(res.body).toMatchObject({ id: accountId, signInMethods: expected })
     },
   )
+
+  it('refuses Authorization: Bearer on an account route, a valid token or not', async () => {
+    const withHeader = () => me().set('Authorization', `Bearer ${token}`)
+
+    expect((await withHeader().expect(401)).body).toMatchObject({ code: 'session.invalid' })
+    expect((await withHeader().set('Origin', originOf('portal')).expect(401)).body).toMatchObject({
+      code: 'session.invalid',
+    })
+  })
 
   it('rejects a request without a token', async () => {
     const res = await me().expect(401)
@@ -73,7 +84,7 @@ describe('JwtAuthGuard', () => {
 
   it('accepts a token signed with the local key the stack publishes', async () => {
     const res = await me()
-      .set('Authorization', `Bearer ${await mintToken({ sub: accountId })}`)
+      .use(session(await mintToken({ sub: accountId })))
       .expect(200)
 
     expect(res.body).toMatchObject({ id: accountId })
@@ -98,7 +109,7 @@ describe('JwtAuthGuard', () => {
     ['a sub that is not a uuid', () => mintToken({ sub: 'not-a-uuid' })],
   ])('rejects %s', async (_, makeToken) => {
     const res = await me()
-      .set('Authorization', `Bearer ${await makeToken()}`)
+      .use(session(await makeToken()))
       .expect(401)
 
     expect(res.body).toMatchObject({ code: 'session.invalid' })
@@ -107,10 +118,7 @@ describe('JwtAuthGuard', () => {
   it('answers 503 with Retry-After when the signing keys cannot be fetched', async () => {
     const cut = await createApp({ SUPABASE_URL: 'http://127.0.0.1:1' })
     try {
-      const res = await request(cut.getHttpServer())
-        .get('/me')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(503)
+      const res = await request(cut.getHttpServer()).get('/me').use(session(token)).expect(503)
 
       expect(res.body).toMatchObject({ code: 'server.unavailable' })
       expect(res.headers['retry-after']).toBe('30')
@@ -132,13 +140,13 @@ describe('JwtAuthGuard', () => {
 
 describe('PATCH /me', () => {
   const patch = (body: object) =>
-    request(app.getHttpServer()).patch('/me').set('Authorization', `Bearer ${token}`).send(body)
+    request(app.getHttpServer()).patch('/me').use(session(token)).send(body)
 
   it('changes the names and the locale', async () => {
     const res = await patch({ firstName: '  Ewa ', locale: 'en' }).expect(200)
 
     expect(res.body).toMatchObject({ firstName: 'Ewa', lastName: 'Nowak', locale: 'en' })
-    expect((await me().set('Authorization', `Bearer ${token}`)).body).toMatchObject({
+    expect((await me().use(session(token))).body).toMatchObject({
       locale: 'en',
     })
   })
@@ -166,9 +174,7 @@ describe('two accounts', () => {
     const otherToken = await signIn(other.email)
 
     const responses = await Promise.all(
-      Array.from({ length: 10 }, (_, i) =>
-        me().set('Authorization', `Bearer ${i % 2 ? otherToken : token}`),
-      ),
+      Array.from({ length: 10 }, (_, i) => me().use(session(i % 2 ? otherToken : token))),
     )
 
     responses.forEach((res, i) => {
@@ -182,11 +188,11 @@ describe('two accounts', () => {
 
     await request(app.getHttpServer())
       .patch('/me')
-      .set('Authorization', `Bearer ${token}`)
+      .use(session(token))
       .send({ firstName: 'Changed' })
       .expect(200)
 
-    const res = await me().set('Authorization', `Bearer ${otherToken}`).expect(200)
+    const res = await me().use(session(otherToken)).expect(200)
     expect(res.body).toMatchObject({ firstName: 'Jan' })
   })
 })
@@ -202,7 +208,7 @@ describe('errors', () => {
     for (const type of ['text/plain', 'application/octet-stream', 'application/json-x']) {
       const res = await request(app.getHttpServer())
         .patch('/me')
-        .set('Authorization', `Bearer ${token}`)
+        .use(session(token))
         .set('Content-Type', type)
         .send('locale=en')
         .expect(415)
@@ -214,7 +220,7 @@ describe('errors', () => {
   it('answers a body that is not JSON in the error format', async () => {
     const res = await request(app.getHttpServer())
       .patch('/me')
-      .set('Authorization', `Bearer ${token}`)
+      .use(session(token))
       .set('Content-Type', 'application/json')
       .send('{not json')
       .expect(400)

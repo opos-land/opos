@@ -1465,10 +1465,9 @@ database, not from the token. A valid token without an `accounts` row -> `401`. 
 two-factor authentication a token below `aal2` -> `401` `session.mfa-required`
 ([7.12](#712-two-factor-authentication)). The JWT holds no
 `tenantId`. The scanner sends its device token as `Authorization: Bearer` ([7.11](#711-scanner));
-no other route reads that header. Until the panel and the portal send the cookies, the guard and the
-rate limit also accept an access token in `Authorization: Bearer` when the application's access
-cookie is missing; both read the credential through one function and share one verification per
-request ([request-credential.ts](../apps/api/src/common/guards/request-credential.ts)).
+no other route reads that header, and a token sent in it on any other route is no credential: `401`.
+The guard and the rate limit read the credential through one function and share one verification
+per request ([request-credential.ts](../apps/api/src/common/guards/request-credential.ts)).
 
 Verifying a token ends in one of three outcomes:
 
@@ -2215,9 +2214,7 @@ Supabase Auth sends no email itself. For every message it calls `POST /hooks/sen
    `redirect_to` is one of the two `/auth/confirm` addresses the API itself asked for
    ([5.1](#51-auth--sign-in-through-the-api)); any other `redirect_to` becomes
    `<PORTAL_URL>/auth/confirm`. The link never names Supabase: the button of `/auth/confirm` redeems
-   it through `POST /auth/verify`. Until the frontends move to `/auth/confirm`, another path of
-   either application keeps the link through Supabase Auth's `/verify`. The template is rendered
-   through Lingui.
+   it through `POST /auth/verify`. The template is rendered through Lingui.
 4. It sends the message through `MailModule` and answers `200 {}`. An SMTP failure -> `500`, which
    Supabase Auth reports to the API as a failed send. Supabase Auth waits 5 s for the hook and
    does not retry, so a send has a 4 s deadline as a whole

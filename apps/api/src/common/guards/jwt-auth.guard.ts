@@ -12,9 +12,8 @@ import {
 import { credentialOf, verifyOnce } from './request-credential'
 
 /**
- * Verifies the Supabase Auth access token (PLAN.md 7.4), from the application's access cookie and,
- * until the frontends move off it, from `Authorization: Bearer`, and puts its account into the request
- * store. The JWT holds no tenant; `locale` and the names come from `accounts`, not the token.
+ * Verifies the Supabase Auth access token (PLAN.md 7.4), from the application's access cookie
+ * alone, and puts its account into the request store. The JWT holds no tenant; `locale` and the names come from `accounts`, not the token.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {

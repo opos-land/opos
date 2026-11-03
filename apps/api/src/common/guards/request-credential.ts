@@ -1,7 +1,7 @@
 import { readSessionCookies } from '../../modules/auth/session-cookies'
 import { type Env } from '../../config/env'
 import { applicationFromOrigin } from '../http/application'
-import { type AccessTokenVerifier, bearerToken, type TokenCheck } from './access-token'
+import { type AccessTokenVerifier, type TokenCheck } from './access-token'
 
 interface CredentialRequest {
   headers: Record<string, string | string[] | undefined>
@@ -9,16 +9,15 @@ interface CredentialRequest {
 
 /**
  * The access token a request presents (PLAN.md 7.4): the access cookie of the application its
- * `Origin` names, and only then, until the frontends move off it, `Authorization: Bearer`. A
- * request without the `Origin` of an application has no session cookie to read.
+ * `Origin` names, and nothing else. A request without the `Origin` of an application has no
+ * session cookie to read, and `Authorization` is read by the scanner's guard alone.
  */
 export function credentialOf(
   req: CredentialRequest,
   env: Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>,
 ): string | undefined {
   const app = applicationFromOrigin(req.headers.origin, env)
-  const cookie = app ? readSessionCookies(req, app).access : undefined
-  return cookie ?? bearerToken(req.headers.authorization)
+  return app ? readSessionCookies(req, app).access : undefined
 }
 
 const outcomes = new WeakMap<object, Map<string, Promise<TokenCheck>>>()

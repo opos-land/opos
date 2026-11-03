@@ -867,17 +867,6 @@ describe('DELETE /me', () => {
     expect((await inPortal.get('/me')).status).toBe(401)
     expect(await accountByEmail(email)).toBeUndefined()
   })
-
-  it('sets no cookie for a Bearer call without the Origin of an application', async () => {
-    const { email } = await confirmedAccount()
-
-    const res = await request(server)
-      .delete('/me')
-      .set('Authorization', `Bearer ${await signIn(email)}`)
-
-    expect(res.status).toBe(204)
-    expect(cookiesOf(res)).toEqual([])
-  })
 })
 
 describe('credentials', () => {
@@ -889,17 +878,6 @@ describe('credentials', () => {
 
     expect(res.status).toBe(200)
     expect(res.body).toMatchObject({ id, email })
-  })
-
-  it('still accepts Bearer until the frontends move', async () => {
-    const { email, id } = await confirmedAccount()
-
-    const res = await request(server)
-      .get('/me')
-      .set('Authorization', `Bearer ${await signIn(email)}`)
-
-    expect(res.status).toBe(200)
-    expect(res.body).toMatchObject({ id })
   })
 
   describe('and the rate limit', () => {
@@ -959,6 +937,9 @@ describe('credentials', () => {
 describe('the shared limit of the auth routes', () => {
   it('counts 300 requests per 5 minutes per address across six routes', async () => {
     const unlimited = await createApp({}, [], { limit: 100_000, ttl: 60_000 })
+    // Listening already, supertest starts no server per request: 25 requests at once would add
+    // 25 sets of listeners to a server that does not listen.
+    await unlimited.listen(0, '127.0.0.1')
     try {
       const send = (path: string, ip: string, body: object) =>
         request(unlimited.getHttpServer())

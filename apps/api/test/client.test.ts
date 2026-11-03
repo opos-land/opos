@@ -5,7 +5,7 @@ import { type ContractRouterClient } from '@orpc/contract'
 import { OpenAPILink } from '@orpc/openapi-client/fetch'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { deleteCreatedAccounts } from './auth'
+import { deleteCreatedAccounts, sessionHeaders } from './auth'
 import { closeTenantDb, deleteCreatedTenants, tenantWithHead } from './tenants'
 
 // How a frontend talks to the API: a client typed by the contract, the session and the tenant in
@@ -47,13 +47,13 @@ const client = (headers: Record<string, string>) => {
 
 describe('the contract client', () => {
   it('calls a tenant route with the types of the contract', async () => {
-    const api = client({ authorization: `Bearer ${t.head.token}`, 'x-tenant-slug': t.slug })
+    const api = client({ ...sessionHeaders(t.head.token), 'x-tenant-slug': t.slug })
 
     expect(await api.tenants.current()).toMatchObject({ id: t.id, slug: t.slug })
   })
 
   it('reads the error code and its params', async () => {
-    const api = client({ authorization: `Bearer ${t.head.token}`, 'x-tenant-slug': t.slug })
+    const api = client({ ...sessionHeaders(t.head.token), 'x-tenant-slug': t.slug })
     const own = (await api.tenants.members.list()).find((m) => m.role === 'head')!
 
     await expect(

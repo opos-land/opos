@@ -9,7 +9,7 @@ import {
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { deleteCreatedAccounts } from './auth'
+import { deleteCreatedAccounts, session } from './auth'
 import {
   addEdition,
   addEditionAccess,
@@ -108,7 +108,7 @@ function call(
   )
   const verb = method.toLowerCase() as Method
   let req = request(app.getHttpServer())[verb](target).set('X-Tenant-Slug', slug)
-  if (who) req = req.set('Authorization', `Bearer ${who.token}`)
+  if (who) req = req.use(session(who.token))
   return verb === 'get' ? req : req.send({})
 }
 

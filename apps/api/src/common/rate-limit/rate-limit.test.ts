@@ -14,30 +14,18 @@ const verifying = (check: TokenCheck) => ({
 
 const context = {} as ExecutionContext
 
-const req = (ip: string, authorization?: string, headers: Record<string, string> = {}) => ({
-  ip,
-  headers: { ...(authorization ? { authorization } : {}), ...headers },
-})
+const req = (ip: string, headers: Record<string, string> = {}) => ({ ip, headers })
+
+const portal = { cookie: 'opos_portal_access=abc', origin: 'https://opos.land' }
 
 describe('rateLimitTracker', () => {
-  it('counts a valid token against the account', async () => {
-    const sub = randomUUID()
-    const verifier = verifying({ status: 'valid', payload: { sub } })
-
-    expect(await rateLimitTracker(verifier, env)(req('192.0.2.1', 'Bearer abc'), context)).toBe(
-      `account:${sub}`,
-    )
-    expect(verifier.verify).toHaveBeenCalledWith('abc')
-  })
-
   it('counts a valid token in the session cookie against the account', async () => {
     const sub = randomUUID()
     const verifier = verifying({ status: 'valid', payload: { sub } })
-    const cookie = { cookie: 'opos_portal_access=abc', origin: 'https://opos.land' }
 
-    expect(
-      await rateLimitTracker(verifier, env)(req('192.0.2.1', undefined, cookie), context),
-    ).toBe(`account:${sub}`)
+    expect(await rateLimitTracker(verifier, env)(req('192.0.2.1', portal), context)).toBe(
+      `account:${sub}`,
+    )
     expect(verifier.verify).toHaveBeenCalledWith('abc')
   })
 
@@ -45,9 +33,9 @@ describe('rateLimitTracker', () => {
     const verifier = verifying({ status: 'invalid' })
     const cookie = { cookie: 'opos_panel_access=forged', origin: 'https://panel.opos.land' }
 
-    expect(
-      await rateLimitTracker(verifier, env)(req('192.0.2.1', undefined, cookie), context),
-    ).toBe('ip:192.0.2.1')
+    expect(await rateLimitTracker(verifier, env)(req('192.0.2.1', cookie), context)).toBe(
+      'ip:192.0.2.1',
+    )
   })
 
   it('tracks a request without a token by its address', async () => {
@@ -57,16 +45,20 @@ describe('rateLimitTracker', () => {
     expect(verifier.verify).not.toHaveBeenCalled()
   })
 
-  it('tracks a forged token by its address', async () => {
-    const track = rateLimitTracker(verifying({ status: 'invalid' }), env)
+  it('ignores Authorization: Bearer, which only the scanner will send', async () => {
+    const verifier = verifying({ status: 'valid', payload: { sub: randomUUID() } })
+    const headers = { authorization: 'Bearer abc', origin: 'https://opos.land' }
 
-    expect(await track(req('192.0.2.1', 'Bearer forged'), context)).toBe('ip:192.0.2.1')
+    expect(await rateLimitTracker(verifier, env)(req('192.0.2.1', headers), context)).toBe(
+      'ip:192.0.2.1',
+    )
+    expect(verifier.verify).not.toHaveBeenCalled()
   })
 
   it('counts against the address when verification is unavailable', async () => {
     const track = rateLimitTracker(verifying({ status: 'unavailable' }), env)
 
-    expect(await track(req('192.0.2.1', 'Bearer abc'), context)).toBe('ip:192.0.2.1')
+    expect(await track(req('192.0.2.1', portal), context)).toBe('ip:192.0.2.1')
   })
 
   it('tracks an IPv6 address by its /64 network', async () => {

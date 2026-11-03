@@ -30,13 +30,6 @@ export async function waitForMail(address: string, count = 1, timeoutMs = 10_000
   }
 }
 
-/** The first link to Supabase Auth's `/verify` in the text part of a message. */
-export function verifyLinkIn(mail: Mail) {
-  const link = /https?:\/\/\S+\/verify\?\S+/.exec(mail.Text)?.[0]
-  if (!link) throw new Error(`no verify link in "${mail.Subject}"`)
-  return link
-}
-
 /** The first link to an application's `/auth/confirm` in the text part of a message. */
 export function confirmLinkIn(mail: Mail) {
   const link = /https?:\/\/\S+\/auth\/confirm\?\S+/.exec(mail.Text)?.[0]

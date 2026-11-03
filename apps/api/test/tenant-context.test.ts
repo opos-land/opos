@@ -4,7 +4,7 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { deleteCreatedAccounts } from './auth'
+import { deleteCreatedAccounts, session } from './auth'
 import { afterCommitCalls, ProbeModule } from './probe'
 import {
   addEdition,
@@ -65,7 +65,7 @@ beforeEach(() => {
 const as = (who: Member, slug?: string) => {
   const agent = request(app.getHttpServer())
   const auth = (r: request.Test) => {
-    r.set('Authorization', `Bearer ${who.token}`)
+    r.use(session(who.token))
     return slug ? r.set('X-Tenant-Slug', slug) : r
   }
   return {
@@ -200,7 +200,7 @@ describe('tenant transaction', () => {
       for (const path of ['/tenants/current', '/editions']) {
         const res = await request(bypassing.getHttpServer())
           .get(path)
-          .set('Authorization', `Bearer ${a.head.token}`)
+          .use(session(a.head.token))
           .set('X-Tenant-Slug', a.slug)
         expect(res.status, path).toBe(500)
         expect(res.body, path).toEqual({ code: 'server.error', message: 'Internal server error' })

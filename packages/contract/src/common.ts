@@ -64,7 +64,7 @@ export const publicRoute = base.$route({
   spec: (operation) => withErrors({ ...operation, security: [] }),
 })
 
-/** A route for a signed-in account: `Authorization: Bearer <access token>`. */
+/** A route for a signed-in account: the session cookie of the portal or the panel (PLAN.md 7.4). */
 export const accountRoute = base.$route({ inputStructure: 'detailed', spec: withErrors })
 
 /** A route that acts inside one tenant, named by X-Tenant-Slug (PLAN.md 7.2). */

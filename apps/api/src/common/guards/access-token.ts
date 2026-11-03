@@ -4,10 +4,6 @@ import { type Account, type Me, type SignInMethod } from '@opos/contract'
 import { authUrl } from '../../config/env'
 import { isUuid } from '../uuid'
 
-/** The bearer token of an `Authorization` header, if it carries one. */
-export const bearerToken = (header: unknown): string | undefined =>
-  typeof header === 'string' ? /^Bearer (\S+)$/.exec(header)?.[1] : undefined
-
 export type AccessTokenPayload = JWTPayload & {
   sub: string
   aal?: 'aal1' | 'aal2'

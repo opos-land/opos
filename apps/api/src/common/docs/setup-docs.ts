@@ -12,10 +12,22 @@ export async function createOpenApiDocument(): Promise<OpenAPIObject> {
     info: { title: 'OPOS API', version: '0.0.0' },
     components: {
       securitySchemes: {
-        bearerAuth: { type: 'http', scheme: 'bearer', description: 'A Supabase Auth access token' },
+        portalSession: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'opos_portal_access',
+          description:
+            'The portal session, set by POST /auth/sign-in with the Origin of the portal',
+        },
+        panelSession: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'opos_panel_access',
+          description: 'The panel session, set by POST /auth/sign-in with the Origin of the panel',
+        },
       },
     },
-    security: [{ bearerAuth: [] }],
+    security: [{ portalSession: [] }, { panelSession: [] }],
   })
   return document as OpenAPIObject
 }

@@ -45,7 +45,6 @@ export class MeController {
     return implement(contract.me.delete).handler(async () => {
       await this.deletion.deleteCurrent()
       // The session died with the account: the pair of the calling application goes (PLAN.md 5.2).
-      // A Bearer call without the Origin of an application has no cookies to clear.
       const app = applicationFromOrigin(req.headers.origin, this.env)
       if (app) clearSessionCookies(req.res, app, this.env)
     })

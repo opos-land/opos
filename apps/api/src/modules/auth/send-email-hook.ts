@@ -31,16 +31,8 @@ export interface HookEmail {
   link: string
 }
 
-/** `<Supabase Auth>/verify?token=<token_hash>&type=<email_action_type>&redirect_to=<redirect_to>` */
-export function verifyLink(authUrl: string, tokenHash: string, type: string, redirectTo?: string) {
-  const query = new URLSearchParams({ token: tokenHash, type })
-  if (redirectTo) query.set('redirect_to', redirectTo)
-  return `${authUrl.replace(/\/+$/, '')}/verify?${query.toString()}`
-}
-
-/** The addresses a link can lead to: Supabase Auth's, and the two applications'. */
+/** The addresses a link can lead to: the two applications'. */
 export interface HookUrls {
-  authUrl: string
   portalUrl: string
   panelUrl: string
 }
@@ -50,19 +42,15 @@ const CONFIRM_PATH = '/auth/confirm'
 /**
  * The link of an email (PLAN.md 10, Send-email hook). `redirect_to` is `/auth/confirm` of the
  * portal or the panel, and the link goes there with `token_hash` and `type`: opening it spends
- * nothing. Any other address becomes the portal's `/auth/confirm`.
- *
- * Until the frontends move to `/auth/confirm`, another path of either application keeps the legacy
- * link through Supabase Auth's `/verify`, so it stays on the redirect list of the mixed period.
+ * nothing. Any other address becomes the portal's `/auth/confirm`; no link is built from the
+ * rest of the redirect list, and none names Supabase Auth.
  */
 export function confirmLink(urls: HookUrls, tokenHash: string, type: string, redirectTo?: string) {
   const target = parseUrl(redirectTo)
-  const origins = [urls.portalUrl, urls.panelUrl].map((url) => new URL(url).origin)
-  const onApplication = target !== undefined && origins.includes(target.origin)
-  if (onApplication && target.pathname !== CONFIRM_PATH) {
-    return verifyLink(urls.authUrl, tokenHash, type, redirectTo)
-  }
-  const origin = onApplication ? target.origin : new URL(urls.portalUrl).origin
+  const applications = [urls.portalUrl, urls.panelUrl].map((url) => new URL(url).origin)
+  const confirming =
+    target !== undefined && applications.includes(target.origin) && target.pathname === CONFIRM_PATH
+  const origin = confirming ? target.origin : new URL(urls.portalUrl).origin
   const query = new URLSearchParams({ token_hash: tokenHash, type })
   return `${origin}${CONFIRM_PATH}?${query.toString()}`
 }

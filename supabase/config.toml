@@ -44,14 +44,10 @@ smtp_port = 54325
 [auth]
 enabled = true
 site_url = "env(SITE_URL)"
-# The last three are temporary, for the sign-in of the current frontends; they leave with it.
 additional_redirect_urls = [
   "env(PORTAL_CONFIRM_URL)",
   "env(PANEL_CONFIRM_URL)",
   "env(GOOGLE_CALLBACK_URL)",
-  "http://opos.localhost:5174/auth/callback",
-  "http://opos.localhost:5174/reset-password",
-  "http://panel.opos.localhost:5173/auth/callback",
 ]
 jwt_expiry = 900
 # The local ES256 key, which `pnpm infra:init` creates and git never sees.

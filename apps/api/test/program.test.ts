@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
 import { ROUTE_RATE_LIMITS } from '../src/common/rate-limit/route-rate-limit'
 import { tenantWriteLockKey } from '../src/common/permissions/tenant-write-lock'
-import { createAccount, deleteCreatedAccounts, testEmail } from './auth'
+import { createAccount, deleteCreatedAccounts, session, testEmail } from './auth'
 import {
   addEdition,
   addEditionAccess,
@@ -65,9 +65,7 @@ afterAll(async () => {
 
 const call = (who: Member, method: Method, path: string, body?: object, slug = a.slug) => {
   const agent = request(app.getHttpServer())
-  const req = agent[method](path)
-    .set('Authorization', `Bearer ${who.token}`)
-    .set('X-Tenant-Slug', slug)
+  const req = agent[method](path).use(session(who.token)).set('X-Tenant-Slug', slug)
   return body ? req.send(body) : req
 }
 

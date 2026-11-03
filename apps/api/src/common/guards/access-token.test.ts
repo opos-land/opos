@@ -4,25 +4,11 @@ import { CompactSign, type CryptoKey, exportJWK, generateKeyPair, type JWK, Sign
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   type AccessTokenVerifier,
-  bearerToken,
   createAccessTokenVerifier,
   lastSignInAt,
   meOf,
   signInMethodsOf,
 } from './access-token'
-
-describe('bearerToken', () => {
-  it.each([
-    ['Bearer abc', 'abc'],
-    ['bearer abc', undefined],
-    ['Bearer ', undefined],
-    ['Bearer a b', undefined],
-    [undefined, undefined],
-    [['Bearer abc'], undefined],
-  ])('reads %o as %o', (header, expected) => {
-    expect(bearerToken(header)).toBe(expected)
-  })
-})
 
 describe('lastSignInAt', () => {
   it('takes the newest amr timestamp', () => {

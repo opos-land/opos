@@ -3,7 +3,14 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { DEFAULT_RATE_LIMIT } from '../src/common/rate-limit/rate-limit'
 import { createApp } from './app'
-import { createAccount, deleteCreatedAccounts, foreignKey, mintToken, signIn } from './auth'
+import {
+  createAccount,
+  deleteCreatedAccounts,
+  foreignKey,
+  mintToken,
+  session,
+  signIn,
+} from './auth'
 
 // Every case sends its own X-Forwarded-For address, so the counters of one case never reach
 // another; `trust proxy` makes that header the client address (PLAN.md 7.9).
@@ -24,7 +31,7 @@ afterAll(async () => {
 
 const get = (path: string, ip: string, token?: string) => {
   const req = request(app.getHttpServer()).get(path).set('X-Forwarded-For', ip)
-  return token ? req.set('Authorization', `Bearer ${token}`) : req
+  return token ? req.use(session(token)) : req
 }
 
 const spend = async (count: number, path: string, ip: string, token?: string) => {
@@ -87,10 +94,7 @@ describe('rate limit', () => {
     })
     await cut.listen(0, '127.0.0.1')
     const call = (ip: string) =>
-      request(cut.getHttpServer())
-        .get('/me')
-        .set('X-Forwarded-For', ip)
-        .set('Authorization', `Bearer ${token}`)
+      request(cut.getHttpServer()).get('/me').set('X-Forwarded-For', ip).use(session(token))
     try {
       for (let i = 0; i < LIMIT; i++) await call('203.0.113.40').expect(503)
 

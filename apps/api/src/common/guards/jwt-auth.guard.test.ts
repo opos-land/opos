@@ -33,13 +33,14 @@ function guard(check: TokenCheck, found: unknown = account) {
   }
 }
 
-const execution = (authorization?: string, request?: object) => {
-  const req = request ?? { headers: authorization ? { authorization } : {} }
-  return { switchToHttp: () => ({ getRequest: () => req }) } as unknown as ExecutionContext
-}
+const execution = (request: object) =>
+  ({ switchToHttp: () => ({ getRequest: () => request }) }) as unknown as ExecutionContext
 
-const withCookie = (headers: Record<string, string | undefined>) =>
-  execution(undefined, { headers })
+const withCookie = (headers: Record<string, string | undefined>) => execution({ headers })
+
+/** A request of the portal that carries `token` in its access cookie. */
+const signedIn = (token = 'abc') =>
+  withCookie({ cookie: `opos_portal_access=${token}`, origin: 'https://opos.land' })
 
 const refusal = (promise: Promise<unknown>) =>
   promise.then(
@@ -56,7 +57,7 @@ describe('JwtAuthGuard', () => {
     }
     const { subject, accounts, context } = guard({ status: 'valid', payload })
 
-    expect(await subject.canActivate(execution('Bearer abc'))).toBe(true)
+    expect(await subject.canActivate(signedIn())).toBe(true)
 
     expect(accounts.findForToken).toHaveBeenCalledWith(account.id)
     expect(context.setAccount).toHaveBeenCalledWith(account, 1_900_000_000, ['password', 'google'])
@@ -65,7 +66,7 @@ describe('JwtAuthGuard', () => {
   it('answers 401 session.invalid without a token, asking the verifier nothing', async () => {
     const { subject, verifier } = guard({ status: 'invalid' })
 
-    const failure = await refusal(subject.canActivate(execution()))
+    const failure = await refusal(subject.canActivate(withCookie({})))
 
     expect(failure).toBeInstanceOf(ApiError)
     expect(toErrorResponse(failure)).toMatchObject({
@@ -78,7 +79,7 @@ describe('JwtAuthGuard', () => {
   it('answers 401 session.invalid for a foreign signature', async () => {
     const { subject, accounts } = guard({ status: 'invalid' })
 
-    const failure = await refusal(subject.canActivate(execution('Bearer forged')))
+    const failure = await refusal(subject.canActivate(signedIn('forged')))
 
     expect(toErrorResponse(failure)).toMatchObject({
       status: 401,
@@ -90,7 +91,7 @@ describe('JwtAuthGuard', () => {
   it('answers 503 server.unavailable with Retry-After when keys cannot be fetched', async () => {
     const { subject, accounts } = guard({ status: 'unavailable' })
 
-    const failure = await refusal(subject.canActivate(execution('Bearer abc')))
+    const failure = await refusal(subject.canActivate(signedIn()))
 
     expect(toErrorResponse(failure)).toMatchObject({
       status: 503,
@@ -103,7 +104,7 @@ describe('JwtAuthGuard', () => {
   it('answers 401 session.invalid for a valid token without an accounts row', async () => {
     const { subject, context } = guard({ status: 'valid', payload: { sub: account.id } }, null)
 
-    const failure = await refusal(subject.canActivate(execution('Bearer abc')))
+    const failure = await refusal(subject.canActivate(signedIn()))
 
     expect(toErrorResponse(failure)).toMatchObject({
       status: 401,
@@ -122,18 +123,20 @@ describe('JwtAuthGuard', () => {
     expect(verifier.verify).toHaveBeenCalledWith('from-cookie')
   })
 
-  it('reads the cookie before Authorization: Bearer', async () => {
+  it('answers 401 for Authorization: Bearer, which only the scanner will send', async () => {
     const { subject, verifier } = guard({ status: 'valid', payload: { sub: account.id } })
 
-    await subject.canActivate(
-      withCookie({
-        cookie: 'opos_portal_access=from-cookie',
-        origin: 'https://opos.land',
-        authorization: 'Bearer from-header',
-      }),
+    const failure = await refusal(
+      subject.canActivate(
+        withCookie({ authorization: 'Bearer from-header', origin: 'https://opos.land' }),
+      ),
     )
 
-    expect(verifier.verify).toHaveBeenCalledWith('from-cookie')
+    expect(toErrorResponse(failure)).toMatchObject({
+      status: 401,
+      body: { code: 'session.invalid' },
+    })
+    expect(verifier.verify).not.toHaveBeenCalled()
   })
 
   it('answers 401 for the cookie of the other application or of no Origin', async () => {
@@ -160,7 +163,7 @@ describe('JwtAuthGuard', () => {
     }
 
     const tracked = await rateLimitTracker(verifier, env)(request, {} as ExecutionContext)
-    const failure = await refusal(subject.canActivate(execution(undefined, request)))
+    const failure = await refusal(subject.canActivate(execution(request)))
 
     expect(tracked).toBe('ip:192.0.2.1')
     expect(toErrorResponse(failure)).toMatchObject({

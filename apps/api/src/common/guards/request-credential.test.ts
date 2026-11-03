@@ -16,24 +16,15 @@ describe('credentialOf', () => {
     )
   })
 
-  it('prefers the cookie to Authorization: Bearer', () => {
-    expect(
-      credentialOf(
-        req({
-          cookie: 'opos_portal_access=from-cookie',
-          origin: 'https://opos.land',
-          authorization: 'Bearer from-header',
-        }),
-        env,
-      ),
-    ).toBe('from-cookie')
-  })
+  it('ignores Authorization: Bearer, with the cookie or without', () => {
+    const cookie = 'opos_portal_access=from-cookie'
+    const authorization = 'Bearer from-header'
 
-  it('falls back to Authorization: Bearer while the frontends move', () => {
-    expect(credentialOf(req({ authorization: 'Bearer from-header' }), env)).toBe('from-header')
-    expect(
-      credentialOf(req({ origin: 'https://opos.land', authorization: 'Bearer from-header' }), env),
-    ).toBe('from-header')
+    expect(credentialOf(req({ cookie, origin: 'https://opos.land', authorization }), env)).toBe(
+      'from-cookie',
+    )
+    expect(credentialOf(req({ authorization }), env)).toBe(undefined)
+    expect(credentialOf(req({ origin: 'https://opos.land', authorization }), env)).toBe(undefined)
   })
 
   it.each([

@@ -1,5 +1,6 @@
 import type postgres from 'postgres'
 import { RUNTIME_TIMEOUTS } from './client'
+import { scramVerifier } from './scram'
 
 const API_ROLES = 'anon, authenticated, service_role'
 
@@ -21,10 +22,12 @@ export async function applyRoles(
   for (const { name, attributes, password } of RUNTIME_ROLES) {
     const [existing] = await sql`select 1 from pg_roles where rolname = ${name}`
     if (!existing) await sql.unsafe(`create role ${name}`)
-    // A role statement takes no parameters: format quotes the password on the server.
+    // The server logs a DDL statement (`log_statement = ddl`) and `pg_stat_statements` keeps its text,
+    // so the statement carries a verifier, which Postgres stores as it is, and never the password.
+    // A role statement takes no parameters: format quotes the verifier on the server.
     const [statement] = await sql<{ text: string }[]>`
       select format(${`alter role %I ${attributes} password %L`}::text, ${name}::text,
-        ${passwords[password]}::text) as text
+        ${scramVerifier(passwords[password])}::text) as text
     `
     await sql.unsafe(statement!.text)
     for (const [setting, value] of Object.entries(RUNTIME_TIMEOUTS)) {

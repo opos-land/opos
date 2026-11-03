@@ -189,6 +189,54 @@ describe('applyRoles', () => {
     }, supabaseAdmin)
   })
 
+  it('sends no statement, text or parameter, that holds a password', async () => {
+    await rolledBack(async (tx) => {
+      await tx.unsafe('set local role postgres')
+      const sent: string[] = []
+      const watched = new Proxy(tx, {
+        apply(target, thisArg, args: unknown[]) {
+          sent.push(JSON.stringify(args))
+          return (target as unknown as (...a: unknown[]) => unknown).apply(thisArg, args)
+        },
+        get(target, property, receiver) {
+          const member = Reflect.get(target, property, receiver) as unknown
+          if (property !== 'unsafe') return member
+          return (...args: unknown[]) => {
+            sent.push(JSON.stringify(args))
+            return (member as (...a: unknown[]) => unknown).apply(target, args)
+          }
+        },
+      })
+
+      await applyRoles(watched, passwords)
+
+      expect(sent.length).toBeGreaterThan(0)
+      for (const password of Object.values(passwords)) {
+        expect(sent.filter((text) => text.includes(password))).toEqual([])
+      }
+      await tx.unsafe('reset role')
+      expect(scramMatches(await storedPassword(tx, 'opos_app'), passwords.app)).toBe(true)
+    }, supabaseAdmin)
+  })
+
+  it('keeps a password working when it runs again, the salt being fresh each time', async () => {
+    await rolledBack(async (tx) => {
+      await tx.unsafe('set local role postgres')
+      await applyRoles(tx, passwords)
+      await tx.unsafe('reset role')
+      const first = await storedPassword(tx, 'opos_app')
+
+      await tx.unsafe('set local role postgres')
+      await applyRoles(tx, passwords)
+      await tx.unsafe('reset role')
+      const second = await storedPassword(tx, 'opos_app')
+
+      expect(second).not.toBe(first)
+      expect(scramMatches(first, passwords.app)).toBe(true)
+      expect(scramMatches(second, passwords.app)).toBe(true)
+    }, supabaseAdmin)
+  })
+
   it('takes a password that needs quoting as it is', async () => {
     await rolledBack(async (tx) => {
       const quoted = { app: `it's "odd"\\`, appGlobal: passwords.appGlobal }

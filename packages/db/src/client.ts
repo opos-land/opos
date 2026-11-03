@@ -36,4 +36,4 @@ export const globalDb = (url: string, options: ConnectionOptions = {}) =>
   connect(url, 'opos-app-global', options)
 
 export const migrationDb = (url: string, options: ConnectionOptions = {}) =>
-  connect(url, 'opos-migrator', { max: 1, ...options })
+  connect(url, 'opos-migration', { max: 1, ...options })

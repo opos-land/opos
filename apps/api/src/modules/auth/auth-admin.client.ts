@@ -7,6 +7,36 @@ import { authUrl, ENV, type Env } from '../../config/env'
 const ADMIN_TIMEOUT_MS = 10_000
 
 /**
+ * One call to Supabase Auth, with the two things auth-js loses made visible: it keeps only
+ * `e.message` of a transport failure, so the cause (`ECONNREFUSED`, a TLS error) joins the message;
+ * and a 5xx outside its own list whose body is not JSON arrives as an error without a status, so
+ * it is raised here as a failure that carries the status and counts as an outage.
+ */
+async function callAuth(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+  let response: Response
+  try {
+    response = await fetch(input, { ...init, signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS) })
+  } catch (error) {
+    const cause = error instanceof Error ? error.cause : undefined
+    if (error instanceof Error && cause instanceof Error) {
+      throw new Error(`${error.message}: ${cause.message}`, { cause: error })
+    }
+    throw error
+  }
+  if (response.status >= 500) {
+    const isJson = await response
+      .clone()
+      .json()
+      .then(
+        () => true,
+        () => false,
+      )
+    if (!isJson) throw new Error(`HTTP ${response.status} with a body that is not JSON`)
+  }
+  return response
+}
+
+/**
  * The Supabase Auth admin API, authorized by the secret key on `apikey` alone (PLAN.md 10). The API
  * uses it for account deletion only. Outbound I/O: never call it inside a tenant transaction.
  */
@@ -19,8 +49,7 @@ export class AuthAdminClient {
     this.api = new GoTrueAdminApi({
       url: authUrl(env),
       headers: { apikey: env.SUPABASE_SECRET_KEY },
-      fetch: (input, init) =>
-        fetch(input, { ...init, signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS) }),
+      fetch: callAuth,
     })
   }
 

@@ -88,8 +88,11 @@ export const nodeFs = {
   write: (path, text) => writeFileSync(path, text),
 }
 
-/** Runs a command, passes its errors through to the terminal and returns what it printed. */
-export function nodeExec(file, args, { cwd, env }) {
+/**
+ * Runs a command, passes its errors through to the terminal and returns what it printed. A failed
+ * command's stdout is dropped unless `showOutputOnFailure` is set: `supabase start` prints keys.
+ */
+export function nodeExec(file, args, { cwd, env, showOutputOnFailure = false }) {
   return new Promise((resolve, reject) => {
     const child = spawn(file, args, { cwd, env, stdio: ['ignore', 'pipe', 'inherit'] })
     let out = ''
@@ -97,6 +100,7 @@ export function nodeExec(file, args, { cwd, env }) {
     child.on('error', reject)
     child.on('close', (code, signal) => {
       const command = `${file} ${args.join(' ')}`
+      if (code !== 0 && showOutputOnFailure) process.stderr.write(out)
       if (code === 0) resolve(out)
       else if (signal === null) reject(new Error(`${command} exited with ${code}`))
       else if (signal === 'SIGKILL') {
@@ -116,7 +120,7 @@ function parseStatus(output) {
   return parseEnv(lines.join('\n'))
 }
 
-/** `exec(file, args, { cwd, env })` returns stdout; `fs` has `exists`, `read` and `write`. */
+/** `exec(file, args, { cwd, env, showOutputOnFailure })` returns stdout; `fs` has `exists`, `read` and `write`. */
 export async function initInfra({
   exec = nodeExec,
   fs = nodeFs,
@@ -220,7 +224,7 @@ export async function initInfra({
   fill('packages/db', reported)
 
   // 5. the database roles, with the passwords and the address written above (docs/PLAN.md, 4.6)
-  await exec('pnpm', ['db:roles'], { cwd: root, env })
+  await exec('pnpm', ['db:roles'], { cwd: root, env, showOutputOnFailure: true })
 }
 
 /* node:coverage ignore next 6 */

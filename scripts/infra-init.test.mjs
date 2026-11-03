@@ -486,3 +486,37 @@ test('nodeExec names the signal that killed a command, and points SIGKILL at mis
     (error) => /killed by SIGKILL/.test(error.message) && /run it through mise/.test(error.message),
   )
 })
+
+test('nodeExec prints what a failed command wrote to stdout only when asked to', async () => {
+  const options = { cwd: tmpdir(), env: process.env }
+  const fail = ['-e', 'console.log("cause: roles refused"); process.exit(1)']
+  const written = []
+  const write = process.stderr.write
+  process.stderr.write = (chunk) => (written.push(String(chunk)), true)
+  try {
+    await assert.rejects(nodeExec(process.execPath, fail, options), /exited with 1/)
+    assert.deepEqual(written, [])
+    await assert.rejects(
+      nodeExec(process.execPath, fail, { ...options, showOutputOnFailure: true }),
+      /exited with 1/,
+    )
+    assert.match(written.join(''), /cause: roles refused/)
+    written.length = 0
+    await nodeExec(process.execPath, ['-e', 'console.log("fine")'], {
+      ...options,
+      showOutputOnFailure: true,
+    })
+    assert.deepEqual(written, [])
+  } finally {
+    process.stderr.write = write
+  }
+})
+
+test('initInfra asks for the output of db:roles on failure and of no other command', async () => {
+  const ctx = setup()
+  await ctx.run()
+  assert.equal(ctx.snapshots['pnpm db:roles'].options.showOutputOnFailure, true)
+  for (const [line, { options }] of Object.entries(ctx.snapshots)) {
+    if (line !== 'pnpm db:roles') assert.notEqual(options.showOutputOnFailure, true, line)
+  }
+})

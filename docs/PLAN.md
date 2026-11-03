@@ -259,7 +259,7 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
 - `build`, `dev` and `test` depend on `i18n:compile` (`test` also on `^i18n:compile`), so nothing
   runs with stale or missing catalogs.
 - The files outside every package that shape the environment the tests run in — `supabase/config.toml`,
-  `mise.toml` and `.github/workflows/` — are `globalDependencies`: a change to them misses every task's cache,
+  `supabase/.env.example`, `scripts/infra-init.mjs`, `mise.toml` and `.github/workflows/` — are `globalDependencies`: a change to them misses every task's cache,
   and `--affected` counts every package as affected.
 - A task with side effects is not cached: `test:e2e`, `i18n:extract` and every `db:*` task.
   Persistent tasks (`dev`, `db:studio`) set `persistent: true`.
@@ -642,9 +642,12 @@ the statements above, so a change to it reaches a database by running it again. 
 every `supabase start` on a new volume and after `supabase db reset`, which drop the roles with the
 cluster, and in production once per project, after a change to it and after a restore of
 Supabase's own backup, which does not keep the passwords of custom roles ([13](#13-deployment)).
+The statement that sets a password carries its SCRAM-SHA-256 verifier ([scram.ts](../packages/db/src/scram.ts)),
+never the password: the server logs DDL (`log_statement = ddl`) and `pg_stat_statements` keeps its text, and
+`opos_app_global` holds `BYPASSRLS`.
 Passwords come from `OPOS_APP_PASSWORD` and `OPOS_APP_GLOBAL_PASSWORD` in the environment of the
 script, chosen per developer and per environment and never committed; they go into connection
-URLs, so they are hex (`openssl rand -hex 32`).
+URLs, so they are hex (32 random bytes in hex).
 
 Every session the runtime pools `appDb()` and `globalDb()` open is bounded by the settings of its
 role, which `db:roles` writes from `RUNTIME_TIMEOUTS` ([client.ts](../packages/db/src/client.ts)):
@@ -2133,7 +2136,7 @@ The rules behind `config.toml`:
   `verify_enabled = true`, and phone and WebAuthn factors off.
 - Signing keys: in each project its own ES256 key, with the legacy JWT secret revoked; locally
   `signing_keys_path = "./signing_keys.json"`, a JSON array of keys that `pnpm infra:init` creates
-  before the first `supabase start` (`[]`, then `supabase gen signing-key --algorithm ES256
+  before the first `supabase start`, when the file is missing or holds only `[]` (`[]`, then `supabase gen signing-key --algorithm ES256
   --append`) and git never sees.
 
 ### API keys and the client's address
@@ -2355,7 +2358,7 @@ set:
 2. fills the empty secrets: `SEND_EMAIL_HOOK_SECRET` (`v1,whsec_` and 32 random bytes in base64),
    the same value in `supabase/.env` and `apps/api/.env`; `INVITE_SECRET`, `OPOS_APP_PASSWORD` and
    `OPOS_APP_GLOBAL_PASSWORD` (`openssl rand -hex 32`), and the database URLs built from them;
-3. creates `supabase/signing_keys.json` when it is missing: `[]`, then
+3. creates `supabase/signing_keys.json` when it is missing or holds only `[]`: `[]`, then
    `supabase gen signing-key --algorithm ES256 --append`;
 4. runs `supabase start`, reads `supabase status -o env` and writes the secret key and the
    addresses it reports into `apps/api/.env` and `packages/db/.env`;
@@ -2452,7 +2455,7 @@ and commented with the advisory id. The override leaves once the parent ships th
 `eslint --fix` and, once built, the [BFF boundary check](#32-frontend-application-layout) on staged files before
 a commit, commitlint and the [tests-first check](../AGENTS.md#tests-first) on the
 message, and `turbo run typecheck test` on the packages changed against `origin/develop` before a
-push (the API tests need `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
+push (the API tests need `pnpm infra:init` once in a new checkout, then `pnpm infra:up`). Single-call escape hatch: `LEFTHOOK=0 git commit ...`.
 
 ---
 

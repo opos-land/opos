@@ -1,6 +1,12 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "globalDependencies": [".github/workflows/**", "supabase/config.toml", "mise.toml"],
+  "globalDependencies": [
+    ".github/workflows/**",
+    "supabase/config.toml",
+    "supabase/.env.example",
+    "scripts/infra-init.mjs",
+    "mise.toml"
+  ],
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]

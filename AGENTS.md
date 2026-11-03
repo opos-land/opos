@@ -173,7 +173,7 @@ Branches follow the same scheme: `feat/tenant-rls`, `fix/refresh-rotation`. They
 The [execution rules](docs/PLAN.md#17-execution-rules) from PLAN.md apply: pinned Node and pnpm
 versions, every user-facing string inside a Lingui macro and translated into `pl` in the same
 commit, reusing the glossary renderings ([localization](docs/PLAN.md#6-localization)), green
-typecheck, lint and tests before every PR. The API tests need the database: `pnpm infra:up` first.
+typecheck, lint and tests before every PR. The API tests need the database: `pnpm infra:init` once in a new checkout, then `pnpm infra:up`.
 `pnpm test:e2e` also needs `pnpm db:migrate && pnpm db:seed` and Chromium, installed once with
 `pnpm --filter @opos/e2e exec playwright install chromium`, and does not run beside the API tests
 ([e2e tests](docs/PLAN.md#152-e2e-tests)).

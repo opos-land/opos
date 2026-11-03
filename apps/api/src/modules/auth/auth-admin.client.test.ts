@@ -113,6 +113,33 @@ describe('AuthAdminClient.deleteUser', () => {
     expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('sb_secret_test'))
   })
 
+  it('logs the cause of a transport failure, which auth-js drops', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.reject(new TypeError('fetch failed', { cause: new Error('connect ECONNREFUSED') })),
+      ),
+    )
+
+    expectUnavailable(await failureOf(client().deleteUser(USER_ID)))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('ECONNREFUSED'))
+  })
+
+  it.each([505, 507, 508])(
+    'turns a %i that is not JSON into a 503 and logs its status',
+    async (status) => {
+      const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve(new Response('<html>nope</html>', { status }))),
+      )
+
+      expectUnavailable(await failureOf(client().deleteUser(USER_ID)))
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining(String(status)))
+    },
+  )
+
   it('turns a timeout into a 503 server.unavailable', async () => {
     vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
     vi.stubGlobal(

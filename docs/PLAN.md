@@ -2917,8 +2917,10 @@ Emails — address confirmation, password reset, invitations, tickets — are re
 HTTP API (`localhost:54324/api/v1`, moved with `SUPABASE_LOCAL_SMTP_PORT`). Google sign-in is not
 covered by e2e: Supabase Auth talks to the real Google, and the smoke test checks that flow
 ([16](#16-smoke-test)). Every scenario checks the BFF boundary on the way, in an automatic fixture
-([index.ts](../e2e/fixtures/index.ts)): a page of the scenario that requests anything outside the
-origins of the panel, the portal and the API fails it; `data:` and `blob:` URLs are no requests out.
+([index.ts](../e2e/fixtures/index.ts)): a request of a page of the scenario is inside when it goes
+to the API or to the origin of the page's own frame, so a panel page requesting the portal fails it;
+a navigation may also go to the panel or the portal, since a scenario moves between them; `data:`
+and `blob:` URLs are no requests out.
 A scenario that calls the API directly sends the session cookie and the `Origin` of an application
 ([api.ts](../e2e/fixtures/api.ts)), like the applications do.
 

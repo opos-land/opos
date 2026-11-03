@@ -15,13 +15,11 @@ export async function callApi(
   path: string,
   {
     token,
-    app = 'panel',
     tenantSlug,
     method = 'GET',
     body,
   }: {
     token?: string
-    app?: 'panel' | 'portal'
     tenantSlug?: string
     method?: string
     body?: unknown
@@ -31,7 +29,7 @@ export async function callApi(
     method,
     headers: {
       ...(token
-        ? { cookie: `opos_${app}_access=${token}`, origin: new URL(stack[app]).origin }
+        ? { cookie: `opos_panel_access=${token}`, origin: new URL(stack.panel).origin }
         : {}),
       ...(tenantSlug ? { 'x-tenant-slug': tenantSlug } : {}),
       ...(body === undefined ? {} : { 'content-type': 'application/json' }),

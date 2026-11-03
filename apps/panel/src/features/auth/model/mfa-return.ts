@@ -9,8 +9,8 @@ export const mfaPath = (returnTo: string) =>
 
 /**
  * Where the code screen returns to when an answer of `location` wants the code (PLAN.md 7.12): the
- * `?redirect=` target of a sign-in; `/auth/confirm` for a link, since its token is spent; the page
- * itself otherwise. Only a path inside the panel is a target.
+ * `?redirect=` target of a sign-in; `/auth/confirm` for a link, without its token, which is not
+ * spent and must not reach a path; the page itself otherwise. Only a path inside the panel is a target.
  */
 export function mfaReturnFor({ pathname, search }: { pathname: string; search: string }): string {
   if (pathname === '/login') {

@@ -267,6 +267,18 @@ describe('across tabs', () => {
     expect(observer.received).toEqual([{ accountId: 'b' }])
   })
 
+  it('hearing a sign-out leaves a session that waits for its code on the code screen', async () => {
+    stubApi({ 'GET /me': [json(401, { code: 'session.mfa-required' })] })
+    await startSession()
+    expect(useSession.getState()).toMatchObject({ status: 'mfa-required', account: null })
+    const { channel } = otherTab()
+
+    channel.postMessage({ accountId: null })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(useSession.getState()).toMatchObject({ status: 'mfa-required', account: null })
+  })
+
   it('hearing a sign-out does not announce it again', async () => {
     stubApi({ 'GET /me': [json(200, account('a'))] })
     await startSession()

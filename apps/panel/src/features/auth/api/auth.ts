@@ -2,7 +2,7 @@ import { type verifySchema } from '@opos/contract'
 import { type z } from 'zod'
 import { env } from '../../../shared/config/env'
 import { accountClient } from '../../../shared/lib/api'
-import { isMfaRequired } from '../../../shared/lib/errors'
+import { isMfaRequired, isSessionInvalid } from '../../../shared/lib/errors'
 import { signedIn, signedOut } from '../../../shared/lib/session'
 import { sessionUnavailable } from '../../../shared/lib/session-store'
 import { rememberAuthReturn } from '../model/auth-return'
@@ -65,8 +65,9 @@ async function afterRightCode(call: () => Promise<unknown>): Promise<unknown> {
   try {
     signedIn(await accountClient.me.get())
   } catch (error) {
-    // The API link has already moved the session to the state the answer asked for.
-    if (!isMfaRequired(error)) sessionUnavailable()
+    // The API link has already moved the session to the state the answer asked for: the code
+    // screen, or signed out when the link's refresh found the session gone.
+    if (!isMfaRequired(error) && !isSessionInvalid(error)) sessionUnavailable()
   }
   return null
 }

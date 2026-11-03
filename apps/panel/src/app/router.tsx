@@ -32,7 +32,10 @@ function SignedIn() {
   )
 }
 
-/** Every screen, with every `session.mfa-required` answer leading to `/auth/mfa` (PLAN.md 7.12). */
+/**
+ * Every screen, with `MfaGate` leading the sign-in pages of a pending session to `/auth/mfa`
+ * (PLAN.md 7.12).
+ */
 function Root() {
   return (
     <>

@@ -72,6 +72,26 @@ describe('verifyCode and recoverWithCode', () => {
     },
   )
 
+  it.each([
+    ['verifyCode', verifyCode],
+    ['recoverWithCode', recoverWithCode],
+  ])(
+    '%s: a GET /me whose session is gone keeps the signed-out state, not unavailable',
+    async (_n, call) => {
+      stubApi(
+        new Response(null, { status: 204 }),
+        json(401, { code: 'session.invalid' }),
+        json(401, { code: 'session.invalid' }),
+      )
+      useSession.setState({ status: 'mfa-required', account: null })
+
+      const failure = await call('123456')
+
+      expect(failure).toBeNull()
+      expect(useSession.getState()).toMatchObject({ status: 'ready', account: null })
+    },
+  )
+
   it('returns the failure of a wrong code and leaves the session waiting', async () => {
     stubApi(json(400, { code: 'mfa.code-invalid' }))
 

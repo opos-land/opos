@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -145,5 +145,30 @@ describe('MfaPage through the API link', () => {
     expect(await screen.findByText('at /login?redirect=%2Fconvention-a%2Fteam')).toBeTruthy()
     expect(calls).toEqual(['POST /auth/sign-out'])
     expect(useSession.getState()).toMatchObject({ status: 'ready', account: null })
+  })
+
+  it('does not offer Sign out while a code is being checked', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    )
+    const user = renderAt()
+
+    await sendCode(user)
+
+    expect(screen.getByRole('button', { name: 'Sign out' }).hasAttribute('disabled')).toBe(true)
+  })
+
+  it('sends no code while the session is being signed out', async () => {
+    const fetchMock = vi.fn(() => new Promise<Response>(() => undefined))
+    vi.stubGlobal('fetch', fetchMock)
+    const user = renderAt()
+
+    await user.type(screen.getByLabelText('Code'), '123456')
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+
+    expect(screen.getByRole('button', { name: 'Continue' }).hasAttribute('disabled')).toBe(true)
+    fireEvent.submit(screen.getByLabelText('Code').closest('form')!)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })

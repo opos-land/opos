@@ -297,7 +297,7 @@ function topLevel(dir) {
 }
 
 /** The checkout of this repository that holds `path`, or null: the areas hold for no other. */
-function checkoutOf(path) {
+export function checkoutOf(path) {
   let dir = path
   while (!existsSync(dir)) dir = dirname(dir)
   const root = topLevel(statSync(dir).isDirectory() ? dir : dirname(dir))
@@ -305,7 +305,7 @@ function checkoutOf(path) {
 }
 
 /** The real path of `path`, resolved through its deepest existing ancestor: a new file has none. */
-function realPath(path) {
+export function realPath(path) {
   try {
     return realpathSync(path)
   } catch {

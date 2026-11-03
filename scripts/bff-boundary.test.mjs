@@ -19,6 +19,7 @@ const refused = [
   ['an address on supabase.in', 'https://abcdefgh.supabase.in/auth/v1', /address/],
   ['an address on supabase.com', 'https://abcdefgh.supabase.com', /address/],
   ['the local stack', 'http://127.0.0.1:54321/auth/v1', /address/],
+  ['the local stack as a bare port', 'const url = "localhost:54321"', /address/],
   ['a publishable key', 'const key = "sb_publishable_AbCd1234"', /key/],
   ['a secret key', 'SUPABASE_KEY=sb_secret_AbCd1234', /key/],
   ['a JWT', `const token = '${jwt}'`, /JWT/],
@@ -64,7 +65,7 @@ describe('findBoundaryBreaches', () => {
           'apps/panel/src/a.ts': "const url = import.meta.env.VITE_API_URL // not supabase's",
           'apps/portal/package.json': '{ "name": "@opos/portal" }',
           'apps/portal/.env.example': 'VITE_API_URL=http://api.opos.localhost:3001',
-          'apps/portal/src/b.ts': 'const port = 543210',
+          'apps/portal/src/b.ts': 'const port = "localhost:543210"',
         },
       }),
       [],
@@ -75,38 +76,73 @@ describe('findBoundaryBreaches', () => {
     assert.deepEqual(breaches(), [])
   })
 
+  const built = { 'apps/panel/dist/a.js': CONTROL, 'apps/portal/dist/a.js': CONTROL }
+
   it('fails a dist without the control value, which proves nothing', () => {
-    const found = breaches({ dist: { 'a.js': 'x' } })
+    const found = breaches({ dist: { ...built, 'apps/portal/dist/a.js': 'x' } })
 
     assert.equal(found.length, 1)
-    assert.match(found[0], /control .* not found/)
+    assert.match(found[0], /^apps\/portal: control .* not found/)
     assert.ok(found[0].includes(CONTROL))
   })
 
+  it('does not take the control value of one application for the other', () => {
+    const found = breaches({
+      dist: {
+        'apps/panel/dist/a.js': CONTROL,
+        'apps/panel/dist/b.js': 'x',
+        'apps/portal/dist/a.js': 'x',
+      },
+    })
+
+    assert.equal(found.length, 1)
+    assert.match(found[0], /^apps\/portal: control .* not found/)
+  })
+
+  it('fails an application that was not built, whatever the other holds', () => {
+    const found = breaches({ dist: { 'apps/panel/dist/a.js': CONTROL } })
+
+    assert.equal(found.length, 1)
+    assert.match(found[0], /^apps\/portal: no dist/)
+  })
+
   it('fails an empty dist, which proves nothing either', () => {
-    assert.match(breaches({ dist: {} })[0], /control .* not found/)
+    const found = breaches({ dist: {} })
+
+    assert.equal(found.length, 2)
+    assert.match(found.join('\n'), /apps\/panel: no dist/)
+    assert.match(found.join('\n'), /apps\/portal: no dist/)
   })
 
   it('fails a secret canary in dist', () => {
-    const found = breaches({ dist: { 'a.js': `${CONTROL} ${CANARY}` } })
+    const found = breaches({ dist: { ...built, 'apps/panel/dist/b.js': `${CONTROL} ${CANARY}` } })
 
     assert.equal(found.length, 1)
     assert.match(found[0], /canary/)
-    assert.match(found[0], /^a\.js: /)
+    assert.match(found[0], /^apps\/panel\/dist\/b\.js: /)
   })
 
   it('applies the rules of the sources to dist', () => {
     const found = breaches({
-      dist: { 'a.js': CONTROL, 'b.js': 'fetch("https://abcdefgh.supabase.co")' },
+      dist: { ...built, 'apps/portal/dist/b.js': 'fetch("https://abcdefgh.supabase.co")' },
     })
 
     assert.equal(found.length, 1)
-    assert.match(found[0], /^b\.js: .*address/)
+    assert.match(found[0], /^apps\/portal\/dist\/b\.js: .*address/)
     assert.doesNotMatch(found[0], /abcdefgh/)
   })
 
-  it('lets a clean dist with the control value pass, whichever file holds it', () => {
-    assert.deepEqual(breaches({ dist: { 'a.js': 'x', 'b.js': `fetch("${CONTROL}")` } }), [])
+  it('lets a clean dist pass when each application holds the control value somewhere', () => {
+    assert.deepEqual(
+      breaches({
+        dist: {
+          ...built,
+          'apps/panel/dist/b.js': 'x',
+          'apps/portal/dist/b.js': `fetch("${CONTROL}")`,
+        },
+      }),
+      [],
+    )
   })
 })
 
@@ -119,6 +155,7 @@ function repo(files = {}) {
     mkdirSync(dirname(join(dir, path)), { recursive: true })
     writeFileSync(join(dir, path), content)
   }
+  write('scripts/tests-first.mjs', '')
   for (const [path, content] of Object.entries(files)) write(path, content)
   return { dir, write }
 }
@@ -207,7 +244,43 @@ describe('main', () => {
     const { dir } = repo({ 'apps/panel/src/a.ts': 'export {}' })
 
     assert.equal(run(['--dist'], dir), 1)
-    assert.match(errors.join('\n'), /control .* not found/)
+    assert.match(errors.join('\n'), /no dist/)
+  })
+
+  it('fails --dist when one application was not built', () => {
+    const { dir, write } = repo({ 'apps/panel/src/a.ts': 'export {}' })
+    write('apps/panel/dist/assets/index.js', `fetch("${CONTROL}")`)
+
+    assert.equal(run(['--dist'], dir), 1)
+    assert.match(errors.join('\n'), /^apps\/portal: no dist/)
+  })
+
+  it('scans the whole checkout when run from a subdirectory', () => {
+    const { dir } = repo({ 'apps/panel/src/a.ts': `import '${breach}'` })
+
+    assert.equal(run([], join(dir, 'apps/panel/src')), 1)
+    assert.match(errors.join('\n'), /apps\/panel\/src\/a\.ts: /)
+  })
+
+  it('reads the files it is given relative to the directory it runs in', () => {
+    const { dir } = repo({ 'apps/panel/src/a.ts': `import '${breach}'` })
+
+    assert.equal(run(['a.ts'], join(dir, 'apps/panel/src')), 1)
+  })
+
+  it('fails when it is not in a repository, since a scan of nothing proves nothing', () => {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), 'bff-boundary-none-')))
+    fixtures.push(dir)
+
+    assert.equal(run([], dir), 1)
+    assert.match(errors.join('\n'), /could not check/)
+  })
+
+  it('fails when the applications list no file at all', () => {
+    const { dir } = repo({ 'packages/x/a.ts': 'export {}' })
+
+    assert.equal(run([], dir), 1)
+    assert.match(errors.join('\n'), /no file/)
   })
 
   describe('as a Claude Code hook', () => {
@@ -231,6 +304,29 @@ describe('main', () => {
       const { dir } = repo({ 'apps/portal/src/a.ts': `import '${breach}'` })
 
       assert.equal(run(['--hook'], dir, event({ tool_name: 'Bash', tool_input: {} })), 2)
+    })
+
+    it('judges a file by the checkout that holds it, not by the session directory', () => {
+      const { dir, write } = repo({ 'apps/portal/src/ok.ts': 'export {}' })
+      write('.claude/worktrees/x/scripts/tests-first.mjs', '')
+      write('.claude/worktrees/x/apps/panel/src/a.ts', `import '${breach}'`)
+      const nested = join(dir, '.claude/worktrees/x')
+      execFileSync('git', ['init', '-q'], { cwd: nested })
+      const file = join(nested, 'apps/panel/src/a.ts')
+
+      assert.equal(run(['--hook'], dir, event({ tool_input: { file_path: file } })), 2)
+      assert.match(errors.join('\n'), /apps\/panel\/src\/a\.ts: /)
+    })
+
+    it('stands aside for a file in no checkout of this repository', () => {
+      const { dir } = repo({ 'apps/panel/src/a.ts': `import '${breach}'` })
+      const other = realpathSync(mkdtempSync(join(tmpdir(), 'bff-boundary-other-')))
+      fixtures.push(other)
+      mkdirSync(join(other, 'apps/panel'), { recursive: true })
+      const file = join(other, 'apps/panel/a.ts')
+      writeFileSync(file, breach)
+
+      assert.equal(run(['--hook'], dir, event({ tool_input: { file_path: file } })), 0)
     })
 
     it('stands aside for an edit outside the applications', () => {

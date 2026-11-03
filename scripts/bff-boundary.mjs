@@ -14,6 +14,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { checkoutOf, realPath } from './tests-first.mjs'
 
 /** The address the control build is given: a bundle that lacks it was not built from this tree. */
 export const CONTROL = 'opos-control.invalid'
@@ -38,18 +39,24 @@ const ruleBreaches = (files) =>
   )
 
 /**
- * The breaches of the boundary in `sources` and, when given, in `dist` (path -> text). A dist
- * without the control value proves nothing, since the scan may have read a bundle of another
- * build, and fails.
+ * The breaches of the boundary in `sources` and, when given, in `dist` (path -> text, from the
+ * root of the checkout). Each application must hold a dist of its own with the control value,
+ * since a dist missing or built from another tree proves nothing, and the other's dist cannot
+ * stand in for it.
  */
 export function findBoundaryBreaches({ sources = new Map(), dist }) {
   const found = ruleBreaches(sources)
   if (!dist) return found
   const bundles = [...dist]
-  if (!bundles.some(([, text]) => text.includes(CONTROL))) {
-    found.push(
-      `dist: control value ${CONTROL} not found in any bundle, so the scan proves nothing: build with VITE_API_URL=https://${CONTROL}`,
-    )
+  for (const app of APPS) {
+    const own = bundles.filter(([path]) => path.startsWith(`${app}/`))
+    if (own.length === 0) {
+      found.push(`${app}: no dist, so the scan proves nothing: build the application first`)
+    } else if (!own.some(([, text]) => text.includes(CONTROL))) {
+      found.push(
+        `${app}: control value ${CONTROL} not found in any bundle, so the scan proves nothing: build with VITE_API_URL=https://${CONTROL}`,
+      )
+    }
   }
   for (const [path, text] of bundles) {
     if (text.includes(CANARY)) {
@@ -91,12 +98,26 @@ const bundles = (root) =>
       .map((entry) => relative(root, join(entry.parentPath, entry.name))),
   )
 
-/** The breaches of the files given, of every file of the applications, and of dist on request. */
-function check(root, files, withDist) {
+/** The top level of the git repository at `dir`; throws when there is none. */
+const topLevel = (dir) =>
+  execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: dir,
+    encoding: 'utf8',
+    stdio: 'pipe',
+  }).trim()
+
+/**
+ * The breaches of the files given (relative to `cwd`), of every file of the applications in the
+ * checkout at `root`, and of dist on request. A scan of no file proves nothing and fails.
+ */
+function check(root, cwd, files, withDist) {
   const paths =
     files.length > 0
-      ? files.map((file) => relative(root, resolve(root, file))).filter(inApps)
+      ? files.map((file) => relative(root, resolve(cwd, file))).filter(inApps)
       : listed(root)
+  if (files.length === 0 && paths.length === 0) {
+    throw new Error('the applications list no file, so there is nothing to scan')
+  }
   return findBoundaryBreaches({
     sources: read(root, paths),
     ...(withDist ? { dist: read(root, bundles(root)) } : {}),
@@ -104,25 +125,31 @@ function check(root, files, withDist) {
 }
 
 /**
- * Runs one mode in the repository at `cwd`; `stdin` reads the hook event. Returns the exit code:
- * 1 for a breach, 2 for a breach found by the hook or for a check that could not run.
+ * Runs one mode from `cwd`; `stdin` reads the hook event. Returns the exit code: 1 for a breach, 2
+ * for a breach found by the hook or for a check that could not run. The hook judges the file by
+ * the checkout that holds it, as tests-first does, and stands aside for a file in none.
  */
 export function main(args, { cwd, stdin }) {
   const hook = args[0] === '--hook'
   try {
+    let root
     if (hook) {
       const target = JSON.parse(stdin()).tool_input?.file_path
-      if (target && !inApps(relative(cwd, resolve(cwd, target)))) return 0
+      const file = target ? realPath(resolve(cwd, target)) : cwd
+      root = checkoutOf(file)
+      if (!root || (target && !inApps(relative(root, file)))) return 0
+    } else {
+      root = topLevel(cwd)
     }
     const files = args.filter((arg) => !arg.startsWith('--'))
-    const found = check(cwd, files, args.includes('--dist'))
+    const found = check(root, cwd, files, args.includes('--dist'))
     if (found.length === 0) return 0
     for (const breach of found) console.error(breach)
     console.error('The panel and the portal talk to the API only (docs/PLAN.md, 3.2).')
     return hook ? 2 : 1
   } catch (error) {
     console.error(`bff-boundary could not check this change, so it refuses it: ${error.message}`)
-    return 2
+    return hook ? 2 : 1
   }
 }
 

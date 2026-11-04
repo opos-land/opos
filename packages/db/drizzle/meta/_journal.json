@@ -176,6 +176,13 @@
       "when": 1793789218379,
       "tag": "0024_revoke_api_roles_from_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793792366642,
+      "tag": "0025_reserve_forgot_password_slug",
+      "breakpoints": true
     }
   ]
 }

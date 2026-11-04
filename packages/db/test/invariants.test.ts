@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import postgres from 'postgres'
 import { migrationUrl } from '../src/migration-url'
+import { RESERVED_TENANT_SLUGS } from '../src/schema'
 import {
   authAdmin,
   createEdition,
@@ -199,10 +200,14 @@ describe('invariants', () => {
     expect(row!.moved).toBe(true)
   })
 
-  it('refuses a reserved word as a slug', async () => {
-    await expect(
-      migrator`insert into tenants (slug, name) values ('panel', 'Panel')`,
-    ).rejects.toThrow(/tenants_slug_not_reserved/)
+  it.each(RESERVED_TENANT_SLUGS)('refuses the reserved word %s as a slug', async (slug) => {
+    // The transaction rolls back should the check let the word through.
+    const inserted = migrator.begin(async (tx) => {
+      await tx`insert into tenants (slug, name) values (${slug}, 'Reserved')`
+      throw new Error(`the slug ${slug} was accepted`)
+    })
+
+    await expect(inserted).rejects.toThrow(/tenants_slug_not_reserved/)
   })
 
   it('refuses a slug outside the allowed format', async () => {

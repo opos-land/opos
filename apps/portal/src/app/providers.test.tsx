@@ -1,22 +1,55 @@
-import { type Session } from '@supabase/auth-js'
+import { i18n } from '@lingui/core'
+import { type QueryClient, useQueryClient } from '@tanstack/react-query'
 import { act, cleanup, render } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadLocale } from '../shared/lib/i18n'
-import { useSession } from '../shared/lib/session'
-import { AccountChangeCleanup, SignedOutLocale } from './providers'
+import { startSession, useSession } from '../shared/lib/session'
+import { AccountChangeCleanup, Providers, SignedOutLocale } from './providers'
 
 vi.mock('../shared/lib/i18n', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   loadLocale: vi.fn(() => Promise.resolve()),
 }))
 
-const sessionOf = (id: string) => ({ user: { id } }) as Session
-
-beforeEach(() => {
-  useSession.setState({ status: 'ready', session: null })
+const accountOf = (id: string) => ({
+  id,
+  email: `${id}@x.test`,
+  firstName: null,
+  lastName: null,
+  locale: null,
+  mfaEnabled: false,
 })
 
-afterEach(cleanup)
+class FakeChannel {
+  static all: FakeChannel[] = []
+  private listeners: ((event: { data: unknown }) => void)[] = []
+  constructor(readonly name: string) {
+    FakeChannel.all.push(this)
+  }
+  addEventListener(_type: 'message', listener: (event: { data: unknown }) => void) {
+    this.listeners.push(listener)
+  }
+  postMessage(data: unknown) {
+    for (const other of FakeChannel.all) {
+      if (other === this || other.name !== this.name) continue
+      for (const listener of other.listeners) queueMicrotask(() => listener({ data }))
+    }
+  }
+}
+
+beforeAll(() => {
+  i18n.loadAndActivate({ locale: 'en', messages: {} })
+})
+
+beforeEach(() => {
+  useSession.setState({ status: 'ready', account: null })
+  vi.mocked(loadLocale).mockClear()
+})
+
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 
 describe('AccountChangeCleanup', () => {
   const setup = () => {
@@ -26,19 +59,19 @@ describe('AccountChangeCleanup', () => {
   }
 
   it('clears on sign-out', () => {
-    useSession.setState({ session: sessionOf('a') })
+    useSession.setState({ account: accountOf('a') })
     const onChange = setup()
 
-    act(() => useSession.setState({ session: null }))
+    act(() => useSession.setState({ account: null }))
 
     expect(onChange).toHaveBeenCalledOnce()
   })
 
   it("clears when another account's session replaces the current one", () => {
-    useSession.setState({ session: sessionOf('a') })
+    useSession.setState({ account: accountOf('a') })
     const onChange = setup()
 
-    act(() => useSession.setState({ session: sessionOf('b') }))
+    act(() => useSession.setState({ account: accountOf('b') }))
 
     expect(onChange).toHaveBeenCalledOnce()
   })
@@ -46,16 +79,51 @@ describe('AccountChangeCleanup', () => {
   it('keeps everything on a refresh of the same account, or the first sign-in', () => {
     const onChange = setup()
 
-    act(() => useSession.setState({ session: sessionOf('a') }))
-    act(() => useSession.setState({ session: sessionOf('a') }))
+    act(() => useSession.setState({ account: accountOf('a') }))
+    act(() => useSession.setState({ account: accountOf('a') }))
 
     expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('an account change announced by another tab clears the query cache', async () => {
+    vi.stubGlobal('BroadcastChannel', FakeChannel)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ ...accountOf('b'), signInMethods: ['password'] }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        ),
+      ),
+    )
+    let queryClient!: QueryClient
+    function Capture() {
+      queryClient = useQueryClient()
+      return null
+    }
+    useSession.setState({ status: 'ready', account: accountOf('a') })
+    render(
+      <Providers>
+        <Capture />
+      </Providers>,
+    )
+    await startSession()
+    // The tab shows account a again; account b signs in elsewhere.
+    useSession.setState({ account: accountOf('a') })
+    queryClient.setQueryData(['account', 'me'], { name: 'a' })
+    expect(queryClient.getQueryData(['account', 'me'])).toBeDefined()
+
+    new FakeChannel('opos-portal-session').postMessage({ accountId: 'b' })
+
+    await vi.waitFor(() => expect(useSession.getState().account?.id).toBe('b'))
+    expect(queryClient.getQueryData(['account', 'me'])).toBeUndefined()
   })
 })
 
 describe('SignedOutLocale', () => {
   beforeEach(() => {
-    vi.mocked(loadLocale).mockClear()
     vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['pl-PL', 'en'])
   })
 
@@ -64,10 +132,10 @@ describe('SignedOutLocale', () => {
   })
 
   it("switches back to the browser's language when the session ends", () => {
-    useSession.setState({ session: sessionOf('a') })
+    useSession.setState({ account: accountOf('a') })
     render(<SignedOutLocale />)
 
-    act(() => useSession.setState({ session: null }))
+    act(() => useSession.setState({ account: null }))
 
     expect(loadLocale).toHaveBeenCalledExactlyOnceWith('pl')
   })
@@ -75,9 +143,36 @@ describe('SignedOutLocale', () => {
   it('leaves the language to the account while there is a session', () => {
     render(<SignedOutLocale />)
 
-    act(() => useSession.setState({ session: sessionOf('a') }))
-    act(() => useSession.setState({ session: sessionOf('b') }))
+    act(() => useSession.setState({ account: accountOf('a') }))
+    act(() => useSession.setState({ account: accountOf('b') }))
 
     expect(loadLocale).not.toHaveBeenCalled()
+  })
+
+  it('switches back when another tab announces the end of the session', async () => {
+    vi.stubGlobal('BroadcastChannel', FakeChannel)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ ...accountOf('a'), signInMethods: ['password'] }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        ),
+      ),
+    )
+    render(
+      <Providers>
+        <p>page</p>
+      </Providers>,
+    )
+    await startSession()
+    expect(useSession.getState().account?.id).toBe('a')
+    vi.mocked(loadLocale).mockClear()
+
+    new FakeChannel('opos-portal-session').postMessage({ accountId: null })
+
+    await vi.waitFor(() => expect(loadLocale).toHaveBeenCalledExactlyOnceWith('pl'))
   })
 })

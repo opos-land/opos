@@ -1,12 +1,20 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "globalDependencies": ["docker-compose.yml", "infra/supabase/**", ".github/workflows/**"],
+  "globalDependencies": [
+    ".github/workflows/**",
+    "supabase/config.toml",
+    "supabase/.env.example",
+    "scripts/infra-init.mjs",
+    "mise.toml"
+  ],
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]
     },
     "build": {
       "dependsOn": ["^build", "i18n:compile"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["VITE_API_URL", "SUPABASE_SECRET_KEY"],
       "outputs": ["dist/**"]
     },
     "dev": {
@@ -24,11 +32,21 @@
     "test": {
       "dependsOn": ["transit", "i18n:compile", "^i18n:compile"],
       "passThroughEnv": [
-        "DATABASE_URL",
-        "DATABASE_GLOBAL_URL",
         "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT",
-        "OPOS_MAILPIT_PORT"
+        "OPOS_ENV",
+        "OPOS_APP_PASSWORD",
+        "OPOS_APP_GLOBAL_PASSWORD",
+        "SUPABASE_LOCAL_SMTP_PORT"
+      ]
+    },
+    "@opos/api#test": {
+      "dependsOn": ["transit", "i18n:compile", "^i18n:compile", "@opos/db#test"],
+      "passThroughEnv": [
+        "DATABASE_MIGRATION_URL",
+        "OPOS_ENV",
+        "OPOS_APP_PASSWORD",
+        "OPOS_APP_GLOBAL_PASSWORD",
+        "SUPABASE_LOCAL_SMTP_PORT"
       ]
     },
     "test:e2e": {
@@ -36,11 +54,7 @@
       "cache": false,
       "passThroughEnv": [
         "CI",
-        "OPOS_DB_PORT",
-        "OPOS_AUTH_PORT",
-        "OPOS_MAILPIT_PORT",
-        "OPOS_SMTP_PORT",
-        "OPOS_API_PORT",
+        "SUPABASE_LOCAL_SMTP_PORT",
         "OPOS_PANEL_PORT",
         "OPOS_PORTAL_PORT",
         "PLAYWRIGHT_BROWSERS_PATH"
@@ -56,81 +70,65 @@
     "i18n:check": {},
     "db:generate": {
       "cache": false,
-      "passThroughEnv": [
-        "DATABASE_URL",
-        "DATABASE_GLOBAL_URL",
-        "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT"
-      ]
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
     },
     "db:migrate": {
       "cache": false,
-      "passThroughEnv": [
-        "DATABASE_URL",
-        "DATABASE_GLOBAL_URL",
-        "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT"
-      ]
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
     },
     "db:push": {
       "cache": false,
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
+    },
+    "db:roles": {
+      "cache": false,
       "passThroughEnv": [
-        "DATABASE_URL",
-        "DATABASE_GLOBAL_URL",
         "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT"
+        "OPOS_ENV",
+        "OPOS_APP_PASSWORD",
+        "OPOS_APP_GLOBAL_PASSWORD"
       ]
     },
     "db:seed": {
       "cache": false,
       "passThroughEnv": [
-        "DATABASE_URL",
-        "DATABASE_GLOBAL_URL",
         "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT",
-        "AUTH_URL",
-        "JWT_SECRET",
-        "SUPABASE_SERVICE_ROLE_KEY",
-        "OPOS_AUTH_PORT",
-        "NODE_ENV"
+        "OPOS_ENV",
+        "SUPABASE_URL",
+        "SUPABASE_SECRET_KEY"
       ]
     },
     "db:verify": {
       "cache": false,
-      "passThroughEnv": [
-        "DATABASE_URL",
-        "DATABASE_GLOBAL_URL",
-        "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT"
-      ]
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
     },
     "db:tenant:create": {
       "cache": false,
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
+    },
+    "db:account:reset-2fa": {
+      "cache": false,
+      "dependsOn": ["i18n:compile"],
       "passThroughEnv": [
-        "DATABASE_URL",
-        "DATABASE_GLOBAL_URL",
         "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT"
+        "OPOS_ENV",
+        "SUPABASE_URL",
+        "SUPABASE_SECRET_KEY",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "MAIL_FROM"
       ]
     },
     "db:tenant:rename": {
       "cache": false,
-      "passThroughEnv": [
-        "DATABASE_URL",
-        "DATABASE_GLOBAL_URL",
-        "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT"
-      ]
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
     },
     "db:studio": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": [
-        "DATABASE_URL",
-        "DATABASE_GLOBAL_URL",
-        "DATABASE_MIGRATION_URL",
-        "OPOS_DB_PORT"
-      ]
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
     }
   }
 }

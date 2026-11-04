@@ -8,7 +8,7 @@ import { type Env } from '../../config/env'
  */
 export const SEND_DEADLINE_MS = 4_000
 
-type SmtpEnv = Pick<Env, 'NODE_ENV' | 'SMTP_HOST' | 'SMTP_PORT' | 'SMTP_USER' | 'SMTP_PASS'>
+type SmtpEnv = Pick<Env, 'OPOS_ENV' | 'SMTP_HOST' | 'SMTP_PORT' | 'SMTP_USER' | 'SMTP_PASS'>
 
 export type SmtpOptions = SMTPTransportOptions & { host: string; port: number }
 
@@ -21,7 +21,7 @@ export function smtpOptions(env: SmtpEnv): SmtpOptions {
     secure,
     // Credentials and message bodies (which carry one-time links) never travel in cleartext. Only a
     // server without credentials outside production, Mailpit in dev and the tests, takes plaintext.
-    requireTLS: !secure && (env.SMTP_USER !== '' || env.NODE_ENV === 'production'),
+    requireTLS: !secure && (env.SMTP_USER !== '' || env.OPOS_ENV === 'production'),
     auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS } : undefined,
     // Connecting, the greeting and the TLS setup share one budget; every later reply gets its own.
     // Both stay below the deadline, so a single stuck step reports its own error.
@@ -83,7 +83,11 @@ export async function sendWithDeadline(
     timer = setTimeout(() => {
       expired = true
       socket?.destroy()
-      reject(new Error(`SMTP send did not finish within ${deadlineMs} ms`))
+      reject(
+        Object.assign(new Error(`SMTP send did not finish within ${deadlineMs} ms`), {
+          code: 'EDEADLINE',
+        }),
+      )
     }, deadlineMs)
   })
   const sending = transport.sendMail(message)

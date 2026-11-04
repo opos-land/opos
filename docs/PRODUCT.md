@@ -111,6 +111,7 @@ accreditation is the ticket; there is no separate accreditation module.
 | **module** | one functional area built on the core: programme, tickets, CMS, profile, booths, friends ([chapter 7](#7-modules)) |
 | **booth** | an exhibitor's stand at an edition; a virtual booth is its online counterpart |
 | **locale** | interface or website language in BCP 47 form (`pl`, `en`) |
+| **two-factor authentication** | a second step of signing in that an account turns on for itself: a code from an authenticator app, with one-time recovery codes for a lost device; `mfa` in code, 2FA for short |
 
 The roles are not mutually exclusive. A single account can be the head organizer of one
 convention, an org in another, an attendee of a third and a speaker at a fourth — under one
@@ -251,9 +252,9 @@ permissions in each edition and an optional expiry date, within the limits of
 The link is valid for 7 days and works once. It opens the invitation page in the panel, which
 shows the convention and the invited address and lets the person sign in or register there — with
 email and password, or with Google. Registering with email, they confirm the address through the
-link sent to it, which signs them in to the panel in whatever browser opens it and asks them to
-choose their password there; a password anyone set on that address before it was confirmed stops
-working. They then join the team from the invitation link. A person who cannot sign in asks the
+link sent to it, which opens a page in the panel; pressing its button signs them in, in whatever
+browser they opened it, and asks them to choose their password there; a password anyone set on that
+address before it was confirmed stops working. They then join the team from the invitation link. A person who cannot sign in asks the
 invitation page for a link to set the password. Only an account whose confirmed address is the
 invited one can accept.
 
@@ -315,7 +316,7 @@ edition level.
 | programme | an edition's programme items and their speakers, the public programme on the convention's page in the portal, likes, personal schedule, reviews | programme (edition) | yes |
 | tickets | an edition's ticket types, sales without an account, emailed QR tickets, scanning at the venue | shop (convention), tickets (edition) | yes |
 | CMS | the public convention website: home page, programme pages, archive, per-edition content | branding (convention), website content (edition) | no |
-| profile | the user's account: name, language, "my conventions", account deletion | — (the user's own data) | account settings and "my conventions" |
+| profile | the user's account: name, language, two-factor authentication, "my conventions", account deletion | — (the user's own data) | account settings and "my conventions" |
 | booths | exhibitor booths at an edition, and virtual booths online | to be added | no |
 | friends | connections between users across conventions | — (the user's own data) | no |
 
@@ -413,24 +414,52 @@ stay with the payment provider; OPOS stores only the provider's payment referenc
 
 **The password comes after the confirmed email address.** Registering by email asks for the
 address and the name only; the account starts working once its owner opens the link sent to that
-address, which asks them to choose the password there. A password anyone set on the address before
-it was confirmed never works afterwards. A Google sign-in counts as confirmed. Setting a password,
-like deleting the account, needs a sign-in from the last few minutes: opening the link counts as
+address and presses the button on the page it leads to, which asks them to choose the password
+there. A password anyone set on the address before
+it was confirmed stops working then; only a failure of the sign-in service at that very moment can
+leave it, until the person saves a new one. A Google sign-in counts as confirmed. Setting a password,
+like deleting the account, needs a sign-in from the last few minutes: pressing that button counts as
 one, and a page left open longer offers to send a new link. Changing the
 account's email address comes after the MVP; it takes effect once both the current and the new
 address confirm it through the links sent to them.
 
+**Opening a confirmation or password link does nothing until the person presses the button.** Such a
+link leads to a page in the portal or the panel, and only the button on that page uses it, so a mail
+scanner or a preview that follows the link leaves it working.
+
+**Two-factor authentication is each account's own choice.** A user turns it on for their own account
+in the account settings, with an authenticator app; no role requires it. From then on every sign-in
+— with a password, with Google or through a link from an email — asks for a code from the app before
+anything else, and the portal and the panel each ask for their own. A code entered in one browser
+ends the account's other sessions that are still waiting for one, so the other browser asks to sign
+in again. A browser that waits for a code can sign out from the code screen, which lets another
+person sign in; until then the public pages stay readable, with a way back to the code screen. A password reset asks for it too: after the code
+the page asks for the new password, without needing the link again. Confirming an account deletion
+asks for it as well, and the deletion goes on after the code. Turning it on shows ten one-time
+recovery codes, once, and the platform keeps only their hashes. A recovery code stands in for a lost
+device: using one turns two-factor authentication off, so the person signs in and may turn it on
+again, and an email tells them. Turning it off, either way, signs the account out of every other
+session. A recovery code that could not turn it off stays usable. Turning it off in the account
+settings needs the code and a sign-in from the last few minutes, and sends the same email. Turning
+it off removes the unused recovery codes; the hash of a code already used stays as a record until
+the account is deleted.
+
+A person who has lost both the device and the recovery codes cannot turn it off themselves. They ask
+the admin, who checks that it is them and removes it with a script, and the same email tells them.
+The script cannot sign the account out elsewhere: a device that was signed in keeps its session until
+the person changes the password.
+
 **An email address leads to an account only once it is confirmed.** Wherever the platform finds an
-account by its email address — the admin appointing a convention's first head organizer, an
-organizer invitation, a speaker on a programme item, the tickets under "my tickets" — an account that has not confirmed its
+account by its email address — the admin appointing a convention's first head organizer, the admin
+removing two-factor authentication, an organizer invitation, a speaker on a programme item, the tickets under "my tickets" — an account that has not confirmed its
 address counts as no account. The admin's script refuses it, and an invitation to it goes out as an
 invitation to a person without an account.
 
 **Account deletion is self-service.** The user deletes the account from settings, after confirming
 it is them: entering the password again or signing in with Google again, no more than a few minutes
 before. A Google sign-in that comes back with a different account deletes nothing and says so.
-Their sign-in identities, sessions, memberships in convention teams and edition registrations go
-with it. The single exception: an account that is a convention's last head
+Their sign-in identities, sessions, two-factor authentication with its recovery codes, memberships
+in convention teams and edition registrations go with it. The single exception: an account that is a convention's last head
 organizer must hand that role over first — otherwise the convention would be left without an
 owner.
 
@@ -466,6 +495,7 @@ and log retention.
 - Multilingual interface (Polish, English) in the panel, portal and emails
 - Language and time zone per convention
 - Accounts: email with password, confirmed by email, and Google sign-in
+- Two-factor authentication an account turns on for itself, with one-time recovery codes
 - Password reset by email
 - Portal that works in a phone browser
 - Edition programme with speakers

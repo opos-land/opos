@@ -71,3 +71,17 @@ export const joinedTeamEmail = (tenantName: string): EmailContent => ({
   validity: null,
   ignore: msg`If you do not expect this, contact the head organizer of the convention.`,
 })
+
+/** An email without a link: a notice of something that happened to the account. */
+export interface NoticeContent {
+  subject: MessageDescriptor
+  body: MessageDescriptor
+  note: MessageDescriptor
+}
+
+/** Two-factor authentication was turned off by a recovery code, `DELETE /auth/mfa` or an admin. */
+export const mfaDisabledEmail: NoticeContent = {
+  subject: msg`Two-factor authentication was turned off`,
+  body: msg`Two-factor authentication was turned off for your OPOS account. You can turn it on again in your account settings.`,
+  note: msg`If you did not do this, change your password right away and turn two-factor authentication on again.`,
+}

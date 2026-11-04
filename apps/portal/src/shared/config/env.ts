@@ -3,7 +3,7 @@ import { z } from 'zod'
 // Build-time addresses (PLAN.md 11): the dev server and the tests fall back to .env.example.
 const schema = z.object({
   VITE_API_URL: z.url(),
-  VITE_AUTH_URL: z.url(),
 })
 
-export const env = schema.parse(import.meta.env)
+// Named one by one: Vite inlines what the source names, and the whole object is every VITE_* there is.
+export const env = schema.parse({ VITE_API_URL: import.meta.env.VITE_API_URL as unknown })

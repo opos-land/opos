@@ -1,20 +1,30 @@
 import { randomUUID } from 'node:crypto'
 import { type AddressInfo, createServer } from 'node:net'
+import { inspect } from 'node:util'
+import { Logger } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { Webhook } from 'standardwebhooks'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { loadEnv } from '../src/config/env'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { authUrl, loadEnv } from '../src/config/env'
 import { createApp } from './app'
-import { createAccount, deleteCreatedAccounts, deleteLater, signIn, TEST_PASSWORD } from './auth'
-import { deleteMail, verifyLinkIn, waitForMail } from './mailpit'
+import {
+  createAccount,
+  deleteCreatedAccounts,
+  deleteLater,
+  session,
+  signIn,
+  TEST_PASSWORD,
+} from './auth'
+import { HOOK_PORT_TIMEOUT_MS, listenOnHookPort } from './hook-port'
+import { confirmLinkIn, deleteMail, waitForMail } from './mailpit'
 import { closeTenantDb, emailConfirmed } from './tenants'
 
-// Supabase Auth calls the hook at host.docker.internal:<OPOS_API_PORT>, so this file runs the API
-// on the PORT it is configured with, on every interface (PLAN.md 12, Ports).
+// Supabase Auth calls the hook at host.docker.internal:<PORT>, so this file runs the API on the
+// PORT it is configured with, on every interface (PLAN.md 12, Ports).
 
 const env = loadEnv()
-const callback = `${env.PORTAL_URL}/auth/callback`
+const confirmUrl = `${env.PORTAL_URL}/auth/confirm`
 const addresses: string[] = []
 let app: NestExpressApplication
 
@@ -25,14 +35,23 @@ const newAddress = () => {
 }
 
 const auth = (path: string, init: RequestInit = {}) =>
-  fetch(`${env.AUTH_URL}${path}`, {
+  fetch(`${authUrl(env)}${path}`, {
     ...init,
     headers: { 'content-type': 'application/json', ...init.headers },
   })
 
-/** Opens a link from an email the way a browser would, and returns where Supabase Auth sends it. */
-async function follow(link: string) {
-  const response = await fetch(link, { redirect: 'manual' })
+/**
+ * Redeems the token of an `/auth/confirm` link straight at Supabase Auth, as the API's
+ * `POST /auth/verify` does for the supported types, and returns where Supabase Auth sends the
+ * browser.
+ */
+async function redeem(link: URL) {
+  const query = new URLSearchParams({
+    token: link.searchParams.get('token_hash') ?? '',
+    type: link.searchParams.get('type') ?? '',
+    redirect_to: confirmUrl,
+  })
+  const response = await fetch(`${authUrl(env)}/verify?${query.toString()}`, { redirect: 'manual' })
   expect(response.status).toBe(303)
   const location = response.headers.get('location') ?? ''
   expect(location).not.toMatch(/error/)
@@ -59,15 +78,15 @@ const hookBody = (type: string, email = newAddress()) => ({
   email_data: {
     token: '123456',
     token_hash: 'hash',
-    redirect_to: callback,
+    redirect_to: confirmUrl,
     email_action_type: type,
   },
 })
 
 beforeAll(async () => {
   app = await createApp()
-  await app.listen(env.PORT)
-})
+  await listenOnHookPort(app, env.PORT)
+}, HOOK_PORT_TIMEOUT_MS)
 
 afterAll(async () => {
   await deleteCreatedAccounts()
@@ -79,7 +98,7 @@ afterAll(async () => {
 describe('emails from Supabase Auth', () => {
   it('confirms a sign-up in the locale sent with it', async () => {
     const email = newAddress()
-    const response = await auth(`/signup?redirect_to=${encodeURIComponent(callback)}`, {
+    const response = await auth(`/signup?redirect_to=${encodeURIComponent(confirmUrl)}`, {
       method: 'POST',
       body: JSON.stringify({ email, password: TEST_PASSWORD, data: { locale: 'en' } }),
     })
@@ -92,12 +111,32 @@ describe('emails from Supabase Auth', () => {
     expect(mail?.HTML).toContain('Confirm email address')
     expect(await emailConfirmed(id)).toBe(false)
 
-    const link = verifyLinkIn(mail!)
-    expect(new URL(link).searchParams.get('type')).toBe('signup')
-    expect(await follow(link)).toContain(callback)
+    const link = confirmLinkIn(mail!)
+    expect(link.searchParams.get('type')).toBe('signup')
+    expect(await redeem(link)).toContain(confirmUrl)
     await expect(signIn(email)).resolves.toBeTypeOf('string')
     expect(await emailConfirmed(id)).toBe(true)
   })
+
+  it.each([env.PORTAL_URL, env.PANEL_URL])(
+    'links a sign-up to /auth/confirm of %s without naming Supabase Auth',
+    async (origin) => {
+      const email = newAddress()
+      const redirectTo = `${origin}/auth/confirm`
+      const response = await auth(`/signup?redirect_to=${encodeURIComponent(redirectTo)}`, {
+        method: 'POST',
+        body: JSON.stringify({ email, password: TEST_PASSWORD }),
+      })
+      deleteLater(((await response.json()) as { id: string }).id)
+
+      const [mail] = await waitForMail(email)
+      const link = confirmLinkIn(mail!)
+      expect(`${link.origin}${link.pathname}`).toBe(redirectTo)
+      expect(link.searchParams.get('type')).toBe('signup')
+      expect(link.searchParams.get('token_hash')).toBeTruthy()
+      expect(mail?.Text).not.toContain('/verify')
+    },
+  )
 
   it('writes in the default locale when nothing else decides', async () => {
     const email = newAddress()
@@ -117,11 +156,11 @@ describe('emails from Supabase Auth', () => {
     const token = await signIn(account.email)
     await request(app.getHttpServer())
       .patch('/me')
-      .set('Authorization', `Bearer ${token}`)
+      .use(session(token))
       .send({ locale: 'en' })
       .expect(200)
 
-    const response = await auth(`/recover?redirect_to=${encodeURIComponent(callback)}`, {
+    const response = await auth(`/recover?redirect_to=${encodeURIComponent(confirmUrl)}`, {
       method: 'POST',
       body: JSON.stringify({ email: account.email }),
     })
@@ -129,9 +168,9 @@ describe('emails from Supabase Auth', () => {
 
     const [mail] = await waitForMail(account.email)
     expect(mail?.Subject).toBe('Reset your password')
-    const link = verifyLinkIn(mail!)
-    expect(new URL(link).searchParams.get('type')).toBe('recovery')
-    expect(await follow(link)).toContain('access_token=')
+    const link = confirmLinkIn(mail!)
+    expect(link.searchParams.get('type')).toBe('recovery')
+    expect(await redeem(link)).toContain('access_token=')
   })
 
   it('confirms an email change on both addresses', async () => {
@@ -153,13 +192,34 @@ describe('emails from Supabase Auth', () => {
     expect(current?.Text).toContain(next)
     expect(incoming?.Subject).toBe('Confirm your new email address')
 
-    await follow(verifyLinkIn(current!))
-    await follow(verifyLinkIn(incoming!))
+    await redeem(confirmLinkIn(current!))
+    await redeem(confirmLinkIn(incoming!))
     await expect(signIn(next)).resolves.toBeTypeOf('string')
   })
 })
 
 describe('POST /hooks/send-email', () => {
+  it.each([
+    `${env.PANEL_URL}/auth/callback`,
+    `${env.PORTAL_URL}/`,
+    'https://evil.example/auth/confirm',
+  ])('sends the confirmation page of the portal for the redirect %s', async (redirectTo) => {
+    const body = hookBody('signup')
+    body.email_data.redirect_to = redirectTo
+    const { payload, headers } = signed(body)
+
+    await request(app.getHttpServer())
+      .post('/hooks/send-email')
+      .set(headers)
+      .send(payload)
+      .expect(200)
+
+    const [mail] = await waitForMail(body.user.email)
+    const link = confirmLinkIn(mail!)
+    expect(`${link.origin}${link.pathname}`).toBe(confirmUrl)
+    expect(mail?.Text).not.toContain('/verify')
+  })
+
   it('refuses a request without a signature', async () => {
     const res = await request(app.getHttpServer())
       .post('/hooks/send-email')
@@ -216,6 +276,51 @@ describe('POST /hooks/send-email', () => {
       expect(res.body).toMatchObject({ code: 'server.error' })
     } finally {
       await broken.close()
+    }
+  })
+
+  it('logs no address when the SMTP server refuses the recipient', async () => {
+    const recipient = 'anna.secret@example.test'
+    const smtp = createServer((socket) => {
+      socket.on('error', () => undefined)
+      socket.write('220 refusing ESMTP\r\n')
+      socket.on('data', (chunk) => {
+        for (const line of chunk.toString().split('\r\n')) {
+          if (/^(EHLO|HELO)/i.test(line)) socket.write('250 ok\r\n')
+          else if (/^MAIL/i.test(line)) socket.write('250 ok\r\n')
+          else if (/^RCPT/i.test(line)) socket.write(`550 5.1.1 <${recipient}> unknown\r\n`)
+          else if (/^QUIT/i.test(line)) socket.end('221 bye\r\n')
+        }
+      })
+    })
+    await new Promise<void>((resolve) => smtp.listen(0, '127.0.0.1', resolve))
+    const refusing = await createApp({
+      SMTP_HOST: '127.0.0.1',
+      SMTP_PORT: String((smtp.address() as AddressInfo).port),
+    })
+    const logs = [
+      vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined),
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined),
+      vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined),
+    ]
+    try {
+      const { payload, headers } = signed(hookBody('signup', recipient))
+
+      const res = await request(refusing.getHttpServer())
+        .post('/hooks/send-email')
+        .set(headers)
+        .send(payload)
+        .expect(500)
+
+      expect(res.body).toMatchObject({ code: 'server.error' })
+      const lines = logs.flatMap((spy) => spy.mock.calls.map((call) => inspect(call, { depth: 8 })))
+      expect(lines.length).toBeGreaterThan(0)
+      expect(lines.join('\n')).not.toContain(recipient)
+      expect(lines.join('\n')).toContain('EENVELOPE')
+    } finally {
+      vi.restoreAllMocks()
+      await refusing.close()
+      smtp.close()
     }
   })
 

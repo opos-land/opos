@@ -10,7 +10,9 @@ export function safeRedirect(value: string | null | undefined): string {
   // slash, so '/\t/evil.test' is the other origin it would open.
   const { origin } = window.location
   const url = new URL(value, origin)
-  if (url.origin !== origin) return SIGNED_IN_HOME
+  // Dot segments collapse during resolution: '/.//evil.test' resolves to '//evil.test', which a
+  // link renders as another origin.
+  if (url.origin !== origin || url.pathname.startsWith('//')) return SIGNED_IN_HOME
   return `${url.pathname}${url.search}${url.hash}`
 }
 

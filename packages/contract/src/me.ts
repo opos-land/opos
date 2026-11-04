@@ -11,9 +11,21 @@ export const accountSchema = z.object({
   lastName: z.string().nullable(),
   /** The account's interface language; `null` means detect it from Accept-Language. */
   locale: z.enum(SUPPORTED_LOCALES).nullable(),
+  /** Whether the account holds a verified two-factor factor (PLAN.md 7.12). */
+  mfaEnabled: z.boolean(),
 })
 
 export type Account = z.infer<typeof accountSchema>
+
+/** How the access token says the person can sign in: `email` is `password`. */
+export const signInMethodSchema = z.enum(['password', 'google'])
+
+export type SignInMethod = z.infer<typeof signInMethodSchema>
+
+/** `GET /me`: the account and the sign-in methods of the token that asked. */
+export const meSchema = accountSchema.extend({ signInMethods: z.array(signInMethodSchema) })
+
+export type Me = z.infer<typeof meSchema>
 
 export const updateAccountSchema = z
   .object({
@@ -62,7 +74,7 @@ export type ScheduleItem = z.infer<typeof scheduleItemSchema>
 export const meContract = {
   get: accountRoute
     .route({ method: 'GET', path: '/me', summary: 'The signed-in account' })
-    .output(accountSchema),
+    .output(meSchema),
   update: accountRoute
     .route({
       method: 'PATCH',

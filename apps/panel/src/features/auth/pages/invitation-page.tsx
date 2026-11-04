@@ -3,17 +3,17 @@ import { formatDateTime } from '@opos/i18n'
 import { type InvitationPreview } from '@opos/contract'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { activeLocale } from '../../../shared/lib/i18n'
 import { errorCode } from '../../../shared/lib/errors'
-import { useSession } from '../../../shared/lib/session'
-import { ErrorMessage, LoadingView, Notice } from '../../../shared/ui'
+import { startSession, useSession } from '../../../shared/lib/session'
+import { ErrorMessage, LoadingView, Notice, UnavailableView } from '../../../shared/ui'
 import { sendPasswordLink, signUpWithEmail } from '../api/auth'
 import { invitationPreviewOptions } from '../api/invitations'
 import { INVITATION_PATH } from '../model/auth-return'
+import { mfaPath, mfaReturnFor } from '../model/mfa-return'
 import { AcceptInvitation } from '../components/accept-invitation'
 import { AuthLayout } from '../components/auth-layout'
-import { ChoosePasswordForm } from '../components/choose-password-form'
 import { EmailOnlyForm } from '../components/email-only-form'
 import { GoogleButton } from '../components/google-button'
 import { SignInForm } from '../components/sign-in-form'
@@ -21,12 +21,9 @@ import {
   endsInvitation,
   forgetInvitation,
   rememberInvitation,
-  setAwaitingPassword,
   type StoredInvitation,
   storedInvitation,
 } from '../model/invitation-storage'
-
-const sameEmail = (a: string | undefined, b: string) => a?.toLowerCase() === b.toLowerCase()
 
 /** The invitee's browser zone: the preview names no convention time zone. */
 const browserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -54,16 +51,15 @@ function PreviewSummary({ preview }: { preview: InvitationPreview }) {
 /** Signed out: sign in, register with email or Google, or ask for a password link. */
 function JoinOptions({
   preview,
-  onAwaitingPassword,
+  onMfaRequired,
 }: {
   preview: InvitationPreview
-  onAwaitingPassword: (awaiting: boolean) => void
+  onMfaRequired: () => void
 }) {
   const [sentTo, setSentTo] = useState<string | null>(null)
   const signUp = async (email: string) => {
     const error = await signUpWithEmail(email, INVITATION_PATH)
     if (error) return error
-    onAwaitingPassword(true)
     setSentTo(email)
     return null
   }
@@ -71,7 +67,6 @@ function JoinOptions({
   const passwordLink = async (email: string) => {
     const error = await sendPasswordLink(email, INVITATION_PATH)
     if (error) return error
-    onAwaitingPassword(true)
     setSentTo(email)
     return null
   }
@@ -108,11 +103,8 @@ function JoinOptions({
         <h2 id="sign-in" className="font-semibold">
           <Trans>I already have an account</Trans>
         </h2>
-        <SignInForm defaultEmail={preview.email} onSignedIn={() => onAwaitingPassword(false)} />
-        <GoogleButton
-          returnTo={INVITATION_PATH}
-          onBeforeRedirect={() => onAwaitingPassword(false)}
-        />
+        <SignInForm defaultEmail={preview.email} onMfaRequired={onMfaRequired} />
+        <GoogleButton returnTo={INVITATION_PATH} />
       </section>
       <section aria-labelledby="sign-up" className="border-line flex flex-col gap-3 border-t pt-6">
         <h2 id="sign-up" className="font-semibold">
@@ -154,19 +146,37 @@ function JoinOptions({
   )
 }
 
+/** A session that waits for its code cannot accept: the way on is the code screen, back here. */
+function FinishSigningIn({ code }: { code: string }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm">
+        <Trans>Your sign-in is not finished. Enter your code to join the team.</Trans>
+      </p>
+      <Link to={code} className="text-accent inline-flex min-h-11 items-center text-sm underline">
+        <Trans>Finish signing in</Trans>
+      </Link>
+    </div>
+  )
+}
+
 /**
  * Invitation acceptance (PLAN.md 7.7): the convention and the invited address, sign-in, sign-up
- * with email or Google, the password chosen after the address is confirmed, then acceptance.
+ * with email or Google, then acceptance. The password is chosen on `/auth/confirm`, which returns
+ * here.
  */
 export function InvitationPage() {
   const { t } = useLingui()
   const [params] = useSearchParams()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const codeScreen = mfaPath(mfaReturnFor(location))
   const urlToken = params.get('token')
-  const [invitation, setInvitation] = useState<StoredInvitation | null>(() =>
+  const [invitation] = useState<StoredInvitation | null>(() =>
     urlToken ? rememberInvitation(urlToken) : storedInvitation(),
   )
   const status = useSession((state) => state.status)
-  const session = useSession((state) => state.session)
+  const account = useSession((state) => state.account)
   const preview = useQuery({
     ...invitationPreviewOptions(invitation?.token ?? ''),
     enabled: Boolean(invitation),
@@ -178,11 +188,6 @@ export function InvitationPage() {
     if (endsInvitation(previewCode)) forgetInvitation()
   }, [previewCode])
 
-  const awaitPassword = (awaitingPassword: boolean) => {
-    setAwaitingPassword(awaitingPassword)
-    setInvitation((current) => current && { ...current, awaitingPassword })
-  }
-
   if (!invitation) {
     return (
       <AuthLayout title={t`Invitation`}>
@@ -193,6 +198,7 @@ export function InvitationPage() {
     )
   }
 
+  if (status === 'unavailable') return <UnavailableView onRetry={() => void startSession()} />
   if (status === 'loading' || preview.isPending) return <LoadingView />
 
   if (preview.isError) {
@@ -209,17 +215,15 @@ export function InvitationPage() {
   return (
     <AuthLayout title={t`Join the organizing team`}>
       <PreviewSummary preview={preview.data} />
-      {session &&
-      invitation.awaitingPassword &&
-      sameEmail(session.user.email, preview.data.email) ? (
-        <ChoosePasswordForm
-          email={session.user.email ?? preview.data.email}
-          onDone={() => awaitPassword(false)}
-        />
-      ) : session ? (
-        <AcceptInvitation token={invitation.token} email={session.user.email ?? ''} />
+      {account ? (
+        <AcceptInvitation token={invitation.token} email={account.email} />
+      ) : status === 'mfa-required' ? (
+        <FinishSigningIn code={codeScreen} />
       ) : (
-        <JoinOptions preview={preview.data} onAwaitingPassword={awaitPassword} />
+        <JoinOptions
+          preview={preview.data}
+          onMfaRequired={() => void navigate(codeScreen, { replace: true })}
+        />
       )}
     </AuthLayout>
   )

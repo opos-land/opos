@@ -1,12 +1,13 @@
 import { Trans } from '@lingui/react/macro'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
 import { Button, ErrorMessage, LoadingView } from '../../../shared/ui'
 import { signOut } from '../api/auth'
 import { acceptInvitationOptions, membershipsKey } from '../api/invitations'
 import { endsInvitation, forgetInvitation } from '../model/invitation-storage'
+import { mfaPath, mfaReturnFor } from '../model/mfa-return'
 
 /**
  * Accepts the invitation as soon as there is a session (PLAN.md 7.7, step 2), then opens the
@@ -14,6 +15,7 @@ import { endsInvitation, forgetInvitation } from '../model/invitation-storage'
  */
 export function AcceptInvitation({ token, email }: { token: string; email: string }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const accept = useMutation({
     ...acceptInvitationOptions(),
@@ -24,6 +26,10 @@ export function AcceptInvitation({ token, email }: { token: string; email: strin
     },
     onError: (error) => {
       if (endsInvitation(errorCode(error))) forgetInvitation()
+      // The session waits for its code: the code screen returns here, to the same invitation.
+      if (errorCode(error) === 'session.mfa-required') {
+        void navigate(mfaPath(mfaReturnFor(location)), { replace: true })
+      }
     },
   })
   const started = useRef(false)

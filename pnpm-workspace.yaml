@@ -50,3 +50,12 @@ catalog:
 overrides:
   # GHSA-r3ph-w7gj-g6xm; @nestjs/swagger 11 pins js-yaml 5.3.0.
   '@nestjs/swagger>js-yaml': ^5.4.1
+  # @nestjs/platform-express 11 pins multer 2.4.0 (GHSA-q7qp-rjg7-q26m).
+  # Drop when @nestjs/platform-express pins multer >= 2.5.0.
+  '@nestjs/platform-express>multer': ^2.5.0
+  # GHSA-27r3-jxmh-p828; express 5 accepts ^2.3.0, the patched range starts at 2.4.0.
+  # Drop when express requires body-parser >= 2.4.0.
+  'express>body-parser': ^2.4.0
+  # GHSA-qw65-cvwx-89v3; ajv accepts ^3.0.1, the patched range starts at 3.1.7.
+  # Drop when ajv requires fast-uri >= 3.1.7.
+  'ajv>fast-uri': ^3.1.7

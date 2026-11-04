@@ -3,7 +3,7 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { deleteCreatedAccounts, testEmail } from './auth'
+import { deleteCreatedAccounts, session, testEmail } from './auth'
 import {
   addEdition,
   addEditionAccess,
@@ -70,9 +70,7 @@ type Method = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
 const call = (who: Member, method: Method, path: string, body?: object, slug = a.slug) => {
   const agent = request(app.getHttpServer())
-  const req = agent[method](path)
-    .set('Authorization', `Bearer ${who.token}`)
-    .set('X-Tenant-Slug', slug)
+  const req = agent[method](path).use(session(who.token)).set('X-Tenant-Slug', slug)
   return body ? req.send(body) : req
 }
 

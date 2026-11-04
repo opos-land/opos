@@ -5,7 +5,7 @@ import {
   forgetAuthReturn,
   rememberAuthReturn,
 } from './auth-return'
-import { rememberInvitation, setAwaitingPassword } from './invitation-storage'
+import { rememberInvitation } from './invitation-storage'
 
 beforeEach(() => {
   localStorage.clear()
@@ -31,17 +31,9 @@ describe('authReturn', () => {
 
   it('prefers the page that started the round trip over a stored invitation', () => {
     rememberInvitation('token-a')
-    setAwaitingPassword(true)
     rememberAuthReturn('/convention-a')
 
     expect(authReturn()).toBe('/convention-a')
-  })
-
-  it('returns to an invitation waiting for its password link', () => {
-    rememberInvitation('token-a')
-    setAwaitingPassword(true)
-
-    expect(authReturn()).toBe('/invitation')
   })
 
   it('is gone once forgotten', () => {

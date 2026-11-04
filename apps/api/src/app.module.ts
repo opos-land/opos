@@ -1,8 +1,11 @@
 import {
   type DynamicModule,
+  Inject,
   type MiddlewareConsumer,
   Module,
   type NestModule,
+  type OnModuleDestroy,
+  type OnModuleInit,
   RequestMethod,
 } from '@nestjs/common'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
@@ -16,6 +19,11 @@ import { TenantTransactionInterceptor } from './common/als/tenant-transaction.in
 import { TenantWriteQueue } from './common/permissions/tenant-write-queue'
 import { DatabaseModule } from './common/database/database.module'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
+import {
+  ACCESS_TOKEN_VERIFIER,
+  type AccessTokenVerifier,
+  createAccessTokenVerifier,
+} from './common/guards/access-token'
 import { AccessRepository } from './common/permissions/access.repository'
 import { DEFAULT_RATE_LIMIT, type RateLimit, rateLimitModule } from './common/rate-limit/rate-limit'
 import { RouteRateLimiter } from './common/rate-limit/route-rate-limit'
@@ -30,9 +38,13 @@ import { PublicModule } from './modules/public/public.module'
 import { TenantsModule } from './modules/tenants/tenants.module'
 
 @Module({})
-export class AppModule implements NestModule {
+export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
+  constructor(@Inject(ACCESS_TOKEN_VERIFIER) private readonly verifier: AccessTokenVerifier) {}
+
   /** `rateLimit` replaces the default limit of PLAN.md 7.9, for tests that run into it. */
   static register(env: Env, rateLimit: RateLimit = DEFAULT_RATE_LIMIT): DynamicModule {
+    // One per process, built here: the rate limit's options take it before Nest injects anything.
+    const verifier = createAccessTokenVerifier(env)
     return {
       module: AppModule,
       global: true,
@@ -42,7 +54,7 @@ export class AppModule implements NestModule {
           plugins: [new RethrowHandlerPlugin({ filter: () => true })],
           sendResponseInterceptors: [deferResponseInTenantTransaction],
         }),
-        rateLimitModule(env, rateLimit),
+        rateLimitModule(verifier, rateLimit, env),
         DatabaseModule,
         HealthModule,
         MeModule,
@@ -55,6 +67,7 @@ export class AppModule implements NestModule {
       ],
       providers: [
         { provide: ENV, useValue: env },
+        { provide: ACCESS_TOKEN_VERIFIER, useValue: verifier },
         { provide: APP_FILTER, useClass: HttpExceptionFilter },
         // A global guard runs before every route's own guards, JwtAuthGuard included.
         { provide: APP_GUARD, useClass: ThrottlerGuard },
@@ -65,8 +78,22 @@ export class AppModule implements NestModule {
         { provide: TenantWriteQueue, useFactory: () => new TenantWriteQueue() },
         RouteRateLimiter,
       ],
-      exports: [ENV, TenantContextService, AccessRepository, RouteRateLimiter],
+      exports: [
+        ENV,
+        ACCESS_TOKEN_VERIFIER,
+        TenantContextService,
+        AccessRepository,
+        RouteRateLimiter,
+      ],
     }
+  }
+
+  onModuleInit() {
+    return this.verifier.loadKeys()
+  }
+
+  onModuleDestroy() {
+    this.verifier.close()
   }
 
   configure(consumer: MiddlewareConsumer) {

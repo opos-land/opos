@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { migrationDb } from '@opos/db'
+import { migrationDb, migrationUrl } from '@opos/db'
 import { sql } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
 import { type TenantContextService } from '../src/common/als/tenant-context.service'
@@ -7,9 +7,7 @@ import { AccessRepository } from '../src/common/permissions/access.repository'
 
 // The bound on the wait for a tenant's write lock (PLAN.md 7.3) is set for that wait alone.
 
-const url = process.env.DATABASE_MIGRATION_URL
-if (!url) throw new Error('DATABASE_MIGRATION_URL is missing from apps/api/.env.example')
-const db = migrationDb(url)
+const db = migrationDb(migrationUrl())
 
 afterAll(() => db.$client.end())
 

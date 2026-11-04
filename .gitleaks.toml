@@ -1,0 +1,47 @@
+# gitleaks configuration for the `secrets` CI job (gitleaks 8.30.1).
+# The default rules stay on; the allowlist below only settles findings that are known and local.
+
+[extend]
+useDefault = true
+
+# History scan. The commits below once carried values in the local development template and in
+# the plan; all of them are local-only development values, to be rotated. A finding is allowed
+# only when its commit AND its path are both listed, so a hit in another commit or in another
+# file still fails.
+[[allowlists]]
+description = "local-only development values in past commits of the env template and the plan"
+condition = "AND"
+commits = [
+  "7e5f8cc6c637b4deabd5211b8b7853912c3b353c",
+  "4149f7b6aea91a339feaec3e8300b5d8020596c2",
+  "218ab5dd4f6fd4f6251421b5355e93bfe3397601",
+  "382189a1d2af80aee0d6d4964bfe8d3abbeba33b",
+  "5965ad6be6687d89ebe4b7c4ff1baf12de16c9f3",
+  "3321ce2c98d222dced4f9cd0bbfb2755d4df4765",
+  "670cf95d32d348869cf01ba2c63c0e0d55e4f5e3",
+]
+paths = [
+  '''^apps/api/\.env\.example$''',
+  '''^docs/PLAN\.md$''',
+]
+
+# History scan. This commit carried a fixed demo TOTP secret in the seed, the RFC 6238 test vector;
+# the seed no longer holds it.
+[[allowlists]]
+description = "the RFC 6238 test vector as the seed's demo secret, in one past commit"
+condition = "AND"
+commits = [
+  "293b97a64e90b8010c05b606334040e8ed2085da",
+]
+paths = [
+  '''^packages/db/src/seed\.ts$''',
+]
+
+# Tree and history scans. Test fixtures, by path alone: a squash merge gives their commits a new
+# hash. The first holds the RFC 6238 test vector, the second a made-up key its check must refuse.
+[[allowlists]]
+description = "test fixtures: the RFC 6238 vector and the boundary check's fake key"
+paths = [
+  '''^packages/db/src/totp\.test\.ts$''',
+  '''^scripts/bff-boundary\.test\.mjs$''',
+]

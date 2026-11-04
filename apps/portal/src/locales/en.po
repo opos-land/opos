@@ -45,12 +45,7 @@ msgstr "Already have an account? <0>Sign in</0>"
 msgid "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
 msgstr "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
 
-#: src/features/auth/pages/reset-password-page.tsx
-msgid "Ask for a new link"
-msgstr "Ask for a new link"
-
-#: src/features/auth/components/new-password-form.tsx
-#: src/features/auth/components/register-form.tsx
+#: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
 msgstr "At least 8 characters."
 
@@ -66,13 +61,49 @@ msgstr "Back to sign-in"
 msgid "By creating an account you confirm that you have read the <0>privacy policy</0>."
 msgstr "By creating an account you confirm that you have read the <0>privacy policy</0>."
 
+#: src/features/account/components/reauthenticate-form.tsx
+#: src/features/account/components/two-factor-card.tsx
+msgid "Cancel"
+msgstr "Cancel"
+
 #: src/features/auth/pages/register-page.tsx
 msgid "Check your inbox"
 msgstr "Check your inbox"
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Choose your password"
+msgstr "Choose your password"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Code"
+msgstr "Code"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Code from the app"
+msgstr "Code from the app"
+
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Confirm"
+msgstr "Confirm"
+
 #: src/features/account/components/delete-account.tsx
+#: src/features/account/components/reauthenticate-form.tsx
 msgid "Confirm with Google"
 msgstr "Confirm with Google"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Confirm your address"
+msgstr "Confirm your address"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Confirmation link"
+msgstr "Confirmation link"
+
+#: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/login-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Continue"
+msgstr "Continue"
 
 #: src/features/auth/components/google-button.tsx
 msgid "Continue with Google"
@@ -104,6 +135,11 @@ msgstr "Deleting your account"
 msgid "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
 msgstr "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Dismiss"
+msgstr "Dismiss"
+
+#: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -118,6 +154,7 @@ msgstr "Emails leave the platform for the mail provider only over an encrypted c
 msgid "Enter 1 to 100 characters."
 msgstr "Enter 1 to 100 characters."
 
+#: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -125,8 +162,26 @@ msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
 
 #: src/features/account/components/delete-account.tsx
+#: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
 msgstr "Enter it again to confirm it is you."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter one of the recovery codes you saved. It turns two-factor authentication off."
+msgstr "Enter one of the recovery codes you saved. It turns two-factor authentication off."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter one of your recovery codes."
+msgstr "Enter one of your recovery codes."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the code from your authenticator app to finish signing in."
+msgstr "Enter the code from your authenticator app to finish signing in."
+
+#: src/features/account/components/two-factor-card.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the six digits from your authenticator app."
+msgstr "Enter the six digits from your authenticator app."
 
 #: src/features/account/components/profile-form.tsx
 msgid "Enter up to 100 characters."
@@ -139,6 +194,14 @@ msgstr "Enter your password."
 #: src/features/landing/pages/landing-page.tsx
 msgid "Fantasy conventions, in one place"
 msgstr "Fantasy conventions, in one place"
+
+#: src/app/layout.tsx
+msgid "Finish signing in"
+msgstr "Finish signing in"
+
+#: src/features/conventions/components/like-button.tsx
+msgid "Finish signing in to like this item"
+msgstr "Finish signing in to like this item"
 
 #: src/features/account/components/profile-form.tsx
 #: src/features/auth/components/register-form.tsx
@@ -157,7 +220,7 @@ msgstr "For organizers"
 msgid "Forgot your password?"
 msgstr "Forgot your password?"
 
-#: src/features/auth/pages/auth-callback-page.tsx
+#: src/features/auth/pages/confirm-page.tsx
 msgid "Go to sign-in"
 msgstr "Go to sign-in"
 
@@ -165,7 +228,6 @@ msgstr "Go to sign-in"
 msgid "Go to the home page"
 msgstr "Go to the home page"
 
-#: src/features/auth/pages/reset-password-page.tsx
 #: src/features/landing/pages/landing-page.tsx
 msgid "Go to your account"
 msgstr "Go to your account"
@@ -182,17 +244,21 @@ msgstr "How long we keep it"
 msgid "How OPOS handles your personal data."
 msgstr "How OPOS handles your personal data."
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "I have saved my codes"
+msgstr "I have saved my codes"
+
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
 msgstr "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
 
-#: src/features/auth/pages/auth-callback-page.tsx
-msgid "If you opened a confirmation link, your address may be confirmed already."
-msgstr "If you opened a confirmation link, your address may be confirmed already."
-
 #: src/features/landing/pages/privacy-page.tsx
 msgid "If you sign in with Google, Google confirms your email address and gives us your name."
 msgstr "If you sign in with Google, Google confirms your email address and gives us your name."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "If you turn on two-factor authentication: the secret of your authenticator app, kept by our sign-in service, and ten one-time recovery codes, of which we keep only their hashes: nobody can read a code back, you included."
+msgstr "If you turn on two-factor authentication: the secret of your authenticator app, kept by our sign-in service, and ten one-time recovery codes, of which we keep only their hashes: nobody can read a code back, you included."
 
 #: src/features/account/components/language-form.tsx
 msgid "Interface language"
@@ -224,7 +290,7 @@ msgstr "Loading…"
 msgid "My schedule"
 msgstr "My schedule"
 
-#: src/features/auth/components/new-password-form.tsx
+#: src/features/auth/components/choose-password-form.tsx
 msgid "New password"
 msgstr "New password"
 
@@ -244,6 +310,10 @@ msgstr "One account for every convention on OPOS."
 msgid "One account for every convention: sign up for an edition, like programme items to build your personal schedule, review the ones you attended and find your tickets in one place. It works in a phone browser, with no app to install."
 msgstr "One account for every convention: sign up for an edition, like programme items to build your personal schedule, review the ones you attended and find your tickets in one place. It works in a phone browser, with no app to install."
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Open the link from your email to confirm your address or reset your password."
+msgstr "Open the link from your email to confirm your address or reset your password."
+
 #: src/app/layout.tsx
 msgid "OPOS"
 msgstr "OPOS"
@@ -257,8 +327,8 @@ msgid "OPOS is the platform conventions use for their programme, tickets and att
 msgstr "OPOS is the platform conventions use for their programme, tickets and attendee sign-ups. It is free for conventions."
 
 #: src/features/landing/pages/privacy-page.tsx
-msgid "OPOS uses no tracking or advertising cookies. Your sign-in session is kept in your browser’s local storage, for this site only."
-msgstr "OPOS uses no tracking or advertising cookies. Your sign-in session is kept in your browser’s local storage, for this site only."
+msgid "OPOS uses no tracking or advertising cookies. Your sign-in session is kept in cookies that your browser sends to OPOS alone, which no script of the page can read. Signing out removes them."
+msgstr "OPOS uses no tracking or advertising cookies. Your sign-in session is kept in cookies that your browser sends to OPOS alone, which no script of the page can read. Signing out removes them."
 
 #: src/features/auth/pages/login-page.tsx
 #: src/features/auth/pages/register-page.tsx
@@ -277,26 +347,41 @@ msgstr "Other editions"
 msgid "Page not found"
 msgstr "Page not found"
 
-#: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Password"
 msgstr "Password"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Press the button to choose a new password."
+msgstr "Press the button to choose a new password."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Press the button to confirm your address. Then you choose your password."
+msgstr "Press the button to confirm your address. Then you choose your password."
 
 #: src/app/layout.tsx
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Privacy policy"
 msgstr "Privacy policy"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "QR code for your authenticator app"
+msgstr "QR code for your authenticator app"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Recovery code"
+msgstr "Recovery code"
+
 #: src/features/conventions/components/like-button.tsx
 msgid "Remove the like"
 msgstr "Remove the like"
 
-#: src/features/auth/components/new-password-form.tsx
+#: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
 msgstr "Repeat the password"
 
+#: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
-#: src/features/auth/pages/reset-password-page.tsx
 msgid "Reset your password"
 msgstr "Reset your password"
 
@@ -304,13 +389,30 @@ msgstr "Reset your password"
 msgid "Save"
 msgstr "Save"
 
-#: src/features/auth/components/new-password-form.tsx
-msgid "Save the new password"
-msgstr "Save the new password"
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Save the password"
+msgstr "Save the password"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
+msgstr "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
 
 #: src/features/account/components/language-form.tsx
 msgid "Saved on your account."
 msgstr "Saved on your account."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
+msgstr "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Secret: <0>{secret}</0>"
+msgstr "Secret: <0>{secret}</0>"
+
+#: src/features/auth/components/choose-password-form.tsx
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Send a new link"
+msgstr "Send a new link"
 
 #: src/features/auth/components/resend-confirmation.tsx
 msgid "Send the confirmation link again"
@@ -319,10 +421,6 @@ msgstr "Send the confirmation link again"
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Send the link"
 msgstr "Send the link"
-
-#: src/features/auth/pages/reset-password-page.tsx
-msgid "Set a new password"
-msgstr "Set a new password"
 
 #: src/app/layout.tsx
 #: src/features/auth/components/sign-in-form.tsx
@@ -336,6 +434,7 @@ msgid "Sign in to like this item"
 msgstr "Sign in to like this item"
 
 #: src/features/account/pages/account-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Sign out"
 msgstr "Sign out"
 
@@ -344,18 +443,22 @@ msgid "Signed in as {email}"
 msgstr "Signed in as {email}"
 
 #: src/features/account/pages/account-page.tsx
-msgid "Signing out ends your sessions on every device."
-msgstr "Signing out ends your sessions on every device."
+msgid "Signing out ends your session on this device."
+msgstr "Signing out ends your session on this device."
 
 #: src/features/account/components/language-form.tsx
 msgid "The browser's language"
 msgstr "The browser's language"
 
 #: src/features/landing/pages/privacy-page.tsx
+msgid "The hash of a recovery code you have used: as a record, until you delete the account."
+msgstr "The hash of a recovery code you have used: as a record, until you delete the account."
+
+#: src/features/landing/pages/privacy-page.tsx
 msgid "The number of likes of a programme item is public. Who liked it is never shown to anyone."
 msgstr "The number of likes of a programme item is public. Who liked it is never shown to anyone."
 
-#: src/features/auth/components/new-password-form.tsx
+#: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "The passwords differ."
 
@@ -368,33 +471,89 @@ msgid "There is no programme yet."
 msgstr "There is no programme yet."
 
 #: src/features/landing/pages/privacy-page.tsx
-msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, tickets and invitations to a convention’s team."
-msgstr "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, tickets and invitations to a convention’s team."
+msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
+msgstr "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Too much time has passed since you opened the link. Ask for a new one."
+msgstr "Too much time has passed since you opened the link. Ask for a new one."
+
+#: src/shared/ui/messages.tsx
+msgid "Try again"
+msgstr "Try again"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn off two-factor authentication"
+msgstr "Turn off two-factor authentication"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on"
+msgstr "Turn on"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on two-factor authentication"
+msgstr "Turn on two-factor authentication"
+
+#: src/features/account/pages/account-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Two-factor authentication"
+msgstr "Two-factor authentication"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
+msgstr "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
+msgstr "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
+msgstr "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 msgstr "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 
-#: src/features/auth/components/new-password-form.tsx
-#: src/features/auth/components/register-form.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use a recovery code"
+msgstr "Use a recovery code"
+
+#: src/features/auth/components/choose-password-form.tsx
 msgid "Use at least 8 characters."
 msgstr "Use at least 8 characters."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Use at most 72 bytes; some characters count for more than one."
+msgstr "Use at most 72 bytes; some characters count for more than one."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use the code of the app"
+msgstr "Use the code of the app"
 
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
 msgstr "We could not find what you are looking for."
 
-#: src/features/auth/pages/auth-callback-page.tsx
+#: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"
 msgstr "We could not sign you in"
 
 #: src/features/auth/pages/register-page.tsx
-msgid "We sent a confirmation link to {sentTo}. Open it to start using your account. The link works for one hour."
-msgstr "We sent a confirmation link to {sentTo}. Open it to start using your account. The link works for one hour."
+msgid "We sent a confirmation link to {sentTo}. Open it to confirm your address and choose your password. The link works for one hour."
+msgstr "We sent a confirmation link to {sentTo}. Open it to confirm your address and choose your password. The link works for one hour."
 
 #: src/features/auth/components/resend-confirmation.tsx
 msgid "We sent a new confirmation link to {email}."
 msgstr "We sent a new confirmation link to {email}."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "We sent a new link to {email}. Open it to choose your password."
+msgstr "We sent a new link to {email}. Open it to choose your password."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "We sent a new link to {sentTo}."
+msgstr "We sent a new link to {sentTo}."
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."
@@ -428,17 +587,17 @@ msgstr "Why we store it"
 msgid "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
 msgstr "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
 
+#: src/features/account/components/delete-account.tsx
+msgid "You confirmed it is you again. Delete the account within 5 minutes."
+msgstr "You confirmed it is you again. Delete the account within 5 minutes."
+
 #: src/features/landing/pages/privacy-page.tsx
-msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
-msgstr "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
+msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
+msgstr "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
 
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "You have not liked any programme items yet."
 msgstr "You have not liked any programme items yet."
-
-#: src/features/account/components/delete-account.tsx
-msgid "You signed in with Google again. Delete the account within 5 minutes."
-msgstr "You signed in with Google again. Delete the account within 5 minutes."
 
 #: src/features/account/pages/account-page.tsx
 msgid "Your account"
@@ -456,6 +615,10 @@ msgstr "Your account has been deleted."
 msgid "Your account: your first name, last name, email address and the interface language you choose."
 msgstr "Your account: your first name, last name, email address and the interface language you choose."
 
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Your address {email} is confirmed. Choose the password you will sign in with."
+msgstr "Your address {email} is confirmed. Choose the password you will sign in with."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your browser"
 msgstr "Your browser"
@@ -468,14 +631,15 @@ msgstr "Your name"
 msgid "Your name is saved."
 msgstr "Your name is saved."
 
-#: src/features/auth/pages/reset-password-page.tsx
-msgid "Your new password is saved. You are signed out on every other device."
-msgstr "Your new password is saved. You are signed out on every other device."
-
 #: src/features/account/components/delete-account.tsx
+#: src/features/account/components/reauthenticate-form.tsx
 msgid "Your password"
 msgstr "Your password"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your rights"
 msgstr "Your rights"
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Your unused recovery codes: until you turn off two-factor authentication."
+msgstr "Your unused recovery codes: until you turn off two-factor authentication."

@@ -15,6 +15,9 @@ describe('safeRedirect', () => {
     '/\t/evil.test',
     '/\n/evil.test',
     '/\r\n/evil.test',
+    '/.//evil.test',
+    '/..//evil.test',
+    '/%2e//evil.test',
     'account',
   ])('sends %j to the account page', (value) => {
     expect(safeRedirect(value)).toBe('/account')

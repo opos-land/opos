@@ -1,21 +1,24 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
 import { appDb, globalDb, migrationDb, RUNTIME_TIMEOUTS } from '../src/client'
+import { migrationUrl } from '../src/migration-url'
 import { setTenantContext } from '../src/rls'
-import { createTenant, url } from './db'
+import { appGlobalPassword, appPassword, createTenant, url } from './db'
 
-// The runtime pools bound how long a statement, a transaction and an idle transaction may hold a
-// connection; the migrator's pool stays unbounded for long migrations (PLAN.md 4.6).
+// A runtime session takes its limits from its role, which db:roles writes from RUNTIME_TIMEOUTS,
+// and sends only application_name; the migration pool sends no limit of its own (PLAN.md 4.6).
 
 const pools = {
-  opos_app: appDb(url('opos_app', 'opos'), { max: 1 }),
-  opos_app_global: globalDb(url('opos_app_global', 'opos'), { max: 1 }),
-  opos_migrator: migrationDb(url('opos_migrator', 'opos')),
+  opos_app: appDb(url('opos_app', appPassword), { max: 1 }),
+  opos_app_global: globalDb(url('opos_app_global', appGlobalPassword), { max: 1 }),
+  postgres: migrationDb(migrationUrl()),
 }
 
 afterAll(async () => {
   await Promise.all(Object.values(pools).map((db) => db.$client.end()))
 })
+
+const limits = Object.keys(RUNTIME_TIMEOUTS)
 
 const settingsOf = async (role: keyof typeof pools) => {
   const [row] = await pools[role].execute<Record<keyof typeof RUNTIME_TIMEOUTS, string>>(sql`
@@ -26,9 +29,33 @@ const settingsOf = async (role: keyof typeof pools) => {
   return row
 }
 
-describe('connection timeouts', () => {
-  it.each(['opos_app', 'opos_app_global'] as const)('bounds every session as %s', async (role) => {
-    expect(await settingsOf(role)).toEqual(RUNTIME_TIMEOUTS)
+/** Where a session's setting came from: `user` is its role, `client` a startup parameter. */
+const sourceOf = async (role: keyof typeof pools, setting: string) => {
+  const [row] = await pools[role].execute<{ source: string }>(
+    sql`select source from pg_settings where name = ${setting}`,
+  )
+  return row?.source
+}
+
+describe('connection settings', () => {
+  it.each(['opos_app', 'opos_app_global'] as const)(
+    'bounds every session as %s from its role',
+    async (role) => {
+      expect(await settingsOf(role)).toEqual(RUNTIME_TIMEOUTS)
+      for (const limit of limits) expect(await sourceOf(role, limit), limit).toBe('user')
+    },
+  )
+
+  it.each([
+    ['opos_app', 'opos-app'],
+    ['opos_app_global', 'opos-app-global'],
+  ] as const)('sends application_name as %s', async (role, name) => {
+    const [row] = await pools[role].execute<{ name: string }>(
+      sql`select current_setting('application_name') as name`,
+    )
+
+    expect(row).toEqual({ name })
+    expect(await sourceOf(role, 'application_name')).toBe('client')
   })
 
   it.each([
@@ -36,7 +63,7 @@ describe('connection timeouts', () => {
     ['an ended session', "set local idle_in_transaction_session_timeout = '100ms'", 300],
   ] as const)('reuses no tenant context after %s', async (_, bound, idleMs) => {
     const tenant = await createTenant()
-    const db = appDb(url('opos_app', 'opos'), { max: 1 })
+    const db = appDb(url('opos_app', appPassword), { max: 1 })
     try {
       await expect(
         db.transaction(async (tx) => {
@@ -55,11 +82,9 @@ describe('connection timeouts', () => {
     }
   })
 
-  it('leaves the migrator unbounded', async () => {
-    expect(await settingsOf('opos_migrator')).toEqual({
-      statement_timeout: '0',
-      idle_in_transaction_session_timeout: '0',
-      transaction_timeout: '0',
-    })
+  it('sends no limit from the migration pool', async () => {
+    for (const limit of limits) {
+      expect(await sourceOf('postgres', limit), limit).not.toBe('client')
+    }
   })
 })

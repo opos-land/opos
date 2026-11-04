@@ -17,7 +17,7 @@ export function EmailOnlyForm({
   defaultEmail: string
   submitLabel: ReactNode
   variant?: 'primary' | 'secondary'
-  /** Resolves to the Supabase Auth error, or null once the message is on its way. */
+  /** Resolves to the API's error, or null once the message is on its way. */
   onSubmit: (email: string) => Promise<unknown>
 }) {
   const { t } = useLingui()

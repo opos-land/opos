@@ -13,6 +13,16 @@ describe('errorMessage', () => {
     )
   })
 
+  it('tells an outage of Supabase Auth apart from a generic failure', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('server.unavailable')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('server.unavailable'))).toBe(
+      'Usługa jest chwilowo niedostępna. Spróbuj ponownie za chwilę.',
+    )
+  })
+
   it('tells a link opened in another browser apart from a generic failure', async () => {
     // auth-js reports a PKCE code without its verifier, as on another device (PLAN.md 7.7, step 6).
     const i18n = setupI18n()
@@ -22,6 +32,22 @@ describe('errorMessage', () => {
     expect(i18n._(errorMessage('auth.pkce_code_verifier_not_found'))).toBe(
       'Otwórz link w przeglądarce, w której o niego poproszono, albo poproś tam o nowy link.',
     )
+  })
+
+  it.each([
+    [
+      'mfa.code-invalid',
+      'Kod jest nieprawidłowy, wygasł lub został już użyty. Sprawdź go i spróbuj ponownie.',
+    ],
+    ['mfa.already-enabled', 'Uwierzytelnianie dwuskładnikowe jest już włączone dla tego konta.'],
+    ['mfa.not-required', 'To konto nie potrzebuje teraz kodu.'],
+    ['mfa.not-enabled', 'Uwierzytelnianie dwuskładnikowe nie jest włączone dla tego konta.'],
+  ])('translates %s of the two-factor routes', async (code, expected) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage(code)).not.toBe(unknownError)
+    expect(i18n._(errorMessage(code))).toBe(expected)
   })
 
   it('names the address of a speaker without an account, from the params of the error', async () => {
@@ -60,6 +86,28 @@ describe('errorMessage', () => {
 
     expect(i18n._(errorMessage('request.rate-limited'))).toBe(
       'Zbyt wiele prób. Spróbuj ponownie później.',
+    )
+  })
+
+  it('names the two refusals of the sign-in routes', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(i18n._(errorMessage('request.origin-denied'))).toBe(
+      'Tego żądania nie można wykonać z tego adresu. Odśwież stronę i spróbuj ponownie.',
+    )
+    expect(i18n._(errorMessage('auth.google-failed'))).toBe(
+      'Logowanie przez Google nie powiodło się. Spróbuj ponownie.',
+    )
+  })
+
+  it('asks for the code of two-factor authentication when a session is below aal2', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('session.mfa-required')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('session.mfa-required'))).toBe(
+      'To konto używa uwierzytelniania dwuskładnikowego. Wpisz kod z aplikacji uwierzytelniającej, aby kontynuować.',
     )
   })
 

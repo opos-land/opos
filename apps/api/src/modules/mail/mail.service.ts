@@ -1,10 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { setupI18n } from '@lingui/core'
 import { activateLocale, type Locale } from '@opos/i18n'
-import { type EmailContent } from '@opos/i18n/emails'
+import { type EmailContent, type NoticeContent } from '@opos/i18n/emails'
 import { ENV, type Env } from '../../config/env'
-import { renderLinkEmail } from './render'
+import { renderLinkEmail, renderNoticeEmail } from './render'
 import { sendWithDeadline, smtpOptions } from './smtp'
+
+/** What sending takes of the environment: the scripts of `tools` have no more (PLAN.md 11). */
+export type MailEnv = Pick<
+  Env,
+  'OPOS_ENV' | 'SMTP_HOST' | 'SMTP_PORT' | 'SMTP_USER' | 'SMTP_PASS' | 'MAIL_FROM'
+>
 
 /**
  * Sends the API's emails over SMTP (Mailpit in dev). Every message is rendered through Lingui in
@@ -16,7 +22,7 @@ export class MailService {
   private readonly smtp
   private readonly from
 
-  constructor(@Inject(ENV) env: Env) {
+  constructor(@Inject(ENV) env: MailEnv) {
     this.smtp = smtpOptions(env)
     this.from = env.MAIL_FROM
   }
@@ -31,6 +37,14 @@ export class MailService {
     const i18n = setupI18n()
     await activateLocale(i18n, message.locale)
     const { subject, text, html } = renderLinkEmail(i18n, message.content, message.link)
+    await sendWithDeadline(this.smtp, this.from, { to: message.to, subject, text, html })
+  }
+
+  /** Renders a notice with no link in `locale` and sends it to `to`. */
+  async sendNoticeEmail(message: { to: string; locale: Locale; content: NoticeContent }) {
+    const i18n = setupI18n()
+    await activateLocale(i18n, message.locale)
+    const { subject, text, html } = renderNoticeEmail(i18n, message.content)
     await sendWithDeadline(this.smtp, this.from, { to: message.to, subject, text, html })
   }
 }

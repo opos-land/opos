@@ -8,7 +8,7 @@ import {
 import { ORPCError, ValidationError } from '@orpc/server'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
-import { ApiError } from '../errors/api-error'
+import { ApiError, unavailable } from '../errors/api-error'
 import { HttpExceptionFilter, postgresCode, toErrorResponse } from './http-exception.filter'
 
 describe('toErrorResponse', () => {
@@ -201,6 +201,21 @@ describe('HttpExceptionFilter on an expected 5xx', () => {
     expect(error).not.toHaveBeenCalled()
     expect(warn).toHaveBeenCalledWith('Busy')
     error.mockRestore()
+    warn.mockRestore()
+  })
+
+  it('logs the reason an expected ApiError holds, and keeps it out of the body', () => {
+    const json = vi.fn()
+    const { response, host: cut } = host()
+    response.status.mockReturnValue({ json })
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+
+    new HttpExceptionFilter().catch(unavailable('fetch failed: connect ECONNREFUSED'), cut)
+
+    expect(warn).toHaveBeenCalledWith(
+      'Supabase Auth is unavailable: fetch failed: connect ECONNREFUSED',
+    )
+    expect(JSON.stringify(json.mock.calls)).not.toContain('ECONNREFUSED')
     warn.mockRestore()
   })
 

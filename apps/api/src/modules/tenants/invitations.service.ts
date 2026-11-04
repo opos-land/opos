@@ -14,6 +14,7 @@ import { type EditionAccess } from '../../common/permissions/permissions'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
 import { AccountsRepository } from '../accounts/accounts.repository'
+import { AuthAdminClient } from '../auth/auth-admin.client'
 import { MailService } from '../mail/mail.service'
 import { recipientLocale } from '../mail/recipient-locale'
 import { assertMayInvite, type InvitationGrant } from './anti-escalation'
@@ -60,6 +61,7 @@ export class InvitationsService {
     private readonly access: AccessRepository,
     private readonly accounts: AccountsRepository,
     private readonly mail: MailService,
+    private readonly admin: AuthAdminClient,
     private readonly rateLimiter: RouteRateLimiter,
   ) {
     this.key = invitationKey(env.INVITE_SECRET)
@@ -92,10 +94,11 @@ export class InvitationsService {
     if (account) {
       if (await this.invitations.isMember(account.id)) throw memberExists()
       const id = await this.invitations.addMember(tenant.id, account.id, grant)
-      this.context.afterCommit(() =>
+      // After the commit, so the call that may read the sign-up locale holds no transaction.
+      this.context.afterCommit(async () =>
         this.mail.sendLinkEmail({
           to: account.email,
-          locale: recipientLocale({ account: account.locale, tenant: tenant.defaultLocale }),
+          locale: await this.admin.noticeLocale(account),
           content: joinedTeamEmail(tenant.name),
           link: `${this.panelUrl}/${tenant.slug}`,
         }),

@@ -12,20 +12,20 @@ import { loginPath, safeRedirect } from '../model/redirect'
 export function RegisterPage() {
   const [params] = useSearchParams()
   const status = useSession((state) => state.status)
-  const session = useSession((state) => state.session)
+  const account = useSession((state) => state.account)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const returnTo = safeRedirect(params.get('redirect'))
 
   if (status === 'loading') return <LoadingView />
-  if (session) return <Navigate to={returnTo} replace />
+  if (account) return <Navigate to={returnTo} replace />
 
   if (sentTo) {
     return (
       <AuthCard title={<Trans>Check your inbox</Trans>}>
         <p>
           <Trans>
-            We sent a confirmation link to {sentTo}. Open it to start using your account. The link
-            works for one hour.
+            We sent a confirmation link to {sentTo}. Open it to confirm your address and choose your
+            password. The link works for one hour.
           </Trans>
         </p>
         <ResendConfirmation email={sentTo} returnTo={returnTo} />

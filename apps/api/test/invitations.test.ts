@@ -11,13 +11,14 @@ import {
   signInvitation,
 } from '../src/modules/tenants/invitation-token'
 import { createApp } from './app'
-import { createAccount, deleteCreatedAccounts, mintToken, signIn, testEmail } from './auth'
+import { createAccount, deleteCreatedAccounts, mintToken, session, signIn, testEmail } from './auth'
 import { deleteMail, invitationLinkIn, waitForMail } from './mailpit'
 import {
   addEdition,
   addEditionAccess,
   addHead,
   addOrg,
+  clearAccountLocale,
   closeTenantDb,
   deleteCreatedTenants,
   deleteEdition,
@@ -72,7 +73,7 @@ const none = { programAccess: 'none', websiteContentAccess: 'none', ticketsAcces
 const invite = (who: Member, body: object, slug = a.slug) =>
   request(app.getHttpServer())
     .post('/tenants/current/members')
-    .set('Authorization', `Bearer ${who.token}`)
+    .use(session(who.token))
     .set('X-Tenant-Slug', slug)
     .send(body)
 
@@ -85,7 +86,7 @@ const preview = (token: string, ip = `198.51.100.${Math.floor(Math.random() * 25
 
 const accept = (token: string, accessToken?: string) => {
   const req = request(app.getHttpServer()).post('/invitations/accept').send({ token })
-  return accessToken ? req.set('Authorization', `Bearer ${accessToken}`) : req
+  return accessToken ? req.use(session(accessToken)) : req
 }
 
 /** The token from the invitation email to `address`. */
@@ -152,7 +153,7 @@ describe('inviting an address without an account', () => {
     })
     const memberships = await request(app.getHttpServer())
       .get('/me/memberships')
-      .set('Authorization', `Bearer ${invitee.token}`)
+      .use(session(invitee.token))
       .expect(200)
     expect(memberships.body).toMatchObject([{ tenant: { id: a.id }, settingsAccess: 'read' }])
   })
@@ -161,7 +162,7 @@ describe('inviting an address without an account', () => {
     const tenant = await tenantWithHead()
     await request(app.getHttpServer())
       .patch('/tenants/current')
-      .set('Authorization', `Bearer ${tenant.head.token}`)
+      .use(session(tenant.head.token))
       .set('X-Tenant-Slug', tenant.slug)
       .send({ defaultLocale: 'en' })
       .expect(200)
@@ -406,6 +407,33 @@ describe('inviting a known account', () => {
     expect(mail!.Text).toContain(`${env.PANEL_URL}/${a.slug}`)
   })
 
+  // The languages in PLAN.md 6 order for a confirmed account: its choice, the sign-up's, the default.
+  it('notifies an account that chose no language in the language of its sign-up', async () => {
+    const tenant = await tenantWithHead('pl')
+    const known = await createAccount({ locale: 'en' })
+    addresses.push(known.email)
+    await clearAccountLocale(known.id)
+
+    await invite(tenant.head, { email: known.email }, tenant.slug).expect(201)
+
+    const [mail] = await waitForMail(known.email)
+    expect(mail!.Subject).toBe(`You have joined the organizing team of Tenant ${tenant.slug}`)
+  })
+
+  it('notifies an account with neither language in Polish, whatever the language of the tenant', async () => {
+    const tenant = await tenantWithHead('en')
+    const known = await createAccount()
+    addresses.push(known.email)
+    await clearAccountLocale(known.id)
+
+    await invite(tenant.head, { email: known.email }, tenant.slug).expect(201)
+
+    const [mail] = await waitForMail(known.email)
+    expect(mail!.Subject).toBe(
+      `Dołączono cię do zespołu organizatorów konwentu Tenant ${tenant.slug}`,
+    )
+  })
+
   it('answers 409 for an account already in the team, an expired membership included', async () => {
     const lapsed = await member()
     await addOrg(a.id, lapsed, { expired: true })
@@ -580,10 +608,7 @@ describe("an invitation and its sender's standing", () => {
         : method === 'put'
           ? server.put(path)
           : server.delete(path)
-    return req
-      .set('Authorization', `Bearer ${t.head.token}`)
-      .set('X-Tenant-Slug', t.slug)
-      .send(body)
+    return req.use(session(t.head.token)).set('X-Tenant-Slug', t.slug).send(body)
   }
 
   const revoked = async ({ token, invitee }: Awaited<ReturnType<typeof invitationFrom>>) => {
@@ -815,7 +840,7 @@ describe('tenant isolation', () => {
     expect(await storedMembership(a.id, invitee.id)).toBeUndefined()
     await request(app.getHttpServer())
       .get('/tenants/current/members')
-      .set('Authorization', `Bearer ${invitee.token}`)
+      .use(session(invitee.token))
       .set('X-Tenant-Slug', a.slug)
       .expect(403)
   })

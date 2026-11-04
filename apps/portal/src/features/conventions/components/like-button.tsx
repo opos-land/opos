@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation } from 'react-router'
 import { useSession } from '../../../shared/lib/session'
 import { Button, ErrorMessage, linkClass } from '../../../shared/ui'
-import { loginPath } from '../../auth'
+import { loginPath, mfaPath } from '../../auth'
 import { scheduleOptions } from '../../schedule'
 import { likeOptions, publicKey, unlikeOptions } from '../api/conventions'
 
@@ -25,7 +25,7 @@ export function LikeButton({
   const location = useLocation()
   const queryClient = useQueryClient()
   const status = useSession((state) => state.status)
-  const signedIn = useSession((state) => Boolean(state.session))
+  const signedIn = useSession((state) => Boolean(state.account))
   const schedule = useQuery({ ...scheduleOptions(), enabled: signedIn })
   const refresh = () =>
     Promise.all([
@@ -36,9 +36,19 @@ export function LikeButton({
   const unlike = useMutation({ ...unlikeOptions(tenantSlug), onSuccess: refresh })
   const params = { editionId, programItemId }
 
-  if (status !== 'ready') return null
+  if (status === 'loading') return null
   if (!signedIn) {
     if (ended) return null
+    const here = `${location.pathname}${location.search}`
+    if (status === 'mfa-required') {
+      return (
+        <p>
+          <Link to={mfaPath(here)} className={linkClass}>
+            <Trans>Finish signing in to like this item</Trans>
+          </Link>
+        </p>
+      )
+    }
     return (
       <p>
         <Link to={loginPath(`${location.pathname}${location.search}`)} className={linkClass}>

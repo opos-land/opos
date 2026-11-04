@@ -2,9 +2,10 @@ import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { afterAll, describe, expect, it } from 'vitest'
 import { appDb, globalDb, migrationDb } from '../src/client'
+import { migrationUrl } from '../src/migration-url'
 import { setTenantContext } from '../src/rls'
 import * as schema from '../src/schema'
-import { createTenant, supabaseAdmin, url } from './db'
+import { appGlobalPassword, appPassword, createTenant, supabaseAdmin, url } from './db'
 
 // setTenantContext opens tenant isolation only on a connection RLS holds to (PLAN.md 4.6): a pool
 // pointed at a role that bypasses RLS fails every tenant transaction instead of reading them all.
@@ -12,9 +13,9 @@ import { createTenant, supabaseAdmin, url } from './db'
 class Rollback extends Error {}
 
 const pools = {
-  opos_app: appDb(url('opos_app', 'opos'), { max: 1 }),
-  opos_app_global: globalDb(url('opos_app_global', 'opos'), { max: 1 }),
-  opos_migrator: migrationDb(url('opos_migrator', 'opos')),
+  opos_app: appDb(url('opos_app', appPassword), { max: 1 }),
+  opos_app_global: globalDb(url('opos_app_global', appGlobalPassword), { max: 1 }),
+  postgres: migrationDb(migrationUrl()),
 }
 
 afterAll(async () => {
@@ -29,7 +30,7 @@ describe('setTenantContext', () => {
     ).resolves.not.toThrow()
   })
 
-  it.each(['opos_app_global', 'opos_migrator'] as const)(
+  it.each(['opos_app_global', 'postgres'] as const)(
     'refuses a tenant context on a connection as %s',
     async (role) => {
       const tenant = await createTenant()
@@ -64,7 +65,7 @@ describe('setTenantContext', () => {
     let refusal: unknown
     await admin
       .transaction(async (tx) => {
-        await tx.execute(sql`grant opos_migrator to opos_app`)
+        await tx.execute(sql`grant anon to opos_app`)
         await tx.execute(sql`set local role opos_app`)
         refusal = await setTenantContext(tx, tenant.id).catch((error: unknown) => error)
         throw new Rollback()

@@ -5,12 +5,8 @@ import {
   type ThrottlerModuleOptions,
 } from '@nestjs/throttler'
 import { type Env } from '../../config/env'
-import {
-  type AccessTokenKey,
-  accessTokenKey,
-  bearerToken,
-  verifyAccessToken,
-} from '../guards/access-token'
+import { type AccessTokenVerifier } from '../guards/access-token'
+import { credentialOf, verifyOnce } from '../guards/request-credential'
 
 /** How many requests one tracker makes within `ttl` milliseconds (PLAN.md 7.9). */
 export interface RateLimit {
@@ -22,24 +18,37 @@ export interface RateLimit {
 export const DEFAULT_RATE_LIMIT: RateLimit = { limit: 300, ttl: 60_000 }
 
 /**
- * Who a request counts against: the account of a valid access token, otherwise the client
- * address, which `trust proxy` takes from X-Forwarded-For. An invalid token counts against the
- * address, so a forged `sub` never spends another account's requests.
+ * Who a request counts against: the account of a valid access token (the cookie, as the guard reads
+ * it, and the same verification), at `aal2` under a counter of its own, so a password alone at
+ * `aal1` cannot use up the limit of the owner's `aal2` session and signing in again resets nothing;
+ * otherwise the client address, which `trust proxy` takes from X-Forwarded-For. A token that is
+ * invalid, or that cannot be checked while the keys are out of reach, counts against the address,
+ * so a forged claim never spends another account's requests.
  */
 export const rateLimitTracker =
-  (key: AccessTokenKey): ThrottlerGetTrackerFunction =>
+  (
+    verifier: AccessTokenVerifier,
+    env: Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>,
+  ): ThrottlerGetTrackerFunction =>
   async (req) => {
-    const token = bearerToken((req as { headers: Record<string, unknown> }).headers.authorization)
-    const payload = token ? await verifyAccessToken(token, key) : undefined
-    if (payload) return `account:${payload.sub}`
+    const token = credentialOf(req as Parameters<typeof credentialOf>[0], env)
+    const check = token ? await verifyOnce(req as object, verifier, token) : undefined
+    if (check?.status === 'valid') {
+      const { aal, sub } = check.payload
+      return aal === 'aal2' ? `account:${sub}:aal2` : `account:${sub}`
+    }
     return `ip:${normalizeIp(String((req as { ip?: unknown }).ip))}`
   }
 
 /** In-memory counters; one counter per tracker and limit, shared by every route it covers. */
-export function rateLimitModule(env: Env, rateLimit: RateLimit) {
+export function rateLimitModule(
+  verifier: AccessTokenVerifier,
+  rateLimit: RateLimit,
+  env: Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>,
+) {
   const options: ThrottlerModuleOptions = {
     throttlers: [{ name: 'default', ...rateLimit }],
-    getTracker: rateLimitTracker(accessTokenKey(env)),
+    getTracker: rateLimitTracker(verifier, env),
     generateKey: (_context, tracker, name) => `${name}:${tracker}`,
   }
   return ThrottlerModule.forRoot(options)

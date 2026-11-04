@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { sendWithDeadline, smtpOptions } from './smtp'
 
 const mailpit = {
-  NODE_ENV: 'development',
+  OPOS_ENV: 'local',
   SMTP_HOST: 'localhost',
   SMTP_PORT: 1025,
   SMTP_USER: '',
@@ -85,15 +85,25 @@ describe('smtpOptions', () => {
     expect(options).toMatchObject({ secure: false, requireTLS: true })
   })
 
-  it('requires STARTTLS in production even without credentials', () => {
-    expect(smtpOptions({ ...mailpit, NODE_ENV: 'production', SMTP_PORT: 25 })).toMatchObject({
-      secure: false,
-      requireTLS: true,
-    })
+  it('requires TLS when OPOS_ENV is production, whatever NODE_ENV says', () => {
+    const env = {
+      ...mailpit,
+      OPOS_ENV: 'production',
+      SMTP_PORT: 25,
+      NODE_ENV: 'development',
+    } as const
+
+    expect(smtpOptions(env)).toMatchObject({ secure: false, requireTLS: true })
+  })
+
+  it('takes plaintext on Dev, where NODE_ENV is production and OPOS_ENV is dev', () => {
+    const env = { ...mailpit, OPOS_ENV: 'dev', NODE_ENV: 'production' } as const
+
+    expect(smtpOptions(env)).toMatchObject({ secure: false, requireTLS: false })
   })
 
   it('uses implicit TLS on port 465', () => {
-    expect(smtpOptions({ ...mailpit, NODE_ENV: 'production', SMTP_PORT: 465 })).toMatchObject({
+    expect(smtpOptions({ ...mailpit, OPOS_ENV: 'production', SMTP_PORT: 465 })).toMatchObject({
       secure: true,
       requireTLS: false,
     })
@@ -144,9 +154,13 @@ describe('sendWithDeadline', () => {
 
     await expect(
       sendWithDeadline(options(server.port), 'opos@example.test', message, 800),
-    ).rejects.toThrow(/within 800 ms/)
+    ).rejects.toMatchObject({
+      message: expect.stringMatching(/within 800 ms/) as string,
+      code: 'EDEADLINE',
+    })
 
-    expect(Date.now() - started).toBeLessThan(1_000)
+    // A send that ran its course takes 1.5 s: five replies, 300 ms each.
+    expect(Date.now() - started).toBeLessThan(1_400)
     await expect.poll(() => server.state.closed).toBe(true)
     expect(server.commands).not.toContain('DATA')
     expect(server.commands).not.toContain('<message>')

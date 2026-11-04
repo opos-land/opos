@@ -81,7 +81,8 @@ describe('TenantWriteQueue', () => {
 
     const started = Date.now()
     await queue.run('a', async () => {})
-    expect(Date.now() - started).toBeLessThan(20)
+    // Well inside the 1000 ms a write would wait behind a turn that was never given back.
+    expect(Date.now() - started).toBeLessThan(500)
   })
 
   it('lets the next write start as soon as the running one gives its turn back', async () => {

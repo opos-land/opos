@@ -1,8 +1,22 @@
+import { createServer } from 'node:http'
+import { type AddressInfo } from 'node:net'
+import { Logger } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier } from '../src/common/guards/access-token'
 import { createApp } from './app'
-import { createAccount, deleteCreatedAccounts, mintToken, signIn, unsignedToken } from './auth'
+import {
+  createAccount,
+  deleteCreatedAccounts,
+  foreignKey,
+  mintToken,
+  originOf,
+  session,
+  signIn,
+  unsignedToken,
+} from './auth'
+import { addVerifiedFactor, closeTenantDb } from './tenants'
 
 let app: NestExpressApplication
 let token: string
@@ -20,19 +34,70 @@ beforeAll(async () => {
 afterAll(async () => {
   await deleteCreatedAccounts()
   await app.close()
+  await closeTenantDb()
 })
 
 const me = () => request(app.getHttpServer()).get('/me')
 
 describe('JwtAuthGuard', () => {
   it('accepts a Supabase Auth session and returns the account', async () => {
-    const res = await me().set('Authorization', `Bearer ${token}`).expect(200)
+    const res = await me().use(session(token)).expect(200)
 
     expect(res.body).toMatchObject({
       id: accountId,
       firstName: 'Anna',
       lastName: 'Nowak',
       locale: null,
+    })
+  })
+
+  it('reports mfaEnabled for an account with a verified factor only', async () => {
+    expect((await me().use(session(token)).expect(200)).body).toMatchObject({ mfaEnabled: false })
+
+    const pending = await createAccount()
+    await addVerifiedFactor(pending.id, 'unverified')
+    const unverified = await me()
+      .use(session(await mintToken({ sub: pending.id })))
+      .expect(200)
+    expect(unverified.body).toMatchObject({ id: pending.id, mfaEnabled: false })
+
+    const other = await createAccount()
+    await addVerifiedFactor(other.id)
+    const res = await me()
+      .use(session(await mintToken({ sub: other.id, aal: 'aal2' })))
+      .expect(200)
+
+    expect(res.body).toMatchObject({ id: other.id, mfaEnabled: true })
+  })
+
+  it.each([
+    [['email'], ['password']],
+    [['google'], ['google']],
+    [
+      ['email', 'google'],
+      ['password', 'google'],
+    ],
+    [undefined, []],
+  ])(
+    'lists the sign-in methods of the token with providers %j as %j',
+    async (providers, expected) => {
+      const res = await me()
+        .use(session(await mintToken({ sub: accountId, providers })))
+        .expect(200)
+
+      expect(res.body).toMatchObject({ id: accountId, signInMethods: expected })
+    },
+  )
+
+  it.each([
+    ['a valid token', () => token],
+    ['a token that is not valid', () => 'not-a-token'],
+  ])('refuses Authorization: Bearer on an account route, with %s', async (_what, bearer) => {
+    const withHeader = () => me().set('Authorization', `Bearer ${bearer()}`)
+
+    expect((await withHeader().expect(401)).body).toMatchObject({ code: 'session.invalid' })
+    expect((await withHeader().set('Origin', originOf('portal')).expect(401)).body).toMatchObject({
+      code: 'session.invalid',
     })
   })
 
@@ -44,37 +109,95 @@ describe('JwtAuthGuard', () => {
     expect(typeof body.message).toBe('string')
   })
 
+  it('accepts a token signed with the local key the stack publishes', async () => {
+    const res = await me()
+      .use(session(await mintToken({ sub: accountId })))
+      .expect(200)
+
+    expect(res.body).toMatchObject({ id: accountId })
+  })
+
   it.each([
     ['an expired token', () => mintToken({ sub: accountId, expiresIn: '-1m' })],
     [
-      'a token signed with another secret',
-      () => mintToken({ sub: accountId }, new TextEncoder().encode('x'.repeat(32))),
+      'a token signed with a foreign ES256 key',
+      async () => mintToken({ sub: accountId }, await foreignKey()),
+    ],
+    [
+      'an HS256 token with any secret',
+      () => mintToken({ sub: accountId, alg: 'HS256' }, new TextEncoder().encode('x'.repeat(32))),
     ],
     ['a token for another audience', () => mintToken({ sub: accountId, aud: 'anon' })],
     ['a token from another issuer', () => mintToken({ sub: accountId, iss: 'https://evil.test' })],
     ['a valid token without an accounts row', () => mintToken()],
     ['a token without exp', () => mintToken({ sub: accountId, expiresIn: null })],
-    ['a token signed with HS512', () => mintToken({ sub: accountId, alg: 'HS512' })],
+    ['an anonymous token', () => mintToken({ sub: accountId, is_anonymous: true })],
     ['an unsigned token', () => Promise.resolve(unsignedToken(accountId))],
     ['a sub that is not a uuid', () => mintToken({ sub: 'not-a-uuid' })],
   ])('rejects %s', async (_, makeToken) => {
     const res = await me()
-      .set('Authorization', `Bearer ${await makeToken()}`)
+      .use(session(await makeToken()))
       .expect(401)
 
     expect(res.body).toMatchObject({ code: 'session.invalid' })
+  })
+
+  it('answers 503 with Retry-After when the signing keys cannot be fetched', async () => {
+    const cut = await createApp({ SUPABASE_URL: 'http://127.0.0.1:1' })
+    try {
+      const res = await request(cut.getHttpServer()).get('/me').use(session(token)).expect(503)
+
+      expect(res.body).toMatchObject({ code: 'server.unavailable' })
+      expect(res.headers['retry-after']).toBe('30')
+    } finally {
+      await cut.close()
+    }
+  })
+
+  it('fetches the signing keys once at startup, and starts without them', async () => {
+    const paths: (string | undefined)[] = []
+    const keysDown = createServer((req, res) => {
+      paths.push(req.url)
+      res.writeHead(500)
+      res.end()
+    })
+    await new Promise<void>((resolve) => keysDown.listen(0, '127.0.0.1', resolve))
+    const url = `http://127.0.0.1:${(keysDown.address() as AddressInfo).port}`
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const started = await createApp({ SUPABASE_URL: url })
+    try {
+      expect(paths).toEqual(['/auth/v1/.well-known/jwks.json'])
+
+      await request(started.getHttpServer()).get('/me').use(session(token)).expect(503)
+
+      expect(paths).toHaveLength(1)
+    } finally {
+      await started.close()
+      keysDown.close()
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('closes the signing key refresh with the application', async () => {
+    const closing = await createApp()
+    const verifier = closing.get<AccessTokenVerifier>(ACCESS_TOKEN_VERIFIER)
+    const close = vi.spyOn(verifier, 'close')
+
+    await closing.close()
+
+    expect(close).toHaveBeenCalledOnce()
   })
 })
 
 describe('PATCH /me', () => {
   const patch = (body: object) =>
-    request(app.getHttpServer()).patch('/me').set('Authorization', `Bearer ${token}`).send(body)
+    request(app.getHttpServer()).patch('/me').use(session(token)).send(body)
 
   it('changes the names and the locale', async () => {
     const res = await patch({ firstName: '  Ewa ', locale: 'en' }).expect(200)
 
     expect(res.body).toMatchObject({ firstName: 'Ewa', lastName: 'Nowak', locale: 'en' })
-    expect((await me().set('Authorization', `Bearer ${token}`)).body).toMatchObject({
+    expect((await me().use(session(token))).body).toMatchObject({
       locale: 'en',
     })
   })
@@ -102,9 +225,7 @@ describe('two accounts', () => {
     const otherToken = await signIn(other.email)
 
     const responses = await Promise.all(
-      Array.from({ length: 10 }, (_, i) =>
-        me().set('Authorization', `Bearer ${i % 2 ? otherToken : token}`),
-      ),
+      Array.from({ length: 10 }, (_, i) => me().use(session(i % 2 ? otherToken : token))),
     )
 
     responses.forEach((res, i) => {
@@ -118,11 +239,11 @@ describe('two accounts', () => {
 
     await request(app.getHttpServer())
       .patch('/me')
-      .set('Authorization', `Bearer ${token}`)
+      .use(session(token))
       .send({ firstName: 'Changed' })
       .expect(200)
 
-    const res = await me().set('Authorization', `Bearer ${otherToken}`).expect(200)
+    const res = await me().use(session(otherToken)).expect(200)
     expect(res.body).toMatchObject({ firstName: 'Jan' })
   })
 })
@@ -135,10 +256,10 @@ describe('errors', () => {
   })
 
   it('refuses a body of another type before any handler reads it', async () => {
-    for (const type of ['text/plain', 'application/octet-stream']) {
+    for (const type of ['text/plain', 'application/octet-stream', 'application/json-x']) {
       const res = await request(app.getHttpServer())
         .patch('/me')
-        .set('Authorization', `Bearer ${token}`)
+        .use(session(token))
         .set('Content-Type', type)
         .send('locale=en')
         .expect(415)
@@ -150,7 +271,7 @@ describe('errors', () => {
   it('answers a body that is not JSON in the error format', async () => {
     const res = await request(app.getHttpServer())
       .patch('/me')
-      .set('Authorization', `Bearer ${token}`)
+      .use(session(token))
       .set('Content-Type', 'application/json')
       .send('{not json')
       .expect(400)

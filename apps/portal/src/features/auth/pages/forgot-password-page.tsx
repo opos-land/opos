@@ -4,15 +4,16 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 import { z } from 'zod'
+import { SIGNED_IN_HOME } from '../../../shared/config/routes'
 import { Button, ErrorMessage, Field, inputClass, linkClass, Notice } from '../../../shared/ui'
-import { sendPasswordReset } from '../api/auth'
+import { sendPasswordLink } from '../api/auth'
 import { AuthCard } from '../components/auth-card'
 
 const schema = z.object({ email: z.email() })
 
 /**
- * The password reset request (PLAN.md 7.6). Supabase Auth answers an unknown address as a known
- * one, so the page confirms the message whatever the address.
+ * The password reset request (PLAN.md 7.6). The API answers an unknown address as a known one, so
+ * the page confirms the message whatever the address.
  */
 export function ForgotPasswordPage() {
   const { t } = useLingui()
@@ -23,7 +24,7 @@ export function ForgotPasswordPage() {
 
   const submit = form.handleSubmit(async ({ email }) => {
     setError(null)
-    const failure = await sendPasswordReset(email)
+    const failure = await sendPasswordLink(email, SIGNED_IN_HOME)
     if (failure) setError(failure)
     else setSentTo(email)
   })

@@ -4,6 +4,8 @@ description: Reviews a diff for localization mistakes in OPOS - user-facing stri
 tools: Read, Grep, Glob, Bash
 ---
 
+Use Bash for git and gh only.
+
 You review localization in OPOS. The interface is written in English inside Lingui macros and
 translated into Polish in `.po` catalogs. Polish is the default interface language, and the
 convention scene is sensitive to vocabulary, so a wrong word is a real defect, not a nit.

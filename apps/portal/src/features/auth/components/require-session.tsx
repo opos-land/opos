@@ -1,19 +1,24 @@
 import { type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router'
-import { useSession } from '../../../shared/lib/session'
-import { LoadingView } from '../../../shared/ui'
+import { startSession, useSession } from '../../../shared/lib/session'
+import { LoadingView, UnavailableView } from '../../../shared/ui'
+import { mfaPath, mfaReturnFor } from '../model/mfa-return'
 import { loginPath } from '../model/redirect'
 
 /**
- * A page for a signed-in user: a loading view while the stored session is restored, and the
- * sign-in screen, with the way back here, once it is clear there is no session.
+ * A page for a signed-in account: a loading view while the account is asked for, never the sign-in
+ * screen (PLAN.md 9); an offer to try again when the API could not be reached, which signs nobody
+ * out; the code screen for a session waiting for its code, which shows no account data; the
+ * sign-in screen once it is clear there is no session.
  */
 export function RequireSession({ children }: { children: ReactNode }) {
   const status = useSession((state) => state.status)
-  const session = useSession((state) => state.session)
+  const account = useSession((state) => state.account)
   const location = useLocation()
 
   if (status === 'loading') return <LoadingView />
-  if (!session) return <Navigate to={loginPath(location.pathname + location.search)} replace />
+  if (status === 'unavailable') return <UnavailableView onRetry={() => void startSession()} />
+  if (status === 'mfa-required') return <Navigate to={mfaPath(mfaReturnFor(location))} replace />
+  if (!account) return <Navigate to={loginPath(location.pathname + location.search)} replace />
   return children
 }

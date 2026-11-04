@@ -10,6 +10,7 @@ export const RESERVED_TENANT_SLUGS = [
   'admin',
   'api',
   'auth',
+  'forgot-password',
   'invitation',
   'login',
   'panel',

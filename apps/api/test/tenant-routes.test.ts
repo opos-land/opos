@@ -9,7 +9,7 @@ import {
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { createAccount, deleteCreatedAccounts, signIn } from './auth'
+import { createAccount, deleteCreatedAccounts, session, signIn } from './auth'
 
 // Every contract route marked as a tenant route must run through the tenant transaction: a method
 // that implements one without @RequireTenant or @RequireEdition would skip it (PLAN.md 7.3). This
@@ -48,7 +48,7 @@ describe('tenant routes', () => {
     const verb = method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete'
     const agent = request(app.getHttpServer())
     const res = await agent[verb](path.replace(/\{[^}]+\}/g, randomUUID()))
-      .set('Authorization', `Bearer ${token}`)
+      .use(session(token))
       .set('X-Tenant-Slug', `missing-${randomUUID().slice(0, 8)}`)
       .send({})
 

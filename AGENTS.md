@@ -173,7 +173,7 @@ Branches follow the same scheme: `feat/tenant-rls`, `fix/refresh-rotation`. They
 The [execution rules](docs/PLAN.md#17-execution-rules) from PLAN.md apply: pinned Node and pnpm
 versions, every user-facing string inside a Lingui macro and translated into `pl` in the same
 commit, reusing the glossary renderings ([localization](docs/PLAN.md#6-localization)), green
-typecheck, lint and tests before every PR. The API tests need the database: `pnpm infra:up` first.
+typecheck, lint and tests before every PR. The API tests need the database: `pnpm infra:init` once in a new checkout, then `pnpm infra:up`.
 `pnpm test:e2e` also needs `pnpm db:migrate && pnpm db:seed` and Chromium, installed once with
 `pnpm --filter @opos/e2e exec playwright install chromium`, and does not run beside the API tests
 ([e2e tests](docs/PLAN.md#152-e2e-tests)).
@@ -182,10 +182,17 @@ typecheck, lint and tests before every PR. The API tests need the database: `pnp
 then `pnpm install` installs dependencies and wires up the hooks. Dependencies younger than 7 days are
 rejected by `minimumReleaseAge` — that is policy, not a failure.
 
+**CI gates** ([CI](docs/PLAN.md#153-ci)): a PR into `main` needs the jobs `check`, `e2e` and `secrets`
+green. `secrets` scans the tree and the whole history for secrets and fails on a dependency with a
+high advisory, so a secret in any commit fails the job, even one removed later. An action in a
+workflow is pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it
+goes through `env`.
+
 **The seed follows the schema.** A change that adds a table, a column without a default, a
 permission or a role, or a data state the tests rely on updates
 [packages/db/src/seed.ts](packages/db/src/seed.ts) and the [demo data](docs/PLAN.md#14-demo-data-seed)
-in the same PR. Run `pnpm db:seed` twice before the PR: the second run proves it is idempotent.
+in the same PR. Run `pnpm db:seed` twice before the PR; `packages/db/test/seed.test.ts` fails when
+the second run changes the row count of any `public` table.
 
 **Tests sit by what they need** ([tests](docs/PLAN.md#15-tests)). A unit test, which needs nothing
 outside the process, goes next to the file it tests as `<name>.test.ts` (`<name>.test.js` in the
@@ -203,7 +210,7 @@ code is covered by a test of its own package.
 
 | Area | Code | Its tests |
 |---|---|---|
-| `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client}.ts`, `infra/supabase/db/` | `packages/db/test/*.test.ts` |
+| `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client,roles,migration-url}.ts`, `packages/db/src/scripts/roles.ts` | `packages/db/test/*.test.ts` |
 | `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
 | `api`, `panel`, `portal` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
 | `db`, `contract`, `i18n`, `eslint-config` | the rest of `packages/<name>/` | a `*.test.*` anywhere in the same package |
@@ -217,7 +224,7 @@ tools (`eslint`, `vite`, `vitest`, `lingui`, `drizzle`, `tsdown`, `playwright`, 
 it.
 
 A deleted test is no test of its area, and neither is a test file in which no line opens with a
-call of `describe`, `it` or `test` (`.todo` and commented-out calls aside); deleted code is a change of its area, and so is a file moved out of it.
+call of `describe`, `it` or `test` (`.todo`, `.skip` and commented-out calls aside); deleted code is a change of its area, and so is a file moved out of it.
 
 [scripts/tests-first.mjs](scripts/tests-first.mjs) holds this table and enforces it three times:
 
@@ -233,6 +240,14 @@ closed: a check that cannot run — unreadable input, git failing, a broken scri
 edit, and after a `Bash` command reports it. When a broken script
 refuses every edit, the user restores it with `! git restore scripts/tests-first.mjs`.
 
+After an `Edit` or `Write` of a migration, the hook [.claude/hooks/migration-reminder.mjs](.claude/hooks/migration-reminder.mjs)
+hands the agent the rules of a migration as context; it never blocks. The project permissions in
+[.claude/settings.json](.claude/settings.json) deny a read of the real `.env` files and of
+the Supabase signing keys file; the `.env.example` templates stay readable. They ask the user before
+an edit of a gate: the settings themselves, `.claude/agents`, `.claude/hooks`,
+`scripts/tests-first.mjs`, `scripts/check-migrations.mjs`, `scripts/bff-boundary.mjs`, `lefthook.yml`,
+`.github/workflows` and `.github/rulesets`.
+
 A change that needs no test — a rename, a comment, a moved import — says why in a
 `No-Test-Reason: <reason>` trailer of its commit message, read as git reads trailers — in the last
 paragraph, beside footers such as `BREAKING CHANGE:`; an agent the hook refuses such an edit
@@ -244,16 +259,17 @@ an area that moves, or a new directory of code, changes the table here and in th
 change to PRODUCT.md or PLAN.md, link and anchor check included. Before a PR, run the
 `tenant-isolation-reviewer` agent when the change touches `packages/db` or `apps/api`, and the
 `i18n-reviewer` agent when it touches user-facing text, a `.po` catalog or `packages/i18n`. Both
-only report; fix what they find before opening the PR.
+only report; fix what they find before opening the PR. [.claude/agent-docs.test.mjs](.claude/agent-docs.test.mjs)
+checks that the paths this file and the agent files cite exist and that the area names here equal
+those of the script.
 
 **The panel and the portal never talk to Supabase.** The API is their only backend (BFF): no
 `@supabase/*` package, no Supabase address or key and no `VITE_*` variable naming Supabase in either
 application; every sign-in operation goes through the API's `auth` endpoints
-([BFF boundary](docs/PLAN.md#32-frontend-application-layout)). Until the move of sign-in to the API
-is built, the existing `@supabase/auth-js` clients of the two applications are the only exception,
-and nothing new is built on them: the `react` ESLint preset refuses any other import of
-`@supabase/*`, static or dynamic, and the files of the exception, listed in each application's
-`eslint.config.js`, may import `@supabase/auth-js` alone.
+([BFF boundary](docs/PLAN.md#32-frontend-application-layout)). The `react` ESLint preset refuses an
+import of `@supabase/*`, static or dynamic, and [scripts/bff-boundary.mjs](scripts/bff-boundary.mjs)
+refuses the rest, in a Claude Code hook, in lefthook `pre-commit` and in CI, which scans the built
+bundles too. A breach is fixed in the application, never allowed by an exception.
 
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`,
 and no remote database URL, Supabase project reference or access token in a `.env` or
@@ -265,7 +281,11 @@ them to the repository. UI follows the designer's designs; where none exists yet
 and real copy ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)). Do not ship
 component-library defaults as a finished look.
 
-The plan does not prescribe an order of work — it follows from dependencies between packages:
+**Adding a feature.** Inside one feature, a new table, route or screen follows the checklist in
+[PLAN.md](docs/PLAN.md#adding-a-feature), step by step, with the `program` slice as its reference.
+
+Between the parts of the product, the plan does not prescribe an order of work — it follows from
+dependencies between packages:
 the Supabase services before `packages/db`, because the schema references
 `auth.users`; `packages/db` and `packages/contract` before the apps, the contract before the
 frontends. The scope to cover is set by [MVP scope](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp),

@@ -15,7 +15,7 @@ export function requireJsonBody(req: Request, res: Response, next: () => void) {
   const length = Number(req.headers['content-length'] ?? 0)
   const hasBody = req.headers['transfer-encoding'] !== undefined || length > 0
   const type = String(req.headers['content-type'] ?? '')
-  if (hasBody && !/^application\/json\b/i.test(type)) {
+  if (hasBody && !/^application\/json\s*(;|$)/i.test(type)) {
     res.status(415).json({
       code: 'request.invalid',
       message: 'A request body must be application/json',

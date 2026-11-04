@@ -8,8 +8,6 @@ export const INVITATION_STORAGE_KEY = 'opos-panel-invitation'
 
 export interface StoredInvitation {
   token: string
-  /** Set by an email sign-up or a password link: the account still has to choose its password. */
-  awaitingPassword: boolean
 }
 
 export function storedInvitation(): StoredInvitation | null {
@@ -18,26 +16,17 @@ export function storedInvitation(): StoredInvitation | null {
   try {
     const value = JSON.parse(raw) as Partial<StoredInvitation>
     if (typeof value.token !== 'string' || !value.token) return null
-    return { token: value.token, awaitingPassword: value.awaitingPassword === true }
+    return { token: value.token }
   } catch {
     return null
   }
 }
 
-const store = (invitation: StoredInvitation) =>
-  writeStorage(INVITATION_STORAGE_KEY, JSON.stringify(invitation))
-
-/** Keeps the token from the link; the same token keeps its state, another one starts over. */
+/** Keeps the token from the link, replacing any other one. */
 export function rememberInvitation(token: string): StoredInvitation {
-  const current = storedInvitation()
-  const invitation = current?.token === token ? current : { token, awaitingPassword: false }
-  store(invitation)
+  const invitation = { token }
+  writeStorage(INVITATION_STORAGE_KEY, JSON.stringify(invitation))
   return invitation
-}
-
-export function setAwaitingPassword(awaitingPassword: boolean) {
-  const current = storedInvitation()
-  if (current) store({ ...current, awaitingPassword })
 }
 
 export function forgetInvitation() {
@@ -59,12 +48,3 @@ const FINAL_CODES = new Set([
  */
 export const endsInvitation = (code: string | undefined) =>
   code !== undefined && FINAL_CODES.has(code)
-
-/**
- * The password an email sign-up is created with (PLAN.md 7.7, step 3): random, never shown and
- * never stored. The invitee chooses the real one once the address is confirmed.
- */
-export function throwawayPassword() {
-  const bytes = crypto.getRandomValues(new Uint8Array(32))
-  return btoa(String.fromCharCode(...bytes))
-}

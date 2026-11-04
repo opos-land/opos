@@ -5,7 +5,6 @@ const valid = {
   firstName: ' Anna ',
   lastName: 'Nowak',
   email: 'anna@example.test',
-  password: 'correct horse',
 }
 
 describe('registrationSchema', () => {
@@ -17,12 +16,17 @@ describe('registrationSchema', () => {
     ['firstName', '   '],
     ['lastName', 'x'.repeat(101)],
     ['email', 'anna'],
-    ['password', 'short'],
   ])('refuses an invalid %s', (field, value) => {
     const result = registrationSchema.safeParse({ ...valid, [field]: value })
 
     expect(result.success).toBe(false)
     expect(result.error?.issues[0]?.path).toEqual([field])
+  })
+
+  it('asks for no password, and carries none to the API', () => {
+    expect(registrationSchema.parse({ ...valid, password: 'correct horse' })).not.toHaveProperty(
+      'password',
+    )
   })
 })
 

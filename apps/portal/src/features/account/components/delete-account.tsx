@@ -2,8 +2,9 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
+import { errorCode } from '../../../shared/lib/errors'
 import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
-import { GoogleButton, signInWithPassword } from '../../auth'
+import { GoogleButton, signInWithPassword, withMfaReturn } from '../../auth'
 import { deleteAccountOptions, forgetSession } from '../api/account'
 import { deletionRefusal } from '../model/deletion'
 import {
@@ -55,7 +56,8 @@ function OtherAccountRefusal({ email }: { email: string }) {
 /**
  * Account deletion (PLAN.md 9): the user confirms it is them — the password again, or Google
  * again — and `DELETE /me` follows within the 5 minutes the API allows (PLAN.md 7.4). A return from
- * Google offers the deletion only to the account that left for it.
+ * Google, or from the code screen of an account with two-factor authentication, offers the
+ * deletion only to the account that left.
  */
 export function DeleteAccount({
   userId,
@@ -103,16 +105,24 @@ export function DeleteAccount({
       return
     }
     const state: AccountDeletedState = { accountDeleted: true }
-    await navigate('/', { replace: true, state })
-    await forgetSession()
+    // Rendered before the session is forgotten: the account page, which needs a session, must be
+    // gone by then, or it would send the visitor to sign-in instead of the home page. `flushSync`
+    // needs the `RouterProvider` of `react-router/dom`, which main.tsx mounts.
+    await navigate('/', { replace: true, state, flushSync: true })
+    forgetSession()
   }
 
   const confirmWithPassword = async (event: FormEvent) => {
     event.preventDefault()
     setError(null)
     setPending(true)
-    const failure = await signInWithPassword({ email, password })
-    if (failure) setError(failure)
+    const failure = await withMfaReturn(CONFIRM_DELETION_PATH, () =>
+      signInWithPassword({ email, password }),
+    )
+    if (errorCode(failure) === 'session.mfa-required') {
+      // The code screen is next and returns here, as a Google return does (PLAN.md 9).
+      rememberDeletionConfirmation(userId)
+    } else if (failure) setError(failure)
     else await deleteNow()
     setPending(false)
   }
@@ -161,7 +171,7 @@ export function DeleteAccount({
       {googleReturn === 'confirmed' ? (
         <>
           <p className="text-sm">
-            <Trans>You signed in with Google again. Delete the account within 5 minutes.</Trans>
+            <Trans>You confirmed it is you again. Delete the account within 5 minutes.</Trans>
           </p>
           <Button
             variant="danger"

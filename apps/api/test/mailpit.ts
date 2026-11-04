@@ -1,6 +1,6 @@
 // Mailpit catches every dev email; its HTTP API lets a test read what the API sent (PLAN.md 12).
 
-const api = `http://localhost:${process.env.OPOS_MAILPIT_PORT ?? '8025'}/api/v1`
+const api = `http://localhost:${process.env.SUPABASE_LOCAL_SMTP_PORT ?? '54324'}/api/v1`
 
 export interface Mail {
   ID: string
@@ -30,11 +30,11 @@ export async function waitForMail(address: string, count = 1, timeoutMs = 10_000
   }
 }
 
-/** The first link to Supabase Auth's `/verify` in the text part of a message. */
-export function verifyLinkIn(mail: Mail) {
-  const link = /https?:\/\/\S+\/verify\?\S+/.exec(mail.Text)?.[0]
-  if (!link) throw new Error(`no verify link in "${mail.Subject}"`)
-  return link
+/** The first link to an application's `/auth/confirm` in the text part of a message. */
+export function confirmLinkIn(mail: Mail) {
+  const link = /https?:\/\/\S+\/auth\/confirm\?\S+/.exec(mail.Text)?.[0]
+  if (!link) throw new Error(`no confirm link in "${mail.Subject}"`)
+  return new URL(link)
 }
 
 /** Removes the messages to `address`, so Mailpit keeps no test mail behind. */

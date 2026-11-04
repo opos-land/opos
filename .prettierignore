@@ -3,4 +3,5 @@ pnpm-lock.yaml
 *.md
 *.po
 packages/db/drizzle/meta/
+supabase/signing_keys.json
 **/locales/*.mjs

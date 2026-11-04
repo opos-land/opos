@@ -1,6 +1,14 @@
 import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale } from '../features/account'
-import { AuthCallbackPage, InvitationPage, LoginPage, RequireSession } from '../features/auth'
+import {
+  ConfirmPage,
+  ForgotPasswordPage,
+  InvitationPage,
+  LoginPage,
+  MfaGate,
+  MfaPage,
+  RequireSession,
+} from '../features/auth'
 import { EditionPage, EditionsPage } from '../features/editions'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionAccessPage, TeamPage } from '../features/team'
@@ -25,32 +33,55 @@ function SignedIn() {
   )
 }
 
+/**
+ * Every screen, with `MfaGate` leading the sign-in pages of a pending session to `/auth/mfa`
+ * (PLAN.md 7.12).
+ */
+function Root() {
+  return (
+    <>
+      <MfaGate />
+      <Outlet />
+    </>
+  )
+}
+
 // The fixed top-level paths are reserved tenant slugs (PLAN.md 8), so /:tenantSlug never
 // shadows them.
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
-  { path: '/auth/callback', element: <AuthCallbackPage /> },
-  { path: '/invitation', element: <InvitationPage /> },
   {
-    element: <SignedIn />,
+    element: <Root />,
     children: [
-      { path: '/', element: <TenantPickerPage /> },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/auth/confirm', element: <ConfirmPage /> },
+      { path: '/auth/mfa', element: <MfaPage /> },
+      { path: '/invitation', element: <InvitationPage /> },
       {
-        path: '/:tenantSlug',
-        element: <TenantLayout />,
+        element: <SignedIn />,
         children: [
-          { index: true, element: <DashboardPage /> },
-          { path: 'editions', element: <EditionsPage /> },
-          { path: 'editions/:editionSlug', element: <EditionPage /> },
-          { path: 'editions/:editionSlug/access', element: <EditionAccessPage /> },
-          { path: 'editions/:editionSlug/program', element: <ProgramPage /> },
-          { path: 'editions/:editionSlug/program/:programItemId', element: <ProgramItemPage /> },
-          { path: 'team', element: <TeamPage /> },
-          { path: 'settings', element: <SettingsPage /> },
-          { path: '*', element: <NotFoundView /> },
+          { path: '/', element: <TenantPickerPage /> },
+          {
+            path: '/:tenantSlug',
+            element: <TenantLayout />,
+            children: [
+              { index: true, element: <DashboardPage /> },
+              { path: 'editions', element: <EditionsPage /> },
+              { path: 'editions/:editionSlug', element: <EditionPage /> },
+              { path: 'editions/:editionSlug/access', element: <EditionAccessPage /> },
+              { path: 'editions/:editionSlug/program', element: <ProgramPage /> },
+              {
+                path: 'editions/:editionSlug/program/:programItemId',
+                element: <ProgramItemPage />,
+              },
+              { path: 'team', element: <TeamPage /> },
+              { path: 'settings', element: <SettingsPage /> },
+              { path: '*', element: <NotFoundView /> },
+            ],
+          },
         ],
       },
+      { path: '*', element: <NotFoundView /> },
     ],
   },
-  { path: '*', element: <NotFoundView /> },
 ])

@@ -11,6 +11,7 @@ describe('activateLocale', () => {
     expect(i18n._(glossary.ticket)).toBe('akredytacja')
     expect(i18n._(glossary.ticketType)).toBe('rodzaj akredytacji')
     expect(i18n._(glossary.tenant)).toBe('konwent')
+    expect(i18n._(glossary.mfa)).toBe('uwierzytelnianie dwuskładnikowe')
   })
 
   it('keeps the English source text in en', async () => {

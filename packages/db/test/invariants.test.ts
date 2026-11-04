@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import postgres from 'postgres'
 import { migrationUrl } from '../src/migration-url'
+import { RESERVED_TENANT_SLUGS } from '../src/schema'
 import {
   authAdmin,
   createEdition,
@@ -9,7 +10,6 @@ import {
   createTenant,
   createUser,
   migrator,
-  superuser,
   unique,
 } from './db'
 
@@ -99,7 +99,7 @@ describe('invariants', () => {
 
       // The second check waits for the tenant lock held by the first transaction.
       for (let i = 0; i < 50 && !checked; i++) {
-        const [waiting] = await superuser<{ count: number }[]>`
+        const [waiting] = await migrator<{ count: number }[]>`
           select count(*)::int as count from pg_stat_activity
           where application_name = 'opos-test-demote' and wait_event_type = 'Lock'
         `
@@ -200,10 +200,14 @@ describe('invariants', () => {
     expect(row!.moved).toBe(true)
   })
 
-  it('refuses a reserved word as a slug', async () => {
-    await expect(
-      migrator`insert into tenants (slug, name) values ('panel', 'Panel')`,
-    ).rejects.toThrow(/tenants_slug_not_reserved/)
+  it.each(RESERVED_TENANT_SLUGS)('refuses the reserved word %s as a slug', async (slug) => {
+    // The transaction rolls back should the check let the word through.
+    const inserted = migrator.begin(async (tx) => {
+      await tx`insert into tenants (slug, name) values (${slug}, 'Reserved')`
+      throw new Error(`the slug ${slug} was accepted`)
+    })
+
+    await expect(inserted).rejects.toThrow(/tenants_slug_not_reserved/)
   })
 
   it('refuses a slug outside the allowed format', async () => {

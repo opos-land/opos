@@ -3,7 +3,7 @@ import { accounts, createTenant, type Database, tenants } from '@opos/db'
 import { inArray, sql } from 'drizzle-orm'
 
 // The tenant a scenario works on: its own slug, created with createTenant as an admin creates one
-// (PLAN.md 14), and the team written directly as opos_migrator, as the seed writes it.
+// (PLAN.md 14), and the team written directly as postgres, as the seed writes it.
 
 type Level = 'none' | 'read' | 'write'
 

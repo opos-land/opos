@@ -15,6 +15,9 @@ describe('safeRedirect', () => {
     '/\t/evil.test',
     '/\n/evil.test',
     '/\r\n/evil.test',
+    '/.//evil.test',
+    '/..//evil.test',
+    '/%2e//evil.test',
     'convention-a',
   ])('sends %j to the start page', (value) => {
     expect(safeRedirect(value)).toBe('/')

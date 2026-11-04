@@ -1,6 +1,7 @@
 import { type Database, migrationDb } from '@opos/db'
-import { test as base } from '@playwright/test'
+import { expect, test as base } from '@playwright/test'
 import { type Account, createAuthUser, deleteAuthUser, freshEmail } from './auth-admin'
+import { type PageRequest, requestsOutside } from './boundary'
 import { deleteMail } from './mailpit'
 import { stack } from './stack'
 import { accountIds, TenantFactory } from './tenants'
@@ -16,6 +17,8 @@ export interface Accounts {
 interface ScenarioFixtures {
   accounts: Accounts
   tenants: TenantFactory
+  /** Fails the scenario whose pages request anything outside the applications and the API. */
+  boundary: void
 }
 
 interface WorkerFixtures {
@@ -25,6 +28,39 @@ interface WorkerFixtures {
 // Scenarios share no data (PLAN.md 15.2): each one makes its own accounts and tenants, and
 // leaves nothing behind in the database or in Mailpit.
 export const test = base.extend<ScenarioFixtures, WorkerFixtures>({
+  // The BFF boundary (PLAN.md 3.2): the browser talks to the panel, the portal and the API alone.
+  // A request to Supabase or to anything else, from any page of the scenario, fails it; so does a
+  // panel page requesting the portal, or the other way round, unless it is a navigation.
+  boundary: [
+    async ({ context }, use) => {
+      const requests: PageRequest[] = []
+      context.on('request', (request) => {
+        // A request of a service worker has no frame: it counts as one of no origin.
+        let frameOrigin: string | null = null
+        try {
+          const origin = new URL(request.frame().url()).origin
+          frameOrigin = origin === 'null' ? null : origin
+        } catch {
+          // no frame, or none with a URL
+        }
+        requests.push({
+          url: request.url(),
+          frameOrigin,
+          navigation: request.isNavigationRequest(),
+        })
+      })
+      await use()
+      expect(
+        requestsOutside(requests, {
+          api: new URL(stack.api).origin,
+          applications: [stack.panel, stack.portal].map((url) => new URL(url).origin),
+        }),
+        'requests outside the origin of their page and the API',
+      ).toEqual([])
+    },
+    { auto: true },
+  ],
+
   db: [
     // Playwright reads a fixture's dependencies from the first parameter's pattern.
     // eslint-disable-next-line no-empty-pattern

@@ -5,13 +5,15 @@ import {
   emailChangeNewEmail,
   invitationEmail,
   joinedTeamEmail,
+  mfaDisabledEmail,
   recoveryEmail,
   signupEmail,
 } from '@opos/i18n/emails'
 import { describe, expect, it } from 'vitest'
-import { renderLinkEmail } from './render'
+import { renderLinkEmail, renderNoticeEmail } from './render'
 
-const link = 'http://localhost:9999/verify?token=abc&type=signup&redirect_to=http%3A%2F%2Fx'
+const link =
+  'http://127.0.0.1:54321/auth/v1/verify?token=abc&type=signup&redirect_to=http%3A%2F%2Fx'
 
 const render = async (locale: 'en' | 'pl', content: EmailContent, url: string) => {
   const i18n = setupI18n()
@@ -65,5 +67,32 @@ describe('renderLinkEmail', () => {
     expect(email.subject).toBe('You have joined the organizing team of Convention A')
     expect(email.text).not.toContain('valid')
     expect(email.html).not.toContain('valid for')
+  })
+})
+
+describe('renderNoticeEmail', () => {
+  const notice = async (locale: 'en' | 'pl') => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, locale)
+    return renderNoticeEmail(i18n, mfaDisabledEmail)
+  }
+
+  it('renders the English source text with no link', async () => {
+    const email = await notice('en')
+
+    expect(email.subject).toBe('Two-factor authentication was turned off')
+    expect(email.text).toContain('change your password right away')
+    expect(email.text).not.toContain('http')
+    expect(email.html).toContain('lang="en"')
+    expect(email.html).not.toContain('href=')
+  })
+
+  it('renders the Polish translation', async () => {
+    const email = await notice('pl')
+
+    expect(email.subject).toBe('Uwierzytelnianie dwuskładnikowe zostało wyłączone')
+    expect(email.text).toContain('Jeśli to nie ty, natychmiast zmień hasło')
+    expect(email.text).toContain('na twoim koncie OPOS')
+    expect(email.html).toContain('lang="pl"')
   })
 })

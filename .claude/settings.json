@@ -1,4 +1,23 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(./apps/*/.env)",
+      "Read(./packages/*/.env)",
+      "Read(./supabase/.env)",
+      "Read(./supabase/signing_keys.json)"
+    ],
+    "ask": [
+      "Edit(./.claude/settings.json)",
+      "Edit(./.claude/agents/**)",
+      "Edit(./.claude/hooks/**)",
+      "Edit(./scripts/tests-first.mjs)",
+      "Edit(./scripts/check-migrations.mjs)",
+      "Edit(./scripts/bff-boundary.mjs)",
+      "Edit(./lefthook.yml)",
+      "Edit(./.github/workflows/**)",
+      "Edit(./.github/rulesets/**)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -22,11 +41,28 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/migration-reminder.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/bff-boundary.mjs --hook || exit 2"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/tests-first.mjs --after-bash || exit 2"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/bff-boundary.mjs --hook || exit 2"
           }
         ]
       }
@@ -38,6 +74,10 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/tests-first.mjs --after-bash || exit 2"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/bff-boundary.mjs --hook || exit 2"
           }
         ]
       }

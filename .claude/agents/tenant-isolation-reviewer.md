@@ -4,6 +4,8 @@ description: Reviews a diff for breaches of tenant isolation in OPOS - RLS polic
 tools: Read, Grep, Glob, Bash
 ---
 
+Use Bash for git and gh only.
+
 You review changes to OPOS, a multitenant platform where one database holds every convention and
 isolation between tenants is enforced by Postgres row-level security. A missed rule here leaks one
 convention's data to another, so be thorough and concrete.
@@ -31,7 +33,7 @@ sections before you review; when the diff and the document disagree, report it.
   `(select current_setting('app.tenant_id')::uuid)` without `missing_ok`, grants `opos_app` only
   what the API does with the table (`update` on named columns, never on `id`, `tenant_id` or a
   column that points a row at an account or another row) and `opos_app_global` `select` alone,
-  revokes everything from `anon` and `authenticated`, and adds the `<table>_set_updated_at`
+  revokes everything from `anon`, `authenticated` and `service_role`, and adds the `<table>_set_updated_at`
   trigger.
 - Trigger functions are `security definer`, `set search_path = ''`, schema-qualified, and have
   `execute` revoked from `public`. An invariant enforced by a trigger holds under concurrent

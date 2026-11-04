@@ -30,6 +30,11 @@ export const glossary = {
   core: msg({ message: 'core', context: 'glossary', comment: 'Glossary term: core' }),
   module: msg({ message: 'module', context: 'glossary', comment: 'Glossary term: module' }),
   booth: msg({ message: 'booth', context: 'glossary', comment: 'Glossary term: booth' }),
+  mfa: msg({
+    message: 'two-factor authentication',
+    context: 'glossary',
+    comment: 'Glossary term: two-factor authentication',
+  }),
   locale: msg({ message: 'language', context: 'glossary', comment: 'Glossary term: locale' }),
 }
 

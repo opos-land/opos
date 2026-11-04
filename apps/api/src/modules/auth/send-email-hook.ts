@@ -31,11 +31,36 @@ export interface HookEmail {
   link: string
 }
 
-/** `<AUTH_URL>/verify?token=<token_hash>&type=<email_action_type>&redirect_to=<redirect_to>` */
-export function verifyLink(authUrl: string, tokenHash: string, type: string, redirectTo?: string) {
-  const query = new URLSearchParams({ token: tokenHash, type })
-  if (redirectTo) query.set('redirect_to', redirectTo)
-  return `${authUrl.replace(/\/+$/, '')}/verify?${query.toString()}`
+/** The addresses a link can lead to: the two applications'. */
+export interface HookUrls {
+  portalUrl: string
+  panelUrl: string
+}
+
+const CONFIRM_PATH = '/auth/confirm'
+
+/**
+ * The link of an email (PLAN.md 10, Send-email hook). `redirect_to` is `/auth/confirm` of the
+ * portal or the panel, and the link goes there with `token_hash` and `type`: opening it spends
+ * nothing. Any other address becomes the portal's `/auth/confirm`; no link is built from the
+ * rest of the redirect list, and none names Supabase Auth.
+ */
+export function confirmLink(urls: HookUrls, tokenHash: string, type: string, redirectTo?: string) {
+  const target = parseUrl(redirectTo)
+  const applications = [urls.portalUrl, urls.panelUrl].map((url) => new URL(url).origin)
+  const confirming =
+    target !== undefined && applications.includes(target.origin) && target.pathname === CONFIRM_PATH
+  const origin = confirming ? target.origin : new URL(urls.portalUrl).origin
+  const query = new URLSearchParams({ token_hash: tokenHash, type })
+  return `${origin}${CONFIRM_PATH}?${query.toString()}`
+}
+
+function parseUrl(value: string | undefined) {
+  try {
+    return value ? new URL(value) : undefined
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -46,13 +71,10 @@ export function verifyLink(authUrl: string, tokenHash: string, type: string, red
  * the payload then carries `token_hash_new` for the current address and `token_hash` for the new
  * one. The names are swapped on Supabase Auth's side, not here.
  */
-export function hookEmails(
-  payload: SendEmailHookPayload,
-  authUrl: string,
-): HookEmail[] | undefined {
+export function hookEmails(payload: SendEmailHookPayload, urls: HookUrls): HookEmail[] | undefined {
   const { user, email_data: data } = payload
   const link = (tokenHash: string) =>
-    verifyLink(authUrl, tokenHash, data.email_action_type, data.redirect_to)
+    confirmLink(urls, tokenHash, data.email_action_type, data.redirect_to)
 
   switch (data.email_action_type) {
     case 'signup':

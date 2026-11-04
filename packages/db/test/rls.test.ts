@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createEdition,
@@ -9,9 +11,8 @@ import {
   inTenant,
   migrator,
   supabaseAdmin,
-  superuser,
 } from './db'
-import { globalReads } from '../src/verify'
+import { globalReads, verifyDatabase } from '../src/verify'
 
 // Every covered table (PLAN.md 4.6) and the column that holds its tenant.
 const covered = [
@@ -269,25 +270,75 @@ describe('tenant isolation', () => {
     }
   })
 
-  it.each(['anon', 'authenticated'])('gives %s no access to public tables', async (role) => {
-    for (const table of [
-      'accounts',
-      'tenants',
-      'tenant_memberships',
-      'editions',
-      'edition_memberships',
-      'accepted_invitations',
-      'program_items',
-      'program_item_speakers',
-      'program_item_likes',
-    ]) {
-      await expect(
-        superuser.begin(async (sql) => {
-          await sql.unsafe(`set local role ${role}`)
-          await sql.unsafe(`select 1 from public.${table} limit 1`)
-        }),
-      ).rejects.toThrow(/permission denied/)
-    }
+  it.each(['anon', 'authenticated', 'service_role'])(
+    'gives %s no privilege on any public table',
+    async (role) => {
+      const held = await migrator`
+        select c.relname, p.privilege
+        from pg_class c
+        cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) p(privilege)
+        where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p')
+          and has_table_privilege(${role}, c.oid, p.privilege)
+      `
+      expect(held).toEqual([])
+    },
+  )
+
+  it('revokes the Supabase API roles from the core tables in its own migration', async () => {
+    const statements = readFileSync(
+      join(import.meta.dirname, '../drizzle/0020_revoke_api_roles_from_core.sql'),
+      'utf8',
+    ).split('--> statement-breakpoint')
+    const held = await migrator
+      .begin(async (sql) => {
+        // What a project that ran no db:roles before the first migration hands out by default.
+        for (const role of ['anon', 'authenticated', 'service_role']) {
+          await sql.unsafe(
+            `grant all on accounts, tenants, tenant_memberships, editions, edition_memberships to ${role}`,
+          )
+        }
+        for (const statement of statements) await sql.unsafe(statement)
+        const rows = await sql`
+          select r.role, c.relname from pg_class c
+          cross join (values ('anon'), ('authenticated'), ('service_role')) r(role)
+          where c.relnamespace = 'public'::regnamespace and c.relkind = 'r'
+            and c.relname in ('accounts', 'tenants', 'tenant_memberships', 'editions', 'edition_memberships')
+            and has_table_privilege(r.role, c.oid, 'SELECT')
+        `
+        throw Object.assign(new Rollback(), { rows })
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Rollback) return (error as Rollback & { rows: unknown[] }).rows
+        throw error
+      })
+    expect(held).toEqual([])
+  })
+
+  it('revokes the Supabase API roles from the functions of public in its own migration', async () => {
+    const statements = readFileSync(
+      join(import.meta.dirname, '../drizzle/0024_revoke_api_roles_from_functions.sql'),
+      'utf8',
+    ).split('--> statement-breakpoint')
+    const outcome = await migrator
+      .begin(async (sql) => {
+        // What a project that ran no db:roles before the first migration hands out by default.
+        await sql.unsafe(
+          'grant execute on all functions in schema public to anon, authenticated, service_role',
+        )
+        const before = (await verifyDatabase(sql)).filter((line) => line.includes('executable by'))
+        for (const statement of statements) await sql.unsafe(statement)
+        const after = (await verifyDatabase(sql)).filter((line) => line.includes('executable by'))
+        throw Object.assign(new Rollback(), { before, after })
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Rollback)
+          return error as Rollback & { before: string[]; after: string[] }
+        throw error
+      })
+    // db:verify reports the functions that kept the default, and none once the migration ran.
+    expect(outcome.before.join('\n')).toMatch(/handle_auth_user_created/)
+    expect(outcome.before.join('\n')).toMatch(/opos_handle_mfa_factor_change/)
+    expect(outcome.after).toEqual([])
   })
 })
 

@@ -6,14 +6,18 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { signInWithPassword } from '../../auth'
+import { mfaReturnFor, signInWithPassword } from '../../auth'
 import { forgetSession } from '../api/account'
-import { rememberDeletionConfirmation } from '../model/deletion-confirmation'
+import {
+  rememberDeletionConfirmation,
+  startedDeletionConfirmation,
+} from '../model/deletion-confirmation'
 import { DeleteAccount } from './delete-account'
 
 const deleteMe = vi.fn()
 
-vi.mock('../../auth', () => ({
+vi.mock(import('../../auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
   signInWithPassword: vi.fn(),
   GoogleButton: ({ returnTo, onLeave }: { returnTo: string; onLeave?: () => void }) => (
     <button type="button" onClick={onLeave}>
@@ -96,10 +100,38 @@ describe('DeleteAccount', () => {
     expect(forgetSession).toHaveBeenCalledOnce()
   })
 
+  it('on an account with two-factor authentication the password leads through the code and back to the deletion', async () => {
+    let returnTo = ''
+    vi.mocked(signInWithPassword).mockImplementation(() => {
+      returnTo = mfaReturnFor({ pathname: '/account', search: '' })
+      return Promise.resolve(new ORPCError('session.mfa-required', { status: 401 }))
+    })
+    const user = renderAt('/account')
+
+    await confirmWithPassword(user)
+
+    // The code screen returns to /account?confirm=deletion, which offers the deletion to this account.
+    expect(returnTo).toBe('/account?confirm=deletion')
+    expect(startedDeletionConfirmation()).toBe('user-anna')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(deleteMe).not.toHaveBeenCalled()
+    expect(mfaReturnFor({ pathname: '/account', search: '' })).toBe('/account')
+  })
+
+  it('after the code, the return deletes with one press and says the person confirmed again', async () => {
+    rememberDeletionConfirmation('user-anna')
+    deleteMe.mockResolvedValue(undefined)
+    const user = renderAt('/account?confirm=deletion', bothMethods)
+
+    expect(screen.getByText(/You confirmed it is you again/)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Delete my account' }))
+
+    expect(await screen.findByText('home {"accountDeleted":true}')).toBeTruthy()
+  })
+
   it('deletes nothing when the password is wrong', async () => {
-    const { AuthApiError } = await import('@supabase/auth-js')
     vi.mocked(signInWithPassword).mockResolvedValue(
-      new AuthApiError('Invalid login credentials', 400, 'invalid_credentials'),
+      new ORPCError('auth.invalid_credentials', { status: 400 }),
     )
     const user = renderAt('/account')
 
@@ -147,8 +179,23 @@ describe('DeleteAccount', () => {
     expect(screen.getByRole('alert').textContent).toContain(
       'Google signed you in to a different account, anna@example.test, so nothing was deleted.',
     )
-    expect(screen.queryByText(/You signed in with Google again/)).toBeNull()
+    expect(screen.queryByText(/You confirmed it is you again/)).toBeNull()
     expect(deleteMe).not.toHaveBeenCalled()
+  })
+
+  it('spends a confirmation that came back without its parameter, as after a failed Google sign-in', async () => {
+    rememberDeletionConfirmation('user-anna')
+    renderAt('/account', bothMethods)
+
+    expect(startedDeletionConfirmation()).toBeNull()
+    cleanup()
+
+    const user = renderAt('/account?confirm=deletion', bothMethods)
+    expect(await screen.findByText('search ""')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Delete my account' }))
+
+    expect(screen.queryByText(/You confirmed it is you again/)).toBeNull()
+    expect(screen.getByLabelText('Your password')).toBeTruthy()
   })
 
   it('offers no deletion to a confirmation link that was not started here', async () => {
@@ -157,7 +204,7 @@ describe('DeleteAccount', () => {
     expect(await screen.findByText('search ""')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Delete my account' }))
 
-    expect(screen.queryByText(/You signed in with Google again/)).toBeNull()
+    expect(screen.queryByText(/You confirmed it is you again/)).toBeNull()
     expect(screen.getByLabelText('Your password')).toBeTruthy()
   })
 

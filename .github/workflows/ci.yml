@@ -5,6 +5,10 @@ on:
   push:
     branches: [main, develop]
 
+# Every job reads the repository and nothing more; a job that needs more says so itself.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -13,12 +17,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           # turbo --affected diffs against main and needs the history
           fetch-depth: 0
-      - uses: jdx/mise-action@v5
-      - uses: actions/cache@v5
+      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ github.sha }}
@@ -26,26 +30,58 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm test:scripts
+      - run: node .claude/skills/docs-sync/scripts/check-doc-links.mjs
       # Code travels with its test (AGENTS.md). A pull request into main brings develop's commits,
       # each checked on its way into develop.
       - if: github.event_name == 'pull_request' && github.base_ref != 'main'
-        run: node scripts/tests-first.mjs --base origin/${{ github.base_ref }}
+        run: node scripts/tests-first.mjs --base "origin/$BASE_REF"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+      # The migration journal against the base branch of a pull request, and against the commit
+      # before a push: two pull requests that are valid alone can break the journal once both merge,
+      # and only the push sees both. A push that creates a branch has no commit before it.
+      - if: github.event_name == 'pull_request'
+        run: node scripts/check-migrations.mjs --base "origin/$BASE_REF"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+      - if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: node scripts/check-migrations.mjs --base "$BEFORE_SHA"
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
       - run: pnpm i18n:check
-      # mailpit: the send-email hook test reads what the API sent
-      - run: docker compose up -d --wait db auth mailpit
+      # The .env files, the signing key, the CLI's local stack and the roles (docs/PLAN.md, 12)
+      - run: pnpm infra:init
       - run: pnpm db:migrate
       - run: pnpm db:verify
-      # The second run proves the seed is idempotent
+      # The second run fails where a constraint refuses a row; packages/db/test/seed.test.ts holds
+      # the row counts across two runs
       - run: pnpm db:seed && pnpm db:seed
-      - run: pnpm turbo run typecheck lint test ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+      - run: pnpm turbo run typecheck lint $TURBO_ARGS
         env:
+          # A pull request runs what it affects, a push runs everything and runs it uncached
+          TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+          TURBO_FORCE: ${{ github.event_name == 'push' }}
           # --affected diffs against the PR base branch, not always main
           TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+      # In a step of their own: this runner also hosts the stack, and the type checker and the linter
+      # would take the time the tests' deadlines count on (docs/PLAN.md, 15.3)
+      - run: pnpm turbo run test $TURBO_ARGS
+        env:
+          TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+          TURBO_FORCE: ${{ github.event_name == 'push' }}
+          TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+      # The control address and the canary make the bundle scan below prove something: a bundle
+      # without the address was not built from this tree, and one with the secret leaks it
       - run: pnpm build
+        env:
+          VITE_API_URL: https://opos-control.invalid
+          SUPABASE_SECRET_KEY: opos-canary-secret-x
+      # The sources and the bundles of the panel and the portal name nothing of Supabase
+      - run: node scripts/bff-boundary.mjs --dist
       # The tests run the sources; this starts the bundle that production runs
       - name: start the built api
         run: |
-          NODE_ENV=production node --env-file=apps/api/.env.example apps/api/dist/main.js &
+          NODE_ENV=production node --env-file=apps/api/.env apps/api/dist/main.js &
           for _ in $(seq 30); do
             curl -fsS http://localhost:3001/health && exit 0
             sleep 1
@@ -55,18 +91,19 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
       - run: pnpm install --frozen-lockfile
       # The applications' dev addresses (docs/PLAN.md, 12. Local development)
-      - run: echo '127.0.0.1 api.localhost panel.localhost opos.localhost' | sudo tee -a /etc/hosts
-      - run: docker compose up -d --wait db auth mailpit
+      - run: echo '127.0.0.1 api.opos.localhost panel.opos.localhost opos.localhost' | sudo tee -a /etc/hosts
+      # The .env files, the signing key, the CLI's local stack and the roles (docs/PLAN.md, 12)
+      - run: pnpm infra:init
       - run: pnpm db:migrate
       - run: pnpm db:seed
       - run: pnpm --filter @opos/e2e exec playwright install --with-deps chromium
       # Playwright starts the api, the panel and the portal itself (e2e/playwright.config.ts)
       - run: pnpm test:e2e
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
           name: playwright
@@ -74,3 +111,27 @@ jobs:
             e2e/test-results/
             e2e/playwright-report/
           retention-days: 7
+
+  # Secrets in the tree and in the whole history, and dependencies with a known high advisory.
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          # gitleaks git walks every commit
+          fetch-depth: 0
+      # The release binary, checked against its published checksum. Both scans run before the
+      # install, so that node_modules is not scanned.
+      - name: install gitleaks
+        run: |
+          curl -fsSL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum --check
+          mkdir "$RUNNER_TEMP/gitleaks"
+          tar -xzf gitleaks.tar.gz -C "$RUNNER_TEMP/gitleaks" gitleaks
+          rm gitleaks.tar.gz
+          echo "$RUNNER_TEMP/gitleaks" >> "$GITHUB_PATH"
+      - run: gitleaks dir . --redact --no-banner
+      - run: gitleaks git . --redact --no-banner
+      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level high

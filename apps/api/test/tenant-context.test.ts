@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto'
+import { inspect } from 'node:util'
+import { Logger } from '@nestjs/common'
+import { migrationUrl } from '@opos/db'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from './app'
-import { deleteCreatedAccounts } from './auth'
+import { deleteCreatedAccounts, session } from './auth'
 import { afterCommitCalls, ProbeModule } from './probe'
 import {
   addEdition,
@@ -64,7 +67,7 @@ beforeEach(() => {
 const as = (who: Member, slug?: string) => {
   const agent = request(app.getHttpServer())
   const auth = (r: request.Test) => {
-    r.set('Authorization', `Bearer ${who.token}`)
+    r.use(session(who.token))
     return slug ? r.set('X-Tenant-Slug', slug) : r
   }
   return {
@@ -96,6 +99,18 @@ describe('GET /tenants/current', () => {
     await as(a.head, 'no-such-tenant').get('/tenants/current').expect(404)
     const res = await as(a.head).get('/tenants/current').expect(400)
     expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'x-tenant-slug' } })
+  })
+
+  it('answers 401 to Authorization: Bearer before it looks the tenant up', async () => {
+    for (const slug of [a.slug, 'no-such-tenant']) {
+      const res = await request(app.getHttpServer())
+        .get('/tenants/current')
+        .set('Authorization', `Bearer ${a.head.token}`)
+        .set('X-Tenant-Slug', slug)
+        .expect(401)
+
+      expect(res.body).toMatchObject({ code: 'session.invalid' })
+    }
   })
 
   it('ignores the header on a route that is not a tenant route', async () => {
@@ -137,6 +152,23 @@ describe('tenant transaction', () => {
       .expect(201)
 
     expect(afterCommitCalls).toEqual([slug])
+  })
+
+  it("logs a failed after-commit mail by nodemailer's code, never its message, and the response stands", async () => {
+    const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const slug = randomUUID().slice(0, 8)
+    try {
+      await as(settingsWriter, a.slug)
+        .post('/probe/editions', { slug, fail: false, mailFails: true })
+        .expect(201)
+
+      const line = inspect(logged.mock.calls)
+      expect(line).toContain('EENVELOPE')
+      expect(line).toContain('550')
+      expect(line).not.toMatch(/anna|secret|example/)
+    } finally {
+      logged.mockRestore()
+    }
   })
 
   it('rolls back a refused request and drops the after-commit queue', async () => {
@@ -193,13 +225,13 @@ describe('tenant transaction', () => {
   })
 
   it('serves no tenant when DATABASE_URL names a role that bypasses RLS', async () => {
-    const migrator = new URL(process.env.DATABASE_MIGRATION_URL!)
+    const migrator = new URL(migrationUrl())
     const bypassing = await createApp({ DATABASE_URL: migrator.toString() })
     try {
       for (const path of ['/tenants/current', '/editions']) {
         const res = await request(bypassing.getHttpServer())
           .get(path)
-          .set('Authorization', `Bearer ${a.head.token}`)
+          .use(session(a.head.token))
           .set('X-Tenant-Slug', a.slug)
         expect(res.status, path).toBe(500)
         expect(res.body, path).toEqual({ code: 'server.error', message: 'Internal server error' })

@@ -1,60 +1,91 @@
-import { AUTH_CALLBACK_PATH, panelUrl } from '../../../shared/config/routes'
-import { auth } from '../../../shared/lib/auth'
-import { activeLocale } from '../../../shared/lib/i18n'
-import { forgetAuthReturn, rememberAuthReturn } from '../model/auth-return'
-import { throwawayPassword } from '../model/invitation-storage'
+import { type verifySchema } from '@opos/contract'
+import { type z } from 'zod'
+import { env } from '../../../shared/config/env'
+import { accountClient } from '../../../shared/lib/api'
+import { isMfaRequired, isSessionInvalid } from '../../../shared/lib/errors'
+import { signedIn, signedOut } from '../../../shared/lib/session'
+import { onSessionEnded, sessionUnavailable } from '../../../shared/lib/session-store'
+import { rememberAuthReturn } from '../model/auth-return'
+import { googleSignInUrl } from '../model/google-url'
 
-// The feature's calls to Supabase Auth (PLAN.md 7.5-7.7). Each one resolves to the AuthError it
-// failed with, or null. A call that comes back through /auth/callback takes the page to return to.
+// The feature's calls to the API's `auth` endpoints (PLAN.md 5.1). Each one resolves to the error
+// it failed with, or null. A call that sends a link takes the page to return to once it is opened.
 
-/** Where every link and the Google return come back to. */
-const callbackUrl = () => panelUrl(AUTH_CALLBACK_PATH)
+/** The link of an email: its `token_hash` and `type`. */
+export type VerifyLink = z.infer<typeof verifySchema>
 
-export async function signInWithPassword(credentials: { email: string; password: string }) {
-  return (await auth.signInWithPassword(credentials)).error
+async function attempt(call: () => Promise<unknown>): Promise<unknown> {
+  try {
+    await call()
+    return null
+  } catch (error) {
+    return error
+  }
 }
 
-/** Leaves for Google; on success the browser is already navigating away. */
-export async function signInWithGoogle(returnTo: string) {
-  rememberAuthReturn(returnTo)
-  const { error } = await auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: callbackUrl() },
+export const signInWithPassword = (body: { email: string; password: string }) =>
+  attempt(async () => signedIn(await accountClient.auth.signIn({ body })))
+
+/** Leaves for Google: a navigation of the browser, not a request of the API link (PLAN.md 7.5). */
+export function signInWithGoogle(returnTo: string) {
+  window.location.assign(googleSignInUrl(env.VITE_API_URL, returnTo))
+}
+
+/** An email sign-up takes no password: the invitee chooses it once the link proves the address. */
+export const signUpWithEmail = (email: string, returnTo: string) =>
+  attempt(async () => {
+    await accountClient.auth.signUp({ body: { email } })
+    rememberAuthReturn(returnTo)
   })
-  if (error) forgetAuthReturn()
-  return error
-}
 
-/** An email sign-up with a throwaway password, chosen for real once confirmed (PLAN.md 7.7). */
-export async function signUpWithEmail(email: string, returnTo: string) {
-  const { error } = await auth.signUp({
-    email,
-    password: throwawayPassword(),
-    options: { data: { locale: activeLocale() }, emailRedirectTo: callbackUrl() },
+export const sendPasswordLink = (email: string, returnTo: string) =>
+  attempt(async () => {
+    await accountClient.auth.passwordForgot({ body: { email } })
+    rememberAuthReturn(returnTo)
   })
-  if (!error) rememberAuthReturn(returnTo)
-  return error
+
+/** The button of `/auth/confirm`: redeems the link of an email and signs in (PLAN.md 5.1). */
+export const verifyLink = (body: VerifyLink) =>
+  attempt(async () => signedIn(await accountClient.auth.verify({ body })))
+
+/**
+ * A code the API accepted has changed the session, so a retry would be refused (`mfa.not-required`):
+ * whatever fails afterwards is no failure of the code. Not knowing the account ends `unavailable`,
+ * whose view asks again (PLAN.md 7.12).
+ */
+async function afterRightCode(call: () => Promise<unknown>): Promise<unknown> {
+  const failure = await attempt(call)
+  if (failure) return failure
+  let ended = false
+  const stop = onSessionEnded(() => (ended = true))
+  try {
+    signedIn(await accountClient.me.get())
+  } catch (error) {
+    // The API link has already moved the session to the state the answer asked for: the code
+    // screen, or signed out when the link's refresh found the session gone. A `session.invalid`
+    // that stands without it is a refresh that could not be made: the account is not known.
+    if (!isMfaRequired(error) && !(isSessionInvalid(error) && ended)) sessionUnavailable()
+  } finally {
+    stop()
+  }
+  return null
 }
 
-export async function sendPasswordLink(email: string, returnTo: string) {
-  const { error } = await auth.resetPasswordForEmail(email, { redirectTo: callbackUrl() })
-  if (!error) rememberAuthReturn(returnTo)
-  return error
-}
+/** The code of the authenticator app; the account is known once it is right (PLAN.md 7.12). */
+export const verifyCode = (code: string) =>
+  afterRightCode(() => accountClient.auth.mfa.verify({ body: { code } }))
 
-export async function exchangeCode(code: string) {
-  return (await auth.exchangeCodeForSession(code)).error
-}
+/** A recovery code: two-factor authentication is off afterwards, and so is `mfaEnabled` (PLAN.md 7.12). */
+export const recoverWithCode = (code: string) =>
+  afterRightCode(() => accountClient.auth.mfa.recover({ body: { code } }))
 
-export async function setPassword(password: string) {
-  return (await auth.updateUser({ password })).error
-}
+/** Saves the password and ends the account's other sessions (PLAN.md 7.6). */
+export const setPassword = (password: string) =>
+  attempt(() => accountClient.auth.password({ body: { password } }))
 
-/** Ends every session of the account but this one, as a password reset does (PLAN.md 7.6). */
-export async function signOutOtherSessions() {
-  return (await auth.signOut({ scope: 'others' })).error
-}
-
-export async function signOut() {
-  return (await auth.signOut()).error
-}
+/** Ends this session only (PLAN.md 5.1). */
+export const signOut = () =>
+  attempt(async () => {
+    await accountClient.auth.signOut()
+    signedOut()
+  })

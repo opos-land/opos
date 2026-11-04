@@ -141,6 +141,48 @@
       "when": 1793565368664,
       "tag": "0019_likes_and_schedule",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793692154817,
+      "tag": "0020_revoke_api_roles_from_core",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793714935269,
+      "tag": "0021_mfa_mirror_and_recovery_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793716534741,
+      "tag": "0022_backfill_mfa_enabled_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793723785687,
+      "tag": "0023_mfa_mirror_lock",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793789218379,
+      "tag": "0024_revoke_api_roles_from_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793792366642,
+      "tag": "0025_reserve_forgot_password_slug",
+      "breakpoints": true
     }
   ]
 }

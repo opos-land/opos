@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { parseEnv } from 'node:util'
+import { migrationUrl } from '@opos/db'
 
-// The addresses and credentials of the stack under test come from the API's own configuration:
-// apps/api/.env.example, overridden by apps/api/.env when present, as in the API tests
-// (PLAN.md 15.1). Mailpit's port is the shell's OPOS_MAILPIT_PORT (PLAN.md 12).
+// The addresses and credentials of the stack under test come from the API's own configuration,
+// apps/api/.env over its template, as in the API tests (PLAN.md 15.1). Mailpit's port is the shell's
+// SUPABASE_LOCAL_SMTP_PORT (PLAN.md 12).
 
 export const API_DIR = fileURLToPath(new URL('../../apps/api/', import.meta.url))
 
@@ -19,11 +20,16 @@ function readEnv(name: string): Record<string, string> {
 }
 
 /** The API's environment, the one the API under test runs with. */
-export const apiEnv: Record<string, string> = { ...readEnv('.env.example'), ...readEnv('.env') }
+export const apiEnv: Record<string, string> = {
+  ...readEnv('.env.example'),
+  ...readEnv('.env'),
+  // A fast run spends the default 300 requests a minute of one address on anonymous calls alone.
+  RATE_LIMIT_DEFAULT: '100000',
+}
 
 function required(name: string) {
   const value = apiEnv[name]
-  if (!value) throw new Error(`${name} is missing from apps/api/.env.example`)
+  if (!value) throw new Error(`${name} is missing from apps/api/.env; run pnpm infra:init`)
   return value
 }
 
@@ -31,10 +37,10 @@ export const stack = {
   api: required('API_URL'),
   panel: required('PANEL_URL'),
   portal: required('PORTAL_URL'),
-  auth: required('AUTH_URL'),
-  mailpit: `http://localhost:${process.env.OPOS_MAILPIT_PORT ?? '8025'}`,
-  databaseUrl: required('DATABASE_MIGRATION_URL'),
-  serviceRoleKey: required('SUPABASE_SERVICE_ROLE_KEY'),
+  auth: `${required('SUPABASE_URL').replace(/\/+$/, '')}/auth/v1`,
+  mailpit: `http://localhost:${process.env.SUPABASE_LOCAL_SMTP_PORT ?? '54324'}`,
+  databaseUrl: migrationUrl(apiEnv),
+  secretKey: required('SUPABASE_SECRET_KEY'),
 }
 
 /** The port of an address, as a dev server binds it. */

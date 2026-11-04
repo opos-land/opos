@@ -1,13 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import { createTenant, migrationDb, tenants, type Transaction } from '@opos/db'
+import { createTenant, migrationDb, migrationUrl, tenants, type Transaction } from '@opos/db'
 import { inArray, sql } from 'drizzle-orm'
 import { createAccount, signIn } from './auth'
 
-// Tenants, editions and memberships for API tests, written as opos_migrator (PLAN.md 15.1).
+// Tenants, editions and memberships for API tests, written as postgres (PLAN.md 15.1).
 
-const url = process.env.DATABASE_MIGRATION_URL
-if (!url) throw new Error('DATABASE_MIGRATION_URL is missing from apps/api/.env.example')
-const db = migrationDb(url)
+const db = migrationDb(migrationUrl())
 const tenantIds: string[] = []
 
 type Level = 'none' | 'read' | 'write'
@@ -23,10 +21,23 @@ export async function member(): Promise<Member> {
   return { ...account, token: await signIn(account.email) }
 }
 
-export async function tenantWithHead() {
+/** A TOTP factor, written to Supabase Auth's table as postgres; the mirror trigger follows. */
+export async function addVerifiedFactor(accountId: string, status = 'verified') {
+  await db.execute(sql`
+    insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
+    values (${randomUUID()}, ${accountId}, 'Authenticator', 'totp', ${status}, now(), now(), 'JBSWY3DPEHPK3PXP')
+  `)
+}
+
+export async function tenantWithHead(defaultLocale?: string) {
   const head = await member()
   const slug = `api-${randomUUID().slice(0, 8)}`
-  const { id } = await createTenant(db, { slug, name: `Tenant ${slug}`, headEmail: head.email })
+  const { id } = await createTenant(db, {
+    slug,
+    name: `Tenant ${slug}`,
+    headEmail: head.email,
+    defaultLocale,
+  })
   tenantIds.push(id)
   return { id, slug, head }
 }
@@ -157,6 +168,48 @@ export const emailConfirmed = async (accountId: string) =>
     )
   )[0]?.confirmed
 
+/** The account row an address has, the unconfirmed ones included. */
+export const accountByEmail = async (email: string) =>
+  (
+    await db.execute<{
+      id: string
+      firstName: string | null
+      lastName: string | null
+      locale: string | null
+    }>(
+      sql`select id, first_name as "firstName", last_name as "lastName", locale from accounts where email = ${email}`,
+    )
+  )[0]
+
+/** The recovery codes of an account as postgres sees them: the hash and whether it is spent. */
+export async function recoveryCodeRows(accountId: string) {
+  return db.execute<{ code_hash: string; used_at: Date | null }>(sql`
+    select code_hash, used_at from account_recovery_codes where account_id = ${accountId}
+    order by code_hash
+  `)
+}
+
+/** An unused recovery code row, as a failed marking would have left it. */
+export async function addRecoveryCodeHash(accountId: string, codeHash: string) {
+  await db.execute(sql`
+    insert into account_recovery_codes (account_id, code_hash) values (${accountId}, ${codeHash})
+  `)
+}
+
+/** What the database holds of an account's two-factor authentication. */
+export async function mfaState(accountId: string) {
+  const [row] = await db.execute<{ mirrored: boolean; factors: number }>(sql`
+    select
+      (select mfa_enabled_at is not null from accounts where id = ${accountId}) as mirrored,
+      (select count(*)::int from auth.mfa_factors where user_id = ${accountId}) as factors
+  `)
+  return { mirrored: row!.mirrored, factors: row!.factors }
+}
+
+/** An account that chose no language: the sign-up's stays in the user's metadata alone. */
+export const clearAccountLocale = (accountId: string) =>
+  db.execute(sql`update accounts set locale = null where id = ${accountId}`)
+
 export const closeTenantDb = () => db.$client.end()
 
 /**
@@ -176,7 +229,7 @@ export async function holdOpen(
 }
 
 /**
- * Runs `fn` in a transaction as opos_migrator, which bypasses RLS, with `app.tenant_id` set to
+ * Runs `fn` in a transaction as postgres, which bypasses RLS, with `app.tenant_id` set to
  * `tenantId`: what a repository returns there comes from its own filters alone.
  */
 export const withoutRls = <T>(tenantId: string, fn: (tx: Transaction) => Promise<T>) =>

@@ -17,7 +17,7 @@ export default defineConfig(({ command, mode }) => {
     ),
     // The panel's dev address (PLAN.md 12); OPOS_PANEL_PORT moves it.
     server: {
-      host: 'panel.localhost',
+      host: 'panel.opos.localhost',
       port: Number(process.env.OPOS_PANEL_PORT ?? 5173),
       strictPort: true,
     },

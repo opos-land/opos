@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test'
 import { API_DIR, apiEnv, portOf, stack } from './fixtures/stack'
 
 // E2E through the UI of the panel and the portal against the full stack (PLAN.md 15.2). The
-// infrastructure comes from `pnpm infra:up`, migrations and the seed run before; the three
+// infrastructure comes from `pnpm infra:init`, migrations and the seed run before; the three
 // applications start here. The API starts fresh on every run, so its in-memory rate-limit
 // counters (PLAN.md 7.9) start from zero; outside CI a running panel and portal are reused.
 

@@ -13,21 +13,24 @@ const columns = {
   firstName: accounts.firstName,
   lastName: accounts.lastName,
   locale: accounts.locale,
+  mfaEnabledAt: accounts.mfaEnabledAt,
 }
 
 type Row = { [K in keyof typeof columns]: (typeof accounts.$inferSelect)[K] }
 
 // A locale written by the sign-up trigger is not validated; an unsupported one means "detect".
-const toAccount = (row: Row): Account => ({
+const toAccount = ({ mfaEnabledAt, ...row }: Row): Account => ({
   ...row,
   locale: isLocale(row.locale) ? row.locale : null,
+  mfaEnabled: mfaEnabledAt !== null,
 })
 
 /**
  * `accounts` has no RLS (PLAN.md 4.6): it is read and written on the opos_app pool outside a
- * tenant transaction. Only the guard and the send-email hook look an account up by id, the `sub`
- * of a verified token or the user of a verified hook payload; every other method works on the
- * account in the request store, so no caller can pass another account's id.
+ * tenant transaction. Only `findForToken` and `localeForHook` look an account up by id, the `sub`
+ * of a verified token, the user of a session Supabase Auth has just issued or the user of a verified
+ * hook payload; every other method works on the account in the request store, so no caller can pass
+ * another account's id.
  */
 @Injectable()
 export class AccountsRepository {
@@ -36,7 +39,11 @@ export class AccountsRepository {
     private readonly context: TenantContextService,
   ) {}
 
-  /** For JwtAuthGuard only: the account a verified token's `sub` names. */
+  /**
+   * For JwtAuthGuard, with a verified token's `sub`, and for the sign-in routes of `AuthService` and
+   * `GoogleAuthService`, with the user of a session Supabase Auth has just issued: the account of
+   * that id. No id a browser sent reaches it.
+   */
   async findForToken(sub: string): Promise<Account | undefined> {
     const [row] = await this.db.select(columns).from(accounts).where(eq(accounts.id, sub))
     return row && toAccount(row)

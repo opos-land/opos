@@ -8,14 +8,15 @@ import { createQueryClient } from './query-client'
 
 /**
  * Nothing of one account survives its sign-out, or another account's session replacing it (a
- * confirmation or password link for another address): no cached answer, no permissions.
+ * confirmation or password link for another address), here or in another tab of the panel
+ * (PLAN.md 7.4): no cached answer, no permissions.
  */
 export function AccountChangeCleanup({ onChange }: { onChange: () => void }) {
   useEffect(
     () =>
       useSession.subscribe((state, previous) => {
-        const before = previous.session?.user.id
-        if (before && before !== state.session?.user.id) onChange()
+        const before = previous.account?.id
+        if (before && before !== state.account?.id) onChange()
       }),
     [onChange],
   )

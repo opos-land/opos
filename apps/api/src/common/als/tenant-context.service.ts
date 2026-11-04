@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { Inject, Injectable, Logger } from '@nestjs/common'
-import { type Account, type Tenant } from '@opos/contract'
+import { type Account, type SignInMethod, type Tenant } from '@opos/contract'
 import {
   type Database,
   permissionLevel,
@@ -8,6 +8,7 @@ import {
   tenantRole,
   type Transaction,
 } from '@opos/db'
+import { mailFailure } from '../../modules/mail/mail-failure'
 import { APP_DB } from '../database/tokens'
 
 export type Level = (typeof permissionLevel.enumValues)[number]
@@ -28,9 +29,13 @@ export type TenantInContext = Tenant
 export interface RequestStore {
   /** The client address, an IPv6 one by its /64, as the rate limit counts it (PLAN.md 7.9). */
   clientAddress?: string
+  /** The client address in full, IPv4-mapped reduced to IPv4: `Sb-Forwarded-For` (PLAN.md 10). */
+  clientIp?: string
   account?: Account
   /** The latest sign-in the access token records, in seconds since the epoch (PLAN.md 7.4). */
   signedInAt?: number
+  /** The sign-in methods the access token names (PLAN.md 5.2). */
+  signInMethods?: SignInMethod[]
   tenant?: TenantInContext
   membership?: TenantMembership | null
   tx?: Transaction
@@ -54,9 +59,9 @@ export class TenantContextService {
 
   constructor(@Inject(APP_DB) private readonly db: Database) {}
 
-  /** Runs `fn` with a fresh request store that knows only the client address. */
-  run<T>(fn: () => T, clientAddress?: string): T {
-    return storage.run({ clientAddress }, fn)
+  /** Runs `fn` with a fresh request store that knows only the client address, in both forms. */
+  run<T>(fn: () => T, clientAddress?: string, clientIp?: string): T {
+    return storage.run({ clientAddress, clientIp }, fn)
   }
 
   /** The client address of the request. */
@@ -77,10 +82,16 @@ export class TenantContextService {
     return store
   }
 
-  setAccount(account: Account, signedInAt?: number) {
+  setAccount(account: Account, signedInAt?: number, signInMethods: SignInMethod[] = []) {
     const store = TenantContextService.store()
     store.account = account
     store.signedInAt = signedInAt
+    store.signInMethods = signInMethods
+  }
+
+  /** The sign-in methods of the verified account; only behind JwtAuthGuard. */
+  signInMethods(): SignInMethod[] {
+    return TenantContextService.store().signInMethods ?? []
   }
 
   /** Whether the access token records a sign-in within the last `seconds`; behind JwtAuthGuard. */
@@ -171,7 +182,7 @@ export class TenantContextService {
       try {
         await fn()
       } catch (error) {
-        this.logger.error(error)
+        this.logger.error(`An after-commit step failed: ${mailFailure(error)}`)
       }
     }
     await sendDeferred(store)

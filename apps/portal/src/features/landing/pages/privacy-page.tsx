@@ -37,6 +37,13 @@ export function PrivacyPage() {
           </li>
           <li>
             <Trans>
+              If you turn on two-factor authentication: the secret of your authenticator app, kept
+              by our sign-in service, and ten one-time recovery codes, of which we keep only their
+              hashes: nobody can read a code back, you included.
+            </Trans>
+          </li>
+          <li>
+            <Trans>
               What you do on the platform: the editions you sign up for, the programme items you
               like and the reviews you write.
             </Trans>
@@ -62,7 +69,8 @@ export function PrivacyPage() {
             To run your account and sign you in; to let conventions sell you tickets, send them to
             you and check them at the venue; to keep your edition sign-ups, your personal schedule
             and your reviews; and to send the emails your account needs: address confirmation,
-            password reset, tickets and invitations to a convention’s team.
+            password reset, the notice that two-factor authentication is turned off, tickets and
+            invitations to a convention’s team.
           </Trans>
         </p>
       </Part>
@@ -109,6 +117,14 @@ export function PrivacyPage() {
             </Trans>
           </li>
           <li>
+            <Trans>Your unused recovery codes: until you turn off two-factor authentication.</Trans>
+          </li>
+          <li>
+            <Trans>
+              The hash of a recovery code you have used: as a record, until you delete the account.
+            </Trans>
+          </li>
+          <li>
             <Trans>
               Orders are the conventions’ sales records: they stay after the account with the same
               address is deleted.
@@ -133,9 +149,10 @@ export function PrivacyPage() {
         <p>
           <Trans>
             You delete your account yourself in the account settings, after confirming it is you:
-            with your password or with Google, again. Your sign-in methods, sessions, likes,
-            reviews, edition sign-ups and memberships in convention teams go with it. The last head
-            organizer of a convention hands that role over first, so the convention keeps an owner.
+            with your password or with Google, again. Your sign-in methods, sessions, two-factor
+            authentication with its recovery codes, likes, reviews, edition sign-ups and memberships
+            in convention teams go with it. The last head organizer of a convention hands that role
+            over first, so the convention keeps an owner.
           </Trans>
         </p>
       </Part>
@@ -143,8 +160,9 @@ export function PrivacyPage() {
       <Part title={<Trans>Your browser</Trans>}>
         <p>
           <Trans>
-            OPOS uses no tracking or advertising cookies. Your sign-in session is kept in your
-            browser’s local storage, for this site only.
+            OPOS uses no tracking or advertising cookies. Your sign-in session is kept in cookies
+            that your browser sends to OPOS alone, which no script of the page can read. Signing out
+            removes them.
           </Trans>
         </p>
       </Part>

@@ -60,8 +60,8 @@ const areas = [
     code: [
       /^packages\/db\/drizzle\/[^/]+\.sql$/,
       /^packages\/db\/src\/schema\//,
-      /^packages\/db\/src\/(rls|verify|tenants|client)\.ts$/,
-      /^infra\/supabase\/db\//,
+      /^packages\/db\/src\/(rls|verify|tenants|client|roles|migration-url)\.ts$/,
+      /^packages\/db\/src\/scripts\/roles\.ts$/,
     ],
     tests: [/^packages\/db\/test\/.+\.test\.ts$/],
     where: 'packages/db/test',
@@ -107,11 +107,11 @@ const testedIn = (area, changes) =>
 
 /**
  * Whether a test file's source holds a test: a line that opens with a call of `describe`, `it` or
- * `test`, `.todo` aside, outside a block comment that opens a line.
+ * `test`, `.todo` and `.skip` aside, outside a block comment that opens a line.
  */
 export function holdsTests(source) {
   const code = source.replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, '')
-  return /^[ \t]*(describe|it|test)(\.(?!todo\b)\w+(\([^()]*\))?)*\s*\(/m.test(code)
+  return /^[ \t]*(describe|it|test)(\.(?!(todo|skip)\b)\w+(\([^()]*\))?)*\s*\(/m.test(code)
 }
 
 /** The changes with each test file that holds no test marked hollow; `read` returns its source. */
@@ -297,7 +297,7 @@ function topLevel(dir) {
 }
 
 /** The checkout of this repository that holds `path`, or null: the areas hold for no other. */
-function checkoutOf(path) {
+export function checkoutOf(path) {
   let dir = path
   while (!existsSync(dir)) dir = dirname(dir)
   const root = topLevel(statSync(dir).isDirectory() ? dir : dirname(dir))
@@ -305,7 +305,7 @@ function checkoutOf(path) {
 }
 
 /** The real path of `path`, resolved through its deepest existing ancestor: a new file has none. */
-function realPath(path) {
+export function realPath(path) {
   try {
     return realpathSync(path)
   } catch {

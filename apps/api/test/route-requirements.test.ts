@@ -9,7 +9,7 @@ import {
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { deleteCreatedAccounts } from './auth'
+import { deleteCreatedAccounts, session } from './auth'
 import {
   addEdition,
   addEditionAccess,
@@ -29,6 +29,15 @@ import { type Level, type Need, tenantRequirements } from './route-needs'
 /** Routes without sign-in; every other route that is not a tenant route needs an account. */
 const publicRoutes = [
   'health.check',
+  'auth.signUp',
+  'auth.resend',
+  'auth.verify',
+  'auth.signIn',
+  'auth.google',
+  'auth.googleCallback',
+  'auth.refresh',
+  'auth.signOut',
+  'auth.passwordForgot',
   'invitations.preview',
   'public.tenant',
   'public.editions',
@@ -99,7 +108,7 @@ function call(
   )
   const verb = method.toLowerCase() as Method
   let req = request(app.getHttpServer())[verb](target).set('X-Tenant-Slug', slug)
-  if (who) req = req.set('Authorization', `Bearer ${who.token}`)
+  if (who) req = req.use(session(who.token))
   return verb === 'get' ? req : req.send({})
 }
 
@@ -148,6 +157,20 @@ describe('contract coverage', () => {
 })
 
 describe('account routes', () => {
+  it('lists the routes of two-factor authentication', () => {
+    const names = accountRoutes.map(([name]) => name)
+
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'auth.mfa.enroll',
+        'auth.mfa.enable',
+        'auth.mfa.verify',
+        'auth.mfa.recover',
+        'auth.mfa.disable',
+      ]),
+    )
+  })
+
   it.each(accountRoutes)('%s refuses a request without a token', async (_, procedure) => {
     const res = await call(procedure, undefined)
     expect(res.status).toBe(401)
@@ -156,9 +179,10 @@ describe('account routes', () => {
 })
 
 describe('tenant routes', () => {
-  const routes = tenantRoutes.map(
-    ([name, procedure]) => [name, procedure, tenantRequirements[name]!] as const,
-  )
+  // A route missing from the needs is the coverage test's to name, not a crash of this file.
+  const routes = tenantRoutes
+    .filter(([name]) => name in tenantRequirements)
+    .map(([name, procedure]) => [name, procedure, tenantRequirements[name]!] as const)
 
   it.each(routes)('%s refuses a request without a token', async (_, procedure, need) => {
     const res = await call(procedure, need)

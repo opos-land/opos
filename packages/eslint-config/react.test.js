@@ -9,12 +9,12 @@ const root = join(import.meta.dirname, 'fixtures', 'feature-app')
 // Type information plays no part in the rules under test, so the fixture needs no React types.
 // An import that does not resolve is not checked, so the import of a workspace package must also
 // prove that it resolves.
-const lint = (options) =>
+const lint = () =>
   new ESLint({
     cwd: root,
     overrideConfigFile: true,
     overrideConfig: [
-      ...react(root, options),
+      ...react(root),
       tseslint.configs.disableTypeChecked,
       {
         files: ['src/features/beta/into-package.ts'],
@@ -23,9 +23,7 @@ const lint = (options) =>
     ],
   })
 
-const eslint = lint({
-  legacyAuth: ['src/shared/lib/legacy-auth.ts', 'src/shared/lib/legacy-client.ts'],
-})
+const eslint = lint()
 
 async function ruleIds(file, linter = eslint) {
   const [result] = await linter.lintFiles([join(root, 'src', file)])
@@ -80,15 +78,6 @@ describe('react preset', () => {
     expect(await ruleIds('features/beta/into-supabase-dynamic.ts')).toEqual([
       'no-restricted-syntax',
     ])
-  })
-
-  it('lets the listed files import the auth-js client and no other Supabase package', async () => {
-    expect(await ruleIds('shared/lib/legacy-client.ts')).toEqual(['no-restricted-imports'])
-  })
-
-  it('lets only the listed files import a Supabase package until sign-in moves to the API', async () => {
-    expect(await ruleIds('shared/lib/legacy-auth.ts')).toEqual([])
-    expect(await ruleIds('shared/lib/legacy-auth.ts', lint())).toEqual(['no-restricted-imports'])
   })
 
   it('applies the rules of hooks', async () => {

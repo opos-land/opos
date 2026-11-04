@@ -19,9 +19,15 @@ pre-commit:
       glob: '*.{ts,tsx,astro}'
       run: pnpm eslint --fix --max-warnings 0 {staged_files}
       stage_fixed: true
+    # Nothing in the panel or the portal names Supabase (docs/PLAN.md 3.2); other staged files pass
+    - name: bff-boundary
+      run: node scripts/bff-boundary.mjs {staged_files}
 
-# The API tests need the database: pnpm infra:up
+# The API tests need the local stack: pnpm infra:init once in a new checkout, then pnpm infra:up
 pre-push:
   jobs:
     - name: typecheck and test
       run: pnpm turbo run typecheck test --filter=...[origin/develop]
+    # A merged migration stays as it is, and a new one is newer than all of them
+    - name: migration journal
+      run: node scripts/check-migrations.mjs --merge-base origin/develop

@@ -31,10 +31,10 @@ export const signInToPanel = (page: Page, email: string, password: string) =>
 export const signInToPortal = (page: Page, email: string, password: string) =>
   signIn(page, portalUrl('/login'), email, password)
 
-/** The session auth-js keeps in the application's localStorage (PLAN.md 7.4). */
-export async function storedSession(page: Page, key: 'opos-panel-auth' | 'opos-portal-auth') {
-  const raw = await page.evaluate((name) => window.localStorage.getItem(name), key)
-  return raw ? (JSON.parse(raw) as { access_token: string; refresh_token: string }) : null
+/** Signs out of the portal from `/account`, which the page shows: this session ends, the others stay. */
+export async function signOutOfPortal(page: Page) {
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click()
+  await expect(page).toHaveURL(/\/login/)
 }
 
 /** Opens the panel's account menu, whose summary is the signed-in address (PLAN.md 8). */
@@ -42,7 +42,7 @@ export async function openPanelAccountMenu(page: Page, email: string) {
   await page.locator('summary', { hasText: email }).click()
 }
 
-/** Signs out of the panel from the account menu: every session of the account ends. */
+/** Signs out of the panel from the account menu: this session ends, the account's others stay. */
 export async function signOutOfPanel(page: Page, email: string) {
   await openPanelAccountMenu(page, email)
   await page.getByRole('button', { name: 'Sign out' }).click()

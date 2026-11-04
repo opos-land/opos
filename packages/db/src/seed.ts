@@ -1,8 +1,9 @@
-import { createHmac } from 'node:crypto'
-import { and, eq } from 'drizzle-orm'
+import { createHash } from 'node:crypto'
+import { and, eq, notInArray } from 'drizzle-orm'
 import { migrationDb } from './client'
-import { migrationUrl } from './migration-url'
+import { migrationUrl, reachableUrl } from './migration-url'
 import {
+  accountRecoveryCodes,
   accounts,
   editionMemberships,
   editions,
@@ -13,6 +14,7 @@ import {
   tenants,
 } from './schema'
 import { createTenant } from './tenants'
+import { totp } from './totp'
 
 // Demo data (PLAN.md 14). Idempotent: every run converges on the same rows.
 
@@ -63,7 +65,6 @@ interface SeedTenant {
 }
 
 const DEV_PASSWORD = 'password123'
-const DEV_JWT_SECRET = 'dev-jwt-secret-at-least-32-characters-long'
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
 
@@ -93,7 +94,16 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'head@convention-b.test', firstName: 'Jana', lastName: 'Novak' },
   { email: 'speaker@example.com', firstName: 'Kasia', lastName: 'Mazur' },
   { email: 'attendee@example.com', firstName: 'Jan', lastName: 'Kowal' },
+  { email: 'mfa@example.com', firstName: 'Maria', lastName: 'Zielinska' },
 ]
+
+// The account with two-factor authentication (PLAN.md 14): a TOTP factor enrolled and verified
+// through Supabase Auth, and ten recovery codes of the length the API issues.
+const MFA_EMAIL = 'mfa@example.com'
+const RECOVERY_CODES = Array.from(
+  { length: 10 },
+  (_, index) => `DEMORECOVERYCOD${'ABCDEFGHIJ'[index]}`,
+)
 
 const TENANTS: SeedTenant[] = [
   {
@@ -197,40 +207,62 @@ const TENANTS: SeedTenant[] = [
   },
 ]
 
-const production = process.env.NODE_ENV === 'production'
-if (production && !process.argv.includes('--i-know-what-i-am-doing')) {
-  console.error('Refusing to seed with NODE_ENV=production without --i-know-what-i-am-doing.')
+if (process.env.OPOS_ENV !== 'local' && process.env.OPOS_ENV !== 'dev') {
+  console.error('The seed runs where OPOS_ENV is local or dev (PLAN.md 14).')
   process.exit(1)
 }
 
-const jwtSecret = process.env.JWT_SECRET ?? (production ? undefined : DEV_JWT_SECRET)
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || (jwtSecret && serviceRoleKey(jwtSecret))
-if (!serviceKey) {
-  console.error('Set SUPABASE_SERVICE_ROLE_KEY or JWT_SECRET to create accounts.')
+function required(name: string) {
+  const value = process.env[name]
+  if (!value) {
+    console.error(`${name} is not set; run pnpm infra:init`)
+    process.exit(1)
+  }
+  return value
+}
+
+// The Auth URL follows the rule of the database URL: a host off the loopback interface needs
+// OPOS_ENV dev, so a remote Auth next to a local database gets no account.
+let supabaseUrl: string
+try {
+  supabaseUrl = reachableUrl('SUPABASE_URL', required('SUPABASE_URL'))
+} catch (error) {
+  console.error((error as Error).message)
   process.exit(1)
 }
-const authUrl = process.env.AUTH_URL ?? `http://localhost:${process.env.OPOS_AUTH_PORT ?? '9999'}`
+const authUrl = `${supabaseUrl.replace(/\/+$/, '')}/auth/v1`
+const secretKey = required('SUPABASE_SECRET_KEY')
 
 const db = migrationDb(migrationUrl())
 
-/** A short-lived service_role JWT for the GoTrue admin API, signed like PLAN.md 10 describes. */
-function serviceRoleKey(secret: string) {
-  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url')
-  const now = Math.floor(Date.now() / 1000)
-  const unsigned = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ role: 'service_role', iat: now, exp: now + 600 })}`
-  return `${unsigned}.${createHmac('sha256', secret).update(unsigned).digest('base64url')}`
-}
-
-async function authAdmin(method: 'POST' | 'PUT', path: string, body: object) {
+/** A call to Supabase Auth, authorized by the secret key alone, or by a session on top of it. */
+async function authCall<T = object>(
+  method: string,
+  path: string,
+  body?: object,
+  accessToken?: string,
+) {
   const response = await fetch(`${authUrl}${path}`, {
     method,
-    headers: { authorization: `Bearer ${serviceKey}`, 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: {
+      apikey: secretKey,
+      ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
+      ...(body ? { 'content-type': 'application/json' } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
   })
   if (!response.ok) {
     throw new Error(`${method} ${path} failed: ${response.status} ${await response.text()}`)
   }
+  return (await response.json().catch(() => ({}))) as T
 }
+
+/** The Supabase Auth admin API (PLAN.md 10). */
+const authAdmin = <T = object>(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  path: string,
+  body?: object,
+) => authCall<T>(method, path, body)
 
 async function ensureAccount(account: SeedAccount) {
   const [existing] = await db
@@ -256,6 +288,79 @@ async function ensureAccount(account: SeedAccount) {
       locale: account.locale ?? null,
     })
     .where(eq(accounts.email, account.email))
+}
+
+/**
+ * Gives the account a verified TOTP factor and ten unused recovery codes. The factor is enrolled
+ * and verified through Supabase Auth as a person would, so its trigger sets `mfaEnabledAt`; a
+ * verified factor is kept, so a rerun enrolls nothing.
+ */
+async function ensureTwoFactor(email: string) {
+  const id = await accountId(email)
+  const { factors: held = [] } = await authAdmin<{ factors?: { id: string; status: string }[] }>(
+    'GET',
+    `/admin/users/${id}`,
+  )
+  for (const factor of held.filter((factor) => factor.status !== 'verified')) {
+    await authAdmin('DELETE', `/admin/users/${id}/factors/${factor.id}`)
+  }
+  if (!held.some((factor) => factor.status === 'verified')) {
+    // Enrolling signs in with the dev password, which the person may have changed since; it is
+    // set only here, so a rerun that finds the factor leaves the password alone.
+    await authAdmin('PUT', `/admin/users/${id}`, { password: DEV_PASSWORD })
+    await enrollFactor(email)
+  }
+
+  const hashes = RECOVERY_CODES.map((code) => createHash('sha256').update(code).digest('hex'))
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(accountRecoveryCodes)
+      .where(
+        and(
+          eq(accountRecoveryCodes.accountId, id),
+          notInArray(accountRecoveryCodes.codeHash, hashes),
+        ),
+      )
+    for (const codeHash of hashes) {
+      await tx
+        .insert(accountRecoveryCodes)
+        .values({ accountId: id, codeHash })
+        .onConflictDoUpdate({
+          target: [accountRecoveryCodes.accountId, accountRecoveryCodes.codeHash],
+          set: { usedAt: null },
+        })
+    }
+  })
+}
+
+/** Signs in with the dev password, enrolls a TOTP factor and verifies it with its own code. */
+async function enrollFactor(email: string) {
+  const session = await authCall<{ access_token: string }>('POST', '/token?grant_type=password', {
+    email,
+    password: DEV_PASSWORD,
+  })
+  const token = session.access_token
+  const factor = await authCall<{ id: string; totp: { secret: string } }>(
+    'POST',
+    '/factors',
+    { factor_type: 'totp', friendly_name: 'Authenticator' },
+    token,
+  )
+  const secret = factor.totp.secret
+  const challenge = await authCall<{ id: string }>(
+    'POST',
+    `/factors/${factor.id}/challenge`,
+    {},
+    token,
+  )
+  await authCall(
+    'POST',
+    `/factors/${factor.id}/verify`,
+    { challenge_id: challenge.id, code: totp(secret, Date.now()) },
+    token,
+  )
+  // The output of a local run stays on the developer's machine; on Dev it lands in the deploy log.
+  if (process.env.OPOS_ENV === 'local') console.log(`${email} TOTP secret: ${secret}`)
 }
 
 async function accountId(email: string) {
@@ -417,6 +522,7 @@ async function seedTenant(spec: SeedTenant) {
 
 try {
   for (const account of ACCOUNTS) await ensureAccount(account)
+  await ensureTwoFactor(MFA_EMAIL)
   for (const tenant of TENANTS) await seedTenant(tenant)
   console.log(
     `Seeded ${TENANTS.length} tenants and ${ACCOUNTS.length} accounts; password ${DEV_PASSWORD}.`,

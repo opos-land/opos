@@ -6,6 +6,7 @@ import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { TenantContextService } from '../src/common/als/tenant-context.service'
 import { GlobalDbService } from '../src/common/database/global-db.service'
+import { AllowMfaPending } from '../src/common/decorators/allow-mfa-pending.decorator'
 import { RequireEdition } from '../src/common/decorators/require-edition.decorator'
 import { RequireTenant } from '../src/common/decorators/require-tenant.decorator'
 import { ApiError } from '../src/common/errors/api-error'
@@ -29,6 +30,7 @@ export const probeContract = {
           fail: z.boolean(),
           throws: z.boolean().optional(),
           slow: z.boolean().optional(),
+          mailFails: z.boolean().optional(),
           tenantId: z.string().optional(),
         }),
       }),
@@ -45,6 +47,7 @@ export const probeContract = {
   outside: route.route({ method: 'GET', path: '/probe/outside' }).output(z.object({})),
   demoteHeads: route.route({ method: 'POST', path: '/probe/demote-heads' }).output(z.object({})),
   slowWrite: route.route({ method: 'POST', path: '/probe/slow-write' }).output(z.object({})),
+  mfaPending: route.route({ method: 'GET', path: '/probe/mfa-pending' }).output(z.object({})),
   nested: route.route({ method: 'GET', path: '/probe/nested' }).output(z.object({})),
   withTenant: route
     .route({ method: 'GET', path: '/probe/with-tenant/{slug}' })
@@ -91,6 +94,12 @@ class ProbeController {
       this.context.afterCommit(async () => {
         if (body.slow) await new Promise((resolve) => setTimeout(resolve, 200))
         afterCommitCalls.push(body.slug)
+        if (body.mailFails) {
+          throw Object.assign(new Error('550 5.1.1 <anna.secret@example.test> unknown'), {
+            code: 'EENVELOPE',
+            responseCode: 550,
+          })
+        }
       })
       if (body.throws) throw new ApiError(409, 'request.invalid', 'Probe failure')
       if (body.fail) throw new ORPCError('CONFLICT', { message: 'Probe failure' })
@@ -150,6 +159,13 @@ class ProbeController {
       await this.editions()
       return {}
     })
+  }
+
+  @Implement(probeContract.mfaPending)
+  @UseGuards(JwtAuthGuard)
+  @AllowMfaPending()
+  mfaPending() {
+    return implement(probeContract.mfaPending).handler(() => ({}))
   }
 
   @Implement(probeContract.withTenant)

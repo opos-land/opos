@@ -2,17 +2,14 @@ import { randomUUID } from 'node:crypto'
 import { stack } from './stack'
 
 // Accounts a scenario starts from are made through Supabase Auth's admin API with the API's
-// service role key (PLAN.md 10, Admin API), as the seed makes them.
+// secret key on `apikey` (PLAN.md 10, Admin API), as the seed makes them.
 
 export const PASSWORD = 'e2e-password-123'
 
 async function admin(path: string, init: RequestInit = {}, accept: number[] = []) {
   const response = await fetch(`${stack.auth}${path}`, {
     ...init,
-    headers: {
-      authorization: `Bearer ${stack.serviceRoleKey}`,
-      'content-type': 'application/json',
-    },
+    headers: { apikey: stack.secretKey, 'content-type': 'application/json' },
   })
   if (!response.ok && !accept.includes(response.status)) {
     throw new Error(`${path}: ${response.status} ${await response.text()}`)
@@ -68,12 +65,16 @@ export async function passwordGrant(email: string, password: string) {
   return { status: response.status, ...body }
 }
 
-/** Supabase Auth's refresh grant: whether a session can still be extended. */
+/**
+ * Supabase Auth's refresh grant: whether a session can still be extended. A session that ended
+ * answers `refresh_token_not_found` in `code`.
+ */
 export async function refreshGrant(refreshToken: string) {
   const response = await fetch(`${stack.auth}/token?grant_type=refresh_token`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ refresh_token: refreshToken }),
   })
-  return response.status
+  const body = (await response.json()) as { error_code?: string }
+  return { status: response.status, code: body.error_code }
 }

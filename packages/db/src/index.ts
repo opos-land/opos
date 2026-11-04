@@ -1,4 +1,5 @@
 export * from './client'
+export * from './migration-url'
 export * from './rls'
 export * from './schema'
 export * from './tenants'

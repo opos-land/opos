@@ -2,7 +2,7 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
-import { authUserExists, deleteCreatedAccounts, mintToken } from './auth'
+import { authUserExists, deleteCreatedAccounts, mintToken, session } from './auth'
 import {
   accountRows,
   addEdition,
@@ -32,8 +32,7 @@ afterAll(async () => {
   await app.close()
 })
 
-const deleteMe = (token: string) =>
-  request(app.getHttpServer()).delete('/me').set('Authorization', `Bearer ${token}`)
+const deleteMe = (token: string) => request(app.getHttpServer()).delete('/me').use(session(token))
 
 const now = () => Math.floor(Date.now() / 1000)
 
@@ -58,10 +57,7 @@ describe('DELETE /me', () => {
       editionMemberships: 0,
     })
     expect(await authUserExists(org.id)).toBe(false)
-    const res = await request(app.getHttpServer())
-      .get('/me')
-      .set('Authorization', `Bearer ${org.token}`)
-      .expect(401)
+    const res = await request(app.getHttpServer()).get('/me').use(session(org.token)).expect(401)
     expect(res.body).toMatchObject({ code: 'session.invalid' })
   })
 
@@ -103,6 +99,23 @@ describe('DELETE /me', () => {
     expect(await authUserExists(head.id)).toBe(true)
     expect(await accountRows(head.id)).toMatchObject({ accounts: 1, tenantMemberships: 1 })
     expect(await countHeads(tenantId)).toBe(1)
+  })
+
+  it('answers 500 when Supabase Auth refuses the secret key, and deletes nothing', async () => {
+    const refused = await createApp({ SUPABASE_SECRET_KEY: 'sb_secret_wrong' })
+    try {
+      const account = await member()
+
+      const res = await request(refused.getHttpServer())
+        .delete('/me')
+        .use(session(account.token))
+        .expect(500)
+
+      expect(res.body).toEqual({ code: 'server.error', message: 'Internal server error' })
+      expect(await authUserExists(account.id)).toBe(true)
+    } finally {
+      await refused.close()
+    }
   })
 
   it('deletes a head the tenant has another one besides', async () => {

@@ -109,7 +109,7 @@ msgstr "An invitation has gone to {email}. Its link works once, until {validUnti
 msgid "At least 8 characters."
 msgstr "At least 8 characters."
 
-#: src/features/auth/pages/auth-callback-page.tsx
+#: src/features/auth/pages/forgot-password-page.tsx
 msgid "Back to sign-in"
 msgstr "Back to sign-in"
 
@@ -117,11 +117,12 @@ msgstr "Back to sign-in"
 msgid "Back to the edition"
 msgstr "Back to the edition"
 
-#: src/features/auth/pages/auth-callback-page.tsx
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Back to the invitation"
 msgstr "Back to the invitation"
 
+#: src/features/account/components/reauthenticate-form.tsx
+#: src/features/account/components/two-factor-card.tsx
 #: src/features/editions/pages/edition-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/member-row.tsx
@@ -139,6 +140,40 @@ msgstr "Choose a convention"
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Choose a time zone from the list."
 msgstr "Choose a time zone from the list."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Choose your password"
+msgstr "Choose your password"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Code"
+msgstr "Code"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Code from the app"
+msgstr "Code from the app"
+
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Confirm"
+msgstr "Confirm"
+
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Confirm with Google"
+msgstr "Confirm with Google"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Confirm your address"
+msgstr "Confirm your address"
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Confirmation link"
+msgstr "Confirmation link"
+
+#: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/login-page.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Continue"
+msgstr "Continue"
 
 #: src/features/auth/components/google-button.tsx
 msgid "Continue with Google"
@@ -195,6 +230,10 @@ msgstr "Deleting an edition cannot be undone. The active edition cannot be delet
 msgid "Description"
 msgstr "Description"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Dismiss"
+msgstr "Dismiss"
+
 #: src/features/team/components/member-row.tsx
 msgid "Edit"
 msgstr "Edit"
@@ -215,6 +254,7 @@ msgstr "Editions"
 
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/forgot-password-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Email"
 msgstr "Email"
@@ -247,15 +287,37 @@ msgstr "Enter a valid date and time."
 
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/forgot-password-page.tsx
 #: src/features/program/components/speakers-editor.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
 
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Enter it again to confirm it is you."
+msgstr "Enter it again to confirm it is you."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter one of the recovery codes you saved. It turns two-factor authentication off."
+msgstr "Enter one of the recovery codes you saved. It turns two-factor authentication off."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter one of your recovery codes."
+msgstr "Enter one of your recovery codes."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the code from your authenticator app to finish signing in."
+msgstr "Enter the code from your authenticator app to finish signing in."
+
 #: src/features/editions/components/edition-form.tsx
 #: src/features/program/components/program-item-form.tsx
 msgid "Enter the end date and time."
 msgstr "Enter the end date and time."
+
+#: src/features/account/components/two-factor-card.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the six digits from your authenticator app."
+msgstr "Enter the six digits from your authenticator app."
 
 #: src/features/editions/components/edition-form.tsx
 #: src/features/program/components/program-item-form.tsx
@@ -270,6 +332,15 @@ msgstr "Enter your password."
 msgid "expired"
 msgstr "expired"
 
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Finish signing in"
+msgstr "Finish signing in"
+
+#: src/features/auth/pages/login-page.tsx
+msgid "Forgot your password?"
+msgstr "Forgot your password?"
+
+#: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Go to sign-in"
 msgstr "Go to sign-in"
@@ -295,6 +366,14 @@ msgstr "I already have an account"
 #: src/features/auth/pages/invitation-page.tsx
 msgid "I am new to OPOS"
 msgstr "I am new to OPOS"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "I have saved my codes"
+msgstr "I have saved my codes"
+
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
+msgstr "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "If no message arrives within a few minutes, the address may already have an account: sign in, or ask for a password link."
@@ -384,6 +463,10 @@ msgstr "Not published"
 msgid "Open the invitation link from your email to join a convention's team."
 msgstr "Open the invitation link from your email to join a convention's team."
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Open the link from your email to confirm your address or reset your password."
+msgstr "Open the link from your email to confirm your address or reset your password."
+
 #: src/features/auth/components/auth-layout.tsx
 #: src/features/tenants/components/panel-header.tsx
 msgid "OPOS panel"
@@ -427,6 +510,14 @@ msgstr "Password"
 msgid "Permissions in each edition are set on the edition's access page."
 msgstr "Permissions in each edition are set on the edition's access page."
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Press the button to choose a new password."
+msgstr "Press the button to choose a new password."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Press the button to confirm your address. Then you choose your password."
+msgstr "Press the button to confirm your address. Then you choose your password."
+
 #: src/features/editions/pages/edition-page.tsx
 #: src/features/program/pages/program-page.tsx
 #: src/features/team/components/permission-labels.tsx
@@ -466,10 +557,18 @@ msgstr "Publish"
 msgid "Published"
 msgstr "Published"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "QR code for your authenticator app"
+msgstr "QR code for your authenticator app"
+
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/member-row.tsx
 msgid "Read"
 msgstr "Read"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Recovery code"
+msgstr "Recovery code"
 
 #: src/features/program/components/speakers-editor.tsx
 msgid "Remove"
@@ -491,6 +590,11 @@ msgstr "Remove from the team"
 msgid "Repeat the password"
 msgstr "Repeat the password"
 
+#: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "Reset your password"
+msgstr "Reset your password"
+
 #: src/features/team/components/invite-form.tsx
 #: src/features/team/components/member-row.tsx
 msgid "Role"
@@ -505,20 +609,45 @@ msgid "Save"
 msgstr "Save"
 
 #: src/features/auth/components/choose-password-form.tsx
+msgid "Save the password"
+msgstr "Save the password"
+
+#: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password and join the team"
 msgstr "Save the password and join the team"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
+msgstr "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
 
 #: src/features/account/components/account-menu.tsx
 msgid "Saved on your account."
 msgstr "Saved on your account."
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
+msgstr "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Secret: <0>{secret}</0>"
+msgstr "Secret: <0>{secret}</0>"
+
 #: src/features/tenants/pages/dashboard-page.tsx
 msgid "See the editions"
 msgstr "See the editions"
 
+#: src/features/auth/components/choose-password-form.tsx
+#: src/features/auth/pages/confirm-page.tsx
+msgid "Send a new link"
+msgstr "Send a new link"
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Send a password link"
 msgstr "Send a password link"
+
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "Send the link"
+msgstr "Send the link"
 
 #: src/features/team/components/permission-labels.tsx
 #: src/features/tenants/components/tenant-layout.tsx
@@ -540,6 +669,7 @@ msgid "Sign in to the organizer panel"
 msgstr "Sign in to the organizer panel"
 
 #: src/features/account/components/account-menu.tsx
+#: src/features/auth/pages/mfa-page.tsx
 msgid "Sign out"
 msgstr "Sign out"
 
@@ -668,9 +798,43 @@ msgstr "Time zone"
 msgid "Title"
 msgstr "Title"
 
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Too much time has passed since you opened the link. Ask for a new one."
+msgstr "Too much time has passed since you opened the link. Ask for a new one."
+
 #: src/features/auth/components/accept-invitation.tsx
+#: src/shared/ui/messages.tsx
 msgid "Try again"
 msgstr "Try again"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn off two-factor authentication"
+msgstr "Turn off two-factor authentication"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on"
+msgstr "Turn on"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn on two-factor authentication"
+msgstr "Turn on two-factor authentication"
+
+#: src/features/account/components/account-menu.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Two-factor authentication"
+msgstr "Two-factor authentication"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
+msgstr "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
+msgstr "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
+msgstr "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 
 #: src/features/editions/pages/edition-page.tsx
 msgid "Unpublish"
@@ -680,9 +844,21 @@ msgstr "Unpublish"
 msgid "Use 1 to 40 lowercase letters, digits and hyphens."
 msgstr "Use 1 to 40 lowercase letters, digits and hyphens."
 
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use a recovery code"
+msgstr "Use a recovery code"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Use at least 8 characters."
 msgstr "Use at least 8 characters."
+
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Use at most 72 bytes; some characters count for more than one."
+msgstr "Use at most 72 bytes; some characters count for more than one."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Use the code of the app"
+msgstr "Use the code of the app"
 
 #: src/features/program/components/program-item-form.tsx
 msgid "Use up to 5000 characters."
@@ -692,7 +868,7 @@ msgstr "Use up to 5000 characters."
 msgid "We could not find what you are looking for."
 msgstr "We could not find what you are looking for."
 
-#: src/features/auth/pages/auth-callback-page.tsx
+#: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"
 msgstr "We could not sign you in"
 
@@ -700,9 +876,21 @@ msgstr "We could not sign you in"
 msgid "We sent a link to {sentTo}. Open it in this browser to choose your password and join the team."
 msgstr "We sent a link to {sentTo}. Open it in this browser to choose your password and join the team."
 
+#: src/features/auth/components/choose-password-form.tsx
+msgid "We sent a new link to {email}. Open it to choose your password."
+msgstr "We sent a new link to {email}. Open it to choose your password."
+
+#: src/features/auth/pages/confirm-page.tsx
+msgid "We sent a new link to {sentTo}."
+msgstr "We sent a new link to {sentTo}."
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "We will send a confirmation link to your address. Once you open it, you choose your password here and join the team. You can also continue with Google above."
 msgstr "We will send a confirmation link to your address. Once you open it, you choose your password here and join the team. You can also continue with Google above."
+
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "We will send you a link to set a new password."
+msgstr "We will send you a link to set a new password."
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/member-row.tsx
@@ -757,3 +945,11 @@ msgstr "Your address {email} is confirmed. Choose the password you will sign in 
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "Your conventions"
 msgstr "Your conventions"
+
+#: src/features/account/components/reauthenticate-form.tsx
+msgid "Your password"
+msgstr "Your password"
+
+#: src/features/auth/pages/invitation-page.tsx
+msgid "Your sign-in is not finished. Enter your code to join the team."
+msgstr "Your sign-in is not finished. Enter your code to join the team."

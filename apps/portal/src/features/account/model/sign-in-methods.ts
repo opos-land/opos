@@ -1,4 +1,4 @@
-import { type User } from '@supabase/auth-js'
+import { type SignInMethod } from '@opos/contract'
 
 export interface SignInMethods {
   password: boolean
@@ -6,17 +6,13 @@ export interface SignInMethods {
 }
 
 /**
- * How the user can confirm it is them before deleting the account (PLAN.md 7.4): the password
- * again, Google again, or either. An account whose providers say nothing is offered the password.
+ * How the account can confirm it is the account before it is deleted (PLAN.md 9): the password
+ * again, Google again, or either, as `GET /me` names its `signInMethods`. An account whose
+ * methods say nothing is offered the password.
  */
-export function signInMethods(user: Pick<User, 'app_metadata' | 'identities'>): SignInMethods {
-  const providers = new Set([
-    ...(user.app_metadata.providers ?? []),
-    ...(user.app_metadata.provider ? [user.app_metadata.provider] : []),
-    ...(user.identities ?? []).map((identity) => identity.provider),
-  ])
-  const google = providers.has('google')
-  return { password: providers.has('email') || !google, google }
+export function signInMethods(methods: readonly SignInMethod[]): SignInMethods {
+  const google = methods.includes('google')
+  return { password: methods.includes('password') || !google, google }
 }
 
 /** The query parameter `/account` comes back with from a Google sign-in that confirms deletion. */

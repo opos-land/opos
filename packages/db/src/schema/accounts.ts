@@ -13,6 +13,8 @@ export const accounts = pgTable(
     locale: text(),
     // auth.users.email_confirmed_at, mirrored by the auth.users triggers; null until confirmed.
     emailConfirmedAt: timestamp({ withTimezone: true }),
+    // Set while the user holds a verified auth.mfa_factors row, by the factor trigger; null when off.
+    mfaEnabledAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (t) => [

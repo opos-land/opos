@@ -12,17 +12,53 @@ const agentFiles = readdirSync(join(root, '.claude/agents'))
   .map((name) => `.claude/agents/${name}`)
 const documents = ['AGENTS.md', ...agentFiles]
 
-// A backticked string is a repository path when it has no space, glob character, placeholder or
-// command syntax, holds a slash and starts with a top-level directory of the repository.
-// Everything else (a command, a glob, `@opos/e2e`, a URL) is not a path. An anchor and a
-// trailing slash are dropped. Existence is checked with existsSync alone; no file is opened.
+// A backticked string is a repository path when it has no space, placeholder or command syntax,
+// holds a slash and starts with a top-level directory of the repository. Everything else (a
+// command, `@opos/e2e`, a URL) is not a path. An anchor and a trailing slash are dropped. A brace
+// pattern such as `src/{a,b}.ts` stands for each of its alternatives, and a glob (`*`, `**`) for the
+// paths it matches. Existence is checked by listing directories; no file is opened.
 const roots = ['apps', 'packages', 'docs', 'scripts', 'infra', 'supabase', 'e2e', '.claude', '.github']
 const isPath = (text) =>
-  !/[\s*{}<>$=:@|]/.test(text) && text.includes('/') && roots.includes(text.split('/')[0])
+  !/[\s{}<>$=:@|]/.test(text) && text.includes('/') && roots.includes(text.split('/')[0])
+
+/** `a/{b,c}.ts` -> `a/b.ts`, `a/c.ts`; nested and repeated groups included. */
+const expandBraces = (text) => {
+  const group = text.match(/\{([^{}]*)\}/)
+  if (!group) return [text]
+  const [whole, inner] = group
+  return inner.split(',').flatMap((alternative) => expandBraces(text.replace(whole, alternative)))
+}
+
+const segmentPattern = (segment) =>
+  new RegExp(`^${segment.replace(/[.+?^$()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')}$`)
+
+/** Whether a path, a glob included, matches something in the repository. */
+const exists = (path, base = root) => {
+  const [segment, ...rest] = path.split('/')
+  if (segment === '**') {
+    return (
+      exists(rest.join('/'), base) ||
+      readdirSync(base, { withFileTypes: true }).some(
+        (entry) => entry.isDirectory() && exists(path, join(base, entry.name)),
+      )
+    )
+  }
+  if (!segment.includes('*')) {
+    return existsSync(join(base, segment)) && (rest.length === 0 || exists(rest.join('/'), join(base, segment)))
+  }
+  if (!existsSync(base)) return false
+  const pattern = segmentPattern(segment)
+  return readdirSync(base, { withFileTypes: true }).some(
+    (entry) =>
+      pattern.test(entry.name) &&
+      (rest.length === 0 || (entry.isDirectory() && exists(rest.join('/'), join(base, entry.name)))),
+  )
+}
 
 const pathsIn = (text) =>
   [...text.matchAll(/`([^`\n]+)`/g)]
     .map(([, cited]) => cited.replace(/#.*$/, '').replace(/\/$/, ''))
+    .flatMap(expandBraces)
     .filter(isPath)
 
 const citedPaths = (file) => pathsIn(read(file))
@@ -41,7 +77,7 @@ test('every repository path AGENTS.md and the agent files cite exists', () => {
   const missing = new Set()
   for (const file of documents) {
     for (const path of citedPaths(file)) {
-      if (!existsSync(join(root, path)) && !absentOnPurpose.has(path)) {
+      if (!exists(path) && !absentOnPurpose.has(path)) {
         missing.add(`${file}: ${path}`)
       }
     }
@@ -49,10 +85,24 @@ test('every repository path AGENTS.md and the agent files cite exists', () => {
   assert.deepEqual([...missing], [])
 })
 
+test('the rls and rbac rows of the tests-first table are among the paths checked', () => {
+  const cited = new Set(citedPaths('AGENTS.md'))
+  for (const path of [
+    'packages/db/src/rls.ts',
+    'packages/db/src/scripts/roles.ts',
+    'apps/api/src/common/als',
+    'apps/api/src/app.module.ts',
+    'packages/db/test/*.test.ts',
+    'apps/api/src/**/*.test.ts',
+  ]) {
+    assert.ok(cited.has(path), `${path} is checked`)
+  }
+})
+
 test('every path absent on purpose is still absent and still cited', () => {
   const cited = new Set(documents.flatMap(citedPaths))
   for (const path of absentOnPurpose) {
-    assert.equal(existsSync(join(root, path)), false, `${path} exists now: drop it from the list`)
+    assert.equal(exists(path), false, `${path} exists now: drop it from the list`)
     assert.ok(cited.has(path), `${path} is no longer cited: drop it from the list`)
   }
 })
@@ -61,7 +111,7 @@ test('every repository path the recipe for adding a feature cites exists', () =>
   const cited = pathsIn(recipe())
   assert.ok(cited.length > 10, 'the recipe names the files of a feature')
   assert.deepEqual(
-    cited.filter((path) => !existsSync(join(root, path))),
+    cited.filter((path) => !exists(path)),
     [],
   )
 })

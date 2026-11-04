@@ -1,7 +1,7 @@
 import { isAuthRetryableFetchError, type SupportedStorage } from '@supabase/auth-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
-import { GOOGLE_STORAGE_KEY, SupabaseAuthFactory } from './supabase-auth.factory'
+import { GOOGLE_STORAGE_KEY, SupabaseAuthFactory, TRANSPORT_FAILURE } from './supabase-auth.factory'
 
 const SECRET = 'sb_secret_test'
 const CLIENT_IP = '2001:db8:1:2:3:4:5:6'
@@ -198,6 +198,20 @@ describe('SupabaseAuthFactory', () => {
       expect(error?.status).toBeGreaterThanOrEqual(500)
       expect(isAuthRetryableFetchError(error)).toBe(false)
       expect(error?.message).toContain('ECONNREFUSED')
+    })
+
+    it('names a transport failure apart from a 5xx that was answered', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new TypeError('fetch failed'))),
+      )
+      expect((await refresh()).error?.code).toBe(TRANSPORT_FAILURE)
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve(new Response('{}', { status: 500 }))),
+      )
+      expect((await refresh()).error?.code).not.toBe(TRANSPORT_FAILURE)
     })
 
     it.each([500, 502, 503, 504])('fails a refresh at once on a %s, as a 5xx', async (status) => {

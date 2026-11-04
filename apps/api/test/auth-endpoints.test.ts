@@ -358,6 +358,50 @@ describe('the mail routes and the mail rate limit', () => {
       }
     },
   )
+
+  it.each(routes)(
+    'answers 202 on %s when Supabase Auth answers a 5xx, and logs an error naming nobody',
+    async (route) => {
+      const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+      const stub = await stubbedSupabaseAuth(500, {
+        error_code: 'unexpected_failure',
+        msg: 'Error sending email to anna.secret@example.test',
+      })
+      try {
+        const res = await request(stub.app.getHttpServer())
+          .post(route)
+          .set('Origin', portal)
+          .send({ email: 'anna.secret@example.test' })
+
+        expect(res.status).toBe(202)
+        expect(res.text).toBe('')
+        expect(logged).toHaveBeenCalledTimes(1)
+        expect(JSON.stringify(logged.mock.calls)).not.toMatch(/anna|secret|example/)
+      } finally {
+        await stub.close()
+      }
+    },
+  )
+
+  it.each(routes)(
+    'answers 503 on %s when Supabase Auth cannot be reached, whatever the address',
+    async (route) => {
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+      const cut = await createApp({ SUPABASE_URL: 'http://127.0.0.1:1' })
+      try {
+        const res = await request(cut.getHttpServer())
+          .post(route)
+          .set('Origin', portal)
+          .send({ email: 'anna.secret@example.test' })
+
+        expect(res.status).toBe(503)
+        expect(res.body).toMatchObject({ code: 'server.unavailable' })
+        expect(res.headers['retry-after']).toBe('30')
+      } finally {
+        await cut.close()
+      }
+    },
+  )
 })
 
 describe('verify', () => {

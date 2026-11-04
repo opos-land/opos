@@ -6,6 +6,7 @@ import {
   isAuthSessionMissingError,
 } from '@supabase/auth-js'
 import { ApiError, mfaRequired, unauthenticated, unavailable } from '../../common/errors/api-error'
+import { TRANSPORT_FAILURE } from './supabase-auth.factory'
 
 const logger = new Logger('AuthRefusal')
 
@@ -33,6 +34,10 @@ const LISTED: Readonly<Record<string, string>> = {
   over_email_send_rate_limit: 'Too many emails were requested.',
   over_request_rate_limit: 'Too many requests reached the sign-in service.',
 }
+
+/** A `5xx` Supabase Auth did answer, as opposed to a transport failure, where nothing answered. */
+export const isAnswered5xx = (error: unknown): error is Error =>
+  isAuthError(error) && (error.status ?? 0) >= 500 && error.code !== TRANSPORT_FAILURE
 
 /**
  * What Supabase Auth refused, as the error the API answers with (PLAN.md 5.1): a dead session is

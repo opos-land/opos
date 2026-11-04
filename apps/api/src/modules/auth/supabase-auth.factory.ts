@@ -14,8 +14,11 @@ const AUTH_TIMEOUT_MS = 10_000
  */
 const OUTAGE_STATUS = 599
 
-const outage = (message: string) =>
-  new Response(JSON.stringify({ code: 'unexpected_failure', msg: message }), {
+/** The `code` of an outage in which nothing answered: a transport failure or the timeout. */
+export const TRANSPORT_FAILURE = 'transport_failure'
+
+const outage = (message: string, errorCode?: string) =>
+  new Response(JSON.stringify({ error_code: errorCode, msg: message }), {
     status: OUTAGE_STATUS,
     headers: { 'Content-Type': 'application/json' },
   })
@@ -48,9 +51,9 @@ async function callAuth(input: string | URL | Request, init?: RequestInit): Prom
   } catch (error) {
     const cause = error instanceof Error ? error.cause : undefined
     if (error instanceof Error && cause instanceof Error) {
-      return outage(`${error.message}: ${cause.message}`)
+      return outage(`${error.message}: ${cause.message}`, TRANSPORT_FAILURE)
     }
-    return outage(error instanceof Error ? error.message : String(error))
+    return outage(error instanceof Error ? error.message : String(error), TRANSPORT_FAILURE)
   }
   if (response.status >= 500) {
     const isJson = await response

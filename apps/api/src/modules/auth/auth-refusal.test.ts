@@ -3,13 +3,30 @@ import { AuthApiError, AuthRetryableFetchError, AuthSessionMissingError } from '
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../../common/errors/api-error'
 import { toErrorResponse } from '../../common/filters/http-exception.filter'
-import { toApiError } from './auth-refusal'
+import { isAnswered5xx, toApiError } from './auth-refusal'
+import { TRANSPORT_FAILURE } from './supabase-auth.factory'
 
 const apiError = (status: number, code: string | undefined) =>
   new AuthApiError('refused', status, code)
 
 afterEach(() => {
   vi.restoreAllMocks()
+})
+
+describe('isAnswered5xx', () => {
+  it('holds for a 5xx Supabase Auth answered', () => {
+    expect(isAnswered5xx(apiError(599, undefined))).toBe(true)
+    expect(isAnswered5xx(apiError(500, 'unexpected_failure'))).toBe(true)
+  })
+
+  it.each([
+    ['a transport failure', apiError(599, TRANSPORT_FAILURE)],
+    ['a refusal below 500', apiError(429, 'over_email_send_rate_limit')],
+    ['a failure auth-js could not read', new AuthRetryableFetchError('down', 0)],
+    ['an error not from auth-js', new TypeError('boom')],
+  ])('does not hold for %s', (_, error) => {
+    expect(isAnswered5xx(error)).toBe(false)
+  })
 })
 
 describe('toApiError', () => {

@@ -73,7 +73,12 @@ export function ChoosePasswordForm({
       <Field
         label={t`New password`}
         hint={t`At least 8 characters.`}
-        error={errors.password && t`Use at least 8 characters.`}
+        error={
+          errors.password &&
+          (errors.password.type === 'too_small'
+            ? t`Use at least 8 characters.`
+            : t`Use at most 72 bytes; some characters count for more than one.`)
+        }
       >
         {(control) => (
           <input

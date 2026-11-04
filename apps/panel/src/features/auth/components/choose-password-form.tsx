@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { newPasswordSchema } from '@opos/contract'
 import { z } from 'zod'
 import { errorCode } from '../../../shared/lib/errors'
 import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
@@ -9,7 +10,7 @@ import { sendPasswordLink, setPassword } from '../api/auth'
 import { INVITATION_PATH } from '../model/auth-return'
 
 const schema = z
-  .object({ password: z.string().min(8), repeat: z.string() })
+  .object({ password: newPasswordSchema.min(8), repeat: z.string() })
   .refine((v) => v.password === v.repeat, { path: ['repeat'] })
 
 /**
@@ -78,7 +79,12 @@ export function ChoosePasswordForm({
       <Field
         label={t`New password`}
         hint={t`At least 8 characters.`}
-        error={errors.password && t`Use at least 8 characters.`}
+        error={
+          errors.password &&
+          (errors.password.type === 'too_small'
+            ? t`Use at least 8 characters.`
+            : t`Use at most 72 bytes; some characters count for more than one.`)
+        }
       >
         {(control) => (
           <input

@@ -523,6 +523,10 @@ msgstr "Użyj kodu odzyskiwania"
 msgid "Use at least 8 characters."
 msgstr "Użyj co najmniej 8 znaków."
 
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Use at most 72 bytes; some characters count for more than one."
+msgstr "Użyj najwyżej 72 bajtów; niektóre znaki liczą się za więcej niż jeden."
+
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Use the code of the app"
 msgstr "Użyj kodu z aplikacji"

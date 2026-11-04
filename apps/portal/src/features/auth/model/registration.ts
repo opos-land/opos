@@ -1,3 +1,4 @@
+import { newPasswordSchema } from '@opos/contract'
 import { z } from 'zod'
 
 const name = z.string().trim().min(1).max(100)
@@ -14,7 +15,7 @@ export const registrationSchema = z.object({
 
 export type Registration = z.infer<typeof registrationSchema>
 
-/** The password chosen after the confirmation, typed twice. */
+/** The password chosen after the confirmation, typed twice; the API's limit of 72 bytes applies. */
 export const passwordSchema = z
-  .object({ password: z.string().min(8), repeat: z.string() })
+  .object({ password: newPasswordSchema.min(8), repeat: z.string() })
   .refine((value) => value.password === value.repeat, { path: ['repeat'] })

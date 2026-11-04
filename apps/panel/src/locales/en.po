@@ -833,6 +833,10 @@ msgstr "Use a recovery code"
 msgid "Use at least 8 characters."
 msgstr "Use at least 8 characters."
 
+#: src/features/auth/components/choose-password-form.tsx
+msgid "Use at most 72 bytes; some characters count for more than one."
+msgstr "Use at most 72 bytes; some characters count for more than one."
+
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Use the code of the app"
 msgstr "Use the code of the app"

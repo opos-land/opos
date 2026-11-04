@@ -130,4 +130,25 @@ describe('ChoosePasswordForm', () => {
 
     expect(onDone).not.toHaveBeenCalled()
   })
+
+  it('refuses a password of more than 72 bytes with a message of its own', async () => {
+    const user = userEvent.setup()
+    const onDone = renderForm()
+
+    await submit(user, 'é'.repeat(37))
+
+    expect(await screen.findByText(/at most 72 bytes/)).toBeTruthy()
+    expect(setPassword).not.toHaveBeenCalled()
+    expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('accepts a password of exactly 72 bytes', async () => {
+    const user = userEvent.setup()
+    const onDone = renderForm()
+
+    await submit(user, 'é'.repeat(36))
+
+    expect(setPassword).toHaveBeenCalledWith('é'.repeat(36))
+    expect(onDone).toHaveBeenCalledOnce()
+  })
 })

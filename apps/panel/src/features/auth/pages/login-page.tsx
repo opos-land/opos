@@ -29,7 +29,7 @@ export function LoginPage() {
   if (status === 'loading') return <LoadingView />
   const returned = returnedError(params.get('error'))
   if (account && returned) {
-    // A Google round trip started while signed in (confirming a deletion, re-authenticating) failed.
+    // A Google round trip started while signed in (re-authenticating) failed.
     return (
       <AuthLayout title={<Trans>Sign in to the organizer panel</Trans>}>
         <ErrorMessage error={returned} />

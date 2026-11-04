@@ -40,9 +40,20 @@ type ApplicationUrls = Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>
 const applicationOrigin = (app: Application, env: ApplicationUrls) =>
   new URL(app === 'portal' ? env.PORTAL_URL : env.PANEL_URL).origin
 
-/** The login page of `app`, which shows the code of a Google sign-in that did not go through. */
-export const googleFailureUrl = (app: Application, code: ErrorCode, env: ApplicationUrls) =>
-  `${applicationOrigin(app, env)}/login?error=${code}`
+/**
+ * The login page of `app`, which shows the code of a Google sign-in that did not go through, with
+ * the path of the flow when one is known, for the way back of a person who is still signed in. The
+ * application's `safeRedirect` decides what it follows.
+ */
+export const googleFailureUrl = (
+  app: Application,
+  code: ErrorCode,
+  env: ApplicationUrls,
+  path?: string,
+) =>
+  `${applicationOrigin(app, env)}/login?error=${code}${
+    path === undefined ? '' : `&redirect=${encodeURIComponent(path)}`
+  }`
 
 /**
  * The path of `app` a Google sign-in returns to (PLAN.md 7.5). `redirect` counts only as a path:
@@ -169,10 +180,6 @@ export class GoogleAuthService {
     }
   }
 
-  private failure(app: Application, code: ErrorCode = GOOGLE_FAILED) {
-    return googleFailureUrl(app, code, this.env)
-  }
-
   /** The address `GET /auth/google` redirects to; sets `opos_google`. */
   async start(query: { app?: unknown; redirect?: unknown }, res: CookieResponse): Promise<string> {
     const app = applicationSchema.safeParse(query.app)
@@ -224,16 +231,20 @@ export class GoogleAuthService {
     req.res.clearCookie(GOOGLE_COOKIE, this.cookieAttributes())
 
     const flow = parseGoogleCookie(raw)
-    if (!flow) return this.failure('portal')
-    if (googleFlowExpired(flow)) return this.failure(flow.app)
+    if (!flow) return googleFailureUrl('portal', GOOGLE_FAILED, this.env)
+    // The cookie is the visitor's to write, so its path counts only once judged again.
+    const path = returnPath(flow.app, flow.path, this.env)
+    const failure = (code: ErrorCode = GOOGLE_FAILED) =>
+      googleFailureUrl(flow.app, code, this.env, path)
+    if (googleFlowExpired(flow)) return failure()
     if (query.error !== undefined) {
       const sent = typeof query.error_code === 'string' ? query.error_code : ''
       this.logger.warn(
         `Supabase Auth sent Google sign-in back with error_code=${LOGGABLE_CODE.test(sent) ? sent : '-'}`,
       )
-      return this.failure(flow.app, failureCode(query.error_code))
+      return failure(failureCode(query.error_code))
     }
-    if (typeof query.code !== 'string' || query.code === '') return this.failure(flow.app)
+    if (typeof query.code !== 'string' || query.code === '') return failure()
 
     const items = new Map([[`${GOOGLE_STORAGE_KEY}-code-verifier`, JSON.stringify(flow.verifier)]])
     let mfaPending: boolean
@@ -249,10 +260,9 @@ export class GoogleAuthService {
     } catch (error) {
       // The code and the status only: the message of a refusal may quote what was sent.
       this.logger.warn(`Google sign-in failed: ${describeFailure(error)}`)
-      return this.failure(flow.app)
+      return failure()
     }
     const origin = applicationOrigin(flow.app, this.env)
-    const path = returnPath(flow.app, flow.path, this.env)
     // The session starts at aal1 on an account with 2FA: the code screen finishes it (PLAN.md 7.12).
     return mfaPending
       ? `${origin}/auth/mfa?redirect=${encodeURIComponent(path)}`

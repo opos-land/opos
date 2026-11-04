@@ -131,6 +131,10 @@ const googleHeader = (res: request.Response) =>
 const start = (query: Record<string, string | undefined>) =>
   request(server).get('/auth/google').query(query)
 
+/** Where a flow that started with no `redirect`, so with the start page, fails to. */
+const failedAt = (origin: string, code = 'auth.google-failed') =>
+  `${origin}/login?error=${code}&redirect=%2F`
+
 /** Starts a sign-in and plays Supabase Auth and Google: a code bound to the redirect's challenge. */
 async function startedFlow(app: 'portal' | 'panel' = 'panel', redirect?: string) {
   const res = await start({ app, redirect }).expect(302)
@@ -400,6 +404,32 @@ describe('GET /auth/google/callback', () => {
     },
   )
 
+  it('names the path of the flow on a failure, so the way back of the login page leads there', async () => {
+    const { cookie } = await startedFlow('panel', '/convention-a/team?page=2')
+
+    const res = await callback({ code: 'never-issued' }, cookie).expect(302)
+
+    expect(res.headers.location).toBe(
+      `${panel}/login?error=auth.google-failed&redirect=%2Fconvention-a%2Fteam%3Fpage%3D2`,
+    )
+  })
+
+  it('judges the path of the flow again on a failure: a tampered one is the start page', async () => {
+    const { res } = await startedFlow('panel', '/convention-a')
+    const tampered = { ...readGoogleCookie(res), path: 'https://evil.example/&error=x' }
+    const cookie = `opos_google=${encodeURIComponent(JSON.stringify(tampered))}`
+
+    const result = await callback({ code: 'never-issued' }, cookie).expect(302)
+
+    expect(result.headers.location).toBe(failedAt(panel))
+  })
+
+  it('names no path when no flow is known', async () => {
+    const res = await callback({ code: 'never-issued' }).expect(302)
+
+    expect(res.headers.location).toBe(`${portal}/login?error=auth.google-failed`)
+  })
+
   it('judges a tampered application again: one that is neither answers the portal login', async () => {
     const { res, code } = await startedFlow('portal')
     const tampered = { ...readGoogleCookie(res), app: 'https://evil.example' }
@@ -429,7 +459,7 @@ describe('GET /auth/google/callback', () => {
     // The code of one browser's flow arrives with the cookie of another browser's.
     const res = await callback({ code: mine.code }, theirs.cookie).expect(302)
 
-    expect(res.headers.location).toBe(`${panel}/login?error=auth.google-failed`)
+    expect(res.headers.location).toBe(failedAt(panel))
     expect(cookiesOf(res).filter((cookie) => cookie.includes('_access='))).toEqual([])
     expect(exchanges).toHaveLength(1)
     expect(cookieNamed(res, 'opos_google')).toMatch(/^opos_google=;/)
@@ -441,7 +471,7 @@ describe('GET /auth/google/callback', () => {
 
     const res = await callback({ code }, cookie).expect(302)
 
-    expect(res.headers.location).toBe(`${panel}/login?error=auth.google-failed`)
+    expect(res.headers.location).toBe(failedAt(panel))
     expect(cookieNamed(res, 'opos_panel_access')).toBeUndefined()
   })
 
@@ -456,7 +486,7 @@ describe('GET /auth/google/callback', () => {
 
     const res = await browser.get('/auth/google/callback').query({ code }).expect(302)
 
-    expect(res.headers.location).toBe(`${panel}/login?error=auth.google-failed`)
+    expect(res.headers.location).toBe(failedAt(panel))
     expect(cookiesOf(res).filter((cookie) => cookie.includes('_access='))).toEqual([])
     expect(exchanges).toEqual([])
   })
@@ -480,7 +510,7 @@ describe('GET /auth/google/callback', () => {
 
       const res = await callback(query, cookie).expect(302)
 
-      expect(res.headers.location).toBe(`${panel}/login?error=${expected}`)
+      expect(res.headers.location).toBe(failedAt(panel, expected))
       expect(res.headers.location).not.toContain('a@b.test')
       expect(exchanges).toEqual([])
       expect(cookieNamed(res, 'opos_google')).toMatch(/^opos_google=;/)
@@ -492,7 +522,7 @@ describe('GET /auth/google/callback', () => {
 
     const res = await callback({}, cookie).expect(302)
 
-    expect(res.headers.location).toBe(`${portal}/login?error=auth.google-failed`)
+    expect(res.headers.location).toBe(failedAt(portal))
   })
 
   it('answers a failed exchange the same way for any reason Supabase Auth gives', async () => {
@@ -500,7 +530,7 @@ describe('GET /auth/google/callback', () => {
 
     const res = await callback({ code: 'never-issued' }, cookie).expect(302)
 
-    expect(res.headers.location).toBe(`${panel}/login?error=auth.google-failed`)
+    expect(res.headers.location).toBe(failedAt(panel))
   })
 
   it('logs the code and status of a failed exchange, and nothing the flow keeps secret', async () => {
@@ -543,7 +573,7 @@ describe('GET /auth/google/callback', () => {
     const res = await callback({ code }, cookie).expect(302)
     accountId = gone
 
-    expect(res.headers.location).toBe(`${panel}/login?error=auth.google-failed`)
+    expect(res.headers.location).toBe(failedAt(panel))
     expect(cookieNamed(res, 'opos_panel_access')).toBeUndefined()
   })
 })

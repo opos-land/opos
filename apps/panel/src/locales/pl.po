@@ -109,6 +109,10 @@ msgstr "Zaproszenie zostało wysłane na adres {email}. Link w nim działa jeden
 msgid "At least 8 characters."
 msgstr "Co najmniej 8 znaków."
 
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "Back to sign-in"
+msgstr "Wróć do logowania"
+
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Back to the edition"
 msgstr "Wróć do edycji"
@@ -250,6 +254,7 @@ msgstr "Edycje"
 
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/forgot-password-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Email"
 msgstr "E-mail"
@@ -282,6 +287,7 @@ msgstr "Podaj prawidłową datę i godzinę."
 
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/forgot-password-page.tsx
 #: src/features/program/components/speakers-editor.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Enter a valid email address."
@@ -330,6 +336,10 @@ msgstr "wygasł"
 msgid "Finish signing in"
 msgstr "Dokończ logowanie"
 
+#: src/features/auth/pages/login-page.tsx
+msgid "Forgot your password?"
+msgstr "Nie pamiętasz hasła?"
+
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Go to sign-in"
@@ -361,9 +371,9 @@ msgstr "Jestem w OPOS po raz pierwszy"
 msgid "I have saved my codes"
 msgstr "Kody są zapisane"
 
-#: src/features/auth/pages/confirm-page.tsx
-msgid "If {sentTo} still waits for confirmation, a new link is on its way. If you have already confirmed it, sign in."
-msgstr "Jeśli adres {sentTo} wciąż czeka na potwierdzenie, nowy link jest w drodze. Jeśli już go potwierdzono, zaloguj się."
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
+msgstr "Jeśli adres {sentTo} należy do konta, wysłaliśmy na niego link do ustawienia nowego hasła. Link działa jeden raz, przez godzinę."
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "If no message arrives within a few minutes, the address may already have an account: sign in, or ask for a password link."
@@ -581,6 +591,7 @@ msgid "Repeat the password"
 msgstr "Powtórz hasło"
 
 #: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/forgot-password-page.tsx
 msgid "Reset your password"
 msgstr "Zresetuj hasło"
 
@@ -633,6 +644,10 @@ msgstr "Wyślij nowy link"
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Send a password link"
 msgstr "Wyślij link do ustawienia hasła"
+
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "Send the link"
+msgstr "Wyślij link"
 
 #: src/features/team/components/permission-labels.tsx
 #: src/features/tenants/components/tenant-layout.tsx
@@ -872,6 +887,10 @@ msgstr "Wysłaliśmy nowy link na adres {sentTo}."
 #: src/features/auth/pages/invitation-page.tsx
 msgid "We will send a confirmation link to your address. Once you open it, you choose your password here and join the team. You can also continue with Google above."
 msgstr "Wyślemy link potwierdzający na twój adres. Gdy go otworzysz, wybierzesz tutaj hasło i dołączysz do zespołu. Możesz też kontynuować przez Google powyżej."
+
+#: src/features/auth/pages/forgot-password-page.tsx
+msgid "We will send you a link to set a new password."
+msgstr "Wyślemy ci link do ustawienia nowego hasła."
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/member-row.tsx

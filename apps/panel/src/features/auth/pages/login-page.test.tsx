@@ -55,6 +55,14 @@ describe('LoginPage ?error=', () => {
     expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy()
   })
 
+  it('offers a password reset', () => {
+    renderLogin('')
+
+    expect(screen.getByRole('link', { name: 'Forgot your password?' }).getAttribute('href')).toBe(
+      '/forgot-password',
+    )
+  })
+
   it('still offers the form while the API cannot be reached', () => {
     useSession.setState({ status: 'unavailable', account: null })
     renderLogin('')

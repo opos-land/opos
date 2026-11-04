@@ -38,12 +38,6 @@ export const signUpWithEmail = (email: string, returnTo: string) =>
     rememberAuthReturn(returnTo)
   })
 
-export const resendConfirmation = (email: string, returnTo: string) =>
-  attempt(async () => {
-    await accountClient.auth.resend({ body: { email } })
-    rememberAuthReturn(returnTo)
-  })
-
 export const sendPasswordLink = (email: string, returnTo: string) =>
   attempt(async () => {
     await accountClient.auth.passwordForgot({ body: { email } })

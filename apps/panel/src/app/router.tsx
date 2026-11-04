@@ -2,6 +2,7 @@ import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale } from '../features/account'
 import {
   ConfirmPage,
+  ForgotPasswordPage,
   InvitationPage,
   LoginPage,
   MfaGate,
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
     element: <Root />,
     children: [
       { path: '/login', element: <LoginPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
       { path: '/auth/confirm', element: <ConfirmPage /> },
       { path: '/auth/mfa', element: <MfaPage /> },
       { path: '/invitation', element: <InvitationPage /> },

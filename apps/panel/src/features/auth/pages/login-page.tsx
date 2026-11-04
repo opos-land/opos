@@ -45,6 +45,9 @@ export function LoginPage() {
     <AuthLayout title={<Trans>Sign in to the organizer panel</Trans>}>
       <ErrorMessage error={returned} />
       <SignInForm onSignedIn={() => void navigate(returnTo, { replace: true })} />
+      <Link to="/forgot-password" className="text-accent text-sm underline">
+        <Trans>Forgot your password?</Trans>
+      </Link>
       <p className="text-muted text-center text-xs">
         <Trans>or</Trans>
       </p>

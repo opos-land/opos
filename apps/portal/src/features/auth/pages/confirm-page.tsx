@@ -12,7 +12,7 @@ import {
   Notice,
   UnavailableView,
 } from '../../../shared/ui'
-import { resendConfirmation, sendPasswordLink, verifyLink } from '../api/auth'
+import { sendPasswordLink, verifyLink } from '../api/auth'
 import { AuthCard } from '../components/auth-card'
 import { ChoosePasswordForm } from '../components/choose-password-form'
 import { EmailOnlyForm } from '../components/email-only-form'
@@ -31,14 +31,15 @@ function readLink(params: URLSearchParams) {
   return parsed.success ? parsed.data : null
 }
 
-/** The new link is the confirmation of the address for a signup link, a password link otherwise. */
-function ExpiredLink({ type, returnTo }: { type: EmailLink['type']; returnTo: string }) {
+/**
+ * The new link is a password link whichever link expired: one works for an address still waiting
+ * for confirmation as well as a confirmed one, which no confirmation mail reaches, and leads to the
+ * password form (PLAN.md 7.6).
+ */
+function ExpiredLink({ returnTo }: { returnTo: string }) {
   const [sentTo, setSentTo] = useState<string | null>(null)
   const send = async (email: string) => {
-    const failure =
-      type === 'signup'
-        ? await resendConfirmation(email, returnTo)
-        : await sendPasswordLink(email, returnTo)
+    const failure = await sendPasswordLink(email, returnTo)
     if (!failure) setSentTo(email)
     return failure
   }
@@ -46,14 +47,7 @@ function ExpiredLink({ type, returnTo }: { type: EmailLink['type']; returnTo: st
   if (sentTo) {
     return (
       <Notice>
-        {type === 'signup' ? (
-          <Trans>
-            If {sentTo} still waits for confirmation, a new link is on its way. If you have already
-            confirmed it, sign in.
-          </Trans>
-        ) : (
-          <Trans>We sent a new link to {sentTo}.</Trans>
-        )}
+        <Trans>We sent a new link to {sentTo}.</Trans>
       </Notice>
     )
   }
@@ -98,7 +92,7 @@ function RedeemLink({
     return (
       <AuthCard title={<Trans>We could not sign you in</Trans>}>
         <ErrorMessage error={error} />
-        <ExpiredLink type={link.type} returnTo={returnTo} />
+        <ExpiredLink returnTo={returnTo} />
       </AuthCard>
     )
   }

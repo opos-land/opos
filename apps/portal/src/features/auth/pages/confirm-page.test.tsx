@@ -6,14 +6,13 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
-import { resendConfirmation, sendPasswordLink, setPassword, verifyLink } from '../api/auth'
+import { sendPasswordLink, setPassword, verifyLink } from '../api/auth'
 import { AUTH_RETURN_STORAGE_KEY, rememberAuthReturn } from '../model/auth-return'
 import { ConfirmPage } from './confirm-page'
 
 vi.mock('../api/auth', () => ({
   verifyLink: vi.fn(),
   setPassword: vi.fn(),
-  resendConfirmation: vi.fn(),
   sendPasswordLink: vi.fn(),
 }))
 
@@ -81,7 +80,6 @@ beforeEach(() => {
   useSession.setState({ status: 'ready', account: null })
   vi.mocked(verifyLink).mockReset().mockResolvedValue(null)
   vi.mocked(setPassword).mockReset().mockResolvedValue(null)
-  vi.mocked(resendConfirmation).mockReset().mockResolvedValue(null)
   vi.mocked(sendPasswordLink).mockReset().mockResolvedValue(null)
 })
 
@@ -212,7 +210,7 @@ describe('ConfirmPage with a token', () => {
     await user.click(screen.getByRole('button', { name: 'Send a new link' }))
 
     expect((await screen.findByRole('status')).textContent).toBe(
-      'If reader@x.test still waits for confirmation, a new link is on its way. If you have already confirmed it, sign in.',
+      'We sent a new link to reader@x.test.',
     )
   })
 
@@ -226,7 +224,7 @@ describe('ConfirmPage with a token', () => {
     expect(screen.getByRole('link', { name: 'Go to sign-in' }).className).toContain('min-h-11')
   })
 
-  it('otp_expired offers a new link, a confirmation for a signup link', async () => {
+  it('otp_expired offers a password link for a signup link, which serves a confirmed address too', async () => {
     const user = userEvent.setup()
     vi.mocked(verifyLink).mockResolvedValue(new ORPCError('auth.otp_expired', { status: 422 }))
     rememberAuthReturn('/conventions/convention-a')
@@ -239,8 +237,7 @@ describe('ConfirmPage with a token', () => {
     await user.type(screen.getByLabelText('Email'), 'reader@x.test')
     await user.click(screen.getByRole('button', { name: 'Send a new link' }))
 
-    expect(resendConfirmation).toHaveBeenCalledWith('reader@x.test', '/conventions/convention-a')
-    expect(sendPasswordLink).not.toHaveBeenCalled()
+    expect(sendPasswordLink).toHaveBeenCalledWith('reader@x.test', '/conventions/convention-a')
     expect(await screen.findByRole('status')).toBeTruthy()
   })
 
@@ -269,7 +266,6 @@ describe('ConfirmPage with a token', () => {
     await user.click(screen.getByRole('button', { name: 'Send a new link' }))
 
     expect(sendPasswordLink).toHaveBeenCalledWith('reader@x.test', '/account')
-    expect(resendConfirmation).not.toHaveBeenCalled()
   })
 
   it.each([

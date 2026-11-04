@@ -954,7 +954,9 @@ authentication is always confirmed before its link, since an unconfirmed account
 enroll a factor. When `updateUser` fails, the [admin API](#admin-api) replaces the password instead,
 which ends every session of the user, the one the button just opened included; the request still
 sets no cookies and answers as the failure of `updateUser` maps, and the person gets back in through
-a new link. A failure of the admin API too is logged as an error naming nobody. The session the
+a new link: `/auth/confirm` answers a spent link of either type with a password link
+(`POST /auth/password/forgot`), which works for a confirmed address as for an unconfirmed one and
+leads to the password form. A failure of the admin API too is logged as an error naming nobody. The session the
 button started counts as a recent sign-in for 5 minutes
 ([7.4](#74-authorization)); a form saved later answers `session.reauthentication-required`, and
 the form then offers a new link by email (`POST /auth/password/forgot`). A confirmed account that
@@ -1597,7 +1599,8 @@ Required behaviour when the email already exists, checked in the smoke test
 
 ### 7.6 Password reset
 
-1. The portal or the panel sends `POST /auth/password/forgot`; the API calls
+1. The `/forgot-password` page of the portal or of the panel, which `/login` of each links to, sends
+   `POST /auth/password/forgot`; the API calls
    `resetPasswordForEmail(email, { redirectTo: <app URL>/auth/confirm })` for the application that
    sent it. Supabase Auth
    answers the same way for an unknown address, and so does the API, so the form reveals nothing
@@ -1632,6 +1635,10 @@ Required behaviour when the email already exists, checked in the smoke test
    `/auth/confirm` holding a session and no token shows the password form, without asking for the
    spent token again. `updateUser` at `aal1` is refused with `insufficient_aal`, so the link alone
    never changes the password.
+6. A link that has expired or been used answers `auth.otp_expired`, and `/auth/confirm` offers a new
+   link through `POST /auth/password/forgot`, for a sign-up link and a recovery link alike. By step 4
+   one such mail serves an unconfirmed address and a confirmed one, to which Supabase Auth would send
+   no confirmation, and it leads to the password form.
 
 ### 7.7 Organizer invitations
 
@@ -1718,7 +1725,9 @@ confirmed does not survive ([4.2](#42-global-tables)).
    unconfirmed account over ([7.5](#75-google-oauth)).
 6. An invitee who cannot sign in — a forgotten password, or someone else registered the address
    first — asks the `/invitation` page for a password link: `POST /auth/password/forgot` from the
-   panel, whose link leads to the panel's `/auth/confirm` and through steps 4 and 5.
+   panel, whose link leads to the panel's `/auth/confirm` and through steps 4 and 5. So does one who
+   reopens a confirmation link already used, having left the password form: its page offers the same
+   link ([7.6](#76-password-reset)), and the panel's `/forgot-password` offers it to anyone.
 
 ### 7.8 CORS
 
@@ -2033,9 +2042,10 @@ headers ([13](#13-deployment)).
 
 | Path | Screen |
 |---|---|
-| `/login` | organizer sign-in: email + password, Google button (`GET /auth/google?app=panel&redirect=<the ?redirect= target>`); shows the code of a failed Google sign-in from `?error=`, also to a browser holding a session (confirming a deletion or re-authenticating with Google failed), with a link to the `?redirect=` target or `/` instead of the form; any other `?error=` value leads a signed-in browser away at once |
-| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends nothing until its button is pressed; the button sends them once to `POST /auth/verify`, then the page asks for the password ([7.7](#77-organizer-invitations)) and opens the page the round trip started on, or `/`; `session.mfa-required` from the button leads to `/auth/mfa` with the return path `/auth/confirm` ([7.6](#76-password-reset)); `auth.otp_expired` offers a new link, and after a sign-up link says that a new link is on its way only if the address still waits for confirmation, and that a confirmed address signs in; opened without a token, the page shows the password form to a browser holding a session and offers the sign-in to any other |
+| `/login` | organizer sign-in: email + password, the link to `/forgot-password`, Google button (`GET /auth/google?app=panel&redirect=<the ?redirect= target>`); shows the code of a failed Google sign-in from `?error=`, also to a browser holding a session (confirming a deletion or re-authenticating with Google failed), with a link to the `?redirect=` target or `/` instead of the form; any other `?error=` value leads a signed-in browser away at once |
+| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends nothing until its button is pressed; the button sends them once to `POST /auth/verify`, then the page asks for the password ([7.7](#77-organizer-invitations)) and opens the page the round trip started on, or `/`; `session.mfa-required` from the button leads to `/auth/mfa` with the return path `/auth/confirm` ([7.6](#76-password-reset)); `auth.otp_expired` offers a new link, a password link (`POST /auth/password/forgot`) for a sign-up link and a recovery link alike, since it works for an unconfirmed address as well as a confirmed one and leads to the password form; opened without a token, the page shows the password form to a browser holding a session and offers the sign-in to any other |
 | `/auth/mfa` | the code screen of two-factor authentication: a code or a recovery code, then the return path ([7.12](#712-two-factor-authentication)) |
+| `/forgot-password` | password reset request; confirms that the message was sent whatever the address ([7.6](#76-password-reset)) |
 | `/invitation` | invitation acceptance (`?token=`): the convention and the invited email, sign-in, sign-up with email or Google, the password chosen after the address is confirmed ([7.7](#77-organizer-invitations)) |
 | `/` | convention picker; redirect when there is a single membership |
 | `/:tenantSlug` | tenant dashboard |
@@ -2052,7 +2062,7 @@ headers ([13](#13-deployment)).
 | `/:tenantSlug/editions/:editionSlug/tickets/scanners` | pairing QR code, paired devices, revocation |
 | `/scanner` | the scanner on a phone: pairing, then scan -> order view -> tick tickets handed in |
 
-- The fixed top-level paths — `/login`, `/auth`, `/invitation`, `/scanner` — are reserved
+- The fixed top-level paths — `/login`, `/forgot-password`, `/auth`, `/invitation`, `/scanner` — are reserved
   tenant slugs ([4.3](#43-tenant-level-tables)), so `/:tenantSlug` never shadows them; a new
   top-level path joins `RESERVED_TENANT_SLUGS` in the same PR.
 - The API link ([api-fetch.ts](../apps/panel/src/shared/lib/api-fetch.ts)) sends the session
@@ -2152,7 +2162,7 @@ image with its headers ([13](#13-deployment)).
 | `/privacy` | the privacy policy ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); linked from the registration form and the footer |
 | `/register` | first and last name, email, Google button — no password; after submitting — "check your inbox", with the link sent again on request (`POST /auth/resend`) |
 | `/login` | email and password, Google button, the link to `/forgot-password`; `auth.email_not_confirmed` offers to send the link again (`POST /auth/resend`); shows the code of a failed Google sign-in from `?error=`, also to a browser holding a session (confirming a deletion or re-authenticating with Google failed), with a link to the `?redirect=` target or `/` instead of the form; any other `?error=` value leads a signed-in browser away at once |
-| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends nothing until its button is pressed; the button sends them once to `POST /auth/verify`, then the page shows the password form for a confirmation and a recovery link alike ([5.1](#the-password-comes-after-the-confirmation), [7.6](#76-password-reset)); saving it ends every other session and opens the page the round trip started on; `session.mfa-required` from the button leads to `/auth/mfa` with the return path `/auth/confirm` ([7.6](#76-password-reset)); `auth.otp_expired` offers a new link, and after a sign-up link says that a new link is on its way only if the address still waits for confirmation, and that a confirmed address signs in; opened without a token, the page shows the password form to a browser holding a session and offers the sign-in to any other |
+| `/auth/confirm` | receives `token_hash` and `type` from an email link and sends nothing until its button is pressed; the button sends them once to `POST /auth/verify`, then the page shows the password form for a confirmation and a recovery link alike ([5.1](#the-password-comes-after-the-confirmation), [7.6](#76-password-reset)); saving it ends every other session and opens the page the round trip started on; `session.mfa-required` from the button leads to `/auth/mfa` with the return path `/auth/confirm` ([7.6](#76-password-reset)); `auth.otp_expired` offers a new link, a password link (`POST /auth/password/forgot`) for a sign-up link and a recovery link alike, since it works for an unconfirmed address as well as a confirmed one and leads to the password form; opened without a token, the page shows the password form to a browser holding a session and offers the sign-in to any other |
 | `/auth/mfa` | the code screen of two-factor authentication: a code or a recovery code, then the return path ([7.12](#712-two-factor-authentication)) |
 | `/forgot-password` | password reset request; confirms that the message was sent whatever the address ([7.6](#76-password-reset)) |
 | `/account` | names, interface language, two-factor authentication, sign-out, account deletion |
@@ -3154,7 +3164,7 @@ never changes a seeded account's password, which ends every other session of the
 | 7 | An org without `settings`: no team or settings in the sidebar, entering by URL -> the "no permissions" screen; with `settings=read`: the team without the invitation form, the settings with "Save" disabled | [permissions](../e2e/specs/permissions.spec.ts) |
 | 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request | [permissions](../e2e/specs/permissions.spec.ts) |
 | 9 | An attendee signs up for an edition from the convention's page, sees it under "my conventions", deletes the account; the last head of a convention is told to hand the role over instead | [account-deletion](../e2e/specs/account-deletion.spec.ts); the edition sign-up comes with the `attendances` feature |
-| 10 | Password reset: request from the sign-in screen, the link from Mailpit and the button of its page lead to a new password, the old session can no longer refresh | [password-reset](../e2e/specs/password-reset.spec.ts) |
+| 10 | Password reset: request from the sign-in screen of the portal and of the panel, the link from Mailpit and the button of its page lead to a new password, the old session can no longer refresh; a used sign-up link gets a password link through its page in both applications | [password-reset](../e2e/specs/password-reset.spec.ts) |
 | 11 | An attendee likes items, finds them in the personal schedule, reviews a past item anonymously with a speakers-only comment; the speaker sees it under "my programme items"; an org hides another review in the panel and the public rating changes | [schedule](../e2e/specs/schedule.spec.ts) up to the personal schedule; the reviews still to come, with the `speaking` feature |
 | 12 | An org whose membership has expired signs in to the panel and sees no convention | [permissions](../e2e/specs/permissions.spec.ts) |
 | 13 | A visitor without an account buys two tickets through the fake provider; the email in Mailpit has two QR codes; registering with the same address shows both under "my tickets" | still to come, with the `tickets` features of the panel and the portal |

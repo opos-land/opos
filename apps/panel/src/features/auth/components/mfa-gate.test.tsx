@@ -57,6 +57,7 @@ describe('MfaGate', () => {
     '/invitation?token=t-1',
     '/invitation',
     '/scanner',
+    '/forgot-password',
     '/auth/confirm?token_hash=hash-a&type=recovery',
   ])('does not hold %s: it renders as for a visitor with no account', (path) => {
     renderAt(path)

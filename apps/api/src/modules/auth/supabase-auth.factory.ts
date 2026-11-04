@@ -14,14 +14,28 @@ const AUTH_TIMEOUT_MS = 10_000
  */
 const OUTAGE_STATUS = 599
 
-/** The `code` of an outage in which nothing answered: a transport failure or the timeout. */
-export const TRANSPORT_FAILURE = 'transport_failure'
+/**
+ * The `code` of an outage Supabase Auth did not answer itself: a transport failure, the timeout, or
+ * a `5xx` without its code, which is a gateway answering for a service that is down.
+ */
+export const NO_AUTH_ANSWER = 'no_auth_answer'
 
-const outage = (message: string, errorCode?: string) =>
+const outage = (message: string, errorCode: string) =>
   new Response(JSON.stringify({ error_code: errorCode, msg: message }), {
     status: OUTAGE_STATUS,
     headers: { 'Content-Type': 'application/json' },
   })
+
+/**
+ * Supabase Auth's own code in the JSON body of an answer, read as auth-js reads it: `code` on the
+ * API version auth-js asks for, which the answer echoes in a header, and `error_code` otherwise.
+ */
+function authCodeOf(response: Response, body: unknown): string | undefined {
+  if (typeof body !== 'object' || body === null) return undefined
+  const { code, error_code: errorCode } = body as { code?: unknown; error_code?: unknown }
+  const own = response.headers.has('x-supabase-api-version') ? code : errorCode
+  return typeof own === 'string' && own !== '' ? own : undefined
+}
 
 /**
  * The key prefix of the Google client's storage. The callback seeds the verifier from the cookie
@@ -33,8 +47,9 @@ export const GOOGLE_STORAGE_KEY = 'opos-google'
  * One call to Supabase Auth, with the two things auth-js loses made visible: it keeps only
  * `e.message` of a transport failure, so the cause (`ECONNREFUSED`, a TLS error) joins the message;
  * and a 5xx whose body is not JSON arrives as an error without a status. Both, and every other
- * 5xx, come back as an `outage`. The client's full address goes along in `Sb-Forwarded-For`
- * (PLAN.md 10); the visitor's `User-Agent` never does.
+ * 5xx, come back as an `outage`, which keeps the code of a 5xx Supabase Auth answered itself. The
+ * client's full address goes along in `Sb-Forwarded-For` (PLAN.md 10); the visitor's `User-Agent`
+ * never does.
  */
 async function callAuth(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers)
@@ -51,19 +66,21 @@ async function callAuth(input: string | URL | Request, init?: RequestInit): Prom
   } catch (error) {
     const cause = error instanceof Error ? error.cause : undefined
     if (error instanceof Error && cause instanceof Error) {
-      return outage(`${error.message}: ${cause.message}`, TRANSPORT_FAILURE)
+      return outage(`${error.message}: ${cause.message}`, NO_AUTH_ANSWER)
     }
-    return outage(error instanceof Error ? error.message : String(error), TRANSPORT_FAILURE)
+    return outage(error instanceof Error ? error.message : String(error), NO_AUTH_ANSWER)
   }
   if (response.status >= 500) {
-    const isJson = await response
+    const http = `HTTP ${response.status}`
+    const read = await response
       .clone()
       .json()
       .then(
-        () => true,
-        () => false,
+        (body: unknown) => ({ code: authCodeOf(response, body) }),
+        () => undefined,
       )
-    return outage(`HTTP ${response.status}${isJson ? '' : ' with a body that is not JSON'}`)
+    if (!read) return outage(`${http} with a body that is not JSON`, NO_AUTH_ANSWER)
+    return read.code ? outage(`${http} ${read.code}`, read.code) : outage(http, NO_AUTH_ANSWER)
   }
   return response
 }

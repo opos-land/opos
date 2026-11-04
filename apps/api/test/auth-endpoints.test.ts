@@ -114,11 +114,19 @@ async function registerAtSupabaseAuth(email: string, password: string) {
   return (await res.json()) as { id: string }
 }
 
-/** An API whose Supabase Auth answers every call with `status` and `body`; the stub closes both. */
-async function stubbedSupabaseAuth(status: number, body: object) {
+/**
+ * An API whose Supabase Auth answers every call with `status` and `body`, an object as JSON and a
+ * string as an HTML page, as a gateway sends it; the stub closes both.
+ */
+async function stubbedSupabaseAuth(
+  status: number,
+  body: object | string,
+  headers: Record<string, string> = {},
+) {
   const stub = createServer((_, res) => {
-    res.writeHead(status, { 'content-type': 'application/json' })
-    res.end(JSON.stringify(body))
+    const contentType = typeof body === 'string' ? 'text/html' : 'application/json'
+    res.writeHead(status, { 'content-type': contentType, ...headers })
+    res.end(typeof body === 'string' ? body : JSON.stringify(body))
   })
   await new Promise<void>((resolve) => stub.listen(0, '127.0.0.1', resolve))
   const url = `http://127.0.0.1:${(stub.address() as AddressInfo).port}`
@@ -377,6 +385,73 @@ describe('the mail routes and the mail rate limit', () => {
         expect(res.text).toBe('')
         expect(logged).toHaveBeenCalledTimes(1)
         expect(JSON.stringify(logged.mock.calls)).not.toMatch(/anna|secret|example/)
+      } finally {
+        await stub.close()
+      }
+    },
+  )
+
+  it.each(routes)(
+    'answers 202 on %s when Supabase Auth answers a 5xx on the API version auth-js asks for',
+    async (route) => {
+      const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+      const stub = await stubbedSupabaseAuth(
+        500,
+        { code: 'unexpected_failure', message: 'Error sending email to anna.secret@example.test' },
+        { 'X-Supabase-Api-Version': '2024-01-01' },
+      )
+      try {
+        const res = await request(stub.app.getHttpServer())
+          .post(route)
+          .set('Origin', portal)
+          .send({ email: 'anna.secret@example.test' })
+
+        expect(res.status).toBe(202)
+        expect(logged).toHaveBeenCalledTimes(1)
+        expect(JSON.stringify(logged.mock.calls)).toContain('HTTP 500 unexpected_failure')
+        expect(JSON.stringify(logged.mock.calls)).not.toMatch(/anna|secret|example/)
+      } finally {
+        await stub.close()
+      }
+    },
+  )
+
+  it('answers 202 on a sign-up when the real Supabase Auth answers a 5xx', async () => {
+    const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+
+    // Postgres takes no NUL in the metadata, so Supabase Auth fails its insert with a 500.
+    await post('/auth/sign-up', { email: newAddress(), firstName: 'Ola\u0000' }).expect(202)
+
+    expect(JSON.stringify(logged.mock.calls)).toContain('HTTP 500 unexpected_failure')
+  })
+
+  it.each(
+    routes.flatMap((route) => [
+      [route, 'a 502 with an HTML body', 502, '<html>Bad Gateway</html>'] as const,
+      [
+        route,
+        'a 503 with JSON and no error_code',
+        503,
+        { message: 'failure to get a peer from the ring-balancer' },
+      ] as const,
+      [route, 'a 500 whose code is no text', 500, { code: 500, msg: 'upstream' }] as const,
+    ]),
+  )(
+    'answers 503 on %s when a gateway answers for a service that is down: %s',
+    async (route, _, status, body) => {
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+      const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+      const stub = await stubbedSupabaseAuth(status, body)
+      try {
+        const res = await request(stub.app.getHttpServer())
+          .post(route)
+          .set('Origin', portal)
+          .send({ email: 'anna.secret@example.test' })
+
+        expect(res.status).toBe(503)
+        expect(res.body).toMatchObject({ code: 'server.unavailable' })
+        expect(res.headers['retry-after']).toBe('30')
+        expect(logged).not.toHaveBeenCalled()
       } finally {
         await stub.close()
       }

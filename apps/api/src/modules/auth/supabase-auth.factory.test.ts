@@ -1,7 +1,7 @@
 import { isAuthRetryableFetchError, type SupportedStorage } from '@supabase/auth-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
-import { GOOGLE_STORAGE_KEY, SupabaseAuthFactory, TRANSPORT_FAILURE } from './supabase-auth.factory'
+import { GOOGLE_STORAGE_KEY, NO_AUTH_ANSWER, SupabaseAuthFactory } from './supabase-auth.factory'
 
 const SECRET = 'sb_secret_test'
 const CLIENT_IP = '2001:db8:1:2:3:4:5:6'
@@ -200,18 +200,53 @@ describe('SupabaseAuthFactory', () => {
       expect(error?.message).toContain('ECONNREFUSED')
     })
 
-    it('names a transport failure apart from a 5xx that was answered', async () => {
+    const answering = (body: string, status = 500, headers: Record<string, string> = {}) =>
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve(new Response(body, { status, headers }))),
+      )
+
+    it('names a failure Supabase Auth did not answer itself: a transport failure', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(() => Promise.reject(new TypeError('fetch failed'))),
       )
-      expect((await refresh()).error?.code).toBe(TRANSPORT_FAILURE)
+      expect((await refresh()).error?.code).toBe(NO_AUTH_ANSWER)
+    })
 
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() => Promise.resolve(new Response('{}', { status: 500 }))),
-      )
-      expect((await refresh()).error?.code).not.toBe(TRANSPORT_FAILURE)
+    it.each([
+      ['an HTML page', '<html>Bad Gateway</html>', 502, {}],
+      ['JSON without a code', '{"message":"no peer"}', 503, {}],
+      ['a code that is no text', '{"code":500,"msg":"upstream"}', 500, {}],
+      ['an empty code', '{"error_code":""}', 500, {}],
+      ['a code outside the API version', '{"code":"bad_gateway"}', 502, {}],
+      ['JSON that is no object', 'null', 500, {}],
+    ])(
+      'names a failure Supabase Auth did not answer itself: %s',
+      async (_, body, status, headers) => {
+        answering(body, status, headers)
+
+        const { error } = await refresh()
+
+        expect(error?.code).toBe(NO_AUTH_ANSWER)
+        expect(error?.message).toContain(`HTTP ${status}`)
+      },
+    )
+
+    it.each([
+      ['error_code', '{"code":500,"error_code":"unexpected_failure","msg":"x"}', {}],
+      [
+        'code on the API version auth-js asks for',
+        '{"code":"unexpected_failure","message":"x"}',
+        { 'X-Supabase-Api-Version': '2024-01-01' },
+      ],
+    ])('keeps the code of a 5xx Supabase Auth answered, in %s', async (_, body, headers) => {
+      answering(body, 500, headers)
+
+      const { error } = await refresh()
+
+      expect(error?.code).toBe('unexpected_failure')
+      expect(error?.message).toBe('HTTP 500 unexpected_failure')
     })
 
     it.each([500, 502, 503, 504])('fails a refresh at once on a %s, as a 5xx', async (status) => {

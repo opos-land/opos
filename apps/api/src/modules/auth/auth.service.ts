@@ -123,10 +123,10 @@ export class AuthService {
   /**
    * The three routes that mail an address promise to reveal nothing about it (PLAN.md 5.1). An
    * empty mail bucket is a `202` for that reason: Supabase Auth's window per address exists only
-   * for an address it knows, and the code cannot tell it from the project's bucket. An answered
-   * `5xx` is a `202` too, and so is a failed hook (`hook_*`, a `422` while the send-email hook is
-   * out of reach): only an address it knows gets as far as a failed send. A transport failure
-   * stays `503`, since it does not depend on the address.
+   * for an address it knows, and the code cannot tell it from the project's bucket. A `5xx`
+   * Supabase Auth answered itself is a `202` too, and so is a failed hook (`hook_*`, a `422` while
+   * the send-email hook is out of reach): only an address it knows gets as far as a failed send. A
+   * transport failure and a gateway's `5xx` stay `503`, since they do not depend on the address.
    */
   private mailRefused(error: unknown, route: string): void {
     if (isAuthError(error) && error.code === 'over_email_send_rate_limit') {
@@ -134,7 +134,7 @@ export class AuthService {
       return
     }
     if (isAnswered5xx(error)) {
-      // The message is callAuth's own, never Supabase Auth's text: it names nobody.
+      // The message is callAuth's own, the status and the code, never Supabase Auth's text.
       this.logger.error(`Supabase Auth failed a mail for ${route}: ${error.message}`)
       return
     }

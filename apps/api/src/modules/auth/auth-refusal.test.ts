@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../../common/errors/api-error'
 import { toErrorResponse } from '../../common/filters/http-exception.filter'
 import { isAnswered5xx, isHookFailure, toApiError } from './auth-refusal'
-import { TRANSPORT_FAILURE } from './supabase-auth.factory'
+import { NO_AUTH_ANSWER } from './supabase-auth.factory'
 
 const apiError = (status: number, code: string | undefined) =>
   new AuthApiError('refused', status, code)
@@ -14,13 +14,14 @@ afterEach(() => {
 })
 
 describe('isAnswered5xx', () => {
-  it('holds for a 5xx Supabase Auth answered', () => {
-    expect(isAnswered5xx(apiError(599, undefined))).toBe(true)
+  it('holds for a 5xx Supabase Auth answered, which carries its code', () => {
+    expect(isAnswered5xx(apiError(599, 'unexpected_failure'))).toBe(true)
     expect(isAnswered5xx(apiError(500, 'unexpected_failure'))).toBe(true)
   })
 
   it.each([
-    ['a transport failure', apiError(599, TRANSPORT_FAILURE)],
+    ['a failure Supabase Auth did not answer', apiError(599, NO_AUTH_ANSWER)],
+    ['a 5xx without a code', apiError(599, undefined)],
     ['a refusal below 500', apiError(429, 'over_email_send_rate_limit')],
     ['a failure auth-js could not read', new AuthRetryableFetchError('down', 0)],
     ['an error not from auth-js', new TypeError('boom')],
@@ -101,10 +102,10 @@ describe('toApiError', () => {
   })
 
   it.each([
-    ['a 5xx', new AuthApiError('HTTP 502 with a body that is not JSON', 599, undefined)],
+    ['a 5xx', new AuthApiError('HTTP 502 with a body that is not JSON', 599, NO_AUTH_ANSWER)],
     [
       'a transport failure',
-      new AuthApiError('fetch failed: connect ECONNREFUSED', 599, TRANSPORT_FAILURE),
+      new AuthApiError('fetch failed: connect ECONNREFUSED', 599, NO_AUTH_ANSWER),
     ],
     ['a failure auth-js retries', new AuthRetryableFetchError('fetch failed', 0)],
   ])('carries the reason of %s to the log line, never to the body', (_, error) => {

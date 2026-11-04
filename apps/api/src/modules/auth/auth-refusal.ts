@@ -7,7 +7,7 @@ import {
   isAuthSessionMissingError,
 } from '@supabase/auth-js'
 import { ApiError, mfaRequired, unauthenticated, unavailable } from '../../common/errors/api-error'
-import { TRANSPORT_FAILURE } from './supabase-auth.factory'
+import { NO_AUTH_ANSWER } from './supabase-auth.factory'
 
 const logger = new Logger('AuthRefusal')
 
@@ -36,9 +36,15 @@ const LISTED: Readonly<Record<string, string>> = {
   over_request_rate_limit: 'Too many requests reached the sign-in service.',
 }
 
-/** A `5xx` Supabase Auth did answer, as opposed to a transport failure, where nothing answered. */
+/**
+ * A `5xx` Supabase Auth answered itself, which carries its code, as opposed to a transport failure
+ * or a gateway answering for a service that is down.
+ */
 export const isAnswered5xx = (error: unknown): error is Error =>
-  isAuthError(error) && (error.status ?? 0) >= 500 && error.code !== TRANSPORT_FAILURE
+  isAuthError(error) &&
+  (error.status ?? 0) >= 500 &&
+  Boolean(error.code) &&
+  error.code !== NO_AUTH_ANSWER
 
 /**
  * A failure of a hook Supabase Auth calls, such as `hook_timeout_after_retry` for an unreachable

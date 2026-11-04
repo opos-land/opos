@@ -4,7 +4,7 @@ import { env } from '../../../shared/config/env'
 import { accountClient } from '../../../shared/lib/api'
 import { isMfaRequired, isSessionInvalid } from '../../../shared/lib/errors'
 import { signedIn, signedOut } from '../../../shared/lib/session'
-import { sessionUnavailable } from '../../../shared/lib/session-store'
+import { onSessionEnded, sessionUnavailable } from '../../../shared/lib/session-store'
 import { rememberAuthReturn } from '../model/auth-return'
 import { googleSignInUrl } from '../model/google-url'
 import { type Registration } from '../model/registration'
@@ -68,12 +68,17 @@ export const verifyLink = (body: VerifyLink) =>
 async function afterRightCode(call: () => Promise<unknown>): Promise<unknown> {
   const failure = await attempt(call)
   if (failure) return failure
+  let ended = false
+  const stop = onSessionEnded(() => (ended = true))
   try {
     signedIn(await accountClient.me.get())
   } catch (error) {
     // The API link has already moved the session to the state the answer asked for: the code
-    // screen, or signed out when the link's refresh found the session gone.
-    if (!isMfaRequired(error) && !isSessionInvalid(error)) sessionUnavailable()
+    // screen, or signed out when the link's refresh found the session gone. A `session.invalid`
+    // that stands without it is a refresh that could not be made: the account is not known.
+    if (!isMfaRequired(error) && !(isSessionInvalid(error) && ended)) sessionUnavailable()
+  } finally {
+    stop()
   }
   return null
 }

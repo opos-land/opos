@@ -159,22 +159,46 @@ describe('resetTwoFactor', () => {
     expect(rows[0]).toMatchObject({ code_hash: 'd'.repeat(64), used_at: null })
   })
 
-  it('sends the notice when removing the codes fails after the factors are gone', async () => {
-    const { id, email } = await personWith2fa()
-    const failing = new Proxy(db, {
+  /** The database, whose `delete` fails as a query of Drizzle does: the query in its message. */
+  const failingDelete = (id: string) =>
+    new Proxy(db, {
       get: (target, property) =>
         property === 'delete'
           ? () => {
-              throw new Error('codes store down')
+              throw new Error(`Failed query: delete from codes\nparams: ${id}`, {
+                cause: new Error('codes store down'),
+              })
             }
           : (Reflect.get(target, property) as unknown),
     })
 
-    const failure = await failureOf(resetTwoFactor({ ...deps, db: failing }, email))
+  it('reports the removal and the notice when removing the codes fails after the factors are gone', async () => {
+    const { id, email } = await personWith2fa()
 
-    expect(failure).toMatchObject({ message: 'codes store down' })
+    const result = await resetTwoFactor({ ...deps, db: failingDelete(id) }, email)
+
+    expect(result).toEqual({
+      accountId: id,
+      factors: 1,
+      emailSent: true,
+      codesError: 'codes store down',
+    })
     expect(await mfaState(id)).toEqual({ mirrored: false, factors: 0 })
     expect(await waitForMail(email)).toHaveLength(1)
+  })
+
+  it('reports both when the codes and the email fail', async () => {
+    const { id, email } = await personWith2fa()
+    const failing = { sendNoticeEmail: () => Promise.reject(new Error('smtp down')) }
+
+    const result = await resetTwoFactor({ ...deps, db: failingDelete(id), mail: failing }, email)
+
+    expect(result).toMatchObject({
+      factors: 1,
+      emailSent: false,
+      emailError: 'smtp down',
+      codesError: 'codes store down',
+    })
   })
 
   it('reports a failed email and leaves the removal standing', async () => {

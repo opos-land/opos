@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { AuthAdminClient } from '../modules/auth/auth-admin.client'
 import { SupabaseAuthFactory } from '../modules/auth/supabase-auth.factory'
 import { MailService } from '../modules/mail/mail.service'
-import { ResetError, resetTwoFactor } from './reset-two-factor'
+import { reportReset, ResetError, resetTwoFactor } from './reset-two-factor'
 
 // `pnpm db:account:reset-2fa <email>` (PLAN.md 14): the entry of the reset. It reads what `tools`
 // is given (PLAN.md 11): the `postgres` role's URL, the Supabase Auth address and secret key, and
@@ -36,12 +36,7 @@ try {
     { db, admin: new AuthAdminClient(new SupabaseAuthFactory(env)), mail: new MailService(env) },
     email,
   )
-  console.log(`Removed ${result.factors} factor(s) of account ${result.accountId}.`)
-  if (!result.emailSent) {
-    console.error(
-      `The email was not sent (${result.emailError ?? 'no reason given'}); the removal stands. Tell the person yourself.`,
-    )
-  }
+  process.exitCode = reportReset(result, console)
 } catch (error) {
   if (!(error instanceof ResetError)) throw error
   console.error(`${error.code}: ${error.message}`)

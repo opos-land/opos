@@ -33,6 +33,14 @@ export interface ResetResult {
   emailSent: boolean
   /** Why the email failed, for the admin to see; absent when it was sent. */
   emailError?: string
+  /** Why the unused recovery codes stayed, for the admin to see; absent when they went. */
+  codesError?: string
+}
+
+/** The reason of a failure, which a failed query of Drizzle holds in `cause`: its message quotes the query. */
+const reasonOf = (error: unknown) => {
+  const reason = error instanceof Error && error.cause instanceof Error ? error.cause : error
+  return reason instanceof Error ? reason.message : 'unknown error'
 }
 
 /**
@@ -70,8 +78,8 @@ export async function resetTwoFactor(deps: ResetDeps, address: string): Promise<
     )
   }
   for (const factorId of factorIds) await deps.admin.deleteFactor(account.id, factorId)
-  // The factors are gone, so the person is told whatever happens to the codes.
-  let codesFailure: Error | undefined
+  // The factors are gone, so the person is told and the admin hears of it whatever the codes do.
+  const result: ResetResult = { accountId: account.id, factors: factorIds.length, emailSent: true }
   try {
     await deps.db
       .delete(accountRecoveryCodes)
@@ -79,25 +87,37 @@ export async function resetTwoFactor(deps: ResetDeps, address: string): Promise<
         and(eq(accountRecoveryCodes.accountId, account.id), isNull(accountRecoveryCodes.usedAt)),
       )
   } catch (error) {
-    codesFailure = error instanceof Error ? error : new Error(String(error))
+    result.codesError = reasonOf(error)
   }
 
-  let result: ResetResult
   try {
     await deps.mail.sendNoticeEmail({
       to: email,
       locale: recipientLocale({ account: account.locale }),
       content: mfaDisabledEmail,
     })
-    result = { accountId: account.id, factors: factorIds.length, emailSent: true }
   } catch (error) {
-    result = {
-      accountId: account.id,
-      factors: factorIds.length,
-      emailSent: false,
-      emailError: error instanceof Error ? error.message : 'unknown error',
-    }
+    result.emailSent = false
+    result.emailError = error instanceof Error ? error.message : 'unknown error'
   }
-  if (codesFailure) throw codesFailure
   return result
+}
+
+/**
+ * What the script tells the admin, and the code it exits with. The removal is always reported, and
+ * only codes left behind make it fail: a failed email leaves the admin to tell the person.
+ */
+export function reportReset(result: ResetResult, out: Pick<Console, 'log' | 'error'>): number {
+  out.log(`Removed ${result.factors} factor(s) of account ${result.accountId}.`)
+  if (!result.emailSent) {
+    out.error(
+      `The email was not sent (${result.emailError ?? 'no reason given'}); the removal stands. Tell the person yourself.`,
+    )
+  }
+  if (result.codesError) {
+    out.error(
+      `The unused recovery codes were not removed (${result.codesError}); the removal stands. They work only with a factor, and the next enrolment replaces them.`,
+    )
+  }
+  return result.codesError ? 1 : 0
 }

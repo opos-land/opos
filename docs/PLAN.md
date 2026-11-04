@@ -1607,6 +1607,9 @@ Required behaviour when the email already exists, checked in the smoke test
    `updateUser({ password })`, then `signOut({ scope: 'others' })` — every
    other session ends: its refresh tokens stop working at once, and an access token it already
    holds keeps working until it expires, at most 15 minutes later ([7.4](#74-authorization)).
+   The form remembers the password of an attempt that failed with anything but `auth.same_password`;
+   `auth.same_password` on a retry of exactly that password counts as saved, since the API completes
+   the change although the answer was lost. On a first attempt it shows its message.
 3. The flow works for a Google-only account as well: completing it adds password sign-in next to
    Google.
 4. A link that reaches an address not yet confirmed confirms it, and `POST /auth/verify` replaces

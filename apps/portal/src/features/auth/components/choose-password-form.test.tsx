@@ -80,4 +80,47 @@ describe('ChoosePasswordForm', () => {
     expect(await screen.findByRole('status')).toBeTruthy()
     expect(onDone).not.toHaveBeenCalled()
   })
+
+  it('counts same_password as saved when it answers a retry of the password that failed before', async () => {
+    const user = userEvent.setup()
+    vi.mocked(setPassword)
+      .mockResolvedValueOnce(new ORPCError('server.unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new ORPCError('auth.same_password', { status: 422 }))
+    const onDone = renderForm()
+
+    await submit(user, 'correct horse')
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(onDone).not.toHaveBeenCalled()
+    await submit(user, 'correct horse')
+
+    expect(setPassword).toHaveBeenCalledTimes(2)
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalledOnce())
+  })
+
+  it('still shows same_password when the first attempt is refused with it', async () => {
+    const user = userEvent.setup()
+    vi.mocked(setPassword).mockResolvedValue(new ORPCError('auth.same_password', { status: 422 }))
+    const onDone = renderForm()
+
+    await submit(user, 'correct horse')
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    await submit(user, 'correct horse')
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('does not count same_password as saved for a different password', async () => {
+    const user = userEvent.setup()
+    vi.mocked(setPassword)
+      .mockResolvedValueOnce(new ORPCError('server.unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new ORPCError('auth.same_password', { status: 422 }))
+    const onDone = renderForm()
+
+    await submit(user, 'correct horse')
+    await screen.findByRole('alert')
+    await submit(user, 'another horse')
+
+    expect(onDone).not.toHaveBeenCalled()
+  })
 })

@@ -10,7 +10,8 @@ import { passwordSchema } from '../model/registration'
 /**
  * The password of an account whose address has just been confirmed (PLAN.md 5.1, 7.6). Saving
  * it ends every other session of the account. A sign-in older than 5 minutes cannot change the
- * password (7.4); the form then offers a new link by email instead.
+ * password (7.4); the form then offers a new link by email instead. `auth.same_password` on a
+ * retry of the password that failed before counts as saved.
  */
 export function ChoosePasswordForm({
   email,
@@ -25,6 +26,8 @@ export function ChoosePasswordForm({
   const { t } = useLingui()
   const [error, setError] = useState<unknown>(null)
   const [linkSent, setLinkSent] = useState(false)
+  /** The password of an attempt that failed for another reason than being the current one. */
+  const [attempted, setAttempted] = useState<string | null>(null)
   const form = useForm({
     resolver: zodResolver(passwordSchema),
     defaultValues: { password: '', repeat: '' },
@@ -35,7 +38,15 @@ export function ChoosePasswordForm({
   const submit = form.handleSubmit(async ({ password }) => {
     setError(null)
     const failure = await setPassword(password)
-    if (failure) return setError(failure)
+    if (failure) {
+      if (errorCode(failure) !== 'auth.same_password') {
+        // The API saves the password, then ends the other sessions: a lost answer or a failed
+        // second step leaves it saved, and the retry meets the current password.
+        setAttempted(password)
+        return setError(failure)
+      }
+      if (attempted !== password) return setError(failure)
+    }
     onDone()
   })
 

@@ -12,4 +12,12 @@ describe('unavailable', () => {
     })
     expect(error.getStatus()).toBe(503)
   })
+
+  it('keeps its reason out of the message and on the log line', () => {
+    const error = unavailable('fetch failed: connect ECONNREFUSED')
+
+    expect(error.message).toBe('Supabase Auth is unavailable')
+    expect(error.logLine).toBe('Supabase Auth is unavailable: fetch failed: connect ECONNREFUSED')
+    expect(unavailable().logLine).toBe('Supabase Auth is unavailable')
+  })
 })

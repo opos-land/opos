@@ -10,14 +10,22 @@ export class ApiError extends HttpException {
     readonly params?: ApiErrorBody['params'],
     /** Response headers that go out with the error, e.g. `Retry-After` on a 429. */
     readonly headers?: Record<string, string>,
-    /** An expected 5xx, such as a busy tenant, is logged as a warning, not as an error. */
-    readonly flags: { expected?: boolean } = {},
+    /**
+     * An expected 5xx, such as a busy tenant, is logged as a warning, not as an error. Its `reason`
+     * goes to the log alone, never to the body, and so names no address or token.
+     */
+    readonly flags: { expected?: boolean; reason?: string } = {},
   ) {
     super(message, status)
   }
 
   get expected() {
     return this.flags.expected === true
+  }
+
+  /** What a log line says of this error: the message, and the reason behind it when there is one. */
+  get logLine() {
+    return this.flags.reason ? `${this.message}: ${this.flags.reason}` : this.message
   }
 }
 
@@ -33,14 +41,14 @@ export const mfaRequired = () =>
   )
 
 /** Supabase Auth or its signing keys are out of reach: retry soon, the session stays (PLAN.md 7.4). */
-export const unavailable = () =>
+export const unavailable = (reason?: string) =>
   new ApiError(
     503,
     'server.unavailable',
     'Supabase Auth is unavailable',
     undefined,
     { 'Retry-After': '30' },
-    { expected: true },
+    { expected: true, reason },
   )
 
 export const forbidden = (message = 'Insufficient permissions') =>

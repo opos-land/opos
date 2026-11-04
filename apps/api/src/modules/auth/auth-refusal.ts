@@ -42,15 +42,16 @@ export const isAnswered5xx = (error: unknown): error is Error =>
 /**
  * What Supabase Auth refused, as the error the API answers with (PLAN.md 5.1): a dead session is
  * `401` `session.invalid`, `insufficient_aal` is `401` `session.mfa-required`,
- * `mfa_verification_failed` is `400` `mfa.code-invalid`, a code the contract lists keeps its status, an outage is `503`, and
- * anything else is a logged `500`.
+ * `mfa_verification_failed` is `400` `mfa.code-invalid`, a code the contract lists keeps its status, an outage is `503` with
+ * its reason for the log line, and anything else is a logged `500`.
  */
 export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error
   if (isAuthSessionMissingError(error)) return unauthenticated()
-  if (isAuthRetryableFetchError(error)) return unavailable()
+  // The message is callAuth's own: the status or the transport cause, never Supabase Auth's text.
+  if (isAuthRetryableFetchError(error)) return unavailable(error.message)
   if (isAuthError(error)) {
-    if ((error.status ?? 0) >= 500) return unavailable()
+    if ((error.status ?? 0) >= 500) return unavailable(error.message)
     if (error.code && SESSION_GONE.has(error.code)) return unauthenticated()
     // The session lives and only lacks the second factor, such as `updateUser` at `aal1`.
     if (error.code === 'insufficient_aal') return mfaRequired()

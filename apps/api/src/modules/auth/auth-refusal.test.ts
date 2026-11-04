@@ -83,6 +83,20 @@ describe('toApiError', () => {
     expect(toApiError(apiError(502, undefined)).headers).toEqual({ 'Retry-After': '30' })
   })
 
+  it.each([
+    ['a 5xx', new AuthApiError('HTTP 502 with a body that is not JSON', 599, undefined)],
+    [
+      'a transport failure',
+      new AuthApiError('fetch failed: connect ECONNREFUSED', 599, TRANSPORT_FAILURE),
+    ],
+    ['a failure auth-js retries', new AuthRetryableFetchError('fetch failed', 0)],
+  ])('carries the reason of %s to the log line, never to the body', (_, error) => {
+    const mapped = toApiError(error)
+
+    expect(mapped.logLine).toBe(`Supabase Auth is unavailable: ${error.message}`)
+    expect(toErrorResponse(mapped).body.message).toBe('Supabase Auth is unavailable')
+  })
+
   it('logs what maps to 500, and only that', () => {
     const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
 

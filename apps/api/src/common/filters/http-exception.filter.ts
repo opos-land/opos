@@ -199,7 +199,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
     const { status, body, headers } = toErrorResponse(exception)
     if (status >= 500) {
-      if (exception instanceof ApiError && exception.expected) this.logger.warn(exception.message)
+      if (exception instanceof ApiError && exception.expected) this.logger.warn(exception.logLine)
       else this.logger.error(exception)
     }
     for (const [name, value] of Object.entries(headers ?? {})) response.setHeader(name, value)

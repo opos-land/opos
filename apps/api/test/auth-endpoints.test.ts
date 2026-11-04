@@ -678,19 +678,48 @@ describe('refresh', () => {
     })
 
     it.each([
-      ['answers a 5xx', () => broken],
-      ['cannot be reached', () => unreachable],
-    ])('answers 503 and keeps the cookies when Supabase Auth %s', async (_, which) => {
-      const res = await request(which().getHttpServer())
-        .post('/auth/refresh')
-        .set('Origin', portal)
-        .set('Cookie', 'opos_portal_refresh=some-token')
-        .send({})
+      ['answers a 5xx', () => broken, 'HTTP 502'],
+      ['cannot be reached', () => unreachable, 'fetch failed'],
+    ])('answers 503 and keeps the cookies when Supabase Auth %s', async (_, which, reason) => {
+      const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+      try {
+        const res = await request(which().getHttpServer())
+          .post('/auth/refresh')
+          .set('Origin', portal)
+          .set('Cookie', 'opos_portal_refresh=some-token')
+          .send({})
 
-      expect(res.status).toBe(503)
-      expect(res.body).toMatchObject({ code: 'server.unavailable' })
-      expect(res.headers['retry-after']).toBe('30')
-      expect(cookiesOf(res)).toEqual([])
+        expect(res.status).toBe(503)
+        expect(res.body).toMatchObject({ code: 'server.unavailable' })
+        expect(res.headers['retry-after']).toBe('30')
+        expect(cookiesOf(res)).toEqual([])
+        expect(warned).toHaveBeenCalledTimes(1)
+        expect(warned.mock.calls[0]?.[0]).toContain(reason)
+        expect(JSON.stringify(warned.mock.calls)).not.toMatch(/some-token|bad gateway/)
+      } finally {
+        vi.restoreAllMocks()
+      }
+    })
+
+    it.each([
+      ['answers a 5xx', () => broken, 'HTTP 502'],
+      ['cannot be reached', () => unreachable, 'fetch failed'],
+    ])('names the reason once when a sign-out finds Supabase Auth %s', async (_, which, reason) => {
+      const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+      try {
+        const res = await request(which().getHttpServer())
+          .post('/auth/sign-out')
+          .set('Origin', portal)
+          .set('Cookie', 'opos_portal_refresh=some-token')
+          .send({})
+
+        expect(res.status).toBe(204)
+        expect(warned).toHaveBeenCalledTimes(1)
+        expect(warned.mock.calls[0]?.[0]).toContain(reason)
+        expect(JSON.stringify(warned.mock.calls)).not.toContain('some-token')
+      } finally {
+        vi.restoreAllMocks()
+      }
     })
 
     it('sends the secret key and the full client address, never the visitor user agent', async () => {

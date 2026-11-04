@@ -275,7 +275,7 @@ export class AuthService {
     } catch (error) {
       const refusal = refreshRefusal(error)
       if (refusal.code !== 'session.invalid') {
-        this.logger.warn(`Sign-out did not reach Supabase Auth: ${refusal.message}`)
+        this.logger.warn(`Sign-out did not reach Supabase Auth: ${refusal.logLine}`)
       }
     } finally {
       clearSessionCookies(req.res, app, this.env)

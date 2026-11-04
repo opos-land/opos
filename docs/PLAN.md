@@ -198,13 +198,13 @@ opos/
       Dockerfile         # targets runtime and tools (13)
     panel/               # built: Vite and Lingui config, catalogs, app/ (router, providers, query
                          #   client), features auth, tenants, editions, program, team, account, shared/
-                         #   (API link, auth client, session, i18n, UI), .env.example, tests (8);
-                         #   the auth client gives way to the API's auth endpoints (5.1)
+                         #   (API link, session, i18n, UI), .env.example, tests (8); sign-in goes through the
+                         #   API's auth endpoints (5.1)
       Dockerfile
     portal/              # built: Vite and Lingui config, catalogs, app/ (router, layout, providers,
                          #   query client), features landing, auth, account, shared/ (API link,
-                         #   auth client, session, i18n, UI), .env.example, tests (9); the auth
-                         #   client gives way to the API's auth endpoints (5.1)
+                         #   session, i18n, UI), .env.example, tests (9); sign-in goes through the API's
+                         #   auth endpoints (5.1)
       src/features/      # still to come: attendances, speaking, tickets
       Dockerfile
   e2e/                   # built: Playwright config, fixtures (stack, Mailpit, admin API, tenants,
@@ -240,8 +240,10 @@ opos/
 
 Root scripts in `package.json` only delegate — `"build": "turbo run build"` — and task logic lives
 in the packages' own scripts. The exceptions are `prepare` (lefthook), `format`/`format:check`
-(prettier over the whole repository) and `infra:up`/`infra:down`/`infra:reset` (the Supabase CLI,
-[12](#12-local-development)); those do not go through turbo.
+(prettier over the whole repository), `infra:init` (`scripts/infra-init.mjs`),
+`infra:up`/`infra:down`/`infra:reset` (the Supabase CLI, [12](#12-local-development)) and
+`test:scripts` (`node --test` over the root `scripts/` and `.claude/`, [15](#15-tests)); those do
+not go through turbo.
 
 `packages/contract`, `packages/db` and `packages/i18n` have no build step, so `^build` gives the
 task graph no edges towards them. The `transit` task supplies those edges: declared only in
@@ -268,7 +270,8 @@ The tasks with their `dependsOn`, `outputs`, cache and environment settings are 
   `dist/scripts/*.js`, with the code they share in a chunk beside them; the rest of `node_modules`
   stays external.
 - Frontend build-time variables (`VITE_*`) enter task hashes through turbo's framework inference.
-  The API's variables are read at runtime and stay out of the hash
+  `build` also hashes the `.env*` files of its package and `SUPABASE_SECRET_KEY`, so a changed
+  secret key rebuilds. The API's other variables are read at runtime and stay out of the hash
   ([11](#11-environment-variables)).
 - turbo runs in strict environment mode and hands a task only the variables it lists. `test` and
   every `db:*` task pass the database variables through (`passThroughEnv`), `test` also the local
@@ -901,8 +904,11 @@ password, and a body with any field the schema does not name, a password include
 | PUT | `/auth/password` | requires a session with a recent sign-in ([7.4](#74-authorization)), else `401` `session.reauthentication-required`; `updateUser({ password })`, then `signOut({ scope: 'others' })`; a `same_password` refusal still ends the other sessions, so a retry after a failed sign-out completes the change | `204` |
 
 Every `auth` route but the two Google ones reads the application from the `Origin` and answers `403`
-`request.origin-denied` without the `Origin` of one. The six routes of the limit in
-[7.9](#79-rate-limiting) count it before they call Supabase Auth.
+`request.origin-denied` without the `Origin` of one. The routes of a signed-in account, `PUT
+/auth/password` and `/auth/mfa/*`, check the session first: without a session cookie they answer
+`401` `session.invalid` whatever the `Origin`, and with one a missing or foreign `Origin` is the
+`403` of [7.4](#74-authorization). The six routes of the limit in [7.9](#79-rate-limiting) count it
+before they call Supabase Auth.
 
 The two `GET` routes are plain Nest routes — a redirect, not JSON — documented in the OpenAPI
 document like `GET /health`. Every other route is in the contract (`contract.auth.*`), built from
@@ -1726,6 +1732,10 @@ scanner included) — an explicit list, never `*` and never a reflected header. 
 session travels in the API's cookies ([7.4](#74-authorization)). `Authorization` stays for the
 scanner's device token ([7.11](#711-scanner)).
 
+Every response carries `Vary: Origin`, whether or not CORS names the `Origin`, the refusals made
+before routing (`415`, `403` `request.origin-denied`) included: the answer depends on the
+`Origin`, so a shared cache must not serve one application's response to another.
+
 `POST /hooks/send-email` and `POST /hooks/payments/:provider` are called server to server and need
 no CORS; they reject every request without a valid signature.
 
@@ -2281,40 +2291,35 @@ only together with SMTP settings OPOS does not use; a push leaves it as it is.
 
 ### Supabase Auth configuration
 
-The rules behind `config.toml`:
+The values of the local stack are in [supabase/config.toml](../supabase/config.toml); the rules
+behind them:
 
-- The Data API is off everywhere: `[api]` sets `enabled = false`, which `config push` turns into
-  an empty list of exposed schemas; the local gateway still serves Auth at `/auth/v1`.
-- The local stack runs only what OPOS uses: `[realtime]`, `[storage]`, `[edge_runtime]` and
-  `[analytics]` are off, and so are `[db.seed]` and `[db.migrations]` — Drizzle migrates and
-  `pnpm db:seed` seeds ([14](#14-demo-data-seed)).
-- The local Mailpit takes the API's mail: `[local_smtp]` with `smtp_port = 54325`.
-
-- Sessions and passwords as in [7.4](#74-authorization): an ES256 signing key, `jwt_expiry = 900`,
-  `enable_refresh_token_rotation = true` with `refresh_token_reuse_interval = 10`,
-  `minimum_password_length = 8`, and in `[auth.email]` `enable_confirmations = true`,
-  `double_confirm_changes = true`, `otp_expiry = 3600`.
-- Sign-up is open (`enable_signup = true`). Email and Google sign-in only: phone sign-up,
-  anonymous sign-ins and manual identity linking are off.
+- The Data API is off everywhere (`[api]`), which `config push` turns into an empty list of exposed
+  schemas; the local gateway still serves Auth at `/auth/v1`.
+- The local stack runs only what OPOS uses: Realtime, Storage, Edge Functions and analytics are off,
+  and so are `[db.seed]` and `[db.migrations]` — Drizzle migrates and `pnpm db:seed` seeds
+  ([14](#14-demo-data-seed)). The local Mailpit takes the API's mail (`[local_smtp]`).
+- Sessions and passwords as in [7.4](#74-authorization): an ES256 signing key, refresh token
+  rotation, a minimum password length of 8, and confirmed email addresses, a change of address
+  confirmed at both. The environments differ from the local stack only in the keys the remote
+  blocks override.
+- Sign-up is open. Email and Google sign-in only: phone sign-up, anonymous sign-ins and manual
+  identity linking are off.
 - `site_url` is `PORTAL_URL`, and `additional_redirect_urls` holds exactly
   `<PORTAL_URL>/auth/confirm`, `<PANEL_URL>/auth/confirm` and `<API_URL>/auth/google/callback`.
-  Locally they come from `supabase/.env` through `env()` (`SITE_URL`, `PORTAL_CONFIRM_URL`,
-  `PANEL_CONFIRM_URL`, `GOOGLE_CALLBACK_URL`), so a developer who moves a port changes them there
-  ([12](#ports)); each remote block writes its environment's addresses out.
-- Every email goes through the send-email hook ([below](#send-email-hook)):
-  `[auth.hook.send_email]` with `uri` `https://api.<ROOT_DOMAIN>/hooks/send-email` in each remote
-  block and `SEND_EMAIL_HOOK_URI` (`http://host.docker.internal:3001/hooks/send-email`) locally, and
-  `secrets` from `SEND_EMAIL_HOOK_SECRET`, the same value the API holds.
-- Google in `[auth.external.google]`, the client id and secret from `env()`; the Google client's
-  authorized redirect URI is `<SUPABASE_URL>/auth/v1/callback`. Locally both stay empty unless
-  someone works on Google sign-in.
-- Two-factor authentication ([7.12](#712-two-factor-authentication)): `[auth.mfa]` with
-  `max_enrolled_factors = 1`, `[auth.mfa.totp]` with `enroll_enabled = true` and
-  `verify_enabled = true`, and phone and WebAuthn factors off.
+  Locally they come from `supabase/.env` through `env()`, so a developer who moves a port changes
+  them there ([12](#ports)); each remote block writes its environment's addresses out.
+- Every email goes through the send-email hook ([below](#send-email-hook)): its `uri` is
+  `https://api.<ROOT_DOMAIN>/hooks/send-email` in each remote block, and its secret is the
+  `SEND_EMAIL_HOOK_SECRET` the API holds.
+- Google's client id and secret come from `env()`; the Google client's authorized redirect URI is
+  `<SUPABASE_URL>/auth/v1/callback`. Locally both stay empty unless someone works on Google
+  sign-in.
+- Two-factor authentication ([7.12](#712-two-factor-authentication)): one factor per account, TOTP
+  only; phone and WebAuthn factors are off.
 - Signing keys: in each project its own ES256 key, with the legacy JWT secret revoked; locally
-  `signing_keys_path = "./signing_keys.json"`, a JSON array of keys that `pnpm infra:init` creates
-  before the first `supabase start`, when the file is missing or holds only `[]` (`[]`, then `supabase gen signing-key --algorithm ES256
-  --append`) and git never sees.
+  `pnpm infra:init` creates the key file `signing_keys.json` that git never sees, before the first
+  `supabase start`, when the file is missing or holds only `[]`.
 
 ### API keys and the client's address
 
@@ -2586,7 +2591,7 @@ the names do not resolve to the loopback interface:
 The three addresses share the site `opos.localhost`, as production's share `opos.land`, so the
 session cookies travel as in production ([7.4](#74-authorization)).
 
-The root scripts are in [package.json](../package.json); apart from `format` and `infra:*`, each
+The root scripts are in [package.json](../package.json); apart from `format`, `infra:*` and `test:scripts`, each
 is a `turbo run <task>` delegate ([3.1](#31-turbo-tasks)). `pnpm infra:up` is `supabase start`,
 `pnpm infra:down` `supabase stop` — the data and the roles stay — and `pnpm infra:reset` wipes the
 local database (`supabase stop --no-backup`), starts it again and runs `pnpm db:roles`;
@@ -3079,7 +3084,7 @@ a hook 30 s ([vitest.config.ts](../apps/api/vitest.config.ts)).
 | two-factor authentication | `enroll` needs a recent sign-in and answers `409` `mfa.already-enabled` with 2FA on; `enable` with a `factorId` of another account -> `404` `request.not-found`, on an already verified factor -> `409` `mfa.already-enabled`, and with a right code sets `aal2` and returns ten codes once, stored hashed, with no plaintext in `account_recovery_codes`; `verify` with a right code raises the session to `aal2`, a refresh keeps it, and a wrong code or one from an hour ago -> `400` `mfa.code-invalid`; the eleventh attempt in 15 minutes -> `429` `request.rate-limited`, another account unaffected; `verify` and `recover` on an account without 2FA or at `aal2` -> `409` `mfa.not-required`; `recover` consumes a code once, removes the factor and clears `mfaEnabledAt`; a used code and one of another account are refused; a factor removal that fails spends no code; `recover` and `DELETE /auth/mfa` send the email in the account's locale, or the sign-up's for an account that chose none, and a failed email still answers `204` and is logged, and the notice goes out although marking or removing the codes fails after the factors are gone; `recover` and `DELETE /auth/mfa` end the account's other sessions (a browser at `aal2` from before gets `401` `session.invalid` on refresh) and keep the caller's, and a failed sign-out changes nothing; `recover` with an unused code of another account is refused and leaves that code unused; a wrong code or a refresh inside the client still sets the refreshed session's cookies; two racing `enable` requests never return a code that is not stored and unused; a code is accepted a second time within its step; a failure of the code store leaks no hash; `enable` on an account that already holds a verified factor deletes no code; the code lookup and the marking refuse the hash of another account; `DELETE /auth/mfa` needs a recent sign-in, answers `401` `session.mfa-required` below `aal2` and `404` `mfa.not-enabled` with no factor; `pnpm db:account:reset-2fa` removes the factors and unused codes and sends the email, reports the removal and the email's outcome although removing the codes fails, and refuses an unknown or unconfirmed address and an account with no verified factor, an unverified-only one included; `DELETE /me` at `aal2` removes the factors and codes with the user; an `aal1` token on an account with 2FA -> `401` `session.mfa-required` on `GET /me` and on a tenant route before any permission check, `POST /auth/sign-out` and `POST /auth/refresh` work at `aal1`, an `aal2` token passes, an account without 2FA passes at `aal1`, and an access token from before `enable` loses access at once; a right password sets the cookies and answers `session.mfa-required`; a recovery link on an account with 2FA cannot change the password at `aal1`; the Google callback leads to the code screen; a refresh of an `aal1` session stays `aal1` |
 | send-email hook | an unsigned or wrongly signed request -> `401`; `signup`, `recovery` and `email_change` (both addresses) land in Mailpit in the recipient's locale with a link to the calling application's `/auth/confirm` that names no Supabase address, and `POST /auth/verify` redeems the `signup` and `recovery` ones; another `email_action_type` or a malformed payload -> `400`; an SMTP failure -> `500`; an SMTP server that answers every step in time but takes longer than the 4 s deadline in total -> `500` within 5 s, the message not sent |
 | rate limit | above the default limit -> `429` `request.rate-limited` with `Retry-After`; one counter per session across routes, and per address without a valid token; a forged token, and one that cannot be checked while the keys are unavailable, counts against the address, never the account it names; another address or session is unaffected, a session of the same account at `aal2` while one at `aal1` spends its limit included; an endpoint with a limit of its own is tested above that limit, `GET /invitations/preview` (per address) and `POST /tenants/current/members` (per tenant) included |
-| CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, with `Access-Control-Allow-Credentials: true`; a foreign origin gets neither header; exactly the four allowed request headers; `Retry-After` exposed |
+| CORS | `PANEL_URL` and `PORTAL_URL` allowed by name on a preflight and a request, with `Access-Control-Allow-Credentials: true`; a foreign origin gets neither header; exactly the four allowed request headers; `Retry-After` exposed; `Vary: Origin` on every response, a refusal made before routing included |
 | i18n | `pnpm i18n:check` passes: catalogs in sync with the code, no message without its `pl` translation; every error `code` from the contract has a descriptor in `errors.ts` (a unit test in `packages/contract`); programme time formatting returns the tenant's zone, not the server's |
 
 ### 15.2 E2E tests

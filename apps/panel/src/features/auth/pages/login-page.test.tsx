@@ -78,4 +78,39 @@ describe('LoginPage ?error=', () => {
 
     expect(screen.getByText('signed in')).toBeTruthy()
   })
+
+  describe('with a session', () => {
+    beforeEach(() => {
+      useSession.setState({
+        status: 'ready',
+        account: {
+          id: 'a',
+          email: 'a@x.test',
+          firstName: null,
+          lastName: null,
+          locale: null,
+          mfaEnabled: false,
+        },
+      })
+    })
+
+    it('shows a failed Google confirmation and a way back instead of leaving', () => {
+      renderLogin('?error=auth.google-failed&redirect=%2Fconvention-a')
+
+      expect(screen.getByRole('alert').textContent).toBe(
+        'Signing in with Google failed. Try again.',
+      )
+      expect(screen.getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe(
+        '/convention-a',
+      )
+      expect(screen.queryByText('signed in')).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Continue with Google' })).toBeNull()
+    })
+
+    it('leaves at once for a value that is no code of the API', () => {
+      renderLogin('?error=access_denied')
+
+      expect(screen.getByText('signed in')).toBeTruthy()
+    })
+  })
 })

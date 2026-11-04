@@ -1,7 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { errorCodes } from '@opos/contract'
 import { ORPCError } from '@orpc/client'
-import { Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { useSession } from '../../../shared/lib/session'
 import { ErrorMessage, LoadingView } from '../../../shared/ui'
 import { AuthLayout } from '../components/auth-layout'
@@ -27,11 +27,23 @@ export function LoginPage() {
   const returnTo = safeRedirect(params.get('redirect'))
 
   if (status === 'loading') return <LoadingView />
+  const returned = returnedError(params.get('error'))
+  if (account && returned) {
+    // A Google round trip started while signed in (confirming a deletion, re-authenticating) failed.
+    return (
+      <AuthLayout title={<Trans>Sign in to the organizer panel</Trans>}>
+        <ErrorMessage error={returned} />
+        <Link to={returnTo} className="text-sm underline">
+          <Trans>Continue</Trans>
+        </Link>
+      </AuthLayout>
+    )
+  }
   if (account) return <Navigate to={returnTo} replace />
 
   return (
     <AuthLayout title={<Trans>Sign in to the organizer panel</Trans>}>
-      <ErrorMessage error={returnedError(params.get('error'))} />
+      <ErrorMessage error={returned} />
       <SignInForm onSignedIn={() => void navigate(returnTo, { replace: true })} />
       <p className="text-muted text-center text-xs">
         <Trans>or</Trans>

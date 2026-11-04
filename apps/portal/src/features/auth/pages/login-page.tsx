@@ -26,11 +26,23 @@ export function LoginPage() {
   const returnTo = safeRedirect(params.get('redirect'))
 
   if (status === 'loading') return <LoadingView />
+  const returned = returnedError(params.get('error'))
+  if (account && returned) {
+    // A Google round trip started while signed in (confirming a deletion, re-authenticating) failed.
+    return (
+      <AuthCard title={<Trans>Sign in</Trans>}>
+        <ErrorMessage error={returned} />
+        <Link to={returnTo} className={linkClass}>
+          <Trans>Continue</Trans>
+        </Link>
+      </AuthCard>
+    )
+  }
   if (account) return <Navigate to={returnTo} replace />
 
   return (
     <AuthCard title={<Trans>Sign in</Trans>}>
-      <ErrorMessage error={returnedError(params.get('error'))} />
+      <ErrorMessage error={returned} />
       <SignInForm
         returnTo={returnTo}
         onSignedIn={() => void navigate(returnTo, { replace: true })}

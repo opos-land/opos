@@ -166,6 +166,7 @@ msgid "Confirmation link"
 msgstr "Link potwierdzający"
 
 #: src/features/auth/pages/confirm-page.tsx
+#: src/features/auth/pages/login-page.tsx
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Continue"
 msgstr "Dalej"

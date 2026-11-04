@@ -268,6 +268,24 @@ describe('TwoFactorCard', () => {
       expect(disableTwoFactor).toHaveBeenCalledTimes(2)
     })
 
+    it('leaves the code screen to an account with 2FA: the password sign-in asks for a code, no error', async () => {
+      vi.mocked(disableTwoFactor).mockRejectedValueOnce(tooOld())
+      vi.mocked(signInWithPassword).mockResolvedValue(
+        new ORPCError('session.mfa-required', { status: 401 }),
+      )
+      const user = renderCard(true)
+
+      await user.click(screen.getByRole('button', { name: 'Turn off two-factor authentication' }))
+      await user.type(await screen.findByLabelText('Your password'), 'secret password')
+      await user.click(screen.getByRole('button', { name: 'Confirm' }))
+
+      await vi.waitFor(() => expect(signInWithPassword).toHaveBeenCalledOnce())
+      // Only the refusal of the too old sign-in is shown, not a failure of the password sign-in.
+      expect(screen.getByRole('alert').textContent).toContain('Confirm it is you')
+      expect(disableTwoFactor).toHaveBeenCalledOnce()
+      expect(refreshAccount).not.toHaveBeenCalled()
+    })
+
     it('lets the person step back from the confirmation to the card', async () => {
       vi.mocked(enrollTwoFactor).mockRejectedValueOnce(tooOld())
       const user = renderCard(false)

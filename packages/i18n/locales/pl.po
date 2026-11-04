@@ -264,10 +264,6 @@ msgid "The code is wrong, has expired or was already used. Check it and try agai
 msgstr "Kod jest nieprawidłowy, wygasł lub został już użyty. Sprawdź go i spróbuj ponownie."
 
 #: src/errors.ts
-#~ msgid "The code is wrong, has expired or was already used. Check the code in your authenticator app or your recovery codes and try again."
-#~ msgstr "Kod jest nieprawidłowy, wygasł lub został już użyty. Sprawdź kod w aplikacji uwierzytelniającej albo kody odzyskiwania i spróbuj ponownie."
-
-#: src/errors.ts
 msgid "The link has expired. Ask for a new one."
 msgstr "Link wygasł. Poproś o nowy."
 

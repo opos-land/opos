@@ -1621,8 +1621,8 @@ Required behaviour when the email already exists, checked in the smoke test
    `updateUser({ password })`, then `signOut({ scope: 'others' })` — every
    other session ends: its refresh tokens stop working at once, and an access token it already
    holds keeps working until it expires, at most 15 minutes later ([7.4](#74-authorization)).
-   The form checks the rule of the contract's `newPasswordSchema` before it sends: at least 8
-   characters and at most 72 bytes, each with its own message.
+   The form checks before it sends: at least 8 characters, its own rule, and at most 72 bytes, the
+   rule of the contract's `newPasswordSchema`, each with its own message.
    The form remembers the password of an attempt that failed with anything but `auth.same_password`;
    `auth.same_password` on a retry of exactly that password counts as saved, since the API completes
    the change although the answer was lost. On a first attempt it shows its message.

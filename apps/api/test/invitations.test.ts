@@ -18,6 +18,7 @@ import {
   addEditionAccess,
   addHead,
   addOrg,
+  clearAccountLocale,
   closeTenantDb,
   deleteCreatedTenants,
   deleteEdition,
@@ -404,6 +405,22 @@ describe('inviting a known account', () => {
     const [mail] = await waitForMail(known.email)
     expect(mail!.Subject).toBe(`You have joined the organizing team of Tenant ${a.slug}`)
     expect(mail!.Text).toContain(`${env.PANEL_URL}/${a.slug}`)
+  })
+
+  // The languages in PLAN.md 6 order: the account's choice, the sign-up's, the tenant's.
+  it.each([
+    ['the sign-up locale before the tenant default', 'en', 'pl'],
+    ['the tenant default when the sign-up sent no locale', undefined, 'en'],
+  ])('notifies an account that chose no language in %s', async (_, signUp, tenantLocale) => {
+    const tenant = await tenantWithHead(tenantLocale)
+    const known = await createAccount(signUp ? { locale: signUp } : {})
+    addresses.push(known.email)
+    await clearAccountLocale(known.id)
+
+    await invite(tenant.head, { email: known.email }, tenant.slug).expect(201)
+
+    const [mail] = await waitForMail(known.email)
+    expect(mail!.Subject).toBe(`You have joined the organizing team of Tenant ${tenant.slug}`)
   })
 
   it('answers 409 for an account already in the team, an expired membership included', async () => {

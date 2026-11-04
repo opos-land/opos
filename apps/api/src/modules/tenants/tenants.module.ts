@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { AuthModule } from '../auth/auth.module'
 import { MailModule } from '../mail/mail.module'
 import { InvitationsController } from './invitations.controller'
 import { InvitationsRepository } from './invitations.repository'
@@ -9,7 +10,7 @@ import { TenantsController } from './tenants.controller'
 import { TenantsRepository } from './tenants.repository'
 
 @Module({
-  imports: [MailModule],
+  imports: [AuthModule, MailModule],
   controllers: [TenantsController, MembersController, InvitationsController],
   providers: [TenantsRepository, MembersRepository, InvitationsRepository, InvitationsService],
   exports: [MembersRepository],

@@ -98,6 +98,23 @@ describe('AuthAdminClient.noticeLocale', () => {
     expect(await client().noticeLocale({ id: USER_ID, locale: null })).toBe(DEFAULT_LOCALE)
   })
 
+  it('puts the locale of the sign-up before the tenant default, and the tenant default before the platform default', async () => {
+    answer(200, { id: USER_ID, user_metadata: { locale: 'en' } })
+    expect(await client().noticeLocale({ id: USER_ID, locale: null }, 'pl')).toBe('en')
+
+    answer(200, { id: USER_ID, user_metadata: {} })
+    expect(await client().noticeLocale({ id: USER_ID, locale: null }, 'en')).toBe('en')
+  })
+
+  it('takes the tenant default when the read fails, logging no id', async () => {
+    const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    answer(500, { msg: `no user ${USER_ID}` })
+
+    expect(await client().noticeLocale({ id: USER_ID, locale: null }, 'en')).toBe('en')
+
+    expect(JSON.stringify(warned.mock.calls)).not.toContain(USER_ID)
+  })
+
   it.each([404, 500, 401])('ends at the default on a %s, logging no id', async (status) => {
     const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
     answer(status, { msg: `no user ${USER_ID}` })

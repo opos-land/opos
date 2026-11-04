@@ -66,15 +66,18 @@ export class AuthAdminClient {
 
   /**
    * The language of a notice to an account (PLAN.md 6): `accounts.locale`, then the locale sent with
-   * the sign-up, which only the user's metadata keeps once the account has gone back to detection
+   * the sign-up, then `tenantLocale` of an inviting tenant, which only the user's metadata keeps once the account has gone back to detection
    * (`GET /admin/users/:id`). Only the language hangs on that call, so a failure counts as no locale.
    */
-  async noticeLocale(account: { id: string; locale: string | null }): Promise<Locale> {
+  async noticeLocale(
+    account: { id: string; locale: string | null },
+    tenantLocale?: string | null,
+  ): Promise<Locale> {
     if (isLocale(account.locale)) return account.locale
     const { data, error } = await this.api.getUserById(account.id)
     if (error) this.logger.warn(`Supabase Auth did not answer getUserById: ${error.status}`)
     const metadata = data.user?.user_metadata
-    return recipientLocale({ signUp: metadata?.locale })
+    return recipientLocale({ signUp: metadata?.locale, tenant: tenantLocale })
   }
 
   /** `GET /admin/users/:id/factors`: the ids of the user's factors, none for a user already gone. */

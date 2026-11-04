@@ -29,10 +29,15 @@ export async function addVerifiedFactor(accountId: string, status = 'verified') 
   `)
 }
 
-export async function tenantWithHead() {
+export async function tenantWithHead(defaultLocale?: string) {
   const head = await member()
   const slug = `api-${randomUUID().slice(0, 8)}`
-  const { id } = await createTenant(db, { slug, name: `Tenant ${slug}`, headEmail: head.email })
+  const { id } = await createTenant(db, {
+    slug,
+    name: `Tenant ${slug}`,
+    headEmail: head.email,
+    defaultLocale,
+  })
   tenantIds.push(id)
   return { id, slug, head }
 }
@@ -200,6 +205,10 @@ export async function mfaState(accountId: string) {
   `)
   return { mirrored: row!.mirrored, factors: row!.factors }
 }
+
+/** An account that chose no language: the sign-up's stays in the user's metadata alone. */
+export const clearAccountLocale = (accountId: string) =>
+  db.execute(sql`update accounts set locale = null where id = ${accountId}`)
 
 export const closeTenantDb = () => db.$client.end()
 

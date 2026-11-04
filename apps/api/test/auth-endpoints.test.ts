@@ -928,7 +928,7 @@ describe('credentials', () => {
         .get('/me')
         .set({ Origin: portal, ...headers })
 
-    it('counts against the account for a valid cookie, from any address', async () => {
+    it('counts against the session for a valid cookie, from any address', async () => {
       const { email } = await confirmedAccount()
       const cookie = `opos_portal_access=${await signIn(email)}`
 

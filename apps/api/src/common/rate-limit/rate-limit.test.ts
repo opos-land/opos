@@ -19,14 +19,30 @@ const req = (ip: string, headers: Record<string, string> = {}) => ({ ip, headers
 const portal = { cookie: 'opos_portal_access=abc', origin: 'https://opos.land' }
 
 describe('rateLimitTracker', () => {
-  it('counts a valid token in the session cookie against the account', async () => {
+  it('counts a valid token in the session cookie against its session', async () => {
+    const sessionId = randomUUID()
+    const verifier = verifying({
+      status: 'valid',
+      payload: { sub: randomUUID(), session_id: sessionId },
+    })
+
+    expect(await rateLimitTracker(verifier, env)(req('192.0.2.1', portal), context)).toBe(
+      `session:${sessionId}`,
+    )
+    expect(verifier.verify).toHaveBeenCalledWith('abc')
+  })
+
+  it.each([
+    ['no session_id', {}],
+    ['an empty session_id', { session_id: '' }],
+    ['a session_id that is no string', { session_id: 7 }],
+  ])('counts a valid token with %s against the account', async (_, claims) => {
     const sub = randomUUID()
-    const verifier = verifying({ status: 'valid', payload: { sub } })
+    const verifier = verifying({ status: 'valid', payload: { sub, ...claims } })
 
     expect(await rateLimitTracker(verifier, env)(req('192.0.2.1', portal), context)).toBe(
       `account:${sub}`,
     )
-    expect(verifier.verify).toHaveBeenCalledWith('abc')
   })
 
   it('tracks a forged cookie by the address, never the account it names', async () => {

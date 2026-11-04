@@ -6,10 +6,13 @@ import { createApp } from './app'
 import {
   createAccount,
   deleteCreatedAccounts,
+  enableMfa,
   foreignKey,
   mintToken,
+  originOf,
   session,
   signIn,
+  TEST_PASSWORD,
 } from './auth'
 
 // Every case sends its own X-Forwarded-For address, so the counters of one case never reach
@@ -52,7 +55,7 @@ describe('rate limit', () => {
     await get('/health', '203.0.113.2').expect(200)
   })
 
-  it('counts a signed-in request against the account, not the address', async () => {
+  it('counts a signed-in request against the session, not the address', async () => {
     const one = await createAccount()
     const other = await createAccount()
     const [oneToken, otherToken] = await Promise.all([signIn(one.email), signIn(other.email)])
@@ -62,6 +65,35 @@ describe('rate limit', () => {
     expectLimited(await get('/me', '203.0.113.11', oneToken))
     await get('/me', '203.0.113.10', otherToken).expect(200)
     await get('/health', '203.0.113.10').expect(200)
+  })
+
+  it('keeps the limit of each session of one account to itself', async () => {
+    const { email } = await createAccount()
+    const [one, other] = await Promise.all([signIn(email), signIn(email)])
+
+    await spend(LIMIT, '/me', '203.0.113.12', one)
+
+    expectLimited(await get('/me', '203.0.113.12', one))
+    await get('/me', '203.0.113.13', other).expect(200)
+  })
+
+  it('leaves the aal2 session of an account alone while a password spends its aal1 limit', async () => {
+    const { email } = await createAccount()
+    const browser = () => request.agent(app.getHttpServer()).set('Origin', originOf('portal'))
+    const owner = browser()
+    await owner.post('/auth/sign-in').send({ email, password: TEST_PASSWORD }).expect(200)
+    await enableMfa(owner)
+    const passwordHolder = browser()
+    const signedIn = await passwordHolder
+      .post('/auth/sign-in')
+      .set('X-Forwarded-For', '203.0.113.14')
+      .send({ email, password: TEST_PASSWORD })
+    expect(signedIn.body).toMatchObject({ code: 'session.mfa-required' })
+
+    for (let i = 0; i < LIMIT; i++) await passwordHolder.get('/me').expect(401)
+
+    expectLimited(await passwordHolder.get('/me'))
+    await owner.get('/me').expect(200)
   })
 
   it('shares one counter between every route', async () => {

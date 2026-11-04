@@ -1,36 +1,42 @@
+import postgres from 'postgres'
+
 const LOOPBACK_HOSTS = ['127.0.0.1', 'localhost', '[::1]']
 const REMOTE_ENVS = ['dev', 'production']
 
-/**
- * The URL of a service a db:* script reaches, as long as it names the loopback interface or
- * OPOS_ENV is dev or production. A refusal names the host, never the URL.
- *
- * postgres.js takes the text after the first `@` of the authority as a list of hosts and connects
- * to the first, where `new URL()` reads the last `@` and the list as one host name. An authority
- * with a `,` or a second `@` is refused, so both readings agree on the host that is checked.
- */
+/** Every host on the loopback interface, or OPOS_ENV dev or production. Names the host, not the URL. */
+function requireReachable(name: string, hosts: string[], env: NodeJS.ProcessEnv): void {
+  if (REMOTE_ENVS.includes(env.OPOS_ENV ?? '')) return
+  const remote = hosts.find((host) => !LOOPBACK_HOSTS.includes(host))
+  if (remote === undefined) return
+  throw new Error(
+    `${name} names the remote host ${remote}; OPOS_ENV must be dev or production to reach it`,
+  )
+}
+
+/** The URL of a service a db:* script reaches with `fetch`, so `new URL` reads its host as `fetch` does. */
 export function reachableUrl(
   name: string,
   value: string,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
-  const authority = value.slice(value.indexOf('://') + 3).split(/[/?#]/)[0] ?? ''
-  if (authority.includes(',') || authority.split('@').length > 2) {
-    throw new Error(`${name} has a host list or more than one @; name a single host`)
-  }
-
   let host: string
   try {
     host = new URL(value).hostname
   } catch {
     throw new Error(`${name} is not a URL`)
   }
-  if (!LOOPBACK_HOSTS.includes(host) && !REMOTE_ENVS.includes(env.OPOS_ENV ?? '')) {
-    throw new Error(
-      `${name} names the remote host ${host}; OPOS_ENV must be dev or production to reach it`,
-    )
-  }
+  requireReachable(name, [host], env)
   return value
+}
+
+/**
+ * Every host postgres.js would use for `url`, a host list and `PGHOST` for a URL naming none
+ * included, asked of postgres.js itself: a client opens nothing until its first query. It cuts each
+ * host at its first `:`, so `new URL` names a single IPv6 address, which comes back as `[` or `[2001`.
+ */
+function databaseHosts(url: string): string[] {
+  const { host } = postgres(url).options
+  return host.length === 1 && host[0]?.startsWith('[') ? [new URL(url).hostname] : host
 }
 
 /**
@@ -41,5 +47,12 @@ export function reachableUrl(
 export function migrationUrl(env: NodeJS.ProcessEnv = process.env): string {
   const url = env.DATABASE_MIGRATION_URL?.trim()
   if (!url) throw new Error('DATABASE_MIGRATION_URL is not set; run pnpm infra:init')
-  return reachableUrl('DATABASE_MIGRATION_URL', url, env)
+  let hosts: string[]
+  try {
+    hosts = databaseHosts(url)
+  } catch {
+    throw new Error('DATABASE_MIGRATION_URL is not a URL')
+  }
+  requireReachable('DATABASE_MIGRATION_URL', hosts, env)
+  return url
 }

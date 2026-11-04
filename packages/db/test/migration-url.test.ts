@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as root from '../src/index'
 import { migrationUrl, reachableUrl } from '../src/migration-url'
 
@@ -76,13 +76,16 @@ describe('migrationUrl', () => {
     expect(root.migrationUrl).toBe(migrationUrl)
   })
 
-  // postgres.js takes the text after the first @ of the authority as the host list and connects to
-  // its first entry, while new URL() reads the last @ and the whole list as one host name.
+  // postgres.js reads the authority itself and takes the first host it can reach, so the guard asks
+  // it: each URL here holds a host a URL parser never sees, or fails to read at all.
   it.each([
-    'postgres://u:p@db.remote.example,x@localhost:54322/postgres',
-    'postgres://u:p@db.remote.example,localhost:54322/postgres',
-    'postgres://u@db.remote.example:5432@localhost:54322/postgres',
-  ])('refuses a URL whose host postgres.js reads differently: %s', (url) => {
+    ['postgres://u:p@db.remote.example,x@localhost:54322/postgres', 'db.remote.example'],
+    ['postgres://u:p@db.remote.example,localhost:54322/postgres', 'db.remote.example'],
+    ['postgres://localhost#@db.remote.example,x:5432/postgres', 'db.remote.example'],
+    ['postgres://u:p@localhost:1#,db.remote.example:5432/postgres', 'db.remote.example'],
+    ['postgres://u:p@localhost%2Cdb.remote.example:5432/postgres', 'db.remote.example'],
+    ['postgres://u:p@[2001:db8::1]:5432/postgres', '[2001:db8::1]'],
+  ])('refuses %s, naming the host and not the URL', (url, host) => {
     let message = ''
     try {
       migrationUrl({ DATABASE_MIGRATION_URL: url })
@@ -90,22 +93,84 @@ describe('migrationUrl', () => {
       message = (error as Error).message
     }
 
-    expect(message).toMatch(/DATABASE_MIGRATION_URL/)
-    expect(message).not.toContain('db.remote.example:5432')
+    expect(message).toContain(`DATABASE_MIGRATION_URL names the remote host ${host}`)
+    expect(message).not.toContain(url)
     expect(message).not.toContain(':p@')
   })
 
-  it('keeps the guard when OPOS_ENV is dev: a host list is refused there too', () => {
-    expect(() =>
-      migrationUrl({
-        DATABASE_MIGRATION_URL: 'postgres://u:p@db.remote.example,x@localhost:54322/postgres',
-        OPOS_ENV: 'dev',
-      }),
-    ).toThrow(/DATABASE_MIGRATION_URL/)
+  it.each([
+    'postgres://u:a,b@localhost:54322/postgres',
+    'postgres://u:p@ss@localhost:54322/postgres',
+    'postgres://u@db.remote.example:5432@localhost:54322/postgres',
+    'postgres://u:p@localhost:54322/postgres?host=db.remote.example',
+    'postgres://u:p@localhost,127.0.0.1:54322/postgres',
+  ])('accepts %s, whose every host postgres.js reads is local', (url) => {
+    expect(migrationUrl({ DATABASE_MIGRATION_URL: url })).toBe(url)
+  })
+
+  describe('a URL naming no host', () => {
+    const url = 'postgres:///postgres'
+
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    it('refuses it when PGHOST names a remote host', () => {
+      vi.stubEnv('PGHOST', 'db.remote.example')
+
+      expect(() => migrationUrl({ DATABASE_MIGRATION_URL: url })).toThrow(
+        /DATABASE_MIGRATION_URL names the remote host db\.remote\.example/,
+      )
+    })
+
+    it.each(['127.0.0.1', ''])('accepts it when PGHOST is %j', (PGHOST) => {
+      vi.stubEnv('PGHOST', PGHOST)
+
+      expect(migrationUrl({ DATABASE_MIGRATION_URL: url })).toBe(url)
+    })
+  })
+
+  it('takes a host list on OPOS_ENV dev, where a remote host is allowed', () => {
+    const url = 'postgres://u:p@db.remote.example,x:5432/postgres'
+
+    expect(migrationUrl({ DATABASE_MIGRATION_URL: url, OPOS_ENV: 'dev' })).toBe(url)
+  })
+
+  it.each(['postgres://u:p@/postgres', 'postgres://u:p@%zz/postgres'])(
+    'refuses %s, which postgres.js cannot read, on OPOS_ENV dev too',
+    (url) => {
+      const refused = () => migrationUrl({ DATABASE_MIGRATION_URL: url, OPOS_ENV: 'dev' })
+
+      expect(refused).toThrow('DATABASE_MIGRATION_URL is not a URL')
+    },
+  )
+
+  it('leaves nothing open behind it, so a script still exits', () => {
+    const open = () => process.getActiveResourcesInfo().filter((name) => name !== 'TTYWrap')
+    const before = open()
+
+    for (let i = 0; i < 20; i++) {
+      migrationUrl({ DATABASE_MIGRATION_URL: 'postgres://u:p@localhost:54322/postgres' })
+    }
+
+    expect(open()).toEqual(before)
   })
 })
 
 describe('reachableUrl', () => {
+  it('reads the host as fetch reads it', () => {
+    expect(reachableUrl('SUPABASE_URL', 'http://u:a,b@localhost:54321', {})).toBe(
+      'http://u:a,b@localhost:54321',
+    )
+    expect(() =>
+      reachableUrl('SUPABASE_URL', 'http://a@auth.example.co@localhost', {}),
+    ).not.toThrow()
+    expect(() => reachableUrl('SUPABASE_URL', 'http://localhost@auth.example.co', {})).toThrow(
+      /names the remote host auth\.example\.co/,
+    )
+    expect(() => reachableUrl('SUPABASE_URL', 'nonsense', {})).toThrow('SUPABASE_URL is not a URL')
+  })
+
   it('applies the rule of the database URL to any named variable', () => {
     expect(() => reachableUrl('SUPABASE_URL', 'https://auth.example.co', {})).toThrow(
       /SUPABASE_URL names the remote host auth\.example\.co/,

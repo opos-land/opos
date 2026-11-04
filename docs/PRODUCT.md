@@ -416,7 +416,8 @@ stay with the payment provider; OPOS stores only the provider's payment referenc
 address and the name only; the account starts working once its owner opens the link sent to that
 address and presses the button on the page it leads to, which asks them to choose the password
 there. A password anyone set on the address before
-it was confirmed never works afterwards. A Google sign-in counts as confirmed. Setting a password,
+it was confirmed stops working then; only a failure of the sign-in service at that very moment can
+leave it, until the person saves a new one. A Google sign-in counts as confirmed. Setting a password,
 like deleting the account, needs a sign-in from the last few minutes: pressing that button counts as
 one, and a page left open longer offers to send a new link. Changing the
 account's email address comes after the MVP; it takes effect once both the current and the new

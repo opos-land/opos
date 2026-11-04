@@ -944,8 +944,10 @@ registered by email starts with a random password nobody knows. The confirmation
 button, so a mail scanner that follows the link leaves it unspent. The button signs in whichever
 browser it is pressed in (`POST /auth/verify`), and the page then asks for the password at once and
 saves it with `PUT /auth/password`, which also ends every
-other session. A password anyone set on the address before it was confirmed never works after the
-confirmation, and a recovery link confirms an unconfirmed address just as a confirmation link does.
+other session. A password anyone set on the address before it was confirmed stops working at the
+confirmation; only a failure of Supabase Auth at that moment can leave it, until the person saves a
+new one, and that is logged when the API sees it. A recovery link confirms an unconfirmed address just
+as a confirmation link does.
 `POST /auth/verify` therefore replaces the password for a `recovery` link as well, unless the answer
 of `verifyOtp` shows the address confirmed before the link was sent: `email_confirmed_at` and
 `recovery_sent_at` both present, the first not later than the second. An absent or unparsable stamp

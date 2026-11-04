@@ -2392,7 +2392,8 @@ Supabase Auth sends no email itself. For every message it calls `POST /hooks/sen
    does not retry, so a send has a 4 s deadline as a whole
    ([smtp.ts](../apps/api/src/modules/mail/smtp.ts)): at the deadline the API drops the SMTP
    connection and answers `500`, and a message the server has not accepted by then is never
-   delivered.
+   delivered. The one log line about a failed send holds the error's class and nodemailer's `code`
+   and `responseCode`, never its message, which quotes the recipient.
 
 | `email_action_type` | Template |
 |---|---|

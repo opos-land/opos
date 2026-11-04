@@ -3,6 +3,7 @@ import { ENV, type Env } from '../../config/env'
 import { ApiError } from '../../common/errors/api-error'
 import { AccountsRepository } from '../accounts/accounts.repository'
 import { MailService } from '../mail/mail.service'
+import { mailFailure } from '../mail/mail-failure'
 import { recipientLocale } from '../mail/recipient-locale'
 import { verifyHookSignature } from './hook-signature'
 import { hookEmails, sendEmailHookPayload } from './send-email-hook'
@@ -53,8 +54,16 @@ export class SendEmailHookController {
       account: await this.accounts.localeForHook(user.id),
       signUp: user.user_metadata?.locale,
     })
-    // An SMTP failure rejects: the filter answers 500, which Supabase Auth reports to the client.
-    await Promise.all(emails.map((email) => this.mail.sendLinkEmail({ ...email, locale })))
+    try {
+      await Promise.all(emails.map((email) => this.mail.sendLinkEmail({ ...email, locale })))
+    } catch (error) {
+      // The 500 makes Supabase Auth report the failed send. The filter logs this error's reason
+      // once; the nodemailer error itself is not passed on, as its message quotes the recipient.
+      throw new ApiError(500, 'server.error', 'Internal server error', undefined, undefined, {
+        expected: true,
+        reason: `The email was not sent: ${mailFailure(error)}`,
+      })
+    }
     return {}
   }
 }

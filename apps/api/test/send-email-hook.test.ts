@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { type AddressInfo, createServer } from 'node:net'
+import { inspect } from 'node:util'
+import { Logger } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { Webhook } from 'standardwebhooks'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { authUrl, loadEnv } from '../src/config/env'
 import { createApp } from './app'
 import {
@@ -274,6 +276,51 @@ describe('POST /hooks/send-email', () => {
       expect(res.body).toMatchObject({ code: 'server.error' })
     } finally {
       await broken.close()
+    }
+  })
+
+  it('logs no address when the SMTP server refuses the recipient', async () => {
+    const recipient = 'anna.secret@example.test'
+    const smtp = createServer((socket) => {
+      socket.on('error', () => undefined)
+      socket.write('220 refusing ESMTP\r\n')
+      socket.on('data', (chunk) => {
+        for (const line of chunk.toString().split('\r\n')) {
+          if (/^(EHLO|HELO)/i.test(line)) socket.write('250 ok\r\n')
+          else if (/^MAIL/i.test(line)) socket.write('250 ok\r\n')
+          else if (/^RCPT/i.test(line)) socket.write(`550 5.1.1 <${recipient}> unknown\r\n`)
+          else if (/^QUIT/i.test(line)) socket.end('221 bye\r\n')
+        }
+      })
+    })
+    await new Promise<void>((resolve) => smtp.listen(0, '127.0.0.1', resolve))
+    const refusing = await createApp({
+      SMTP_HOST: '127.0.0.1',
+      SMTP_PORT: String((smtp.address() as AddressInfo).port),
+    })
+    const logs = [
+      vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined),
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined),
+      vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined),
+    ]
+    try {
+      const { payload, headers } = signed(hookBody('signup', recipient))
+
+      const res = await request(refusing.getHttpServer())
+        .post('/hooks/send-email')
+        .set(headers)
+        .send(payload)
+        .expect(500)
+
+      expect(res.body).toMatchObject({ code: 'server.error' })
+      const lines = logs.flatMap((spy) => spy.mock.calls.map((call) => inspect(call, { depth: 8 })))
+      expect(lines.length).toBeGreaterThan(0)
+      expect(lines.join('\n')).not.toContain(recipient)
+      expect(lines.join('\n')).toContain('EENVELOPE')
+    } finally {
+      vi.restoreAllMocks()
+      await refusing.close()
+      smtp.close()
     }
   })
 

@@ -132,8 +132,11 @@ async function stubbedSupabaseAuth(status: number, body: object) {
   }
 }
 
-/** An API whose Supabase Auth is the real one, except that changing a user fails. */
-async function failingUserUpdate() {
+/**
+ * An API whose Supabase Auth is the real one, except that a user changing themselves fails, and
+ * the admin API changing a user answers `adminStatus` when one is given.
+ */
+async function failingUserUpdate(adminStatus?: number) {
   const real = authUrl(env).replace(/\/auth\/v1$/, '')
   const proxy = createServer((req, res) => {
     const chunks: Buffer[] = []
@@ -143,6 +146,11 @@ async function failingUserUpdate() {
         if (req.method === 'PUT' && req.url?.startsWith('/auth/v1/user')) {
           res.writeHead(400, { 'content-type': 'application/json' })
           res.end(JSON.stringify({ error_code: 'something_new', msg: 'refused' }))
+          return
+        }
+        if (adminStatus && req.method === 'PUT' && req.url?.startsWith('/auth/v1/admin/users/')) {
+          res.writeHead(adminStatus, { 'content-type': 'application/json' })
+          res.end(JSON.stringify({ msg: 'refused' }))
           return
         }
         const headers = Object.fromEntries(
@@ -700,6 +708,10 @@ describe('sign-out', () => {
 })
 
 describe('password', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('answers session.reauthentication-required past 5 minutes', async () => {
     const account = await confirmedAccount()
     const tenMinutesAgo = Math.floor(Date.now() / 1000) - 600
@@ -869,6 +881,47 @@ describe('password', () => {
       expect(cookiesOf(res)).toEqual([])
       expect(warned).toHaveBeenCalledTimes(1)
       expect(JSON.stringify(warned.mock.calls)).not.toContain(address)
+    } finally {
+      await failing.close()
+    }
+    // The admin API replaced it, which ended the session the link opened: a new link gets back in.
+    const old = await post('/auth/sign-in', { email: address, password: 'attacker-pass-1' })
+    expect(old.body).toMatchObject({ code: 'auth.invalid_credentials' })
+    await post('/auth/password/forgot', { email: address }).expect(202)
+    const again = await linkFor(address, 2)
+    const agent = request.agent(server).set('Origin', portal)
+    await agent
+      .post('/auth/verify')
+      .send({ tokenHash: again.tokenHash, type: again.type })
+      .expect(200)
+    await agent.put('/auth/password').send({ password: 'chosen-pass-1' }).expect(204)
+  })
+
+  it.each([
+    ['fails', 500],
+    ['refuses the key', 401],
+  ])('hands out no session when the admin API %s as well', async (_, status) => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const address = newAddress()
+    const { id } = await registerAtSupabaseAuth(address, 'attacker-pass-1')
+    deleteLater(id)
+    const { tokenHash, type } = await linkFor(address)
+    const failing = await failingUserUpdate(status)
+    try {
+      const res = await request(failing.app.getHttpServer())
+        .post('/auth/verify')
+        .set('Origin', portal)
+        .send({ tokenHash, type })
+
+      expect(res.status).toBe(500)
+      expect(res.body).toMatchObject({ code: 'server.error' })
+      expect(cookiesOf(res)).toEqual([])
+      const lines = logged.mock.calls.flat().filter((line) => typeof line === 'string')
+      expect(lines.filter((line) => line.includes('admin API'))).toHaveLength(1)
+      for (const secret of [address, id, tokenHash, 'attacker-pass-1']) {
+        expect(JSON.stringify(lines)).not.toContain(secret)
+      }
     } finally {
       await failing.close()
     }

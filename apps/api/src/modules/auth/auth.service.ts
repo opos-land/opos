@@ -11,6 +11,7 @@ import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
 import { RECENT_SIGN_IN_SECONDS } from '../accounts/account-deletion.service'
 import { AccountsRepository } from '../accounts/accounts.repository'
+import { AuthAdminClient } from './auth-admin.client'
 import { toApiError } from './auth-refusal'
 import { SupabaseAuthFactory } from './supabase-auth.factory'
 import {
@@ -31,6 +32,9 @@ export function unwrap<T>(result: { data: T; error: Error | null }): T {
   if (result.error) throw result.error
   return result.data
 }
+
+/** A password nobody knows: the API never returns or keeps it. */
+const randomPassword = () => randomBytes(32).toString('base64url')
 
 /** Supabase Auth refuses a sign-up of an address it knows with one of these on some versions. */
 const REGISTERED = new Set(['user_already_exists', 'email_exists'])
@@ -71,6 +75,7 @@ export class AuthService {
   constructor(
     @Inject(ENV) private readonly env: Env,
     private readonly auth: SupabaseAuthFactory,
+    private readonly admin: AuthAdminClient,
     private readonly accounts: AccountsRepository,
     private readonly context: TenantContextService,
     private readonly limiter: RouteRateLimiter,
@@ -134,11 +139,10 @@ export class AuthService {
     acceptLanguage: string | undefined,
   ): Promise<void> {
     const app = await this.publicRoute(req)
-    // The person chooses the password after the link proves the address; this one nobody knows.
-    const password = randomBytes(32).toString('base64url')
+    // The person chooses the password after the link proves the address.
     const { error } = await this.auth.forRequest().signUp({
       email: body.email,
-      password,
+      password: randomPassword(),
       options: {
         emailRedirectTo: this.confirmUrl(app),
         data: {
@@ -179,7 +183,7 @@ export class AuthService {
     const result = await client.verifyOtp({ token_hash: body.tokenHash, type: body.type })
     if (result.error) throw toApiError(result.error)
     const keepsPassword = body.type === 'recovery' && confirmedBeforeItsLink(result.data.user)
-    if (!keepsPassword) await this.replacePassword(client)
+    if (!keepsPassword) await this.replacePassword(client, result.data.user?.id)
     return this.signedIn(req, app, result.data.session)
   }
 
@@ -189,15 +193,32 @@ export class AuthService {
    * link or a recovery link confirmed it. A recovery link on an address confirmed before it leaves
    * the password alone: the person may never use the link's form, and an account with two-factor
    * authentication could not change it at `aal1` anyway. The session the confirmation opened is
-   * not handed out while the old password may still work.
+   * not handed out while the old password may still work: when the session cannot replace it the
+   * admin API does, which ends that session too, and the request answers the failure with no
+   * cookies, so the person gets back in through a new link.
    */
-  private async replacePassword(client: GoTrueClient): Promise<void> {
+  private async replacePassword(client: GoTrueClient, userId: string | undefined): Promise<void> {
     try {
-      const { error } = await client.updateUser({ password: randomBytes(32).toString('base64url') })
+      const { error } = await client.updateUser({ password: randomPassword() })
       if (error) throw error
     } catch (error) {
       this.logger.warn('Could not replace the password of an account at its confirmation')
+      await this.replacePasswordAsAdmin(userId)
       throw toApiError(error)
+    }
+  }
+
+  /** The last resort of `replacePassword`, whose failure the caller answers either way. */
+  private async replacePasswordAsAdmin(userId: string | undefined): Promise<void> {
+    try {
+      if (!userId) throw new Error('Supabase Auth answered no user')
+      await this.admin.setPassword(userId, randomPassword())
+    } catch (error) {
+      this.logger.error(
+        `The admin API did not replace the password of an account at its confirmation either, so it may still work: ${
+          error instanceof Error ? error.message : 'unknown failure'
+        }`,
+      )
     }
   }
 

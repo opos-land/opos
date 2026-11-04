@@ -5,8 +5,8 @@ import { SupabaseAuthFactory } from './supabase-auth.factory'
 
 /**
  * The Supabase Auth admin API, authorized by the secret key on `apikey` alone (PLAN.md 10). The API
- * uses it for account deletion and factor removal. Outbound I/O: never call it inside a tenant
- * transaction.
+ * uses it for account deletion, factor removal and a password a confirmation could not replace.
+ * Outbound I/O: never call it inside a tenant transaction.
  */
 @Injectable()
 export class AuthAdminClient {
@@ -40,6 +40,15 @@ export class AuthAdminClient {
     if (!error) return true
     if (error.status === 404) return false
     throw this.refused('deleteUser', error)
+  }
+
+  /**
+   * `PUT /admin/users/:id` with a new password. Supabase Auth then ends every session of the user:
+   * the refresh token of a session opened before it is refused.
+   */
+  async setPassword(id: string, password: string): Promise<void> {
+    const { error } = await this.api.updateUserById(id, { password })
+    if (error) throw this.refused('updateUserById', error)
   }
 
   /**

@@ -39,6 +39,33 @@ const failureOf = (promise: Promise<unknown>) =>
     (error: unknown) => error,
   )
 
+describe('AuthAdminClient.setPassword', () => {
+  it('sends the password to the user, on the secret key alone', async () => {
+    const fetch = answer(200, { id: USER_ID })
+
+    await client().setPassword(USER_ID, 'a-fresh-random-password')
+
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe(`http://supabase.test/auth/v1/admin/users/${USER_ID}`)
+    expect(init.method).toBe('PUT')
+    expect(JSON.parse(init.body as string)).toEqual({ password: 'a-fresh-random-password' })
+    expect(new Headers(init.headers).get('authorization')).toBeNull()
+  })
+
+  it.each([
+    [500, 'Supabase Auth is unavailable'],
+    [401, 'Supabase Auth refused updateUserById with 401'],
+  ])('refuses on a %s, naming neither the user nor the password', async (status, message) => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    answer(status, { msg: 'refused' })
+
+    const failure = await failureOf(client().setPassword(USER_ID, 'a-fresh-random-password'))
+
+    expect(failure).toBeInstanceOf(Error)
+    expect((failure as Error).message).toBe(message)
+  })
+})
+
 describe('AuthAdminClient.deleteUser', () => {
   it('deletes the user through the gateway, on the secret key alone', async () => {
     const fetch = answer(200, { id: USER_ID })

@@ -1945,7 +1945,9 @@ holds the settings ([10](#supabase-auth-configuration)).
 | the two-factor card | on `/account` in the portal, and in the account menu in the panel; shows the QR code and the secret, then the recovery codes once after a right code, until the person confirms they saved them; after a recovery code it shows 2FA as off. The QR code is the `data:` SVG the API returned, which the CSP's `img-src` allows ([13](#images)); it stays in component state and is never stored |
 
 A right code, or a recovery code, answers `204`; the screen then asks `GET /me` and announces the
-account to the other tabs ([7.4](#74-authorization)). A wrong code shows its message and keeps the
+account to the other tabs ([7.4](#74-authorization)). The two-factor card's own `GET /me` after a
+change of `mfaEnabled` writes nothing once the session has come to wait for its code meanwhile. A
+wrong code shows its message and keeps the
 form. A successful `verify` at `aal2` ends every other `aal1` session of the account at Supabase
 Auth, so two browsers cannot both wait for a code: the one that waits longer gets `401`
 `session.invalid` from the screen.

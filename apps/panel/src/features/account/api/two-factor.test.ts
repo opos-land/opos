@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
+import { mfaRequired } from '../../../shared/lib/session-store'
 import { disableTwoFactor, enableTwoFactor, enrollTwoFactor, refreshAccount } from './two-factor'
 import { accountOptions } from './account'
 
@@ -98,5 +99,23 @@ describe('refreshAccount', () => {
 
     expect(client.getQueryData(accountOptions().queryKey)).toBeUndefined()
     expect(useSession.getState().account).toBeNull()
+  })
+
+  it('writes no account once the session waits for its code meanwhile', async () => {
+    let answer!: (response: Response) => void
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>((resolve) => (answer = resolve))),
+    )
+    const client = new QueryClient()
+
+    const refreshing = refreshAccount(client, true)
+    await vi.waitFor(() => expect(answer).toBeTypeOf('function'))
+    mfaRequired()
+    answer(json(200, me))
+    await refreshing
+
+    expect(useSession.getState()).toMatchObject({ status: 'mfa-required', account: null })
+    expect(client.getQueryData(accountOptions().queryKey)).toBeUndefined()
   })
 })

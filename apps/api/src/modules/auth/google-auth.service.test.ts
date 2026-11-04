@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   failureCode,
   GOOGLE_COOKIE_MAX_AGE_MS,
+  GOOGLE_FLOW_MS,
   googleFlowExpired,
   googleCookieValue,
   parseGoogleCookie,
@@ -57,12 +58,13 @@ describe('parseGoogleCookie', () => {
       verifier: VERIFIER,
       app: 'portal',
       path: '/a',
-      expiresAt: now + GOOGLE_COOKIE_MAX_AGE_MS,
+      expiresAt: now + GOOGLE_FLOW_MS,
     })
   })
 
-  it('is as old as its Max-Age', () => {
-    expect(GOOGLE_COOKIE_MAX_AGE_MS).toBe(600_000)
+  it('holds a flow of 10 minutes in a cookie that outlives it', () => {
+    expect(GOOGLE_FLOW_MS).toBe(600_000)
+    expect(GOOGLE_COOKIE_MAX_AGE_MS).toBe(3_600_000)
   })
 
   it('is expired once expiresAt has come, but still names its application', () => {

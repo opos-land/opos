@@ -157,14 +157,14 @@ describe('GET /auth/google', () => {
     expect(location.searchParams.get('redirect_to')).toBe(`${env.API_URL}/auth/google/callback`)
   })
 
-  it('sets opos_google HttpOnly, SameSite=Lax, Path=/auth/google, Max-Age 600', async () => {
+  it('sets opos_google HttpOnly, SameSite=Lax, Path=/auth/google, past the flow it holds', async () => {
     const { res } = await startedFlow('panel', '/invitation?token=abc')
     const cookie = cookieNamed(res, 'opos_google')!
 
     expect(cookie).toContain('HttpOnly')
     expect(cookie).toContain('SameSite=Lax')
     expect(cookie).toContain('Path=/auth/google')
-    expect(cookie).toContain('Max-Age=600')
+    expect(cookie).toContain('Max-Age=3600')
     expect(cookie).not.toContain('Domain')
     expect(cookie.includes('Secure')).toBe(new URL(env.API_URL).protocol === 'https:')
     const stored = readGoogleCookie(res)
@@ -445,12 +445,16 @@ describe('GET /auth/google/callback', () => {
     expect(cookieNamed(res, 'opos_panel_access')).toBeUndefined()
   })
 
-  it('past 10 minutes signs nobody in', async () => {
-    const { code, cookie } = await startedFlow('panel')
+  it('past 10 minutes signs nobody in and returns to the login of its own application', async () => {
+    // An agent keeps the cookie as a browser does, and drops it once its lifetime has passed.
+    const browser = request.agent(server)
+    const started = await browser.get('/auth/google').query({ app: 'panel' }).expect(302)
+    const code = randomBytes(8).toString('hex')
+    issued.set(code, new URL(started.headers.location!).searchParams.get('code_challenge')!)
     const now = Date.now()
     vi.spyOn(Date, 'now').mockReturnValue(now + 601_000)
 
-    const res = await callback({ code }, cookie).expect(302)
+    const res = await browser.get('/auth/google/callback').query({ code }).expect(302)
 
     expect(res.headers.location).toBe(`${panel}/login?error=auth.google-failed`)
     expect(cookiesOf(res).filter((cookie) => cookie.includes('_access='))).toEqual([])

@@ -18,7 +18,10 @@ import { GOOGLE_STORAGE_KEY, SupabaseAuthFactory } from './supabase-auth.factory
 
 /** The cookie that carries a Google sign-in from its start to its callback (PLAN.md 7.4, 7.5). */
 export const GOOGLE_COOKIE = 'opos_google'
-export const GOOGLE_COOKIE_MAX_AGE_MS = 10 * 60 * 1000
+/** How long a Google sign-in may take from its start to its callback. */
+export const GOOGLE_FLOW_MS = 10 * 60 * 1000
+/** The cookie outlives the flow: a late callback still knows the application to return to. */
+export const GOOGLE_COOKIE_MAX_AGE_MS = 60 * 60 * 1000
 const GOOGLE_COOKIE_PATH = '/auth/google'
 
 /** What the cookie holds; `expiresAt` is in milliseconds since the epoch. */
@@ -65,7 +68,7 @@ export function returnPath(app: Application, redirect: unknown, env: Application
 export const googleCookieValue = (
   flow: Pick<GoogleFlow, 'verifier' | 'app' | 'path'>,
   now = Date.now(),
-): string => JSON.stringify({ ...flow, expiresAt: now + GOOGLE_COOKIE_MAX_AGE_MS })
+): string => JSON.stringify({ ...flow, expiresAt: now + GOOGLE_FLOW_MS })
 
 /** Whether the 10 minutes of the flow are over. */
 export const googleFlowExpired = (flow: Pick<GoogleFlow, 'expiresAt'>, now = Date.now()) =>

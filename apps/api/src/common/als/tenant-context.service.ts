@@ -8,6 +8,7 @@ import {
   tenantRole,
   type Transaction,
 } from '@opos/db'
+import { mailFailure } from '../../modules/mail/mail-failure'
 import { APP_DB } from '../database/tokens'
 
 export type Level = (typeof permissionLevel.enumValues)[number]
@@ -181,7 +182,7 @@ export class TenantContextService {
       try {
         await fn()
       } catch (error) {
-        this.logger.error(error)
+        this.logger.error(`An after-commit step failed: ${mailFailure(error)}`)
       }
     }
     await sendDeferred(store)

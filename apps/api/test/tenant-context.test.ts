@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto'
+import { inspect } from 'node:util'
+import { Logger } from '@nestjs/common'
 import { migrationUrl } from '@opos/db'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session } from './auth'
 import { afterCommitCalls, ProbeModule } from './probe'
@@ -150,6 +152,23 @@ describe('tenant transaction', () => {
       .expect(201)
 
     expect(afterCommitCalls).toEqual([slug])
+  })
+
+  it("logs a failed after-commit mail by nodemailer's code, never its message, and the response stands", async () => {
+    const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const slug = randomUUID().slice(0, 8)
+    try {
+      await as(settingsWriter, a.slug)
+        .post('/probe/editions', { slug, fail: false, mailFails: true })
+        .expect(201)
+
+      const line = inspect(logged.mock.calls)
+      expect(line).toContain('EENVELOPE')
+      expect(line).toContain('550')
+      expect(line).not.toMatch(/anna|secret|example/)
+    } finally {
+      logged.mockRestore()
+    }
   })
 
   it('rolls back a refused request and drops the after-commit queue', async () => {

@@ -83,7 +83,11 @@ export async function sendWithDeadline(
     timer = setTimeout(() => {
       expired = true
       socket?.destroy()
-      reject(new Error(`SMTP send did not finish within ${deadlineMs} ms`))
+      reject(
+        Object.assign(new Error(`SMTP send did not finish within ${deadlineMs} ms`), {
+          code: 'EDEADLINE',
+        }),
+      )
     }, deadlineMs)
   })
   const sending = transport.sendMail(message)

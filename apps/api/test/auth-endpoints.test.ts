@@ -1,5 +1,6 @@
 import { createServer, type IncomingHttpHeaders, type Server } from 'node:http'
 import { type AddressInfo } from 'node:net'
+import { inspect } from 'node:util'
 import { Logger } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
@@ -114,6 +115,9 @@ async function registerAtSupabaseAuth(email: string, password: string) {
   return (await res.json()) as { id: string }
 }
 
+/** What the text of a refusal may quote; it must never reach a log line. */
+const QUOTED_ADDRESS = 'quoted.secret@example.test'
+
 /**
  * An API whose Supabase Auth answers every call with `status` and `body`, an object as JSON and a
  * string as an HTML page, as a gateway sends it; the stub closes both.
@@ -153,7 +157,7 @@ async function failingUserUpdate(adminStatus?: number) {
       void (async () => {
         if (req.method === 'PUT' && req.url?.startsWith('/auth/v1/user')) {
           res.writeHead(400, { 'content-type': 'application/json' })
-          res.end(JSON.stringify({ error_code: 'something_new', msg: 'refused' }))
+          res.end(JSON.stringify({ error_code: 'something_new', msg: `refused ${QUOTED_ADDRESS}` }))
           return
         }
         if (adminStatus && req.method === 'PUT' && req.url?.startsWith('/auth/v1/admin/users/')) {
@@ -1090,10 +1094,10 @@ describe('password', () => {
       expect(res.status).toBe(500)
       expect(res.body).toMatchObject({ code: 'server.error' })
       expect(cookiesOf(res)).toEqual([])
-      const lines = logged.mock.calls.flat().filter((line) => typeof line === 'string')
+      const lines = logged.mock.calls.flat().map((argument) => inspect(argument))
       expect(lines.filter((line) => line.includes('admin API'))).toHaveLength(1)
-      for (const secret of [address, id, tokenHash, 'attacker-pass-1']) {
-        expect(JSON.stringify(lines)).not.toContain(secret)
+      for (const secret of [address, id, tokenHash, 'attacker-pass-1', QUOTED_ADDRESS]) {
+        expect(lines.join('\n')).not.toContain(secret)
       }
     } finally {
       await failing.close()

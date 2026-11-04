@@ -1,3 +1,4 @@
+import { inspect } from 'node:util'
 import { Logger } from '@nestjs/common'
 import { AuthApiError, AuthRetryableFetchError, AuthSessionMissingError } from '@supabase/auth-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -124,6 +125,24 @@ describe('toApiError', () => {
 
     toApiError(apiError(400, 'something_new'))
     expect(logged).toHaveBeenCalledTimes(1)
+  })
+
+  it('logs the code and the status of an unlisted refusal, never its text', () => {
+    const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+
+    toApiError(
+      new AuthApiError(
+        'Address anna.secret@example.test is not authorized',
+        422,
+        'email_address_not_authorized',
+      ),
+    )
+
+    expect(logged).toHaveBeenCalledTimes(1)
+    const line = inspect(logged.mock.calls)
+    expect(line).toContain('email_address_not_authorized')
+    expect(line).toContain('422')
+    expect(line).not.toMatch(/anna|secret|example/)
   })
 
   it('maps an error that is not from auth-js to 500, logged', () => {

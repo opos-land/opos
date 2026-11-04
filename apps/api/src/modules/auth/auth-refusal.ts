@@ -58,7 +58,7 @@ export const isHookFailure = (error: unknown): error is AuthError =>
  * What Supabase Auth refused, as the error the API answers with (PLAN.md 5.1): a dead session is
  * `401` `session.invalid`, `insufficient_aal` is `401` `session.mfa-required`,
  * `mfa_verification_failed` is `400` `mfa.code-invalid`, a code the contract lists keeps its status, an outage is `503` with
- * its reason for the log line, and anything else is a logged `500`.
+ * its reason for the log line, and anything else is a `500`, logged by its code and status.
  */
 export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error
@@ -79,6 +79,11 @@ export function toApiError(error: unknown): ApiError {
       return new ApiError(error.status ?? 400, `auth.${error.code}` as ErrorCode, message)
     }
   }
-  logger.error(error)
+  // The text of a refusal can quote the address, so only its code and status reach the log.
+  logger.error(
+    isAuthError(error)
+      ? `Supabase Auth refused with an unlisted code: ${error.code ?? 'none'}, status ${error.status ?? 'none'}`
+      : error,
+  )
   return new ApiError(500, 'server.error', 'Unexpected answer from Supabase Auth')
 }

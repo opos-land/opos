@@ -9,6 +9,7 @@ import { type Application, applicationFromOrigin } from '../../common/http/appli
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
 import { RECENT_SIGN_IN_SECONDS } from '../accounts/account-deletion.service'
+import { mailFailure } from '../mail/mail-failure'
 import { MailService } from '../mail/mail.service'
 import { AuthAdminClient } from './auth-admin.client'
 import { toApiError } from './auth-refusal'
@@ -162,9 +163,7 @@ export class MfaService {
       })
     } catch (error) {
       this.logger.warn(
-        `The notice that two-factor authentication was turned off was not sent: ${
-          error instanceof Error ? error.message : 'unknown error'
-        }`,
+        `The notice that two-factor authentication was turned off was not sent: ${mailFailure(error)}`,
       )
     }
   }

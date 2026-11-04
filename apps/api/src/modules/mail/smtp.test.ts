@@ -154,7 +154,10 @@ describe('sendWithDeadline', () => {
 
     await expect(
       sendWithDeadline(options(server.port), 'opos@example.test', message, 800),
-    ).rejects.toThrow(/within 800 ms/)
+    ).rejects.toMatchObject({
+      message: expect.stringMatching(/within 800 ms/) as string,
+      code: 'EDEADLINE',
+    })
 
     // A send that ran its course takes 1.5 s: five replies, 300 ms each.
     expect(Date.now() - started).toBeLessThan(1_400)

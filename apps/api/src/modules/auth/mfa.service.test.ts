@@ -198,12 +198,21 @@ describe('MfaService.recover', () => {
   it('still answers when the email fails, and logs it without the code', async () => {
     const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
     const { service, mail } = setup()
-    mail.sendNoticeEmail.mockRejectedValueOnce(new Error('smtp down'))
+    mail.sendNoticeEmail.mockRejectedValueOnce(
+      Object.assign(new Error('550 5.1.1 <anna.secret@example.test> unknown'), {
+        code: 'EENVELOPE',
+        responseCode: 550,
+      }),
+    )
 
     await expect(service.recover(request(), body)).resolves.toBeUndefined()
 
     expect(warn).toHaveBeenCalledTimes(1)
-    expect(String(warn.mock.calls[0]![0])).not.toContain('ABCDEFGHIJKLMNOP')
+    const line = String(warn.mock.calls[0]![0])
+    expect(line).not.toContain('ABCDEFGHIJKLMNOP')
+    expect(line).toContain('EENVELOPE')
+    expect(line).toContain('550')
+    expect(line).not.toMatch(/anna|secret|example/)
   })
 
   it('mails the account in its locale', async () => {
@@ -516,12 +525,17 @@ describe('MfaService.disable', () => {
   it('still answers when the email fails', async () => {
     const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
     const { service, mail } = setup()
-    mail.sendNoticeEmail.mockRejectedValueOnce(new Error('smtp down'))
+    mail.sendNoticeEmail.mockRejectedValueOnce(
+      Object.assign(new Error('550 <person@example.test> unknown'), {
+        code: 'EENVELOPE',
+        responseCode: 550,
+      }),
+    )
 
     await expect(service.disable(request('aal2'))).resolves.toBeUndefined()
 
     expect(warn).toHaveBeenCalledTimes(1)
-    expect(String(warn.mock.calls[0]![0])).toContain('smtp down')
+    expect(String(warn.mock.calls[0]![0])).toContain('EENVELOPE')
     expect(String(warn.mock.calls[0]![0])).not.toContain('person@example.test')
   })
 

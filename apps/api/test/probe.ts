@@ -30,6 +30,7 @@ export const probeContract = {
           fail: z.boolean(),
           throws: z.boolean().optional(),
           slow: z.boolean().optional(),
+          mailFails: z.boolean().optional(),
           tenantId: z.string().optional(),
         }),
       }),
@@ -93,6 +94,12 @@ class ProbeController {
       this.context.afterCommit(async () => {
         if (body.slow) await new Promise((resolve) => setTimeout(resolve, 200))
         afterCommitCalls.push(body.slug)
+        if (body.mailFails) {
+          throw Object.assign(new Error('550 5.1.1 <anna.secret@example.test> unknown'), {
+            code: 'EENVELOPE',
+            responseCode: 550,
+          })
+        }
       })
       if (body.throws) throw new ApiError(409, 'request.invalid', 'Probe failure')
       if (body.fail) throw new ORPCError('CONFLICT', { message: 'Probe failure' })

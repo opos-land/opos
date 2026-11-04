@@ -169,6 +169,13 @@
       "when": 1793723785687,
       "tag": "0023_mfa_mirror_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793789218379,
+      "tag": "0024_revoke_api_roles_from_functions",
+      "breakpoints": true
     }
   ]
 }

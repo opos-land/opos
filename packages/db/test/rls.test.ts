@@ -12,7 +12,7 @@ import {
   migrator,
   supabaseAdmin,
 } from './db'
-import { globalReads } from '../src/verify'
+import { globalReads, verifyDatabase } from '../src/verify'
 
 // Every covered table (PLAN.md 4.6) and the column that holds its tenant.
 const covered = [
@@ -312,6 +312,33 @@ describe('tenant isolation', () => {
         throw error
       })
     expect(held).toEqual([])
+  })
+
+  it('revokes the Supabase API roles from the functions of public in its own migration', async () => {
+    const statements = readFileSync(
+      join(import.meta.dirname, '../drizzle/0024_revoke_api_roles_from_functions.sql'),
+      'utf8',
+    ).split('--> statement-breakpoint')
+    const outcome = await migrator
+      .begin(async (sql) => {
+        // What a project that ran no db:roles before the first migration hands out by default.
+        await sql.unsafe(
+          'grant execute on all functions in schema public to anon, authenticated, service_role',
+        )
+        const before = (await verifyDatabase(sql)).filter((line) => line.includes('executable by'))
+        for (const statement of statements) await sql.unsafe(statement)
+        const after = (await verifyDatabase(sql)).filter((line) => line.includes('executable by'))
+        throw Object.assign(new Rollback(), { before, after })
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Rollback)
+          return error as Rollback & { before: string[]; after: string[] }
+        throw error
+      })
+    // db:verify reports the functions that kept the default, and none once the migration ran.
+    expect(outcome.before.join('\n')).toMatch(/handle_auth_user_created/)
+    expect(outcome.before.join('\n')).toMatch(/opos_handle_mfa_factor_change/)
+    expect(outcome.after).toEqual([])
   })
 })
 

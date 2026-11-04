@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { type ExecutionContext } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
-import { type AccessTokenVerifier, type TokenCheck } from '../guards/access-token'
+import {
+  type AccessTokenPayload,
+  type AccessTokenVerifier,
+  type TokenCheck,
+} from '../guards/access-token'
 import { rateLimitTracker } from './rate-limit'
 
 const env = { PORTAL_URL: 'https://opos.land', PANEL_URL: 'https://panel.opos.land' }
@@ -20,30 +24,42 @@ const req = (ip: string, headers: Record<string, string> = {}) => ({ ip, headers
 const portal = { cookie: 'opos_portal_access=abc', origin: 'https://opos.land' }
 
 describe('rateLimitTracker', () => {
-  it('counts a valid token in the session cookie against its session', async () => {
-    const sessionId = randomUUID()
-    const verifier = verifying({
-      status: 'valid',
-      payload: { sub: randomUUID(), session_id: sessionId },
-    })
+  it('counts a valid token at aal2 in the session cookie against its account and level', async () => {
+    const sub = randomUUID()
+    const verifier = verifying({ status: 'valid', payload: { sub, aal: 'aal2' } })
 
     expect(await rateLimitTracker(verifier, env)(req('192.0.2.1', portal), context)).toBe(
-      `session:${sessionId}`,
+      `account:${sub}:aal2`,
     )
     expect(verifier.verify).toHaveBeenCalledWith('abc')
   })
 
   it.each([
-    ['no session_id', {}],
-    ['an empty session_id', { session_id: '' }],
-    ['a session_id that is no string', { session_id: 7 }],
-  ])('counts a valid token with %s against the account', async (_, claims) => {
+    ['at aal1', { aal: 'aal1' }],
+    ['with no aal', {}],
+    ['with an aal that is no known level', { aal: 'aal3' }],
+    ['with an aal that is no string', { aal: 2 }],
+  ])('counts a valid token %s against the account alone', async (_, claims) => {
     const sub = randomUUID()
-    const verifier = verifying({ status: 'valid', payload: { sub, ...claims } })
+    const verifier = verifying({
+      status: 'valid',
+      payload: { sub, ...claims } as AccessTokenPayload,
+    })
 
     expect(await rateLimitTracker(verifier, env)(req('192.0.2.1', portal), context)).toBe(
       `account:${sub}`,
     )
+  })
+
+  it('never reads the session of a token: two sessions of one account share a counter', async () => {
+    const sub = randomUUID()
+    const track = (sessionId: string) =>
+      rateLimitTracker(
+        verifying({ status: 'valid', payload: { sub, aal: 'aal1', session_id: sessionId } }),
+        env,
+      )(req('192.0.2.1', portal), context)
+
+    expect(await track(randomUUID())).toBe(await track(randomUUID()))
   })
 
   it('tracks a forged cookie by the address, never the account it names', async () => {

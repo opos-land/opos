@@ -55,7 +55,7 @@ describe('rate limit', () => {
     await get('/health', '203.0.113.2').expect(200)
   })
 
-  it('counts a signed-in request against the session, not the address', async () => {
+  it('counts a signed-in request against the account, not the address', async () => {
     const one = await createAccount()
     const other = await createAccount()
     const [oneToken, otherToken] = await Promise.all([signIn(one.email), signIn(other.email)])
@@ -67,14 +67,23 @@ describe('rate limit', () => {
     await get('/health', '203.0.113.10').expect(200)
   })
 
-  it('keeps the limit of each session of one account to itself', async () => {
+  it('shares one counter between two aal1 sessions of one account', async () => {
     const { email } = await createAccount()
     const [one, other] = await Promise.all([signIn(email), signIn(email)])
 
     await spend(LIMIT, '/me', '203.0.113.12', one)
 
-    expectLimited(await get('/me', '203.0.113.12', one))
-    await get('/me', '203.0.113.13', other).expect(200)
+    expectLimited(await get('/me', '203.0.113.13', other))
+  })
+
+  it('does not reset the counter of an account when it signs in again', async () => {
+    const { email } = await createAccount()
+    const spent = await signIn(email)
+
+    await spend(LIMIT, '/me', '203.0.113.15', spent)
+    expectLimited(await get('/me', '203.0.113.15', spent))
+
+    expectLimited(await get('/me', '203.0.113.16', await signIn(email)))
   })
 
   it('leaves the aal2 session of an account alone while a password spends its aal1 limit', async () => {
@@ -90,7 +99,7 @@ describe('rate limit', () => {
       .send({ email, password: TEST_PASSWORD })
     expect(signedIn.body).toMatchObject({ code: 'session.mfa-required' })
 
-    for (let i = 0; i < LIMIT; i++) await passwordHolder.get('/me').expect(401)
+    for (let i = 0; i < LIMIT; i++) await passwordHolder.get('/me')
 
     expectLimited(await passwordHolder.get('/me'))
     await owner.get('/me').expect(200)

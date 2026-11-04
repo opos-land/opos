@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
-import { mfaRequired } from '../../../shared/lib/session-store'
+import { clearSession, mfaRequired } from '../../../shared/lib/session-store'
 import { disableTwoFactor, enableTwoFactor, enrollTwoFactor, refreshAccount } from './two-factor'
 import { accountOptions } from './account'
 
@@ -117,5 +117,44 @@ describe('refreshAccount', () => {
 
     expect(useSession.getState()).toMatchObject({ status: 'mfa-required', account: null })
     expect(client.getQueryData(accountOptions().queryKey)).toBeUndefined()
+  })
+
+  describe('while GET /me is on its way', () => {
+    /** Runs a refresh up to its `GET /me`, then `change`, then lets the answer for `me` arrive. */
+    async function refreshAcross(client: QueryClient, change: () => void) {
+      let answer!: (response: Response) => void
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => new Promise<Response>((resolve) => (answer = resolve))),
+      )
+      const refreshing = refreshAccount(client, true)
+      await vi.waitFor(() => expect(answer).toBeTypeOf('function'))
+      change()
+      answer(json(200, me))
+      await refreshing
+    }
+
+    it('shows no account once the person has signed out', async () => {
+      const client = new QueryClient()
+
+      await refreshAcross(client, () => {
+        clearSession()
+      })
+
+      expect(useSession.getState()).toMatchObject({ status: 'ready', account: null })
+      expect(client.getQueryData(accountOptions().queryKey)).toBeUndefined()
+    })
+
+    it('leaves the account the tab has settled on when it is another one', async () => {
+      const client = new QueryClient()
+      const other = { ...me, id: 'b', email: 'other@example.test' }
+
+      await refreshAcross(client, () => {
+        useSession.setState({ status: 'ready', account: other })
+      })
+
+      expect(useSession.getState().account).toEqual(other)
+      expect(client.getQueryData(accountOptions().queryKey)).toBeUndefined()
+    })
   })
 })

@@ -18,7 +18,7 @@ export const disableTwoFactor = () => accountClient.auth.mfa.disable()
  * What the API just answered about `mfaEnabled` goes into the account page and the session at
  * once; `GET /me` is asked afterwards and its answer replaces the whole account. A `GET /me` that
  * fails therefore leaves the card right, not stale, and rejects for the caller to see. An answer
- * that arrives after the session stopped being `ready` is dropped.
+ * is dropped unless the session is still `ready` and shows that account (PLAN.md 7.4).
  */
 export async function refreshAccount(queryClient: QueryClient, mfaEnabled: boolean) {
   const key = accountOptions().queryKey
@@ -27,9 +27,10 @@ export async function refreshAccount(queryClient: QueryClient, mfaEnabled: boole
   if (shown) useSession.setState({ account: { ...shown, mfaEnabled } })
 
   const account = await accountClient.me.get()
-  // The session may have come to wait for its code meanwhile: an account written now would make
-  // the code screen and the pages that need a session send each other on.
-  if (useSession.getState().status !== 'ready') return
+  // Meanwhile the session may have come to wait for its code, where an account would make the code
+  // screen and the pages that need a session send each other on, or signed out, or changed account.
+  const { status, account: current } = useSession.getState()
+  if (status !== 'ready' || current?.id !== account.id) return
   queryClient.setQueryData(key, account)
   useSession.setState({ account })
 }

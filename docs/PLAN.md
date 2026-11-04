@@ -1336,9 +1336,12 @@ transaction is open; they never query the pool directly. The two exceptions are
 `AccountsRepository` and `RecoveryCodesRepository`: `accounts` and `account_recovery_codes` have no
 RLS ([4.6](#46-tenant-isolation--rls-in-postgres)), so they run on the `opos_app` pool outside a
 tenant transaction. Only `findForToken(sub)`, which
-`JwtAuthGuard` calls, and `localeForHook(id)`, which the send-email hook calls with the user of a
-verified payload, take an id; every other method of the two works on the account in the request
-store, so no caller can pass another account's id. Inside a tenant transaction three repositories read other
+`JwtAuthGuard` calls with a verified token's `sub` and the sign-in routes of
+[auth.service.ts](../apps/api/src/modules/auth/auth.service.ts) and
+[google-auth.service.ts](../apps/api/src/modules/auth/google-auth.service.ts) with the user of a
+session Supabase Auth has just issued, and `localeForHook(id)`, which the send-email hook calls with
+the user of a verified payload, take an id; every other method of the two works on the account in
+the request store, so no caller can pass another account's id. Inside a tenant transaction three repositories read other
 accounts, listed in [4.6](#46-tenant-isolation--rls-in-postgres): `ProgramRepository` joins the
 speakers' accounts and finds the confirmed accounts of a speaker list, `MembersRepository` joins the
 team's accounts, and `InvitationsRepository.confirmedAccount` finds one confirmed account by the

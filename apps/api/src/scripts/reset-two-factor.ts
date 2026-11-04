@@ -3,7 +3,6 @@ import { mfaDisabledEmail } from '@opos/i18n/emails'
 import { and, eq, isNull } from 'drizzle-orm'
 import { type AuthAdminClient } from '../modules/auth/auth-admin.client'
 import { type MailService } from '../modules/mail/mail.service'
-import { recipientLocale } from '../modules/mail/recipient-locale'
 
 /** Why a reset changed nothing (PLAN.md 14): the codes the script exits with. */
 export type ResetErrorCode = 'account.not-found' | 'account.unconfirmed' | 'mfa.not-enabled'
@@ -21,7 +20,7 @@ export class ResetError extends Error {
 /** What the reset works on: the `postgres` role's connection, the admin API and the mail transport. */
 export interface ResetDeps {
   db: Database
-  admin: Pick<AuthAdminClient, 'factorIds' | 'deleteFactor'>
+  admin: Pick<AuthAdminClient, 'factorIds' | 'deleteFactor' | 'noticeLocale'>
   mail: Pick<MailService, 'sendNoticeEmail'>
 }
 
@@ -93,7 +92,7 @@ export async function resetTwoFactor(deps: ResetDeps, address: string): Promise<
   try {
     await deps.mail.sendNoticeEmail({
       to: email,
-      locale: recipientLocale({ account: account.locale }),
+      locale: await deps.admin.noticeLocale(account),
       content: mfaDisabledEmail,
     })
   } catch (error) {

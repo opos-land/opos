@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common'
+import { DEFAULT_LOCALE } from '@opos/i18n'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { toErrorResponse } from '../../common/filters/http-exception.filter'
 import { AuthAdminClient } from './auth-admin.client'
@@ -63,6 +64,48 @@ describe('AuthAdminClient.setPassword', () => {
 
     expect(failure).toBeInstanceOf(Error)
     expect((failure as Error).message).toBe(message)
+  })
+})
+
+describe('AuthAdminClient.noticeLocale', () => {
+  it('takes the locale the account chose, and asks Supabase Auth nothing', async () => {
+    const fetch = answer(200, {})
+
+    expect(await client().noticeLocale({ id: USER_ID, locale: 'en' })).toBe('en')
+
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['no choice', null],
+    ['a locale the platform does not speak', 'cs'],
+  ])('with %s reads the locale of the sign-up', async (_, locale) => {
+    const fetch = answer(200, { id: USER_ID, user_metadata: { locale: 'en' } })
+
+    expect(await client().noticeLocale({ id: USER_ID, locale })).toBe('en')
+
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe(`http://supabase.test/auth/v1/admin/users/${USER_ID}`)
+    expect(init.method).toBe('GET')
+  })
+
+  it.each([
+    ['no sign-up locale', { id: USER_ID, user_metadata: {} }],
+    ['an unsupported one', { id: USER_ID, user_metadata: { locale: 'cs' } }],
+  ])('ends at the default with %s', async (_, user) => {
+    answer(200, user)
+
+    expect(await client().noticeLocale({ id: USER_ID, locale: null })).toBe(DEFAULT_LOCALE)
+  })
+
+  it.each([404, 500, 401])('ends at the default on a %s, logging no id', async (status) => {
+    const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    answer(status, { msg: `no user ${USER_ID}` })
+
+    expect(await client().noticeLocale({ id: USER_ID, locale: null })).toBe(DEFAULT_LOCALE)
+
+    expect(warned).toHaveBeenCalledTimes(1)
+    expect(JSON.stringify(warned.mock.calls)).not.toContain(USER_ID)
   })
 })
 

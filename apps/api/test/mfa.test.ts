@@ -557,6 +557,41 @@ describe('POST /auth/mfa/recover', () => {
   })
 })
 
+describe('the notice that 2FA is off, for an account that chose no locale', () => {
+  /** A person who signed up in `locale` and has since gone back to detection. */
+  const detecting = async (locale: string) => {
+    const person = await personWith2fa({ locale })
+    await person.agent.patch('/me').send({ locale: null }).expect(200)
+    return person
+  }
+
+  // The two languages, so one of them differs from DEFAULT_LOCALE, which would pass at once.
+  it.each([
+    ['pl', 'Uwierzytelnianie dwuskładnikowe zostało wyłączone'],
+    ['en', 'Two-factor authentication was turned off'],
+  ])('recover falls back on the sign-up locale %s', async (locale, subject) => {
+    const person = await detecting(locale)
+    const { agent } = await passwordBrowser(person.email)
+
+    await agent.post('/auth/mfa/recover').send({ code: person.recoveryCodes[0] }).expect(204)
+
+    const [mail] = await waitForMail(person.email)
+    expect(mail!.Subject).toBe(subject)
+  })
+
+  it.each([
+    ['pl', 'Uwierzytelnianie dwuskładnikowe zostało wyłączone'],
+    ['en', 'Two-factor authentication was turned off'],
+  ])('DELETE /auth/mfa falls back on the sign-up locale %s', async (locale, subject) => {
+    const person = await detecting(locale)
+
+    await person.agent.delete('/auth/mfa').expect(204)
+
+    const [mail] = await waitForMail(person.email)
+    expect(mail!.Subject).toBe(subject)
+  })
+})
+
 describe('DELETE /auth/mfa', () => {
   it('needs aal2', async () => {
     const { id, email } = await personWith2fa()

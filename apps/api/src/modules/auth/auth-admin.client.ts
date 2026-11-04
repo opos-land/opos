@@ -1,12 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { isLocale, type Locale } from '@opos/i18n'
 import { type AuthError, type GoTrueAdminApi, isAuthRetryableFetchError } from '@supabase/auth-js'
 import { unavailable } from '../../common/errors/api-error'
+import { recipientLocale } from '../mail/recipient-locale'
 import { SupabaseAuthFactory } from './supabase-auth.factory'
 
 /**
  * The Supabase Auth admin API, authorized by the secret key on `apikey` alone (PLAN.md 10). The API
- * uses it for account deletion, factor removal and a password a confirmation could not replace.
- * Outbound I/O: never call it inside a tenant transaction.
+ * uses it for account deletion, factor removal, a password a confirmation could not replace and
+ * the locale of a notice. Outbound I/O: never call it inside a tenant transaction.
  */
 @Injectable()
 export class AuthAdminClient {
@@ -60,6 +62,19 @@ export class AuthAdminClient {
     if (!error) return true
     if (error.status === 404) return false
     throw this.refused('deleteFactor', error)
+  }
+
+  /**
+   * The language of a notice to an account (PLAN.md 6): `accounts.locale`, then the locale sent with
+   * the sign-up, which only the user's metadata keeps once the account has gone back to detection
+   * (`GET /admin/users/:id`). Only the language hangs on that call, so a failure counts as no locale.
+   */
+  async noticeLocale(account: { id: string; locale: string | null }): Promise<Locale> {
+    if (isLocale(account.locale)) return account.locale
+    const { data, error } = await this.api.getUserById(account.id)
+    if (error) this.logger.warn(`Supabase Auth did not answer getUserById: ${error.status}`)
+    const metadata = data.user?.user_metadata
+    return recipientLocale({ signUp: metadata?.locale })
   }
 
   /** `GET /admin/users/:id/factors`: the ids of the user's factors, none for a user already gone. */

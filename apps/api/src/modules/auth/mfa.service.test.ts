@@ -83,6 +83,7 @@ function setup(
   }
   const admin = {
     deleteFactor: log('deleteFactor', true),
+    noticeLocale: vi.fn(({ locale }: { locale: string }) => Promise.resolve(locale)),
   }
   const codes = {
     replaceUnused: log('replaceUnused', true),

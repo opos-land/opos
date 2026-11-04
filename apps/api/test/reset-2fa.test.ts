@@ -79,6 +79,22 @@ describe('resetTwoFactor', () => {
     expect(sent!.Subject).toBe('Uwierzytelnianie dwuskładnikowe zostało wyłączone')
   })
 
+  it.each([
+    ['pl', 'Uwierzytelnianie dwuskładnikowe zostało wyłączone'],
+    ['en', 'Two-factor authentication was turned off'],
+  ])('mails an account that chose no locale in the sign-up locale %s', async (locale, subject) => {
+    const account = await createAccount({ locale })
+    addresses.push(account.email)
+    const agent = await signedInAgent('portal', account.email)
+    await enableMfa(agent)
+    await agent.patch('/me').send({ locale: null }).expect(200)
+
+    await resetTwoFactor(deps, account.email)
+
+    const [sent] = await waitForMail(account.email)
+    expect(sent!.Subject).toBe(subject)
+  })
+
   it('keeps the codes already used, as a record', async () => {
     const { id, email, recoveryCodes } = await personWith2fa()
     const browser = await signedInBrowserAt1(email)

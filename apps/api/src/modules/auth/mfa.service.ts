@@ -10,7 +10,6 @@ import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
 import { RECENT_SIGN_IN_SECONDS } from '../accounts/account-deletion.service'
 import { MailService } from '../mail/mail.service'
-import { recipientLocale } from '../mail/recipient-locale'
 import { AuthAdminClient } from './auth-admin.client'
 import { toApiError } from './auth-refusal'
 import { unwrap, type AuthRequest } from './auth.service'
@@ -154,11 +153,11 @@ export class MfaService {
 
   /** The notice that 2FA is off; a failure is logged and the removal stands (PLAN.md 7.12). */
   private async notifyDisabled() {
-    const { email, locale } = this.context.account()
+    const account = this.context.account()
     try {
       await this.mail.sendNoticeEmail({
-        to: email,
-        locale: recipientLocale({ account: locale }),
+        to: account.email,
+        locale: await this.admin.noticeLocale(account),
         content: mfaDisabledEmail,
       })
     } catch (error) {

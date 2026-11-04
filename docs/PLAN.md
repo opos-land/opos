@@ -2660,6 +2660,12 @@ SUPABASE_LOCAL_SMTP_SMTP_PORT = "21025"
 Never in a `.env` at the repository root ([11](#11-environment-variables)). After a change,
 `pnpm infra:down && pnpm infra:up` recreates the stack on the new ports.
 
+The CLI publishes these ports on every interface of the machine and has no setting for it, so the
+database, with the CLI's default credentials, Studio and Mailpit would be open to the local network.
+Every developer sets `"ip": "127.0.0.1"` once in the engine's daemon configuration (Settings, Docker
+Engine, in Docker Desktop) and recreates the stack the same way; `docker ps` then shows
+`127.0.0.1:54322`. The setting holds for every container of that engine.
+
 ### Versions and dependencies
 
 Tool versions come from `mise.toml`: `mise install` in the repository root installs Node and,

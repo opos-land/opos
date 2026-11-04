@@ -2875,7 +2875,9 @@ stays in the future.
   returned secret ([totp.ts](../packages/db/src/totp.ts)), so the trigger sets `mfaEnabledAt`; the
   seed writes nothing into `auth` and never writes `mfaEnabledAt`. An account that already holds a
   verified factor keeps it, so a rerun enrolls nothing; a stale unverified factor is removed through
-  the admin API first. Supabase Auth generates the secret, so a run that enrolled prints it when
+  the admin API first. A seed that enrolls sets the password to the dev password through the admin
+  API first, since the person may have changed it, and a rerun that enrolls nothing leaves the
+  password alone. Supabase Auth generates the secret, so a run that enrolled prints it when
   `OPOS_ENV` is `local`, and never on Dev, where the output lands in the deploy log. A developer gets
   in with the code from that output's secret, or with a recovery code from
   [seed.ts](../packages/db/src/seed.ts), which turns the factor off until the next seed. Every run

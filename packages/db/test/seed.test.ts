@@ -139,6 +139,52 @@ describe('db:seed two-factor account', () => {
   )
 
   it(
+    'enrolls again after the password has changed and the factor is gone',
+    { timeout: 120_000 },
+    async () => {
+      const id = await accountId()
+      await removeFactors(id)
+      const changed = await fetch(`${authUrl}/admin/users/${id}`, {
+        method: 'PUT',
+        headers: { apikey: process.env.SUPABASE_SECRET_KEY!, 'content-type': 'application/json' },
+        body: JSON.stringify({ password: 'a-password-chosen-since' }),
+      })
+      expect(changed.status).toBe(200)
+
+      const run = runSeed('local')
+
+      expect(run.status, run.stderr).toBe(0)
+      expect((await factors(id)).map((factor) => factor.status)).toEqual(['verified'])
+      // The password is reset only to enroll: a rerun that finds the factor leaves it alone.
+      const kept = await fetch(`${authUrl}/token?grant_type=password`, {
+        method: 'POST',
+        headers: { apikey: process.env.SUPABASE_SECRET_KEY!, 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password: 'password123' }),
+      })
+      expect(kept.status).toBe(200)
+      await fetch(`${authUrl}/admin/users/${id}`, {
+        method: 'PUT',
+        headers: { apikey: process.env.SUPABASE_SECRET_KEY!, 'content-type': 'application/json' },
+        body: JSON.stringify({ password: 'a-password-chosen-since' }),
+      })
+      const rerun = runSeed('local')
+      expect(rerun.status, rerun.stderr).toBe(0)
+      const left = await fetch(`${authUrl}/token?grant_type=password`, {
+        method: 'POST',
+        headers: { apikey: process.env.SUPABASE_SECRET_KEY!, 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password: 'a-password-chosen-since' }),
+      })
+      expect(left.status).toBe(200)
+      // Back to the demo password for the tests after this one.
+      await fetch(`${authUrl}/admin/users/${id}`, {
+        method: 'PUT',
+        headers: { apikey: process.env.SUPABASE_SECRET_KEY!, 'content-type': 'application/json' },
+        body: JSON.stringify({ password: 'password123' }),
+      })
+    },
+  )
+
+  it(
     'replaces a stale unverified factor and prints no secret on dev',
     { timeout: 120_000 },
     async () => {

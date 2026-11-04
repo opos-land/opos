@@ -304,7 +304,12 @@ async function ensureTwoFactor(email: string) {
   for (const factor of held.filter((factor) => factor.status !== 'verified')) {
     await authAdmin('DELETE', `/admin/users/${id}/factors/${factor.id}`)
   }
-  if (!held.some((factor) => factor.status === 'verified')) await enrollFactor(email)
+  if (!held.some((factor) => factor.status === 'verified')) {
+    // Enrolling signs in with the dev password, which the person may have changed since; it is
+    // set only here, so a rerun that finds the factor leaves the password alone.
+    await authAdmin('PUT', `/admin/users/${id}`, { password: DEV_PASSWORD })
+    await enrollFactor(email)
+  }
 
   const hashes = RECOVERY_CODES.map((code) => createHash('sha256').update(code).digest('hex'))
   await db.transaction(async (tx) => {

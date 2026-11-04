@@ -57,12 +57,12 @@ function templateKeys(template) {
 /** `text` with the empty assignment of `key` given `value`; the rest of the line stays. */
 function fillAssignment(text, key, value) {
   const lines = text.split('\n')
-  const target = new RegExp(`^(\\s*(?:export\\s+)?${key}\\s*=)(.*)$`)
+  const target = new RegExp(`^(\\s*(?:export\\s+)?${key}\\s*=)([^\\r]*)(\\r?)$`)
   for (let idx = lines.length - 1; idx >= 0; idx--) {
     const match = target.exec(lines[idx])
     const rest = match && EMPTY_REST.exec(match[2])
     if (!rest) continue
-    lines[idx] = `${match[1]}${value}${rest[2] ? ` ${rest[2]}` : ''}`
+    lines[idx] = `${match[1]}${value}${rest[2] ? ` ${rest[2]}` : ''}${match[3]}`
     break
   }
   return lines.join('\n')
@@ -94,7 +94,9 @@ export function fillEnvFile(template, existing, values) {
     }
   }
   if (appended.length === 0) return text
-  return `${text.endsWith('\n') ? text : `${text}\n`}${appended.join('\n')}\n`
+  const eol = text.includes('\r\n') ? '\r\n' : '\n'
+  const added = appended.map((line) => line.replace(/\r$/, '')).join(eol)
+  return `${text.endsWith('\n') ? text : `${text}${eol}`}${added}${eol}`
 }
 
 export const nodeFs = {
@@ -189,15 +191,31 @@ export async function initInfra({
   for (const dir of ENV_DIRS) fill(dir, { OPOS_ENV: 'local' })
 
   // 2. the empty secrets; a secret one file already holds is the one the others get
-  const pick = (dirs, key, generate) => dirs.map((dir) => known(dir, key)).find(isSet) ?? generate()
+  const pick = (dirs, key, generate, fallback = () => undefined) =>
+    dirs.map((dir) => known(dir, key)).find(isSet) ?? fallback() ?? generate()
+  // The password inside a database URL of apps/api/.env: a rerun that finds packages/db/.env gone
+  // must not give the roles passwords that file's URLs do not hold.
+  const passwordIn = (key) => () => {
+    try {
+      const { password } = new URL(known('apps/api', key))
+      return password === '' ? undefined : decodeURIComponent(password)
+    } catch {
+      return undefined
+    }
+  }
   const hex = () => randomBytes(32).toString('hex')
   const hookSecret = pick(
     ['apps/api', 'supabase'],
     'SEND_EMAIL_HOOK_SECRET',
     () => `v1,whsec_${randomBytes(32).toString('base64')}`,
   )
-  const appPassword = pick(['packages/db'], 'OPOS_APP_PASSWORD', hex)
-  const appGlobalPassword = pick(['packages/db'], 'OPOS_APP_GLOBAL_PASSWORD', hex)
+  const appPassword = pick(['packages/db'], 'OPOS_APP_PASSWORD', hex, passwordIn('DATABASE_URL'))
+  const appGlobalPassword = pick(
+    ['packages/db'],
+    'OPOS_APP_GLOBAL_PASSWORD',
+    hex,
+    passwordIn('DATABASE_GLOBAL_URL'),
+  )
   const dbPort = env.SUPABASE_DB_PORT ?? '54322'
   const databaseUrl = (role, password) =>
     `postgres://${role}:${password}@127.0.0.1:${dbPort}/postgres`

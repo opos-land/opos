@@ -100,6 +100,15 @@ test('fillEnvFile keeps the comments, the blank lines and the order of the templ
   assert.equal(fillEnvFile(template, '', { A: 'a' }), '# the key\nA=a\n\n# the next\nB=1\n')
 })
 
+test('fillEnvFile fills an empty value of a CRLF file and keeps its line endings', () => {
+  assert.equal(
+    fillEnvFile('A=\r\nB=\r\n', 'A=\r\n# note\r\nB=\r\n', { A: 'a', B: 'b' }),
+    'A=a\r\n# note\r\nB=b\r\n',
+  )
+  assert.equal(fillEnvFile('A=\r\n', 'A= # mine\r\n', { A: 'a' }), 'A=a # mine\r\n')
+  assert.equal(fillEnvFile('A=\r\n', '', { A: 'a' }), 'A=a\r\n')
+})
+
 test('fillEnvFile ignores a value for a key the template does not name', () => {
   assert.equal(fillEnvFile('A=\n', '', { Z: 'z' }), 'A=\n')
 })
@@ -589,4 +598,34 @@ test('initInfra asks for the output of db:roles on failure and of no other comma
   for (const [line, { options }] of Object.entries(ctx.snapshots)) {
     if (line !== 'pnpm db:roles') assert.notEqual(options.showOutputOnFailure, true, line)
   }
+})
+
+test('a rerun after removing packages/db/.env gives the roles the passwords apps/api/.env holds', async () => {
+  const first = setup()
+  await first.run()
+  const api = first.text('apps/api/.env')
+  const appPassword = first.value('packages/db/.env', 'OPOS_APP_PASSWORD')
+  const globalPassword = first.value('packages/db/.env', 'OPOS_APP_GLOBAL_PASSWORD')
+
+  const second = setup({ files: { 'apps/api/.env': api } })
+  await second.run()
+
+  assert.equal(second.value('packages/db/.env', 'OPOS_APP_PASSWORD'), appPassword)
+  assert.equal(second.value('packages/db/.env', 'OPOS_APP_GLOBAL_PASSWORD'), globalPassword)
+  assert.equal(
+    second.value('apps/api/.env', 'DATABASE_URL'),
+    first.value('apps/api/.env', 'DATABASE_URL'),
+  )
+})
+
+test('the password of packages/db/.env wins over the one in the URLs of apps/api/.env', async () => {
+  const run = setup({
+    files: {
+      'packages/db/.env': 'OPOS_APP_PASSWORD=kept\n',
+      'apps/api/.env': 'DATABASE_URL=postgres://opos_app:other@127.0.0.1:54322/postgres\n',
+    },
+  })
+  await run.run()
+
+  assert.equal(run.value('packages/db/.env', 'OPOS_APP_PASSWORD'), 'kept')
 })

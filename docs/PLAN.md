@@ -2554,7 +2554,9 @@ set:
    `apps/panel`, `apps/portal` — with `OPOS_ENV=local`;
 2. fills the empty secrets: `SEND_EMAIL_HOOK_SECRET` (`v1,whsec_` and 32 random bytes in base64),
    the same value in `supabase/.env` and `apps/api/.env`; `INVITE_SECRET`, `OPOS_APP_PASSWORD` and
-   `OPOS_APP_GLOBAL_PASSWORD` (32 random bytes in hex), and the database URLs built from them;
+   `OPOS_APP_GLOBAL_PASSWORD` (32 random bytes in hex), and the database URLs built from them; a
+   password missing from `packages/db/.env` is the one already inside the matching URL of
+   `apps/api/.env`, so removing one file never gives the roles passwords the other does not hold;
 3. creates `supabase/signing_keys.json` when it is missing or holds only `[]`: `[]`, then
    `supabase gen signing-key --algorithm ES256 --append`;
 4. runs `supabase start`, reads `supabase status -o env` and writes the secret key and the

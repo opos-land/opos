@@ -107,6 +107,10 @@ test('fillEnvFile fills an empty value of a CRLF file and keeps its line endings
   )
   assert.equal(fillEnvFile('A=\r\n', 'A= # mine\r\n', { A: 'a' }), 'A=a # mine\r\n')
   assert.equal(fillEnvFile('A=\r\n', '', { A: 'a' }), 'A=a\r\n')
+  assert.equal(
+    fillEnvFile('A=\r\n# note\r\nB=\r\n', 'A=x\r\n', { B: 'b' }),
+    'A=x\r\n# note\r\nB=b\r\n',
+  )
 })
 
 test('fillEnvFile ignores a value for a key the template does not name', () => {
@@ -629,3 +633,15 @@ test('the password of packages/db/.env wins over the one in the URLs of apps/api
 
   assert.equal(run.value('packages/db/.env', 'OPOS_APP_PASSWORD'), 'kept')
 })
+
+for (const [name, url] of [
+  ['a URL with no password', 'postgres://opos_app@127.0.0.1:54322/postgres'],
+  ['text that is no URL', 'not a url'],
+]) {
+  test(`${name} in apps/api/.env gives the roles a new password`, async () => {
+    const run = setup({ files: { 'apps/api/.env': `DATABASE_URL=${url}\n` } })
+    await run.run()
+
+    assert.match(run.value('packages/db/.env', 'OPOS_APP_PASSWORD'), /^[0-9a-f]{64}$/)
+  })
+}

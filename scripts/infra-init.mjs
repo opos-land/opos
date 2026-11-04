@@ -197,8 +197,7 @@ export async function initInfra({
   // must not give the roles passwords that file's URLs do not hold.
   const passwordIn = (key) => () => {
     try {
-      const { password } = new URL(known('apps/api', key))
-      return password === '' ? undefined : decodeURIComponent(password)
+      return decodeURIComponent(new URL(known('apps/api', key)).password) || undefined
     } catch {
       return undefined
     }

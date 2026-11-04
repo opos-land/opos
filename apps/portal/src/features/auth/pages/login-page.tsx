@@ -28,11 +28,14 @@ export function LoginPage() {
   if (status === 'loading') return <LoadingView />
   const returned = returnedError(params.get('error'))
   if (account && returned) {
-    // A Google round trip started while signed in (confirming a deletion, re-authenticating) failed.
+    // A Google round trip started while signed in (confirming a deletion, re-authenticating)
+    // failed. The way back is the page alone: the query of the target is what only a successful
+    // return may carry, as `/account?confirm=deletion` offers the deletion.
+    const page = new URL(returnTo, window.location.origin).pathname
     return (
       <AuthCard title={<Trans>Sign in</Trans>}>
         <ErrorMessage error={returned} />
-        <Link to={returnTo} className={linkClass}>
+        <Link to={page} className={linkClass}>
           <Trans>Continue</Trans>
         </Link>
       </AuthCard>

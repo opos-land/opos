@@ -183,6 +183,21 @@ describe('DeleteAccount', () => {
     expect(deleteMe).not.toHaveBeenCalled()
   })
 
+  it('spends a confirmation that came back without its parameter, as after a failed Google sign-in', async () => {
+    rememberDeletionConfirmation('user-anna')
+    renderAt('/account', bothMethods)
+
+    expect(startedDeletionConfirmation()).toBeNull()
+    cleanup()
+
+    const user = renderAt('/account?confirm=deletion', bothMethods)
+    expect(await screen.findByText('search ""')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Delete my account' }))
+
+    expect(screen.queryByText(/You confirmed it is you again/)).toBeNull()
+    expect(screen.getByLabelText('Your password')).toBeTruthy()
+  })
+
   it('offers no deletion to a confirmation link that was not started here', async () => {
     const user = renderAt('/account?confirm=deletion', bothMethods)
 

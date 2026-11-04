@@ -2169,7 +2169,7 @@ image with its headers ([13](#13-deployment)).
 | `/` | OPOS platform landing page |
 | `/privacy` | the privacy policy ([PRODUCT.md 10](PRODUCT.md#10-personal-data-and-privacy)); linked from the registration form and the footer |
 | `/register` | first and last name, email, Google button — no password; after submitting — "check your inbox", with the link sent again on request (`POST /auth/resend`) |
-| `/login` | email and password, Google button, the link to `/forgot-password`; `auth.email_not_confirmed` offers to send the link again (`POST /auth/resend`); shows the code of a failed Google sign-in from `?error=`, also to a browser holding a session (confirming a deletion or re-authenticating with Google failed), with a link to the `?redirect=` target or `/account` instead of the form; any other `?error=` value leads a signed-in browser away at once |
+| `/login` | email and password, Google button, the link to `/forgot-password`; `auth.email_not_confirmed` offers to send the link again (`POST /auth/resend`); shows the code of a failed Google sign-in from `?error=`, also to a browser holding a session (confirming a deletion or re-authenticating with Google failed), with a link to the path of the `?redirect=` target without its query, or `/account`, instead of the form; any other `?error=` value leads a signed-in browser away at once |
 | `/auth/confirm` | receives `token_hash` and `type` from an email link and sends nothing until its button is pressed; the button sends them once to `POST /auth/verify`, then the page shows the password form for a confirmation and a recovery link alike ([5.1](#the-password-comes-after-the-confirmation), [7.6](#76-password-reset)); saving it ends every other session and opens the page the round trip started on; `session.mfa-required` from the button leads to `/auth/mfa` with the return path `/auth/confirm` ([7.6](#76-password-reset)); `auth.otp_expired` offers a new link, a password link (`POST /auth/password/forgot`) for a sign-up link and a recovery link alike, since it works for an unconfirmed address as well as a confirmed one and leads to the password form; opened without a token, the page shows the password form to a browser holding a session and offers the sign-in to any other |
 | `/auth/mfa` | the code screen of two-factor authentication: a code or a recovery code, then the return path ([7.12](#712-two-factor-authentication)) |
 | `/forgot-password` | password reset request; confirms that the message was sent whatever the address ([7.6](#76-password-reset)) |
@@ -2250,8 +2250,9 @@ On an account with two-factor authentication either confirmation passes through 
 ([7.12](#712-two-factor-authentication)): `POST /auth/sign-in` answers `session.mfa-required`, and the
 password confirmation also returns through `/account?confirm=deletion`, as the Google return does, so
 `DELETE /me` runs after the code.
-That return is used once and leaves the address at once: a reload or a copied link offers the
-password and Google again, another account Google signed in is told nothing was deleted, and `401`
+That return is used once and leaves the address at once: a reload, a copied link or the way back
+from a failed Google sign-in, which is `/account` alone, offers the password and Google again,
+another account Google signed in is told nothing was deleted, and `401`
 `session.reauthentication-required` offers both confirmations again. The methods offered follow the
 account's `signInMethods` from `GET /me`
 ([sign-in-methods.ts](../apps/portal/src/features/account/model/sign-in-methods.ts)).

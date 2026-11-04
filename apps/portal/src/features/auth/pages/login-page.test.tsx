@@ -114,6 +114,14 @@ describe('LoginPage ?error=', () => {
       expect(screen.queryByRole('button', { name: 'Continue with Google' })).toBeNull()
     })
 
+    it('leads back to the page alone, without the query only a successful return carries', () => {
+      renderLogin(
+        `?error=auth.google-failed&redirect=${encodeURIComponent('/account?confirm=deletion#delete')}`,
+      )
+
+      expect(screen.getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe('/account')
+    })
+
     it('leads back to the start page when the flow started there, as the API names it', () => {
       renderLogin('?error=auth.google-failed&redirect=%2F')
 

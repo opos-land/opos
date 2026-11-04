@@ -26,6 +26,26 @@ describe('loadEnv', () => {
     })
   })
 
+  describe('RATE_LIMIT_DEFAULT', () => {
+    it('is unset by default', () => {
+      expect(loadEnv(valid).RATE_LIMIT_DEFAULT).toBeUndefined()
+    })
+
+    it('is a positive integer on local', () => {
+      expect(loadEnv({ ...valid, RATE_LIMIT_DEFAULT: '5000' }).RATE_LIMIT_DEFAULT).toBe(5000)
+    })
+
+    it.each(['dev', 'production'])('is refused on %s, naming it', (OPOS_ENV) => {
+      expect(() => loadEnv({ ...valid, OPOS_ENV, RATE_LIMIT_DEFAULT: '5000' })).toThrow(
+        /RATE_LIMIT_DEFAULT/,
+      )
+    })
+
+    it.each(['0', '-1', '1.5', 'many'])('refuses %s', (value) => {
+      expect(() => loadEnv({ ...valid, RATE_LIMIT_DEFAULT: value })).toThrow(/RATE_LIMIT_DEFAULT/)
+    })
+  })
+
   it.each([
     'SUPABASE_URL',
     'SUPABASE_SECRET_KEY',

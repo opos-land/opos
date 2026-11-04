@@ -26,6 +26,13 @@ const envSchema = z
     SMTP_USER: z.string().default(''),
     SMTP_PASS: z.string().default(''),
     MAIL_FROM: z.string().min(1),
+    // Replaces the limit of every route that sets none of its own (PLAN.md 7.9). Only the e2e
+    // suite sets it, and only on local: a fast run spends the default of an address in seconds.
+    RATE_LIMIT_DEFAULT: z.coerce.number().int().positive().optional(),
+  })
+  .refine((env) => env.RATE_LIMIT_DEFAULT === undefined || env.OPOS_ENV === 'local', {
+    message: 'RATE_LIMIT_DEFAULT is allowed only when OPOS_ENV is local',
+    path: ['RATE_LIMIT_DEFAULT'],
   })
   .refine((env) => env.INVITE_SECRET !== env.SUPABASE_SECRET_KEY, {
     message: 'INVITE_SECRET must differ from SUPABASE_SECRET_KEY',

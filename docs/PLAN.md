@@ -1791,6 +1791,11 @@ route's own guards ([rate-limit.ts](../apps/api/src/common/rate-limit/rate-limit
 | `/scanner/*` | 600 / min per device |
 | the rest of the API | 300 / min per account and per account at `aal2`, per IP without a valid token |
 
+`RATE_LIMIT_DEFAULT`, an optional positive integer in the API's environment, replaces the count of
+the default limit; the API refuses to start with it unless `OPOS_ENV` is `local`, and no template
+sets it. Only the e2e suite sets it ([15.2](#152-e2e-tests)): a fast run spends 300 anonymous
+requests an address in seconds.
+
 The last row is the default every route gets; an endpoint with a limit of its own adds it in the PR
 that builds the endpoint. The default covers `GET /health` and the send-email hook as well, which
 Supabase Auth's email bucket keeps far below it ([10](#rate-limits)). Swagger UI and the OpenAPI
@@ -3124,7 +3129,9 @@ install chromium`), then `pnpm test:e2e`.
   the panel and the portal as dev servers. They run with the API's configuration,
   `apps/api/.env`, as in the API tests
   ([15.1](#151-api-integration-tests)); the dev servers take their ports from `PANEL_URL` and
-  `PORTAL_URL`. The API starts fresh on every run, so the in-memory counters of its rate limits
+  `PORTAL_URL`. The suite starts the API with `RATE_LIMIT_DEFAULT` set high
+  ([stack.ts](../e2e/fixtures/stack.ts)), since a fast run spends the default limit of its one
+  address ([7.9](#79-rate-limiting)). The API starts fresh on every run, so the in-memory counters of its rate limits
   ([7.9](#79-rate-limiting)) start from zero; an API already listening on its `PORT`, such as the
   one `pnpm dev` starts, stops the run. Outside CI a running panel and portal are reused.
 - `pnpm test:e2e` and the API tests do not run at the same time: both need the API's `PORT`, where

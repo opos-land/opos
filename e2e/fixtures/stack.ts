@@ -20,7 +20,12 @@ function readEnv(name: string): Record<string, string> {
 }
 
 /** The API's environment, the one the API under test runs with. */
-export const apiEnv: Record<string, string> = { ...readEnv('.env.example'), ...readEnv('.env') }
+export const apiEnv: Record<string, string> = {
+  ...readEnv('.env.example'),
+  ...readEnv('.env'),
+  // A fast run spends the default 300 requests a minute of one address on anonymous calls alone.
+  RATE_LIMIT_DEFAULT: '100000',
+}
 
 function required(name: string) {
   const value = apiEnv[name]

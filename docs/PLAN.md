@@ -1227,7 +1227,7 @@ catalogs are out of sync with the code or a message has no `pl` translation. A n
 |---|---|
 | panel, portal — signed in | `accounts.locale` -> `Accept-Language` -> `DEFAULT_LOCALE` |
 | portal — signed out | `Accept-Language` -> `DEFAULT_LOCALE` |
-| emails | the recipient's `accounts.locale` -> `locale` from the sign-up metadata -> the inviting `tenants.defaultLocale`, for an address without a confirmed account and for the notice to one that joins -> `DEFAULT_LOCALE` |
+| emails | the recipient's `accounts.locale` -> `locale` from the sign-up metadata -> for an address without a confirmed account the inviting `tenants.defaultLocale` -> `DEFAULT_LOCALE` |
 | ticket emails | `orders.locale`, taken from the portal's active locale at checkout |
 
 ### API errors

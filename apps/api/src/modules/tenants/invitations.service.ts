@@ -98,7 +98,7 @@ export class InvitationsService {
       this.context.afterCommit(async () =>
         this.mail.sendLinkEmail({
           to: account.email,
-          locale: await this.admin.noticeLocale(account, tenant.defaultLocale),
+          locale: await this.admin.noticeLocale(account),
           content: joinedTeamEmail(tenant.name),
           link: `${this.panelUrl}/${tenant.slug}`,
         }),

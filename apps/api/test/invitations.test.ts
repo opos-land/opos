@@ -407,13 +407,10 @@ describe('inviting a known account', () => {
     expect(mail!.Text).toContain(`${env.PANEL_URL}/${a.slug}`)
   })
 
-  // The languages in PLAN.md 6 order: the account's choice, the sign-up's, the tenant's.
-  it.each([
-    ['the sign-up locale before the tenant default', 'en', 'pl'],
-    ['the tenant default when the sign-up sent no locale', undefined, 'en'],
-  ])('notifies an account that chose no language in %s', async (_, signUp, tenantLocale) => {
-    const tenant = await tenantWithHead(tenantLocale)
-    const known = await createAccount(signUp ? { locale: signUp } : {})
+  // The languages in PLAN.md 6 order for a confirmed account: its choice, the sign-up's, the default.
+  it('notifies an account that chose no language in the language of its sign-up', async () => {
+    const tenant = await tenantWithHead('pl')
+    const known = await createAccount({ locale: 'en' })
     addresses.push(known.email)
     await clearAccountLocale(known.id)
 
@@ -421,6 +418,20 @@ describe('inviting a known account', () => {
 
     const [mail] = await waitForMail(known.email)
     expect(mail!.Subject).toBe(`You have joined the organizing team of Tenant ${tenant.slug}`)
+  })
+
+  it('notifies an account with neither language in Polish, whatever the language of the tenant', async () => {
+    const tenant = await tenantWithHead('en')
+    const known = await createAccount()
+    addresses.push(known.email)
+    await clearAccountLocale(known.id)
+
+    await invite(tenant.head, { email: known.email }, tenant.slug).expect(201)
+
+    const [mail] = await waitForMail(known.email)
+    expect(mail!.Subject).toBe(
+      `Dołączono cię do zespołu organizatorów konwentu Tenant ${tenant.slug}`,
+    )
   })
 
   it('answers 409 for an account already in the team, an expired membership included', async () => {

@@ -1560,10 +1560,10 @@ request ([10](#api-keys-and-the-clients-address)):
    `<app URL>/auth/mfa?redirect=<path>` ([7.12](#712-two-factor-authentication)). A missing or
    expired `opos_google`, an `error` from Supabase Auth or a failed
    exchange answers `302` to `<app URL>/login?error=<code>`, and `<PORTAL_URL>/login` when the
-   cookie names no application. The code is `auth.<error_code>` for the `error_code` of Supabase
-   Auth's `error` when it is `otp_expired` or `over_request_rate_limit`, the two codes of the
-   contract ([5.1](#51-auth--sign-in-through-the-api)) a redirect from Google sign-in can carry,
-   and `auth.google-failed` for every other case, a failed exchange included: no text of the
+   cookie names no application. The code is `auth.over_request_rate_limit` when that is the
+   `error_code` of Supabase Auth's `error` ([5.1](#51-auth--sign-in-through-the-api)), and
+   `auth.google-failed` for every other case, a failed exchange and `otp_expired` included, whose
+   message speaks of a link from an email: no text of the
    query reaches the address, and a code of the password or mail routes, `auth.email_not_confirmed`
    among them, is never passed on.
 

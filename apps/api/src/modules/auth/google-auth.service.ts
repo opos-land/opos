@@ -107,24 +107,13 @@ export function parseGoogleCookie(value: string | undefined): GoogleFlow | null 
 const GOOGLE_FAILED = 'auth.google-failed' satisfies ErrorCode
 
 /**
- * The codes of the contract a redirect from Google sign-in can carry: Supabase Auth's expired
- * flow and its request limit. The codes of the password and mail routes never reach it.
- */
-const GOOGLE_REDIRECT_CODES = [
-  'auth.otp_expired',
-  'auth.over_request_rate_limit',
-] as const satisfies readonly ErrorCode[]
-
-/**
  * The `error=` code of the login page for an `error_code` Supabase Auth appended to the callback:
- * `auth.<error_code>` when it is one of `GOOGLE_REDIRECT_CODES`, `auth.google-failed` for anything
- * else. The query is the visitor's to write, so no other text of it reaches a Location.
+ * `auth.over_request_rate_limit` for its request limit, `auth.google-failed` for anything else,
+ * `otp_expired` included, whose message speaks of a link from an email. The query is the visitor's
+ * to write, so no other text of it reaches a Location.
  */
 export function failureCode(errorCode: unknown): ErrorCode {
-  const code = `auth.${typeof errorCode === 'string' ? errorCode : ''}`
-  return (GOOGLE_REDIRECT_CODES as readonly string[]).includes(code)
-    ? (code as ErrorCode)
-    : GOOGLE_FAILED
+  return errorCode === 'over_request_rate_limit' ? 'auth.over_request_rate_limit' : GOOGLE_FAILED
 }
 
 /** A short machine code such as `flow_state_not_found`; anything else is not worth a log line. */

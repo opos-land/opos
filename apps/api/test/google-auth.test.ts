@@ -462,7 +462,7 @@ describe('GET /auth/google/callback', () => {
   })
 
   it.each([
-    ['otp_expired', 'auth.otp_expired'],
+    ['otp_expired', 'auth.google-failed'],
     ['over_request_rate_limit', 'auth.over_request_rate_limit'],
     ['signup_disabled', 'auth.google-failed'],
     ['email_exists', 'auth.google-failed'],

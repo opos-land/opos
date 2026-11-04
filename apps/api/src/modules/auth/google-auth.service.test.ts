@@ -97,14 +97,12 @@ describe('parseGoogleCookie', () => {
 })
 
 describe('failureCode', () => {
-  it.each([
-    ['otp_expired', 'auth.otp_expired'],
-    ['over_request_rate_limit', 'auth.over_request_rate_limit'],
-  ])('passes the listed code %s on as %s', (code, expected) => {
-    expect(failureCode(code)).toBe(expected)
+  it('passes on over_request_rate_limit, the one code a Google redirect shares with the contract', () => {
+    expect(failureCode('over_request_rate_limit')).toBe('auth.over_request_rate_limit')
   })
 
   it.each([
+    'otp_expired',
     'invalid_credentials',
     'email_not_confirmed',
     'weak_password',

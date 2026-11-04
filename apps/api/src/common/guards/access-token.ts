@@ -52,6 +52,9 @@ const KEY_REFRESH_MS = 600_000
 export const KEY_RETRY_MS = 5_000
 const logger = new Logger('AccessTokenVerifier')
 
+/** A fetch refused inside the window, which is no failed fetch: it reopens nothing and logs nothing. */
+class KeyFetchRefused extends Error {}
+
 /** An error with its cause: a failed fetch names the network error only there. */
 const withCause = (error: unknown) => {
   const cause = error instanceof Error ? error.cause : undefined
@@ -73,13 +76,15 @@ export function createAccessTokenVerifier(
   let retryAt = 0
 
   const fetchKeys: typeof fetch = async (input, init) => {
-    if (Date.now() < retryAt) throw new Error('The last fetch of the signing keys has just failed')
+    if (Date.now() < retryAt) {
+      throw new KeyFetchRefused('The last fetch of the signing keys has just failed')
+    }
     return (options.fetch ?? fetch)(input, init)
   }
 
   /** Opens the window and logs once: what fails inside it was refused, or shared that one fetch. */
   const fetchFailed = (what: string, error: unknown) => {
-    if (Date.now() < retryAt) return
+    if (error instanceof KeyFetchRefused || Date.now() < retryAt) return
     retryAt = Date.now() + KEY_RETRY_MS
     logger.warn(`${what}: ${withCause(error)}`)
   }

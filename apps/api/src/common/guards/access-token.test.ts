@@ -381,6 +381,28 @@ describe('createAccessTokenVerifier', () => {
       expect(failing).toHaveBeenCalledTimes(2)
     })
 
+    it('does not reopen the window for a refusal that straddles its end', async () => {
+      const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      const failing = offline()
+      const verifier = make({ fetch: failing })
+      const token = await sign(current)
+      await verifier.verify(token)
+      warn.mockClear()
+
+      // The refusal reads the clock just inside the window, and what follows it just past the end.
+      const end = start.getTime() + KEY_RETRY_MS
+      const clock = vi.spyOn(Date, 'now').mockReturnValue(end)
+      clock.mockReturnValueOnce(end - 1)
+      expect(await verifier.verify(token)).toEqual({ status: 'unavailable' })
+      clock.mockRestore()
+
+      expect(failing).toHaveBeenCalledTimes(1)
+      expect(warn).not.toHaveBeenCalled()
+      vi.setSystemTime(end)
+      await verifier.verify(token)
+      expect(failing).toHaveBeenCalledTimes(2)
+    })
+
     it('counts an answer that is no key set as a failed fetch', async () => {
       vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
       const failing = vi.fn<typeof fetch>(() => Promise.resolve(new Response('', { status: 500 })))

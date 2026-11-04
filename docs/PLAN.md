@@ -2498,6 +2498,7 @@ that first reads it.
 | `INVITE_SECRET` | at least 32 characters, never equal to another secret |
 | `API_URL`, `PANEL_URL`, `PORTAL_URL` | `http://api.opos.localhost:3001`, `http://panel.opos.localhost:5173`, `http://opos.localhost:5174` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | the local Mailpit (`127.0.0.1:54325`, no credentials); Mailpit on Dev, the mail provider in production |
+| `RATE_LIMIT_DEFAULT` | unset; only the e2e suite sets it, and the API refuses to start with it unless `OPOS_ENV` is `local` ([7.9](#79-rate-limiting)) |
 | `DATABASE_MIGRATION_URL` | for the API and e2e tests, which write their fixtures as `postgres`, and for `pnpm db:account:reset-2fa` ([14](#resetting-two-factor-authentication)); `env.ts` does not read it, and the deployed `api` never receives it |
 
 **`packages/db/.env`** — the `db:*` scripts and the schema tests read `DATABASE_MIGRATION_URL`

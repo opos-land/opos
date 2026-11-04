@@ -1521,6 +1521,8 @@ on a `401`, or in `unavailable` on a `429`, a `500`, a `503` or a network failur
 replacing it — is announced on a `BroadcastChannel` (`opos-panel-session`, `opos-portal-session`),
 and every other tab of the application clears its query cache. A `GET /me` answered after such a
 change, or after a newer `GET /me` of the tab, shows no account and announces nothing.
+A page load whose `GET /me` answers `session.mfa-required`, as a Google return does, announces that
+the other tabs hold no account: the cookies now wait for a code.
 
 **Recent sign-in** — `DELETE /me`, `PUT /auth/password`, `POST /auth/mfa/enroll` and
 `DELETE /auth/mfa` require an `amr` entry in the JWT with a

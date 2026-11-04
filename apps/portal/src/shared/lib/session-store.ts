@@ -46,12 +46,13 @@ export function clearSession() {
 
 /**
  * The session waits for its code and shows no account. Where an account was shown, the other tabs
- * are told to drop it: the cookies now belong to whoever is signing in (PLAN.md 7.4).
+ * are told to drop it: the cookies now belong to whoever is signing in (PLAN.md 7.4). A page load
+ * that lands here, as a Google return does, holds no account yet and passes `always`.
  */
-export function mfaRequired() {
+export function mfaRequired(always = false) {
   const hadAccount = useSession.getState().account !== null
   useSession.setState({ status: 'mfa-required', account: null })
-  if (hadAccount) announceAccountChange(null)
+  if (hadAccount || always) announceAccountChange(null)
 }
 
 /** The API could not be asked who is signed in; the screen offers to try again. */

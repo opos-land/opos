@@ -173,6 +173,16 @@ describe('across tabs', () => {
     expect(useSession.getState()).toMatchObject({ status: 'mfa-required', account: null })
   })
 
+  it('a page load that lands on the code screen tells the other tabs to drop their account', async () => {
+    const { received } = otherTab()
+    stubApi({ 'GET /me': [json(401, { code: 'session.mfa-required' })] })
+
+    await startSession()
+    await Promise.resolve()
+
+    expect(received).toEqual([{ accountId: null }])
+  })
+
   it('a session that waits for its code with no account to lose says nothing', async () => {
     const { received } = otherTab()
     useSession.setState({ status: 'ready', account: null })

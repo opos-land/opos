@@ -120,6 +120,15 @@ describe('LoginPage ?error=', () => {
       expect(screen.getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe('/')
     })
 
+    it.each(['/.//evil.test', '/..//evil.test', '/%2e//evil.test'])(
+      'does not lead off the site for %s',
+      (value) => {
+        renderLogin(`?error=auth.google-failed&redirect=${encodeURIComponent(value)}`)
+
+        expect(screen.getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe('/account')
+      },
+    )
+
     it('leaves at once for a value that is no code of the API', () => {
       renderLogin('?error=access_denied')
 

@@ -2385,7 +2385,10 @@ removal, [7.12](#712-two-factor-authentication)), through `@supabase/auth-js` in
 or the factor is already gone; a transport failure or a `5xx` answers `503` `server.unavailable`; any
 other refusal, a `401` or `403` for a wrong key included, is the API's own
 failure and answers `500` `server.error`, logged — never the caller's `session.invalid` or
-`permission.denied`. The seed calls `POST /admin/users`, `PUT /admin/users/:id`, `GET /admin/users/:id` and the factor
+`permission.denied`. The two calls that only stand behind something else answer nothing of their
+own: a failed `PUT /admin/users/:id` leaves the answer of
+[5.1](#the-password-comes-after-the-confirmation) standing, and a failed `GET /admin/users/:id`
+counts as no locale; both are logged, naming nobody. The seed calls `POST /admin/users`, `PUT /admin/users/:id`, `GET /admin/users/:id` and the factor
 removal with the same key ([14](#14-demo-data-seed)), and `pnpm db:account:reset-2fa` calls `GET /admin/users/:id/factors`,
 the factor removal and `GET /admin/users/:id` ([14](#resetting-two-factor-authentication)). The key never reaches a frontend
 ([3.2](#32-frontend-application-layout)).

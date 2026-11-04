@@ -260,8 +260,12 @@ msgid "The address may contain only lowercase letters, digits and hyphens, 3 to 
 msgstr "The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters."
 
 #: src/errors.ts
-msgid "The code is wrong, has expired or was already used. Check the code in your authenticator app or your recovery codes and try again."
-msgstr "The code is wrong, has expired or was already used. Check the code in your authenticator app or your recovery codes and try again."
+msgid "The code is wrong, has expired or was already used. Check it and try again."
+msgstr "The code is wrong, has expired or was already used. Check it and try again."
+
+#: src/errors.ts
+#~ msgid "The code is wrong, has expired or was already used. Check the code in your authenticator app or your recovery codes and try again."
+#~ msgstr "The code is wrong, has expired or was already used. Check the code in your authenticator app or your recovery codes and try again."
 
 #: src/errors.ts
 msgid "The link has expired. Ask for a new one."

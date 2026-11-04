@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common'
 import { type ErrorCode } from '@opos/contract'
 import {
+  type AuthError,
   isAuthError,
   isAuthRetryableFetchError,
   isAuthSessionMissingError,
@@ -38,6 +39,14 @@ const LISTED: Readonly<Record<string, string>> = {
 /** A `5xx` Supabase Auth did answer, as opposed to a transport failure, where nothing answered. */
 export const isAnswered5xx = (error: unknown): error is Error =>
   isAuthError(error) && (error.status ?? 0) >= 500 && error.code !== TRANSPORT_FAILURE
+
+/**
+ * A failure of a hook Supabase Auth calls, such as `hook_timeout_after_retry` for an unreachable
+ * send-email hook. It answers `422`, not `5xx`, but like a failed send it depends on the address:
+ * only an address Supabase Auth knows gets as far as the hook.
+ */
+export const isHookFailure = (error: unknown): error is AuthError =>
+  isAuthError(error) && (error.code?.startsWith('hook_') ?? false)
 
 /**
  * What Supabase Auth refused, as the error the API answers with (PLAN.md 5.1): a dead session is

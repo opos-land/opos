@@ -12,7 +12,7 @@ import { ENV, type Env } from '../../config/env'
 import { RECENT_SIGN_IN_SECONDS } from '../accounts/account-deletion.service'
 import { AccountsRepository } from '../accounts/accounts.repository'
 import { AuthAdminClient } from './auth-admin.client'
-import { isAnswered5xx, toApiError } from './auth-refusal'
+import { isAnswered5xx, isHookFailure, toApiError } from './auth-refusal'
 import { SupabaseAuthFactory } from './supabase-auth.factory'
 import {
   clearSessionCookies,
@@ -124,8 +124,9 @@ export class AuthService {
    * The three routes that mail an address promise to reveal nothing about it (PLAN.md 5.1). An
    * empty mail bucket is a `202` for that reason: Supabase Auth's window per address exists only
    * for an address it knows, and the code cannot tell it from the project's bucket. An answered
-   * `5xx` is a `202` too: only an address it knows gets as far as a failed send. A transport
-   * failure stays `503`, since it does not depend on the address.
+   * `5xx` is a `202` too, and so is a failed hook (`hook_*`, a `422` while the send-email hook is
+   * out of reach): only an address it knows gets as far as a failed send. A transport failure
+   * stays `503`, since it does not depend on the address.
    */
   private mailRefused(error: unknown, route: string): void {
     if (isAuthError(error) && error.code === 'over_email_send_rate_limit') {
@@ -135,6 +136,10 @@ export class AuthService {
     if (isAnswered5xx(error)) {
       // The message is callAuth's own, never Supabase Auth's text: it names nobody.
       this.logger.error(`Supabase Auth failed a mail for ${route}: ${error.message}`)
+      return
+    }
+    if (isHookFailure(error)) {
+      this.logger.error(`Supabase Auth failed a mail for ${route}: ${error.code}`)
       return
     }
     throw addressRefusal(error)

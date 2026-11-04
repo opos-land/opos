@@ -3,7 +3,7 @@ import { AuthApiError, AuthRetryableFetchError, AuthSessionMissingError } from '
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../../common/errors/api-error'
 import { toErrorResponse } from '../../common/filters/http-exception.filter'
-import { isAnswered5xx, toApiError } from './auth-refusal'
+import { isAnswered5xx, isHookFailure, toApiError } from './auth-refusal'
 import { TRANSPORT_FAILURE } from './supabase-auth.factory'
 
 const apiError = (status: number, code: string | undefined) =>
@@ -26,6 +26,23 @@ describe('isAnswered5xx', () => {
     ['an error not from auth-js', new TypeError('boom')],
   ])('does not hold for %s', (_, error) => {
     expect(isAnswered5xx(error)).toBe(false)
+  })
+})
+
+describe('isHookFailure', () => {
+  it.each(['hook_timeout', 'hook_timeout_after_retry', 'hook_payload_over_size_limit'])(
+    'holds for the code %s',
+    (code) => {
+      expect(isHookFailure(apiError(422, code))).toBe(true)
+    },
+  )
+
+  it.each([
+    ['another code', apiError(422, 'validation_failed')],
+    ['no code', apiError(422, undefined)],
+    ['an error not from auth-js', new TypeError('hook_timeout')],
+  ])('does not hold for %s', (_, error) => {
+    expect(isHookFailure(error)).toBe(false)
   })
 })
 

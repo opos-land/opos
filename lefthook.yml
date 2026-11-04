@@ -30,4 +30,4 @@ pre-push:
       run: pnpm turbo run typecheck test --filter=...[origin/develop]
     # A merged migration stays as it is, and a new one is newer than all of them
     - name: migration journal
-      run: node scripts/check-migrations.mjs --base origin/develop
+      run: node scripts/check-migrations.mjs --merge-base origin/develop

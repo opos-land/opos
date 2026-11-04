@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict'
-import { test } from 'node:test'
-import { checkMigrations, main, mergeBaseOf } from './check-migrations.mjs'
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { after, test } from 'node:test'
+import { checkMigrations, main } from './check-migrations.mjs'
+
+const fixtures = []
+after(() => fixtures.forEach((dir) => rmSync(dir, { recursive: true, force: true })))
 
 const names = ['a', 'b', 'c', 'd']
 
@@ -104,7 +111,6 @@ test('the CLI exits 1 and prints one line per problem', () => {
   const lines = []
   const input = state({ when: [10, 10, 5], baseWhen: [10] })
   const code = main(['--base', 'origin/develop'], {
-    mergeBase: (ref) => ref,
     load: (ref) =>
       ref === null
         ? { journal: input.journal, files: input.files }
@@ -121,7 +127,6 @@ test('the CLI asks the loader for the working tree, then for the base ref it was
   const refs = []
   const input = state({ when: [10] })
   const code = main(['--base', 'origin/develop'], {
-    mergeBase: (ref) => ref,
     load: (ref) => {
       refs.push(ref)
       return { journal: input.journal, files: input.files }
@@ -132,30 +137,10 @@ test('the CLI asks the loader for the working tree, then for the base ref it was
   assert.deepEqual(refs, [null, 'origin/develop'])
 })
 
-test('a branch behind its base is compared with the merge base, not with the base tip', () => {
-  const refs = []
-  const input = state({ when: [10] })
-  const code = main(['--base', 'origin/develop'], {
-    mergeBase: (ref) => (ref === 'origin/develop' ? 'abc123' : ref),
-    load: (ref) => {
-      refs.push(ref)
-      return { journal: input.journal, files: input.files }
-    },
-    log: () => {},
-  })
-  assert.equal(code, 0)
-  assert.deepEqual(refs, [null, 'abc123'])
-})
-
-test('a base ref with no merge base is used as it is', () => {
-  assert.equal(mergeBaseOf('origin/does-not-exist-anywhere'), 'origin/does-not-exist-anywhere')
-})
-
 test('an unreadable base ref prints one line naming it and exits 1', () => {
   const lines = []
   const input = state({ when: [10] })
   const code = main(['--base', 'origin/develop'], {
-    mergeBase: (ref) => ref,
     load: (ref) => {
       if (ref !== null) throw new Error('fatal: invalid object name')
       return { journal: input.journal, files: input.files }
@@ -167,8 +152,123 @@ test('an unreadable base ref prints one line naming it and exits 1', () => {
   assert.match(lines[0], /origin\/develop/)
 })
 
-test('a call without --base prints the usage and exits 64', () => {
+test('a call without a form prints the usage and exits 64', () => {
   const lines = []
   assert.equal(main([], { log: (line) => lines.push(line) }), 64)
-  assert.match(lines[0], /Usage: check-migrations\.mjs --base <ref>/)
+  assert.match(lines[0], /Usage: check-migrations\.mjs --base <ref> \| --merge-base <ref>/)
+  assert.equal(main(['--merge-base'], { log: () => {} }), 64)
+})
+
+/** A real repository in a temporary directory, on a branch `base` with the migrations of `tags`. */
+function repository(tags) {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'check-migrations-')))
+  fixtures.push(root)
+  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
+  git('init', '-q', '-b', 'base')
+  git('config', 'user.email', 'test@example.com')
+  git('config', 'user.name', 'Test')
+  git('config', 'commit.gpgsign', 'false')
+  git('config', 'core.hooksPath', '/dev/null')
+  const directory = join(root, 'packages/db/drizzle')
+  mkdirSync(join(directory, 'meta'), { recursive: true })
+
+  /** Commits the migrations of `next`, the whole list, and only those. */
+  const commit = (next, message) => {
+    git('rm', '-q', '-r', '--ignore-unmatch', 'packages/db/drizzle')
+    mkdirSync(join(directory, 'meta'), { recursive: true })
+    const { journal, files } = side(
+      next.map((_, idx) => (idx + 1) * 10),
+      next,
+    )
+    writeFileSync(join(directory, 'meta/_journal.json'), JSON.stringify({ entries: journal }))
+    for (const [tag, sql] of files) writeFileSync(join(directory, `${tag}.sql`), sql)
+    git('add', 'packages/db/drizzle')
+    git('commit', '-q', '--allow-empty', '-m', message)
+    return git('rev-parse', 'HEAD')
+  }
+
+  const check = (...argv) => {
+    const lines = []
+    const code = main(argv, { root, log: (line) => lines.push(line) })
+    return { code, lines }
+  }
+  commit(tags, 'start')
+  return { git, commit, check }
+}
+
+test('--merge-base lets a branch behind its base pass, with a newer migration on the base', () => {
+  const { git, commit, check } = repository(['0000_a'])
+  git('checkout', '-q', '-b', 'feature')
+  commit(['0000_a'], 'no migration')
+  git('checkout', '-q', 'base')
+  commit(['0000_a', '0001_b'], 'a teammate merges a migration')
+  git('checkout', '-q', 'feature')
+
+  assert.deepEqual(check('--merge-base', 'base'), { code: 0, lines: [] })
+})
+
+test('--merge-base refuses a branch that removes a merged migration', () => {
+  const { git, commit, check } = repository(['0000_a', '0001_b'])
+  git('checkout', '-q', '-b', 'feature')
+  commit(['0000_a'], 'removes the merged migration')
+
+  const { code, lines } = check('--merge-base', 'base')
+
+  assert.equal(code, 1)
+  assert.match(lines.join('\n'), /0001_b.*never removed or reordered/)
+})
+
+test('--base compares with exactly its ref, as a branch behind it shows', () => {
+  const { git, commit, check } = repository(['0000_a'])
+  git('checkout', '-q', '-b', 'feature')
+  commit(['0000_a'], 'no migration')
+  git('checkout', '-q', 'base')
+  commit(['0000_a', '0001_b'], 'a teammate merges a migration')
+  git('checkout', '-q', 'feature')
+
+  const { code, lines } = check('--base', 'base')
+
+  assert.equal(code, 1)
+  assert.match(lines.join('\n'), /0001_b.*never removed or reordered/)
+})
+
+test('--base still refuses what a force-push dropped, whose merge base lacks it', () => {
+  const { git, commit, check } = repository(['0000_a'])
+  const parent = git('rev-parse', 'HEAD')
+  const before = commit(['0000_a', '0001_b'], 'merges a migration')
+  git('reset', '-q', '--hard', parent)
+  commit(['0000_a'], 'the force-pushed commit, without that migration')
+
+  assert.equal(check('--merge-base', before).code, 0)
+  const { code, lines } = check('--base', before)
+  assert.equal(code, 1)
+  assert.match(lines.join('\n'), /0001_b.*never removed or reordered/)
+})
+
+test('--merge-base refuses a ref it cannot resolve, naming it', () => {
+  const { check } = repository(['0000_a'])
+
+  const { code, lines } = check('--merge-base', 'origin/does-not-exist-anywhere')
+
+  assert.equal(code, 1)
+  assert.equal(lines.length, 1)
+  assert.match(lines[0], /origin\/does-not-exist-anywhere/)
+})
+
+test('--merge-base refuses a ref with no history in common', () => {
+  const { git, check } = repository(['0000_a'])
+  git('checkout', '-q', '--orphan', 'unrelated')
+  git('commit', '-q', '-m', 'no shared history')
+
+  const { code, lines } = check('--merge-base', 'base')
+
+  assert.equal(code, 1)
+  assert.match(lines[0], /base/)
+})
+
+test('the pre-push hook compares with the merge base, and CI does not', () => {
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8')
+
+  assert.match(read('../lefthook.yml'), /check-migrations\.mjs --merge-base origin\/develop/)
+  assert.doesNotMatch(read('../.github/workflows/ci.yml'), /--merge-base/)
 })

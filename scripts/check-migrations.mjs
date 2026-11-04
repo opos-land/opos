@@ -4,14 +4,16 @@
 // merged migration with an older `when`, or an edited one the base branch already holds, would
 // pass there and silently never reach a database that is already migrated.
 //
-//   --base <ref>  the journal and the .sql files in the working tree, against the same on <ref>
+//   --base <ref>        the journal and the .sql files in the working tree, against the same on <ref>
+//   --merge-base <ref>  the same against `git merge-base HEAD <ref>`, so a branch that is merely
+//                       behind <ref> is not refused for the newer migrations of <ref>
 
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const directory = 'packages/db/drizzle'
 
 /**
@@ -60,7 +62,7 @@ export function checkMigrations({ journal, files, baseJournal, baseFiles }) {
 }
 
 /** The journal entries and the .sql files of `ref`, or of the working tree when `ref` is null. */
-function loadMigrations(ref) {
+function loadMigrations(ref, root) {
   const read = (path) =>
     ref === null
       ? readFileSync(join(root, path), 'utf8')
@@ -81,38 +83,40 @@ function loadMigrations(ref) {
   return { journal, files }
 }
 
-/**
- * The commit the working tree branched from: a branch that is merely behind its base must not
- * look as if it removed the base's newer migrations. A ref with no merge base (a force-pushed
- * commit, a shallow clone) is compared as it is.
- */
-export function mergeBaseOf(ref) {
-  try {
-    return execFileSync('git', ['merge-base', 'HEAD', ref], {
-      cwd: root,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim()
-  } catch {
-    return ref
-  }
+/** The commit the working tree branched from `ref`; `git` fails when it cannot name one. */
+function mergeBaseOf(ref, root) {
+  return execFileSync('git', ['merge-base', 'HEAD', ref], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim()
 }
 
-/** `load(ref)`, `mergeBase(ref)` and `log(line)` are injected by the tests. */
+/** `load(ref, root)`, `log(line)` and `root`, a repository of their own, are injected by the tests. */
 export function main(
   argv,
-  { load = loadMigrations, mergeBase = mergeBaseOf, log = console.error } = {},
+  { load = loadMigrations, log = console.error, root = repositoryRoot } = {},
 ) {
-  if (argv[0] !== '--base' || !argv[1]) {
-    log('Usage: check-migrations.mjs --base <ref>')
+  const [form, ref] = argv
+  if ((form !== '--base' && form !== '--merge-base') || !ref) {
+    log('Usage: check-migrations.mjs --base <ref> | --merge-base <ref>')
     return 64
   }
-  const current = load(null)
+  let target = ref
+  if (form === '--merge-base') {
+    try {
+      target = mergeBaseOf(ref, root)
+    } catch {
+      log(`Cannot find the merge base of HEAD and ${ref}; fetch it, or compare with --base`)
+      return 1
+    }
+  }
+  const current = load(null, root)
   let base
   try {
-    base = load(mergeBase(argv[1]))
+    base = load(target, root)
   } catch {
-    log(`Cannot read the migrations of ${argv[1]}; fetch it, or check that it holds ${directory}`)
+    log(`Cannot read the migrations of ${ref}; fetch it, or check that it holds ${directory}`)
     return 1
   }
   const problems = checkMigrations({

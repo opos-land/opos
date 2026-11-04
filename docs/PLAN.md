@@ -2720,7 +2720,9 @@ is `local` or `dev` ([7.10](#710-payments)), `db:seed` refuses `production`
 `production`, so a developer's `.env` holding a remote URL fails before it writes anything. The hosts
 are the ones postgres.js itself lists for that URL, a host list and `PGHOST` for a URL naming none
 included, read without a connection
-([migration-url.ts](../packages/db/src/migration-url.ts)). The seed holds `SUPABASE_URL` to the same
+([migration-url.ts](../packages/db/src/migration-url.ts)). A URL whose authority holds more than one
+`@` is refused with a fixed sentence asking to percent-encode the password, since postgres.js and
+`new URL` would read different hosts. The seed holds `SUPABASE_URL` to the same
 rule, with its host read as `fetch` reads it. Dev and production both run with
 `NODE_ENV=production`.
 

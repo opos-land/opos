@@ -56,6 +56,36 @@ describe('migrationUrl', () => {
     expect(message).not.toContain('s3cret')
   })
 
+  // postgres.js cuts the authority at the first @ and new URL at the last, so a second @ would make
+  // the guard and the clients read different hosts; the guard names no fragment of such a URL.
+  it.each([
+    'postgres://u:p@ss,word@localhost:54322/postgres',
+    'postgres://u:hunter2@sec,ret@db.remote.example:5432/postgres',
+    'postgres://x:y@localhost,localhost:@db.remote.example:5432/postgres',
+    'postgres://u:p@db.remote.example,x@localhost:54322/postgres',
+    'postgres://u:p@ss@localhost:54322/postgres',
+    'postgres://u@db.remote.example:5432@localhost:54322/postgres',
+  ])('asks for a percent-encoded password when the authority holds a second @: %s', (url) => {
+    for (const OPOS_ENV of [undefined, 'local', 'dev']) {
+      let message = ''
+      try {
+        migrationUrl({ DATABASE_MIGRATION_URL: url, OPOS_ENV })
+      } catch (error) {
+        message = (error as Error).message
+      }
+
+      expect(message).toBe(
+        'DATABASE_MIGRATION_URL holds more than one @ in its authority; percent-encode an @ in the password as %40',
+      )
+    }
+  })
+
+  it('accepts an @ in a query or a path, and an encoded @ in the password', () => {
+    const url = 'postgres://u:p%40ss%2Cword@localhost:54322/postgres?options=a@b'
+
+    expect(migrationUrl({ DATABASE_MIGRATION_URL: url })).toBe(url)
+  })
+
   it.each(['dev', 'production'])('accepts a remote host with OPOS_ENV %s', (OPOS_ENV) => {
     expect(migrationUrl({ DATABASE_MIGRATION_URL: remote, OPOS_ENV })).toBe(remote)
   })
@@ -79,7 +109,6 @@ describe('migrationUrl', () => {
   // postgres.js reads the authority itself and takes the first host it can reach, so the guard asks
   // it: each URL here holds a host a URL parser never sees, or fails to read at all.
   it.each([
-    ['postgres://u:p@db.remote.example,x@localhost:54322/postgres', 'db.remote.example'],
     ['postgres://u:p@db.remote.example,localhost:54322/postgres', 'db.remote.example'],
     ['postgres://localhost#@db.remote.example,x:5432/postgres', 'db.remote.example'],
     ['postgres://u:p@localhost:1#,db.remote.example:5432/postgres', 'db.remote.example'],
@@ -100,8 +129,6 @@ describe('migrationUrl', () => {
 
   it.each([
     'postgres://u:a,b@localhost:54322/postgres',
-    'postgres://u:p@ss@localhost:54322/postgres',
-    'postgres://u@db.remote.example:5432@localhost:54322/postgres',
     'postgres://u:p@localhost:54322/postgres?host=db.remote.example',
     'postgres://u:p@localhost,127.0.0.1:54322/postgres',
   ])('accepts %s, whose every host postgres.js reads is local', (url) => {

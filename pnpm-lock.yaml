@@ -81,9 +81,9 @@ catalogs:
 
 overrides:
   '@nestjs/swagger>js-yaml': ^5.4.1
-  multer: ^2.5.0
-  body-parser: ^2.4.0
-  fast-uri: ^3.1.7
+  '@nestjs/platform-express>multer': ^2.5.0
+  express>body-parser: ^2.4.0
+  ajv>fast-uri: ^3.1.7
 
 importers:
 

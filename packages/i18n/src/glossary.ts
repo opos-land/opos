@@ -33,7 +33,7 @@ export const glossary = {
   mfa: msg({
     message: 'two-factor authentication',
     context: 'glossary',
-    comment: 'Glossary term: mfa',
+    comment: 'Glossary term: two-factor authentication',
   }),
   locale: msg({ message: 'language', context: 'glossary', comment: 'Glossary term: locale' }),
 }

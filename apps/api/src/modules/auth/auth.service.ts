@@ -52,6 +52,15 @@ const addressRefusal = (error: unknown) =>
     : toApiError(error)
 
 /**
+ * Whether a recovery link found the address already confirmed, by the two stamps of Supabase Auth's
+ * own clock in its answer. Otherwise the link is what confirmed it (PLAN.md 5.1), which is also the
+ * answer for a stamp absent or unparsable: `NaN` compares false.
+ */
+export const confirmedBeforeItsLink = (
+  user: { email_confirmed_at?: string; recovery_sent_at?: string } | null,
+) => Date.parse(user?.email_confirmed_at ?? '') <= Date.parse(user?.recovery_sent_at ?? '')
+
+/**
  * The `auth` endpoints (PLAN.md 5.1): the API calls Supabase Auth for the person and keeps the
  * session in cookies, one pair per application (PLAN.md 7.4). No token reaches a response body.
  */
@@ -169,14 +178,18 @@ export class AuthService {
     const client = this.auth.forRequest()
     const result = await client.verifyOtp({ token_hash: body.tokenHash, type: body.type })
     if (result.error) throw toApiError(result.error)
-    if (body.type === 'signup') await this.replacePassword(client)
+    const keepsPassword = body.type === 'recovery' && confirmedBeforeItsLink(result.data.user)
+    if (!keepsPassword) await this.replacePassword(client)
     return this.signedIn(req, app, result.data.session)
   }
 
   /**
    * Whoever registered the address first chose its password before the owner confirmed it, so
-   * the confirmation replaces it with a random one nobody knows (PLAN.md 5.1). The session the
-   * confirmation opened is not handed out while the old password may still work.
+   * the confirmation replaces it with a random one nobody knows (PLAN.md 5.1), whether a sign-up
+   * link or a recovery link confirmed it. A recovery link on an address confirmed before it leaves
+   * the password alone: the person may never use the link's form, and an account with two-factor
+   * authentication could not change it at `aal1` anyway. The session the confirmation opened is
+   * not handed out while the old password may still work.
    */
   private async replacePassword(client: GoTrueClient): Promise<void> {
     try {

@@ -11,6 +11,7 @@ import {
   createAccount,
   deleteCreatedAccounts,
   deleteLater,
+  enableMfa,
   foreignKey,
   mintToken,
   originOf,
@@ -97,6 +98,20 @@ async function linkFor(address: string, count = 1) {
     type: link.searchParams.get('type')!,
     origin: link.origin,
   }
+}
+
+/** A sign-up straight at Supabase Auth, as anyone can make past the API, with a chosen password. */
+async function registerAtSupabaseAuth(email: string, password: string) {
+  const res = await fetch(
+    `${authUrl(env)}/signup?redirect_to=${encodeURIComponent(`${portal}/auth/confirm`)}`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    },
+  )
+  expect(res.status).toBe(200)
+  return (await res.json()) as { id: string }
 }
 
 /** An API whose Supabase Auth answers every call with `status` and `body`; the stub closes both. */
@@ -779,16 +794,7 @@ describe('password', () => {
   it('refuses a password set before the confirmation as soon as verify answers', async () => {
     const address = newAddress()
     // Someone registered the address first, with a password of their own, straight at Supabase Auth.
-    const attacker = await fetch(
-      `${authUrl(env)}/signup?redirect_to=${encodeURIComponent(`${portal}/auth/confirm`)}`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: address, password: 'attacker-pass-1' }),
-      },
-    )
-    expect(attacker.status).toBe(200)
-    deleteLater(((await attacker.json()) as { id: string }).id)
+    deleteLater((await registerAtSupabaseAuth(address, 'attacker-pass-1')).id)
     const { tokenHash, type } = await linkFor(address)
 
     const agent = request.agent(server).set('Origin', portal)
@@ -811,19 +817,45 @@ describe('password', () => {
     await post('/auth/sign-in', { email, password: TEST_PASSWORD }).expect(200)
   })
 
+  it('refuses a password set before a recovery link confirmed the address', async () => {
+    const address = newAddress()
+    // Someone registered the address first, with a password of their own, straight at Supabase Auth.
+    deleteLater((await registerAtSupabaseAuth(address, 'attacker-pass-1')).id)
+    await post('/auth/password/forgot', { email: address }).expect(202)
+    const { tokenHash, type } = await linkFor(address, 2)
+    expect(type).toBe('recovery')
+
+    const agent = request.agent(server).set('Origin', portal)
+    await agent.post('/auth/verify').send({ tokenHash, type }).expect(200)
+
+    // Before any PUT /auth/password: the owner may leave the form.
+    const old = await post('/auth/sign-in', { email: address, password: 'attacker-pass-1' })
+    expect(old.body).toMatchObject({ code: 'auth.invalid_credentials' })
+    await agent.put('/auth/password').send({ password: 'chosen-pass-1' }).expect(204)
+    await post('/auth/sign-in', { email: address, password: 'chosen-pass-1' }).expect(200)
+  })
+
+  it('answers session.mfa-required and sets cookies for a recovery link of an account with 2FA', async () => {
+    const { email } = await confirmedAccount()
+    await enableMfa(await signedInAgent('portal', email))
+    await post('/auth/password/forgot', { email }).expect(202)
+    const { tokenHash, type } = await linkFor(email)
+
+    const res = await post('/auth/verify', { tokenHash, type })
+
+    expect(res.status).toBe(401)
+    expect(res.body).toMatchObject({ code: 'session.mfa-required' })
+    expect(cookieNamed(res, 'opos_portal_access')).toBeDefined()
+    expect(cookieNamed(res, 'opos_portal_refresh')).toBeDefined()
+    const stays = await post('/auth/sign-in', { email, password: TEST_PASSWORD })
+    expect(stays.body).toMatchObject({ code: 'session.mfa-required' })
+  })
+
   it('hands out no session when the old password cannot be replaced', async () => {
     const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
     vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
     const address = newAddress()
-    const signedUp = await fetch(
-      `${authUrl(env)}/signup?redirect_to=${encodeURIComponent(`${portal}/auth/confirm`)}`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: address, password: 'attacker-pass-1' }),
-      },
-    )
-    deleteLater(((await signedUp.json()) as { id: string }).id)
+    deleteLater((await registerAtSupabaseAuth(address, 'attacker-pass-1')).id)
     const { tokenHash, type } = await linkFor(address)
     const failing = await failingUserUpdate()
     try {

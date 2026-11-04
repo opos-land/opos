@@ -25,6 +25,8 @@ export type TokenCheck =
 
 export interface AccessTokenVerifier {
   verify(token: string): Promise<TokenCheck>
+  /** The fetch at startup, so the first token waits on nothing; a failure is logged, never thrown. */
+  loadKeys(): Promise<void>
   /** Stops the background key refresh. */
   close(): void
 }
@@ -46,6 +48,8 @@ const invalidErrors = [
 ]
 
 const KEY_REFRESH_MS = 600_000
+/** How long no key fetch is made after one failed: jose's own cooldown counts only a success. */
+export const KEY_RETRY_MS = 5_000
 const logger = new Logger('AccessTokenVerifier')
 
 /** An error with its cause: a failed fetch names the network error only there. */
@@ -57,25 +61,39 @@ const withCause = (error: unknown) => {
 /**
  * Verifies Supabase Auth access tokens against the project's JWKS (PLAN.md 7.4). The keys are held
  * for good and reloaded on a timer, so an outage of Supabase Auth leaves tokens verifying on the
- * last good keys; before the first fetch succeeds a token is `unavailable`, never `invalid`.
+ * last good keys; before the first fetch succeeds a token is `unavailable`, never `invalid`. A
+ * failed fetch closes the way to the next one for `KEY_RETRY_MS`, so no request waits on a fetch
+ * that has just failed.
  */
 export function createAccessTokenVerifier(
   env: { SUPABASE_URL: string },
   options: { fetch?: typeof fetch; refreshEveryMs?: number } = {},
 ): AccessTokenVerifier {
   const issuer = authUrl(env)
+  let retryAt = 0
+
+  const fetchKeys: typeof fetch = async (input, init) => {
+    if (Date.now() < retryAt) throw new Error('The last fetch of the signing keys has just failed')
+    return (options.fetch ?? fetch)(input, init)
+  }
+
+  /** Opens the window and logs once: what fails inside it was refused, or shared that one fetch. */
+  const fetchFailed = (what: string, error: unknown) => {
+    if (Date.now() < retryAt) return
+    retryAt = Date.now() + KEY_RETRY_MS
+    logger.warn(`${what}: ${withCause(error)}`)
+  }
+
   const keys = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`), {
     cacheMaxAge: Infinity,
     timeoutDuration: 2000,
     cooldownDuration: 30_000,
-    ...(options.fetch ? { [customFetch]: options.fetch } : {}),
+    [customFetch]: fetchKeys,
   })
 
   const timer = setInterval(() => {
     keys.reload().catch((error: unknown) => {
-      logger.warn(
-        `Reloading the signing keys failed, keeping the last good ones: ${withCause(error)}`,
-      )
+      fetchFailed('Reloading the signing keys failed, keeping the last good ones', error)
     })
   }, options.refreshEveryMs ?? KEY_REFRESH_MS)
   timer.unref()
@@ -94,10 +112,14 @@ export function createAccessTokenVerifier(
         return { status: 'valid', payload: { ...payload, sub: payload.sub } }
       } catch (error) {
         if (invalidErrors.some((type) => error instanceof type)) return { status: 'invalid' }
-        logger.warn(`A token could not be checked: ${withCause(error)}`)
+        fetchFailed('A token could not be checked', error)
         return { status: 'unavailable' }
       }
     },
+    loadKeys: () =>
+      keys.reload().catch((error: unknown) => {
+        fetchFailed('Fetching the signing keys at startup failed, the API starts without', error)
+      }),
     close: () => clearInterval(timer),
   }
 }

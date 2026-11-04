@@ -53,6 +53,7 @@ describe('credentialOf', () => {
 describe('verifyOnce', () => {
   const verifying = (check: TokenCheck) => ({
     verify: vi.fn<AccessTokenVerifier['verify']>(() => Promise.resolve(check)),
+    loadKeys: vi.fn(() => Promise.resolve()),
     close: vi.fn(),
   })
 

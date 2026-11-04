@@ -6,6 +6,7 @@ import {
   type AccessTokenVerifier,
   createAccessTokenVerifier,
   isAal2,
+  KEY_RETRY_MS,
   lastSignInAt,
   meOf,
   signInMethodsOf,
@@ -342,7 +343,96 @@ describe('createAccessTokenVerifier', () => {
     const token = await sign(current)
 
     expect((await verifier.verify(token)).status).toBe('unavailable')
+    vi.setSystemTime(start.getTime() + KEY_RETRY_MS)
     expect((await verifier.verify(token)).status).toBe('valid')
+  })
+
+  describe('after a failed fetch', () => {
+    const offline = () => vi.fn<typeof fetch>().mockRejectedValue(new TypeError('offline'))
+
+    it('answers unavailable at once for a short window, fetching once', async () => {
+      const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      const failing = offline()
+      const verifier = make({ fetch: failing })
+      const token = await sign(current)
+
+      expect(await verifier.verify(token)).toEqual({ status: 'unavailable' })
+      vi.setSystemTime(start.getTime() + KEY_RETRY_MS - 1)
+      expect(await verifier.verify(token)).toEqual({ status: 'unavailable' })
+      expect(await verifier.verify(token)).toEqual({ status: 'unavailable' })
+
+      expect(failing).toHaveBeenCalledTimes(1)
+      expect(warn).toHaveBeenCalledOnce()
+    })
+
+    it('fetches again once the window has passed, and opens a new one if that fails', async () => {
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      const failing = offline()
+      const verifier = make({ fetch: failing })
+      const token = await sign(current)
+      await verifier.verify(token)
+
+      vi.setSystemTime(start.getTime() + KEY_RETRY_MS)
+      await verifier.verify(token)
+      expect(failing).toHaveBeenCalledTimes(2)
+
+      vi.setSystemTime(start.getTime() + 2 * KEY_RETRY_MS - 1)
+      await verifier.verify(token)
+      expect(failing).toHaveBeenCalledTimes(2)
+    })
+
+    it('counts an answer that is no key set as a failed fetch', async () => {
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      const failing = vi.fn<typeof fetch>(() => Promise.resolve(new Response('', { status: 500 })))
+      const verifier = make({ fetch: failing })
+      const token = await sign(current)
+
+      await verifier.verify(token)
+      await verifier.verify(token)
+
+      expect(failing).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps verifying on the keys it holds, and an unknown kid fetches nothing', async () => {
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      const verifier = make({ refreshEveryMs: 600_000 })
+      expect((await verifier.verify(await sign(current))).status).toBe('valid')
+      fetchStub.mockRejectedValue(new TypeError('offline'))
+      await vi.advanceTimersByTimeAsync(600_000)
+      const fetches = fetchStub.mock.calls.length
+      const stranger = await sign(await makePair('key-2'))
+
+      expect((await verifier.verify(await sign(current))).status).toBe('valid')
+      expect(await verifier.verify(stranger)).toEqual({ status: 'unavailable' })
+
+      expect(fetchStub).toHaveBeenCalledTimes(fetches)
+    })
+  })
+
+  describe('loadKeys', () => {
+    it('fetches the keys once, so the first token waits on nothing', async () => {
+      const verifier = make()
+
+      await verifier.loadKeys()
+      expect(fetchStub).toHaveBeenCalledTimes(1)
+
+      expect((await verifier.verify(await sign(current))).status).toBe('valid')
+      expect(fetchStub).toHaveBeenCalledTimes(1)
+    })
+
+    it('never fails, logs the cause, and leaves the next token to the short window', async () => {
+      const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      const failing = vi
+        .fn<typeof fetch>()
+        .mockRejectedValue(new TypeError('fetch failed', { cause: new Error('ECONNREFUSED') }))
+      const verifier = make({ fetch: failing })
+
+      await expect(verifier.loadKeys()).resolves.toBeUndefined()
+
+      expect(String(warn.mock.calls[0]?.[0])).toContain('ECONNREFUSED')
+      expect(await verifier.verify(await sign(current))).toEqual({ status: 'unavailable' })
+      expect(failing).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('keeps verifying on the last good keys when a refresh fails, past 10 minutes', async () => {

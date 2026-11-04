@@ -18,6 +18,7 @@ const account = { id: randomUUID() }
 function guard(check: TokenCheck, found: unknown = account) {
   const verifier = {
     verify: vi.fn<AccessTokenVerifier['verify']>(() => Promise.resolve(check)),
+    loadKeys: vi.fn(() => Promise.resolve()),
     close: vi.fn(),
   }
   const accounts = { findForToken: vi.fn(() => Promise.resolve(found)) }

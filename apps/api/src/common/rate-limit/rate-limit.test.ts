@@ -9,6 +9,7 @@ const env = { PORTAL_URL: 'https://opos.land', PANEL_URL: 'https://panel.opos.la
 /** A verifier that gives every token the same outcome. */
 const verifying = (check: TokenCheck) => ({
   verify: vi.fn<AccessTokenVerifier['verify']>(() => Promise.resolve(check)),
+  loadKeys: vi.fn(() => Promise.resolve()),
   close: vi.fn(),
 })
 

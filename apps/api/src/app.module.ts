@@ -5,6 +5,7 @@ import {
   Module,
   type NestModule,
   type OnModuleDestroy,
+  type OnModuleInit,
   RequestMethod,
 } from '@nestjs/common'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
@@ -37,7 +38,7 @@ import { PublicModule } from './modules/public/public.module'
 import { TenantsModule } from './modules/tenants/tenants.module'
 
 @Module({})
-export class AppModule implements NestModule, OnModuleDestroy {
+export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
   constructor(@Inject(ACCESS_TOKEN_VERIFIER) private readonly verifier: AccessTokenVerifier) {}
 
   /** `rateLimit` replaces the default limit of PLAN.md 7.9, for tests that run into it. */
@@ -85,6 +86,10 @@ export class AppModule implements NestModule, OnModuleDestroy {
         RouteRateLimiter,
       ],
     }
+  }
+
+  onModuleInit() {
+    return this.verifier.loadKeys()
   }
 
   onModuleDestroy() {

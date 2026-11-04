@@ -336,12 +336,12 @@ describe('the mail routes and the mail rate limit', () => {
   it.each(routes)(
     'answers 202 on %s when Supabase Auth has no mail left, and logs a warning naming nobody',
     async (route) => {
-      const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
-      const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
       const stub = await stubbedSupabaseAuth(429, {
         error_code: 'over_email_send_rate_limit',
         msg: 'email rate limit exceeded',
       })
+      const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+      const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
       try {
         const res = await request(stub.app.getHttpServer())
           .post(route)

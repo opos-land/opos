@@ -1,3 +1,6 @@
+import { createServer } from 'node:http'
+import { type AddressInfo } from 'node:net'
+import { Logger } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -148,6 +151,30 @@ describe('JwtAuthGuard', () => {
       expect(res.headers['retry-after']).toBe('30')
     } finally {
       await cut.close()
+    }
+  })
+
+  it('fetches the signing keys once at startup, and starts without them', async () => {
+    const paths: (string | undefined)[] = []
+    const keysDown = createServer((req, res) => {
+      paths.push(req.url)
+      res.writeHead(500)
+      res.end()
+    })
+    await new Promise<void>((resolve) => keysDown.listen(0, '127.0.0.1', resolve))
+    const url = `http://127.0.0.1:${(keysDown.address() as AddressInfo).port}`
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const started = await createApp({ SUPABASE_URL: url })
+    try {
+      expect(paths).toEqual(['/auth/v1/.well-known/jwks.json'])
+
+      await request(started.getHttpServer()).get('/me').use(session(token)).expect(503)
+
+      expect(paths).toHaveLength(1)
+    } finally {
+      await started.close()
+      keysDown.close()
+      vi.restoreAllMocks()
     }
   })
 

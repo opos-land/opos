@@ -3175,7 +3175,9 @@ the documents (`.claude/skills/docs-sync/scripts/check-doc-links.mjs`) and the m
 check (`scripts/check-migrations.mjs`) in two forms: on a PR against the base branch, and on every
 push to `develop` or `main` against the commit before the push, which sees what two PRs valid
 alone do to the journal once both have merged; a push that creates a branch has no such commit and
-skips it.
+skips it. The script compares the working tree with `git merge-base HEAD <ref>`, not with the tip
+of `<ref>`, so a branch that is merely behind its base is not refused for the base's newer
+migrations; where the ref has no merge base, it is used as it is.
 
 The workflow reads the repository and nothing more (`permissions: contents: read`), every action is
 pinned by a full commit hash with its tag in a comment, and no `run` step interpolates event data:

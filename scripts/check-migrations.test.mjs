@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { checkMigrations, main } from './check-migrations.mjs'
+import { checkMigrations, main, mergeBaseOf } from './check-migrations.mjs'
 
 const names = ['a', 'b', 'c', 'd']
 
@@ -104,6 +104,7 @@ test('the CLI exits 1 and prints one line per problem', () => {
   const lines = []
   const input = state({ when: [10, 10, 5], baseWhen: [10] })
   const code = main(['--base', 'origin/develop'], {
+    mergeBase: (ref) => ref,
     load: (ref) =>
       ref === null
         ? { journal: input.journal, files: input.files }
@@ -120,6 +121,7 @@ test('the CLI asks the loader for the working tree, then for the base ref it was
   const refs = []
   const input = state({ when: [10] })
   const code = main(['--base', 'origin/develop'], {
+    mergeBase: (ref) => ref,
     load: (ref) => {
       refs.push(ref)
       return { journal: input.journal, files: input.files }
@@ -130,10 +132,30 @@ test('the CLI asks the loader for the working tree, then for the base ref it was
   assert.deepEqual(refs, [null, 'origin/develop'])
 })
 
+test('a branch behind its base is compared with the merge base, not with the base tip', () => {
+  const refs = []
+  const input = state({ when: [10] })
+  const code = main(['--base', 'origin/develop'], {
+    mergeBase: (ref) => (ref === 'origin/develop' ? 'abc123' : ref),
+    load: (ref) => {
+      refs.push(ref)
+      return { journal: input.journal, files: input.files }
+    },
+    log: () => {},
+  })
+  assert.equal(code, 0)
+  assert.deepEqual(refs, [null, 'abc123'])
+})
+
+test('a base ref with no merge base is used as it is', () => {
+  assert.equal(mergeBaseOf('origin/does-not-exist-anywhere'), 'origin/does-not-exist-anywhere')
+})
+
 test('an unreadable base ref prints one line naming it and exits 1', () => {
   const lines = []
   const input = state({ when: [10] })
   const code = main(['--base', 'origin/develop'], {
+    mergeBase: (ref) => ref,
     load: (ref) => {
       if (ref !== null) throw new Error('fatal: invalid object name')
       return { journal: input.journal, files: input.files }

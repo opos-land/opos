@@ -81,8 +81,28 @@ function loadMigrations(ref) {
   return { journal, files }
 }
 
-/** `load(ref)` and `log(line)` are injected by the tests. */
-export function main(argv, { load = loadMigrations, log = console.error } = {}) {
+/**
+ * The commit the working tree branched from: a branch that is merely behind its base must not
+ * look as if it removed the base's newer migrations. A ref with no merge base (a force-pushed
+ * commit, a shallow clone) is compared as it is.
+ */
+export function mergeBaseOf(ref) {
+  try {
+    return execFileSync('git', ['merge-base', 'HEAD', ref], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    return ref
+  }
+}
+
+/** `load(ref)`, `mergeBase(ref)` and `log(line)` are injected by the tests. */
+export function main(
+  argv,
+  { load = loadMigrations, mergeBase = mergeBaseOf, log = console.error } = {},
+) {
   if (argv[0] !== '--base' || !argv[1]) {
     log('Usage: check-migrations.mjs --base <ref>')
     return 64
@@ -90,7 +110,7 @@ export function main(argv, { load = loadMigrations, log = console.error } = {}) 
   const current = load(null)
   let base
   try {
-    base = load(argv[1])
+    base = load(mergeBase(argv[1]))
   } catch {
     log(`Cannot read the migrations of ${argv[1]}; fetch it, or check that it holds ${directory}`)
     return 1

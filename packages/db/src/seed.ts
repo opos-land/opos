@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { and, eq, notInArray } from 'drizzle-orm'
 import { migrationDb } from './client'
-import { migrationUrl } from './migration-url'
+import { migrationUrl, reachableUrl } from './migration-url'
 import {
   accountRecoveryCodes,
   accounts,
@@ -221,7 +221,16 @@ function required(name: string) {
   return value
 }
 
-const authUrl = `${required('SUPABASE_URL').replace(/\/+$/, '')}/auth/v1`
+// The Auth URL follows the rule of the database URL: a host off the loopback interface needs
+// OPOS_ENV dev, so a remote Auth next to a local database gets no account.
+let supabaseUrl: string
+try {
+  supabaseUrl = reachableUrl('SUPABASE_URL', required('SUPABASE_URL'))
+} catch (error) {
+  console.error((error as Error).message)
+  process.exit(1)
+}
+const authUrl = `${supabaseUrl.replace(/\/+$/, '')}/auth/v1`
 const secretKey = required('SUPABASE_SECRET_KEY')
 
 const db = migrationDb(migrationUrl())

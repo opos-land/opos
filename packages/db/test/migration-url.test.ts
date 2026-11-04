@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as root from '../src/index'
-import { migrationUrl } from '../src/migration-url'
+import { migrationUrl, reachableUrl } from '../src/migration-url'
 
 // Every db:* script connects through this variable, with no default: a missing one and a remote
 // host without the OPOS_ENV of its environment both stop the script (PLAN.md 11).
@@ -74,5 +74,47 @@ describe('migrationUrl', () => {
 
   it('is exported from the package root, so tests and fixtures read the URL through the guard', () => {
     expect(root.migrationUrl).toBe(migrationUrl)
+  })
+
+  // postgres.js takes the text after the first @ of the authority as the host list and connects to
+  // its first entry, while new URL() reads the last @ and the whole list as one host name.
+  it.each([
+    'postgres://u:p@db.remote.example,x@localhost:54322/postgres',
+    'postgres://u:p@db.remote.example,localhost:54322/postgres',
+    'postgres://u@db.remote.example:5432@localhost:54322/postgres',
+  ])('refuses a URL whose host postgres.js reads differently: %s', (url) => {
+    let message = ''
+    try {
+      migrationUrl({ DATABASE_MIGRATION_URL: url })
+    } catch (error) {
+      message = (error as Error).message
+    }
+
+    expect(message).toMatch(/DATABASE_MIGRATION_URL/)
+    expect(message).not.toContain('db.remote.example:5432')
+    expect(message).not.toContain(':p@')
+  })
+
+  it('keeps the guard when OPOS_ENV is dev: a host list is refused there too', () => {
+    expect(() =>
+      migrationUrl({
+        DATABASE_MIGRATION_URL: 'postgres://u:p@db.remote.example,x@localhost:54322/postgres',
+        OPOS_ENV: 'dev',
+      }),
+    ).toThrow(/DATABASE_MIGRATION_URL/)
+  })
+})
+
+describe('reachableUrl', () => {
+  it('applies the rule of the database URL to any named variable', () => {
+    expect(() => reachableUrl('SUPABASE_URL', 'https://auth.example.co', {})).toThrow(
+      /SUPABASE_URL names the remote host auth\.example\.co/,
+    )
+    expect(reachableUrl('SUPABASE_URL', 'https://auth.example.co', { OPOS_ENV: 'dev' })).toBe(
+      'https://auth.example.co',
+    )
+    expect(reachableUrl('SUPABASE_URL', 'http://127.0.0.1:54321', { OPOS_ENV: 'local' })).toBe(
+      'http://127.0.0.1:54321',
+    )
   })
 })

@@ -2689,8 +2689,10 @@ project ([10](#10-supabase)).
 is `local` or `dev` ([7.10](#710-payments)), `db:seed` refuses `production`
 ([14](#14-demo-data-seed)), and every `db:*` script and the schema tests refuse a
 `DATABASE_MIGRATION_URL` whose host is not on the loopback interface unless `OPOS_ENV` is `dev` or
-`production`, so a developer's `.env` holding a remote URL fails before it writes anything. Dev and
-production both run with `NODE_ENV=production`.
+`production`, so a developer's `.env` holding a remote URL fails before it writes anything; the seed
+holds `SUPABASE_URL` to the same rule, and both refuse an authority with a host list or a second
+`@`, which postgres.js reads differently from a URL parser. Dev and production both run with
+`NODE_ENV=production`.
 
 **Dev is closed to the public.** Traefik asks for basic auth on its portal, panel and Mailpit
 routers (`DEV_BASIC_AUTH`); the API stays reachable, since Supabase Auth calls its hook and the

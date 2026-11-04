@@ -61,6 +61,21 @@ describe('db:seed', { timeout: 30_000 }, () => {
   })
 })
 
+describe('db:seed Auth URL', { timeout: 30_000 }, () => {
+  it('refuses a remote Auth URL on local before it creates an account', () => {
+    const { status, stderr } = seed({
+      OPOS_ENV: 'local',
+      SUPABASE_URL: 'https://auth.remote.example',
+      SUPABASE_SECRET_KEY: 'sb_secret_x',
+      DATABASE_MIGRATION_URL: process.env.DATABASE_MIGRATION_URL,
+    })
+
+    expect(status).toBe(1)
+    expect(stderr).toMatch(/SUPABASE_URL names the remote host auth\.remote\.example/)
+    expect(stderr).not.toContain('sb_secret_x')
+  })
+})
+
 // The two-factor demo account is enrolled through Supabase Auth, never written into auth
 // (PLAN.md 4.6, 14); it runs the whole seed against the local stack.
 describe('db:seed two-factor account', () => {

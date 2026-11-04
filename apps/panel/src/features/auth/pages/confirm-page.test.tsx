@@ -198,7 +198,7 @@ describe('ConfirmPage with a token', () => {
     await user.click(screen.getByRole('button', { name: 'Send a new link' }))
 
     expect((await screen.findByRole('status')).textContent).toBe(
-      'We sent a new link to invitee@x.test.',
+      'If invitee@x.test still waits for confirmation, a new link is on its way. If you have already confirmed it, sign in.',
     )
   })
 
@@ -218,6 +218,20 @@ describe('ConfirmPage with a token', () => {
     expect(resendConfirmation).toHaveBeenCalledWith('invitee@x.test', '/invitation')
     expect(sendPasswordLink).not.toHaveBeenCalled()
     expect(await screen.findByRole('status')).toBeTruthy()
+  })
+
+  it('says a new link was sent for a recovery link', async () => {
+    const user = userEvent.setup()
+    vi.mocked(verifyLink).mockResolvedValue(new ORPCError('auth.otp_expired', { status: 422 }))
+    renderConfirm('?token_hash=hash-a&type=recovery')
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.type(await screen.findByLabelText('Email'), 'invitee@x.test')
+    await user.click(screen.getByRole('button', { name: 'Send a new link' }))
+
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'We sent a new link to invitee@x.test.',
+    )
   })
 
   it('otp_expired offers a password link for a recovery link', async () => {

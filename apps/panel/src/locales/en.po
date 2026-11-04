@@ -361,6 +361,10 @@ msgstr "I am new to OPOS"
 msgid "I have saved my codes"
 msgstr "I have saved my codes"
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "If {sentTo} still waits for confirmation, a new link is on its way. If you have already confirmed it, sign in."
+msgstr "If {sentTo} still waits for confirmation, a new link is on its way. If you have already confirmed it, sign in."
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "If no message arrives within a few minutes, the address may already have an account: sign in, or ask for a password link."
 msgstr "If no message arrives within a few minutes, the address may already have an account: sign in, or ask for a password link."

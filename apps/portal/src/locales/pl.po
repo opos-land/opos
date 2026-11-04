@@ -248,6 +248,10 @@ msgstr "Jak OPOS postępuje z twoimi danymi osobowymi."
 msgid "I have saved my codes"
 msgstr "Kody są zapisane"
 
+#: src/features/auth/pages/confirm-page.tsx
+msgid "If {sentTo} still waits for confirmation, a new link is on its way. If you have already confirmed it, sign in."
+msgstr "Jeśli adres {sentTo} wciąż czeka na potwierdzenie, nowy link jest w drodze. Jeśli już go potwierdzono, zaloguj się."
+
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
 msgstr "Jeśli adres {sentTo} należy do konta, wysłaliśmy na niego link do ustawienia nowego hasła. Link działa jeden raz, przez godzinę."

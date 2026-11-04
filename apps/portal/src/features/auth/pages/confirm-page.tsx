@@ -46,7 +46,14 @@ function ExpiredLink({ type, returnTo }: { type: EmailLink['type']; returnTo: st
   if (sentTo) {
     return (
       <Notice>
-        <Trans>We sent a new link to {sentTo}.</Trans>
+        {type === 'signup' ? (
+          <Trans>
+            If {sentTo} still waits for confirmation, a new link is on its way. If you have already
+            confirmed it, sign in.
+          </Trans>
+        ) : (
+          <Trans>We sent a new link to {sentTo}.</Trans>
+        )}
       </Notice>
     )
   }

@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProgramItemPage } from './program-item-page'
@@ -65,6 +65,7 @@ beforeEach(() => {
   api.item.mockReset().mockResolvedValue(panel)
   api.edition.mockReset().mockResolvedValue({
     id: 'edition-1',
+    name: 'Convention A 2027',
     endsAt: new Date(Date.now() + 86_400_000).toISOString(),
   })
 })
@@ -81,6 +82,7 @@ describe('ProgramItemPage', () => {
     expect(screen.getByText('1 like')).toBeDefined()
     expect(document.body.textContent).toContain('10:00')
     expect(mentions('June 2, 2027')).toBe(1)
+    await waitFor(() => expect(document.title).toBe('A panel on maps · Convention A 2027 · OPOS'))
   })
 
   it('says each date once for an item that runs past midnight in that zone', async () => {

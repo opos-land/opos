@@ -3,7 +3,8 @@ import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { ErrorMessage } from './messages'
+import { MemoryRouter } from 'react-router'
+import { ErrorMessage, NotFoundView } from './messages'
 
 beforeAll(() => {
   i18n.loadAndActivate({ locale: 'en', messages: {} })
@@ -38,5 +39,19 @@ describe('ErrorMessage', () => {
     renderError(null)
 
     expect(screen.queryByRole('alert')).toBeNull()
+  })
+})
+
+describe('NotFoundView', () => {
+  it('names the tab after a page that is not found', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <MemoryRouter>
+          <NotFoundView />
+        </MemoryRouter>
+      </I18nProvider>,
+    )
+
+    expect(document.title).toBe('Page not found · OPOS')
   })
 })

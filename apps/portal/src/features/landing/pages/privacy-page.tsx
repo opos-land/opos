@@ -3,8 +3,9 @@
 // the text in both languages and add what a draft cannot state: the data controller's name and
 // contact address, the legal basis of each purpose and the list of processors.
 
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { type ReactNode } from 'react'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { Page } from '../../../shared/ui'
 
 function Part({ title, children }: { title: ReactNode; children: ReactNode }) {
@@ -22,6 +23,8 @@ function Points({ children }: { children: ReactNode }) {
 
 /** The privacy policy (PRODUCT.md 10), linked from the registration form and the footer. */
 export function PrivacyPage() {
+  const { t } = useLingui()
+  usePageTitle(t`Privacy policy`)
   return (
     <Page
       title={<Trans>Privacy policy</Trans>}

@@ -1,6 +1,7 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { Button, ErrorMessage, LoadingView, Page, Section } from '../../../shared/ui'
 import { signOut } from '../../auth'
 import { accountOptions } from '../api/account'
@@ -15,6 +16,8 @@ import { signInMethods } from '../model/sign-in-methods'
  * sign-out and deletion.
  */
 export function AccountPage() {
+  const { t } = useLingui()
+  usePageTitle(t`Your account`)
   const account = useQuery(accountOptions())
   // A failed sign-out leaves the cookies set, so it is shown rather than dropped.
   const [signOutError, setSignOutError] = useState<unknown>(null)

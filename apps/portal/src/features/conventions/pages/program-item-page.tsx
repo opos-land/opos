@@ -2,6 +2,7 @@ import { Plural, Trans } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
 import { isNotFound } from '../../../shared/lib/errors'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { ErrorMessage, linkClass, LoadingView, NotFoundView, Page } from '../../../shared/ui'
 import { conventionOptions, editionOptions, programItemOptions } from '../api/conventions'
 import { LikeButton } from '../components/like-button'
@@ -14,6 +15,7 @@ export function ProgramItemPage() {
   const convention = useQuery(conventionOptions(tenantSlug))
   const item = useQuery(programItemOptions(tenantSlug, editionSlug, programItemId))
   const edition = useQuery(editionOptions(tenantSlug, editionSlug))
+  usePageTitle(item.data?.title, edition.data?.name ?? convention.data?.name)
   const time = useConventionTime(convention.data?.timezone ?? 'UTC')
 
   if (convention.isError || item.isError) {

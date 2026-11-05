@@ -1,6 +1,7 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { useSession } from '../../../shared/lib/session'
 import { linkClass, LoadingView } from '../../../shared/ui'
 import { AuthCard } from '../components/auth-card'
@@ -10,6 +11,8 @@ import { ResendConfirmation } from '../components/resend-confirmation'
 import { loginPath, safeRedirect } from '../model/redirect'
 
 export function RegisterPage() {
+  const { t } = useLingui()
+  usePageTitle(t`Create an account`)
   const [params] = useSearchParams()
   const status = useSession((state) => state.status)
   const account = useSession((state) => state.account)

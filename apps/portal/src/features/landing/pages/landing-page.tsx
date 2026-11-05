@@ -1,6 +1,7 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, useLocation } from 'react-router'
 import { SIGNED_IN_HOME } from '../../../shared/config/routes'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { useSession } from '../../../shared/lib/session'
 import { Notice, Section } from '../../../shared/ui'
 import { type AccountDeletedState } from '../../account'
@@ -17,6 +18,8 @@ const deleted = (state: unknown) =>
 
 /** The platform's home page (PLAN.md 9). */
 export function LandingPage() {
+  const { t } = useLingui()
+  usePageTitle(t`Fantasy conventions, in one place`)
   const location = useLocation()
   const status = useSession((state) => state.status)
   const account = useSession((state) => state.account)

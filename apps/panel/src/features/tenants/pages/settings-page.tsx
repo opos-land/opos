@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { languageName } from '../../../shared/lib/i18n'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Button,
   ErrorMessage,
@@ -26,6 +27,7 @@ const schema = updateTenantSchema.required()
 export function SettingsPage() {
   const { t, i18n } = useLingui()
   const { tenant, access, api } = useCurrentTenant()
+  usePageTitle(t`Settings`, tenant.name)
   const queryClient = useQueryClient()
   const canWrite = atLeast(access.settings, 'write')
   const [saved, setSaved] = useState(false)

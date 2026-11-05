@@ -3,7 +3,7 @@ import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { ErrorMessage } from './messages'
+import { ErrorMessage, NoPermissionView, NotFoundView } from './messages'
 
 beforeAll(() => {
   i18n.loadAndActivate({ locale: 'en', messages: {} })
@@ -38,5 +38,27 @@ describe('ErrorMessage', () => {
     renderError(null)
 
     expect(screen.queryByRole('alert')).toBeNull()
+  })
+})
+
+describe('screens that stand in for a page', () => {
+  it('names the tab after a page that is not found', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <NotFoundView />
+      </I18nProvider>,
+    )
+
+    expect(document.title).toBe('Page not found · OPOS panel')
+  })
+
+  it('names the tab after missing permissions', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <NoPermissionView />
+      </I18nProvider>,
+    )
+
+    expect(document.title).toBe('No permissions · OPOS panel')
   })
 })

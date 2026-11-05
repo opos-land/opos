@@ -198,6 +198,7 @@ msgid "Create the edition"
 msgstr "Create the edition"
 
 #: src/features/tenants/components/tenant-layout.tsx
+#: src/features/tenants/pages/dashboard-page.tsx
 msgid "Dashboard"
 msgstr "Dashboard"
 
@@ -469,6 +470,7 @@ msgstr "Open the link from your email to confirm your address or reset your pass
 
 #: src/features/auth/components/auth-layout.tsx
 #: src/features/tenants/components/panel-header.tsx
+#: src/shared/lib/page-title.ts
 msgid "OPOS panel"
 msgstr "OPOS panel"
 
@@ -519,6 +521,7 @@ msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Press the button to confirm your address. Then you choose your password."
 
 #: src/features/editions/pages/edition-page.tsx
+#: src/features/program/pages/program-item-page.tsx
 #: src/features/program/pages/program-page.tsx
 #: src/features/team/components/permission-labels.tsx
 msgid "Programme"
@@ -661,6 +664,7 @@ msgid "Shop"
 msgstr "Shop"
 
 #: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/login-page.tsx
 msgid "Sign in"
 msgstr "Sign in"
 

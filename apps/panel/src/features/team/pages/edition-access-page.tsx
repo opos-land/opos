@@ -1,6 +1,7 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { useSession } from '../../../shared/lib/session'
 import {
   ErrorMessage,
@@ -18,6 +19,7 @@ import { ProgramLabel, TicketsLabel } from '../components/permission-labels'
 
 /** Team members' permissions in one edition (PLAN.md 8, `/access`). */
 export function EditionAccessPage() {
+  const { t } = useLingui()
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
   const accountId = useSession((state) => state.account?.id)
@@ -28,13 +30,14 @@ export function EditionAccessPage() {
     ...editionMembersOptions(api, edition?.id ?? ''),
     enabled: allowed && Boolean(edition),
   })
+  const editionName = edition?.name
+  usePageTitle(editionName ? t`Access to ${editionName}` : tenant.name)
 
   if (!allowed) return <NoPermissionView />
   if (isPending) return <LoadingView />
   if (isError) return <ErrorMessage error={error} />
   if (!edition) return <NoPermissionView />
 
-  const editionName = edition.name
   const heads = members.data?.filter((m) => m.role === 'head') ?? []
   const orgs = members.data?.filter((m) => m.role === 'org') ?? []
 

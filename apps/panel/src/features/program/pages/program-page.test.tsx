@@ -84,6 +84,7 @@ describe('ProgramPage', () => {
     view()
 
     expect(screen.getByRole('heading', { name: NO_PERMISSION })).toBeDefined()
+    expect(document.title).toBe('No permissions · OPOS panel')
     expect(list).not.toHaveBeenCalled()
   })
 
@@ -104,6 +105,7 @@ describe('ProgramPage', () => {
     expect(link.getAttribute('href')).toBe('/convention-a/editions/2027/program/item-1')
     expect(screen.getByText('Kasia Mazur')).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Add the item' })).toBeNull()
+    expect(document.title).toBe('Programme · Edition 2027 · OPOS panel')
   })
 
   it('offers the form to a member with program=write', async () => {

@@ -271,6 +271,13 @@ import of `@supabase/*`, static or dynamic, and [scripts/bff-boundary.mjs](scrip
 refuses the rest, in a Claude Code hook, in lefthook `pre-commit` and in CI, which scans the built
 bundles too. A breach is fixed in the application, never allowed by an exception.
 
+**Every page names itself in the browser tab.** A new page — a module of
+`apps/<app>/src/features/<feature>/pages/` — calls `usePageTitle` of `shared/lib/page-title.ts`
+before its first `return`: the page first, then the edition or convention it belongs to, as
+translated messages that reuse the page's heading, or the tenant's own content
+([page titles](docs/PLAN.md#32-frontend-application-layout)). `src/app/pages.test.ts` of each
+application fails on a page that does not.
+
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`,
 and no remote database URL, Supabase project reference or access token in a `.env` or
 `mise.local.toml`; they change only through the deploy workflow

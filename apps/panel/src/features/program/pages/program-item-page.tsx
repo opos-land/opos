@@ -1,7 +1,8 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Button,
   ErrorMessage,
@@ -24,6 +25,7 @@ import { SpeakersEditor } from '../components/speakers-editor'
 
 /** One programme item: its data, speakers and deletion; everything but reading needs program=write. */
 export function ProgramItemPage() {
+  const { t } = useLingui()
   const { editionSlug, programItemId } = useParams()
   const { tenant, access, api } = useCurrentTenant()
   const time = useTenantTime()
@@ -37,6 +39,8 @@ export function ProgramItemPage() {
     ...programItemsOptions(api, edition?.id ?? ''),
     enabled: atLeast(level, 'read'),
   })
+  const item = items.data?.find((entry) => entry.id === programItemId)
+  usePageTitle(item?.title ?? t`Programme`, edition?.name ?? tenant.name)
   const base = `/${tenant.slug}/editions/${editionSlug ?? ''}/program`
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: programKey(api) })
@@ -55,7 +59,6 @@ export function ProgramItemPage() {
   if (items.isPending) return <LoadingView />
   if (items.isError) return <ErrorMessage error={items.error} />
 
-  const item = items.data.find((entry) => entry.id === programItemId)
   if (!item) return <NotFoundView />
 
   const params = { editionId: edition.id, programItemId: item.id }

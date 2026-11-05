@@ -2,6 +2,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { errorCodes } from '@opos/contract'
 import { ORPCError } from '@orpc/client'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { useSession } from '../../../shared/lib/session'
 import { ErrorMessage, LoadingView } from '../../../shared/ui'
 import { AuthLayout } from '../components/auth-layout'
@@ -20,6 +21,7 @@ function returnedError(value: string | null) {
 
 export function LoginPage() {
   const { t } = useLingui()
+  usePageTitle(t`Sign in`)
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const status = useSession((state) => state.status)

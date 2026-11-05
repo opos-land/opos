@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { activeLocale } from '../../../shared/lib/i18n'
 import { errorCode } from '../../../shared/lib/errors'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { startSession, useSession } from '../../../shared/lib/session'
 import { ErrorMessage, LoadingView, Notice, UnavailableView } from '../../../shared/ui'
 import { sendPasswordLink, signUpWithEmail } from '../api/auth'
@@ -167,6 +168,7 @@ function FinishSigningIn({ code }: { code: string }) {
  */
 export function InvitationPage() {
   const { t } = useLingui()
+  usePageTitle(t`Invitation`)
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const location = useLocation()

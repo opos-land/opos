@@ -2,6 +2,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Button,
   ErrorMessage,
@@ -30,6 +31,7 @@ export function EditionPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
+  usePageTitle(edition?.name ?? tenant.name)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const canWrite = atLeast(access.settings, 'write')
   const base = `/${tenant.slug}/editions`

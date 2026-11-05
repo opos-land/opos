@@ -1,5 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { useSession } from '../../../shared/lib/session'
 import { ErrorMessage, LoadingView, PageHeader, Section } from '../../../shared/ui'
 import { atLeast, RequireAccess, useCurrentTenant } from '../../tenants'
@@ -10,7 +11,8 @@ import { MemberRow } from '../components/member-row'
 /** The convention's team: members, invitations, permissions and expiry (PLAN.md 8). */
 export function TeamPage() {
   const { t } = useLingui()
-  const { access, api } = useCurrentTenant()
+  const { tenant, access, api } = useCurrentTenant()
+  usePageTitle(t`Team`, tenant.name)
   const accountId = useSession((state) => state.account?.id)
   const members = useQuery({
     ...membersOptions(api),

@@ -373,6 +373,8 @@ much as its features.
   starting point for the code, not the final appearance.
 - **Placeholders are honest.** Until a design exists, a screen uses plain blocks and real copy,
   not stand-in artwork.
+- **Every screen names itself.** The browser tab shows the screen, then the edition or convention
+  it belongs to, then "OPOS panel" in the panel or "OPOS" in the portal, in the interface language.
 
 ---
 

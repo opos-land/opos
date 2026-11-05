@@ -2,6 +2,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { type ReactNode } from 'react'
 import { errorMessage } from '@opos/i18n/errors'
 import { describeError } from '../lib/errors'
+import { useScreenTitle } from '../lib/page-title'
 import { Button } from './button'
 
 /** An API error, shown by its code through the catalog (PLAN.md 6). */
@@ -50,6 +51,8 @@ export function UnavailableView({ onRetry }: { onRetry: () => void }) {
 
 /** The screen a `403` ends on (PLAN.md 8), and a page the member's permissions do not cover. */
 export function NoPermissionView() {
+  const { t } = useLingui()
+  useScreenTitle(t`No permissions`)
   return (
     <section className="flex max-w-xl flex-col gap-2 p-8">
       <h1 className="text-xl font-semibold">
@@ -66,6 +69,8 @@ export function NoPermissionView() {
 }
 
 export function NotFoundView() {
+  const { t } = useLingui()
+  useScreenTitle(t`Page not found`)
   return (
     <section className="flex max-w-xl flex-col gap-2 p-8">
       <h1 className="text-xl font-semibold">

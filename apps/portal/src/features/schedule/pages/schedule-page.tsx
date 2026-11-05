@@ -1,16 +1,17 @@
-import { Trans } from '@lingui/react/macro'
-import { useLingui } from '@lingui/react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { formatDateTime, isLocale } from '@opos/i18n'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { activeLocale } from '../../../shared/lib/i18n'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { ErrorMessage, linkClass, LoadingView, Page } from '../../../shared/ui'
 import { scheduleOptions } from '../api/schedule'
 import { scheduleDays } from '../model/schedule-days'
 
 /** The liked items across conventions by day, each in its convention's zone (PLAN.md 9). */
 export function SchedulePage() {
-  const { i18n } = useLingui()
+  const { i18n, t } = useLingui()
+  usePageTitle(t`My schedule`)
   const locale = isLocale(i18n.locale) ? i18n.locale : activeLocale()
   const schedule = useQuery(scheduleOptions())
 

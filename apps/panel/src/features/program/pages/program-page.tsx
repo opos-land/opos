@@ -1,6 +1,7 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   ErrorMessage,
   LoadingView,
@@ -18,12 +19,14 @@ const EMPTY = { title: '', description: '', startsAt: '', endsAt: '' }
 
 /** The edition's programme items and, for a member with `program=write`, the creation form. */
 export function ProgramPage() {
+  const { t } = useLingui()
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
   const time = useTenantTime()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
+  usePageTitle(t`Programme`, edition?.name ?? tenant.name)
   const level = edition ? access.edition(edition.id).program : 'none'
   const items = useQuery({
     ...programItemsOptions(api, edition?.id ?? ''),

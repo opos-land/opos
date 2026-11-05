@@ -1,8 +1,9 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { verifySchema } from '@opos/contract'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { startSession, useSession } from '../../../shared/lib/session'
 import {
   Button,
@@ -137,6 +138,8 @@ function RedeemLink({
  * password form to a browser holding a session and offers the sign-in to any other.
  */
 export function ConfirmPage() {
+  const { t } = useLingui()
+  usePageTitle(t`Confirmation link`)
   const navigate = useNavigate()
   const location = useLocation()
   const [params] = useSearchParams()

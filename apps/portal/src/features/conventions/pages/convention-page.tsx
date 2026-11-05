@@ -2,6 +2,7 @@ import { Trans } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
 import { isNotFound } from '../../../shared/lib/errors'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   ErrorMessage,
   linkClass,
@@ -23,6 +24,7 @@ import { useConventionTime } from '../hooks/use-convention-time'
 export function ConventionPage() {
   const { tenantSlug = '' } = useParams()
   const convention = useQuery(conventionOptions(tenantSlug))
+  usePageTitle(convention.data?.name)
   const active = useQuery(activeEditionOptions(tenantSlug))
   const editions = useQuery(editionsOptions(tenantSlug))
   const items = useQuery({

@@ -3,6 +3,7 @@ import { errorMessage } from '@opos/i18n/errors'
 import { type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { describeError } from '../lib/errors'
+import { useScreenTitle } from '../lib/page-title'
 import { Button } from './button'
 import { linkClass } from './page'
 
@@ -55,6 +56,8 @@ export function UnavailableView({ onRetry }: { onRetry: () => void }) {
 
 /** Unknown paths, and anything the portal cannot find (PLAN.md 9). */
 export function NotFoundView() {
+  const { t } = useLingui()
+  useScreenTitle(t`Page not found`)
   return (
     <section className="flex flex-col gap-3 py-8">
       <h1 className="text-2xl font-semibold">

@@ -2,6 +2,7 @@ import { Trans } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
 import { isNotFound } from '../../../shared/lib/errors'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { ErrorMessage, linkClass, LoadingView, NotFoundView, Page } from '../../../shared/ui'
 import { conventionOptions, editionOptions, programItemsOptions } from '../api/conventions'
 import { ProgramList } from '../components/program-list'
@@ -12,6 +13,7 @@ export function EditionPage() {
   const { tenantSlug = '', editionSlug = '' } = useParams()
   const convention = useQuery(conventionOptions(tenantSlug))
   const edition = useQuery(editionOptions(tenantSlug, editionSlug))
+  usePageTitle(edition.data?.name ?? convention.data?.name)
   const items = useQuery({
     ...programItemsOptions(tenantSlug, editionSlug),
     enabled: Boolean(edition.data),

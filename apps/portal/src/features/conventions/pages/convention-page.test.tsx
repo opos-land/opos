@@ -79,6 +79,7 @@ describe('ConventionPage', () => {
     view()
 
     expect(await screen.findByRole('heading', { name: 'Convention A', level: 1 })).toBeDefined()
+    expect(document.title).toBe('Convention A · OPOS')
     expect(await screen.findByRole('heading', { name: 'Wednesday, June 2, 2027' })).toBeDefined()
     const link = screen.getByRole('link', { name: 'Item late' })
     expect(link.getAttribute('href')).toBe('/conventions/convention-a/2027/program/late')
@@ -118,6 +119,7 @@ describe('ConventionPage', () => {
     view()
 
     expect(await screen.findByRole('heading', { name: /not found|find/i })).toBeDefined()
+    expect(document.title).toBe('Page not found · OPOS')
   })
 
   it('shows any other failure as an error', async () => {

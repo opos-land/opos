@@ -1,6 +1,7 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { ErrorMessage, LoadingView, PageHeader, Section } from '../../../shared/ui'
 import { editionListOptions } from '../api/tenants'
 import { useCurrentTenant } from '../components/tenant-context'
@@ -8,7 +9,9 @@ import { useTenantTime } from '../hooks/use-tenant-time'
 import { atLeast } from '../model/permissions'
 
 export function DashboardPage() {
+  const { t } = useLingui()
   const { tenant, access, api } = useCurrentTenant()
+  usePageTitle(t`Dashboard`, tenant.name)
   const time = useTenantTime()
   const editions = useQuery(editionListOptions(api))
   const visible = editions.data?.filter((e) => access.seesEdition(e.id)) ?? []

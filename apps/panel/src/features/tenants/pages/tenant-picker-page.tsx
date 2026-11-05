@@ -1,5 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, Navigate } from 'react-router'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { PageHeader } from '../../../shared/ui'
 import { PanelHeader } from '../components/panel-header'
 import { usePermissionStore } from '../model/permissions'
@@ -7,6 +8,7 @@ import { usePermissionStore } from '../model/permissions'
 /** The convention picker at `/`; a single membership goes straight to its convention. */
 export function TenantPickerPage() {
   const { t } = useLingui()
+  usePageTitle(t`Your conventions`)
   const memberships = usePermissionStore((state) => state.memberships) ?? []
   const only = memberships.length === 1 ? memberships[0] : undefined
 

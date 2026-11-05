@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 import { z } from 'zod'
 import { SIGNED_IN_HOME } from '../../../shared/config/routes'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { Button, ErrorMessage, Field, inputClass, linkClass, Notice } from '../../../shared/ui'
 import { sendPasswordLink } from '../api/auth'
 import { AuthCard } from '../components/auth-card'
@@ -17,6 +18,7 @@ const schema = z.object({ email: z.email() })
  */
 export function ForgotPasswordPage() {
   const { t } = useLingui()
+  usePageTitle(t`Reset your password`)
   const [error, setError] = useState<unknown>(null)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { email: '' } })

@@ -315,6 +315,7 @@ msgid "Open the link from your email to confirm your address or reset your passw
 msgstr "Otwórz link z wiadomości e-mail, aby potwierdzić adres lub ustawić nowe hasło."
 
 #: src/app/layout.tsx
+#: src/shared/lib/page-title.ts
 msgid "OPOS"
 msgstr "OPOS"
 

@@ -1,6 +1,7 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { ErrorMessage, LoadingView, PageHeader, Section } from '../../../shared/ui'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
 import { createEditionOptions, editionsKey } from '../api/editions'
@@ -12,7 +13,9 @@ const EMPTY = { name: '', slug: '', startsAt: '', endsAt: '' }
 
 /** The edition list and, for a member with `settings=write`, the creation form. */
 export function EditionsPage() {
+  const { t } = useLingui()
   const { tenant, access, api } = useCurrentTenant()
+  usePageTitle(t`Editions`, tenant.name)
   const time = useTenantTime()
   const navigate = useNavigate()
   const queryClient = useQueryClient()

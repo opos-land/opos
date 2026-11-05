@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
+import { usePageTitle } from '../../../shared/lib/page-title'
 import { startSession, useSession } from '../../../shared/lib/session'
 import {
   Button,
@@ -25,6 +26,7 @@ const SIX_DIGITS = /^\d{6}$/
  */
 export function MfaPage() {
   const { t } = useLingui()
+  usePageTitle(t`Two-factor authentication`)
   const queryClient = useQueryClient()
   const [params] = useSearchParams()
   const returnTo = safeRedirect(params.get('redirect'))

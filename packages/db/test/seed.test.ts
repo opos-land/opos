@@ -250,3 +250,28 @@ describe('db:seed run twice', () => {
     expect(await rowCounts()).toEqual(before)
   })
 })
+
+// One account heads both conventions, so the panel's convention picker and switch have someone to
+// show (PLAN.md 8, 14); a head holds no tenant-level permission and never expires (PLAN.md 4.5).
+describe('db:seed head of two conventions', () => {
+  it('makes multi@example.com a head organizer of both', { timeout: 120_000 }, async () => {
+    const run = runSeed('local')
+    expect(run.status, run.stderr).toBe(0)
+
+    const rows = await migrator<
+      { slug: string; role: string; settings_access: string; expires_at: Date | null }[]
+    >`
+      select t.slug, m.role, m.settings_access, m.expires_at
+      from tenant_memberships m
+      join tenants t on t.id = m.tenant_id
+      join accounts a on a.id = m.account_id
+      where a.email = 'multi@example.com'
+      order by t.slug
+    `
+
+    expect(rows).toEqual([
+      { slug: 'convention-a', role: 'head', settings_access: 'none', expires_at: null },
+      { slug: 'convention-b', role: 'head', settings_access: 'none', expires_at: null },
+    ])
+  })
+})

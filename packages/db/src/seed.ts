@@ -29,6 +29,8 @@ interface SeedAccount {
 
 interface SeedMember {
   email: string
+  /** `org` when left out; a head holds no permission of its own and never expires (PLAN.md 4.5). */
+  role?: 'head' | 'org'
   expired?: boolean
   tenant?: { settingsAccess?: Access; brandingAccess?: Access; shopConfigAccess?: Access }
   editions?: Record<
@@ -95,6 +97,7 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'speaker@example.com', firstName: 'Kasia', lastName: 'Mazur' },
   { email: 'attendee@example.com', firstName: 'Jan', lastName: 'Kowal' },
   { email: 'mfa@example.com', firstName: 'Maria', lastName: 'Zielinska' },
+  { email: 'multi@example.com', firstName: 'Olga', lastName: 'Duda' },
 ]
 
 // The account with two-factor authentication (PLAN.md 14): a TOTP factor enrolled and verified
@@ -180,6 +183,7 @@ const TENANTS: SeedTenant[] = [
         editions: { '2026': { programAccess: 'write' } },
       },
       { email: 'gate@convention-a.test', editions: { '2026': { ticketsAccess: 'write' } } },
+      { email: 'multi@example.com', role: 'head' },
     ],
   },
   {
@@ -203,7 +207,7 @@ const TENANTS: SeedTenant[] = [
         ],
       },
     ],
-    team: [],
+    team: [{ email: 'multi@example.com', role: 'head' }],
   },
 ]
 
@@ -464,21 +468,27 @@ async function seedTenant(spec: SeedTenant) {
       }
     }
 
+    // A head holds no permission of its own and never expires (PLAN.md 4.5).
+    const asHead = (id: string) => ({
+      id,
+      role: 'head' as const,
+      expiresAt: null,
+      tenant: {} as NonNullable<SeedMember['tenant']>,
+      editions: {} as NonNullable<SeedMember['editions']>,
+    })
     const members = [
-      {
-        id: headId,
-        role: 'head' as const,
-        expiresAt: null,
-        tenant: {} as NonNullable<SeedMember['tenant']>,
-        editions: {} as NonNullable<SeedMember['editions']>,
-      },
-      ...team.map((member) => ({
-        id: member.id,
-        role: 'org' as const,
-        expiresAt: member.expired ? new Date(Date.now() - DAY) : null,
-        tenant: member.tenant ?? {},
-        editions: member.editions ?? {},
-      })),
+      asHead(headId),
+      ...team.map((member) =>
+        member.role === 'head'
+          ? asHead(member.id)
+          : {
+              id: member.id,
+              role: 'org' as const,
+              expiresAt: member.expired ? new Date(Date.now() - DAY) : null,
+              tenant: member.tenant ?? {},
+              editions: member.editions ?? {},
+            },
+      ),
     ]
     for (const member of members) {
       const access = {

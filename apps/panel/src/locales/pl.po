@@ -934,7 +934,7 @@ msgstr "Nie masz uprawnień do tej strony. Jeśli potrzebujesz dostępu, poproś
 
 #: src/features/editions/pages/convention-entry-page.tsx
 msgid "You have no access to any edition of this convention yet. A head organizer can give it to you."
-msgstr "Nie masz jeszcze dostępu do żadnej edycji tego konwentu. Może Ci go nadać główny organizator."
+msgstr "Nie masz jeszcze dostępu do żadnej edycji tego konwentu. Główny organizator może ci go nadać."
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Your address {email} is confirmed. Choose the password you will sign in with."

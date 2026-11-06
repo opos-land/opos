@@ -152,18 +152,22 @@ In the MVP these work: name, address, language, time zone, team, shop configurat
 with speakers, likes, reviews, tickets and attendee registrations. The remaining items already
 have their place in the permission model but no functionality behind them yet.
 
-The panel keeps the two levels apart. The convention and each of its editions have a menu of their
-own, only one of them is shown at a time, and no screen appears in both:
+The panel keeps the two levels apart, so that the many organizers who work on one edition never
+meet the management of the whole convention:
 
-| Menu | What it holds |
-|---|---|
-| convention | dashboard, the list of editions with the creation of a new one, team, settings, shop |
-| edition | everything about that one edition: dashboard, programme, tickets with their orders and scanners, the team's access to the edition, and its settings — data, activation, publication |
+| Place | What it holds | Who sees it |
+|---|---|---|
+| an edition | everything about that one edition: dashboard, programme, tickets with their orders and scanners, the team's access to the edition, and its settings — data, activation, publication | an organizer with a permission in that edition, one who reads the convention's settings, and a head organizer |
+| convention settings | general data (name, language, time zone), the list of editions with the creation of a new one, team, shop | an organizer who can open one of its sections; a head organizer always |
 
-The edition's menu leads back to the convention and switches between the editions the organizer
-sees. Each menu shows only the sections the organizer's permissions open
-([5](#5-roles-and-permissions)), so a screen about one edition stays in that edition's menu even
-when a convention-level permission governs it.
+Signing in to the panel leads to the list of the organizer's conventions, or straight into the
+only one. Entering a convention opens an edition: the active one when the organizer sees it, else
+the newest they see. The edition's menu switches between the editions the organizer sees. The
+convention settings are a separate place, reached from the top bar and from the list of
+conventions, and the panel never mentions them to an organizer who cannot open them. Each menu
+shows only the sections the organizer's permissions open ([5](#5-roles-and-permissions)), and a
+screen about one edition stays in that edition's menu even when a convention-level permission
+governs it.
 
 ---
 

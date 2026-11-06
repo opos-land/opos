@@ -2948,8 +2948,10 @@ tenant](#creating-a-tenant)). The active editions start 60 days after the run, s
 stays in the future.
 
 - **Accounts:** `head@convention-a.test`, five organizer accounts, `head@convention-b.test`,
-  `speaker@example.com`, `attendee@example.com`, `mfa@example.com`. Dev password: `password123`. One
-  organizer account has `locale=en`.
+  `speaker@example.com`, `attendee@example.com`, `mfa@example.com`, `multi@example.com`. Dev
+  password: `password123`. One organizer account has `locale=en`. `multi@example.com` is a head of
+  both tenants, the one account that meets the panel's convention picker and switch
+  ([8](#8-appspanel)).
 - **Two-factor authentication:** `mfa@example.com` holds a verified TOTP factor and ten unused
   recovery codes. The seed enrolls the factor through Supabase Auth as a person would: it signs in
   with the dev password, enrolls a TOTP factor and verifies it with the code it computes from the
@@ -2975,8 +2977,8 @@ stays in the future.
   - Tickets 2026: types "Weekend" (120 PLN, 500) and "Saturday" (70 PLN, no limit, sales ending
     the day before the edition); a `paid` order of `guest@example.com`, who has no account, one
     `expired` order and one `cancelled` order.
-- **Tenant `convention-b`** — "Convention B", `defaultLocale=en`, `timezone=Europe/Prague`, head
-  `head@convention-b.test`,
+- **Tenant `convention-b`** — "Convention B", `defaultLocale=en`, `timezone=Europe/Prague`, heads
+  `head@convention-b.test` and `multi@example.com`,
   a single `2026` edition with an English programme and one "Day pass" ticket type (provider
   `fake`, currency `PLN`).
 - **Convention A team:**
@@ -2989,6 +2991,7 @@ stays in the future.
 | `viewer@convention-a.test` | `org` | `settings=read` | 2026: `program=read` |
 | `expired@convention-a.test` | `org`, `expiresAt` in the past | `settings=write` | 2026: `program=write` |
 | `gate@convention-a.test` | `org` | everything `none` | 2026: `tickets=write` |
+| `multi@example.com` | `head` | bypass | bypass |
 
 - **Attendee:** `attendee@example.com` signed up for `convention-a/2025`, not for `2026`.
 

@@ -27,7 +27,7 @@ const schema = updateTenantSchema.required()
 export function SettingsPage() {
   const { t, i18n } = useLingui()
   const { tenant, access, api } = useCurrentTenant()
-  usePageTitle(t`Settings`, tenant.name)
+  usePageTitle(t`General`, tenant.name)
   const queryClient = useQueryClient()
   const canWrite = atLeast(access.settings, 'write')
   const [saved, setSaved] = useState(false)
@@ -61,7 +61,7 @@ export function SettingsPage() {
 
   return (
     <RequireAccess allowed={atLeast(access.settings, 'read')}>
-      <PageHeader title={<Trans>Settings</Trans>} />
+      <PageHeader title={<Trans>General</Trans>} description={tenant.name} />
       <Section title={<Trans>Convention</Trans>}>
         <form
           onSubmit={(event) => void submit(event)}

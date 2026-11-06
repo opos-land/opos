@@ -2051,8 +2051,8 @@ headers ([13](#13-deployment)).
 | Feature | Scope |
 |---|---|
 | `auth` | sign-in, password reset, email links, the code screen of two-factor authentication, invitation acceptance with sign-up ([7.7](#77-organizer-invitations)) |
-| `tenants` | convention picker, dashboard, settings, language and time zone |
-| `editions` | edition list, creation, activation, publication |
+| `tenants` | convention picker, the top bar, the convention settings with their menu, the general settings: name, language and time zone |
+| `editions` | entering a convention; the edition area with its menu, the edition switch of the top bar, the edition dashboard, the edition settings: data, activation, publication, deletion; the edition list and creation in the convention settings |
 | `program` | the edition's programme items, their speakers, review moderation |
 | `shop` | the payment provider account and currency |
 | `tickets` | ticket types, orders, cancellation, paired scanners |
@@ -2067,16 +2067,17 @@ headers ([13](#13-deployment)).
 | `/auth/mfa` | the code screen of two-factor authentication: a code or a recovery code, then the return path ([7.12](#712-two-factor-authentication)) |
 | `/forgot-password` | password reset request; confirms that the message was sent whatever the address ([7.6](#76-password-reset)) |
 | `/invitation` | invitation acceptance (`?token=`): the convention and the invited email, sign-in, sign-up with email or Google, the password chosen after the address is confirmed ([7.7](#77-organizer-invitations)) |
-| `/` | convention picker; redirect when there is a single membership |
-| `/:tenantSlug` | tenant dashboard |
-| `/:tenantSlug/editions` | edition list + creation |
-| `/:tenantSlug/editions/:editionSlug` | edition data, activation, publication |
+| `/` | convention picker: a card per convention opens it, and holds the convention settings for a member who may open them; a single membership goes straight into its convention |
+| `/:tenantSlug` | entering the convention: the member's edition — the active one when the member sees it, else the newest; with none, the convention settings' editions for a member who may open them, else a screen saying there is no edition for the member yet |
+| `/:tenantSlug/editions/:editionSlug` | edition dashboard: dates, whether the edition is active and published |
 | `/:tenantSlug/editions/:editionSlug/program` | programme items |
 | `/:tenantSlug/editions/:editionSlug/program/:programItemId` | item form, speakers, reviews with hide and show |
 | `/:tenantSlug/editions/:editionSlug/access` | team members' edition permissions |
-| `/:tenantSlug/team` | `tenant_memberships` — list, invitations, permissions, expiry date |
-| `/:tenantSlug/settings` | name, convention language, time zone; the slug shown, not editable |
-| `/:tenantSlug/shop` | payment provider account, currency; credentials write-only |
+| `/:tenantSlug/editions/:editionSlug/settings` | edition data, activation, publication, deletion |
+| `/:tenantSlug/settings` | general: name, convention language, time zone; the slug shown, not editable |
+| `/:tenantSlug/settings/editions` | edition list + creation |
+| `/:tenantSlug/settings/team` | `tenant_memberships` — list, invitations, permissions, expiry date |
+| `/:tenantSlug/settings/shop` | payment provider account, currency; credentials write-only |
 | `/:tenantSlug/editions/:editionSlug/tickets` | ticket types with sold and held counts |
 | `/:tenantSlug/editions/:editionSlug/tickets/orders` | orders, search by email, order details, cancellation |
 | `/:tenantSlug/editions/:editionSlug/tickets/scanners` | pairing QR code, paired devices, revocation |
@@ -2085,6 +2086,32 @@ headers ([13](#13-deployment)).
 - The fixed top-level paths — `/login`, `/forgot-password`, `/auth`, `/invitation`, `/scanner` — are reserved
   tenant slugs ([4.3](#43-tenant-level-tables)), so `/:tenantSlug` never shadows them; a new
   top-level path joins `RESERVED_TENANT_SLUGS` in the same PR.
+- Every page under `/:tenantSlug` sits in one of two areas, each with a menu of its own; one area
+  is shown at a time, below the top bar of both
+  ([tenant-layout.tsx](../apps/panel/src/features/tenants/components/tenant-layout.tsx),
+  [area-frame.tsx](../apps/panel/src/features/tenants/components/area-frame.tsx)). The edition
+  area holds `/:tenantSlug/editions/:editionSlug` and every path below it
+  ([edition-layout.tsx](../apps/panel/src/features/editions/components/edition-layout.tsx)); the
+  convention settings hold `/:tenantSlug/settings` and every path below it
+  ([convention-layout.tsx](../apps/panel/src/features/tenants/components/convention-layout.tsx)).
+  A section appears in exactly one menu, and a page about one edition belongs to the edition area
+  even when a tenant-level permission (`settings`) governs it. A new page joins the route of its
+  area in [router.tsx](../apps/panel/src/app/router.tsx).
+
+  | Area | Menu, with the permission that shows each section |
+  |---|---|
+  | edition | Dashboard; Programme at `program>=read`; Tickets, Orders and Scanners at `tickets>=read`; Access and Edition settings at `settings>=read` |
+  | convention settings | General, Editions and Team at `settings>=read`; Shop at `shop>=read` |
+
+  The top bar holds the panel's name, the convention and, in the edition area, the edition, always
+  under the label "Edition" — each a switch when the member sees more than one
+  ([edition-switch.tsx](../apps/panel/src/features/editions/components/edition-switch.tsx), handed
+  to the bar by [router.tsx](../apps/panel/src/app/router.tsx), since `editions` builds on
+  `tenants`) — and the account menu. A member who can open a section of the convention settings
+  also finds there the way to them from an edition, "Convention settings", and back, "Back to the
+  edition", once there is an edition the member sees; a member who cannot never sees them
+  mentioned ([permissions.ts](../apps/panel/src/features/tenants/model/permissions.ts)). A `403`
+  replaces the page and keeps the menu.
 - The API link ([api-fetch.ts](../apps/panel/src/shared/lib/api-fetch.ts)) sends the session
   cookies (`credentials: 'include'`), `X-Tenant-Slug` and `Accept-Language` from the active locale,
   and reads errors back as in [5](#5-api-contract). Every tenant gets a client of its own whose
@@ -2117,9 +2144,15 @@ headers ([13](#13-deployment)).
   panel is a target.
   The panel knows it is signed in only
   from the API's answers: it reads no cookie and stores no token.
+- A page to return to belongs to the account that left it. The tab remembers in `sessionStorage`
+  the account it last showed
+  ([shown-account.ts](../apps/panel/src/features/auth/model/shown-account.ts)); another account
+  arriving on a page of the panel — signed in from the `?redirect=` the previous one left, back
+  from Google, or announced by another tab — starts from `/`, and the same account returns to the
+  page ([require-session.tsx](../apps/panel/src/features/auth/components/require-session.tsx)).
 - `GET /me/memberships` after sign-in populates the permission store
   ([permissions.ts](../apps/panel/src/features/tenants/model/permissions.ts)). The UI reads it and
-  the API stays the authority: the sidebar hides sections with a `none` permission, at `read` the
+  the API stays the authority: each menu hides sections with a `none` permission, at `read` the
   save buttons are `disabled`, a page the permissions do not cover ends on the "no permissions"
   screen when entered by URL, and an org without `settings>=read` sees only the editions it holds a
   level in. Only the permissions that do something appear
@@ -2924,8 +2957,10 @@ tenant](#creating-a-tenant)). The active editions start 60 days after the run, s
 stays in the future.
 
 - **Accounts:** `head@convention-a.test`, five organizer accounts, `head@convention-b.test`,
-  `speaker@example.com`, `attendee@example.com`, `mfa@example.com`. Dev password: `password123`. One
-  organizer account has `locale=en`.
+  `speaker@example.com`, `attendee@example.com`, `mfa@example.com`, `multi@example.com`. Dev
+  password: `password123`. One organizer account has `locale=en`. `multi@example.com` is a head of
+  both tenants, the one account that meets the panel's convention picker and switch
+  ([8](#8-appspanel)).
 - **Two-factor authentication:** `mfa@example.com` holds a verified TOTP factor and ten unused
   recovery codes. The seed enrolls the factor through Supabase Auth as a person would: it signs in
   with the dev password, enrolls a TOTP factor and verifies it with the code it computes from the
@@ -2951,8 +2986,8 @@ stays in the future.
   - Tickets 2026: types "Weekend" (120 PLN, 500) and "Saturday" (70 PLN, no limit, sales ending
     the day before the edition); a `paid` order of `guest@example.com`, who has no account, one
     `expired` order and one `cancelled` order.
-- **Tenant `convention-b`** — "Convention B", `defaultLocale=en`, `timezone=Europe/Prague`, head
-  `head@convention-b.test`,
+- **Tenant `convention-b`** — "Convention B", `defaultLocale=en`, `timezone=Europe/Prague`, heads
+  `head@convention-b.test` and `multi@example.com`,
   a single `2026` edition with an English programme and one "Day pass" ticket type (provider
   `fake`, currency `PLN`).
 - **Convention A team:**
@@ -2965,6 +3000,7 @@ stays in the future.
 | `viewer@convention-a.test` | `org` | `settings=read` | 2026: `program=read` |
 | `expired@convention-a.test` | `org`, `expiresAt` in the past | `settings=write` | 2026: `program=write` |
 | `gate@convention-a.test` | `org` | everything `none` | 2026: `tickets=write` |
+| `multi@example.com` | `head` | bypass | bypass |
 
 - **Attendee:** `attendee@example.com` signed up for `convention-a/2025`, not for `2026`.
 
@@ -3191,10 +3227,10 @@ never changes a seeded account's password, which ends every other session of the
 | 1 | Registration: the form asks for no password; the link from Mailpit opens a page that changes nothing until its button is pressed; the button confirms, signs in and asks for the password; sign-out, sign-in again with it; the language switch survives the session. Again for an address someone registered first through the API and left unconfirmed: after the owner confirms and chooses a password, no other password signs in | [registration](../e2e/specs/registration.spec.ts) |
 | 2 | Resending the confirmation link from the "check your inbox" screen delivers a new message | [registration](../e2e/specs/registration.spec.ts) |
 | 3 | The session survives a page reload, and the portal's calls to the API carry its session cookies, which no script of the page can read; after sign-out the cookies are gone and `POST /auth/refresh` is refused | [registration](../e2e/specs/registration.spec.ts) |
-| 4 | A head creates an edition, activates it, publishes it and adds programme items with a speaker; an address without a confirmed account is refused, naming the address | [editions](../e2e/specs/editions.spec.ts) |
+| 4 | A head enters the convention into its active edition, creates an edition in the convention settings, activates and publishes it in the edition's settings, switches editions and goes from the convention settings back to the edition, and adds programme items with a speaker; an address without a confirmed account is refused, naming the address | [editions](../e2e/specs/editions.spec.ts) |
 | 5 | The programme shows up on the portal pages of both tenants, signed out, each in its own time zone | [conventions](../e2e/specs/conventions.spec.ts) |
-| 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee sees only their edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in | [invitation](../e2e/specs/invitation.spec.ts) |
-| 7 | An org without `settings`: no team or settings in the sidebar, entering by URL -> the "no permissions" screen; with `settings=read`: the team without the invitation form, the settings with "Save" disabled | [permissions](../e2e/specs/permissions.spec.ts) |
+| 6 | Organizer invitation: email from Mailpit -> sign-up on `/invitation` -> confirmation -> the password chosen -> acceptance -> the invitee lands in their only edition, whose menu holds the programme alone, with no convention settings and no other edition. Again for an address someone registered first with another password and left unconfirmed: after the invitee's sign-up and acceptance, that other password does not sign in | [invitation](../e2e/specs/invitation.spec.ts) |
+| 7 | An org without `settings`: lands in its edition with the programme alone in the menu and no convention settings; the convention settings or the edition's access and settings entered by URL -> the "no permissions" screen; with `settings=read`: the edition's access and settings with "Save" disabled, the team without the invitation form, the general settings with "Save" disabled | [permissions](../e2e/specs/permissions.spec.ts) |
 | 8 | Isolation: attempting to enter another tenant's convention through the UI and by a direct API request | [permissions](../e2e/specs/permissions.spec.ts) |
 | 9 | An attendee signs up for an edition from the convention's page, sees it under "my conventions", deletes the account; the last head of a convention is told to hand the role over instead | [account-deletion](../e2e/specs/account-deletion.spec.ts); the edition sign-up comes with the `attendances` feature |
 | 10 | Password reset: request from the sign-in screen of the portal and of the panel, the link from Mailpit and the button of its page lead to a new password, the old session can no longer refresh; a used sign-up link gets a password link through its page in both applications | [password-reset](../e2e/specs/password-reset.spec.ts) |
@@ -3206,7 +3242,7 @@ never changes a seeded account's password, which ends every other session of the
 | 16 | A head adds a confirmed account to the team, which gets a notification, changes its permissions and removes it; an org with `settings=write` invites and raises nobody above its own permissions (`member.above-own` next to the form) and has nothing to change on a head or on itself | [team](../e2e/specs/team.spec.ts) |
 | 17 | The panel's language switcher keeps the language on the account across a reload, and the browser's language comes back when chosen | [panel-language](../e2e/specs/panel-language.spec.ts) |
 | 18 | An attendee turns on two-factor authentication in the portal, signs out, signs in with the password and a code and reaches the account; a wrong code is refused; a password reset on the account asks for the code and then shows the password form without the link again; confirming the account's deletion with the password leads through the code and back to the deletion; a recovery code turns it off; the panel on the same account asks for its own code | [two-factor](../e2e/specs/two-factor.spec.ts) |
-| 19 | The session of the panel and of the portal in one browser: an expired access cookie is renewed by `POST /auth/refresh` and the application stays signed in; two tabs refreshing together both stay signed in; signing out in one tab takes the other off the account screens without a reload; a refresh answered `503` keeps the account signed in and the screen says to try again, not that the session has ended | [session](../e2e/specs/session.spec.ts) |
+| 19 | The session of the panel and of the portal in one browser: an expired access cookie is renewed by `POST /auth/refresh` and the application stays signed in; two tabs refreshing together both stay signed in; signing out in one tab takes the other off the account screens without a reload; in the panel, another account signing in after a sign-out starts in its own convention, not on the page left behind; a refresh answered `503` keeps the account signed in and the screen says to try again, not that the session has ended | [session](../e2e/specs/session.spec.ts) |
 
 Scenarios 1, 9, 10, 11, 13 and 14 run in both the desktop and the mobile project, and so does the code screen of scenario 18.
 
@@ -3310,7 +3346,7 @@ for `opos.land`. Production runs the items marked **(production)**, on a smoke t
 7. **Organizer invitation.** A head invites an email with `program=write` for 2026 -> the message
    arrives -> acceptance -> the invitee sees the 2026 programme and nothing else.
 8. **Permissions in the UI and on the server.** `viewer@convention-a.test` has no team management
-   in the sidebar, and a direct URL ends with the "no permissions" screen and a `403` from the API.
+   in the convention settings, and a direct URL ends with the "no permissions" screen and a `403` from the API.
 9. **Tenant isolation.** A Convention A org with `X-Tenant-Slug: convention-b` -> `403`;
    `GET /editions/:id` with a Convention B edition -> `404`. In `psql` on `opos_app` with
    Convention B's `app.tenant_id`: `select count(*) from program_items` returns only Convention B items,
@@ -3409,7 +3445,7 @@ once in a new checkout ([12](#12-local-development)), then `pnpm infra:up` and `
 | 6 | What the route needs, under its router path such as `program.list`. A tenant route: `tenantRequirements` of `apps/api/test/route-needs.ts`. A route without sign-in: `publicRoutes` of `apps/api/test/route-requirements.test.ts`. An account route is found on its own. A write route also gets a request in `writes` of `apps/api/test/tenants-editions.test.ts`, and a table it writes a query in `tenantState` of `apps/api/test/tenants.ts` | these lists are the test | `apps/api/test/route-requirements.test.ts` fails until a new route is listed, naming it, and then sends it every actor ([15.1](#151-api-integration-tests)); `tenants-editions.test.ts` fails until a write route is in `writes`. A table missing from `tenantState`: nothing, and a refused write would look as if it had changed nothing |
 | 7 | Module in `apps/api/src/modules/<name>` ([7.1](#71-modules)): controller, repository and module, registered in `apps/api/src/app.module.ts`. A handler calls a repository, or strings a few of its calls together as `putSpeakers` of `apps/api/src/modules/program/program.controller.ts` does; a service holds a flow that outgrows a handler, as `apps/api/src/modules/tenants/invitations.service.ts` does. Every route is a method of its own with `@Implement`. A tenant route also takes one of `@RequireTenant`, `@RequireEdition` or, as the exception, `@InTenant` ([7.3](#73-permissions)). These apply `JwtAuthGuard`, so the route inherits `401` `session.invalid` and `session.mfa-required` ([7.12](#712-two-factor-authentication)), and the `write` level brings the tenant's queue and write lock with no code in the handler. An account route takes `@UseGuards(JwtAuthGuard)` instead, as in `apps/api/src/modules/accounts/me.controller.ts`, and a public route neither, as in `apps/api/src/modules/public/public.controller.ts`. A repository takes its transaction from `TenantContextService.tx()` ([7.2](#72-tenant-context)) and looks a row up inside the parent the path names | `apps/api/test/<module>.test.ts`: what the route does, and the identifiers of another tenant and another edition answering `403` or `404`; a helper in `apps/api/test/tenants.ts` writes the table's rows as `postgres` | `apps/api/test/tenant-routes.test.ts` and `route-requirements.test.ts` read the contract and fail on a tenant route without the decorators and on an account route open without a token; `apps/api/test/mfa-guard.test.ts` on a route open below `aal2`. `apps/api/test/tenant-filters.test.ts` holds the queries [that decide access](#tenant-context), listed by hand, and no new repository: one that decides access adds its case there. A query that forgets the parent of the path: nothing but the module's test and the `tenant-isolation-reviewer` agent |
 | 8 | Seed in `packages/db/src/seed.ts` and demo data in [14](#14-demo-data-seed), then `pnpm db:seed` twice. A table with no unique key looks its row up first, as the programme items do | any test of `packages/db` | `packages/db/test/seed.test.ts`, in `pnpm test`, runs the seed twice and fails when the second run changes the row count of any `public` table, a future table included: a plain `insert` that doubles a row. CI also runs `pnpm db:seed` twice, and the second run fails where a constraint refuses. A seed left out altogether: nothing |
-| 9 | Feature folder in `apps/panel/src/features` or `apps/portal/src/features` ([3.2](#32-frontend-application-layout)): `api/` with its query options, `pages/`, `index.ts`, and the route in `apps/panel/src/app/router.tsx` or `apps/portal/src/app/router.tsx`. A panel page takes the API client and the permissions from `useCurrentTenant()` and ends on `NoPermissionView` below its level. Every page calls `usePageTitle` before its first `return` ([page titles](#32-frontend-application-layout)). A panel page under `/:tenantSlug` sits inside `RequireSession`, which answers the session states `mfa-required` and `unavailable`; a portal page that needs a session is wrapped in `RequireSession` in the router. A new top-level panel path joins `RESERVED_TENANT_SLUGS` in `packages/db/src/schema/tenants.ts` ([8](#8-appspanel)), which feeds a check constraint, so it means a migration and a return to step 2 | `pages/<name>-page.test.tsx` beside the page, as `apps/panel/src/features/program/pages/program-page.test.tsx` | ESLint, on a commit and in CI: `@supabase/*`, an import of another feature's internals. `src/app/pages.test.ts` of the application, in `pnpm test`: a page without `usePageTitle`. `scripts/bff-boundary.mjs`, in a Claude Code hook, lefthook `pre-commit` and CI: the rest of [the boundary](#32-frontend-application-layout). A page left outside `RequireSession`: nothing but a scenario of step 11, and the API still answers it `401`. A top-level path missing from `RESERVED_TENANT_SLUGS`: nothing |
+| 9 | Feature folder in `apps/panel/src/features` or `apps/portal/src/features` ([3.2](#32-frontend-application-layout)): `api/` with its query options, `pages/`, `index.ts`, and the route in `apps/panel/src/app/router.tsx` or `apps/portal/src/app/router.tsx`; a panel route joins the area of its page, the edition area or the convention settings ([8](#8-appspanel)). A panel page takes the API client and the permissions from `useCurrentTenant()` and ends on `NoPermissionView` below its level. Every page calls `usePageTitle` before its first `return` ([page titles](#32-frontend-application-layout)). A panel page under `/:tenantSlug` sits inside `RequireSession`, which answers the session states `mfa-required` and `unavailable`; a portal page that needs a session is wrapped in `RequireSession` in the router. A new top-level panel path joins `RESERVED_TENANT_SLUGS` in `packages/db/src/schema/tenants.ts` ([8](#8-appspanel)), which feeds a check constraint, so it means a migration and a return to step 2 | `pages/<name>-page.test.tsx` beside the page, as `apps/panel/src/features/program/pages/program-page.test.tsx` | ESLint, on a commit and in CI: `@supabase/*`, an import of another feature's internals. `src/app/pages.test.ts` of the application, in `pnpm test`: a page without `usePageTitle`. `scripts/bff-boundary.mjs`, in a Claude Code hook, lefthook `pre-commit` and CI: the rest of [the boundary](#32-frontend-application-layout). A page left outside `RequireSession`: nothing but a scenario of step 11, and the API still answers it `401`. A top-level path missing from `RESERVED_TENANT_SLUGS`: nothing |
 | 10 | Every user-facing string of step 9 in a Lingui macro ([6](#6-localization)), then `pnpm i18n:extract` and its translation in `apps/panel/src/locales/pl.po` or `apps/portal/src/locales/pl.po`, in the commit of the screen, reusing the [glossary renderings](#catalogs). A new domain term enters [PRODUCT.md 3](PRODUCT.md#3-glossary) and `packages/i18n/src/glossary.ts` first | a test in `packages/i18n` for `packages/i18n/src/glossary.ts`, whose area is `i18n`; none for a catalog, which is not code | `pnpm i18n:check`, by hand and in CI, never on a commit: catalogs out of sync, a message without `pl`. A bare literal in JSX: nothing but the `i18n-reviewer` agent |
 | 11 | Scenario in `e2e/specs` with its row in [15.2](#152-e2e-tests), when the plan lists one or the feature brings a new flow; it starts from its own rows through the `tenants` and `db` fixtures of `e2e/fixtures/index.ts`. `pnpm test:e2e` needs `pnpm db:migrate && pnpm db:seed` and does not run beside the API tests | the scenario is the test | The `e2e` job of CI runs what exists and is required on a PR into `main` ([15.3](#153-ci)). A feature without a scenario: nothing |
 | 12 | Documents, with the `docs-sync` skill: the table in [4](#4-database-schema) and in [covered tables](#covered-tables), the route in [5](#5-api-contract), the module in [7.1](#71-modules), the feature and its paths in [8](#8-appspanel) or [9](#9-appsportal), the cases in [15](#15-tests), and [PRODUCT.md](PRODUCT.md) when the product changes | none: a document is not code | `.claude/skills/docs-sync/scripts/check-doc-links.mjs` in CI: a broken link or anchor. That the text is true: nothing |

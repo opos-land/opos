@@ -9,11 +9,19 @@ import {
   MfaPage,
   RequireSession,
 } from '../features/auth'
-import { EditionPage, EditionsPage } from '../features/editions'
+import {
+  ConventionEntryPage,
+  EditionDashboardPage,
+  EditionLayout,
+  EditionSettingsPage,
+  EditionsPage,
+  EditionSwitch,
+} from '../features/editions'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionAccessPage, TeamPage } from '../features/team'
 import {
-  DashboardPage,
+  AreaFrame,
+  ConventionLayout,
   MembershipsGate,
   SettingsPage,
   TenantLayout,
@@ -63,20 +71,41 @@ export const router = createBrowserRouter([
           { path: '/', element: <TenantPickerPage /> },
           {
             path: '/:tenantSlug',
-            element: <TenantLayout />,
+            // The edition switch of the top bar belongs to `editions`, which builds on `tenants`.
+            element: <TenantLayout editionSwitch={<EditionSwitch />} />,
             children: [
-              { index: true, element: <DashboardPage /> },
-              { path: 'editions', element: <EditionsPage /> },
-              { path: 'editions/:editionSlug', element: <EditionPage /> },
-              { path: 'editions/:editionSlug/access', element: <EditionAccessPage /> },
-              { path: 'editions/:editionSlug/program', element: <ProgramPage /> },
               {
-                path: 'editions/:editionSlug/program/:programItemId',
-                element: <ProgramItemPage />,
+                // Entering the convention opens the member's edition.
+                element: <AreaFrame />,
+                children: [
+                  { index: true, element: <ConventionEntryPage /> },
+                  { path: '*', element: <NotFoundView /> },
+                ],
               },
-              { path: 'team', element: <TeamPage /> },
-              { path: 'settings', element: <SettingsPage /> },
-              { path: '*', element: <NotFoundView /> },
+              {
+                // The convention settings: what belongs to the whole convention.
+                path: 'settings',
+                element: <ConventionLayout />,
+                children: [
+                  { index: true, element: <SettingsPage /> },
+                  { path: 'editions', element: <EditionsPage /> },
+                  { path: 'team', element: <TeamPage /> },
+                  { path: '*', element: <NotFoundView /> },
+                ],
+              },
+              {
+                // The edition area: everything about one edition, its settings included.
+                path: 'editions/:editionSlug',
+                element: <EditionLayout />,
+                children: [
+                  { index: true, element: <EditionDashboardPage /> },
+                  { path: 'program', element: <ProgramPage /> },
+                  { path: 'program/:programItemId', element: <ProgramItemPage /> },
+                  { path: 'access', element: <EditionAccessPage /> },
+                  { path: 'settings', element: <EditionSettingsPage /> },
+                  { path: '*', element: <NotFoundView /> },
+                ],
+              },
             ],
           },
         ],

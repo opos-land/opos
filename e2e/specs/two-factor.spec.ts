@@ -209,7 +209,7 @@ test.describe('two-factor authentication', () => {
     const edition = await tenants.addEdition(tenant.id, { name: 'Spring edition' })
     const invitee = accounts.freshEmail('invitee')
     await signInToPanel(page, head.email, head.password)
-    await page.goto(panelUrl(`/${tenant.slug}/team`))
+    await page.goto(panelUrl(`/${tenant.slug}/settings/team`))
     const invite = page.getByRole('region', { name: 'Invite to the team' })
     await invite.getByLabel('Email').fill(invitee)
     await invite.getByLabel(`Programme in ${edition.name}`).selectOption('write')

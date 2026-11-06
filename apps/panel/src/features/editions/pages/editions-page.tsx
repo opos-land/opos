@@ -2,7 +2,13 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
-import { ErrorMessage, LoadingView, PageHeader, Section } from '../../../shared/ui'
+import {
+  ErrorMessage,
+  LoadingView,
+  NoPermissionView,
+  PageHeader,
+  Section,
+} from '../../../shared/ui'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
 import { createEditionOptions, editionsKey } from '../api/editions'
 import { EditionForm } from '../components/edition-form'
@@ -11,7 +17,10 @@ import { useEditions } from '../hooks/use-editions'
 
 const EMPTY = { name: '', slug: '', startsAt: '', endsAt: '' }
 
-/** The edition list and, for a member with `settings=write`, the creation form. */
+/**
+ * The edition list of the convention settings and, for a member with `settings=write`, the
+ * creation form; each edition opens its own area.
+ */
 export function EditionsPage() {
   const { t } = useLingui()
   const { tenant, access, api } = useCurrentTenant()
@@ -27,6 +36,8 @@ export function EditionsPage() {
       void navigate(`/${tenant.slug}/editions/${edition.slug}`)
     },
   })
+
+  if (!atLeast(access.settings, 'read')) return <NoPermissionView />
 
   return (
     <>

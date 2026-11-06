@@ -152,6 +152,24 @@ In the MVP these work: name, address, language, time zone, team, shop configurat
 with speakers, likes, reviews, tickets and attendee registrations. The remaining items already
 have their place in the permission model but no functionality behind them yet.
 
+The panel keeps the two levels apart, so that the many organizers who work on one edition never
+meet the management of the whole convention:
+
+| Place | What it holds | Who sees it |
+|---|---|---|
+| an edition | everything about that one edition: dashboard, programme, tickets with their orders and scanners, the team's access to the edition, and its settings — data, activation, publication | an organizer with a permission in that edition, one who reads the convention's settings, and a head organizer |
+| convention settings | general data (name, language, time zone), the list of editions with the creation of a new one, team, shop | an organizer who can open one of its sections; a head organizer always |
+
+Signing in to the panel leads to the list of the organizer's conventions, or straight into the
+only one; only the account that left a page returns to it. Entering a convention opens an edition:
+the active one when the organizer sees it, else the newest they see. The top bar names the
+convention and the edition and switches between the conventions and the editions the organizer
+sees. The convention settings are a separate place, reached from the top bar and from the list of
+conventions, and the panel never mentions them to an organizer who cannot open them. Each menu
+shows only the sections the organizer's permissions open ([5](#5-roles-and-permissions)), and a
+screen about one edition stays in that edition's menu even when a convention-level permission
+governs it.
+
 ---
 
 ## 5. Roles and permissions
@@ -220,7 +238,8 @@ and nothing else) and attends Convention C. All on one account:
 | Convention B, 2027 edition | — | write access to the programme; nothing else |
 | Convention C, 2026 edition | attendee | only their own registration |
 
-In the panel Jan switches convention context in the top bar.
+In the panel Jan switches convention and edition in the top bar
+([4](#what-belongs-to-the-convention-and-what-to-the-edition)).
 
 ### 5.6 Anti-escalation policy
 

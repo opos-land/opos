@@ -36,6 +36,11 @@ export interface TenantAccess {
   edition(editionId: string): EditionAccess
   /** A head and a member who reads the settings see every edition; others only their own. */
   seesEdition(editionId: string): boolean
+  /**
+   * Whether the member can open a section of the convention settings (PLAN.md 8): general, editions
+   * and team at settings>=read; the shop joins them with its screen.
+   */
+  seesConventionSettings: boolean
 }
 
 /** The member's access in the tenant of `membership`; a head passes every check, on both levels. */
@@ -66,6 +71,7 @@ export function tenantAccess(membership: Membership): TenantAccess {
       ((e) => [e.program, e.websiteContent, e.tickets])(edition(editionId)).some((level) =>
         atLeast(level, 'read'),
       ),
+    seesConventionSettings: atLeast(settings, 'read'),
   }
 }
 

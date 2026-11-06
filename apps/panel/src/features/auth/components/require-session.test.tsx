@@ -105,3 +105,70 @@ describe('RequireSession', () => {
     expect(startSession).toHaveBeenCalledOnce()
   })
 })
+
+// A page to return to belongs to the account that left it (PLAN.md 8): the tab remembers the
+// account it last showed, and another account arriving on a page of the panel starts from `/`.
+describe('RequireSession across accounts', () => {
+  const SHOWN = 'opos-panel-shown-account'
+  const other = { ...account, id: 'b', email: 'b@x.test' }
+
+  function Where() {
+    return <p>at {useLocation().pathname}</p>
+  }
+
+  const at = (path: string) =>
+    render(
+      <I18nProvider i18n={i18n}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route
+              path="*"
+              element={
+                <RequireSession>
+                  <Where />
+                </RequireSession>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </I18nProvider>,
+    )
+
+  beforeEach(() => {
+    window.sessionStorage.clear()
+  })
+
+  it('leads another account than the tab last showed from the page left behind to the start', () => {
+    window.sessionStorage.setItem(SHOWN, 'a')
+    useSession.setState({ status: 'ready', account: other })
+    at('/convention-a/editions/2026')
+
+    expect(screen.getByText('at /')).toBeTruthy()
+    expect(window.sessionStorage.getItem(SHOWN)).toBe('b')
+  })
+
+  it('brings the same account back to the page it left', () => {
+    window.sessionStorage.setItem(SHOWN, 'a')
+    useSession.setState({ status: 'ready', account })
+    at('/convention-a/editions/2026')
+
+    expect(screen.getByText('at /convention-a/editions/2026')).toBeTruthy()
+  })
+
+  it('opens the page of a link in a tab that has shown no account yet', () => {
+    useSession.setState({ status: 'ready', account: other })
+    at('/convention-a/editions/2026')
+
+    expect(screen.getByText('at /convention-a/editions/2026')).toBeTruthy()
+    expect(window.sessionStorage.getItem(SHOWN)).toBe('b')
+  })
+
+  it('leads to the start when another tab replaces the account under the page', () => {
+    useSession.setState({ status: 'ready', account })
+    at('/convention-a/editions/2026')
+    act(() => useSession.setState({ status: 'loading', account: null }))
+    act(() => useSession.setState({ status: 'ready', account: other }))
+
+    expect(screen.getByText('at /')).toBeTruthy()
+  })
+})

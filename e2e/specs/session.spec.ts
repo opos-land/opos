@@ -11,9 +11,9 @@ import {
 } from '../fixtures/ui'
 
 // The session of the panel and of the portal on the API's cookies (PLAN.md 8, 9, 15.2 scenario
-// 19): the refresh, two tabs refreshing together, a sign-out that reaches the other tab, and an
-// outage during a refresh. They run in a real browser, with real cookies, navigator.locks and
-// BroadcastChannel.
+// 19): the refresh, two tabs refreshing together, a sign-out that reaches the other tab, another
+// account signing in after a sign-out, and an outage during a refresh. They run in a real
+// browser, with real cookies, navigator.locks and BroadcastChannel.
 
 const ACCESS_COOKIE = 'opos_panel_access'
 const PORTAL_ACCESS_COOKIE = 'opos_portal_access'
@@ -36,7 +36,7 @@ async function signedInHead({
   const head = await accounts.create()
   const tenant = await tenants.create({ headEmail: head.email })
   await signInToPanel(page, head.email, head.password)
-  const team = panelUrl(`/${tenant.slug}/team`)
+  const team = panelUrl(`/${tenant.slug}/settings/team`)
   await page.goto(team)
   await expect(page.getByRole('region', { name: 'Invite to the team' })).toBeVisible()
   return { head, tenant, team }
@@ -93,6 +93,35 @@ test.describe('the panel session', () => {
     await signOutOfPanel(page, head.email)
 
     await expect(other).toHaveURL(/\/login/)
+  })
+
+  test('another account signing in after a sign-out starts in its own convention, not on the page left behind', async ({
+    page,
+    accounts,
+    tenants,
+  }) => {
+    const first = await accounts.create()
+    const firstTenant = await tenants.create({ headEmail: first.email })
+    await tenants.addEdition(firstTenant.id, { name: 'First edition', isActive: true })
+    const second = await accounts.create()
+    const secondTenant = await tenants.create({ headEmail: second.email })
+    const secondEdition = await tenants.addEdition(secondTenant.id, {
+      name: 'Second edition',
+      isActive: true,
+    })
+
+    await signInToPanel(page, first.email, first.password)
+    await expect(page.getByRole('navigation', { name: 'First edition' })).toBeVisible()
+    await signOutOfPanel(page, first.email)
+    // The sign-in screen keeps the page left behind as ?redirect=; the next account signs in there.
+    await expect(page).toHaveURL(/\/login\?redirect=/)
+    await page.getByLabel('Email', { exact: true }).fill(second.email)
+    await page.getByLabel('Password', { exact: true }).fill(second.password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+
+    await expect(page).toHaveURL(panelUrl(`/${secondTenant.slug}/editions/${secondEdition.slug}`))
+    await expect(page.getByRole('navigation', { name: 'Second edition' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'No permissions' })).toHaveCount(0)
   })
 
   test('a refresh answered 503 keeps the account signed in and shows "try again"', async ({

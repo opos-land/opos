@@ -20,7 +20,7 @@ test.describe('team management in the panel', () => {
     })
 
     await signInToPanel(page, head.email, head.password)
-    await page.goto(panelUrl(`/${tenant.slug}/team`))
+    await page.goto(panelUrl(`/${tenant.slug}/settings/team`))
 
     const invite = page.getByRole('region', { name: 'Invite to the team' })
     await invite.getByLabel('Email').fill(colleague.email)
@@ -68,7 +68,7 @@ test.describe('team management in the panel', () => {
     const newcomer = await accounts.create()
 
     await signInToPanel(page, org.email, org.password)
-    await page.goto(panelUrl(`/${tenant.slug}/team`))
+    await page.goto(panelUrl(`/${tenant.slug}/settings/team`))
 
     // The org holds no shop permission, so it grants none.
     const invite = page.getByRole('region', { name: 'Invite to the team' })

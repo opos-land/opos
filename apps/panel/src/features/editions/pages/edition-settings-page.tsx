@@ -1,7 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Button,
@@ -22,8 +22,11 @@ import { EditionForm } from '../components/edition-form'
 import { EditionStatus } from '../components/edition-status'
 import { useEditionBySlug } from '../hooks/use-editions'
 
-/** Edition data, activation, publication and deletion; everything but reading needs settings=write. */
-export function EditionPage() {
+/**
+ * The edition's settings: its data, activation, publication and deletion. Reading needs
+ * settings>=read, everything else settings=write.
+ */
+export function EditionSettingsPage() {
   const { t } = useLingui()
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
@@ -31,17 +34,20 @@ export function EditionPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
-  usePageTitle(edition?.name ?? tenant.name)
+  usePageTitle(t`Edition settings`, edition?.name ?? tenant.name)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const canWrite = atLeast(access.settings, 'write')
   const base = `/${tenant.slug}/editions`
+  const list = `/${tenant.slug}/settings/editions`
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: editionsKey(api) })
   const update = useMutation({
     ...updateEditionOptions(api),
     onSuccess: async (saved) => {
       await refresh()
-      if (saved.slug !== editionSlug) void navigate(`${base}/${saved.slug}`, { replace: true })
+      if (saved.slug !== editionSlug) {
+        void navigate(`${base}/${saved.slug}/settings`, { replace: true })
+      }
     },
   })
   const publish = useMutation({ ...updateEditionOptions(api), onSuccess: refresh })
@@ -50,10 +56,11 @@ export function EditionPage() {
     ...removeEditionOptions(api),
     onSuccess: async () => {
       await refresh()
-      void navigate(base, { replace: true })
+      void navigate(list, { replace: true })
     },
   })
 
+  if (!atLeast(access.settings, 'read')) return <NoPermissionView />
   if (isPending) return <LoadingView />
   if (isError) return <ErrorMessage error={error} />
   if (!edition) return <NoPermissionView />
@@ -63,8 +70,8 @@ export function EditionPage() {
   return (
     <>
       <PageHeader
-        title={edition.name}
-        description={time.range(edition.startsAt, edition.endsAt)}
+        title={<Trans>Edition settings</Trans>}
+        description={edition.name}
         actions={<EditionStatus edition={edition} />}
       />
       <Section title={<Trans>Edition data</Trans>}>
@@ -120,24 +127,6 @@ export function EditionPage() {
             </div>
             <ErrorMessage error={publish.error} />
           </div>
-        </Section>
-      )}
-      {atLeast(access.edition(edition.id).program, 'read') && (
-        <Section title={<Trans>Programme</Trans>}>
-          <p className="text-sm">
-            <Link to={`${base}/${edition.slug}/program`} className="text-accent underline">
-              <Trans>Programme items of this edition</Trans>
-            </Link>
-          </p>
-        </Section>
-      )}
-      {atLeast(access.settings, 'read') && (
-        <Section title={<Trans>Access</Trans>}>
-          <p className="text-sm">
-            <Link to={`${base}/${edition.slug}/access`} className="text-accent underline">
-              {t`Team members' permissions in this edition`}
-            </Link>
-          </p>
         </Section>
       )}
       {canWrite && (

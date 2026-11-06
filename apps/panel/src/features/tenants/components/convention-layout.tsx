@@ -1,41 +1,37 @@
 import { Trans } from '@lingui/react/macro'
-import { atLeast } from '../model/permissions'
 import { AreaFrame, SidebarLink } from './area-frame'
 import { useCurrentTenant } from './tenant-context'
 
 /**
- * The convention area (PLAN.md 8): the menu of what belongs to the whole convention. A section of
- * one edition never appears here; it lives in the edition's own menu.
+ * The convention settings (PLAN.md 8): what belongs to the whole convention, for a member who may
+ * open them. A section of one edition never appears here; it lives in the edition's own menu.
  */
 export function ConventionLayout() {
   const { tenant, access } = useCurrentTenant()
-  const base = `/${tenant.slug}`
+  const base = `/${tenant.slug}/settings`
+
+  if (!access.seesConventionSettings) return <AreaFrame />
 
   return (
     <AreaFrame
       menu={{
         label: tenant.name,
         header: (
-          <p className="text-muted text-xs font-semibold tracking-wide uppercase">{tenant.name}</p>
+          <p className="text-muted text-xs font-semibold tracking-wide uppercase">
+            <Trans>Convention settings</Trans>
+          </p>
         ),
         links: (
           <>
             <SidebarLink to={base} end>
-              <Trans>Dashboard</Trans>
+              <Trans>General</Trans>
             </SidebarLink>
-            <SidebarLink to={`${base}/editions`} end>
+            <SidebarLink to={`${base}/editions`}>
               <Trans>Editions</Trans>
             </SidebarLink>
-            {atLeast(access.settings, 'read') && (
-              <>
-                <SidebarLink to={`${base}/team`}>
-                  <Trans>Team</Trans>
-                </SidebarLink>
-                <SidebarLink to={`${base}/settings`}>
-                  <Trans>Settings</Trans>
-                </SidebarLink>
-              </>
-            )}
+            <SidebarLink to={`${base}/team`}>
+              <Trans>Team</Trans>
+            </SidebarLink>
           </>
         ),
       }}

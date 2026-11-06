@@ -10,8 +10,13 @@ import { panelUrl, signInToPanel, signOutOfPanel } from '../fixtures/ui'
 
 const INVITEE_PASSWORD = 'e2e-invitee-password-789'
 
-/** From the invitation link to the convention's dashboard, through the email-only sign-up. */
-async function signUpAndJoin(page: Page, email: string, tenant: { slug: string; name: string }) {
+/** From the invitation link into the invitee's only edition, through the email-only sign-up. */
+async function signUpAndJoin(
+  page: Page,
+  email: string,
+  tenant: { slug: string; name: string },
+  edition: { slug: string; name: string },
+) {
   await page.goto(invitationLinkIn(await waitForMail(email)))
   await expect(page.getByRole('heading', { name: 'Join the organizing team' })).toBeVisible()
   await expect(
@@ -32,10 +37,8 @@ async function signUpAndJoin(page: Page, email: string, tenant: { slug: string; 
   await page.getByLabel('Repeat the password').fill(INVITEE_PASSWORD)
   await page.getByRole('button', { name: 'Save the password and join the team' }).click()
 
-  await expect(page).toHaveURL(panelUrl(`/${tenant.slug}`))
-  await expect(
-    page.getByRole('navigation', { name: tenant.name }).getByRole('link', { name: 'Dashboard' }),
-  ).toBeVisible()
+  await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
+  await expect(page.getByRole('navigation', { name: edition.name })).toBeVisible()
 }
 
 test.describe('organizer invitation to an address without an account', () => {
@@ -46,12 +49,12 @@ test.describe('organizer invitation to an address without an account', () => {
   }) => {
     const head = await accounts.create()
     const tenant = await tenants.create({ headEmail: head.email })
-    await tenants.addEdition(tenant.id, { name: 'Spring edition' })
+    const spring = await tenants.addEdition(tenant.id, { name: 'Spring edition' })
     await tenants.addEdition(tenant.id, { name: 'Autumn edition' })
     const invitee = accounts.freshEmail('invitee')
 
     await signInToPanel(page, head.email, head.password)
-    await page.goto(panelUrl(`/${tenant.slug}/team`))
+    await page.goto(panelUrl(`/${tenant.slug}/settings/team`))
     const invite = page.getByRole('region', { name: 'Invite to the team' })
     await invite.getByLabel('Email').fill(invitee)
     await invite.getByLabel('Programme in Spring edition').selectOption('write')
@@ -61,21 +64,15 @@ test.describe('organizer invitation to an address without an account', () => {
     // The head leaves the browser to the invitee.
     await signOutOfPanel(page, head.email)
 
-    await signUpAndJoin(page, invitee, tenant)
+    await signUpAndJoin(page, invitee, tenant, spring)
 
-    // An org without settings sees no team or settings, and only the editions it holds a level in.
-    const sidebar = page.getByRole('navigation', { name: tenant.name })
-    await expect(sidebar.getByRole('link', { name: 'Team' })).toHaveCount(0)
-    await sidebar.getByRole('link', { name: 'Editions' }).click()
-    await expect(page.getByRole('link', { name: 'Autumn edition' })).toHaveCount(0)
-
-    // Inside that edition, its menu holds only what the invitation granted.
-    await page.getByRole('link', { name: 'Spring edition' }).click()
-    const editionMenu = page.getByRole('navigation', { name: 'Spring edition' })
-    await expect(editionMenu.getByRole('link', { name: 'Programme' })).toBeVisible()
-    for (const section of ['Access', 'Settings']) {
-      await expect(editionMenu.getByRole('link', { name: section })).toHaveCount(0)
-    }
+    // The invitee works in that edition alone: its menu holds what the invitation granted, with
+    // no convention settings and no other edition to switch to.
+    const editionMenu = page.getByRole('navigation', { name: spring.name })
+    await expect(editionMenu.getByRole('link')).toHaveText(['Dashboard', 'Programme'])
+    await expect(editionMenu.getByRole('combobox')).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'Convention settings' })).toHaveCount(0)
+    await expect(page.getByText('Autumn edition')).toHaveCount(0)
     expect((await passwordGrant(invitee, INVITEE_PASSWORD)).status).toBe(200)
   })
 
@@ -110,7 +107,7 @@ test.describe('organizer invitation to an address without an account', () => {
     // An unconfirmed account counts as no account: the address gets a signed invitation.
     expect(sent.body).toMatchObject({ outcome: 'invited', email: squatter.email })
 
-    await signUpAndJoin(page, squatter.email, tenant)
+    await signUpAndJoin(page, squatter.email, tenant, edition)
 
     expect((await passwordGrant(squatter.email, squatter.password)).status).toBe(400)
     expect((await passwordGrant(squatter.email, INVITEE_PASSWORD)).status).toBe(200)

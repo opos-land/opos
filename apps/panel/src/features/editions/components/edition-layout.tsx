@@ -1,15 +1,14 @@
 import { Trans } from '@lingui/react/macro'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { AreaFrame, atLeast, SidebarLink, useCurrentTenant } from '../../tenants'
 import { useEditionBySlug } from '../hooks/use-editions'
 
 const caption = 'text-muted text-xs font-semibold tracking-wide uppercase'
 
 /**
- * The edition area (PLAN.md 8): the menu of everything about one edition, its settings and team
- * access included, with the way back to the convention and a switch to the member's other
- * editions. Until the edition is known, or when the member does not see it, there is no menu and
- * the page says why.
+ * The edition area (PLAN.md 8), where most members work: the menu of everything about one edition,
+ * its settings and team access included, with a switch to the member's other editions. Until the
+ * edition is known, or when the member does not see it, there is no menu and the page says why.
  */
 export function EditionLayout() {
   const { editionSlug } = useParams()
@@ -30,10 +29,6 @@ export function EditionLayout() {
         label: edition.name,
         header: (
           <>
-            <Link to={convention} className="text-muted hover:text-ink text-sm">
-              <span aria-hidden="true">← </span>
-              {tenant.name}
-            </Link>
             {others.length > 1 ? (
               <label className="flex flex-col gap-1">
                 <span className={caption}>
@@ -74,7 +69,7 @@ export function EditionLayout() {
                   <Trans>Access</Trans>
                 </SidebarLink>
                 <SidebarLink to={`${base}/settings`}>
-                  <Trans>Settings</Trans>
+                  <Trans>Edition settings</Trans>
                 </SidebarLink>
               </>
             )}

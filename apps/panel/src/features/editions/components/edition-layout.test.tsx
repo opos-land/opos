@@ -53,7 +53,6 @@ const view = (path: string) =>
     <I18nProvider i18n={i18n}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/:tenantSlug" element={<p>the convention dashboard</p>} />
           <Route path="/:tenantSlug/editions/:editionSlug" element={<EditionLayout />}>
             <Route index element={<p>the edition dashboard</p>} />
             <Route path="program" element={<p>the programme</p>} />
@@ -63,19 +62,12 @@ const view = (path: string) =>
     </I18nProvider>,
   )
 
-/** The text of an element a screen reader reads: what `aria-hidden` hides left out. */
-const spokenText = (element: Element) => {
-  const copy = element.cloneNode(true) as Element
-  copy.querySelectorAll('[aria-hidden="true"]').forEach((hidden) => hidden.remove())
-  return copy.textContent?.trim()
-}
-
-/** The menu's links by the text read out, each with its address. */
+/** The menu's links by name, each with its address. */
 const links = (menuName: string) => {
   const menu = screen.getByRole('navigation', { name: menuName })
   return within(menu)
     .getAllByRole('link')
-    .map((link) => [spokenText(link), link.getAttribute('href')])
+    .map((link) => [link.textContent, link.getAttribute('href')])
 }
 
 beforeAll(() => {
@@ -97,11 +89,10 @@ describe('EditionLayout', () => {
     view('/convention-a/editions/2026')
 
     expect(links('Edition 2026')).toEqual([
-      ['Convention A', '/convention-a'],
       ['Dashboard', '/convention-a/editions/2026'],
       ['Programme', '/convention-a/editions/2026/program'],
       ['Access', '/convention-a/editions/2026/access'],
-      ['Settings', '/convention-a/editions/2026/settings'],
+      ['Edition settings', '/convention-a/editions/2026/settings'],
     ])
     expect(screen.getByText('the edition dashboard')).toBeDefined()
     expect(screen.queryByRole('navigation', { name: 'Convention A' })).toBeNull()
@@ -111,11 +102,7 @@ describe('EditionLayout', () => {
     state.program = 'write'
     view('/convention-a/editions/2026/program')
 
-    expect(links('Edition 2026').map(([name]) => name)).toEqual([
-      'Convention A',
-      'Dashboard',
-      'Programme',
-    ])
+    expect(links('Edition 2026').map(([name]) => name)).toEqual(['Dashboard', 'Programme'])
     expect(screen.getByText('the programme')).toBeDefined()
   })
 
@@ -124,19 +111,10 @@ describe('EditionLayout', () => {
     view('/convention-a/editions/2026')
 
     expect(links('Edition 2026').map(([name]) => name)).toEqual([
-      'Convention A',
       'Dashboard',
       'Access',
-      'Settings',
+      'Edition settings',
     ])
-  })
-
-  it('leads back to the convention', () => {
-    view('/convention-a/editions/2026')
-
-    fireEvent.click(screen.getByRole('link', { name: 'Convention A' }))
-
-    expect(screen.getByText('the convention dashboard')).toBeDefined()
   })
 
   it('switches to another edition the member sees, on its dashboard', () => {

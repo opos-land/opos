@@ -76,10 +76,6 @@ msgstr "Activation and publication"
 msgid "Active"
 msgstr "Active"
 
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "Active edition"
-msgstr "Active edition"
-
 #: src/features/program/components/speakers-editor.tsx
 msgid "Add"
 msgstr "Add"
@@ -114,6 +110,7 @@ msgid "Back to sign-in"
 msgstr "Back to sign-in"
 
 #: src/features/team/pages/edition-access-page.tsx
+#: src/features/tenants/components/panel-header.tsx
 msgid "Back to the edition"
 msgstr "Back to the edition"
 
@@ -180,7 +177,6 @@ msgid "Continue with Google"
 msgstr "Continue with Google"
 
 #: src/features/tenants/components/panel-header.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Convention"
 msgstr "Convention"
@@ -188,6 +184,12 @@ msgstr "Convention"
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Convention language"
 msgstr "Convention language"
+
+#: src/features/tenants/components/convention-layout.tsx
+#: src/features/tenants/components/panel-header.tsx
+#: src/features/tenants/pages/tenant-picker-page.tsx
+msgid "Convention settings"
+msgstr "Convention settings"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Create an account"
@@ -199,8 +201,6 @@ msgstr "Create the edition"
 
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/editions/pages/edition-dashboard-page.tsx
-#: src/features/tenants/components/convention-layout.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 msgid "Dashboard"
 msgstr "Dashboard"
 
@@ -250,6 +250,11 @@ msgstr "Edition"
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Edition data"
 msgstr "Edition data"
+
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
+msgid "Edition settings"
+msgstr "Edition settings"
 
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
@@ -343,6 +348,11 @@ msgstr "Finish signing in"
 #: src/features/auth/pages/login-page.tsx
 msgid "Forgot your password?"
 msgstr "Forgot your password?"
+
+#: src/features/tenants/components/convention-layout.tsx
+#: src/features/tenants/pages/settings-page.tsx
+msgid "General"
+msgstr "General"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/invitation-page.tsx
@@ -446,10 +456,6 @@ msgstr "New programme item"
 msgid "No access"
 msgstr "No access"
 
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "No edition is active."
-msgstr "No edition is active."
-
 #: src/features/team/components/member-row.tsx
 msgid "No end date"
 msgstr "No end date"
@@ -459,7 +465,6 @@ msgid "No permissions"
 msgstr "No permissions"
 
 #: src/features/editions/components/edition-status.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 msgid "Not published"
 msgstr "Not published"
 
@@ -555,7 +560,6 @@ msgid "Publish"
 msgstr "Publish"
 
 #: src/features/editions/components/edition-status.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 msgid "Published"
 msgstr "Published"
 
@@ -634,10 +638,6 @@ msgstr "Scan the QR code with an authenticator app, or type the secret into it. 
 msgid "Secret: <0>{secret}</0>"
 msgstr "Secret: <0>{secret}</0>"
 
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "See the editions"
-msgstr "See the editions"
-
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Send a new link"
@@ -651,12 +651,7 @@ msgstr "Send a password link"
 msgid "Send the link"
 msgstr "Send the link"
 
-#: src/features/editions/components/edition-layout.tsx
-#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/team/components/permission-labels.tsx
-#: src/features/tenants/components/convention-layout.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
-#: src/features/tenants/pages/settings-page.tsx
 msgid "Settings"
 msgstr "Settings"
 
@@ -707,7 +702,6 @@ msgstr "Status"
 
 #: src/features/team/pages/team-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 msgid "Team"
 msgstr "Team"
 
@@ -923,14 +917,6 @@ msgstr "Yes, remove {name} from the team"
 msgid "you"
 msgstr "you"
 
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "You are a head organizer."
-msgstr "You are a head organizer."
-
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "You are an organizer."
-msgstr "You are an organizer."
-
 #: src/features/auth/pages/invitation-page.tsx
 msgid "You are invited to the organizing team of <0>{tenantName}</0>."
 msgstr "You are invited to the organizing team of <0>{tenantName}</0>."
@@ -946,6 +932,10 @@ msgstr "You are signed in as {email}."
 #: src/shared/ui/messages.tsx
 msgid "You do not have permission to see this page. If you need access, ask a head organizer of the convention."
 msgstr "You do not have permission to see this page. If you need access, ask a head organizer of the convention."
+
+#: src/features/editions/pages/convention-entry-page.tsx
+msgid "You have no access to any edition of this convention yet. A head organizer can give it to you."
+msgstr "You have no access to any edition of this convention yet. A head organizer can give it to you."
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Your address {email} is confirmed. Choose the password you will sign in with."

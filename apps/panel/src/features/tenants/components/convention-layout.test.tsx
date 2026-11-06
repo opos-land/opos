@@ -29,10 +29,10 @@ const view = (member: Membership) =>
       <TenantContext.Provider
         value={{ tenant, membership: member, access: tenantAccess(member), api: {} as Api }}
       >
-        <MemoryRouter initialEntries={['/convention-a']}>
+        <MemoryRouter initialEntries={['/convention-a/settings']}>
           <Routes>
-            <Route path="/:tenantSlug" element={<ConventionLayout />}>
-              <Route index element={<p>the dashboard</p>} />
+            <Route path="/:tenantSlug/settings" element={<ConventionLayout />}>
+              <Route index element={<p>the general settings</p>} />
             </Route>
           </Routes>
         </MemoryRouter>
@@ -56,19 +56,19 @@ afterEach(() => {
 })
 
 describe('ConventionLayout', () => {
-  it('opens every convention section to a head, and no section of an edition', () => {
+  it('opens every section of the convention settings to a head, and no section of an edition', () => {
     view(membership({ role: 'head' }))
 
+    expect(within(menu()).getByText('Convention settings')).toBeDefined()
     expect(links()).toEqual([
-      ['Dashboard', '/convention-a'],
-      ['Editions', '/convention-a/editions'],
-      ['Team', '/convention-a/team'],
-      ['Settings', '/convention-a/settings'],
+      ['General', '/convention-a/settings'],
+      ['Editions', '/convention-a/settings/editions'],
+      ['Team', '/convention-a/settings/team'],
     ])
-    expect(screen.getByText('the dashboard')).toBeDefined()
+    expect(screen.getByText('the general settings')).toBeDefined()
   })
 
-  it('hides the team and the settings from an org without settings', () => {
+  it('shows no menu to an org without settings, and leaves the page to say so', () => {
     view(
       membership({
         editions: [
@@ -83,13 +83,14 @@ describe('ConventionLayout', () => {
       }),
     )
 
-    expect(links().map(([name]) => name)).toEqual(['Dashboard', 'Editions'])
+    expect(screen.queryByRole('navigation')).toBeNull()
+    expect(screen.getByText('the general settings')).toBeDefined()
   })
 
-  it('shows the team and the settings to an org who reads the settings', () => {
+  it('opens the convention settings to an org who reads them', () => {
     view(membership({ settingsAccess: 'read' }))
 
-    expect(links().map(([name]) => name)).toEqual(['Dashboard', 'Editions', 'Team', 'Settings'])
+    expect(links().map(([name]) => name)).toEqual(['General', 'Editions', 'Team'])
   })
 
   it('keeps the menu while a 403 replaces the page', () => {
@@ -97,7 +98,7 @@ describe('ConventionLayout', () => {
     view(membership({ role: 'head' }))
 
     expect(screen.getByRole('heading', { name: 'No permissions' })).toBeDefined()
-    expect(screen.queryByText('the dashboard')).toBeNull()
-    expect(links()).toHaveLength(4)
+    expect(screen.queryByText('the general settings')).toBeNull()
+    expect(links()).toHaveLength(3)
   })
 })

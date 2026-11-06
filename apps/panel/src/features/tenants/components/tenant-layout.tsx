@@ -11,9 +11,9 @@ import { PanelHeader } from './panel-header'
 import { type CurrentTenant, TenantContext } from './tenant-context'
 
 /**
- * The frame of every page inside a tenant: the top bar, then the area of the page, the
- * convention's or one edition's, each with its own menu (PLAN.md 8). Without the tenant there is
- * no area, only the "no permissions" screen, an error or the loading view.
+ * The frame of every page inside a tenant: the top bar, then the area of the page, one edition's
+ * or the convention settings, each with its own menu (PLAN.md 8). Without the tenant there is no
+ * area, only the "no permissions" screen, an error or the loading view.
  */
 export function TenantLayout() {
   const { tenantSlug = '' } = useParams()
@@ -40,7 +40,10 @@ export function TenantLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <PanelHeader tenantSlug={tenantSlug} />
+      <PanelHeader
+        tenantSlug={tenantSlug}
+        conventionSettings={current?.access.seesConventionSettings}
+      />
       {screen ? (
         <main className="flex-1 p-4 md:p-8">{screen}</main>
       ) : (

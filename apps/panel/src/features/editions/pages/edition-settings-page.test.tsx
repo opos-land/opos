@@ -9,6 +9,7 @@ import { EditionSettingsPage } from './edition-settings-page'
 
 const state = vi.hoisted(() => ({ settings: 'none', program: 'none' }))
 const update = vi.hoisted(() => vi.fn())
+const remove = vi.hoisted(() => vi.fn())
 
 const edition: Edition = {
   id: 'edition-1',
@@ -45,7 +46,7 @@ vi.mock('../api/editions', () => ({
   editionsKey: () => ['editions'],
   updateEditionOptions: () => ({ mutationFn: update }),
   activateEditionOptions: () => ({ mutationFn: vi.fn() }),
-  removeEditionOptions: () => ({ mutationFn: vi.fn() }),
+  removeEditionOptions: () => ({ mutationFn: remove }),
 }))
 
 function Location() {
@@ -77,6 +78,7 @@ beforeEach(() => {
   state.settings = 'none'
   state.program = 'none'
   update.mockReset()
+  remove.mockReset()
 })
 
 afterEach(cleanup)
@@ -94,11 +96,11 @@ describe('EditionSettingsPage', () => {
     state.settings = 'read'
     view()
 
-    expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Edition settings', level: 1 })).toBeDefined()
     expect(screen.getByText('Edition 2026')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Save' }).hasAttribute('disabled')).toBe(true)
     expect(screen.queryByRole('button', { name: 'Activate' })).toBeNull()
-    expect(document.title).toBe('Settings · Edition 2026 · OPOS panel')
+    expect(document.title).toBe('Edition settings · Edition 2026 · OPOS panel')
   })
 
   it('links to no other section of the edition: the menu does', () => {
@@ -126,5 +128,18 @@ describe('EditionSettingsPage', () => {
       params: { editionId: 'edition-1' },
       body: { slug: 'next-year' },
     })
+  })
+
+  it('leads to the editions of the convention settings once the edition is deleted', async () => {
+    state.settings = 'write'
+    remove.mockResolvedValue(undefined)
+    view()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete Edition 2026' }))
+
+    expect(
+      await screen.findByText('/convention-a/settings/editions', { selector: 'output' }),
+    ).toBeDefined()
   })
 })

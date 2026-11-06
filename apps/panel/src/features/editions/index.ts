@@ -1,5 +1,6 @@
 export { EditionLayout } from './components/edition-layout'
 export { useEditionBySlug, useEditions } from './hooks/use-editions'
+export { ConventionEntryPage } from './pages/convention-entry-page'
 export { EditionDashboardPage } from './pages/edition-dashboard-page'
 export { EditionSettingsPage } from './pages/edition-settings-page'
 export { EditionsPage } from './pages/editions-page'

@@ -7,7 +7,7 @@ import { panelUrl, seeded, signInToPanel } from '../fixtures/ui'
 // and the API refuses what the UI hides (PLAN.md 8).
 
 test.describe('permissions in the panel', () => {
-  test('an org without settings sees no team, access or settings, and entering by URL is refused', async ({
+  test('an org without settings works in its edition alone, and entering the settings by URL is refused', async ({
     page,
     accounts,
     tenants,
@@ -20,23 +20,20 @@ test.describe('permissions in the panel', () => {
     await tenants.addEditionAccess(tenant.id, membership, edition.id, { program: 'read' })
 
     await signInToPanel(page, org.email, org.password)
-    const sidebar = page.getByRole('navigation', { name: tenant.name })
-    await expect(sidebar.getByRole('link')).toHaveText(['Dashboard', 'Editions'])
-
-    for (const path of ['team', 'settings']) {
-      await page.goto(panelUrl(`/${tenant.slug}/${path}`))
-      await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
-    }
-
-    // The edition's menu: the programme, but not the access or the settings of the edition.
-    await page.goto(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
+    // The org lands in its only edition, whose menu holds the programme alone.
+    await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
     const editionMenu = page.getByRole('navigation', { name: edition.name })
-    await expect(editionMenu.getByRole('link', { name: 'Programme' })).toBeVisible()
-    for (const section of ['Access', 'Settings']) {
-      await expect(editionMenu.getByRole('link', { name: section })).toHaveCount(0)
-    }
-    for (const path of ['access', 'settings']) {
-      await page.goto(panelUrl(`/${tenant.slug}/editions/${edition.slug}/${path}`))
+    await expect(editionMenu.getByRole('link')).toHaveText(['Dashboard', 'Programme'])
+    await expect(page.getByRole('link', { name: 'Convention settings' })).toHaveCount(0)
+
+    for (const path of [
+      'settings',
+      'settings/editions',
+      'settings/team',
+      `editions/${edition.slug}/access`,
+      `editions/${edition.slug}/settings`,
+    ]) {
+      await page.goto(panelUrl(`/${tenant.slug}/${path}`))
       await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
     }
   })
@@ -53,29 +50,32 @@ test.describe('permissions in the panel', () => {
     await tenants.addOrg(tenant.id, org.id, { settings: 'read' })
 
     await signInToPanel(page, org.email, org.password)
-    const sidebar = page.getByRole('navigation', { name: tenant.name })
-    await sidebar.getByRole('link', { name: 'Team' }).click()
+    // Reading the settings, the org sees every edition, with its access and settings.
+    const editionMenu = page.getByRole('navigation', { name: edition.name })
+    await expect(editionMenu.getByRole('link')).toHaveText([
+      'Dashboard',
+      'Access',
+      'Edition settings',
+    ])
+    await editionMenu.getByRole('link', { name: 'Edition settings' }).click()
+    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Activate' })).toHaveCount(0)
+
+    await page.getByRole('link', { name: 'Convention settings' }).click()
+    const settings = page.getByRole('navigation', { name: tenant.name })
+    await settings.getByRole('link', { name: 'Team' }).click()
     await expect(page.getByRole('listitem').filter({ hasText: head.email })).toBeVisible()
     await expect(page.getByRole('region', { name: 'Invite to the team' })).toHaveCount(0)
 
-    await sidebar.getByRole('link', { name: 'Settings' }).click()
+    await settings.getByRole('link', { name: 'General' }).click()
     await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
-
-    // The edition's settings in its own menu: shown, with nothing to activate or save.
-    await page.goto(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
-    await page
-      .getByRole('navigation', { name: edition.name })
-      .getByRole('link', { name: 'Settings' })
-      .click()
-    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
-    await expect(page.getByRole('button', { name: 'Activate' })).toHaveCount(0)
   })
 
   test("another tenant's convention is closed in the UI and in the API", async ({ page, db }) => {
     await signInToPanel(page, seeded.headA, seeded.password)
     await page.goto(panelUrl('/convention-b'))
     await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
-    await page.goto(panelUrl('/convention-b/editions'))
+    await page.goto(panelUrl('/convention-b/settings'))
     await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
 
     const token = await accessToken(seeded.headA, seeded.password)

@@ -10,6 +10,7 @@ import {
   RequireSession,
 } from '../features/auth'
 import {
+  ConventionEntryPage,
   EditionDashboardPage,
   EditionLayout,
   EditionSettingsPage,
@@ -18,8 +19,8 @@ import {
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionAccessPage, TeamPage } from '../features/team'
 import {
+  AreaFrame,
   ConventionLayout,
-  DashboardPage,
   MembershipsGate,
   SettingsPage,
   TenantLayout,
@@ -72,13 +73,21 @@ export const router = createBrowserRouter([
             element: <TenantLayout />,
             children: [
               {
-                // The convention area: what belongs to the whole convention.
+                // Entering the convention opens the member's edition.
+                element: <AreaFrame />,
+                children: [
+                  { index: true, element: <ConventionEntryPage /> },
+                  { path: '*', element: <NotFoundView /> },
+                ],
+              },
+              {
+                // The convention settings: what belongs to the whole convention.
+                path: 'settings',
                 element: <ConventionLayout />,
                 children: [
-                  { index: true, element: <DashboardPage /> },
+                  { index: true, element: <SettingsPage /> },
                   { path: 'editions', element: <EditionsPage /> },
                   { path: 'team', element: <TeamPage /> },
-                  { path: 'settings', element: <SettingsPage /> },
                   { path: '*', element: <NotFoundView /> },
                 ],
               },

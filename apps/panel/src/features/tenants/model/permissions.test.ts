@@ -51,6 +51,35 @@ describe('tenantAccess', () => {
     expect(access.seesEdition(EDITION_2025)).toBe(true)
   })
 
+  it('opens the convention settings to a head and to an org who reads the settings', () => {
+    expect(tenantAccess(membership({ role: 'head' })).seesConventionSettings).toBe(true)
+    expect(tenantAccess(membership({ settingsAccess: 'read' })).seesConventionSettings).toBe(true)
+  })
+
+  it('keeps the convention settings closed to an org with edition-level permissions only', () => {
+    const access = tenantAccess(
+      membership({
+        editions: [
+          {
+            editionId: EDITION_2026,
+            editionSlug: '2026',
+            programAccess: 'write',
+            websiteContentAccess: 'none',
+            ticketsAccess: 'write',
+          },
+        ],
+      }),
+    )
+
+    expect(access.seesConventionSettings).toBe(false)
+  })
+
+  it('keeps the convention settings closed while the shop, the only section left, has no screen', () => {
+    expect(tenantAccess(membership({ shopConfigAccess: 'write' })).seesConventionSettings).toBe(
+      false,
+    )
+  })
+
   it("reads an org's tenant-level permissions from its membership", () => {
     const access = tenantAccess(membership({ settingsAccess: 'read', shopConfigAccess: 'write' }))
 

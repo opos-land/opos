@@ -36,7 +36,7 @@ async function signedInHead({
   const head = await accounts.create()
   const tenant = await tenants.create({ headEmail: head.email })
   await signInToPanel(page, head.email, head.password)
-  const team = panelUrl(`/${tenant.slug}/team`)
+  const team = panelUrl(`/${tenant.slug}/settings/team`)
   await page.goto(team)
   await expect(page.getByRole('region', { name: 'Invite to the team' })).toBeVisible()
   return { head, tenant, team }

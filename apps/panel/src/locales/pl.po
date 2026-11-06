@@ -76,10 +76,6 @@ msgstr "Aktywacja i publikacja"
 msgid "Active"
 msgstr "Aktywna"
 
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "Active edition"
-msgstr "Aktywna edycja"
-
 #: src/features/program/components/speakers-editor.tsx
 msgid "Add"
 msgstr "Dodaj"
@@ -114,6 +110,7 @@ msgid "Back to sign-in"
 msgstr "Wróć do logowania"
 
 #: src/features/team/pages/edition-access-page.tsx
+#: src/features/tenants/components/panel-header.tsx
 msgid "Back to the edition"
 msgstr "Wróć do edycji"
 
@@ -180,7 +177,6 @@ msgid "Continue with Google"
 msgstr "Kontynuuj przez Google"
 
 #: src/features/tenants/components/panel-header.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Convention"
 msgstr "Konwent"
@@ -188,6 +184,12 @@ msgstr "Konwent"
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Convention language"
 msgstr "Język konwentu"
+
+#: src/features/tenants/components/convention-layout.tsx
+#: src/features/tenants/components/panel-header.tsx
+#: src/features/tenants/pages/tenant-picker-page.tsx
+msgid "Convention settings"
+msgstr "Ustawienia konwentu"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Create an account"
@@ -199,8 +201,6 @@ msgstr "Utwórz edycję"
 
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/editions/pages/edition-dashboard-page.tsx
-#: src/features/tenants/components/convention-layout.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 msgid "Dashboard"
 msgstr "Pulpit"
 
@@ -250,6 +250,11 @@ msgstr "Edycja"
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Edition data"
 msgstr "Dane edycji"
+
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
+msgid "Edition settings"
+msgstr "Ustawienia edycji"
 
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
@@ -343,6 +348,11 @@ msgstr "Dokończ logowanie"
 #: src/features/auth/pages/login-page.tsx
 msgid "Forgot your password?"
 msgstr "Nie pamiętasz hasła?"
+
+#: src/features/tenants/components/convention-layout.tsx
+#: src/features/tenants/pages/settings-page.tsx
+msgid "General"
+msgstr "Ogólne"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/invitation-page.tsx
@@ -446,10 +456,6 @@ msgstr "Nowy punkt programu"
 msgid "No access"
 msgstr "Brak dostępu"
 
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "No edition is active."
-msgstr "Żadna edycja nie jest aktywna."
-
 #: src/features/team/components/member-row.tsx
 msgid "No end date"
 msgstr "Bez daty końcowej"
@@ -459,7 +465,6 @@ msgid "No permissions"
 msgstr "Brak uprawnień"
 
 #: src/features/editions/components/edition-status.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 msgid "Not published"
 msgstr "Nieopublikowana"
 
@@ -555,7 +560,6 @@ msgid "Publish"
 msgstr "Opublikuj"
 
 #: src/features/editions/components/edition-status.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 msgid "Published"
 msgstr "Opublikowana"
 
@@ -634,10 +638,6 @@ msgstr "Zeskanuj kod QR aplikacją uwierzytelniającą albo wpisz do niej sekret
 msgid "Secret: <0>{secret}</0>"
 msgstr "Sekret: <0>{secret}</0>"
 
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "See the editions"
-msgstr "Zobacz edycje"
-
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Send a new link"
@@ -651,12 +651,7 @@ msgstr "Wyślij link do ustawienia hasła"
 msgid "Send the link"
 msgstr "Wyślij link"
 
-#: src/features/editions/components/edition-layout.tsx
-#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/team/components/permission-labels.tsx
-#: src/features/tenants/components/convention-layout.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
-#: src/features/tenants/pages/settings-page.tsx
 msgid "Settings"
 msgstr "Ustawienia"
 
@@ -707,7 +702,6 @@ msgstr "Stan"
 
 #: src/features/team/pages/team-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
-#: src/features/tenants/pages/dashboard-page.tsx
 msgid "Team"
 msgstr "Zespół"
 
@@ -923,14 +917,6 @@ msgstr "Tak, usuń z zespołu: {name}"
 msgid "you"
 msgstr "to ty"
 
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "You are a head organizer."
-msgstr "Jesteś głównym organizatorem."
-
-#: src/features/tenants/pages/dashboard-page.tsx
-msgid "You are an organizer."
-msgstr "Jesteś organizatorem."
-
 #: src/features/auth/pages/invitation-page.tsx
 msgid "You are invited to the organizing team of <0>{tenantName}</0>."
 msgstr "Zapraszamy cię do zespołu organizatorów konwentu <0>{tenantName}</0>."
@@ -946,6 +932,10 @@ msgstr "Zalogowano jako {email}."
 #: src/shared/ui/messages.tsx
 msgid "You do not have permission to see this page. If you need access, ask a head organizer of the convention."
 msgstr "Nie masz uprawnień do tej strony. Jeśli potrzebujesz dostępu, poproś głównego organizatora konwentu."
+
+#: src/features/editions/pages/convention-entry-page.tsx
+msgid "You have no access to any edition of this convention yet. A head organizer can give it to you."
+msgstr "Nie masz jeszcze dostępu do żadnej edycji tego konwentu. Może Ci go nadać główny organizator."
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Your address {email} is confirmed. Choose the password you will sign in with."

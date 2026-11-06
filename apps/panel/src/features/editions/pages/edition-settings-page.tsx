@@ -34,10 +34,11 @@ export function EditionSettingsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
-  usePageTitle(t`Settings`, edition?.name ?? tenant.name)
+  usePageTitle(t`Edition settings`, edition?.name ?? tenant.name)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const canWrite = atLeast(access.settings, 'write')
   const base = `/${tenant.slug}/editions`
+  const list = `/${tenant.slug}/settings/editions`
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: editionsKey(api) })
   const update = useMutation({
@@ -55,7 +56,7 @@ export function EditionSettingsPage() {
     ...removeEditionOptions(api),
     onSuccess: async () => {
       await refresh()
-      void navigate(base, { replace: true })
+      void navigate(list, { replace: true })
     },
   })
 
@@ -69,7 +70,7 @@ export function EditionSettingsPage() {
   return (
     <>
       <PageHeader
-        title={<Trans>Settings</Trans>}
+        title={<Trans>Edition settings</Trans>}
         description={edition.name}
         actions={<EditionStatus edition={edition} />}
       />

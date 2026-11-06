@@ -200,7 +200,6 @@ msgid "Create the edition"
 msgstr "Create the edition"
 
 #: src/features/editions/components/edition-layout.tsx
-#: src/features/editions/pages/edition-dashboard-page.tsx
 msgid "Dashboard"
 msgstr "Dashboard"
 

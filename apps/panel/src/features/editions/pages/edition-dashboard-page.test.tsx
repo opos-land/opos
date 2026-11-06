@@ -62,7 +62,7 @@ describe('EditionDashboardPage', () => {
     expect(
       screen.getByText('The edition is not published: the portal does not show it.'),
     ).toBeDefined()
-    expect(document.title).toBe('Dashboard · Edition 2026 · OPOS panel')
+    expect(document.title).toBe('Edition 2026 · OPOS panel')
   })
 
   it('says when the edition is not the active one', () => {

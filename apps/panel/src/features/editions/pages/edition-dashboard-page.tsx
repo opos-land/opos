@@ -19,7 +19,7 @@ export function EditionDashboardPage() {
   const { tenant } = useCurrentTenant()
   const time = useTenantTime()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
-  usePageTitle(t`Dashboard`, edition?.name ?? tenant.name)
+  usePageTitle(edition?.name ?? tenant.name)
 
   if (isPending) return <LoadingView />
   if (isError) return <ErrorMessage error={error} />

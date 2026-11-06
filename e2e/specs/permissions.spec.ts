@@ -77,6 +77,8 @@ test.describe('permissions in the panel', () => {
     await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
     await page.goto(panelUrl('/convention-b/settings'))
     await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
+    await page.goto(panelUrl('/convention-b/editions/2026'))
+    await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
 
     const token = await accessToken(seeded.headA, seeded.password)
     const foreign = await callApi('/tenants/current', { token, tenantSlug: 'convention-b' })

@@ -2052,7 +2052,7 @@ headers ([13](#13-deployment)).
 |---|---|
 | `auth` | sign-in, password reset, email links, the code screen of two-factor authentication, invitation acceptance with sign-up ([7.7](#77-organizer-invitations)) |
 | `tenants` | convention picker, the top bar, the convention settings with their menu, the general settings: name, language and time zone |
-| `editions` | entering a convention; the edition area with its menu and edition switch, the edition dashboard, the edition settings: data, activation, publication, deletion; the edition list and creation in the convention settings |
+| `editions` | entering a convention; the edition area with its menu, the edition switch of the top bar, the edition dashboard, the edition settings: data, activation, publication, deletion; the edition list and creation in the convention settings |
 | `program` | the edition's programme items, their speakers, review moderation |
 | `shop` | the payment provider account and currency |
 | `tickets` | ticket types, orders, cancellation, paired scanners |
@@ -2100,15 +2100,18 @@ headers ([13](#13-deployment)).
 
   | Area | Menu, with the permission that shows each section |
   |---|---|
-  | edition | the switch between the editions the member sees; Dashboard; Programme at `program>=read`; Tickets, Orders and Scanners at `tickets>=read`; Access and Edition settings at `settings>=read` |
+  | edition | Dashboard; Programme at `program>=read`; Tickets, Orders and Scanners at `tickets>=read`; Access and Edition settings at `settings>=read` |
   | convention settings | General, Editions and Team at `settings>=read`; Shop at `shop>=read` |
 
-  The top bar holds the panel's name, the convention (a switch for a member of several) and the
-  account menu. A member who can open a section of the convention settings also finds there the
-  way to them from an edition, "Convention settings", and back, "Back to the edition"; a member
-  who cannot never sees them mentioned
-  ([permissions.ts](../apps/panel/src/features/tenants/model/permissions.ts)). A `403` replaces
-  the page and keeps the menu.
+  The top bar holds the panel's name, the convention and, in the edition area, the edition, always
+  under the label "Edition" — each a switch when the member sees more than one
+  ([edition-switch.tsx](../apps/panel/src/features/editions/components/edition-switch.tsx), handed
+  to the bar by [router.tsx](../apps/panel/src/app/router.tsx), since `editions` builds on
+  `tenants`) — and the account menu. A member who can open a section of the convention settings
+  also finds there the way to them from an edition, "Convention settings", and back, "Back to the
+  edition", once there is an edition the member sees; a member who cannot never sees them
+  mentioned ([permissions.ts](../apps/panel/src/features/tenants/model/permissions.ts)). A `403`
+  replaces the page and keeps the menu.
 - The API link ([api-fetch.ts](../apps/panel/src/shared/lib/api-fetch.ts)) sends the session
   cookies (`credentials: 'include'`), `X-Tenant-Slug` and `Accept-Language` from the active locale,
   and reads errors back as in [5](#5-api-contract). Every tenant gets a client of its own whose
@@ -2141,6 +2144,12 @@ headers ([13](#13-deployment)).
   panel is a target.
   The panel knows it is signed in only
   from the API's answers: it reads no cookie and stores no token.
+- A page to return to belongs to the account that left it. The tab remembers in `sessionStorage`
+  the account it last showed
+  ([shown-account.ts](../apps/panel/src/features/auth/model/shown-account.ts)); another account
+  arriving on a page of the panel — signed in from the `?redirect=` the previous one left, back
+  from Google, or announced by another tab — starts from `/`, and the same account returns to the
+  page ([require-session.tsx](../apps/panel/src/features/auth/components/require-session.tsx)).
 - `GET /me/memberships` after sign-in populates the permission store
   ([permissions.ts](../apps/panel/src/features/tenants/model/permissions.ts)). The UI reads it and
   the API stays the authority: each menu hides sections with a `none` permission, at `read` the
@@ -3233,7 +3242,7 @@ never changes a seeded account's password, which ends every other session of the
 | 16 | A head adds a confirmed account to the team, which gets a notification, changes its permissions and removes it; an org with `settings=write` invites and raises nobody above its own permissions (`member.above-own` next to the form) and has nothing to change on a head or on itself | [team](../e2e/specs/team.spec.ts) |
 | 17 | The panel's language switcher keeps the language on the account across a reload, and the browser's language comes back when chosen | [panel-language](../e2e/specs/panel-language.spec.ts) |
 | 18 | An attendee turns on two-factor authentication in the portal, signs out, signs in with the password and a code and reaches the account; a wrong code is refused; a password reset on the account asks for the code and then shows the password form without the link again; confirming the account's deletion with the password leads through the code and back to the deletion; a recovery code turns it off; the panel on the same account asks for its own code | [two-factor](../e2e/specs/two-factor.spec.ts) |
-| 19 | The session of the panel and of the portal in one browser: an expired access cookie is renewed by `POST /auth/refresh` and the application stays signed in; two tabs refreshing together both stay signed in; signing out in one tab takes the other off the account screens without a reload; a refresh answered `503` keeps the account signed in and the screen says to try again, not that the session has ended | [session](../e2e/specs/session.spec.ts) |
+| 19 | The session of the panel and of the portal in one browser: an expired access cookie is renewed by `POST /auth/refresh` and the application stays signed in; two tabs refreshing together both stay signed in; signing out in one tab takes the other off the account screens without a reload; in the panel, another account signing in after a sign-out starts in its own convention, not on the page left behind; a refresh answered `503` keeps the account signed in and the screen says to try again, not that the session has ended | [session](../e2e/specs/session.spec.ts) |
 
 Scenarios 1, 9, 10, 11, 13 and 14 run in both the desktop and the mobile project, and so does the code screen of scenario 18.
 

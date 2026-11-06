@@ -67,8 +67,15 @@ test.describe('organizer invitation to an address without an account', () => {
     const sidebar = page.getByRole('navigation', { name: tenant.name })
     await expect(sidebar.getByRole('link', { name: 'Team' })).toHaveCount(0)
     await sidebar.getByRole('link', { name: 'Editions' }).click()
-    await expect(page.getByRole('link', { name: 'Spring edition' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Autumn edition' })).toHaveCount(0)
+
+    // Inside that edition, its menu holds only what the invitation granted.
+    await page.getByRole('link', { name: 'Spring edition' }).click()
+    const editionMenu = page.getByRole('navigation', { name: 'Spring edition' })
+    await expect(editionMenu.getByRole('link', { name: 'Programme' })).toBeVisible()
+    for (const section of ['Access', 'Settings']) {
+      await expect(editionMenu.getByRole('link', { name: section })).toHaveCount(0)
+    }
     expect((await passwordGrant(invitee, INVITEE_PASSWORD)).status).toBe(200)
   })
 

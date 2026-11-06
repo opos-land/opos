@@ -1,8 +1,9 @@
 import { expect, test } from '../fixtures'
 import { panelUrl, signInToPanel } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenario 4: a head creates an edition, activates it and publishes it; the edition
-// active before stops being active (PLAN.md 4.5). The head then adds its programme with a speaker.
+// PLAN.md 15.2, scenario 4: a head creates an edition in the convention's menu, then activates and
+// publishes it in the edition's own; the edition active before stops being active (PLAN.md 4.5).
+// The head then adds its programme with a speaker.
 
 test('a head creates, activates and publishes an edition', async ({ page, accounts, tenants }) => {
   const head = await accounts.create()
@@ -25,6 +26,17 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
 
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/next-year`))
   await expect(page.getByRole('heading', { name: 'Next year', level: 1 })).toBeVisible()
+
+  // The edition has a menu of its own, and the convention's menu is gone.
+  const menu = page.getByRole('navigation', { name: 'Next year' })
+  await expect(page.getByRole('navigation', { name: tenant.name })).toHaveCount(0)
+  for (const section of ['Dashboard', 'Programme', 'Access', 'Settings']) {
+    await expect(menu.getByRole('link', { name: section })).toBeVisible()
+  }
+  await expect(menu.getByRole('link', { name: 'Team' })).toHaveCount(0)
+
+  await menu.getByRole('link', { name: 'Settings' }).click()
+  await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/next-year/settings`))
   // The dates are the wall-clock times of the convention's zone.
   await expect(page.getByLabel('Starts')).toHaveValue('2027-06-04T10:00')
 
@@ -39,6 +51,18 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
     { slug: 'next-year', isActive: true, isPublished: true },
     { slug: 'this-year', isActive: false, isPublished: false },
   ])
+
+  // The switch leads to another edition, the link back to the convention's menu.
+  await menu.getByLabel('Edition').selectOption({ label: 'This year' })
+  await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/this-year`))
+  await page
+    .getByRole('navigation', { name: 'This year' })
+    .getByRole('link', { name: tenant.name })
+    .click()
+  await expect(page).toHaveURL(panelUrl(`/${tenant.slug}`))
+  await expect(
+    page.getByRole('navigation', { name: tenant.name }).getByRole('link', { name: 'Team' }),
+  ).toBeVisible()
 })
 
 test('a head adds a programme item with a speaker', async ({ page, accounts, tenants }) => {
@@ -49,7 +73,10 @@ test('a head adds a programme item with a speaker', async ({ page, accounts, ten
 
   await signInToPanel(page, head.email, head.password)
   await page.goto(panelUrl(`/${tenant.slug}/editions/this-year`))
-  await page.getByRole('link', { name: 'Programme items of this edition' }).click()
+  await page
+    .getByRole('navigation', { name: 'This year' })
+    .getByRole('link', { name: 'Programme' })
+    .click()
   await expect(page.getByText('There are no programme items yet.')).toBeVisible()
 
   const create = page.getByRole('region', { name: 'New programme item' })

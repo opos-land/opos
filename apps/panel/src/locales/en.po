@@ -35,7 +35,7 @@ msgstr "A head organizer has every permission, in every edition, and never expir
 msgid "A new edition starts inactive and unpublished."
 msgstr "A new edition starts inactive and unpublished."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/components/edition-layout.tsx
 msgid "Access"
 msgstr "Access"
 
@@ -60,15 +60,15 @@ msgstr "Account"
 msgid "Actions"
 msgstr "Actions"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Activate"
 msgstr "Activate"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Activating this edition makes it the convention's active one; the edition active now stops being active."
 msgstr "Activating this edition makes it the convention's active one; the edition active now stops being active."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Activation and publication"
 msgstr "Activation and publication"
 
@@ -123,7 +123,7 @@ msgstr "Back to the invitation"
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/member-row.tsx
 msgid "Cancel"
@@ -197,7 +197,9 @@ msgstr "Create an account"
 msgid "Create the edition"
 msgstr "Create the edition"
 
-#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/editions/pages/edition-dashboard-page.tsx
+#: src/features/tenants/components/convention-layout.tsx
 #: src/features/tenants/pages/dashboard-page.tsx
 msgid "Dashboard"
 msgstr "Dashboard"
@@ -206,12 +208,12 @@ msgstr "Dashboard"
 msgid "Dates"
 msgstr "Dates"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 msgid "Delete"
 msgstr "Delete"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Delete the edition"
 msgstr "Delete the edition"
 
@@ -223,7 +225,7 @@ msgstr "Delete the programme item"
 msgid "Deleting a programme item cannot be undone."
 msgstr "Deleting a programme item cannot be undone."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
 msgstr "Deleting an edition cannot be undone. The active edition cannot be deleted."
 
@@ -239,17 +241,18 @@ msgstr "Dismiss"
 msgid "Edit"
 msgstr "Edit"
 
+#: src/features/editions/components/edition-layout.tsx
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Edition"
 msgstr "Edition"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Edition data"
 msgstr "Edition data"
 
 #: src/features/editions/pages/editions-page.tsx
-#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/tenants/components/convention-layout.tsx
 msgid "Editions"
 msgstr "Editions"
 
@@ -520,7 +523,7 @@ msgstr "Press the button to choose a new password."
 msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Press the button to confirm your address. Then you choose your password."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/components/edition-layout.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/program/pages/program-page.tsx
 #: src/features/team/components/permission-labels.tsx
@@ -539,10 +542,6 @@ msgstr "Programme item data"
 msgid "Programme items"
 msgstr "Programme items"
 
-#: src/features/editions/pages/edition-page.tsx
-msgid "Programme items of this edition"
-msgstr "Programme items of this edition"
-
 #: src/features/team/components/edition-access-row.tsx
 msgid "Programme of {name}"
 msgstr "Programme of {name}"
@@ -551,7 +550,7 @@ msgstr "Programme of {name}"
 msgid "Programme times and edition dates are shown in this time zone."
 msgstr "Programme times and edition dates are shown in this time zone."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Publish"
 msgstr "Publish"
 
@@ -603,7 +602,7 @@ msgstr "Reset your password"
 msgid "Role"
 msgstr "Role"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/edition-access-row.tsx
 #: src/features/team/components/member-row.tsx
@@ -652,8 +651,10 @@ msgstr "Send a password link"
 msgid "Send the link"
 msgstr "Send the link"
 
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/team/components/permission-labels.tsx
-#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/tenants/components/convention-layout.tsx
 #: src/features/tenants/pages/dashboard-page.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Settings"
@@ -699,19 +700,16 @@ msgstr "Speakers"
 msgid "Starts"
 msgstr "Starts"
 
+#: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/editions-page.tsx
 msgid "Status"
 msgstr "Status"
 
 #: src/features/team/pages/team-page.tsx
-#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/tenants/components/convention-layout.tsx
 #: src/features/tenants/pages/dashboard-page.tsx
 msgid "Team"
 msgstr "Team"
-
-#: src/features/editions/pages/edition-page.tsx
-msgid "Team members' permissions in this edition"
-msgstr "Team members' permissions in this edition"
 
 #: src/features/program/components/speakers-editor.tsx
 msgid "The address of the speaker's confirmed account."
@@ -725,11 +723,13 @@ msgstr "The browser's language"
 msgid "The convention's address is set by the platform administrator."
 msgstr "The convention's address is set by the platform administrator."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-dashboard-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "The edition is not published: the portal does not show it."
 msgstr "The edition is not published: the portal does not show it."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-dashboard-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "The edition is published: the portal shows it to everyone."
 msgstr "The edition is published: the portal shows it to everyone."
 
@@ -769,7 +769,12 @@ msgstr "There are no editions yet."
 msgid "There are no programme items yet."
 msgstr "There are no programme items yet."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-dashboard-page.tsx
+msgid "This edition is not the convention's active one."
+msgstr "This edition is not the convention's active one."
+
+#: src/features/editions/pages/edition-dashboard-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "This is the convention's active edition."
 msgstr "This is the convention's active edition."
 
@@ -840,7 +845,7 @@ msgstr "Two-factor authentication is on, but the recovery codes could not be sho
 msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 msgstr "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Unpublish"
 msgstr "Unpublish"
 
@@ -901,7 +906,7 @@ msgstr "We will send you a link to set a new password."
 msgid "Write"
 msgstr "Write"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Yes, delete {editionName}"
 msgstr "Yes, delete {editionName}"
 

@@ -9,10 +9,16 @@ import {
   MfaPage,
   RequireSession,
 } from '../features/auth'
-import { EditionPage, EditionsPage } from '../features/editions'
+import {
+  EditionDashboardPage,
+  EditionLayout,
+  EditionSettingsPage,
+  EditionsPage,
+} from '../features/editions'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionAccessPage, TeamPage } from '../features/team'
 import {
+  ConventionLayout,
   DashboardPage,
   MembershipsGate,
   SettingsPage,
@@ -65,18 +71,30 @@ export const router = createBrowserRouter([
             path: '/:tenantSlug',
             element: <TenantLayout />,
             children: [
-              { index: true, element: <DashboardPage /> },
-              { path: 'editions', element: <EditionsPage /> },
-              { path: 'editions/:editionSlug', element: <EditionPage /> },
-              { path: 'editions/:editionSlug/access', element: <EditionAccessPage /> },
-              { path: 'editions/:editionSlug/program', element: <ProgramPage /> },
               {
-                path: 'editions/:editionSlug/program/:programItemId',
-                element: <ProgramItemPage />,
+                // The convention area: what belongs to the whole convention.
+                element: <ConventionLayout />,
+                children: [
+                  { index: true, element: <DashboardPage /> },
+                  { path: 'editions', element: <EditionsPage /> },
+                  { path: 'team', element: <TeamPage /> },
+                  { path: 'settings', element: <SettingsPage /> },
+                  { path: '*', element: <NotFoundView /> },
+                ],
               },
-              { path: 'team', element: <TeamPage /> },
-              { path: 'settings', element: <SettingsPage /> },
-              { path: '*', element: <NotFoundView /> },
+              {
+                // The edition area: everything about one edition, its settings included.
+                path: 'editions/:editionSlug',
+                element: <EditionLayout />,
+                children: [
+                  { index: true, element: <EditionDashboardPage /> },
+                  { path: 'program', element: <ProgramPage /> },
+                  { path: 'program/:programItemId', element: <ProgramItemPage /> },
+                  { path: 'access', element: <EditionAccessPage /> },
+                  { path: 'settings', element: <EditionSettingsPage /> },
+                  { path: '*', element: <NotFoundView /> },
+                ],
+              },
             ],
           },
         ],

@@ -1,3 +1,5 @@
+export { AreaFrame, SidebarLink } from './components/area-frame'
+export { ConventionLayout } from './components/convention-layout'
 export { MembershipsGate } from './components/memberships-gate'
 export { RequireAccess } from './components/require-access'
 export { useCurrentTenant } from './components/tenant-context'

@@ -35,7 +35,7 @@ msgstr "Główny organizator ma wszystkie uprawnienia w każdej edycji, a jego d
 msgid "A new edition starts inactive and unpublished."
 msgstr "Nowa edycja jest na początku nieaktywna i nieopublikowana."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/components/edition-layout.tsx
 msgid "Access"
 msgstr "Dostęp"
 
@@ -60,15 +60,15 @@ msgstr "Konto"
 msgid "Actions"
 msgstr "Działania"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Activate"
 msgstr "Aktywuj"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Activating this edition makes it the convention's active one; the edition active now stops being active."
 msgstr "Aktywacja sprawi, że ta edycja stanie się aktywną edycją konwentu; obecnie aktywna edycja przestanie nią być."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Activation and publication"
 msgstr "Aktywacja i publikacja"
 
@@ -123,7 +123,7 @@ msgstr "Wróć do zaproszenia"
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/member-row.tsx
 msgid "Cancel"
@@ -197,7 +197,9 @@ msgstr "Załóż konto"
 msgid "Create the edition"
 msgstr "Utwórz edycję"
 
-#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/editions/pages/edition-dashboard-page.tsx
+#: src/features/tenants/components/convention-layout.tsx
 #: src/features/tenants/pages/dashboard-page.tsx
 msgid "Dashboard"
 msgstr "Pulpit"
@@ -206,12 +208,12 @@ msgstr "Pulpit"
 msgid "Dates"
 msgstr "Daty"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 msgid "Delete"
 msgstr "Usuń"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Delete the edition"
 msgstr "Usuń edycję"
 
@@ -223,7 +225,7 @@ msgstr "Usuń punkt programu"
 msgid "Deleting a programme item cannot be undone."
 msgstr "Usunięcia punktu programu nie można cofnąć."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
 msgstr "Usunięcia edycji nie można cofnąć. Aktywnej edycji nie można usunąć."
 
@@ -239,17 +241,18 @@ msgstr "Zamknij"
 msgid "Edit"
 msgstr "Edytuj"
 
+#: src/features/editions/components/edition-layout.tsx
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Edition"
 msgstr "Edycja"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Edition data"
 msgstr "Dane edycji"
 
 #: src/features/editions/pages/editions-page.tsx
-#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/tenants/components/convention-layout.tsx
 msgid "Editions"
 msgstr "Edycje"
 
@@ -520,7 +523,7 @@ msgstr "Naciśnij przycisk, aby wybrać nowe hasło."
 msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/components/edition-layout.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/program/pages/program-page.tsx
 #: src/features/team/components/permission-labels.tsx
@@ -539,10 +542,6 @@ msgstr "Dane punktu programu"
 msgid "Programme items"
 msgstr "Punkty programu"
 
-#: src/features/editions/pages/edition-page.tsx
-msgid "Programme items of this edition"
-msgstr "Punkty programu tej edycji"
-
 #: src/features/team/components/edition-access-row.tsx
 msgid "Programme of {name}"
 msgstr "Program – {name}"
@@ -551,7 +550,7 @@ msgstr "Program – {name}"
 msgid "Programme times and edition dates are shown in this time zone."
 msgstr "Godziny programu i daty edycji są pokazywane w tej strefie czasowej."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Publish"
 msgstr "Opublikuj"
 
@@ -603,7 +602,7 @@ msgstr "Zresetuj hasło"
 msgid "Role"
 msgstr "Rola"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/edition-access-row.tsx
 #: src/features/team/components/member-row.tsx
@@ -652,8 +651,10 @@ msgstr "Wyślij link do ustawienia hasła"
 msgid "Send the link"
 msgstr "Wyślij link"
 
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/team/components/permission-labels.tsx
-#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/tenants/components/convention-layout.tsx
 #: src/features/tenants/pages/dashboard-page.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Settings"
@@ -699,19 +700,16 @@ msgstr "Prelegenci"
 msgid "Starts"
 msgstr "Początek"
 
+#: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/editions-page.tsx
 msgid "Status"
 msgstr "Stan"
 
 #: src/features/team/pages/team-page.tsx
-#: src/features/tenants/components/tenant-layout.tsx
+#: src/features/tenants/components/convention-layout.tsx
 #: src/features/tenants/pages/dashboard-page.tsx
 msgid "Team"
 msgstr "Zespół"
-
-#: src/features/editions/pages/edition-page.tsx
-msgid "Team members' permissions in this edition"
-msgstr "Uprawnienia członków zespołu w tej edycji"
 
 #: src/features/program/components/speakers-editor.tsx
 msgid "The address of the speaker's confirmed account."
@@ -725,11 +723,13 @@ msgstr "Język przeglądarki"
 msgid "The convention's address is set by the platform administrator."
 msgstr "Adres konwentu ustala administrator platformy."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-dashboard-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "The edition is not published: the portal does not show it."
 msgstr "Edycja nie jest opublikowana: portal jej nie pokazuje."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-dashboard-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "The edition is published: the portal shows it to everyone."
 msgstr "Edycja jest opublikowana: portal pokazuje ją wszystkim."
 
@@ -769,7 +769,12 @@ msgstr "Nie ma jeszcze żadnej edycji."
 msgid "There are no programme items yet."
 msgstr "Nie ma jeszcze punktów programu."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-dashboard-page.tsx
+msgid "This edition is not the convention's active one."
+msgstr "To nie jest aktywna edycja konwentu."
+
+#: src/features/editions/pages/edition-dashboard-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "This is the convention's active edition."
 msgstr "To jest aktywna edycja konwentu."
 
@@ -840,7 +845,7 @@ msgstr "Uwierzytelnianie dwuskładnikowe jest włączone, ale nie udało się po
 msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 msgstr "Uwierzytelnianie dwuskładnikowe jest włączone. Przy każdym logowaniu podajesz kod z aplikacji uwierzytelniającej."
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Unpublish"
 msgstr "Wycofaj publikację"
 
@@ -901,7 +906,7 @@ msgstr "Wyślemy ci link do ustawienia nowego hasła."
 msgid "Write"
 msgstr "Zapis"
 
-#: src/features/editions/pages/edition-page.tsx
+#: src/features/editions/pages/edition-settings-page.tsx
 msgid "Yes, delete {editionName}"
 msgstr "Tak, usuń edycję {editionName}"
 

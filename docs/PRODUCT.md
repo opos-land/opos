@@ -152,6 +152,19 @@ In the MVP these work: name, address, language, time zone, team, shop configurat
 with speakers, likes, reviews, tickets and attendee registrations. The remaining items already
 have their place in the permission model but no functionality behind them yet.
 
+The panel keeps the two levels apart. The convention and each of its editions have a menu of their
+own, only one of them is shown at a time, and no screen appears in both:
+
+| Menu | What it holds |
+|---|---|
+| convention | dashboard, the list of editions with the creation of a new one, team, settings, shop |
+| edition | everything about that one edition: dashboard, programme, tickets with their orders and scanners, the team's access to the edition, and its settings — data, activation, publication |
+
+The edition's menu leads back to the convention and switches between the editions the organizer
+sees. Each menu shows only the sections the organizer's permissions open
+([5](#5-roles-and-permissions)), so a screen about one edition stays in that edition's menu even
+when a convention-level permission governs it.
+
 ---
 
 ## 5. Roles and permissions
@@ -220,7 +233,8 @@ and nothing else) and attends Convention C. All on one account:
 | Convention B, 2027 edition | — | write access to the programme; nothing else |
 | Convention C, 2026 edition | attendee | only their own registration |
 
-In the panel Jan switches convention context in the top bar.
+In the panel Jan switches convention in the top bar, and edition in the edition's menu
+([4](#what-belongs-to-the-convention-and-what-to-the-edition)).
 
 ### 5.6 Anti-escalation policy
 

@@ -70,7 +70,7 @@ test.describe('organizer invitation to an address without an account', () => {
     // no convention settings and no other edition to switch to.
     const editionMenu = page.getByRole('navigation', { name: spring.name })
     await expect(editionMenu.getByRole('link')).toHaveText(['Dashboard', 'Programme'])
-    await expect(editionMenu.getByRole('combobox')).toHaveCount(0)
+    await expect(page.getByRole('banner').getByRole('combobox')).toHaveCount(0)
     await expect(page.getByRole('link', { name: 'Convention settings' })).toHaveCount(0)
     await expect(page.getByText('Autumn edition')).toHaveCount(0)
     expect((await passwordGrant(invitee, INVITEE_PASSWORD)).status).toBe(200)

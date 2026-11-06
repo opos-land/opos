@@ -241,7 +241,7 @@ msgstr "Zamknij"
 msgid "Edit"
 msgstr "Edytuj"
 
-#: src/features/editions/components/edition-layout.tsx
+#: src/features/editions/components/edition-switch.tsx
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Edition"

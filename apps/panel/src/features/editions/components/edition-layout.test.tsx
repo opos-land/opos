@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { type Edition } from '@opos/contract'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as Tenants from '../../tenants'
@@ -117,32 +117,12 @@ describe('EditionLayout', () => {
     ])
   })
 
-  it('switches to another edition the member sees, on its dashboard', () => {
-    state.program = 'read'
-    view('/convention-a/editions/2026/program')
-
-    const switcher = screen.getByRole('combobox', { name: 'Edition' })
-    expect((switcher as HTMLSelectElement).value).toBe('2026')
-    expect(
-      within(switcher)
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual(['Edition 2027', 'Edition 2026'])
-
-    fireEvent.change(switcher, { target: { value: '2027' } })
-
-    expect(screen.getByRole('navigation', { name: 'Edition 2027' })).toBeDefined()
-    expect(screen.getByText('the edition dashboard')).toBeDefined()
-  })
-
-  it('names the only edition the member sees instead of offering a switch', () => {
-    state.editions = [edition('2026', 'Edition 2026')]
+  it('names its edition at the head of the menu, and leaves the switch to the top bar', () => {
     view('/convention-a/editions/2026')
 
-    expect(screen.queryByRole('combobox')).toBeNull()
-    expect(
-      within(screen.getByRole('navigation', { name: 'Edition 2026' })).getByText('Edition 2026'),
-    ).toBeDefined()
+    const menu = screen.getByRole('navigation', { name: 'Edition 2026' })
+    expect(within(menu).getByText('Edition 2026')).toBeDefined()
+    expect(within(menu).queryByRole('combobox')).toBeNull()
   })
 
   it('shows no menu for an edition the member does not see, and leaves the page to say so', () => {

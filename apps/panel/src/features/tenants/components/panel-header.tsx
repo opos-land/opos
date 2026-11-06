@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro'
+import { type ReactNode } from 'react'
 import { Link, useMatch, useNavigate } from 'react-router'
 import { AccountMenu } from '../../account'
 import { usePermissionStore } from '../model/permissions'
@@ -7,15 +8,21 @@ const button = 'rounded-box border-line hover:border-ink border px-3 py-1 text-s
 
 /**
  * The top bar (PLAN.md 8): the panel's name, the convention (a switch for a member of several),
- * the way between an edition and the convention settings for a member who may open them, and the
- * account menu.
+ * the edition, the way between an edition and the convention settings for a member who may open
+ * them, and the account menu.
  */
 export function PanelHeader({
   tenantSlug,
   conventionSettings = false,
+  editionSwitch,
+  seesAnEdition = false,
 }: {
   tenantSlug?: string
   conventionSettings?: boolean
+  /** The edition switch of the `editions` feature, which the application hands in. */
+  editionSwitch?: ReactNode
+  /** Whether the member sees an edition to go back to from the convention settings. */
+  seesAnEdition?: boolean
 }) {
   const { t } = useLingui()
   const navigate = useNavigate()
@@ -49,13 +56,16 @@ export function PanelHeader({
       ) : (
         current && <span className="text-muted text-sm">{current.tenant.name}</span>
       )}
+      {editionSwitch}
       <div className="ml-auto flex items-center gap-4">
         {tenantSlug &&
           conventionSettings &&
           (inSettings ? (
-            <Link to={`/${tenantSlug}`} className={button}>
-              <Trans>Back to the edition</Trans>
-            </Link>
+            seesAnEdition && (
+              <Link to={`/${tenantSlug}`} className={button}>
+                <Trans>Back to the edition</Trans>
+              </Link>
+            )
           ) : (
             <Link to={`/${tenantSlug}/settings`} className={button}>
               <Trans>Convention settings</Trans>

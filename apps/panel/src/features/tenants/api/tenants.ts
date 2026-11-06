@@ -7,3 +7,6 @@ export const membershipsKey = () => accountApi.me.memberships.key()
 export const tenantOptions = (api: Api) => api.tenants.current.queryOptions()
 
 export const updateTenantOptions = (api: Api) => api.tenants.update.mutationOptions()
+
+/** The editions, for the top bar's way back from the convention settings; the edition list's query. */
+export const editionListOptions = (api: Api) => api.editions.list.queryOptions()

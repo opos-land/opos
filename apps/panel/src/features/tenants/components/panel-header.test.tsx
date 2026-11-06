@@ -2,6 +2,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { type Membership } from '@opos/contract'
 import { cleanup, render, screen } from '@testing-library/react'
+import { type ReactNode } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { setMemberships } from '../model/permissions'
@@ -19,7 +20,12 @@ const membership = (slug: string, name: string): Membership => ({
   editions: [],
 })
 
-const view = (path: string, conventionSettings: boolean) =>
+const view = (
+  path: string,
+  conventionSettings: boolean,
+  editionSwitch?: ReactNode,
+  seesAnEdition = true,
+) =>
   render(
     <I18nProvider i18n={i18n}>
       <MemoryRouter initialEntries={[path]}>
@@ -27,7 +33,12 @@ const view = (path: string, conventionSettings: boolean) =>
           <Route
             path="/:tenantSlug/*"
             element={
-              <PanelHeader tenantSlug="convention-a" conventionSettings={conventionSettings} />
+              <PanelHeader
+                tenantSlug="convention-a"
+                conventionSettings={conventionSettings}
+                editionSwitch={editionSwitch}
+                seesAnEdition={seesAnEdition}
+              />
             }
           />
         </Routes>
@@ -65,6 +76,14 @@ describe('PanelHeader', () => {
     )
   })
 
+  it('shows the edition switch it is given beside the convention', () => {
+    setMemberships([membership('convention-a', 'Convention A')])
+    view('/convention-a/editions/2026', false, <span>the edition switch</span>)
+
+    const bar = screen.getByRole('banner')
+    expect(bar.textContent).toMatch(/Convention A.*the edition switch/)
+  })
+
   it('leads from an edition to the convention settings of a member who may open them', () => {
     setMemberships([membership('convention-a', 'Convention A')])
     view('/convention-a/editions/2026', true)
@@ -81,6 +100,13 @@ describe('PanelHeader', () => {
     const link = screen.getByRole('link', { name: 'Back to the edition' })
     expect(link.getAttribute('href')).toBe('/convention-a')
     expect(screen.queryByRole('link', { name: 'Convention settings' })).toBeNull()
+  })
+
+  it('offers no way back from the convention settings while there is no edition to go to', () => {
+    setMemberships([membership('convention-a', 'Convention A')])
+    view('/convention-a/settings/editions', true, undefined, false)
+
+    expect(screen.queryByRole('link', { name: 'Back to the edition' })).toBeNull()
   })
 
   it('never mentions the convention settings to a member who may not open them', () => {

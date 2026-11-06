@@ -15,6 +15,7 @@ import {
   EditionLayout,
   EditionSettingsPage,
   EditionsPage,
+  EditionSwitch,
 } from '../features/editions'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionAccessPage, TeamPage } from '../features/team'
@@ -70,7 +71,8 @@ export const router = createBrowserRouter([
           { path: '/', element: <TenantPickerPage /> },
           {
             path: '/:tenantSlug',
-            element: <TenantLayout />,
+            // The edition switch of the top bar belongs to `editions`, which builds on `tenants`.
+            element: <TenantLayout editionSwitch={<EditionSwitch />} />,
             children: [
               {
                 // Entering the convention opens the member's edition.

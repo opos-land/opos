@@ -60,9 +60,9 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
     { slug: 'this-year', isActive: false, isPublished: false },
   ])
 
-  // The switch leads to another edition; the way back from the convention settings to the
-  // active one, now the new edition.
-  await menu.getByLabel('Edition').selectOption({ label: 'This year' })
+  // The switch of the top bar leads to another edition; the way back from the convention settings
+  // to the active one, now the new edition.
+  await page.getByRole('banner').getByLabel('Edition').selectOption({ label: 'This year' })
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/this-year`))
   await page.getByRole('link', { name: 'Convention settings' }).click()
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/settings`))

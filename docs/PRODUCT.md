@@ -56,8 +56,9 @@ done when this flow works with no manual database edits beyond step 1:
 ## 3. Glossary
 
 Each term has one name in code, API and interface, no synonyms, and exactly one rendering in every
-interface language, in the scene's own words: in Polish, **ticket** is the scene's word for
-admission to a convention, and accreditation is a ticket.
+interface language, following the scene's own vocabulary rather than a literal translation: in
+Polish, **ticket** is rendered with the scene's word for admission to a convention, not the word for
+a ticket; what the scene calls accreditation is the ticket.
 
 | Term | Meaning |
 |---|---|
@@ -242,12 +243,14 @@ the button on its page is pressed. An email address leads to an account only onc
 
 **Two-factor authentication is each account's own choice**, required by no role. Once on, it guards
 every sign-in, password reset and account deletion. Ten one-time recovery codes, shown once and
-stored hashed, replace a lost device and turn it off; turning it off signs out the other sessions
-and sends an email. A person who has lost both device and codes asks the admin.
+stored hashed, replace a lost device and turn it off; turning it off signs out the other sessions,
+removes the unused codes and sends an email, and the hash of a used code stays until the account is
+deleted. A person who has lost both device and codes asks the admin.
 
 Supabase hosts the database and sign-in in the EU on our behalf. Production data never leaves
 production: Dev holds demo data and the team's own accounts. Backups are encrypted; our own copies
-are kept up to three months. There are no tracking or advertising cookies; the sign-in cookie is
+are kept up to three months. Emails reach the mail provider only over an encrypted connection.
+There are no tracking or advertising cookies; the sign-in cookie is
 strictly necessary. **The privacy policy ships with the MVP**, after a legal review, in every
 interface language.
 

@@ -78,17 +78,20 @@ and after every restore.
 | `GET /me/schedule` | the session's own likes; published editions only |
 | `DELETE /me` | the session's account; answers only whether it is a tenant's last head |
 
-A new one is bound by the session's account, a secret the caller proved (a signature, a link or
-device token) or the API's own job; it joins this table and puts its columns into `globalReads` of
-[verify.ts](../packages/db/src/verify.ts).
+A new one is bound by the session's account or its confirmed email address, a secret the caller
+proved (a signature, a link or device token) or the API's own job; it joins this table and puts its
+columns into `globalReads` of [verify.ts](../packages/db/src/verify.ts).
 
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
-account or another row; `tenants` rows change only through the admin's scripts. Nothing is written
+account or another row. `tenants` rows are inserted, deleted and given a new slug only by the
+admin's scripts; `opos_app` updates `name`, `default_locale` and `timezone` alone. Nothing is written
 into `auth`; OPOS's triggers on `auth.users` and `auth.mfa_factors` are listed in verify.ts. A
 `security definer` function pins `search_path = ''` and no runtime role may execute it; constraints
-have explicit names, since errors map to codes by them. `pnpm db:verify` checks all of this, each
-check with a case in [verify.test.ts](../packages/db/test/verify.test.ts).
+have explicit names, since errors map to codes by them. `pnpm db:verify` checks the policies, grants,
+roles, functions and triggers, each check with a case in
+[verify.test.ts](../packages/db/test/verify.test.ts);
+[check-migrations.mjs](../scripts/check-migrations.mjs) refuses a change to a merged migration.
 
 ## Invariants
 
@@ -108,14 +111,16 @@ check with a case in [verify.test.ts](../packages/db/test/verify.test.ts).
 | 12 | `accounts.mfaEnabledAt` is set exactly while a verified factor exists | the trigger on `auth.mfa_factors`, locking the account row |
 
 Invariants 7 and 9–11 belong to [modules not built yet](#modules-waiting-for-their-domain-owner);
-[invariants.test.ts](../packages/db/test/invariants.test.ts) covers the database-side ones.
+[invariants.test.ts](../packages/db/test/invariants.test.ts) and
+[accounts.test.ts](../packages/db/test/accounts.test.ts) cover the database-side ones.
 
 ## Permissions
 
 The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision in
 [permissions.ts](../apps/api/src/common/permissions/permissions.ts).
 
-- `none < read < write`. A `head` passes every check; an expired membership counts as none.
+- `none < read < write`. A `head` passes every check; an expired membership counts as none, its
+  expiry measured when the read runs (`statement_timestamp()`), not when the transaction began.
 - Tenant-level permissions (`settings`, `branding`, `shop`) never grant edition-level ones
   (`program`, `websiteContent`, `tickets`).
 - A non-member gets `403` before any edition is looked up. For a member, a row of another tenant or
@@ -125,7 +130,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   lowers nobody's access. Each applies `JwtAuthGuard`.
 - A route at `write` checks, waits in its tenant's queue in the API process, takes the tenant's
   advisory lock and checks again (`503` `request.busy` past the limit). Every route that lowers a
-  member's access is a write route; reads neither queue nor lock.
+  member's access is a write route, except `DELETE /me`, which lowers only the account's own; reads
+  neither queue nor lock.
 - Anti-escalation is set in PRODUCT.md and enforced by the API on locked memberships. An invitation
   stands only while its sender could still send it.
 
@@ -138,8 +144,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `Sb-Forwarded-For`; a refusal reaches the browser as a code `auth.<error_code>`, never as its
   text. Its emails go through a signed hook to the API, which renders them.
 - `JwtAuthGuard` accepts ES256 alone, against the project's JWKS, with `aud = authenticated`,
-  `iss = <SUPABASE_URL>/auth/v1`, `exp`, `sub` and an `accounts` row. Keys out of reach answer
-  `503`, never `401`: an outage signs nobody out.
+  `iss = <SUPABASE_URL>/auth/v1`, `exp`, a uuid `sub`, no `is_anonymous` and an `accounts` row. The
+  session travels only in the cookies: a token in `Authorization` is no session. Keys out of reach
+  answer `503`, never `401`: an outage signs nobody out.
 - A request that changes state with a session cookie needs the `Origin` of an application (`403`
   `request.origin-denied`) and a JSON body (`415`): with `SameSite=Strict`, the CSRF protection.
   CORS names the two applications, never `*`.
@@ -147,9 +154,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   that confirms the address, never its opening, replaces any password set before. **An email address
   leads to an account only once confirmed**, in every lookup by email; sign-up, resending and
   password reset answer alike for any address.
-- Deleting the account, changing the password and enrolling or removing a factor need a sign-in
-  younger than 5 minutes (`session.reauthentication-required`). A new password and a removed factor
-  end the account's other sessions.
+- `DELETE /me`, `PUT /auth/password`, `POST /auth/mfa/enroll` and `DELETE /auth/mfa` need a
+  sign-in younger than 5 minutes (`session.reauthentication-required`); a recovery code needs none,
+  it is the proof. A new password and a removed factor end the account's other sessions.
 - **Two-factor authentication.** With a verified factor, a session below `aal2` reaches only the
   code routes, refresh and sign-out; every other route answers `401` `session.mfa-required` before
   any permission check, by invariant 12, so an older token loses access at once.
@@ -166,13 +173,15 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   the English `message`.
 - A tenant request is one transaction: an exception or a status of `300` or more rolls it back, and
   the response waits for the commit.
-- Outbound I/O never runs inside a transaction: it waits for the commit (`afterCommit`), and its
-  failure is logged while the response stands. A send the business cannot lose keeps an outbox.
+- Outbound I/O never runs inside a transaction. Started by a tenant request, it waits for the
+  commit (`afterCommit`), and its failure is logged while the response stands; a send the business
+  cannot lose keeps an outbox. A call to Supabase Auth outside a transaction answers with its own
+  failure.
 - Every route has a default rate limit per account, or per address without a session; a route open
   to abuse adds its own in code
   ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)).
-- A log line written on purpose names no token, password or email address and quotes no third
-  party's error text; an unexpected error is logged whole, never sent in the body.
+- A log line written on purpose names no token, password or email address; an unexpected error is
+  logged whole, never sent in the body.
 
 | Status | Meaning | Default code |
 |---|---|---|
@@ -214,11 +223,16 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   the fallback; a new locale needs no migration.
 - Every user-facing string sits in a macro, plurals in `plural`, its `pl` translation in the same
   commit; `pnpm i18n:check` fails on drift or a missing one.
-- Every [glossary](PRODUCT.md#3-glossary) term has one rendering per locale in
-  [glossary.ts](../packages/i18n/src/glossary.ts), which every message reuses.
+- Every [glossary](PRODUCT.md#3-glossary) term has one rendering per locale:
+  [glossary.ts](../packages/i18n/src/glossary.ts) declares it with the context `glossary`, the `pl`
+  catalog of `packages/i18n` holds its Polish rendering, and every message reuses it. A new term
+  enters glossary.ts before its first use in the interface.
 - The API returns codes, never sentences, and renders emails in the recipient's language.
-- Dates go through `Intl` in the tenant's time zone, never the browser's. Tenant content is
-  single-language data outside Lingui.
+- Dates go through `Intl` with an explicit time zone: a tenant's dates, programme times included,
+  in the tenant's `timezone`, never the browser's; a date with no tenant, such as an invitation's
+  expiry, in the browser's. Numbers go through `Intl.NumberFormat`, money in minor units with its
+  currency.
+- Tenant content is single-language data outside Lingui.
 
 ## Environments
 

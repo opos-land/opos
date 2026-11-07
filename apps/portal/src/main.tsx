@@ -7,8 +7,8 @@ import { loadLocale, pickLocale } from './shared/lib/i18n'
 import { startSession } from './shared/lib/session'
 import './styles.css'
 
-// The browser's language until the account's is known (PLAN.md 6); the session is restored
-// meanwhile, and a page that needs it shows a loading view until it is (PLAN.md 9).
+// The browser's language until the account's is known; the session is restored
+// meanwhile, and a page that needs it shows a loading view until it is.
 void startSession()
 void loadLocale(pickLocale()).then(() => {
   createRoot(document.getElementById('root')!).render(

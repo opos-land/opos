@@ -3,7 +3,7 @@ import { stack } from './stack'
 
 // Signing in through the UI, the way a person does, to the panel or the portal.
 
-/** The demo accounts of the seed (PLAN.md 14); a scenario only reads them and never signs them out. */
+/** The demo accounts of the seed; a scenario only reads them and never signs them out. */
 export const seeded = {
   password: 'password123',
   headA: 'head@convention-a.test',
@@ -37,7 +37,7 @@ export async function signOutOfPortal(page: Page) {
   await expect(page).toHaveURL(/\/login/)
 }
 
-/** Opens the panel's account menu, whose summary is the signed-in address (PLAN.md 8). */
+/** Opens the panel's account menu, whose summary is the signed-in address. */
 export async function openPanelAccountMenu(page: Page, email: string) {
   await page.locator('summary', { hasText: email }).click()
 }

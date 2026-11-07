@@ -1,10 +1,9 @@
 import { expect, test } from '../fixtures'
 import { panelUrl, signInToPanel } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenario 4: a head enters the convention into its active edition, creates an
-// edition in the convention settings, then activates and publishes it in the edition's own
-// settings; the edition active before stops being active (PLAN.md 4.5). The head then adds its
-// programme with a speaker.
+// A head enters the convention into its active edition, creates an edition in the convention
+// settings, then activates and publishes it in the edition's own settings; the edition active
+// before stops being active. The head then adds its programme with a speaker.
 
 test('a head creates, activates and publishes an edition', async ({ page, accounts, tenants }) => {
   const head = await accounts.create()

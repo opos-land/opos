@@ -106,7 +106,7 @@ describe('RequireSession', () => {
   })
 })
 
-// A page to return to belongs to the account that left it (PLAN.md 8): the tab remembers the
+// A page to return to belongs to the account that left it: the tab remembers the
 // account it last showed, and another account arriving on a page of the panel starts from `/`.
 describe('RequireSession across accounts', () => {
   const SHOWN = 'opos-panel-shown-account'

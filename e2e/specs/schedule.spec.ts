@@ -1,8 +1,7 @@
 import { expect, test } from '../fixtures'
 import { portalUrl, signInToPortal } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenario 11, up to the schedule: an attendee likes an item and finds it in the
-// personal schedule, then takes the like back. The reviews come with their module.
+// An attendee likes an item and finds it in the personal schedule, then takes the like back.
 
 test('an attendee likes an item and finds it in the schedule', async ({
   page,

@@ -18,7 +18,7 @@ const valid = {
 }
 
 describe('loadEnv', () => {
-  it('takes the variables of PLAN.md 11', () => {
+  it('takes a valid environment', () => {
     expect(loadEnv(valid)).toMatchObject({
       SUPABASE_URL: 'http://127.0.0.1:54321',
       SUPABASE_SECRET_KEY: 'sb_secret_local',

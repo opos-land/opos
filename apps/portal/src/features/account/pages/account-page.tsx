@@ -12,7 +12,7 @@ import { TwoFactorCard } from '../components/two-factor-card'
 import { signInMethods } from '../model/sign-in-methods'
 
 /**
- * Account settings (PLAN.md 9): the names, the interface language, two-factor authentication,
+ * Account settings: the names, the interface language, two-factor authentication,
  * sign-out and deletion.
  */
 export function AccountPage() {

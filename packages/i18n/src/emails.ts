@@ -2,8 +2,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 
 // The content of the emails the API renders in the recipient's locale: Supabase Auth's, sent when
-// the send-email hook calls it (PLAN.md 10, Send-email hook), and the organizer invitations
-// (PLAN.md 7.7).
+// the send-email hook calls it, and the organizer invitations.
 
 /**
  * One email: its subject, the paragraph above the link, the link's label and the closing note.

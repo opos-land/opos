@@ -14,7 +14,7 @@ import {
 } from './db'
 import { globalReads, verifyDatabase } from '../src/verify'
 
-// Every covered table (PLAN.md 4.6) and the column that holds its tenant.
+// Every covered table and the column that holds its tenant.
 const covered = [
   ['tenants', 'id'],
   ['tenant_memberships', 'tenant_id'],
@@ -78,7 +78,7 @@ describe('coverage', () => {
     expect(tables.map((t) => t.relname)).toEqual(covered.map(([table]) => table).sort())
   })
 
-  // PLAN.md 4.4: RLS filters on the tenant column of every query, so an index must start with it.
+  // RLS filters on the tenant column of every query, so an index must start with it.
   it.each(covered)(
     'holds an index on %s that starts with its tenant column',
     async (table, column) => {
@@ -343,7 +343,7 @@ describe('tenant isolation', () => {
 })
 
 describe('runtime privileges', () => {
-  // The columns the cross-tenant queries of PLAN.md 4.6 read: the list db:verify holds the role
+  // The columns the allowed cross-tenant queries read: the list db:verify holds the role
   // to, so the grants the migrations made and that list cannot drift apart.
   const readsOf = (table: string) =>
     globalReads.filter((read) => read.startsWith(`${table}.`)).map((read) => read.split('.')[1]!)

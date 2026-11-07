@@ -26,7 +26,7 @@ export interface CookieRequest {
   headers: Record<string, string | string[] | undefined>
 }
 
-/** Every cookie is `Secure` when the API is served over https (PLAN.md 7.4). */
+/** Every cookie is `Secure` when the API is served over https. */
 const attributes = (env: Pick<Env, 'API_URL'>, path: string) => ({
   httpOnly: true as const,
   sameSite: 'strict' as const,
@@ -35,7 +35,7 @@ const attributes = (env: Pick<Env, 'API_URL'>, path: string) => ({
 })
 
 /**
- * Sets the session of `app` (PLAN.md 7.4): the access token to its `exp`, the refresh token for 30
+ * Sets the session of `app`: the access token to its `exp`, the refresh token for 30
  * days, on the API's own host with no `Domain`. Nothing of the other application's pair changes.
  */
 export function setSessionCookies(

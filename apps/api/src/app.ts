@@ -31,7 +31,7 @@ export async function configureApp(app: NestExpressApplication, env: Env) {
       allowedHeaders: ['Authorization', 'Content-Type', 'X-Tenant-Slug', 'Accept-Language'],
       // Not CORS-safelisted: without this the panel and portal cannot read it on a 429.
       exposedHeaders: ['Retry-After'],
-      // The session travels in the API's cookies, for these two origins only (PLAN.md 7.8).
+      // The session travels in the API's cookies, for these two origins only.
       credentials: allowed,
     })
   })

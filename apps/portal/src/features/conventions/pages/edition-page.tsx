@@ -8,7 +8,7 @@ import { conventionOptions, editionOptions, programItemsOptions } from '../api/c
 import { ProgramList } from '../components/program-list'
 import { useConventionTime } from '../hooks/use-convention-time'
 
-/** One published edition's programme, past or active (PLAN.md 9). */
+/** One published edition's programme, past or active. */
 export function EditionPage() {
   const { tenantSlug = '', editionSlug = '' } = useParams()
   const convention = useQuery(conventionOptions(tenantSlug))

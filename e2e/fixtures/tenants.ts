@@ -2,15 +2,15 @@ import { randomUUID } from 'node:crypto'
 import { accounts, createTenant, type Database, tenants } from '@opos/db'
 import { inArray, sql } from 'drizzle-orm'
 
-// The tenant a scenario works on: its own slug, created with createTenant as an admin creates one
-// (PLAN.md 14), and the team written directly as postgres, as the seed writes it.
+// The tenant a scenario works on: its own slug, created with createTenant as an admin creates one,
+// and the team written directly as postgres, as the seed writes it.
 
 type Level = 'none' | 'read' | 'write'
 
 const DAY = 24 * 60 * 60 * 1000
 
 export interface TenantInput {
-  /** A confirmed account: createTenant refuses any other (PLAN.md 14, Creating a tenant). */
+  /** A confirmed account: createTenant refuses any other. */
   headEmail: string
   name?: string
   timezone?: string

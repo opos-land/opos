@@ -3,7 +3,7 @@ import { type TenantMembership } from '../../common/als/tenant-context.service'
 import { ApiError } from '../../common/errors/api-error'
 import { type EditionAccess, rank, tenantResources } from '../../common/permissions/permissions'
 
-// The anti-escalation policy of PRODUCT.md 5.6. A head passes every rule except editing their own
+// The anti-escalation policy of PRODUCT.md 5. A head passes every rule except editing their own
 // membership; an org with settings=write manages other orgs within their own limits.
 
 type RefusalCode =
@@ -62,7 +62,7 @@ export const raisesEditionLevel = (
   )
 
 /**
- * An org whose access expires grants nothing that outlasts it (PRODUCT.md 5.6): it extends no one's
+ * An org whose access expires grants nothing that outlasts it (PRODUCT.md 5): it extends no one's
  * access past its own end, and raises no permission of a member whose access lasts longer. Lowering
  * a permission or shortening access is never limited by the org's own end. `current` and `next` are
  * the member's expiry before and after the change.
@@ -151,7 +151,7 @@ export function assertMayExtend(
   }
 }
 
-/** What an invitation grants (PLAN.md 7.7), with the defaults of an omitted field applied. */
+/** What an invitation grants, with the defaults of an omitted field applied. */
 export interface InvitationGrant extends TenantLevels {
   role: TenantMembership['role']
   expiresAt: Date | null

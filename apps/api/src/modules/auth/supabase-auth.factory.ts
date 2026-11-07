@@ -48,7 +48,7 @@ export const GOOGLE_STORAGE_KEY = 'opos-google'
  * `e.message` of a transport failure, so the cause (`ECONNREFUSED`, a TLS error) joins the message;
  * and a 5xx whose body is not JSON arrives as an error without a status. Both, and every other
  * 5xx, come back as an `outage`, which keeps the code of a 5xx Supabase Auth answered itself. The
- * client's full address goes along in `Sb-Forwarded-For` (PLAN.md 10); the visitor's `User-Agent`
+ * client's full address goes along in `Sb-Forwarded-For`; the visitor's `User-Agent`
  * never does.
  */
 async function callAuth(input: string | URL | Request, init?: RequestInit): Promise<Response> {
@@ -86,7 +86,7 @@ async function callAuth(input: string | URL | Request, init?: RequestInit): Prom
 }
 
 /**
- * The API's Supabase Auth clients (PLAN.md 10), each made per request so nothing of one request's
+ * The API's Supabase Auth clients, each made per request so nothing of one request's
  * session reaches another. All authorize with the secret key on `apikey` alone and never refresh
  * on their own.
  */

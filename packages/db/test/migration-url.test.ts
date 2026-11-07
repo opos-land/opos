@@ -3,7 +3,7 @@ import * as root from '../src/index'
 import { migrationUrl, reachableUrl } from '../src/migration-url'
 
 // Every db:* script connects through this variable, with no default: a missing one and a remote
-// host without the OPOS_ENV of its environment both stop the script (PLAN.md 11).
+// host without the OPOS_ENV of its environment both stop the script.
 
 const remote = 'postgres://postgres:s3cret@db.example.supabase.co:5432/postgres'
 

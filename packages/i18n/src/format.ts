@@ -1,6 +1,6 @@
 import type { Locale } from './locales'
 
-/** Dates always carry an explicit time zone: programme times use the tenant's (PLAN.md 6). */
+/** Dates always carry an explicit time zone: programme times use the tenant's. */
 export const formatDateTime = (
   value: Date,
   locale: Locale,

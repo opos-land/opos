@@ -16,7 +16,7 @@ import {
 } from './session-cookies'
 import { GOOGLE_STORAGE_KEY, SupabaseAuthFactory } from './supabase-auth.factory'
 
-/** The cookie that carries a Google sign-in from its start to its callback (PLAN.md 7.4, 7.5). */
+/** The cookie that carries a Google sign-in from its start to its callback. */
 export const GOOGLE_COOKIE = 'opos_google'
 /** How long a Google sign-in may take from its start to its callback. */
 export const GOOGLE_FLOW_MS = 10 * 60 * 1000
@@ -56,7 +56,7 @@ export const googleFailureUrl = (
   }`
 
 /**
- * The path of `app` a Google sign-in returns to (PLAN.md 7.5). `redirect` counts only as a path:
+ * The path of `app` a Google sign-in returns to. `redirect` counts only as a path:
  * it starts with a single `/`, holds no backslash or control character, and still resolves to the
  * application's own origin with a path that starts with a single `/`; anything else is the start page, `/`.
  */
@@ -155,7 +155,7 @@ export interface GoogleRequest extends CookieRequest {
 }
 
 /**
- * Google sign-in with PKCE (PLAN.md 7.5): the API is the OAuth client of Supabase Auth, and the
+ * Google sign-in with PKCE: the API is the OAuth client of Supabase Auth, and the
  * verifier waits between the two requests in the `opos_google` cookie, never in a body, a log or
  * a Location.
  */
@@ -263,7 +263,7 @@ export class GoogleAuthService {
       return failure()
     }
     const origin = applicationOrigin(flow.app, this.env)
-    // The session starts at aal1 on an account with 2FA: the code screen finishes it (PLAN.md 7.12).
+    // The session starts at aal1 on an account with 2FA: the code screen finishes it.
     return mfaPending
       ? `${origin}/auth/mfa?redirect=${encodeURIComponent(path)}`
       : `${origin}${path}`

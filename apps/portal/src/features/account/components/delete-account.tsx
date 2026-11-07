@@ -54,8 +54,8 @@ function OtherAccountRefusal({ email }: { email: string }) {
 }
 
 /**
- * Account deletion (PLAN.md 9): the user confirms it is them — the password again, or Google
- * again — and `DELETE /me` follows within the 5 minutes the API allows (PLAN.md 7.4). A return from
+ * Account deletion: the user confirms it is them — the password again, or Google
+ * again — and `DELETE /me` follows within the 5 minutes the API allows. A return from
  * Google, or from the code screen of an account with two-factor authentication, offers the
  * deletion only to the account that left.
  */
@@ -120,7 +120,7 @@ export function DeleteAccount({
       signInWithPassword({ email, password }),
     )
     if (errorCode(failure) === 'session.mfa-required') {
-      // The code screen is next and returns here, as a Google return does (PLAN.md 9).
+      // The code screen is next and returns here, as a Google return does.
       rememberDeletionConfirmation(userId)
     } else if (failure) setError(failure)
     else await deleteNow()

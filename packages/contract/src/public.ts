@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { publicRoute, timestamp } from './common'
 
-// What a convention's page shows to anyone (PLAN.md 5.7). A field added here is public at once.
+// What a convention's page shows to anyone. A field added here is public at once.
 
 export const publicTenantSchema = z.object({
   name: z.string(),

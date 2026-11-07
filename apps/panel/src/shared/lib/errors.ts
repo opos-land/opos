@@ -14,7 +14,7 @@ const isParams = (data: unknown): data is Record<string, string | number> =>
   Object.values(data).every((value) => typeof value === 'string' || typeof value === 'number')
 
 /**
- * The API's error body (PLAN.md 5) as an ORPCError with the code and its params; any other body
+ * The API's error body as an ORPCError with the code and its params; any other body
  * is left to oRPC.
  */
 export function decodeApiError(body: unknown, status: number): ORPCError<string, unknown> | null {
@@ -36,7 +36,7 @@ export function errorCode(error: unknown): string | undefined {
 
 /**
  * `signedOut()` leaves `ready` with no account. Any other state keeps a session the refresh could
- * not settle (PLAN.md 8): a `401` shown then means "try again", not "sign in again".
+ * not settle: a `401` shown then means "try again", not "sign in again".
  */
 function sessionReallyEnded() {
   const { status, account } = useSession.getState()
@@ -44,7 +44,7 @@ function sessionReallyEnded() {
 }
 
 /**
- * The message to show for an error, picked by its code from the catalog (PLAN.md 6). The English
+ * The message to show for an error, picked by its code from the catalog. The English
  * `message` the API sends never reaches the screen; an unknown code, or an error
  * without one, shows the generic message.
  */

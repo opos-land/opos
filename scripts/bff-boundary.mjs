@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The BFF boundary (docs/PLAN.md, 3.2): the panel and the portal talk to the API only, so in
+// The BFF boundary (docs/ARCHITECTURE.md): the panel and the portal talk to the API only, so in
 // apps/panel and apps/portal, and in their production bundles, nothing names Supabase.
 //
 //   (no argument)   every file of the two applications that git lists, the templates included
@@ -145,7 +145,7 @@ export function main(args, { cwd, stdin }) {
     const found = check(root, cwd, files, args.includes('--dist'))
     if (found.length === 0) return 0
     for (const breach of found) console.error(breach)
-    console.error('The panel and the portal talk to the API only (docs/PLAN.md, 3.2).')
+    console.error('The panel and the portal talk to the API only (docs/ARCHITECTURE.md).')
     return hook ? 2 : 1
   } catch (error) {
     console.error(`bff-boundary could not check this change, so it refuses it: ${error.message}`)

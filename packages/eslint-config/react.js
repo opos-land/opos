@@ -28,7 +28,7 @@ const supabaseImports = {
 }
 
 /**
- * The import rules of the feature-based layout (PLAN.md 3.2), for the application whose root is
+ * The import rules of the feature-based layout, for the application whose root is
  * `root`: a feature sees another feature only through its `index.ts`, `shared/` never imports a
  * feature, `app/` imports anything and nothing imports `app/`. Features are read from
  * `src/features` when the config loads.
@@ -85,7 +85,7 @@ export function featureBoundaries(root) {
 
 /**
  * A browser application built with React: the panel and the portal. Neither imports a Supabase
- * package, since the API is its only backend (PLAN.md 3.2).
+ * package, since the API is its only backend.
  */
 export function react(root) {
   return tseslint.config(

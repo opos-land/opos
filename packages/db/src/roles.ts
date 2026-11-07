@@ -18,7 +18,7 @@ const RUNTIME_ROLES = [
 ] as const
 
 /**
- * The roles and defaults of PLAN.md 4.6, as `postgres` may set them on a local stack and on a hosted
+ * The runtime roles and their defaults, as `postgres` may set them on a local stack and on a hosted
  * project alike: creates a missing runtime role, sets its attributes, password and limits, and
  * clears what a Supabase project starts with. Idempotent, so a change here reaches a database by
  * running it again. It runs in the caller's transaction, so it applies whole or not at all.

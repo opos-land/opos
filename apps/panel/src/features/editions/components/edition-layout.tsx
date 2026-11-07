@@ -4,7 +4,7 @@ import { AreaFrame, atLeast, SidebarLink, useCurrentTenant } from '../../tenants
 import { useEditionBySlug } from '../hooks/use-editions'
 
 /**
- * The edition area (PLAN.md 8), where most members work: the menu of everything about one edition,
+ * The edition area, where most members work: the menu of everything about one edition,
  * its settings and team access included; the switch to another edition is in the top bar. Until
  * the edition is known, or when the member does not see it, there is no menu and the page says
  * why.

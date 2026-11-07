@@ -5,7 +5,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { type TenantContextService } from '../src/common/als/tenant-context.service'
 import { AccessRepository } from '../src/common/permissions/access.repository'
 
-// The bound on the wait for a tenant's write lock (PLAN.md 7.3) is set for that wait alone.
+// The bound on the wait for a tenant's write lock is set for that wait alone.
 
 const db = migrationDb(migrationUrl())
 

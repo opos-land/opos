@@ -8,7 +8,7 @@ import { scheduleOptions } from '../../schedule'
 import { likeOptions, publicKey, unlikeOptions } from '../api/conventions'
 
 /**
- * Liking a programme item (PRODUCT.md 7.1): possible until the edition ends, while a like can be
+ * Liking a programme item (PRODUCT.md 7): possible until the edition ends, while a like can be
  * taken away at any time. The account's likes are its schedule.
  */
 export function LikeButton({

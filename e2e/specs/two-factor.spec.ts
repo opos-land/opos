@@ -12,15 +12,15 @@ import {
   signOutOfPortal,
 } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenario 18: two-factor authentication through the screens of the portal and the
-// panel (PLAN.md 7.12). The code of the authenticator app is computed from the secret the card
-// shows, with the RFC 6238 function of packages/db.
+// Two-factor authentication through the screens of the portal and the panel. The code of the
+// authenticator app is computed from the secret the card shows, with the RFC 6238 function of
+// packages/db.
 
 const codeFor = (secret: string) => totp(secret, Date.now())
 
 /** Turns two-factor authentication on from the card of `/account`; the secret and the ten codes. */
 async function turnOn(page: Page) {
-  // The narrowest phone PLAN.md 9 designs for.
+  // The narrowest phone the portal designs for.
   await page.setViewportSize({ width: 360, height: 780 })
   await page.goto(portalUrl('/account'))
   await page.getByRole('button', { name: 'Turn on two-factor authentication' }).click()

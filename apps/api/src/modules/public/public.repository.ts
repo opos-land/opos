@@ -43,7 +43,7 @@ const toEdition = ({
 
 /**
  * What a convention's page shows, inside the tenant the address names; RLS keeps every query inside
- * it. Only a published edition exists here: the filter sits in this repository (PLAN.md 5.7), so an
+ * it. Only a published edition exists here: the filter sits in this repository, so an
  * unpublished one answers like an unknown one.
  */
 @Injectable()

@@ -5,8 +5,8 @@ import { SupabaseAuthFactory } from '../modules/auth/supabase-auth.factory'
 import { MailService } from '../modules/mail/mail.service'
 import { reportReset, ResetError, resetTwoFactor } from './reset-two-factor'
 
-// `pnpm db:account:reset-2fa <email>` (PLAN.md 14): the entry of the reset. It reads what `tools`
-// is given (PLAN.md 11): the `postgres` role's URL, the Supabase Auth address and secret key, and
+// `pnpm db:account:reset-2fa <email>`: the entry of the reset. It reads what `tools`
+// is given: the `postgres` role's URL, the Supabase Auth address and secret key, and
 // the mail settings.
 
 const usage = 'Usage: pnpm db:account:reset-2fa <email>'

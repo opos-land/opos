@@ -8,8 +8,8 @@ import { type CookieRequest, type CookieResponse } from './session-cookies'
 /** Express sets `res` on the request; the service writes the cookies through it. */
 type HttpRequest = CookieRequest & { res: CookieResponse }
 
-// The Origin and the session cookies are read from the request, never from the contract's input
-// (PLAN.md 5.1). The routes answer without a body: oRPC sends the status the contract names.
+// The Origin and the session cookies are read from the request, never from the contract's input.
+// The routes answer without a body: oRPC sends the status the contract names.
 @Controller()
 export class AuthController {
   constructor(private readonly auth: AuthService) {}

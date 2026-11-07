@@ -52,7 +52,7 @@ describe('RouteRateLimiter', () => {
     )
   })
 
-  it('sets the limits of PLAN.md 7.9', () => {
+  it('sets the route limits', () => {
     expect(ROUTE_RATE_LIMITS).toEqual({
       authentication: { limit: 300, ttl: 300_000 },
       invitations: { limit: 20, ttl: 3_600_000 },

@@ -7,7 +7,7 @@ import { type Application } from '../src/common/http/application'
 import { authUrl, loadEnv } from '../src/config/env'
 
 // Test accounts go through the real Supabase Auth: the admin API creates them and the password
-// grant signs them in (PLAN.md 15.1).
+// grant signs them in.
 
 const env = loadEnv()
 const auth = authUrl(env)
@@ -69,7 +69,7 @@ export function unsignedToken(sub: string) {
   return `${encode({ alg: 'none', typ: 'JWT' })}.${encode(claims)}.`
 }
 
-/** The admin API takes the secret key on `apikey` and no `Authorization` (PLAN.md 10). */
+/** The admin API takes the secret key on `apikey` and no `Authorization`. */
 const admin = async (path: string, init: RequestInit = {}, accept: number[] = []) => {
   const response = await fetch(`${auth}${path}`, {
     ...init,
@@ -141,7 +141,7 @@ export const originOf = (app: Application) =>
 
 /**
  * The headers the portal's browser sends for `token`: its access cookie and the portal's Origin.
- * The API reads no other credential (PLAN.md 7.4).
+ * The API reads no other credential.
  */
 export const sessionHeaders = (token: string) => ({
   origin: originOf('portal'),
@@ -155,7 +155,7 @@ export const session =
 
 /**
  * A supertest agent signed in to `app` through `POST /auth/sign-in`: it holds the session cookies
- * the API set and sends the application's Origin with every request (PLAN.md 15.1).
+ * the API set and sends the application's Origin with every request.
  */
 export async function signedInAgent(app: Application, email: string, password = TEST_PASSWORD) {
   if (!apiServer) throw new Error('bindApi(app.getHttpServer()) first')
@@ -180,7 +180,7 @@ export async function deleteCreatedAccounts() {
 
 /**
  * An RFC 6238 code for a base32 secret, by Supabase Auth's clock. `stepsAhead` moves it by 30
- * second steps. Supabase Auth accepts a code again within its own step (PLAN.md 7.12), and a code
+ * second steps. Supabase Auth accepts a code again within its own step, and a code
  * an hour old is refused.
  */
 export const totpCode = (secret: string, stepsAhead = 0, now = Date.now()): string =>

@@ -17,7 +17,7 @@ const required = (name: string) => {
   return value
 }
 
-/** The passwords of the runtime roles, as pnpm db:roles set them (PLAN.md 4.6). */
+/** The passwords of the runtime roles, as pnpm db:roles set them. */
 export const appPassword = required('OPOS_APP_PASSWORD')
 export const appGlobalPassword = required('OPOS_APP_GLOBAL_PASSWORD')
 /** The local stack gives Supabase's own roles the password of postgres. */
@@ -25,7 +25,7 @@ const localPassword = new URL(migrationUrl()).password
 
 const connect = (connectionUrl: string) => postgres(connectionUrl, { max: 2, onnotice: () => {} })
 
-/** The postgres role, as migrations and the scripts run (PLAN.md 4.6). */
+/** The postgres role, as migrations and the scripts run. */
 export const migrator = connect(migrationUrl())
 const appUrl = url('opos_app', appPassword)
 export const app = connect(appUrl)

@@ -9,7 +9,7 @@ import { mergeSavedAccount, updateAccountOptions } from '../api/account'
 const BROWSER = 'browser'
 
 /**
- * The interface language (PLAN.md 6): a language, or the browser's, kept on the account through
+ * The interface language: a language, or the browser's, kept on the account through
  * `PATCH /me`, so it follows the user to every device.
  */
 export function LanguageForm({ account }: { account: Account }) {

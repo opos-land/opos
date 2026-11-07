@@ -12,7 +12,7 @@ import { AuthLayout } from '../components/auth-layout'
 const schema = z.object({ email: z.email() })
 
 /**
- * The password reset request (PLAN.md 7.6). The API answers an unknown address as a known one, so
+ * The password reset request. The API answers an unknown address as a known one, so
  * the page confirms the message whatever the address.
  */
 export function ForgotPasswordPage() {

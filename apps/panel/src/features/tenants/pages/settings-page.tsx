@@ -23,7 +23,7 @@ import { atLeast } from '../model/permissions'
 
 const schema = updateTenantSchema.required()
 
-/** Name, convention language and time zone; the slug is shown, never edited (PLAN.md 8). */
+/** Name, convention language and time zone; the slug is shown, never edited. */
 export function SettingsPage() {
   const { t, i18n } = useLingui()
   const { tenant, access, api } = useCurrentTenant()

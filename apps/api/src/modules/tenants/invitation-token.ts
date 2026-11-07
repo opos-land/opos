@@ -4,7 +4,7 @@ import { errors, type JWTPayload, jwtVerify, SignJWT } from 'jose'
 import { z } from 'zod'
 import { ApiError } from '../../common/errors/api-error'
 
-/** An invitation link works for 7 days (PLAN.md 7.7). */
+/** An invitation link works for 7 days. */
 export const INVITATION_TTL_SECONDS = 7 * 24 * 3600
 
 // Keeps an invitation apart from any other token signed with the same algorithm.

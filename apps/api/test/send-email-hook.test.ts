@@ -21,7 +21,7 @@ import { confirmLinkIn, deleteMail, waitForMail } from './mailpit'
 import { closeTenantDb, emailConfirmed } from './tenants'
 
 // Supabase Auth calls the hook at host.docker.internal:<PORT>, so this file runs the API on the
-// PORT it is configured with, on every interface (PLAN.md 12, Ports).
+// PORT it is configured with, on every interface.
 
 const env = loadEnv()
 const confirmUrl = `${env.PORTAL_URL}/auth/confirm`

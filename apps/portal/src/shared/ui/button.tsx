@@ -12,7 +12,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   pending?: boolean
 }
 
-/** A button sized for a finger first (PLAN.md 9): at least 44 px tall. */
+/** A button sized for a finger first: at least 44 px tall. */
 export function Button({
   variant = 'primary',
   pending = false,

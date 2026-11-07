@@ -10,15 +10,15 @@ import { postgresCode } from '../filters/http-exception.filter'
 
 /**
  * Reads the permissions of the request's account inside its tenant transaction; every query
- * filters on the transaction's tenant itself, besides RLS (PLAN.md 4.6).
+ * filters on the transaction's tenant itself, besides RLS.
  */
 @Injectable()
 export class AccessRepository {
   constructor(private readonly context: TenantContextService) {}
 
   /**
-   * Waits for and takes the write lock of the tenant in context until the transaction ends
-   * (PLAN.md 7.3); a membership read after it sees every member change the lock serialised.
+   * Waits for and takes the write lock of the tenant in context until the transaction ends; a
+   * membership read after it sees every member change the lock serialised.
    */
   async lockTenantWrites() {
     const tx = this.context.tx()

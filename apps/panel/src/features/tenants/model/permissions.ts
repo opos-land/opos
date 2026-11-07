@@ -5,7 +5,7 @@ export type Level = 'none' | 'read' | 'write'
 
 const rank: Record<Level, number> = { none: 0, read: 1, write: 2 }
 
-/** A level passes a requirement with that level or a higher one (PLAN.md 7.3). */
+/** A level passes a requirement with that level or a higher one. */
 export const atLeast = (level: Level, required: Level) => rank[level] >= rank[required]
 
 export interface EditionAccess {
@@ -37,7 +37,7 @@ export interface TenantAccess {
   /** A head and a member who reads the settings see every edition; others only their own. */
   seesEdition(editionId: string): boolean
   /**
-   * Whether the member can open a section of the convention settings (PLAN.md 8): general, editions
+   * Whether the member can open a section of the convention settings: general, editions
    * and team at settings>=read; the shop joins them with its screen.
    */
   seesConventionSettings: boolean
@@ -80,7 +80,7 @@ interface PermissionState {
   memberships: Membership[] | null
 }
 
-/** The permission store (PLAN.md 8), filled from GET /me/memberships after sign-in. */
+/** The permission store, filled from GET /me/memberships after sign-in. */
 export const usePermissionStore = create<PermissionState>(() => ({ memberships: null }))
 
 export const setMemberships = (memberships: Membership[] | null) =>

@@ -19,7 +19,7 @@ import {
   tenantWithHead,
 } from './tenants'
 
-// Likes and the personal schedule (PLAN.md 5.2, 5.6): any signed-in account, no membership needed.
+// Likes and the personal schedule: any signed-in account, no membership needed.
 
 type Tenant = Awaited<ReturnType<typeof tenantWithHead>>
 

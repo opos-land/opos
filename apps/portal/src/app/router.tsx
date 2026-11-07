@@ -14,7 +14,7 @@ import { SchedulePage } from '../features/schedule'
 import { NotFoundView } from '../shared/ui'
 import { Layout } from './layout'
 
-// Routes only mount a view from a feature (PLAN.md 3.2).
+// Routes only mount a view from a feature.
 export const router = createBrowserRouter([
   {
     element: <Layout />,

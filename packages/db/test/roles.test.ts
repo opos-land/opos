@@ -5,7 +5,7 @@ import { RUNTIME_TIMEOUTS } from '../src/client'
 import { applyRoles } from '../src/roles'
 import { migrator, supabaseAdmin } from './db'
 
-// db:roles (PLAN.md 4.6). Every case runs in a transaction that rolls back, so no other session,
+// db:roles. Every case runs in a transaction that rolls back, so no other session,
 // the API tests running beside these included, sees a change to a role, a default or a schema.
 
 class Rollback extends Error {}

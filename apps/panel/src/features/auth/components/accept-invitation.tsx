@@ -10,7 +10,7 @@ import { endsInvitation, forgetInvitation } from '../model/invitation-storage'
 import { mfaPath, mfaReturnFor } from '../model/mfa-return'
 
 /**
- * Accepts the invitation as soon as there is a session (PLAN.md 7.7, step 2), then opens the
+ * Accepts the invitation as soon as there is a session, then opens the
  * convention the account has joined.
  */
 export function AcceptInvitation({ token, email }: { token: string; email: string }) {

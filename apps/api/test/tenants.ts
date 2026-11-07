@@ -3,7 +3,7 @@ import { createTenant, migrationDb, migrationUrl, tenants, type Transaction } fr
 import { inArray, sql } from 'drizzle-orm'
 import { createAccount, signIn } from './auth'
 
-// Tenants, editions and memberships for API tests, written as postgres (PLAN.md 15.1).
+// Tenants, editions and memberships for API tests, written as postgres.
 
 const db = migrationDb(migrationUrl())
 const tenantIds: string[] = []
@@ -160,7 +160,7 @@ export async function deleteCreatedTenants() {
   tenantIds.length = 0
 }
 
-/** Whether accounts holds the email confirmation Supabase Auth recorded (PLAN.md 4.2). */
+/** Whether accounts holds the email confirmation Supabase Auth recorded. */
 export const emailConfirmed = async (accountId: string) =>
   (
     await db.execute<{ confirmed: boolean }>(
@@ -317,7 +317,7 @@ export async function addHead(tenantId: string, account: { id: string }) {
   `)
 }
 
-/** The rows that reference an account, by table (PLAN.md 9, account deletion). */
+/** The rows that reference an account, by table. */
 export const accountRows = async (accountId: string) =>
   (
     await db.execute<{

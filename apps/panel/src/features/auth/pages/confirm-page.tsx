@@ -28,7 +28,7 @@ function readLink(params: URLSearchParams) {
 /**
  * The new link is a password link whichever link expired: one works for an address still waiting
  * for confirmation as well as a confirmed one, which no confirmation mail reaches, and leads to the
- * password form (PLAN.md 7.6).
+ * password form.
  */
 function ExpiredLink({ returnTo }: { returnTo: string }) {
   const [sentTo, setSentTo] = useState<string | null>(null)
@@ -50,7 +50,7 @@ function ExpiredLink({ returnTo }: { returnTo: string }) {
   )
 }
 
-/** The page of an email link: nothing is sent until the button is pressed (PLAN.md 7.6, 7.7). */
+/** The page of an email link: nothing is sent until the button is pressed. */
 function RedeemLink({
   link,
   returnTo,
@@ -121,7 +121,7 @@ function RedeemLink({
 }
 
 /**
- * `/auth/confirm` (PLAN.md 5.1, 7.6, 7.7): an email link opens it and nothing is sent until its
+ * `/auth/confirm`: an email link opens it and nothing is sent until its
  * button is pressed, so a mail scanner that follows the link leaves the link unspent. The button
  * signs in, the page then asks for the password and opens the page the round trip started on.
  * Opened without a link, it shows the password form to a browser holding a session and offers
@@ -140,7 +140,7 @@ export function ConfirmPage() {
   // A session held before the button is no reason to skip it: the link may be for another account.
   const [redeemed, setRedeemed] = useState(false)
 
-  // The address no longer carries the spent link, so a reload cannot press it again (PLAN.md 7.6).
+  // The address no longer carries the spent link, so a reload cannot press it again.
   const redeemedLink = () => {
     setRedeemed(true)
     void navigate({ pathname: location.pathname }, { replace: true })

@@ -278,7 +278,7 @@ describe('@RequireEdition', () => {
     await as(programReader, b.slug).get(`/probe/editions/${editionA}`).expect(404)
   })
 
-  // An edition-level write takes the tenant's write lock like a tenant-level one (PLAN.md 7.3):
+  // An edition-level write takes the tenant's write lock like a tenant-level one:
   // a lower edition permission committed under that lock while the write waits stops it.
   it('refuses an edition write once a lower edition permission commits while it waits', async () => {
     const writer = await member()
@@ -307,7 +307,7 @@ describe('@RequireEdition', () => {
   })
 })
 
-// Writes of one tenant queue inside the API before they open a transaction (PLAN.md 7.3), so a
+// Writes of one tenant queue inside the API before they open a transaction, so a
 // tenant with more waiting writes than the pool has connections leaves the pool to the others.
 describe('the write queue of a tenant', () => {
   it('keeps connections free for other tenants while the writes of one tenant queue', async () => {

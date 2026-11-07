@@ -64,7 +64,7 @@ describe('verifyDatabase', () => {
     expect(await problemsAfter(async () => {})).toEqual([])
   })
 
-  it('accepts a tenant table that follows PLAN.md 4.6', async () => {
+  it('accepts a tenant table that follows the isolation rules', async () => {
     const problems = await problemsAfter((sql) =>
       sql.unsafe(`${tenantTable('verify_probe')}; ${isolated('verify_probe')}`),
     )

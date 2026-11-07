@@ -3,8 +3,7 @@ import { accessToken, callApi } from '../fixtures/api'
 import { expect, test } from '../fixtures'
 import { panelUrl, seeded, signInToPanel } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenarios 7, 8 and 12: what the panel shows follows the member's permissions,
-// and the API refuses what the UI hides (PLAN.md 8).
+// What the panel shows follows the member's permissions, and the API refuses what the UI hides.
 
 test.describe('permissions in the panel', () => {
   test('an org without settings works in its edition alone, and entering the settings by URL is refused', async ({

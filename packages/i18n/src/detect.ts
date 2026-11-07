@@ -21,7 +21,7 @@ export function parseAcceptLanguage(header: string | null | undefined): Locale[]
 
 /**
  * The first supported locale among the candidates, in order: the account's choice, then the
- * Accept-Language header, then DEFAULT_LOCALE (PLAN.md 6, locale detection).
+ * Accept-Language header, then DEFAULT_LOCALE.
  */
 export function detectLocale(candidates: {
   account?: string | null

@@ -8,7 +8,7 @@ interface CredentialRequest {
 }
 
 /**
- * The access token a request presents (PLAN.md 7.4): the access cookie of the application its
+ * The access token a request presents: the access cookie of the application its
  * `Origin` names, and nothing else. A request without the `Origin` of an application has no
  * session cookie to read, and `Authorization` is read by the scanner's guard alone.
  */

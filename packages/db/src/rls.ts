@@ -4,7 +4,7 @@ import { type Database } from './client'
 export type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0]
 
 /**
- * Sets `app.tenant_id` for the rest of the transaction only (SET LOCAL, PLAN.md 4.6); every RLS
+ * Sets `app.tenant_id` for the rest of the transaction only (SET LOCAL); every RLS
  * policy reads it, and a query without it fails. The same query asks who the connection is: RLS
  * holds only opos_app, so a pool pointed at any other role, or at an opos_app that bypasses RLS
  * or inherits another role, fails here instead of reading every tenant.
@@ -22,7 +22,7 @@ export async function setTenantContext(tx: Transaction, tenantId: string) {
         ? ', a member of other roles'
         : ''
     throw new Error(
-      `A tenant transaction runs as ${row?.role}${why}; RLS holds only opos_app without BYPASSRLS and without other roles (PLAN.md 4.6)`,
+      `A tenant transaction runs as ${row?.role}${why}; RLS holds only opos_app without BYPASSRLS and without other roles`,
     )
   }
 }

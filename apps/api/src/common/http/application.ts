@@ -1,6 +1,6 @@
 import { type Env } from '../../config/env'
 
-/** The two applications that sign in through the API (PLAN.md 5.1). */
+/** The two applications that sign in through the API. */
 export type Application = 'portal' | 'panel'
 
 type ApplicationUrls = Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>
@@ -8,7 +8,7 @@ type ApplicationUrls = Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>
 /**
  * The application a request comes from: its `Origin` is exactly `PORTAL_URL` or `PANEL_URL`.
  * Another subdomain of the same site, another port or scheme, and a request without the header are
- * none (PLAN.md 7.4).
+ * none.
  */
 export function applicationFromOrigin(origin: unknown, env: ApplicationUrls): Application | null {
   if (typeof origin !== 'string') return null
@@ -32,7 +32,7 @@ interface Response {
 /**
  * A request that changes state and carries a session cookie needs the `Origin` of an application:
  * `403` `request.origin-denied` otherwise, a sibling subdomain included. With `SameSite=Strict`
- * this is the CSRF protection; there is no CSRF token (PLAN.md 7.4).
+ * this is the CSRF protection; there is no CSRF token.
  */
 export const requireOriginForSession =
   (env: ApplicationUrls) => (req: Request, res: Response, next: () => void) => {

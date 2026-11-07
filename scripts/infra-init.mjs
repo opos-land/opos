@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// `pnpm infra:init` (docs/PLAN.md, 12): writes the .env files from their templates, fills the empty
+// `pnpm infra:init`: writes the .env files from their templates, fills the empty
 // secrets, creates the local signing key, starts the Supabase CLI's local stack, writes the keys and
 // addresses it reports and sets the database roles. Safe to run again: a value already set is never
 // overwritten. It runs on the local stack only and never links a hosted project.
@@ -241,7 +241,7 @@ export async function initInfra({
     })
   }
 
-  // 4. the local stack, and the keys and addresses it reports (docs/PLAN.md, 12)
+  // 4. the local stack, and the keys and addresses it reports
   await exec('supabase', ['start'], { cwd: root, env })
   const status = parseStatus(await exec('supabase', ['status', '-o', 'env'], { cwd: root, env }))
   for (const key of ['API_URL', 'DB_URL', 'SECRET_KEY']) {
@@ -261,13 +261,13 @@ export async function initInfra({
     for (const key of keys) {
       if (isSet(known(dir, key)) && databasePort(known(dir, key)) !== databasePort(status.DB_URL)) {
         warn(
-          `${dir}/.env: ${key} is on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm infra:init (docs/PLAN.md, 12)`,
+          `${dir}/.env: ${key} is on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm infra:init`,
         )
       }
     }
   }
 
-  // 5. the database roles, with the passwords and the address written above (docs/PLAN.md, 4.6)
+  // 5. the database roles, with the passwords and the address written above
   await exec('pnpm', ['db:roles'], { cwd: root, env, showOutputOnFailure: true })
 }
 

@@ -5,8 +5,7 @@ import { signInWithGoogle } from '../api/auth'
 
 /**
  * Google sign-in and sign-up in one, and a repeated Google sign-in that confirms it is the user: a
- * navigation to the API, which returns to `returnTo` signed in, or to `/login?error=<code>`
- * (PLAN.md 7.5).
+ * navigation to the API, which returns to `returnTo` signed in, or to `/login?error=<code>`.
  */
 export function GoogleButton({
   returnTo,

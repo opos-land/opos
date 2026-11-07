@@ -6,7 +6,7 @@ import { GoogleButton, signInWithPassword } from '../../auth'
 import { type SignInMethods } from '../model/sign-in-methods'
 
 /**
- * A sign-in from the last 5 minutes (PLAN.md 7.4), asked for again as the account's
+ * A sign-in from the last 5 minutes, asked for again as the account's
  * `signInMethods` allow: the password here, Google by leaving and coming back to `returnTo`. On an
  * account with two-factor authentication the password sign-in leads through the code screen first.
  */

@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { accountRoute, publicRoute, timestamp } from './common'
 
 /**
- * The token of an organizer invitation, from the link in its email (PLAN.md 7.7). The largest
+ * The token of an organizer invitation, from the link in its email. The largest
  * invitation inviteMemberSchema accepts signs a token of about 9.8k characters; the limit leaves
  * room for it and keeps `GET /invitations/preview?token=` within Node's 16 KiB header limit.
  */

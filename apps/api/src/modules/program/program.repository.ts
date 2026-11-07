@@ -98,7 +98,7 @@ export class ProgramRepository {
     editionId: string,
     values: { title: string; description?: string | null; startsAt: string; endsAt: string },
   ): Promise<ProgramItem> {
-    // A write runs under the tenant's write lock (PLAN.md 7.3), so nothing is added after the count.
+    // A write runs under the tenant's write lock, so nothing is added after the count.
     const [held] = await this.context
       .tx()
       .select({ items: count() })

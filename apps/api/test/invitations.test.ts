@@ -32,7 +32,7 @@ import {
   tenantWithHead,
 } from './tenants'
 
-// Organizer invitations (PLAN.md 7.7) against Supabase Auth, Postgres and Mailpit.
+// Organizer invitations against Supabase Auth, Postgres and Mailpit.
 
 const env = loadEnv()
 const key = invitationKey(env.INVITE_SECRET)
@@ -407,7 +407,7 @@ describe('inviting a known account', () => {
     expect(mail!.Text).toContain(`${env.PANEL_URL}/${a.slug}`)
   })
 
-  // The languages in PLAN.md 6 order for a confirmed account: its choice, the sign-up's, the default.
+  // The language order for a confirmed account: its choice, the sign-up's, the default.
   it('notifies an account that chose no language in the language of its sign-up', async () => {
     const tenant = await tenantWithHead('pl')
     const known = await createAccount({ locale: 'en' })

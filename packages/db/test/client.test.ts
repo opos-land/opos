@@ -6,7 +6,7 @@ import { setTenantContext } from '../src/rls'
 import { appGlobalPassword, appPassword, createTenant, url } from './db'
 
 // A runtime session takes its limits from its role, which db:roles writes from RUNTIME_TIMEOUTS,
-// and sends only application_name; the migration pool sends no limit of its own (PLAN.md 4.6).
+// and sends only application_name; the migration pool sends no limit of its own.
 
 const pools = {
   opos_app: appDb(url('opos_app', appPassword), { max: 1 }),

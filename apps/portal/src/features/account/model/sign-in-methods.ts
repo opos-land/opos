@@ -6,7 +6,7 @@ export interface SignInMethods {
 }
 
 /**
- * How the account can confirm it is the account before it is deleted (PLAN.md 9): the password
+ * How the account can confirm it is the account before it is deleted: the password
  * again, Google again, or either, as `GET /me` names its `signInMethods`. An account whose
  * methods say nothing is offered the password.
  */

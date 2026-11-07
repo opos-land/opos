@@ -26,7 +26,7 @@ const toAccount = ({ mfaEnabledAt, ...row }: Row): Account => ({
 })
 
 /**
- * `accounts` has no RLS (PLAN.md 4.6): it is read and written on the opos_app pool outside a
+ * `accounts` has no RLS: it is read and written on the opos_app pool outside a
  * tenant transaction. Only `findForToken` and `localeForHook` look an account up by id, the `sub`
  * of a verified token, the user of a session Supabase Auth has just issued or the user of a verified
  * hook payload; every other method works on the account in the request store, so no caller can pass
@@ -63,7 +63,7 @@ export class AccountsRepository {
 
   /**
    * The signed-in account's email once it is confirmed, else nothing: matching by email counts
-   * only a confirmed address (PLAN.md 4.2).
+   * only a confirmed address.
    */
   async confirmedEmail(): Promise<string | undefined> {
     const { id } = this.context.account()

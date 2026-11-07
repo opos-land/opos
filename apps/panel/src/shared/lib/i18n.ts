@@ -18,7 +18,7 @@ export async function loadLocale(locale: Locale) {
 }
 
 /**
- * The interface language (PLAN.md 6): the account's choice, then the browser's languages, then
+ * The interface language: the account's choice, then the browser's languages, then
  * DEFAULT_LOCALE.
  */
 export const pickLocale = (account?: string | null): Locale =>

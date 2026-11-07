@@ -5,17 +5,16 @@ export interface SessionState {
   /**
    * `loading` until `GET /me` has answered; `unavailable` when it could not be asked, so the panel
    * offers to try again and signs nobody out; `mfa-required` for a session below `aal2` on an
-   * account with two-factor authentication, which is not signed in until the code screen is done
-   * (PLAN.md 7.12).
+   * account with two-factor authentication, which is not signed in until the code screen is done.
    */
   status: 'loading' | 'ready' | 'unavailable' | 'mfa-required'
-  /** The signed-in account; known only from the API's answers (PLAN.md 8). */
+  /** The signed-in account; known only from the API's answers. */
   account: Account | null
 }
 
 export const useSession = create<SessionState>(() => ({ status: 'loading', account: null }))
 
-/** What the other tabs of the panel are told on an account change (PLAN.md 7.4). */
+/** What the other tabs of the panel are told on an account change. */
 export const SESSION_CHANNEL = 'opos-panel-session'
 
 let channel: BroadcastChannel | null | undefined
@@ -46,7 +45,7 @@ export function clearSession() {
 
 /**
  * The session waits for its code and shows no account. Where an account was shown, the other tabs
- * are told to drop it: the cookies now belong to whoever is signing in (PLAN.md 7.4). A page load
+ * are told to drop it: the cookies now belong to whoever is signing in. A page load
  * that lands here, as a Google return does, holds no account yet and passes `always`.
  */
 export function mfaRequired(always = false) {

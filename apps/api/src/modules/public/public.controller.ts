@@ -7,7 +7,7 @@ import { notFound } from '../../common/errors/api-error'
 import { PublicRepository } from './public.repository'
 
 // Without sign-in and without X-Tenant-Slug: the address names the tenant, and each request opens
-// its context with withTenant (PLAN.md 7.2).
+// its context with withTenant.
 @Controller()
 export class PublicController {
   constructor(

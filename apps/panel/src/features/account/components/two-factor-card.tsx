@@ -20,7 +20,7 @@ type Action = 'enroll' | 'disable'
 
 /**
  * What the card shows besides the on or off state. The secret, the QR code and the recovery codes
- * live in this state alone: they are never stored, and go with the view (PLAN.md 7.12).
+ * live in this state alone: they are never stored, and go with the view.
  */
 type View =
   | { step: 'idle' }
@@ -131,7 +131,7 @@ function RecoveryCodes({ codes, onSaved }: { codes: string[]; onSaved: () => voi
 }
 
 /**
- * The two-factor card in the account menu (PLAN.md 7.12): off, with the way to turn it on (the QR code
+ * The two-factor card in the account menu: off, with the way to turn it on (the QR code
  * and the secret, then the recovery codes once, until the person confirms they saved them); on,
  * with the way to turn it off. Turning it on or off needs a sign-in from the last 5 minutes, which
  * the card asks for as the account's sign-in methods allow.
@@ -163,7 +163,7 @@ export function TwoFactorCard({
   }, [mfaEnabled])
 
   // The API's answer is written into the account before `GET /me` is asked, so the card is right
-  // even when that request fails (PLAN.md 7.12).
+  // even when that request fails.
   const refresh = (mfaEnabled: boolean) =>
     refreshAccount(queryClient, mfaEnabled).catch(() => undefined)
 
@@ -210,7 +210,7 @@ export function TwoFactorCard({
       return null
     } catch (failure) {
       if (errorCode(failure) !== 'mfa.already-enabled') return failure
-      // The factor is verified but a request racing this one replaced the codes (PLAN.md 7.12).
+      // The factor is verified but a request racing this one replaced the codes.
       setView({ step: 'idle' })
       // Set before the refresh: the refresh may want the code, which unmounts this card.
       rememberLostCodes()

@@ -11,7 +11,7 @@ import { SignInForm } from '../components/sign-in-form'
 import { safeRedirect, withRedirect } from '../model/redirect'
 
 /**
- * The code a failed Google sign-in puts in `?error=` (PLAN.md 7.5), as an error the catalog can
+ * The code a failed Google sign-in puts in `?error=`, as an error the catalog can
  * show. A value that is no code of the API shows nothing: no text of the address reaches the page.
  */
 function returnedError(value: string | null) {

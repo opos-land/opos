@@ -18,7 +18,7 @@ function LevelText({ level }: { level: Member['settingsAccess'] }) {
 
 /**
  * One member of the team: what the membership holds and, for a member with `settings=write`, the
- * editor and removal. Anti-escalation refusals come back with codes of their own (PLAN.md 5.3).
+ * editor and removal. Anti-escalation refusals come back with codes of their own.
  */
 export function MemberRow({ member, isSelf }: { member: Member; isSelf: boolean }) {
   const { t } = useLingui()
@@ -60,7 +60,7 @@ export function MemberRow({ member, isSelf }: { member: Member; isSelf: boolean 
     update.mutate({ params, body })
   })
 
-  // Only a head edits a head; nobody edits their own membership (PRODUCT.md 5.6).
+  // Only a head edits a head; nobody edits their own membership (PRODUCT.md 5).
   const manageable =
     atLeast(access.settings, 'write') && !isSelf && (member.role === 'org' || access.isHead)
   const name = memberName(member)

@@ -6,7 +6,7 @@ import { confirmLinkIn, waitForMail } from '../fixtures/mailpit'
 import { stack } from '../fixtures/stack'
 import { portalUrl, signInToPortal, signOutOfPortal } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenarios 1-3: registration, confirmation and the session in the portal.
+// Registration, confirmation and the session in the portal.
 
 const apiOrigin = new URL(stack.api).origin
 const SESSION_COOKIES = ['opos_portal_access', 'opos_portal_refresh']

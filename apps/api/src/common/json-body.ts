@@ -7,7 +7,7 @@ interface Response {
 }
 
 /**
- * A request body must be JSON (PLAN.md 5). Express parses JSON before routing, within its size
+ * A request body must be JSON. Express parses JSON before routing, within its size
  * limit; any other body oRPC would read from the stream itself, with no limit, inside the tenant
  * transaction. The headers decide, so the body is never read.
  */

@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 
-/** How many recovery codes `enable` hands out (PLAN.md 7.12). */
+/** How many recovery codes `enable` hands out. */
 export const RECOVERY_CODE_COUNT = 10
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'

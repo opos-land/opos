@@ -11,7 +11,7 @@ import { NO_AUTH_ANSWER } from './supabase-auth.factory'
 
 const logger = new Logger('AuthRefusal')
 
-/** The session is gone: the client signs in again (PLAN.md 5.1). */
+/** The session is gone: the client signs in again. */
 const SESSION_GONE = new Set([
   'session_not_found',
   'refresh_token_not_found',
@@ -23,7 +23,7 @@ const SESSION_GONE = new Set([
 /**
  * Codes of Supabase Auth that reach the client as `auth.<error_code>` with its status, each with
  * the English message of OPOS's own the error body carries: the wording of a third party never
- * becomes part of the API's body (PLAN.md 5).
+ * becomes part of the API's body.
  */
 const LISTED: Readonly<Record<string, string>> = {
   email_not_confirmed: 'The email address is not confirmed.',
@@ -55,7 +55,7 @@ export const isHookFailure = (error: unknown): error is AuthError =>
   isAuthError(error) && (error.code?.startsWith('hook_') ?? false)
 
 /**
- * What Supabase Auth refused, as the error the API answers with (PLAN.md 5.1): a dead session is
+ * What Supabase Auth refused, as the error the API answers with: a dead session is
  * `401` `session.invalid`, `insufficient_aal` is `401` `session.mfa-required`,
  * `mfa_verification_failed` is `400` `mfa.code-invalid`, a code the contract lists keeps its status, an outage is `503` with
  * its reason for the log line, and anything else is a `500`, logged by its code and status.
@@ -70,7 +70,7 @@ export function toApiError(error: unknown): ApiError {
     if (error.code && SESSION_GONE.has(error.code)) return unauthenticated()
     // The session lives and only lacks the second factor, such as `updateUser` at `aal1`.
     if (error.code === 'insufficient_aal') return mfaRequired()
-    // A wrong code or one outside its window; Supabase Auth answers it with a 422 (PLAN.md 7.12).
+    // A wrong code or one outside its window; Supabase Auth answers it with a 422.
     if (error.code === 'mfa_verification_failed') {
       return new ApiError(400, 'mfa.code-invalid', 'The code is wrong or has expired.')
     }

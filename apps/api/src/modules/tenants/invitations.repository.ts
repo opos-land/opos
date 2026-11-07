@@ -13,9 +13,9 @@ import { currentTenantId } from '../../common/database/current-tenant'
 import { type InvitationGrant } from './anti-escalation'
 
 /**
- * Invitations inside the tenant transaction (PLAN.md 7.7). Every query on `tenants`,
+ * Invitations inside the tenant transaction. Every query on `tenants`,
  * `tenant_memberships`, `editions` and `accepted_invitations` filters on the transaction's tenant
- * itself, besides RLS (PLAN.md 4.6).
+ * itself, besides RLS.
  */
 @Injectable()
 export class InvitationsRepository {
@@ -38,7 +38,7 @@ export class InvitationsRepository {
 
   /**
    * The account that uses `email`, only once that address is confirmed: an unconfirmed account
-   * counts as none (PLAN.md 4.2). `email` is lowercase, like `accounts.email`.
+   * counts as none. `email` is lowercase, like `accounts.email`.
    */
   async confirmedAccount(email: string) {
     const [row] = await this.context

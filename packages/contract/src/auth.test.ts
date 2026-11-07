@@ -8,7 +8,7 @@ import {
   verifySchema,
 } from './auth'
 
-// What the auth routes take (PLAN.md 5.1): a sign-up takes no password, ever.
+// What the auth routes take: a sign-up takes no password, ever.
 describe('signUpSchema', () => {
   it('takes an address and optional names', () => {
     expect(signUpSchema.parse({ email: ' anna@example.test ' })).toEqual({

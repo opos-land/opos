@@ -14,7 +14,7 @@ import {
 import { credentialOf, verifyOnce } from './request-credential'
 
 /**
- * Verifies the Supabase Auth access token (PLAN.md 7.4), from the application's access cookie
+ * Verifies the Supabase Auth access token, from the application's access cookie
  * alone, and puts its account into the request store. The JWT holds no tenant; `locale` and the names come from `accounts`, not the token.
  */
 @Injectable()
@@ -43,7 +43,7 @@ export class JwtAuthGuard implements CanActivate {
     const account = await this.accounts.findForToken(check.payload.sub)
     if (!account) throw unauthenticated('No account for this token')
     // Read from the mirror, not from Supabase Auth: a token issued before `enable` loses access
-    // at once (PLAN.md 7.12). The routes that finish a sign-in carry @AllowMfaPending.
+    // at once. The routes that finish a sign-in carry @AllowMfaPending.
     if (account.mfaEnabled && check.payload.aal !== 'aal2' && !this.mfaPendingAllowed(ctx)) {
       throw mfaRequired()
     }
@@ -52,7 +52,7 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   private mfaPendingAllowed(ctx: ExecutionContext) {
-    // The handler alone: metadata on a controller would open every route of it (PLAN.md 7.12).
+    // The handler alone: metadata on a controller would open every route of it.
     return this.reflector.get<boolean | undefined>(ALLOW_MFA_PENDING, ctx.getHandler()) === true
   }
 }

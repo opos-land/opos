@@ -14,7 +14,7 @@ import { RecoveryCodeStoreError, type RecoveryCodesRepository } from './recovery
 import { type SupabaseAuthFactory } from './supabase-auth.factory'
 
 // The order of the calls is what these tests pin: a failed removal spends no recovery code, a
-// failed email after a removal still answers, and `enable` replaces leftovers (PLAN.md 7.12).
+// failed email after a removal still answers, and `enable` replaces leftovers.
 
 const env = {
   PORTAL_URL: 'http://portal.test',

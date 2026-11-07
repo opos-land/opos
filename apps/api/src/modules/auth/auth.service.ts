@@ -57,7 +57,7 @@ const addressRefusal = (error: unknown) =>
 
 /**
  * Whether a recovery link found the address already confirmed, by the two stamps of Supabase Auth's
- * own clock in its answer. Otherwise the link is what confirmed it (PLAN.md 5.1), which is also the
+ * own clock in its answer. Otherwise the link is what confirmed it, which is also the
  * answer for a stamp absent or unparsable: `NaN` compares false.
  */
 export const confirmedBeforeItsLink = (
@@ -65,8 +65,8 @@ export const confirmedBeforeItsLink = (
 ) => Date.parse(user?.email_confirmed_at ?? '') <= Date.parse(user?.recovery_sent_at ?? '')
 
 /**
- * The `auth` endpoints (PLAN.md 5.1): the API calls Supabase Auth for the person and keeps the
- * session in cookies, one pair per application (PLAN.md 7.4). No token reaches a response body.
+ * The `auth` endpoints: the API calls Supabase Auth for the person and keeps the
+ * session in cookies, one pair per application. No token reaches a response body.
  */
 @Injectable()
 export class AuthService {
@@ -81,7 +81,7 @@ export class AuthService {
     private readonly limiter: RouteRateLimiter,
   ) {}
 
-  /** The calling application is the `Origin`; anything else is refused (PLAN.md 5.1). */
+  /** The calling application is the `Origin`; anything else is refused. */
   private application(req: CookieRequest): Application {
     const app = applicationFromOrigin(req.headers.origin, this.env)
     if (!app) throw originDenied()
@@ -110,7 +110,7 @@ export class AuthService {
   /**
    * Sets the cookies of a session just issued and answers the account it belongs to. On an account
    * with two-factor authentication the cookies are set all the same, at `aal1`, and the answer is
-   * `session.mfa-required`: the person finishes signing in on the code screen (PLAN.md 7.12).
+   * `session.mfa-required`: the person finishes signing in on the code screen.
    */
   private async signedIn(req: AuthRequest, app: Application, session: Session | null): Promise<Me> {
     if (!session) throw new ApiError(500, 'server.error', 'Supabase Auth issued no session')
@@ -121,7 +121,7 @@ export class AuthService {
   }
 
   /**
-   * The three routes that mail an address promise to reveal nothing about it (PLAN.md 5.1). An
+   * The three routes that mail an address promise to reveal nothing about it. An
    * empty mail bucket is a `202` for that reason: Supabase Auth's window per address exists only
    * for an address it knows, and the code cannot tell it from the project's bucket. A `5xx`
    * Supabase Auth answered itself is a `202` too, and so is a failed hook (`hook_*`, a `422` while
@@ -201,7 +201,7 @@ export class AuthService {
 
   /**
    * Whoever registered the address first chose its password before the owner confirmed it, so
-   * the confirmation replaces it with a random one nobody knows (PLAN.md 5.1), whether a sign-up
+   * the confirmation replaces it with a random one nobody knows, whether a sign-up
    * link or a recovery link confirmed it. A recovery link on an address confirmed before it leaves
    * the password alone: the person may never use the link's form, and an account with two-factor
    * authentication could not change it at `aal1` anyway. The session the confirmation opened is
@@ -243,7 +243,7 @@ export class AuthService {
 
   /**
    * Rotates the pair. Only a dead session ends the browser's: `session.invalid` clears the
-   * cookies, an outage or any other refusal keeps them (PLAN.md 5.1).
+   * cookies, an outage or any other refusal keeps them.
    */
   async refresh(req: AuthRequest): Promise<void> {
     const app = this.application(req)

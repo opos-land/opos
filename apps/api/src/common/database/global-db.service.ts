@@ -14,8 +14,8 @@ import { type TenantInContext, TenantContextService } from '../als/tenant-contex
 import { GLOBAL_DB } from './tokens'
 
 /**
- * The only code on the opos_app_global role, which bypasses RLS. Every method is a row of the
- * cross-tenant query table in PLAN.md 4.6; a new one needs a new row there first.
+ * The only code on the opos_app_global role, which bypasses RLS. Every method is one of the
+ * documented cross-tenant queries; a new one is documented first.
  */
 @Injectable()
 export class GlobalDbService {

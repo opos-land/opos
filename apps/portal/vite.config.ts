@@ -15,7 +15,7 @@ export default defineConfig(({ command, mode }) => {
     define: Object.fromEntries(
       missing.map(([key, value]) => [`import.meta.env.${key}`, JSON.stringify(value)]),
     ),
-    // The portal's dev address (PLAN.md 12); OPOS_PORTAL_PORT moves it.
+    // The portal's dev address; OPOS_PORTAL_PORT moves it.
     server: {
       host: 'opos.localhost',
       port: Number(process.env.OPOS_PORTAL_PORT ?? 5174),

@@ -6,7 +6,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 import { type AuthRequest } from './auth.service'
 import { MfaService } from './mfa.service'
 
-// Two-factor authentication (PLAN.md 7.12). The four POST routes finish a sign-in or start 2FA, so
+// Two-factor authentication. The four POST routes finish a sign-in or start 2FA, so
 // they accept a session below aal2, one handler at a time; DELETE /auth/mfa does not.
 @Controller()
 @UseGuards(JwtAuthGuard)

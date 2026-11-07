@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures'
 import { portalUrl } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenario 5: the programme shows up on the portal pages of both tenants, signed out,
+// The programme shows up on the portal pages of both tenants, signed out,
 // each in its own time zone. One instant reads differently on the two pages.
 
 const INSTANT = '2027-06-04T08:00:00.000Z'

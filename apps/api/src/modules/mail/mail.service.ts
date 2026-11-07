@@ -6,7 +6,7 @@ import { ENV, type Env } from '../../config/env'
 import { renderLinkEmail, renderNoticeEmail } from './render'
 import { sendWithDeadline, smtpOptions } from './smtp'
 
-/** What sending takes of the environment: the scripts of `tools` have no more (PLAN.md 11). */
+/** What sending takes of the environment: the scripts of `tools` have no more. */
 export type MailEnv = Pick<
   Env,
   'OPOS_ENV' | 'SMTP_HOST' | 'SMTP_PORT' | 'SMTP_USER' | 'SMTP_PASS' | 'MAIL_FROM'
@@ -14,7 +14,7 @@ export type MailEnv = Pick<
 
 /**
  * Sends the API's emails over SMTP (Mailpit in dev). Every message is rendered through Lingui in
- * the recipient's locale (PLAN.md 6) and sent within SEND_DEADLINE_MS; a failed or late send
+ * the recipient's locale and sent within SEND_DEADLINE_MS; a failed or late send
  * rejects, so the caller decides what it means.
  */
 @Injectable()

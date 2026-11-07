@@ -10,7 +10,7 @@ export interface ConnectionOptions {
 
 /**
  * How long a runtime session may let a statement, an idle transaction and a whole transaction hold
- * a connection (PLAN.md 4.6). `pnpm db:roles` writes them as settings of the runtime roles, so a
+ * a connection. `pnpm db:roles` writes them as settings of the runtime roles, so a
  * session has them from its first query, through a pooler too; past a bound Postgres cancels the
  * statement or ends the session.
  */

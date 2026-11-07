@@ -25,7 +25,7 @@ import { HOOK_PORT_TIMEOUT_MS, listenOnHookPort } from './hook-port'
 import { confirmLinkIn, deleteMail, waitForMail } from './mailpit'
 import { accountByEmail, closeTenantDb } from './tenants'
 
-// Every operation of PLAN.md 5.1 against the local stack, from real cookies (PLAN.md 15.1). The
+// Every operation of the `auth` endpoints against the local stack, from real cookies. The
 // sign-ups here make Supabase Auth call the send-email hook, so the API listens on its PORT.
 
 const env = loadEnv()

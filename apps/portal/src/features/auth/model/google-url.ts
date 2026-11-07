@@ -1,7 +1,7 @@
 import { safeRedirect } from './redirect'
 
 /**
- * The address the Google button navigates to (PLAN.md 7.5): the API starts the sign-in for the
+ * The address the Google button navigates to: the API starts the sign-in for the
  * portal and returns to `returnTo`, which it judges again as a path of the portal.
  */
 export function googleSignInUrl(apiUrl: string, returnTo: string) {

@@ -12,7 +12,7 @@ import { mfaRequired, signedOut } from './session-store'
 export type ApiClient = ContractRouterClient<Contract>
 export type Api = RouterUtils<ApiClient>
 
-/** One refresh at a time: for the requests of this tab, then in turn with the other tabs (PLAN.md 7.4). */
+/** One refresh at a time: for the requests of this tab, then in turn with the other tabs. */
 const refresh = shared(acrossTabs('opos-portal-refresh', () => requestRefresh(env.VITE_API_URL)))
 
 function client(tenantSlug?: string): ApiClient {

@@ -3,7 +3,7 @@ import { accounts } from './accounts'
 import { id, timestamps } from './columns'
 
 /**
- * The one-time recovery codes of two-factor authentication (PLAN.md 4.2, 7.12). Only the SHA-256
+ * The one-time recovery codes of two-factor authentication. Only the SHA-256
  * of a code is stored. A global table: no RLS, read and written only for the account in the
  * request store.
  */

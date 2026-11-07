@@ -3,7 +3,7 @@ import { accountClient } from '../../../shared/lib/api'
 import { useSession } from '../../../shared/lib/session'
 import { accountOptions } from './account'
 
-// The calls of the two-factor card (PLAN.md 7.12). They are plain calls, not TanStack mutations: a
+// The calls of the two-factor card. They are plain calls, not TanStack mutations: a
 // mutation keeps its answer in the mutation cache, and the answers here are a secret and the
 // recovery codes, which must not outlive the view.
 
@@ -18,7 +18,7 @@ export const disableTwoFactor = () => accountClient.auth.mfa.disable()
  * What the API just answered about `mfaEnabled` goes into the account page and the session at
  * once; `GET /me` is asked afterwards and its answer replaces the whole account. A `GET /me` that
  * fails therefore leaves the card right, not stale, and rejects for the caller to see. An answer
- * is dropped unless the session is still `ready` and shows that account (PLAN.md 7.4).
+ * is dropped unless the session is still `ready` and shows that account.
  */
 export async function refreshAccount(queryClient: QueryClient, mfaEnabled: boolean) {
   const key = accountOptions().queryKey

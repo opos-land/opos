@@ -1,5 +1,5 @@
 /**
- * The account this tab last showed (PLAN.md 8). A page to return to belongs to that account, so
+ * The account this tab last showed. A page to return to belongs to that account, so
  * another account arriving on a page of the panel starts from `/`. Kept in sessionStorage, which
  * is the tab's own and outlives a page load, a Google return included; without it the panel works
  * as if the tab had shown no account yet.

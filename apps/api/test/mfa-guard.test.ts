@@ -28,7 +28,7 @@ import { confirmLinkIn, deleteMail, waitForMail } from './mailpit'
 import { ProbeModule } from './probe'
 import { addVerifiedFactor, closeTenantDb } from './tenants'
 
-// The guard asks for the second factor where an account turned it on (PLAN.md 7.12). A session
+// The guard asks for the second factor where an account turned it on. A session
 // below aal2 on such an account reaches no route but the ones that let it finish signing in; no
 // other sign-in path raises the level or skips it.
 

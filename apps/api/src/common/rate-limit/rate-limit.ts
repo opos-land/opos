@@ -8,7 +8,7 @@ import { type Env } from '../../config/env'
 import { type AccessTokenVerifier } from '../guards/access-token'
 import { credentialOf, verifyOnce } from '../guards/request-credential'
 
-/** How many requests one tracker makes within `ttl` milliseconds (PLAN.md 7.9). */
+/** How many requests one tracker makes within `ttl` milliseconds. */
 export interface RateLimit {
   limit: number
   ttl: number

@@ -9,7 +9,7 @@ import { signUp } from '../api/auth'
 import { registrationSchema } from '../model/registration'
 
 /**
- * Registration (PLAN.md 9): the names and the address, no password; it is chosen once the link
+ * Registration: the names and the address, no password; it is chosen once the link
  * proves the address. `onRegistered` gets the address the link went to.
  */
 export function RegisterForm({

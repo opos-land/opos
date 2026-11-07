@@ -6,7 +6,7 @@ import { PanelHeader } from '../components/panel-header'
 import { tenantAccess, usePermissionStore } from '../model/permissions'
 
 /**
- * The convention picker at `/` (PLAN.md 8): a card per convention opens its edition, and a member
+ * The convention picker at `/`: a card per convention opens its edition, and a member
  * who may open the convention settings finds them on the card too. A single membership goes
  * straight into its convention, whatever the role.
  */

@@ -2,7 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { type SelectHTMLAttributes } from 'react'
 import { inputClass } from '../../../shared/ui'
 
-/** A permission value (PRODUCT.md 5.3): none, read or write. */
+/** A permission value (PRODUCT.md 5): none, read or write. */
 export function LevelSelect(props: SelectHTMLAttributes<HTMLSelectElement>) {
   const { t } = useLingui()
   return (

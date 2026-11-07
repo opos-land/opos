@@ -25,10 +25,10 @@ interface WorkerFixtures {
   db: Database
 }
 
-// Scenarios share no data (PLAN.md 15.2): each one makes its own accounts and tenants, and
+// Scenarios share no data: each one makes its own accounts and tenants, and
 // leaves nothing behind in the database or in Mailpit.
 export const test = base.extend<ScenarioFixtures, WorkerFixtures>({
-  // The BFF boundary (PLAN.md 3.2): the browser talks to the panel, the portal and the API alone.
+  // The BFF boundary: the browser talks to the panel, the portal and the API alone.
   // A request to Supabase or to anything else, from any page of the scenario, fails it; so does a
   // panel page requesting the portal, or the other way round, unless it is a navigation.
   boundary: [

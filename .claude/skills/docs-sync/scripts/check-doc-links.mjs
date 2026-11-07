@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Checks relative links and anchors in the repository's Markdown documents.
 // Usage: node .claude/skills/docs-sync/scripts/check-doc-links.mjs [file.md ...]
-// Without arguments it checks AGENTS.md, README.md, docs/PRODUCT.md and docs/PLAN.md.
+// Without arguments it checks AGENTS.md, README.md, docs/PRODUCT.md and docs/ARCHITECTURE.md.
 // Exits 1 when a link points at a missing file or a missing heading.
 
 import { existsSync, readFileSync, statSync } from 'node:fs'
@@ -10,7 +10,7 @@ import { dirname, join, normalize, relative } from 'node:path'
 const root = process.cwd()
 const files = process.argv.slice(2).length
   ? process.argv.slice(2)
-  : ['AGENTS.md', 'README.md', 'docs/PRODUCT.md', 'docs/PLAN.md'].filter((f) => existsSync(f))
+  : ['AGENTS.md', 'README.md', 'docs/PRODUCT.md', 'docs/ARCHITECTURE.md'].filter((f) => existsSync(f))
 
 // Fenced blocks and inline code hold examples, not links; headings keep their inline code.
 const stripFences = (text) => text.replace(/^```[\s\S]*?^```/gm, '')

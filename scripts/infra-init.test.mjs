@@ -478,7 +478,7 @@ test('initInfra warns about a database URL on another port than the stack report
   })
   await ctx.run()
   const advice =
-    'on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm infra:init (docs/PLAN.md, 12)'
+    'on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm infra:init'
   assert.deepEqual(ctx.warnings, [
     `apps/api/.env: DATABASE_URL is ${advice}`,
     `apps/api/.env: DATABASE_MIGRATION_URL is ${advice}`,

@@ -4,8 +4,8 @@ import { parseEnv } from 'node:util'
 import { migrationUrl } from '@opos/db'
 
 // The addresses and credentials of the stack under test come from the API's own configuration,
-// apps/api/.env over its template, as in the API tests (PLAN.md 15.1). Mailpit's port is the shell's
-// SUPABASE_LOCAL_SMTP_PORT (PLAN.md 12).
+// apps/api/.env over its template, as in the API tests. Mailpit's port is the shell's
+// SUPABASE_LOCAL_SMTP_PORT.
 
 export const API_DIR = fileURLToPath(new URL('../../apps/api/', import.meta.url))
 

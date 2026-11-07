@@ -5,7 +5,7 @@ import { markForbidden } from '../shared/lib/forbidden'
 import { membershipsKey } from '../features/tenants'
 
 /**
- * A plain `403` from the API ends on the "no permissions" screen (PLAN.md 8), and the permission
+ * A plain `403` from the API ends on the "no permissions" screen, and the permission
  * store is read again, since the member's permissions changed under the page.
  */
 export function createQueryClient() {

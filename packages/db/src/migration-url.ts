@@ -40,7 +40,7 @@ function databaseHosts(url: string): string[] {
 }
 
 /**
- * The URL of the postgres role, through which every db:* script connects (PLAN.md 11). It has no
+ * The URL of the postgres role, through which every db:* script connects. It has no
  * default, and a host off the loopback interface needs the OPOS_ENV of its environment, so a
  * script never reaches a hosted project by accident.
  */

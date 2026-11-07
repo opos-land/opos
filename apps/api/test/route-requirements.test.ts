@@ -22,7 +22,7 @@ import {
 } from './tenants'
 import { type Level, type Need, tenantRequirements } from './route-needs'
 
-// Every route of the contract, checked against the permission it needs (PLAN.md 5, 7.3). A route
+// Every route of the contract, checked against the permission it needs. A route
 // missing from the tables below fails the coverage tests, so a new route is written down here,
 // with its permission, before it can pass.
 

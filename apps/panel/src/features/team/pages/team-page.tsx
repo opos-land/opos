@@ -8,7 +8,7 @@ import { membersOptions } from '../api/members'
 import { InviteForm } from '../components/invite-form'
 import { MemberRow } from '../components/member-row'
 
-/** The convention's team: members, invitations, permissions and expiry (PLAN.md 8). */
+/** The convention's team: members, invitations, permissions and expiry. */
 export function TeamPage() {
   const { t } = useLingui()
   const { tenant, access, api } = useCurrentTenant()

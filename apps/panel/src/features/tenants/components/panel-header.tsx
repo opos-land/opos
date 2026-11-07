@@ -7,7 +7,7 @@ import { usePermissionStore } from '../model/permissions'
 const button = 'rounded-box border-line hover:border-ink border px-3 py-1 text-sm'
 
 /**
- * The top bar (PLAN.md 8): the panel's name, the convention (a switch for a member of several),
+ * The top bar: the panel's name, the convention (a switch for a member of several),
  * the edition, the way between an edition and the convention settings for a member who may open
  * them, and the account menu.
  */

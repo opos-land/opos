@@ -4,7 +4,7 @@ import { type TenantContextService } from '../../common/als/tenant-context.servi
 import { RecoveryCodeStoreError, RecoveryCodesRepository } from './recovery-codes.repository'
 
 // A query that fails carries its parameters in the error, and a parameter here is the SHA-256 of a
-// recovery code: none of it may leave the repository (PLAN.md 7.12).
+// recovery code: none of it may leave the repository.
 
 const hash = 'a'.repeat(64)
 const accountId = randomUUID()

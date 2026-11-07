@@ -16,7 +16,7 @@ import {
 } from './auth'
 
 // Every case sends its own X-Forwarded-For address, so the counters of one case never reach
-// another; `trust proxy` makes that header the client address (PLAN.md 7.9).
+// another; `trust proxy` makes that header the client address.
 
 let app: NestExpressApplication
 

@@ -12,120 +12,59 @@ Write responses in the language the user writes in.
 
 ## Repository
 
-OPOS — a multitenant platform for running fantasy conventions, free for conventions. The code
-follows two documents; `apps/api`, the core of `apps/panel`, the account screens of `apps/portal`
-and the shared packages they need exist, the rest of
-[the monorepo structure](docs/PLAN.md#3-monorepo-structure) is still to be built.
+OPOS — a multitenant platform for running fantasy conventions, free for conventions. `apps/api`, the
+core of `apps/panel`, the account screens of `apps/portal` and the shared packages they need exist;
+deployment and the modules waiting for their domain owner are still to be built. Everything in this
+repository is written in English.
 
-Everything in this repository is written in English.
-
-| File | Contains |
+| File | Holds |
 |---|---|
-| [docs/PRODUCT.md](docs/PRODUCT.md) | what we build and for whom: domain model, glossary, roles and permissions, addresses, modules, design, languages and markets, personal data, MVP scope |
-| [docs/PLAN.md](docs/PLAN.md) | how to build it: architecture, stack, database schema, API contract, applications, Supabase, environments, deployment, tests |
+| [docs/PRODUCT.md](docs/PRODUCT.md) | what we build and for whom: glossary, tenant and edition, roles and permissions, addresses, modules, design, languages, personal data, MVP scope |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the rules of the code that no single file shows: boundaries, tenant isolation, invariants, permissions, sessions, conventions, environments, what is still to be built, the checklist for adding a feature |
 
-## Meeting decisions take precedence
+## Documents hold rules, the code holds the rest
 
-Decisions from team meetings override what the repository says — the documents, this file and the
-tooling configuration. When the user brings a meeting note:
+The code and its tests are the documentation of how things work: read them. The two documents keep
+only what the code cannot say — the intent, the business rules, the rules whose breach is not
+visible in one file, and what is decided but not built. A detail the code holds (a column, a value,
+a screen's behaviour, a list of files) never enters them.
 
-1. Carry every decision into the repository following the prime rule below: both documents, this
-   file and the configuration it affects.
-2. Where the note contradicts the repository, the note wins.
-3. Where the note is ambiguous, or a decision forces a choice the note does not make, ask before
-   writing. Never settle a contradiction silently.
-4. The note itself does not enter the repository — only its decisions, written as the target state.
-5. No personal names in the documents; describe roles instead.
+- A change that alters a rule one of the documents states updates that document in the same change;
+  a change of product behaviour also reads the other document for a sentence it makes untrue. The
+  `docs-sync` skill is the procedure.
+- Where a document and the code disagree, say so and ask which is right; never settle it silently.
+- A code comment explains its code on its own; it cites a document only by file and heading
+  (`docs/ARCHITECTURE.md, Tenant isolation`).
 
-## Prime rule: update both documents together
+**Meeting decisions take precedence** over the documents, this file and the configuration. When the
+user brings a meeting note, carry each decision into what it affects, as the target state; where the
+note is ambiguous or contradicts itself, ask before writing. The note itself and personal names never
+enter the repository: roles instead.
 
-**Every change agreed in a conversation lands in both documents within the same turn.** Never end
-a turn with one file updated and the other not — even when the change "only concerns engineering"
-or "only concerns the product". The other file almost always contains a statement that just
-stopped being true.
-
-Procedure for every substantive change:
-
-1. Decide which side the change belongs to (table below).
-2. Apply it there.
-3. Read the other file looking for sentences the change invalidates — and fix them.
-4. Check terminology against the [glossary](docs/PRODUCT.md#3-glossary).
-5. Check that links and chapter numbers on both sides still point where they should.
-6. In the response to the user, state what changed in each file.
-
-### What goes where
-
-| Change concerns | PRODUCT.md | PLAN.md |
-|---|---|---|
-| new feature or a change in MVP scope | yes | yes — contract, apps, tests |
-| name of a domain concept | yes — glossary | yes — mapping to tables |
-| permission rule, who can do what | yes | yes — guards, contract |
-| new endpoint | only when it changes product behaviour | yes |
-| database column, index, migration | no | yes until built, then only the rules ([above](#planmd-shrinks-as-the-code-grows)) |
-| library choice, version, configuration | no | yes |
-| language, market, time zone | yes | yes — schema, i18n |
-| personal data, retention, GDPR | yes | yes — schema, backups |
-| address, domain, who sets it | yes | yes — routing, Traefik |
-
-A change that lands only in PLAN.md still requires reviewing PRODUCT.md — step 3 of the procedure
-always applies.
-
-## PLAN.md shrinks as the code grows
-
-PLAN.md specifies a part in full detail only until it is built. From then on the code is the source
-of its details, and PLAN.md keeps what the code cannot say on its own:
-
-| Stays in PLAN.md | Moves to the code; PLAN.md links to the file |
-|---|---|
-| architecture and the boundaries between applications and packages | file listings and per-file descriptions |
-| invariants and what enforces each of them (constraint, trigger, lock, service check) | columns, types, defaults, constraint and index names |
-| security rules: database roles, RLS, the queries allowed to cross tenants | the SQL of policies, triggers, grants and verification queries |
-| conventions every future change must follow (naming, policy shape, migration rules) | values set in configuration files: tasks, scripts, ports, mounts |
-| behaviour of the contract: status codes, error codes, required permissions | request and response schemas once they live in `packages/contract` |
-| what the tests must cover | the tests themselves |
-
-The PR that builds a part of PLAN.md slims that part in the same PR: every detail now present in the
-code is replaced by a relative link to the file or directory that holds it
-(relative to `docs/`: `[packages/db/src/schema](../packages/db/src/schema)`), and the rules from the left column stay.
-Where a rule in PLAN.md and the code disagree, the code has a bug; where a detail does, the detail
-should not have been in PLAN.md.
+**Business rules come from the domain owner.** Each module's rules are set by its domain owner
+([PRODUCT.md 7](docs/PRODUCT.md#7-modules)). A module still waiting for its owner — today reviews,
+tickets with payments and the scanner, and attendee registrations — is not built, and its tables,
+routes, screens and flows are not invented: the documents hold only the rules any shape of it keeps
+([architecture](docs/ARCHITECTURE.md#modules-waiting-for-their-domain-owner)). Asked to build one,
+say so and ask for the owner's rules first; they land in the documents before the code.
 
 ## Document style
 
-- **English everywhere.** Documents, code, comments in code and configuration files, identifiers,
-  route paths, source messages, branch names and commits. The only Polish in the repository is the
-  `pl` translation catalog. No emoji in documents, code or commits.
-- The comment rule has no exceptions: `//`, `/* */`, `#`, `--`, JSDoc, TODO and FIXME are always
-  English, including in `lefthook.yml`, `docker-compose*.yml`, SQL migrations and `.env.example`.
-  The only exception is `.md` files, which are documentation, not code.
-- **Write "how it is meant to be", not "what we changed and why".** The documents describe the
-  target state. They contain no change history, no lists of decisions with alternatives, no
-  "why this way" chapters and no comparisons with a previous version. Rationale stays in the
-  conversation.
-- Exception: a short operational note is fine when it is an instruction rather than a
-  justification ("step 3 before step 1 ends in a Let's Encrypt rate limit").
-- Tables instead of paragraphs wherever the content has structure.
-- Specifics instead of generalities: column names, status codes, paths, limits — for a part that
-  is not built yet. A built part links to the code instead
-  ([PLAN.md shrinks as the code grows](#planmd-shrinks-as-the-code-grows)).
-- Tables of contents and anchors updated together with headings.
+- **English everywhere** — documents, code, comments (`//`, `/* */`, `#`, `--`, JSDoc, TODO,
+  including `lefthook.yml`, compose files, SQL migrations and `.env.example`), identifiers, route
+  paths, source messages, branches and commits. The only Polish in the repository is the `pl`
+  translation catalog. No emoji.
+- The target state only: no change history, no alternatives, no "why" chapters. A short operational
+  instruction is fine.
+- Tables where the content has structure; anchors updated together with headings.
 - Terminology strictly from the glossary: tenant, edition, programme item, speaker, like, review,
   ticket type, order, ticket, scanner, attendee, admin, org, head, user, core, module, booth.
 
 ## Commits
 
-Conventional Commits, in English, atomic. Enforced by commitlint in the `commit-msg` hook.
-
-```
-<type>(<scope>): <subject>
-
-<body — optional, explains "why", not "what">
-
-<footer — BREAKING CHANGE, issue references>
-```
-
-Subject in the imperative mood (`add`, not `added`), lowercase, no trailing period, header up to
-72 characters.
+Conventional Commits, in English, atomic, enforced by commitlint in the `commit-msg` hook:
+`<type>(<scope>): <subject>`, the subject imperative and lowercase with no trailing period, the
+header up to 72 characters; an optional body says why.
 
 | Type | When |
 |---|---|
@@ -140,73 +79,53 @@ Subject in the imperative mood (`add`, not `added`), lowercase, no trailing peri
 | `ci` | GitHub Actions workflows |
 | `revert` | reverting a commit |
 
-Scopes: `api`, `panel`, `portal`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra`, `repo`.
-`infra` covers Traefik, compose, `infra/` and `supabase/`. The scope is optional, but when present it
-must come from this list — otherwise commitlint rejects the message. A new scope goes into
-`commitlint.config.mjs` and into this table.
-
-Rules commitlint will not check, but which still apply:
+Scopes: `api`, `panel`, `portal`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (Traefik, compose,
+`infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs` and this list.
 
 - A Drizzle migration goes in the same commit as the schema change that produced it.
-- `.po` catalogs, with the `pl` translations filled in, go in the same commit as the code
-  introducing the messages; compiled catalogs are build artifacts and never enter the repository.
+- `.po` catalogs with the `pl` translations go in the same commit as the code introducing the
+  messages; compiled catalogs never enter the repository.
 - A change in `packages/contract` that breaks consumers: `!` after the scope and a
   `BREAKING CHANGE:` footer.
-- Every commit leaves the repository green — not just the end of the branch.
-- A refactor does not travel in the same commit as a feature.
-- The message is in English; commitlint will not verify that.
+- Every commit leaves the repository green; a refactor does not travel with a feature.
 
-```
-feat(db): add tenant and edition schema
-feat(api): add tenant and edition permission guards
-fix(api): reject edition membership pointing at another tenant
-test(e2e): cover organizer invitation flow
-chore(repo): pin node and pnpm versions
-```
-
-Branches follow the same scheme: `feat/tenant-rls`, `fix/refresh-rotation`. They start from
-`develop` and their PRs target `develop`; `main` changes only through a PR from `develop`
-([branches](docs/PLAN.md#153-ci)). Never push to `main` directly.
+Branches follow the same scheme (`feat/tenant-rls`). They start from `develop` and their PRs target
+`develop`; `main` changes only through a PR from `develop` ([CI](docs/ARCHITECTURE.md#ci)). Never
+push to `main` directly.
 
 ## Working with code
 
-The [execution rules](docs/PLAN.md#17-execution-rules) from PLAN.md apply: pinned Node and pnpm
-versions, every user-facing string inside a Lingui macro and translated into `pl` in the same
-commit, reusing the glossary renderings ([localization](docs/PLAN.md#6-localization)), green
-typecheck, lint and tests before every PR. The API tests need the database: `pnpm infra:init` once in a new checkout, then `pnpm infra:up`.
-`pnpm test:e2e` also needs `pnpm db:migrate && pnpm db:seed` and Chromium, installed once with
-`pnpm --filter @opos/e2e exec playwright install chromium`, and does not run beside the API tests
-([e2e tests](docs/PLAN.md#152-e2e-tests)).
+`mise install` installs Node and enables corepack for pnpm; `pnpm install` installs dependencies and
+wires up the hooks. Dependencies younger than 7 days are rejected by `minimumReleaseAge` — that is
+policy, not a failure ([versions](docs/ARCHITECTURE.md#tooling-and-versions)). The API tests need
+the database: `pnpm infra:init` once in a new checkout, then `pnpm infra:up`. `pnpm test:e2e` also
+needs `pnpm db:migrate && pnpm db:seed` and Chromium (`pnpm --filter @opos/e2e exec playwright
+install chromium`), and does not run beside the API tests. Before every PR: typecheck, lint and
+tests green.
 
-`mise install` installs Node and enables corepack for pnpm ([versions](docs/PLAN.md#versions-and-dependencies));
-then `pnpm install` installs dependencies and wires up the hooks. Dependencies younger than 7 days are
-rejected by `minimumReleaseAge` — that is policy, not a failure.
+Every user-facing string sits in a Lingui macro and is translated into `pl` in the same commit,
+reusing the glossary renderings ([localization](docs/ARCHITECTURE.md#localization)).
 
-**CI gates** ([CI](docs/PLAN.md#153-ci)): a PR into `main` needs the jobs `check`, `e2e` and `secrets`
-green. `secrets` scans the tree and the whole history for secrets and fails on a dependency with a
-high advisory, so a secret in any commit fails the job, even one removed later. An action in a
-workflow is pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it
-goes through `env`.
+**CI gates** ([CI](docs/ARCHITECTURE.md#ci)): a PR into `main` needs the jobs `check`, `e2e` and
+`secrets` green; `secrets` scans the whole history, so a secret in any commit fails it. An action is
+pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it goes through
+`env`.
 
 **The seed follows the schema.** A change that adds a table, a column without a default, a
 permission or a role, or a data state the tests rely on updates
-[packages/db/src/seed.ts](packages/db/src/seed.ts) and the [demo data](docs/PLAN.md#14-demo-data-seed)
-in the same PR. Run `pnpm db:seed` twice before the PR; `packages/db/test/seed.test.ts` fails when
-the second run changes the row count of any `public` table.
+[packages/db/src/seed.ts](packages/db/src/seed.ts) in the same PR. Run `pnpm db:seed` twice before
+the PR; `packages/db/test/seed.test.ts` fails when the second run changes a row count.
 
-**Tests sit by what they need** ([tests](docs/PLAN.md#15-tests)). A unit test, which needs nothing
-outside the process, goes next to the file it tests as `<name>.test.ts` (`<name>.test.js` in the
-JavaScript-only `packages/eslint-config`); an integration test, which needs Postgres, Supabase Auth
-or HTTP, goes into the `test/` directory of its package or application; an e2e test goes into the
-`e2e` package. New code with logic of its own gets a unit test in the same commit.
+**Tests sit by what they need.** A unit test goes next to the file it tests as `<name>.test.ts`
+(`.test.js` in `packages/eslint-config`); an integration test, which needs Postgres, Supabase Auth or
+HTTP, goes into the `test/` directory of its package or application; an e2e test into `e2e`. New
+code with logic of its own gets a unit test in the same commit.
 
 ### Tests first
 
-Every change of code starts with its test: write or change the test, run it and watch it fail for
-the reason the change addresses, then change the code. A rule that already holds gets a test that
-passes at once — break the code on purpose once to see the test catch it, then restore it. Tenant
-isolation and permissions have areas of their own, with their tests in fixed places; any other
-code is covered by a test of its own package.
+Every change of code starts with its test: write or change the test, watch it fail for the reason
+the change addresses, then change the code. A rule that already holds gets a test that passes at
+once — break the code on purpose once to see the test catch it.
 
 | Area | Code | Its tests |
 |---|---|---|
@@ -217,84 +136,57 @@ code is covered by a test of its own package.
 | `scripts`, `claude` | `scripts/`, `.claude/` | a `*.test.*` in the same directory tree, run by `pnpm test:scripts` |
 | `unlisted` | code anywhere else | none: a new directory of code gets its area here and in the script first |
 
-Code is a script or SQL file. Tests and what serves them — `test/` helpers, `fixtures/`, the whole
-`e2e` package — are not code, and neither are type declarations, the configuration files of the
-tools (`eslint`, `vite`, `vitest`, `lingui`, `drizzle`, `tsdown`, `playwright`, `commitlint`), the
-`locales/` catalogs, nor installed or built output. A file belongs to the first area that matches
-it.
+Code is a script or SQL file. Tests and what serves them (`test/` helpers, `fixtures/`, the `e2e`
+package), type declarations, tool configuration files, `locales/` catalogs and built output are not.
+A file belongs to the first area that matches it. A deleted test, or a test file with no `describe`,
+`it` or `test` call, is no test; deleted or moved-out code is a change of its area.
 
-A deleted test is no test of its area, and neither is a test file in which no line opens with a
-call of `describe`, `it` or `test` (`.todo`, `.skip` and commented-out calls aside); deleted code is a change of its area, and so is a file moved out of it.
-
-[scripts/tests-first.mjs](scripts/tests-first.mjs) holds this table and enforces it three times:
-
-| Where | Refuses |
-|---|---|
-| Claude Code hooks ([.claude/settings.json](.claude/settings.json)) | an `Edit` or `Write` of an area's code while no test of that area has changed in the working tree; after a `Bash` command, whether it succeeded or failed, it reports an area's code the command changed under the same condition; both stand aside while git resolves a merge, rebase, cherry-pick or revert |
-| lefthook `commit-msg` | a commit that stages an area's code without a test of that area; a merge commit is left to CI |
-| CI, on a pull request into any branch but `main` | each commit since the base branch that changes an area's code without a test of that area in the same commit; a merge commit by what it adds beyond merging its parents, a conflict resolution included |
-
-The Claude Code hooks look at the checkout of this repository that holds the edited file, and a
-`Bash` command at the project's directory; a file in no checkout of it is not checked. They fail
-closed: a check that cannot run — unreadable input, git failing, a broken script — refuses the
-edit, and after a `Bash` command reports it. When a broken script
-refuses every edit, the user restores it with `! git restore scripts/tests-first.mjs`.
-
-After an `Edit` or `Write` of a migration, the hook [.claude/hooks/migration-reminder.mjs](.claude/hooks/migration-reminder.mjs)
-hands the agent the rules of a migration as context; it never blocks. The project permissions in
-[.claude/settings.json](.claude/settings.json) deny a read of the real `.env` files and of
-the Supabase signing keys file; the `.env.example` templates stay readable. They ask the user before
-an edit of a gate: the settings themselves, `.claude/agents`, `.claude/hooks`,
-`scripts/tests-first.mjs`, `scripts/check-migrations.mjs`, `scripts/bff-boundary.mjs`, `lefthook.yml`,
-`.github/workflows` and `.github/rulesets`.
+[scripts/tests-first.mjs](scripts/tests-first.mjs) holds this table and enforces it in the Claude
+Code hooks ([.claude/settings.json](.claude/settings.json): an `Edit` or `Write` of an area's code is
+refused while no test of that area changed; after a `Bash` command it reports such a change), in
+lefthook `commit-msg` and in CI on every PR not into `main`, commit by commit. The hooks fail closed
+and stand aside during a merge, rebase, cherry-pick or revert; a broken script is restored with
+`! git restore scripts/tests-first.mjs`.
 
 A change that needs no test — a rename, a comment, a moved import — says why in a
-`No-Test-Reason: <reason>` trailer of its commit message, read as git reads trailers — in the last
-paragraph, beside footers such as `BREAKING CHANGE:`; an agent the hook refuses such an edit
-asks the user instead of working around the hook. An amend that stages only code is refused when
-the code's test came in the commit it amends: stage the test again or add the trailer. A path of
-an area that moves, or a new directory of code, changes the table here and in the script together.
+`No-Test-Reason: <reason>` trailer of its commit message. An agent the hook refuses asks the user
+instead of working around it. A moved area path or a new directory of code changes the table here
+and in the script together.
 
-**Project skill and reviewers** in `.claude/`. The `docs-sync` skill is the procedure for every
-change to PRODUCT.md or PLAN.md, link and anchor check included. Before a PR, run the
-`tenant-isolation-reviewer` agent when the change touches `packages/db` or `apps/api`, and the
-`i18n-reviewer` agent when it touches user-facing text, a `.po` catalog or `packages/i18n`. Both
-only report; fix what they find before opening the PR. [.claude/agent-docs.test.mjs](.claude/agent-docs.test.mjs)
-checks that the paths this file and the agent files cite exist and that the area names here equal
-those of the script.
+**Gates.** [.claude/hooks/migration-reminder.mjs](.claude/hooks/migration-reminder.mjs) hands the
+rules of a migration as context after it is edited. The permissions in
+[.claude/settings.json](.claude/settings.json) deny reading the real `.env` files and the Supabase
+signing keys (the `.env.example` templates stay readable) and ask the user before an edit of the
+settings, `.claude/agents`, `.claude/hooks`, `scripts/tests-first.mjs`, `scripts/check-migrations.mjs`,
+`scripts/bff-boundary.mjs`, `lefthook.yml`, `.github/workflows` or `.github/rulesets`.
+[.claude/agent-docs.test.mjs](.claude/agent-docs.test.mjs) checks that the paths this file and the
+agent files cite exist and that the area names here equal those of the script.
 
-**The panel and the portal never talk to Supabase.** The API is their only backend (BFF): no
-`@supabase/*` package, no Supabase address or key and no `VITE_*` variable naming Supabase in either
-application; every sign-in operation goes through the API's `auth` endpoints
-([BFF boundary](docs/PLAN.md#32-frontend-application-layout)). The `react` ESLint preset refuses an
-import of `@supabase/*`, static or dynamic, and [scripts/bff-boundary.mjs](scripts/bff-boundary.mjs)
-refuses the rest, in a Claude Code hook, in lefthook `pre-commit` and in CI, which scans the built
-bundles too. A breach is fixed in the application, never allowed by an exception.
+**Reviewers.** Before a PR, run the `tenant-isolation-reviewer` agent when the change touches
+`packages/db` or `apps/api`, and the `i18n-reviewer` agent when it touches user-facing text, a `.po`
+catalog or `packages/i18n`. Both only report; fix what they find first.
 
-**Every page names itself in the browser tab.** A new page — a module of
-`apps/<app>/src/features/<feature>/pages/` — calls `usePageTitle` of `shared/lib/page-title.ts`
-before its first `return`: the page first, then the edition or convention it belongs to, as
-translated messages that reuse the page's heading, or the tenant's own content
-([page titles](docs/PLAN.md#32-frontend-application-layout)). `src/app/pages.test.ts` of each
-application fails on a page that does not.
+**The panel and the portal never talk to Supabase.** The API is their only backend: no
+`@supabase/*` package, no Supabase address or key, no `VITE_*` variable naming Supabase. The `react`
+ESLint preset and [scripts/bff-boundary.mjs](scripts/bff-boundary.mjs) refuse a breach in a hook, in
+lefthook `pre-commit` and in CI ([boundary](docs/ARCHITECTURE.md#applications-and-packages)). A
+breach is fixed in the application, never allowed by an exception.
 
-**Dev and production are shared.** A working checkout never points at them: no `supabase link`,
-and no remote database URL, Supabase project reference or access token in a `.env` or
-`mise.local.toml`; they change only through the deploy workflow
-([environments](docs/PLAN.md#environments)). Testing happens on the local stack, with the seed.
+**Every page names itself in the browser tab** through `usePageTitle` of `shared/lib/page-title.ts`,
+called before the page's first `return`; `src/app/pages.test.ts` of each application fails on a page
+that does not ([frontends](docs/ARCHITECTURE.md#frontends)).
+
+**Dev and production are shared.** A working checkout never points at them: no `supabase link`, no
+remote database URL, project reference or access token in a `.env` or `mise.local.toml`; they change
+only through the deploy workflow ([environments](docs/ARCHITECTURE.md#environments)).
 
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
-them to the repository. UI follows the designer's designs; where none exists yet, use plain blocks
-and real copy ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)). Do not ship
-component-library defaults as a finished look.
+them to the repository. Where no design exists yet, use plain blocks and real copy
+([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)); component-library defaults are not a
+finished look.
 
-**Adding a feature.** Inside one feature, a new table, route or screen follows the checklist in
-[PLAN.md](docs/PLAN.md#adding-a-feature), step by step, with the `program` slice as its reference.
-
-Between the parts of the product, the plan does not prescribe an order of work — it follows from
-dependencies between packages:
-the Supabase services before `packages/db`, because the schema references
-`auth.users`; `packages/db` and `packages/contract` before the apps, the contract before the
-frontends. The scope to cover is set by [MVP scope](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp),
-and the readiness criteria by [tests](docs/PLAN.md#15-tests) and the
-[smoke test](docs/PLAN.md#16-smoke-test).
+**Adding a feature.** A new table, route or screen follows the
+[checklist](docs/ARCHITECTURE.md#adding-a-feature) step by step, with the `program` slice as its
+reference. Between parts of the product the order follows the dependencies between packages, the
+scope is [the MVP](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp), and the readiness criteria are the
+[tests](docs/ARCHITECTURE.md#tests).

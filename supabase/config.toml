@@ -1,5 +1,5 @@
-# The local Supabase stack (docs/PLAN.md, 10 and 12). Secrets and addresses come from
-# supabase/.env through env(), which `pnpm infra:init` writes. Never `supabase link`.
+# The local Supabase stack. Secrets and addresses come from supabase/.env through env(), which
+# `pnpm infra:init` writes. Never `supabase link`.
 project_id = "opos"
 
 # The Data API is off; the local gateway still serves Auth at /auth/v1.

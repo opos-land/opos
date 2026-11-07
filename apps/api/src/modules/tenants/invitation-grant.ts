@@ -28,7 +28,7 @@ export function grantOf(body: InviteMember): InvitationGrant {
   }
 }
 
-/** The claims of the token that carries `grant` to `email`, sent by `invitedBy` (PLAN.md 7.7). */
+/** The claims of the token that carries `grant` to `email`, sent by `invitedBy`. */
 export const claimsOf = (
   { tenantId, email, invitedBy }: Pick<InvitationClaims, 'tenantId' | 'email' | 'invitedBy'>,
   { role, settingsAccess, brandingAccess, shopConfigAccess, expiresAt, editions }: InvitationGrant,

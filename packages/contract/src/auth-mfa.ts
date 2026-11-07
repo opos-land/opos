@@ -15,7 +15,7 @@ export const enableMfaSchema = z.object({ factorId: z.uuid(), code: totpCode }).
 
 /**
  * A recovery code as typed: the API drops spaces and hyphens and ignores the case, so the screen
- * may group the 16 characters (PLAN.md 7.12).
+ * may group the 16 characters.
  */
 export const recoverSchema = z.object({ code: z.string().trim().min(1).max(64) }).strict()
 
@@ -32,7 +32,7 @@ export const enableMfaOutputSchema = z.object({
   recoveryCodes: z.array(z.string()).length(10),
 })
 
-/** Two-factor authentication (PLAN.md 7.12): TOTP on Supabase Auth's factors. */
+/** Two-factor authentication: TOTP on Supabase Auth's factors. */
 export const mfaContract = {
   enroll: accountRoute
     .route({

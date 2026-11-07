@@ -1,7 +1,6 @@
 import { stack } from './stack'
 
-// Mailpit catches every dev email; its HTTP API lets a scenario read what the stack sent
-// (PLAN.md 15.2).
+// Mailpit catches every dev email; its HTTP API lets a scenario read what the stack sent.
 
 export interface Mail {
   ID: string
@@ -59,12 +58,12 @@ function linkIn(mail: Pick<Mail, 'Subject' | 'Text'>, pattern: RegExp, kind: str
 }
 
 /**
- * The `/auth/confirm` link of a confirmation or password message (PLAN.md 5.1): the page's button
+ * The `/auth/confirm` link of a confirmation or password message: the page's button
  * redeems it.
  */
 export const confirmLinkIn = (mail: Pick<Mail, 'Subject' | 'Text'>) =>
   linkIn(mail, /https?:\/\/\S+\/auth\/confirm\?\S+/, 'confirm')
 
-/** The organizer invitation link, `<PANEL_URL>/invitation?token=...` (PLAN.md 7.7). */
+/** The organizer invitation link, `<PANEL_URL>/invitation?token=...`. */
 export const invitationLinkIn = (mail: Pick<Mail, 'Subject' | 'Text'>) =>
   linkIn(mail, /https?:\/\/\S+\/invitation\?token=\S+/, 'invitation')

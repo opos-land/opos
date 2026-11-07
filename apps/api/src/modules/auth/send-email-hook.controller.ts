@@ -14,7 +14,7 @@ interface HookRequest {
 }
 
 /**
- * Supabase Auth sends no email itself: it calls this hook for every message (PLAN.md 10). Outside
+ * Supabase Auth sends no email itself: it calls this hook for every message. Outside
  * the oRPC contract, called server to server only. A status outside 2xx makes Supabase Auth report
  * the send as failed.
  */

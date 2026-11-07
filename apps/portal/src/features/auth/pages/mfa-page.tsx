@@ -20,7 +20,7 @@ import { loginPath, safeRedirect } from '../model/redirect'
 const SIX_DIGITS = /^\d{6}$/
 
 /**
- * `/auth/mfa` (PLAN.md 7.12): the code of the authenticator app, or a recovery code, for a session
+ * `/auth/mfa`: the code of the authenticator app, or a recovery code, for a session
  * that signed in below `aal2`. A right code shows the account and opens the page the sign-in came
  * from; a recovery code turns two-factor authentication off first. A wrong code keeps the form.
  */

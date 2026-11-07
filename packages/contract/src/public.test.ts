@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { publicEditionSchema, publicProgramItemSchema, publicTenantSchema } from './public'
 
-// What leaves the API without sign-in (PLAN.md 5.7): a field added here is public at once.
+// What leaves the API without sign-in: a field added here is public at once.
 describe('the public schemas', () => {
   it('give a speaker names alone', () => {
     const speaker = publicProgramItemSchema.shape.speakers.element

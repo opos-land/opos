@@ -40,10 +40,10 @@ export interface HookUrls {
 const CONFIRM_PATH = '/auth/confirm'
 
 /**
- * The link of an email (PLAN.md 10, Send-email hook). `redirect_to` is `/auth/confirm` of the
- * portal or the panel, and the link goes there with `token_hash` and `type`: opening it spends
- * nothing. Any other address becomes the portal's `/auth/confirm`; no link is built from the
- * rest of the redirect list, and none names Supabase Auth.
+ * The link of an email. `redirect_to` is `/auth/confirm` of the portal or the panel, and the link
+ * goes there with `token_hash` and `type`: opening it spends nothing. Any other address becomes the
+ * portal's `/auth/confirm`; no link is built from the rest of the redirect list, and none names
+ * Supabase Auth.
  */
 export function confirmLink(urls: HookUrls, tokenHash: string, type: string, redirectTo?: string) {
   const target = parseUrl(redirectTo)
@@ -64,8 +64,8 @@ function parseUrl(value: string | undefined) {
 }
 
 /**
- * The emails one hook call sends (PLAN.md 10, Send-email hook), or `undefined` for an
- * `email_action_type` OPOS does not send: those flows are disabled.
+ * The emails one hook call sends, or `undefined` for an `email_action_type` OPOS does not send:
+ * those flows are disabled.
  *
  * An email change asks both addresses to confirm when Supabase Auth's secure email change is on:
  * the payload then carries `token_hash_new` for the current address and `token_hash` for the new

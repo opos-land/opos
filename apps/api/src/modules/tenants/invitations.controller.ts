@@ -5,7 +5,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 import { InvitationsService } from './invitations.service'
 
 // Without X-Tenant-Slug: the verified token names the tenant, and the service opens its context
-// with withTenant (PLAN.md 7.2).
+// with withTenant.
 @Controller()
 export class InvitationsController {
   constructor(private readonly invitations: InvitationsService) {}

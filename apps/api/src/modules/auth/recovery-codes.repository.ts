@@ -26,9 +26,9 @@ async function guarded<T>(operation: string, query: () => Promise<T>): Promise<T
 }
 
 /**
- * `account_recovery_codes` has no RLS (PLAN.md 4.2): it is read and written on the opos_app pool
+ * `account_recovery_codes` has no RLS: it is read and written on the opos_app pool
  * outside a tenant transaction, like `accounts`. Every method works on the account in the request
- * store, so no caller can pass another account's id (PLAN.md 7.2). The table keeps hashes only.
+ * store, so no caller can pass another account's id. The table keeps hashes only.
  */
 @Injectable()
 export class RecoveryCodesRepository {

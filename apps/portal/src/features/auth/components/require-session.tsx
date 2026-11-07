@@ -7,7 +7,7 @@ import { loginPath } from '../model/redirect'
 
 /**
  * A page for a signed-in account: a loading view while the account is asked for, never the sign-in
- * screen (PLAN.md 9); an offer to try again when the API could not be reached, which signs nobody
+ * screen; an offer to try again when the API could not be reached, which signs nobody
  * out; the code screen for a session waiting for its code, which shows no account data; the
  * sign-in screen once it is clear there is no session.
  */

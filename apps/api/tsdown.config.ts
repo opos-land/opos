@@ -5,7 +5,7 @@ import { mapMacroOptions, transform } from '@lingui/native-tools'
 import { defineConfig, type Rolldown } from 'tsdown'
 
 /**
- * Compiles the Lingui macros of the inlined @opos/i18n entry points (PLAN.md 6) with the config of
+ * Compiles the Lingui macros of the inlined @opos/i18n entry points with the config of
  * that package, keeping only message ids: the compiled catalogs carry the text.
  */
 function linguiMacros(): Rolldown.Plugin {
@@ -30,7 +30,7 @@ function linguiMacros(): Rolldown.Plugin {
 }
 
 export default defineConfig({
-  // The scripts of `tools` (PLAN.md 14) are built with the API: the Lingui macros of the email
+  // The scripts of `tools` are built with the API: the Lingui macros of the email
   // content need the same plugin.
   entry: { main: 'src/main.ts', 'scripts/reset-2fa': 'src/scripts/reset-2fa.ts' },
   format: 'esm',

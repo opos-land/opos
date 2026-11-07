@@ -1,5 +1,5 @@
 /**
- * Whether `timezone` names an IANA zone; tenants format programme times in it (PLAN.md 6). A fixed
+ * Whether `timezone` names an IANA zone; tenants format programme times in it. A fixed
  * offset such as `+01:00` is refused: `Intl` accepts it, but it ignores daylight saving time.
  */
 export function isTimeZone(timezone: string) {
@@ -56,7 +56,7 @@ const pad = (value: number, length = 2) => String(value).padStart(length, '0')
 
 /**
  * The wall-clock time of `value` in `timeZone`, as `YYYY-MM-DDTHH:mm`: the value of an
- * `<input type="datetime-local">` that edits a tenant's dates in the tenant's zone (PLAN.md 6).
+ * `<input type="datetime-local">` that edits a tenant's dates in the tenant's zone.
  */
 export function toZonedWallTime(value: Date, timeZone: string) {
   const w = wallTime(value, timeZone)

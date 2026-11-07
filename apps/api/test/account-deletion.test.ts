@@ -16,7 +16,7 @@ import {
   tenantWithHead,
 } from './tenants'
 
-// The account lifecycle's end (PLAN.md 7.4, 9): DELETE /me through the Supabase Auth admin API.
+// The account lifecycle's end: DELETE /me through the Supabase Auth admin API.
 
 let app: NestExpressApplication
 

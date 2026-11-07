@@ -17,7 +17,7 @@ export type AccessTokenPayload = JWTPayload & {
   amr?: unknown
 }
 
-/** The three outcomes of checking an access token (PLAN.md 7.4). */
+/** The three outcomes of checking an access token. */
 export type TokenCheck =
   | { status: 'valid'; payload: AccessTokenPayload }
   | { status: 'invalid' }
@@ -62,7 +62,7 @@ const withCause = (error: unknown) => {
 }
 
 /**
- * Verifies Supabase Auth access tokens against the project's JWKS (PLAN.md 7.4). The keys are held
+ * Verifies Supabase Auth access tokens against the project's JWKS. The keys are held
  * for good and reloaded on a timer, so an outage of Supabase Auth leaves tokens verifying on the
  * last good keys; before the first fetch succeeds a token is `unavailable`, never `invalid`. A
  * failed fetch closes the way to the next one for `KEY_RETRY_MS`, so no request waits on a fetch

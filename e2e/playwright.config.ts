@@ -2,15 +2,15 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, devices } from '@playwright/test'
 import { API_DIR, apiEnv, portOf, stack } from './fixtures/stack'
 
-// E2E through the UI of the panel and the portal against the full stack (PLAN.md 15.2). The
+// E2E through the UI of the panel and the portal against the full stack. The
 // infrastructure comes from `pnpm infra:init`, migrations and the seed run before; the three
 // applications start here. The API starts fresh on every run, so its in-memory rate-limit
-// counters (PLAN.md 7.9) start from zero; outside CI a running panel and portal are reused.
+// counters start from zero; outside CI a running panel and portal are reused.
 
 const CI = Boolean(process.env.CI)
 const app = (name: string) => fileURLToPath(new URL(`../apps/${name}/`, import.meta.url))
 
-// The dev servers bind the ports of the addresses the API allows (PLAN.md 12, Ports).
+// The dev servers bind the ports of the addresses the API allows.
 const devServerEnv = {
   ...(process.env as Record<string, string>),
   OPOS_PANEL_PORT: portOf(stack.panel),
@@ -33,7 +33,7 @@ export default defineConfig({
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], locale: 'en-US' } },
-    // The portal on a phone: the scenarios tagged @mobile (PLAN.md 15.2).
+    // The portal on a phone: the scenarios tagged @mobile.
     { name: 'mobile', use: { ...devices['Pixel 7'], locale: 'en-US' }, grep: /@mobile/ },
   ],
   webServer: [

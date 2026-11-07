@@ -18,7 +18,7 @@ import {
 } from './tenants'
 
 // The reads that decide which tenant a request acts in filter on the tenant of the transaction
-// themselves, besides RLS (PLAN.md 4.6): these run them on a connection that bypasses RLS.
+// themselves, besides RLS: these run them on a connection that bypasses RLS.
 
 /** A TenantContextService whose transaction is `tx`, as the repositories read it. */
 const contextOf = (tx: unknown) => ({ tx: () => tx }) as unknown as TenantContextService

@@ -8,7 +8,7 @@ import { ErrorMessage, linkClass, LoadingView, Page } from '../../../shared/ui'
 import { scheduleOptions } from '../api/schedule'
 import { scheduleDays } from '../model/schedule-days'
 
-/** The liked items across conventions by day, each in its convention's zone (PLAN.md 9). */
+/** The liked items across conventions by day, each in its convention's zone. */
 export function SchedulePage() {
   const { i18n, t } = useLingui()
   usePageTitle(t`My schedule`)

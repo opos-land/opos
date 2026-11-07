@@ -3,9 +3,9 @@ import { waitForMail } from '../fixtures/mailpit'
 import { stack } from '../fixtures/stack'
 import { panelUrl, signInToPanel } from '../fixtures/ui'
 
-// The convention's team in the panel (PLAN.md 8): invitations of confirmed accounts, changes,
+// The convention's team in the panel: invitations of confirmed accounts, changes,
 // removal, and the anti-escalation refusals shown next to the form that caused them
-// (PRODUCT.md 5.6).
+// (PRODUCT.md 5).
 
 test.describe('team management in the panel', () => {
   test('a head adds a confirmed account, changes its permissions and removes it', async ({
@@ -29,7 +29,7 @@ test.describe('team management in the panel', () => {
     await expect(invite.getByRole('status')).toHaveText(
       'Celina Colleague has joined the team and has been told by email.',
     )
-    // The notification links to the convention in the panel (PLAN.md 7.7).
+    // The notification links to the convention in the panel.
     expect((await waitForMail(colleague.email)).Text).toContain(`${stack.panel}/${tenant.slug}`)
 
     // Nobody edits their own membership.

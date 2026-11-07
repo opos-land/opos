@@ -135,7 +135,7 @@ function validationError(error: ValidationError): ApiErrorBody {
   }
 }
 
-/** Maps anything thrown while handling a request onto the error schema of PLAN.md 5. */
+/** Maps anything thrown while handling a request onto the API's error schema. */
 export function toErrorResponse(exception: unknown): {
   status: number
   body: ApiErrorBody

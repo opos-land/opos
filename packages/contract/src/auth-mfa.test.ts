@@ -4,7 +4,7 @@ import { enableMfaSchema, recoverSchema, verifyMfaSchema } from './auth-mfa'
 
 const factorId = '5f0c9a4e-3a55-4b9a-8e0c-7b8f1f1b2c3d'
 
-// What the two-factor routes take (PLAN.md 7.12).
+// What the two-factor routes take.
 describe('verifyMfaSchema', () => {
   it('takes six digits, trimmed', () => {
     expect(verifyMfaSchema.parse({ code: ' 123456 ' })).toEqual({ code: '123456' })
@@ -57,7 +57,7 @@ describe('contract.auth.mfa', () => {
     expect(contract.auth.mfa[name]['~orpc'].route).toMatchObject({ method, path })
   })
 
-  it('answers 204 where PLAN.md 7.12 does', () => {
+  it('answers 204 on verify, recover and disable', () => {
     for (const name of ['verify', 'recover', 'disable'] as const) {
       expect(contract.auth.mfa[name]['~orpc'].route.successStatus).toBe(204)
     }

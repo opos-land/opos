@@ -8,7 +8,7 @@ import { programContract } from './program'
 import { publicContract } from './public'
 import { tenantsContract } from './tenants'
 
-/** The API contract (PLAN.md 5): the API implements it, clients call through it. */
+/** The API contract: the API implements it, clients call through it. */
 export const contract = {
   health: healthContract,
   auth: authContract,

@@ -14,7 +14,7 @@ const schema = z
   .refine((v) => v.password === v.repeat, { path: ['repeat'] })
 
 /**
- * The password of an account whose address has just been confirmed (PLAN.md 7.7, step 4). Saving
+ * The password of an account whose address has just been confirmed. Saving
  * it ends every other session of the account. A sign-in older than 5 minutes cannot change the
  * password (7.4); the form then offers a new link by email instead. `auth.same_password` on a
  * retry of the password that failed before counts as saved.

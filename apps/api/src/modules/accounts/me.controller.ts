@@ -44,7 +44,7 @@ export class MeController {
   delete(@Req() req: CookieRequest & { res: CookieResponse }) {
     return implement(contract.me.delete).handler(async () => {
       await this.deletion.deleteCurrent()
-      // The session died with the account: the pair of the calling application goes (PLAN.md 5.2).
+      // The session died with the account: the pair of the calling application goes.
       const app = applicationFromOrigin(req.headers.origin, this.env)
       if (app) clearSessionCookies(req.res, app, this.env)
     })

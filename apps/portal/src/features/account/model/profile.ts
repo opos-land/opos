@@ -1,7 +1,7 @@
 import { type Account, type UpdateAccount } from '@opos/contract'
 import { z } from 'zod'
 
-/** The names as the form edits them; an empty field clears the name (`PATCH /me`, PLAN.md 5.2). */
+/** The names as the form edits them; an empty field clears the name (`PATCH /me`). */
 export const profileSchema = z.object({
   firstName: z.string().trim().max(100),
   lastName: z.string().trim().max(100),

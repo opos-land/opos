@@ -10,10 +10,10 @@ import {
   signOutOfPortal,
 } from '../fixtures/ui'
 
-// The session of the panel and of the portal on the API's cookies (PLAN.md 8, 9, 15.2 scenario
-// 19): the refresh, two tabs refreshing together, a sign-out that reaches the other tab, another
-// account signing in after a sign-out, and an outage during a refresh. They run in a real
-// browser, with real cookies, navigator.locks and BroadcastChannel.
+// The session of the panel and of the portal on the API's cookies: the refresh, two tabs
+// refreshing together, a sign-out that reaches the other tab, another account signing in after a
+// sign-out, and an outage during a refresh. They run in a real browser, with real cookies,
+// navigator.locks and BroadcastChannel.
 
 const ACCESS_COOKIE = 'opos_panel_access'
 const PORTAL_ACCESS_COOKIE = 'opos_portal_access'

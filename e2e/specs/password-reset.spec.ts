@@ -5,8 +5,8 @@ import { confirmLinkIn, waitForMail } from '../fixtures/mailpit'
 import { stack } from '../fixtures/stack'
 import { panelUrl, portalUrl } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenario 10: password reset from the sign-in screen of each application, and the new
-// link a used sign-up link gets through its page (PLAN.md 7.6).
+// Password reset from the sign-in screen of each application, and the new
+// link a used sign-up link gets through its page.
 
 const NEW_PASSWORD = 'e2e-new-password-456'
 

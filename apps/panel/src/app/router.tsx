@@ -42,8 +42,7 @@ function SignedIn() {
 }
 
 /**
- * Every screen, with `MfaGate` leading the sign-in pages of a pending session to `/auth/mfa`
- * (PLAN.md 7.12).
+ * Every screen, with `MfaGate` leading the sign-in pages of a pending session to `/auth/mfa`.
  */
 function Root() {
   return (
@@ -54,7 +53,7 @@ function Root() {
   )
 }
 
-// The fixed top-level paths are reserved tenant slugs (PLAN.md 8), so /:tenantSlug never
+// The fixed top-level paths are reserved tenant slugs, so /:tenantSlug never
 // shadows them.
 export const router = createBrowserRouter([
   {

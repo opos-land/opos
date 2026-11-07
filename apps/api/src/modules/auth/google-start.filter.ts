@@ -6,8 +6,8 @@ import { googleFailureUrl } from './google-auth.service'
 
 /**
  * `GET /auth/google` is a navigation, so a visitor over a limit, the default one or the one it
- * shares with the auth routes, lands on the login page of the application and not on a JSON body
- * (PLAN.md 7.9). Any other failure, and a query that names no application, answers as on every route.
+ * shares with the auth routes, lands on the login page of the application and not on a JSON body.
+ * Any other failure, and a query that names no application, answers as on every route.
  */
 @Catch()
 export class GoogleStartFilter extends HttpExceptionFilter {

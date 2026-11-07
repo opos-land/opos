@@ -2,14 +2,14 @@ import type postgres from 'postgres'
 import { RUNTIME_TIMEOUTS } from './client'
 
 /**
- * The tenant_isolation condition of PLAN.md 4.6 as Postgres deparses it, for both USING and
+ * The tenant_isolation condition as Postgres deparses it, for both USING and
  * WITH CHECK; `tenants` compares its own `id`, every other covered table its `tenant_id`.
  */
 const isolation = (column: string) =>
   `(${column} = ( SELECT (current_setting('app.tenant_id'::text))::uuid AS current_setting))`
 
 /**
- * The columns opos_app_global reads: what the cross-tenant queries of PLAN.md 4.6 select, and
+ * The columns opos_app_global reads: what the allowed cross-tenant queries select, and
  * nothing else. A query that needs another column adds it here in the PR of its migration.
  */
 export const globalReads = [
@@ -46,11 +46,11 @@ export const globalReads = [
   'program_item_likes.program_item_id',
 ]
 
-/** The public tables outside tenant isolation (PLAN.md 4.2). */
+/** The public tables outside tenant isolation. */
 const globalTables = ['accounts', 'account_recovery_codes']
 
 /**
- * The triggers OPOS attaches to the tables of the auth schema (PLAN.md 4.6): table, then trigger,
+ * The triggers OPOS attaches to the tables of the auth schema: table, then trigger,
  * then its definition as `pg_get_triggerdef` deparses it with the schema of the function left out.
  * Each must exist, be enabled and match; a trigger on an auth table outside this structure is a
  * violation. A trigger the API starts relying on joins it in the PR of its migration.
@@ -71,7 +71,7 @@ const authTriggers: Record<string, Record<string, string>> = {
 }
 
 /**
- * The columns opos_app updates (PLAN.md 4.6): never `id`, `tenant_id` or a column that points a
+ * The columns opos_app updates: never `id`, `tenant_id` or a column that points a
  * row at an account or another row. A column the API starts changing joins this list in the PR
  * of the migration that grants it.
  */
@@ -104,13 +104,13 @@ const appUpdates = [
 ]
 
 /**
- * Checks the database against the isolation rules of PLAN.md 4.6 and returns every violation;
+ * Checks the database against the tenant isolation rules and returns every violation;
  * an empty list means the rules hold. Reads the catalog only, so it runs in any transaction.
  */
 export async function verifyDatabase(sql: postgres.TransactionSql): Promise<string[]> {
   const problems: string[] = []
 
-  // Covered tables: tenants and every public table with a tenant_id column (PLAN.md 4.6).
+  // Covered tables: tenants and every public table with a tenant_id column.
   const covered = await sql<{ relname: string; secured: boolean }[]>`
     select c.relname, c.relrowsecurity and c.relforcerowsecurity as secured
     from pg_class c
@@ -129,7 +129,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     )
   }
 
-  // A public table is either covered or one of the global tables of PLAN.md 4.2; a tenant table
+  // A public table is either covered or one of the global tables; a tenant table
   // keyed only through another row (an edition_id, an order_id) would escape every check above.
   const uncovered = await sql<{ relname: string }[]>`
     select c.relname
@@ -217,7 +217,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     )
   }
 
-  // Runtime privileges (PLAN.md 4.6). has_table_privilege counts table-level grants only, so the
+  // Runtime privileges. has_table_privilege counts table-level grants only, so the
   // column-level updates opos_app holds pass. opos_app inserts and deletes only where the API
   // creates and removes rows: a write the API starts doing joins this list with its migration.
   const appWrites = [
@@ -393,7 +393,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
 
   // A security definer function runs as its owner, which bypasses RLS: it pins its search_path,
   // and no runtime role may call it directly. Its migration revokes EXECUTE from PUBLIC, on top of
-  // the default db:roles removes (PLAN.md 4.6). Any other function in public stays out of reach of
+  // the default db:roles removes. Any other function in public stays out of reach of
   // the Supabase API roles, which would call it through /rest/v1/rpc.
   const functions = await sql<
     { name: string; definer: boolean; pinned: boolean; callers: string[] }[]
@@ -426,7 +426,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   }
 
   // Supabase's API roles reach nothing in public, not even the schema, and the runtime roles use it
-  // without creating in it (PLAN.md 4.6).
+  // without creating in it.
   const schemaGrants = await sql<{ role: string; privilege: string }[]>`
     select r.role, p.privilege
     from (values ('anon', true), ('authenticated', true), ('service_role', true), ('opos_app', false), ('opos_app_global', false)) r(role, api)
@@ -441,7 +441,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     )
   }
 
-  // The runtime roles hold nothing in auth (PLAN.md 4.6). A function there stays executable through
+  // The runtime roles hold nothing in auth. A function there stays executable through
   // PUBLIC, as Supabase leaves it; without usage on the schema no role reaches it, so only a direct
   // grant counts.
   const authGrants = await sql<{ grant: string }[]>`

@@ -24,7 +24,7 @@ describe('errorMessage', () => {
   })
 
   it('tells a link opened in another browser apart from a generic failure', async () => {
-    // auth-js reports a PKCE code without its verifier, as on another device (PLAN.md 7.7, step 6).
+    // auth-js reports a PKCE code without its verifier, as on another device.
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')
 
@@ -79,7 +79,7 @@ describe('errorMessage', () => {
     )
   })
 
-  // A limit can run for an hour (PLAN.md 7.9), so the message promises no moment.
+  // A limit can run for an hour, so the message promises no moment.
   it('asks to come back later above a rate limit', async () => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

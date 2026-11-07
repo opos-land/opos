@@ -19,14 +19,14 @@ export const timestamp = z.iso
 
 // What a route needs besides its input, read by tests and documented below in OpenAPI.
 export interface ContractMeta {
-  /** A tenant route: X-Tenant-Slug names the tenant it runs in (PLAN.md 7.2). */
+  /** A tenant route: X-Tenant-Slug names the tenant it runs in. */
   tenant?: boolean
 }
 
 type Operation = Exclude<NonNullable<Route['spec']>, (...args: never[]) => unknown>
 
 const errorResponse: NonNullable<Operation['responses']>[string] = {
-  description: 'The error format of PLAN.md 5: a stable `code`, its `params`, an English `message`',
+  description: 'The error format: a stable `code`, its `params`, an English `message`',
   content: {
     'application/json': {
       schema: {
@@ -64,10 +64,10 @@ export const publicRoute = base.$route({
   spec: (operation) => withErrors({ ...operation, security: [] }),
 })
 
-/** A route for a signed-in account: the session cookie of the portal or the panel (PLAN.md 7.4). */
+/** A route for a signed-in account: the session cookie of the portal or the panel. */
 export const accountRoute = base.$route({ inputStructure: 'detailed', spec: withErrors })
 
-/** A route that acts inside one tenant, named by X-Tenant-Slug (PLAN.md 7.2). */
+/** A route that acts inside one tenant, named by X-Tenant-Slug. */
 export const tenantRoute = oc.$meta<ContractMeta>({ tenant: true }).$route({
   inputStructure: 'detailed',
   spec: (operation) =>

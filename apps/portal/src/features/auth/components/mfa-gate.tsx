@@ -16,7 +16,7 @@ function holdsSignIn({ pathname, search }: { pathname: string; search: string })
 }
 
 /**
- * A session that waits for its code (PLAN.md 7.12) is led to the code screen from the pages that
+ * A session that waits for its code is led to the code screen from the pages that
  * would start another sign-in, keeping the path to return to; the screen's sign-out is how another
  * person gets in. Every other page renders as for a visitor with no account: pages that need a
  * session lead to the code screen themselves (`RequireSession`).

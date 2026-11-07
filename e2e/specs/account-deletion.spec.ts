@@ -3,8 +3,7 @@ import { expect, test } from '../fixtures'
 import { accountIds } from '../fixtures/tenants'
 import { portalUrl, signInToPortal } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenario 9 (the account deletion): DELETE /me after the password confirms it is
-// the account's owner (PLAN.md 9, Account deletion).
+// DELETE /me after the password confirms it is the account's owner.
 
 test.describe('account deletion in the portal', () => {
   test(

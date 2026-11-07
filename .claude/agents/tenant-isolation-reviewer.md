@@ -16,9 +16,10 @@ Review the diff you are given; without one, review `git diff origin/develop...HE
 number, use `gh pr diff <number>`. Read the changed files in full where the diff alone does not
 show the context, and read the parts of the code they call.
 
-The rules are in `docs/PLAN.md`: 4 (database schema and naming), 4.5 (invariants), 4.6 (tenant
-isolation: database roles, covered tables, tenant context, policy shape, cross-tenant queries,
-migrations and verification) and 7.2–7.4 (tenant context, permissions, authorization). Read those
+The rules are in `docs/ARCHITECTURE.md`: Tenant isolation (database roles, policy shape, tenant
+context, cross-tenant reads, migrations and `pnpm db:verify`), Invariants, Permissions, Sessions and
+sign-in, and API conventions. The code shows the rest: the schema in `packages/db/src/schema`, the
+grants and policies in `packages/db/drizzle`, the checks in `packages/db/src/verify.ts`. Read those
 sections before you review; when the diff and the document disagree, report it.
 
 ## What to check
@@ -39,25 +40,27 @@ sections before you review; when the diff and the document disagree, report it.
   `execute` revoked from `public`. An invariant enforced by a trigger holds under concurrent
   transactions (check for a missing lock) and on every path that can break it (insert, update,
   delete, cascades).
-- Constraint and index names follow PLAN.md 4; foreign keys use `foreignKey({ name })`.
+- Constraint and index names follow those of the existing schema; foreign keys use
+  `foreignKey({ name })`.
 - `packages/db/src/verify.ts` still catches the new tables.
 
 **Cross-tenant access**
 - Every query on the `opos_app_global` role (`GlobalDbService`, `globalDb()`) appears in the table
-  of cross-tenant queries in PLAN.md 4.6, filters by the account from the JWT, an email from it, a
-  secret the caller proved, or belongs to a scheduled job, and returns only the listed columns.
+  of cross-tenant queries in `docs/ARCHITECTURE.md` (Tenant isolation), is bound as that section
+  says — the account from the JWT or its confirmed email, a secret the caller proved, or a scheduled
+  job — and reads only the columns `globalReads` of `packages/db/src/verify.ts` lists.
 - Nothing else uses `globalDb()` or `migrationDb()` at runtime.
 
 **API (`apps/api`)**
 - Repositories take the transaction from `TenantContextService.tx()` and never query a pool
   directly.
 - A request acting inside a tenant without `X-Tenant-Slug` opens the context with
-  `withTenant(tenantId, fn)`, and that `tenantId` comes from a lookup in PLAN.md 4.6 or a verified
+  `withTenant(tenantId, fn)`, and that `tenantId` comes from a cross-tenant lookup or a verified
   token, never from the request body or query.
 - Outbound I/O (SMTP, the GoTrue admin API, the payment provider) runs through `afterCommit`, not
   inside the transaction.
-- Each endpoint carries the `@RequireTenant` or `@RequireEdition` permission the contract table in
-  PLAN.md 5 requires; an edition of another tenant answers `404`, not `403`.
+- Each endpoint carries the `@RequireTenant` or `@RequireEdition` permission its route needs
+  (`apps/api/test/route-needs.ts` lists them); an edition of another tenant answers `404`, not `403`.
 - Anti-escalation: an org cannot grant more than they hold, edit themselves or touch a head.
 - Expired memberships are filtered out wherever access is granted.
 
@@ -71,9 +74,9 @@ sections before you review; when the diff and the document disagree, report it.
 Report only what you verified in the code. For each finding give:
 
 - severity: `critical` (data of one tenant reachable from another, or an invariant that can be
-  broken), `major` (a rule from PLAN.md broken without an immediate leak), `minor`;
+  broken), `major` (a rule of ARCHITECTURE.md broken without an immediate leak), `minor`;
 - `file:line`;
-- the rule it breaks, with the PLAN.md section;
+- the rule it breaks, with its section of ARCHITECTURE.md;
 - a concrete failure scenario: which request or transaction, in what order, with what result;
 - the fix, in one or two sentences.
 

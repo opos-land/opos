@@ -200,9 +200,17 @@ remote database URL, project reference or access token in a `.env` or `mise.loca
 only through the deploy workflow ([environments](docs/ARCHITECTURE.md#environments)).
 
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
-them to the repository. Where no design exists yet, use plain blocks and real copy
-([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)); component-library defaults are not a
-finished look.
+them to the repository. Where no design exists yet, use shadcn/ui's defaults unchanged and real copy
+([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)); they are not a finished look.
+
+**Screens are built from shadcn/ui** in each application's `src/shared/ui`
+([frontends](docs/ARCHITECTURE.md#frontends)). A component comes from the CLI the application pins,
+`pnpm --dir apps/panel exec shadcn add <name>` or the same for `apps/portal`, never
+`npx shadcn@latest`, and stays as the CLI writes it but for formatting, lint fixes and its own texts
+moved into Lingui macros; the look changes through the tokens of `src/styles.css`. The `shadcn`
+skill ([.claude/skills/shadcn/SKILL.md](.claude/skills/shadcn/SKILL.md)) and the `shadcn` MCP server
+of [.mcp.json](.mcp.json) run that CLI; [.claude/shadcn.test.mjs](.claude/shadcn.test.mjs) keeps
+them so.
 
 **Adding a feature.** A new feature starts from its accepted spec, and a new table, route or screen
 follows the [checklist](docs/ARCHITECTURE.md#adding-a-feature) step by step, with the `program`

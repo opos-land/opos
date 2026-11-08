@@ -216,11 +216,14 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   goes only through a feature's `api/`.
 - Every page calls `usePageTitle` before its first `return`, naming the page, then its edition or
   convention; `src/app/pages.test.ts` enforces it.
-- `shared/ui` is native elements styled only through the tokens of `src/styles.css`; shadcn/ui only
-  for a widget native HTML lacks. No AI-generated graphics
+- Screens are built from shadcn/ui components on Base UI, which the CLI of each application adds to
+  its `shared/ui` as it writes them, but for formatting, lint fixes and their own texts moved into
+  Lingui macros; an application's own compositions of them sit beside them. They are styled only
+  through the tokens of `src/styles.css`, which carry shadcn/ui's names and its default theme until
+  the designer's ([0020](adr/0020-build-the-frontends-from-shadcn-ui-with-its-default-look.md));
+  `src/styles.test.ts` fails on a class Tailwind cannot build. No AI-generated graphics
   ([PRODUCT.md](PRODUCT.md#8-design-and-public-image)).
-- The portal is mobile-first: 360 px first, one column, controls at least 44 px tall, 16 px form
-  text, no horizontal scrolling.
+- The portal is mobile-first: 360 px first, one column, no horizontal scrolling.
 - The browser holds no session state: no token, no cookie read, the account from `GET /me`. A `401`
   brings one refresh shared by the tabs; only a refresh answered `401` signs out, `unavailable` never
   does, and `mfa-required` shows no account data.
@@ -276,6 +279,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
   `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
   ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).
+- The shadcn/ui CLI, its agent skill and its MCP server run the version an application pins, as
+  `pnpm --dir apps/<app> exec shadcn`, never `npx shadcn@latest` or `pnpm dlx`, which pass
+  `minimumReleaseAge` by
+  ([0021](adr/0021-run-the-shadcn-skill-and-mcp-server-through-the-pinned-cli.md)).
 - turbo ([turbo.json](../turbo.json)) declares only what a rule needs: catalogs compile before `dev`,
   `build` and `test`; side effects such as `db:*` are never cached; runtime variables stay out of
   the hash; the schema and API suites never share the stack at once.

@@ -56,7 +56,7 @@ export function LoginPage() {
       <Link to="/forgot-password" className={`${linkClass} text-sm`}>
         <Trans>Forgot your password?</Trans>
       </Link>
-      <p className="text-muted text-center text-sm">
+      <p className="text-muted-foreground text-center text-sm">
         <Trans>or</Trans>
       </p>
       <GoogleButton returnTo={returnTo} />

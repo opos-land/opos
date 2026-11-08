@@ -38,8 +38,8 @@ export function ProgramList({
               const count = item.speakers.length
               const likes = item.likeCount
               return (
-                <li key={item.id} className="border-line flex flex-col gap-1 border-t pt-3">
-                  <span className="text-muted text-sm">
+                <li key={item.id} className="flex flex-col gap-1 border-t pt-3">
+                  <span className="text-muted-foreground text-sm">
                     {time.hours(item.startsAt, item.endsAt)}
                   </span>
                   <Link to={`${editionPath}/program/${item.id}`} className={linkClass}>
@@ -54,7 +54,7 @@ export function ProgramList({
                       />
                     </span>
                   )}
-                  <span className="text-muted text-sm">
+                  <span className="text-muted-foreground text-sm">
                     <Plural value={likes} one="# like" other="# likes" />
                   </span>
                 </li>

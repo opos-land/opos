@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 import { PRIVACY_PATH } from '../../../shared/config/routes'
-import { Button, ErrorMessage, Field, inputClass, linkClass } from '../../../shared/ui'
+import { Button, ErrorMessage, FormField, Input, linkClass } from '../../../shared/ui'
 import { signUp } from '../api/auth'
 import { registrationSchema } from '../model/registration'
 
@@ -36,39 +36,28 @@ export function RegisterForm({
 
   return (
     <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-4">
-      <Field label={t`First name`} error={errors.firstName && t`Enter 1 to 100 characters.`}>
+      <FormField label={t`First name`} error={errors.firstName && t`Enter 1 to 100 characters.`}>
         {(control) => (
-          <input
-            {...control}
-            {...form.register('firstName')}
-            autoComplete="given-name"
-            className={inputClass}
-          />
+          <Input {...control} {...form.register('firstName')} autoComplete="given-name" />
         )}
-      </Field>
-      <Field label={t`Last name`} error={errors.lastName && t`Enter 1 to 100 characters.`}>
+      </FormField>
+      <FormField label={t`Last name`} error={errors.lastName && t`Enter 1 to 100 characters.`}>
         {(control) => (
-          <input
-            {...control}
-            {...form.register('lastName')}
-            autoComplete="family-name"
-            className={inputClass}
-          />
+          <Input {...control} {...form.register('lastName')} autoComplete="family-name" />
         )}
-      </Field>
-      <Field label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
+      </FormField>
+      <FormField label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
         {(control) => (
-          <input
+          <Input
             {...control}
             {...form.register('email')}
             type="email"
             autoComplete="email"
             inputMode="email"
-            className={inputClass}
           />
         )}
-      </Field>
-      <p className="text-muted text-sm">
+      </FormField>
+      <p className="text-muted-foreground text-sm">
         <Trans>
           By creating an account you confirm that you have read the{' '}
           <Link to={PRIVACY_PATH} className={linkClass}>
@@ -78,7 +67,7 @@ export function RegisterForm({
         </Trans>
       </p>
       <ErrorMessage error={error} />
-      <Button type="submit" pending={isSubmitting}>
+      <Button disabled={isSubmitting} type="submit">
         <Trans>Create an account</Trans>
       </Button>
     </form>

@@ -3,13 +3,11 @@ import { Link, useLocation } from 'react-router'
 import { SIGNED_IN_HOME } from '../../../shared/config/routes'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import { useSession } from '../../../shared/lib/session'
-import { Notice, Section } from '../../../shared/ui'
+import { buttonVariants, Notice, Section } from '../../../shared/ui'
 import { type AccountDeletedState } from '../../account'
 
-const primaryLink =
-  'rounded-box bg-accent text-accent-ink border-accent inline-flex min-h-11 items-center justify-center border px-4 py-2 font-medium hover:opacity-90'
-const secondaryLink =
-  'rounded-box bg-surface text-ink border-line inline-flex min-h-11 items-center justify-center border px-4 py-2 font-medium hover:border-ink'
+const primaryLink = buttonVariants({ size: 'lg' })
+const secondaryLink = buttonVariants({ variant: 'outline', size: 'lg' })
 
 const deleted = (state: unknown) =>
   typeof state === 'object' &&
@@ -35,7 +33,7 @@ export function LandingPage() {
         <h1 className="text-3xl leading-tight font-semibold">
           <Trans>Fantasy conventions, in one place</Trans>
         </h1>
-        <p className="text-muted text-lg">
+        <p className="text-muted-foreground text-lg">
           <Trans>
             OPOS is the platform conventions use for their programme, tickets and attendee sign-ups.
             It is free for conventions.

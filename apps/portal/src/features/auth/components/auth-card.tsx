@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { Page } from '../../../shared/ui'
+import { Card, CardContent, Page } from '../../../shared/ui'
 
 /** The frame of the screens around sign-in: a heading and one surface of content. */
 export function AuthCard({
@@ -13,9 +13,9 @@ export function AuthCard({
 }) {
   return (
     <Page title={title} lead={lead}>
-      <div className="rounded-box border-line bg-surface flex flex-col gap-4 border p-4">
-        {children}
-      </div>
+      <Card>
+        <CardContent className="flex flex-col gap-4">{children}</CardContent>
+      </Card>
     </Page>
   )
 }

@@ -48,7 +48,7 @@ export function AccountPage() {
         </p>
         <ErrorMessage error={signOutError} />
         <Button
-          variant="secondary"
+          variant="outline"
           className="self-start"
           onClick={() => void signOut().then(setSignOutError)}
         >

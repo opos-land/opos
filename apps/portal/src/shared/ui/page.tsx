@@ -1,6 +1,7 @@
 import { type ReactNode, useId } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from './card'
 
-export const linkClass = 'text-accent underline underline-offset-2'
+export const linkClass = 'text-primary underline underline-offset-4'
 
 /** One screen of the portal: its heading, an optional lead and the content in one column. */
 export function Page({
@@ -16,7 +17,7 @@ export function Page({
     <section className="flex flex-col gap-6 py-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold">{title}</h1>
-        {lead && <p className="text-muted">{lead}</p>}
+        {lead && <p className="text-muted-foreground">{lead}</p>}
       </header>
       {children}
     </section>
@@ -27,14 +28,15 @@ export function Page({
 export function Section({ title, children }: { title: ReactNode; children: ReactNode }) {
   const headingId = useId()
   return (
-    <section
-      aria-labelledby={headingId}
-      className="rounded-box border-line bg-surface flex flex-col gap-4 border p-4"
-    >
-      <h2 id={headingId} className="text-lg font-semibold">
-        {title}
-      </h2>
-      {children}
+    <section aria-labelledby={headingId}>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2 id={headingId}>{title}</h2>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">{children}</CardContent>
+      </Card>
     </section>
   )
 }

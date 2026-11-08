@@ -6,7 +6,7 @@ import { Link } from 'react-router'
 import { z } from 'zod'
 import { SIGNED_IN_HOME } from '../../../shared/config/routes'
 import { usePageTitle } from '../../../shared/lib/page-title'
-import { Button, ErrorMessage, Field, inputClass, linkClass, Notice } from '../../../shared/ui'
+import { Button, ErrorMessage, FormField, Input, linkClass, Notice } from '../../../shared/ui'
 import { sendPasswordLink } from '../api/auth'
 import { AuthCard } from '../components/auth-card'
 
@@ -45,20 +45,19 @@ export function ForgotPasswordPage() {
         </Notice>
       ) : (
         <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-4">
-          <Field label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
+          <FormField label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
             {(control) => (
-              <input
+              <Input
                 {...control}
                 {...form.register('email')}
                 type="email"
                 autoComplete="email"
                 inputMode="email"
-                className={inputClass}
               />
             )}
-          </Field>
+          </FormField>
           <ErrorMessage error={error} />
-          <Button type="submit" pending={isSubmitting}>
+          <Button disabled={isSubmitting} type="submit">
             <Trans>Send the link</Trans>
           </Button>
         </form>

@@ -67,14 +67,15 @@ export function LikeButton({
       <div>
         {liked ? (
           <Button
-            variant="secondary"
-            pending={unlike.isPending}
+            disabled={unlike.isPending}
+            variant="outline"
+
             onClick={() => unlike.mutate({ params })}
           >
             <Trans>Remove the like</Trans>
           </Button>
         ) : (
-          <Button pending={like.isPending} onClick={() => like.mutate({ params })}>
+          <Button disabled={like.isPending} onClick={() => like.mutate({ params })}>
             <Trans>Like</Trans>
           </Button>
         )}

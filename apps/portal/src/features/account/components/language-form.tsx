@@ -3,7 +3,7 @@ import { type Account } from '@opos/contract'
 import { isLocale, SUPPORTED_LOCALES } from '@opos/i18n'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
-import { ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import { ErrorMessage, FormField, NativeSelect, NativeSelectOption } from '../../../shared/ui'
 import { mergeSavedAccount, updateAccountOptions } from '../api/account'
 
 const BROWSER = 'browser'
@@ -28,24 +28,23 @@ export function LanguageForm({ account }: { account: Account }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <Field label={t`Interface language`} hint={t`Saved on your account.`}>
+      <FormField label={t`Interface language`} hint={t`Saved on your account.`}>
         {(control) => (
-          <select
+          <NativeSelect
             {...control}
-            className={inputClass}
             value={account.locale ?? BROWSER}
             disabled={update.isPending}
             onChange={(event) => change(event.target.value)}
           >
-            <option value={BROWSER}>{t`The browser's language`}</option>
+            <NativeSelectOption value={BROWSER}>{t`The browser's language`}</NativeSelectOption>
             {SUPPORTED_LOCALES.map((locale) => (
-              <option key={locale} value={locale} lang={locale}>
+              <NativeSelectOption key={locale} value={locale} lang={locale}>
                 {languageName(locale)}
-              </option>
+              </NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
         )}
-      </Field>
+      </FormField>
       <ErrorMessage error={update.error} />
     </div>
   )

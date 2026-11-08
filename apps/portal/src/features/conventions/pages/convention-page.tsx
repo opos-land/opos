@@ -59,7 +59,7 @@ export function ConventionPage() {
         )
       ) : (
         <Section title={active.data.name}>
-          <p className="text-muted text-sm">
+          <p className="text-muted-foreground text-sm">
             {time.dates(active.data.startsAt, active.data.endsAt)}
           </p>
           {items.isPending ? (
@@ -84,7 +84,7 @@ export function ConventionPage() {
                 <Link to={`${base}/${edition.slug}`} className={linkClass}>
                   {edition.name}
                 </Link>
-                <span className="text-muted text-sm">
+                <span className="text-muted-foreground text-sm">
                   {time.dates(edition.startsAt, edition.endsAt)}
                 </span>
               </li>

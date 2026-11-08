@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
-import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
+import { Button, ErrorMessage, FormField, Input, Notice } from '../../../shared/ui'
 import {
   disableTwoFactor,
   enableTwoFactor,
@@ -75,28 +75,27 @@ function Enrolling({
           Secret: <code className="font-mono break-all">{secret}</code>
         </Trans>
       </p>
-      <Field
+      <FormField
         label={t`Code from the app`}
         error={invalid && t`Enter the six digits from your authenticator app.`}
       >
         {(control) => (
-          <input
+          <Input
             {...control}
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
             value={code}
             onChange={(event) => setCode(event.target.value)}
-            className={inputClass}
           />
         )}
-      </Field>
+      </FormField>
       <ErrorMessage error={error} />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" pending={pending}>
+        <Button disabled={pending} type="submit">
           <Trans>Turn on</Trans>
         </Button>
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant="outline" onClick={onCancel}>
           <Trans>Cancel</Trans>
         </Button>
       </div>
@@ -115,10 +114,7 @@ function RecoveryCodes({ codes, onSaved }: { codes: string[]; onSaved: () => voi
       </p>
       <ul className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
         {codes.map((code) => (
-          <li
-            key={code}
-            className="rounded-box border-line border px-3 py-2 font-mono text-base break-all"
-          >
+          <li key={code} className="rounded-lg border px-3 py-2 font-mono text-base break-all">
             {code}
           </li>
         ))}
@@ -262,7 +258,7 @@ export function TwoFactorCard({
             ones, sign in with a code from your app, turn two-factor authentication off, and turn it
             on again.
           </Trans>
-          <Button variant="secondary" className="mt-2" onClick={dismissLostCodes}>
+          <Button variant="outline" className="mt-2" onClick={dismissLostCodes}>
             <Trans>Dismiss</Trans>
           </Button>
         </Notice>
@@ -277,9 +273,10 @@ export function TwoFactorCard({
             </Trans>
           </p>
           <Button
-            variant="danger"
+            disabled={pending}
+            variant="destructive"
             className="self-start"
-            pending={pending}
+
             onClick={() => void run('disable')}
           >
             <Trans>Turn off two-factor authentication</Trans>
@@ -293,7 +290,7 @@ export function TwoFactorCard({
               authenticator app each time you sign in.
             </Trans>
           </p>
-          <Button className="self-start" pending={pending} onClick={() => void run('enroll')}>
+          <Button disabled={pending} className="self-start" onClick={() => void run('enroll')}>
             <Trans>Turn on two-factor authentication</Trans>
           </Button>
         </>

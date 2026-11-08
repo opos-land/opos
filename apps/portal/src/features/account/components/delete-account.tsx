@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
-import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import { Alert, AlertDescription, Button, ErrorMessage, FormField, Input } from '../../../shared/ui'
 import { GoogleButton, signInWithPassword, withMfaReturn } from '../../auth'
 import { deleteAccountOptions, forgetSession } from '../api/account'
 import { deletionRefusal } from '../model/deletion'
@@ -28,28 +28,28 @@ export interface AccountDeletedState {
 
 function LastHeadRefusal() {
   return (
-    <div role="alert" className="rounded-box border-danger text-danger border px-3 py-2 text-sm">
-      <p>
+    <Alert variant="destructive">
+      <AlertDescription>
         <Trans>
           You are the last head organizer of a convention, and a convention must keep at least one.
           In the organizer panel, make another member of that convention’s team a head organizer,
           then delete your account.
         </Trans>
-      </p>
-    </div>
+      </AlertDescription>
+    </Alert>
   )
 }
 
 function OtherAccountRefusal({ email }: { email: string }) {
   return (
-    <div role="alert" className="rounded-box border-danger text-danger border px-3 py-2 text-sm">
-      <p>
+    <Alert variant="destructive">
+      <AlertDescription>
         <Trans>
           Google signed you in to a different account, {email}, so nothing was deleted. To delete
           the account you started from, sign in to it and confirm again.
         </Trans>
-      </p>
-    </div>
+      </AlertDescription>
+    </Alert>
   )
 }
 
@@ -149,7 +149,7 @@ export function DeleteAccount({
     return (
       <>
         {googleReturn === 'other-account' && <OtherAccountRefusal email={email} />}
-        <Button variant="danger" className="self-start" onClick={start}>
+        <Button variant="destructive" className="self-start" onClick={start}>
           <Trans>Delete my account</Trans>
         </Button>
       </>
@@ -174,9 +174,10 @@ export function DeleteAccount({
             <Trans>You confirmed it is you again. Delete the account within 5 minutes.</Trans>
           </p>
           <Button
-            variant="danger"
+            disabled={pending}
+            variant="destructive"
             className="self-start"
-            pending={pending}
+
             onClick={() => void deleteAfterGoogle()}
           >
             <Trans>Delete my account</Trans>
@@ -189,20 +190,19 @@ export function DeleteAccount({
               onSubmit={(event) => void confirmWithPassword(event)}
               className="flex flex-col gap-4"
             >
-              <Field label={t`Your password`} hint={t`Enter it again to confirm it is you.`}>
+              <FormField label={t`Your password`} hint={t`Enter it again to confirm it is you.`}>
                 {(control) => (
-                  <input
+                  <Input
                     {...control}
                     type="password"
                     autoComplete="current-password"
                     required
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className={inputClass}
                   />
                 )}
-              </Field>
-              <Button type="submit" variant="danger" className="self-start" pending={pending}>
+              </FormField>
+              <Button disabled={pending} type="submit" variant="destructive" className="self-start">
                 <Trans>Delete my account</Trans>
               </Button>
             </form>
@@ -217,7 +217,7 @@ export function DeleteAccount({
           )}
         </>
       )}
-      <Button variant="secondary" className="self-start" onClick={keep}>
+      <Button variant="outline" className="self-start" onClick={keep}>
         <Trans>Keep my account</Trans>
       </Button>
     </div>

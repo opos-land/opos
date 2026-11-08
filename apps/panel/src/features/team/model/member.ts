@@ -22,9 +22,9 @@ export type MemberChange = Partial<{
 }>
 
 /**
- * The PATCH body for what the form changed, and nothing else: an unchanged field is never sent
- * (PLAN.md 5.3). Promoting to head sends the role alone, since a head holds no levels and no
- * expiry. Returns null for an expiry that names no instant.
+ * The PATCH body for what the form changed, and nothing else: an unchanged field is never sent.
+ * Promoting to head sends the role alone, since a head holds no levels and no expiry. Returns
+ * null for an expiry that names no instant.
  */
 export function memberChange(
   before: MemberFormValues,

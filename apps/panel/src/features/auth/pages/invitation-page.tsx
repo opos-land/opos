@@ -162,7 +162,7 @@ function FinishSigningIn({ code }: { code: string }) {
 }
 
 /**
- * Invitation acceptance (PLAN.md 7.7): the convention and the invited address, sign-in, sign-up
+ * Invitation acceptance: the convention and the invited address, sign-in, sign-up
  * with email or Google, then acceptance. The password is chosen on `/auth/confirm`, which returns
  * here.
  */

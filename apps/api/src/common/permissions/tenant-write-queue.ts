@@ -1,7 +1,7 @@
 import { ApiError } from '../errors/api-error'
 import { TENANT_WRITE_LOCK_TIMEOUT_MS } from './tenant-write-lock'
 
-/** The answer to a write that waited too long for its tenant (PLAN.md 7.3). */
+/** The answer to a write that waited too long for its tenant. */
 export const tenantBusy = (tenantId: string) =>
   new ApiError(
     503,
@@ -13,8 +13,8 @@ export const tenantBusy = (tenantId: string) =>
   )
 
 /**
- * Runs the writes of one tenant one after another, in arrival order, inside this process
- * (PLAN.md 7.3). A write waits here before it opens its transaction, so a queue of writes to a
+ * Runs the writes of one tenant one after another, in arrival order, inside this process.
+ * A write waits here before it opens its transaction, so a queue of writes to a
  * busy tenant holds no database connection; past `timeoutMs` it gives up with 503 request.busy.
  * The tenant's advisory write lock stays the guarantee across processes.
  */

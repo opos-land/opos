@@ -4,8 +4,8 @@ import { z } from 'zod'
 const name = z.string().trim().min(1).max(100)
 
 /**
- * The registration form (PLAN.md 9): the names follow the account's limits in `PATCH /me`. It asks
- * for no password, which is chosen once the link proves the address (PLAN.md 5.1).
+ * The registration form: the names follow the account's limits in `PATCH /me`. It asks
+ * for no password, which is chosen once the link proves the address.
  */
 export const registrationSchema = z.object({
   firstName: name,

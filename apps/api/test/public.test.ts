@@ -14,7 +14,7 @@ import {
   tenantWithHead,
 } from './tenants'
 
-// The convention pages' routes (PLAN.md 5.7): no sign-in, and only what a published edition shows.
+// The convention pages' routes: no sign-in, and only what a published edition shows.
 
 type Tenant = Awaited<ReturnType<typeof tenantWithHead>>
 

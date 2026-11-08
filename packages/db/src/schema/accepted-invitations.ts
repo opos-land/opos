@@ -3,8 +3,8 @@ import { id, timestamps } from './columns'
 import { tenants } from './tenants'
 
 /**
- * The organizer invitations already accepted in a tenant, by the `jti` of their token (PLAN.md
- * 7.7): an invitation works once, also after the membership it created is removed.
+ * The organizer invitations already accepted in a tenant, by the `jti` of their token: an
+ * invitation works once, also after the membership it created is removed.
  */
 export const acceptedInvitations = pgTable(
   'accepted_invitations',

@@ -7,7 +7,7 @@ export interface PageRequest {
 }
 
 /**
- * The requests of a page that leave the boundary (PLAN.md 15.2). A request is inside when it goes
+ * The requests of a page that leave the boundary. A request is inside when it goes
  * to the API, or to the origin of the frame that made it; a navigation may also go to the panel or
  * the portal, since a scenario moves between them and the API's redirects land there. Only a URL
  * that goes out over the network counts, so `data:`, `blob:` and `about:` do not.

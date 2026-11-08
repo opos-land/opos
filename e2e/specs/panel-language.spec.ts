@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures'
 import { pl } from '../fixtures/catalog'
 import { openPanelAccountMenu, signInToPanel } from '../fixtures/ui'
 
-// The panel's language switcher (PLAN.md 8): the choice is kept on the account through PATCH /me
+// The panel's language switcher: the choice is kept on the account through PATCH /me
 // and survives a reload.
 
 test('the language chosen in the account menu stays on the account', async ({

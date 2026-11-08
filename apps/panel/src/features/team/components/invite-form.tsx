@@ -52,7 +52,7 @@ function Outcome({ outcome }: { outcome: InvitationOutcome }) {
   )
 }
 
-/** An invitation by email (PRODUCT.md 5.7): the role, both levels and an optional expiry. */
+/** An invitation by email (PRODUCT.md 5): the role, both levels and an optional expiry. */
 export function InviteForm() {
   const { t } = useLingui()
   const { access, api } = useCurrentTenant()

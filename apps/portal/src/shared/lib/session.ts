@@ -15,13 +15,13 @@ import {
 export { announceAccountChange, signedIn, signedOut, useSession }
 export type { SessionState }
 
-/** The number of the latest `load`, which only its own answer may settle (PLAN.md 7.4). */
+/** The number of the latest `load`, which only its own answer may settle. */
 let newestLoad = 0
 
 /**
  * Asks who is signed in and shows the answer. A session waiting for its code ends `mfa-required`.
  * `announce` tells the other tabs which account was found, or to drop theirs when the cookies
- * now wait for a code (a Google return is a page load, PLAN.md 7.4, 7.12); a tab following an
+ * now wait for a code (a Google return is a page load); a tab following an
  * announcement does not. A `401` that stands is a session that
  * is over only when a request of this tab ended it; one the refresh could not settle is
  * `unavailable`. The answer to a load a newer one overtook counts for nothing, and neither does an
@@ -49,7 +49,7 @@ async function load(announce: boolean) {
 }
 
 /**
- * Application start (PLAN.md 9): `GET /me`, with the API link's one refresh on a `401`. It ends
+ * Application start: `GET /me`, with the API link's one refresh on a `401`. It ends
  * `ready`, with the account or without one, or `unavailable` when the answer could not be had; a
  * failed refresh does not sign anyone out. Calling it again retries. An account it finds is
  * announced to the other tabs; finding none is not.
@@ -61,7 +61,7 @@ export function startSession() {
 
 let following = false
 
-/** Follows the account changes the other tabs announce (PLAN.md 7.4). */
+/** Follows the account changes the other tabs announce. */
 function followOtherTabs() {
   const channel = sessionChannel()
   if (following || !channel) return

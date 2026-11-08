@@ -1,7 +1,7 @@
 import { passwordGrant } from './auth-admin'
 import { stack } from './stack'
 
-// A direct request to the API, as an application would send it once signed in (PLAN.md 7.4): the
+// A direct request to the API, as an application would send it once signed in: the
 // access token in the cookie of the application, with the application's Origin. The API reads
 // nothing else.
 

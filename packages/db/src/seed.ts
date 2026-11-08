@@ -16,7 +16,7 @@ import {
 import { createTenant } from './tenants'
 import { totp } from './totp'
 
-// Demo data (PLAN.md 14). Idempotent: every run converges on the same rows.
+// Demo data. Idempotent: every run converges on the same rows.
 
 type Access = 'none' | 'read' | 'write'
 
@@ -29,7 +29,7 @@ interface SeedAccount {
 
 interface SeedMember {
   email: string
-  /** `org` when left out; a head holds no permission of its own and never expires (PLAN.md 4.5). */
+  /** `org` when left out; a head holds no permission of its own and never expires. */
   role?: 'head' | 'org'
   expired?: boolean
   tenant?: { settingsAccess?: Access; brandingAccess?: Access; shopConfigAccess?: Access }
@@ -100,7 +100,7 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'multi@example.com', firstName: 'Olga', lastName: 'Duda' },
 ]
 
-// The account with two-factor authentication (PLAN.md 14): a TOTP factor enrolled and verified
+// The account with two-factor authentication: a TOTP factor enrolled and verified
 // through Supabase Auth, and ten recovery codes of the length the API issues.
 const MFA_EMAIL = 'mfa@example.com'
 const RECOVERY_CODES = Array.from(
@@ -212,7 +212,7 @@ const TENANTS: SeedTenant[] = [
 ]
 
 if (process.env.OPOS_ENV !== 'local' && process.env.OPOS_ENV !== 'dev') {
-  console.error('The seed runs where OPOS_ENV is local or dev (PLAN.md 14).')
+  console.error('The seed runs where OPOS_ENV is local or dev.')
   process.exit(1)
 }
 
@@ -261,7 +261,7 @@ async function authCall<T = object>(
   return (await response.json().catch(() => ({}))) as T
 }
 
-/** The Supabase Auth admin API (PLAN.md 10). */
+/** The Supabase Auth admin API. */
 const authAdmin = <T = object>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   path: string,
@@ -468,7 +468,7 @@ async function seedTenant(spec: SeedTenant) {
       }
     }
 
-    // A head holds no permission of its own and never expires (PLAN.md 4.5).
+    // A head holds no permission of its own and never expires.
     const asHead = (id: string) => ({
       id,
       role: 'head' as const,

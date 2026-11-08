@@ -134,8 +134,9 @@ export class EditionsRepository {
   }
 
   /**
-   * The transactional switch of PLAN.md 4.5. The tenant row lock serialises two activations in
-   * one tenant, so the second sees the first and editions_one_active_unique is never hit.
+   * The transactional switch of the active edition. The tenant row lock serialises two
+   * activations in one tenant, so the second sees the first and editions_one_active_unique is
+   * never hit.
    */
   async activate(id: string) {
     const tx = this.context.tx()

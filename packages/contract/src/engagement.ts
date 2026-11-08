@@ -5,7 +5,7 @@ const programItem = z.object({
   params: z.object({ editionId: z.string(), programItemId: z.string() }),
 })
 
-/** Any signed-in account, in the team or not (PLAN.md 5.6). */
+/** Any signed-in account, in the team or not. */
 export const engagementContract = {
   like: tenantRoute
     .route({

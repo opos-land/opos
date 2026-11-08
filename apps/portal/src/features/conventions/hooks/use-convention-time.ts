@@ -2,7 +2,7 @@ import { useLingui } from '@lingui/react'
 import { formatDateTime, isLocale } from '@opos/i18n'
 import { activeLocale } from '../../../shared/lib/i18n'
 
-/** Dates of a convention, in its time zone and never the browser's (PLAN.md 6). */
+/** Dates of a convention, in its time zone and never the browser's. */
 export function useConventionTime(timeZone: string) {
   const { i18n } = useLingui()
   const locale = isLocale(i18n.locale) ? i18n.locale : activeLocale()

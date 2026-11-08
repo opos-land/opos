@@ -16,7 +16,7 @@ describe('the stored invitation', () => {
     expect(storedInvitation()).toBeNull()
   })
 
-  it('keeps the token across a reload, under the key of PLAN.md 7.7', () => {
+  it('keeps the token across a reload, under its storage key', () => {
     rememberInvitation('token-a')
 
     expect(JSON.parse(localStorage.getItem(INVITATION_STORAGE_KEY)!)).toEqual({

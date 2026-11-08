@@ -5,8 +5,8 @@ import { expect, test } from '../fixtures'
 import { confirmLinkIn, invitationLinkIn, waitForMail } from '../fixtures/mailpit'
 import { panelUrl, signInToPanel, signOutOfPanel } from '../fixtures/ui'
 
-// PLAN.md 15.2, scenario 6: an invitee without an account registers in the panel on
-// /invitation, confirms the address, chooses a password and joins the team (PLAN.md 7.7).
+// An invitee without an account registers in the panel on /invitation, confirms the address,
+// chooses a password and joins the team.
 
 const INVITEE_PASSWORD = 'e2e-invitee-password-789'
 

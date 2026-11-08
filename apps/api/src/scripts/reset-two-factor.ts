@@ -4,7 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { type AuthAdminClient } from '../modules/auth/auth-admin.client'
 import { type MailService } from '../modules/mail/mail.service'
 
-/** Why a reset changed nothing (PLAN.md 14): the codes the script exits with. */
+/** Why a reset changed nothing: the codes the script exits with. */
 export type ResetErrorCode = 'account.not-found' | 'account.unconfirmed' | 'mfa.not-enabled'
 
 export class ResetError extends Error {
@@ -44,7 +44,7 @@ const reasonOf = (error: unknown) => {
 
 /**
  * Removes the factors and the unused recovery codes of the account with this address, for a
- * person who lost both the device and the codes (PLAN.md 7.12, 14), and sends them the notice of
+ * person who lost both the device and the codes, and sends them the notice of
  * `recover`. The address is matched case-insensitively against a confirmed account. A refusal
  * changes nothing. Nothing the person could use to sign in is printed or logged.
  */
@@ -68,7 +68,7 @@ export async function resetTwoFactor(deps: ResetDeps, address: string): Promise<
   }
 
   // 2FA is on when a verified factor exists, which the mirror says; a leftover unverified factor
-  // is not 2FA (PLAN.md 7.12), and a reset of that account would tell a person a lie.
+  // is not 2FA, and a reset of that account would tell a person a lie.
   const factorIds = account.mfaEnabledAt ? await deps.admin.factorIds(account.id) : []
   if (factorIds.length === 0) {
     throw new ResetError(

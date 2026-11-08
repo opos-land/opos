@@ -20,7 +20,7 @@ const sql = postgres(migrationUrl(), { max: 1, onnotice: () => {} })
 
 try {
   await sql.begin((tx) => applyRoles(tx, passwords))
-  console.log('The runtime roles and the defaults of PLAN.md 4.6 are in place.')
+  console.log('The runtime roles and their defaults are in place.')
 } finally {
   await sql.end()
 }

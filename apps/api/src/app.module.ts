@@ -41,7 +41,7 @@ import { TenantsModule } from './modules/tenants/tenants.module'
 export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
   constructor(@Inject(ACCESS_TOKEN_VERIFIER) private readonly verifier: AccessTokenVerifier) {}
 
-  /** `rateLimit` replaces the default limit of PLAN.md 7.9, for tests that run into it. */
+  /** `rateLimit` replaces the default limit, for tests that run into it. */
   static register(env: Env, rateLimit: RateLimit = DEFAULT_RATE_LIMIT): DynamicModule {
     // One per process, built here: the rate limit's options take it before Nest injects anything.
     const verifier = createAccessTokenVerifier(env)
@@ -50,7 +50,7 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
       global: true,
       imports: [
         ORPCModule.forRoot({
-          // Every error reaches HttpExceptionFilter, which renders the error format of PLAN.md 5.
+          // Every error reaches HttpExceptionFilter, which renders the API's error format.
           plugins: [new RethrowHandlerPlugin({ filter: () => true })],
           sendResponseInterceptors: [deferResponseInTenantTransaction],
         }),

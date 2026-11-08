@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { stack } from './stack'
 
 // Accounts a scenario starts from are made through Supabase Auth's admin API with the API's
-// secret key on `apikey` (PLAN.md 10, Admin API), as the seed makes them.
+// secret key on `apikey`, as the seed makes them.
 
 export const PASSWORD = 'e2e-password-123'
 

@@ -22,7 +22,7 @@ import {
   tenantWithHead,
 } from './tenants'
 
-// Programme items and their speakers (PLAN.md 5.5). Which permission each route needs is checked
+// Programme items and their speakers. Which permission each route needs is checked
 // in route-requirements.test.ts; these cover what the routes do.
 
 type Tenant = Awaited<ReturnType<typeof tenantWithHead>>

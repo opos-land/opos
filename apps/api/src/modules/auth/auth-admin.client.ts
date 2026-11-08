@@ -6,7 +6,7 @@ import { recipientLocale } from '../mail/recipient-locale'
 import { SupabaseAuthFactory } from './supabase-auth.factory'
 
 /**
- * The Supabase Auth admin API, authorized by the secret key on `apikey` alone (PLAN.md 10). The API
+ * The Supabase Auth admin API, authorized by the secret key on `apikey` alone. The API
  * uses it for account deletion, factor removal, a password a confirmation could not replace and
  * the locale of a notice. Outbound I/O: never call it inside a tenant transaction.
  */
@@ -65,7 +65,7 @@ export class AuthAdminClient {
   }
 
   /**
-   * The language of a notice to an account (PLAN.md 6): `accounts.locale`, then the locale sent with
+   * The language of a notice to an account: `accounts.locale`, then the locale sent with
    * the sign-up, which only the user's metadata keeps once the account has gone back to detection
    * (`GET /admin/users/:id`), then the default. Only the language hangs on that call, so a failure
    * counts as no locale.

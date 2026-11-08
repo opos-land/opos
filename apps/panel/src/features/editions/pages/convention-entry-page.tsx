@@ -7,7 +7,7 @@ import { useEditions } from '../hooks/use-editions'
 import { defaultEdition } from '../model/default-edition'
 
 /**
- * Entering a convention (PLAN.md 8) opens the member's edition. With no edition to open, the
+ * Entering a convention opens the member's edition. With no edition to open, the
  * convention settings open on their editions, or the member learns there is nothing for them yet.
  */
 export function ConventionEntryPage() {

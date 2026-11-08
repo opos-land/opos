@@ -1,4 +1,4 @@
-// Mailpit catches every dev email; its HTTP API lets a test read what the API sent (PLAN.md 12).
+// Mailpit catches every dev email; its HTTP API lets a test read what the API sent.
 
 const api = `http://localhost:${process.env.SUPABASE_LOCAL_SMTP_PORT ?? '54324'}/api/v1`
 
@@ -43,7 +43,7 @@ export async function deleteMail(address: string) {
   await fetch(`${api}/search?query=${query}`, { method: 'DELETE' })
 }
 
-/** The organizer invitation link in the text part of a message (PLAN.md 7.7). */
+/** The organizer invitation link in the text part of a message. */
 export function invitationLinkIn(mail: Mail) {
   const link = /https?:\/\/\S+\/invitation\?token=\S+/.exec(mail.Text)?.[0]
   if (!link) throw new Error(`no invitation link in "${mail.Subject}"`)

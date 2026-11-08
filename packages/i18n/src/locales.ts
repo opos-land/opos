@@ -9,7 +9,7 @@ export const SUPPORTED_LOCALES = ['en', 'pl'] as const
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
 
-/** The interface language when nothing else decides it (PLAN.md 6). */
+/** The interface language when nothing else decides it. */
 export const DEFAULT_LOCALE: Locale = 'pl'
 
 export const isLocale = (value: unknown): value is Locale =>

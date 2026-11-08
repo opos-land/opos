@@ -4,7 +4,7 @@ A multitenant platform for running fantasy conventions: programme, tickets, atte
 and a public convention website. Free for conventions.
 
 - [docs/PRODUCT.md](docs/PRODUCT.md) — what we build and for whom
-- [docs/PLAN.md](docs/PLAN.md) — how to build it
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — the rules of the code no single file shows
 - [AGENTS.md](AGENTS.md) — rules for working in this repository
 
 ## License

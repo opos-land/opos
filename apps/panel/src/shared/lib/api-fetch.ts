@@ -1,4 +1,4 @@
-/** How a `POST /auth/refresh` ended (PLAN.md 7.4): only `signed-out` ends the session. */
+/** How a `POST /auth/refresh` ended: only `signed-out` ends the session. */
 export type RefreshResult = 'refreshed' | 'signed-out' | 'unavailable'
 
 export interface ApiFetchOptions {
@@ -6,9 +6,9 @@ export interface ApiFetchOptions {
   refresh(): Promise<RefreshResult>
   /** The session is over: a refresh answered `401`, or the retry was refused again. */
   onSignedOut(): void
-  /** A `401` `session.mfa-required` came back: the session waits for its code (PLAN.md 7.12). */
+  /** A `401` `session.mfa-required` came back: the session waits for its code. */
   onMfaRequired(): void
-  /** Sent as X-Tenant-Slug; the API ignores it on routes outside a tenant (PLAN.md 7.2). */
+  /** Sent as X-Tenant-Slug; the API ignores it on routes outside a tenant. */
   tenantSlug?: string
   /** The active interface language, sent as Accept-Language. */
   locale(): string
@@ -34,7 +34,7 @@ const answers = async (response: Response, code: string) =>
 const answersSessionInvalid = (response: Response) => answers(response, 'session.invalid')
 
 /**
- * The fetch of the panel's API link (PLAN.md 8): it sends the session cookies, the tenant and the
+ * The fetch of the panel's API link: it sends the session cookies, the tenant and the
  * language, and answers a `401` `session.invalid` with one refresh and one retry. A refresh answered
  * `401`, or a retry refused again, signs the session out; a refresh that could not be made
  * (`unavailable`) keeps it and hands the screen the original response.
@@ -85,7 +85,7 @@ export function shared<T>(fn: () => Promise<T>): () => Promise<T> {
 
 /**
  * Runs `fn` inside a Web Lock of that name, so the tabs of one application take turns, each with
- * the newest cookie (PLAN.md 7.4); a browser without Web Locks runs it at once.
+ * the newest cookie; a browser without Web Locks runs it at once.
  */
 export function acrossTabs<T>(name: string, fn: () => Promise<T>): () => Promise<T> {
   return () =>

@@ -521,7 +521,7 @@ describe('promotion to head', () => {
   })
 })
 
-// Each test holds a row lock from outside, so the requests really overlap (PLAN.md 15.1).
+// Each test holds a row lock from outside, so the requests really overlap.
 describe('concurrency', () => {
   it('re-checks the target after waiting: an org cannot delete a member promoted meanwhile', async () => {
     const t = await tenantWithHead()
@@ -549,7 +549,7 @@ describe('concurrency', () => {
   })
 
   // Every API route that lowers a member's access is a write route and runs under the tenant's
-  // write lock (PLAN.md 7.3). These tests hold that lock in a transaction of their own, lower the
+  // write lock. These tests hold that lock in a transaction of their own, lower the
   // actor's access in it and commit while the actor's write waits: the write must read the
   // committed change, refuse with 403 and leave the tenant as it was.
   describe('a write while a change to its actor commits', () => {
@@ -720,7 +720,7 @@ describe('concurrency', () => {
     )
 
     // After the check under the write lock, a member change waits for rows and re-checks its actor
-    // on the row it locked (PLAN.md 5.3), so the access of an actor may end during that wait too.
+    // on the row it locked, so the access of an actor may end during that wait too.
     // These requests raise nothing, so anti-escalation lets an org whose access expires send them.
     const memberChanges: Record<string, (s: Setup, ends: Date) => Request> = {
       'tenants.members.invite': (s, ends) => ({
@@ -1009,7 +1009,7 @@ describe('tenant settings', () => {
     const res = await call(a.head, 'patch', '/tenants/current', { name: 'Renamed' }).expect(200)
     expect(res.body).toMatchObject({ name: 'Renamed', slug: a.slug })
 
-    // The slug changes only through the admin's script (PLAN.md 14).
+    // The slug changes only through the admin's script.
     expect(
       (await call(a.head, 'patch', '/tenants/current', { slug: 'renamed-tenant' })).body,
     ).toMatchObject({ code: 'request.invalid', params: { field: 'slug' } })

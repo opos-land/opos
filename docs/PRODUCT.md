@@ -1,6 +1,7 @@
 # OPOS — product document
 
-What we build and for whom. The way it gets built is described in [PLAN.md](PLAN.md).
+What we build and for whom: the intent and the business rules. The rules of the code are in
+[ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Table of contents
 
@@ -20,544 +21,266 @@ What we build and for whom. The way it gets built is described in [PLAN.md](PLAN
 
 ## 1. What OPOS is
 
-A multitenant platform for running fantasy conventions: programme, tickets, attendee registrations
-and a public convention website. One installation serves many conventions with full data isolation
-between them.
+A multitenant platform for running fantasy conventions, with full data isolation between them.
+Attendees use the portal, on a phone or a desktop; organizers use the panel.
 
-**OPOS is free for conventions.** The platform charges conventions nothing and is not built to
-earn from the convention scene. Convention OPOS is the starting point: the attendee accounts it
-gathers are the base for later attendee-facing products, such as virtual booths and an OPOS shop
-([chapter 11](#11-mvp-scope-vs-beyond-mvp)). Commercial exhibitors are a separate matter: booth
-terms, including any fee, are set by the booths module.
+**OPOS is free for conventions** and is not built to earn from the scene; the attendee accounts it
+gathers are the base for later products, such as virtual booths and an OPOS shop.
 
-Attendees use the platform website, which works on a phone as well as on a desktop. There is no
-native mobile application. Organizers work in the panel, in a browser.
-
-The MVP targets a single market: Poland. The next ones are neighbouring — Czechia and Slovakia
-have a nearly identical convention scene — and the product is multilingual from the first commit,
-so entering them is a matter of adding translation catalogs.
-
-The applications run on our own VPS. The database and sign-in run on Supabase's hosted service in
-the EU. Only our API talks to Supabase — the portal and the panel talk to the API alone — so the
-API can move to another server, and the hosting of the database and sign-in can change, without
-attendees or organizers noticing.
-
-The source code is available, not open source: it is licensed under the PolyForm Internal Use
-License 1.0.0. An organization may run and modify OPOS for its own internal operations; distributing
-the code or modified versions is not permitted.
+The MVP targets Poland; Czechia and Slovakia come next. The applications run on our own server, the
+database and sign-in on Supabase in the EU, reached only through our API. The code is
+source-available under the PolyForm Internal Use License 1.0.0: it may be run and modified for
+internal use, not distributed.
 
 ---
 
 ## 2. MVP goal and end-to-end flow
 
-The MVP is the core — accounts, conventions, editions and permissions — plus two complete
-modules: the programme and tickets. Further modules ([chapter 7](#7-modules)) are added onto a
-finished core.
+The MVP is the core plus the programme and tickets; other modules are built only after it. It is
+done when this flow works with no manual database edits beyond step 1:
 
-The MVP is closed once the flow below works with no manual database edits beyond step 1:
-
-1. The admin creates the `convention-a` convention and its first head organizer with a database
-   script. There is no admin interface in the MVP.
-2. The head organizer signs in to the panel, creates the "Convention A 2026" edition, marks it
-   active and publishes it.
-3. They add a few programme items and assign a speaker account to one of them.
-4. They connect the convention's own payment provider account and create a ticket type with a
-   price, a quantity limit and a sales window.
-5. The portal shows that programme on the convention's page — list and item details — to anyone,
-   signed in or not.
-6. A visitor without an account buys two tickets with only an email address. The payment goes to
-   the convention's account, and the tickets arrive by email with QR codes.
-7. The head organizer emails an invitation granting programme write access to the 2026 edition
-   only. The invitee accepts the link and sees nothing in the panel but that edition's programme.
-8. The visitor later registers in the portal on the same address — by email, confirmed through
-   a link sent to that address before they choose a password, or with Google — and finds both tickets under "my
-   tickets". They open the convention's page from a link the convention shared, sign up for the
-   2026 edition and see it under "my conventions". All of it works in a phone browser.
-9. They like a few programme items and find them in their personal schedule. After an item
-   starts, they review it; the speaker reads the review in the portal.
-10. At the gate, an org pairs a phone with the edition by scanning a QR code from the panel. The
-    phone scans a ticket, shows everything in that order, and the org ticks the tickets handed
-    in; a second scan of the same ticket shows it as already used.
-11. An organizer of Convention A can neither read nor change anything in Convention B.
+1. The admin creates a convention and its first head with a script.
+2. The head creates an edition, marks it active and publishes it.
+3. They add programme items and assign a speaker to one.
+4. They connect the convention's own payment provider account and put tickets on sale.
+5. The convention's page in the portal shows the programme to anyone.
+6. A visitor buys tickets; the payment goes to the convention's account.
+7. The head invites an org to this edition's programme alone, and that is all the org sees.
+8. The visitor registers, by email or Google, and signs up for the edition, on a phone.
+9. They like programme items, see them in their personal schedule and review one for the speaker.
+10. At the gate, an org checks the visitor's tickets with a phone.
+11. An organizer of one convention can neither read nor change anything in another.
 
 ---
 
 ## 3. Glossary
 
-The names are consistent across code, API and interface. We introduce no synonyms, and each term
-has exactly one rendering in every interface language. A rendering follows the convention scene's
-own vocabulary rather than a literal translation: in Polish, **ticket** is rendered with the word
-the scene uses for admission to a convention, not with the word for a ticket. What the scene calls
-accreditation is the ticket; there is no separate accreditation module.
+Each term has one name in code, API and interface, no synonyms, and exactly one rendering in every
+interface language, following the scene's own vocabulary rather than a literal translation: in
+Polish, **ticket** is rendered with the scene's word for admission to a convention, not the word for
+a ticket; what the scene calls accreditation is the ticket.
 
 | Term | Meaning |
 |---|---|
-| **tenant** | the convention brand as a continuous entity, e.g. "Convention A" |
-| **edition** | a specific annual instance, e.g. "Convention A 2026" |
+| **tenant** | a convention brand across the years, e.g. "Convention A" |
+| **edition** | its annual instance, e.g. "Convention A 2026" |
 | **programme item** | an entry in an edition's programme; `ProgramItem` in code |
-| **speaker** | an account an org assigns to a programme item; reads the reviews of that item |
-| **like** | a user's mark on a programme item; it adds the item to their personal schedule |
-| **review** | a user's rating of a programme item, with an optional comment |
-| **ticket type** | a kind of ticket an edition sells: name, price, quantity limit, sales window |
-| **order** | one purchase: the buyer's email and name, the tickets bought, the payment state |
-| **ticket** | admission to an edition, with its own QR code; belongs to the email address the order was placed with |
-| **scanner** | a phone paired with an edition that checks and redeems tickets at the venue |
-| **attendee** | an account's registration for a specific edition |
-| **admin** | the person running the whole platform: creates conventions, appoints the first head organizers |
-| **org** | a member of a convention's organizing team, works in the panel |
-| **head** | the head organizer of a convention — an org with no permission limits |
-| **user** | a convention attendee, works in the portal |
-| **core** | accounts, conventions, editions and permissions — what every module builds on |
-| **module** | one functional area built on the core: programme, tickets, CMS, profile, booths, friends ([chapter 7](#7-modules)) |
-| **booth** | an exhibitor's stand at an edition; a virtual booth is its online counterpart |
-| **locale** | interface or website language in BCP 47 form (`pl`, `en`) |
-| **two-factor authentication** | a second step of signing in that an account turns on for itself: a code from an authenticator app, with one-time recovery codes for a lost device; `mfa` in code, 2FA for short |
+| **speaker** | an account an org assigns to a programme item |
+| **like** | a user's mark adding a programme item to their personal schedule |
+| **review** | a user's rating of a programme item |
+| **ticket type** | a kind of ticket an edition sells |
+| **order** | one purchase of tickets for an edition, with its payment |
+| **ticket** | admission to an edition |
+| **scanner** | a device checking tickets at the venue, with no account signed in |
+| **attendee** | an account's registration for an edition |
+| **admin** | runs the platform; creates conventions and their first heads |
+| **org** | a member of a convention's organizing team; works in the panel |
+| **head** | a convention's head organizer: an org with no permission limits |
+| **user** | a convention attendee; works in the portal |
+| **core** | accounts, conventions, editions and permissions |
+| **module** | a functional area built on the core |
+| **booth** | an exhibitor's stand at an edition, or online as a virtual booth |
+| **locale** | a language in BCP 47 form (`pl`, `en`) |
+| **two-factor authentication** | a second sign-in step an account turns on for itself; 2FA, `mfa` in code |
 
-The roles are not mutually exclusive. A single account can be the head organizer of one
-convention, an org in another, an attendee of a third and a speaker at a fourth — under one
-password and one sign-in.
+The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
+different convention.
 
 ---
 
 ## 4. Business model — tenant and edition
 
-**A tenant is the convention brand**, not a single edition. Conventions are series run by the same
-team year after year; the largest ones have been running for two or three decades without a break.
+**A tenant is the convention brand**, not a single edition: its team, branding, configuration and
+address carry over between editions, and an attendee keeps their history with it.
 
-That split gives us:
-
-- The organizing team, branding and configuration carry over from edition to edition.
-- The convention address stays the same between editions, so SEO does not suffer.
-- An attendee sees the history of their visits to a given convention across the years.
-
-**OPOS does not touch the conventions' money.** It charges conventions no fees, and the shop
-configuration points at a payment provider account owned by the convention, so ticket revenue
-flows directly to the organizer. The platform neither processes nor holds attendee payments — it
-only stores the configuration. The rule covers conventions, not commercial exhibitors: their
-terms come with the booths module.
-
-### What belongs to the convention, and what to the edition
+**OPOS does not touch the conventions' money.** Ticket payments go straight to a payment provider
+account the convention owns, and OPOS charges no fees.
 
 | Convention level | Edition level |
 |---|---|
-| name, address (slug), custom domain | programme — programme items, their speakers |
-| convention language and time zone | programme hours computed in the convention's time zone |
-| website branding (logo, colours, fonts) | per-edition website content (hero, news) |
-| organizing team | tickets, types, sales limits |
-| shop configuration (payment provider, currency) | attendee registrations |
-| eventually: speaker profiles with a history of appearances | likes and reviews of programme items |
-| | rooms, block schedule |
+| name, address, custom domain, language, time zone | programme items, speakers, likes, reviews |
+| team, shop (payment provider, currency), branding | tickets, attendee registrations, website content |
 
-In the MVP these work: name, address, language, time zone, team, shop configuration, programme
-with speakers, likes, reviews, tickets and attendee registrations. The remaining items already
-have their place in the permission model but no functionality behind them yet.
-
-The panel keeps the two levels apart, so that the many organizers who work on one edition never
-meet the management of the whole convention:
-
-| Place | What it holds | Who sees it |
-|---|---|---|
-| an edition | everything about that one edition: dashboard, programme, tickets with their orders and scanners, the team's access to the edition, and its settings — data, activation, publication | an organizer with a permission in that edition, one who reads the convention's settings, and a head organizer |
-| convention settings | general data (name, language, time zone), the list of editions with the creation of a new one, team, shop | an organizer who can open one of its sections; a head organizer always |
-
-Signing in to the panel leads to the list of the organizer's conventions, or straight into the
-only one; only the account that left a page returns to it. Entering a convention opens an edition:
-the active one when the organizer sees it, else the newest they see. The top bar names the
-convention and the edition and switches between the conventions and the editions the organizer
-sees. The convention settings are a separate place, reached from the top bar and from the list of
-conventions, and the panel never mentions them to an organizer who cannot open them. Each menu
-shows only the sections the organizer's permissions open ([5](#5-roles-and-permissions)), and a
-screen about one edition stays in that edition's menu even when a convention-level permission
-governs it.
+The panel keeps the levels apart, so the organizers of one edition never meet the convention's
+management: an edition opens to an org with a permission in it or read access to settings, the
+convention settings to an org with a permission there, and a menu shows only what the organizer's
+permissions open.
 
 ---
 
 ## 5. Roles and permissions
 
-Organizers hold permissions **per resource**, on two levels: convention and edition.
+### 5.1 Permissions and roles
 
-### 5.1 Convention level
+An org holds permissions **per resource** on two levels, each **none** (the default), **read** or
+**write**: a new org has no access until granted, and need not have it in every edition.
 
-Membership in a convention's team grants a role (`head` / `org`) plus permissions to resources
-shared across all editions. An `org` membership may carry an expiry date: from that moment the
-person has no access to the convention at all, as if removed from the team. A `head` membership
-never expires.
-
-- **settings** — convention data and team composition
-- **branding** — logo, colours, website appearance
-- **shop** — payment provider, currency
-
-### 5.2 Edition level
-
-Access to a specific edition is optional — a team member may, but need not, have access to every
-edition:
-
-- **programme** — the edition's programme items
-- **website content** — the edition's hero and news
-- **tickets** — the edition's tickets
-
-### 5.3 Permission values
-
-Every permission takes one of three values: **none / read / write**. The default is none — a new
-team member starts with no access at all and receives it explicitly.
-
-In the MVP, **settings**, **shop**, **programme** and **tickets** are the ones that actually do
-something. The remaining permissions exist in the model but have no resource to govern yet and do
-not appear in the panel.
-
-| Permission | read | write |
-|---|---|---|
-| shop | sees which payment provider account is connected | connects or replaces it |
-| tickets | sees ticket types, orders and paired scanners | manages ticket types, cancels orders, pairs and revokes scanners |
-
-### 5.4 Roles
-
-**`head` — head organizer.** Bypasses every permission, on both levels. Every convention must have
-at least one. Granted when the convention is created; handing the role over requires promoting the
-other person first. A head demoted to an org starts with no permissions, unless the demotion
-assigns them.
-
-**`org` — organizer.** Permissions assigned item by item, separately for the convention and for
-each edition, optionally until an expiry date.
-
-Speakers, attendees and ticket buyers are not team members: they hold no permissions in the
-panel and act only in the portal, on their own programme items, registrations and tickets. An org
-with write access to an edition's programme assigns a speaker by the address of a confirmed account,
-up to 10 on one programme item. A convention names at most 100 new addresses an hour this way. An
-edition holds at most 1000 programme items.
-
-### 5.5 Example
-
-Jan is the head organizer of Convention A, helps out at Convention B (the 2027 edition's programme
-and nothing else) and attends Convention C. All on one account:
-
-| Where | Role | What they can do |
-|---|---|---|
-| Convention A | head | everything, in every edition |
-| Convention B | org | nothing at convention level |
-| Convention B, 2027 edition | — | write access to the programme; nothing else |
-| Convention C, 2026 edition | attendee | only their own registration |
-
-In the panel Jan switches convention and edition in the top bar
-([4](#what-belongs-to-the-convention-and-what-to-the-edition)).
-
-### 5.6 Anti-escalation policy
-
-- Only a head organizer edits or removes another head organizer.
-- An org with write access to settings manages other orgs, but cannot grant anyone a permission
-  higher than their own — on either level. Lifting or extending someone's expiry grants back
-  everything they hold, so an org does it only for a member who holds no more than the org.
-  Lowering a permission or shortening someone's access grants nothing, so any org managing the
-  team may do it.
-- An org whose own access expires grants nothing that outlasts it: they extend no one's access past
-  their own end date — an invitation or a scanner they pair included — and raise no permission of
-  a member whose access lasts longer than theirs.
-- Nobody edits their own membership.
-- A convention's last head organizer cannot be removed.
-
-### 5.7 Organizer invitations by email
-
-An org with write access to settings — or a head organizer — adds people to the team by email. The
-invitation sets everything a membership holds: the role, the convention-level permissions, the
-permissions in each edition and an optional expiry date, within the limits of
-[5.6](#56-anti-escalation-policy).
-
-| The address belongs to | What happens |
+| Level | Permissions |
 |---|---|
-| an account that confirmed it, not yet in the team | the person joins the team at once and gets an email saying so, in their own language |
-| an account already in the team, even one whose access has expired | no invitation: the team screen changes that membership instead |
-| nobody, or an account that has not confirmed it | an email in the convention's language with a link to accept the invitation |
+| convention | settings (data and team), shop (payment provider account), branding |
+| edition | programme, tickets (sales and scanners), website content |
 
-The link is valid for 7 days and works once. It opens the invitation page in the panel, which
-shows the convention and the invited address and lets the person sign in or register there — with
-email and password, or with Google. Registering with email, they confirm the address through the
-link sent to it, which opens a page in the panel; pressing its button signs them in, in whatever
-browser they opened it, and asks them to choose their password there; a password anyone set on that
-address before it was confirmed stops working. They then join the team from the invitation link. A person who cannot sign in asks the
-invitation page for a link to set the password. Only an account whose confirmed address is the
-invited one can accept.
+A **head** bypasses every permission, and the membership never expires. Every convention keeps at
+least one, handed over by promoting another member first; a demoted head keeps only the permissions
+the demotion assigns. An **org** membership may expire, and from then on gives no access at all.
 
-An invitation stands only while the person who sent it could still send it. Once the sender has
-left the team, their access has expired, they have lost write access to settings or they no
-longer hold a permission the invitation grants, the link no longer works. Removing or demoting the
-sender is how a head organizer withdraws an invitation that has gone out.
+Speakers, attendees and ticket buyers hold no permissions. An org with programme write access
+assigns speakers by a confirmed account's address: up to 10 per programme item, 100 new addresses
+per convention an hour. An edition holds up to 1000 programme items.
 
-The platform keeps no list of pending invitations: until it is accepted, an invitation exists only
-in its link. A convention sends at most 20 invitations an hour.
+### 5.2 Anti-escalation policy
+
+- Only a head edits or removes a head, and the last head cannot be removed.
+- Nobody edits their own membership.
+- An org with settings write access manages orgs, but grants no one more than they hold, on either
+  level. Lifting or extending an expiry grants back everything, so they do it only for a member
+  holding no more than they do; lowering a permission or shortening access grants nothing, so any
+  org managing the team may do it.
+- An org whose access expires grants nothing past their end date — access, invitation or scanner —
+  and raises no permission of a member whose access lasts longer.
+
+### 5.3 Organizer invitations
+
+An org with settings write access, or a head, invites by email. The invitation sets the whole
+membership — role, permissions on both levels, expiry — within [5.2](#52-anti-escalation-policy).
+A confirmed account outside the team joins at once; any other address gets a link, valid 7 days,
+that works once and only for an account whose confirmed address is the invited one. An invitation
+stands only while its sender could still send it, and exists only in its link until accepted. A
+convention sends up to 20 an hour.
 
 ---
 
 ## 6. Addresses and domains
 
-| Address | What is there | In the MVP |
+| Address | What is there | MVP |
 |---|---|---|
-| `opos.land` | the portal: landing page, registration, attendee account, convention pages with the programme | yes |
-| `opos.land/conventions/<convention>` | a convention's page: the active edition's programme and past editions | yes |
-| `panel.opos.land` | organizer panel | yes |
-| `panel.opos.land/scanner` | the ticket scanner on a paired phone, without signing in | yes |
-| `api.opos.land` | API | yes |
-| `api.opos.land/docs` | public API documentation (Swagger UI), no sign-in | yes |
-| `<convention>.opos.land` | public convention website (CMS module) | no |
-| customer's own domain | the same public convention website | no |
-| `admin.opos.land` | platform admin panel | no |
+| `opos.land` | the portal | yes |
+| `opos.land/conventions/<convention>` | a convention's page: programme, past editions, sign-up | yes |
+| `panel.opos.land` | the panel; the scanner at `/scanner` | yes |
+| `api.opos.land` | the API; public documentation at `/docs` | yes |
+| `<convention>.opos.land`, a custom domain | the public convention website | no |
+| `admin.opos.land` | the platform admin panel | no |
 
-A convention links to its page in the portal from its own website and social media; the page has
-the "Sign up" button for the active edition.
-
-The team tests on a separate Dev environment, on a domain of its own and closed to the public; it
-holds demo data and the team's own accounts.
-
-Registration, sign-in and password reset happen in the portal and the panel themselves. Signing in
-with Google is the one moment the browser passes through Supabase's own address, which Google's
-sign-in screen also names.
-
-**Only the admin sets a convention's address.** It is chosen when the admin creates the convention,
-and only the admin changes it later: every link and bookmark to the convention's page carries it,
-and the old address stops working. An address is never a word the platform uses for itself, such
-as `panel`, `api` or `login`.
-
-**Only the admin sets a custom domain.** The field is unique platform-wide and unverified, so
-self-service would let someone claim another party's domain and intercept its traffic. Wiring up a
-domain requires manual configuration on the platform side anyway. Self-service returns together
-with domain ownership verification.
+**Only the admin sets a convention's address and custom domain.** Changing the address breaks every
+old link, and no address is a word the platform uses itself, such as `panel` or `api`.
 
 ---
 
 ## 7. Modules
 
-OPOS is a core plus modules. The core — accounts, conventions, editions and permissions
-([chapter 5](#5-roles-and-permissions)) — is shared by every module. A module adds one functional
-area on top of it; a module that organizers manage brings its own permission on the convention or
-edition level.
+**Every module has a domain owner**, who knows how conventions run that area and sets the module's
+rules, a built module's included. Rules nobody with that knowledge has set are not guessed: for a
+module still waiting for its owner, this document states only what it delivers and the rules any
+shape of it keeps. Reviews, tickets with the scanner, and attendee registrations wait for their
+owners.
 
-| Module | Covers | Permission | In the MVP |
-|---|---|---|---|
-| programme | an edition's programme items and their speakers, the public programme on the convention's page in the portal, likes, personal schedule, reviews | programme (edition) | yes |
-| tickets | an edition's ticket types, sales without an account, emailed QR tickets, scanning at the venue | shop (convention), tickets (edition) | yes |
-| CMS | the public convention website: home page, programme pages, archive, per-edition content | branding (convention), website content (edition) | no |
-| profile | the user's account: name, language, two-factor authentication, "my conventions", account deletion | — (the user's own data) | account settings and "my conventions" |
-| booths | exhibitor booths at an edition, and virtual booths online | to be added | no |
-| friends | connections between users across conventions | — (the user's own data) | no |
+| Module | Covers | MVP |
+|---|---|---|
+| programme | programme items, speakers, likes, personal schedule, reviews | yes |
+| tickets | ticket sales, checking tickets at the venue | yes |
+| profile | the user's account and "my conventions" | yes |
+| CMS | the public convention website | no |
+| booths | exhibitor booths, at the venue and virtual | no |
+| friends | connections between users | no |
 
-Modules beyond the MVP are built only after the core, the programme and tickets are finished.
+**Likes.** A signed-in user likes programme items of a published edition, before or during it, and
+can take a like back. The like count is public; who liked an item is not.
 
-### 7.1 Likes and personal schedule
-
-- Any signed-in user likes programme items of a published edition, before or during the edition.
-  A like puts the item into the user's personal schedule in the portal, and the user can take it
-  back at any time.
-- The like count of an item is public. Who liked an item is not shown to anyone.
-
-### 7.2 Reviews
+**Reviews.** Users review programme items and a speaker reads the reviews of their own; the rest is
+set by the programme's domain owner. Any shape keeps these rules:
 
 | Rule | Value |
 |---|---|
-| Who reviews | a holder of a valid ticket for the edition, or a team member with access to that edition |
-| When | from the item's start time on |
-| How many | one review per account per item; the author edits or deletes it |
-| Content | rating 1–5 and an optional comment up to 2000 characters |
-| Author shown | the author's name, or "anonymous" when the author chooses so; anonymity holds towards everyone, organizers included |
-| Comment visibility | public, or the item's speakers only — the author's choice |
-| Public view | the average rating, the number of reviews and the public comments |
-| Speaker view | every comment on their own items, public and speakers-only |
-| Moderation | an org with programme write access hides a review; a hidden review disappears from every view except the panel |
+| Belongs to | a programme item; goes with the item and with its author's account |
+| Organizers | act on it with the programme permission of the item's edition |
 
-### 7.3 Tickets
+**Tickets.** What is sold, on what terms, and how tickets reach the buyer and are checked are set by
+the domain owner of tickets. Any shape keeps these rules:
 
 | Rule | Value |
 |---|---|
-| What is sold | tickets only; one edition per order, up to 10 tickets |
-| Ticket type | name, price in the convention's currency, optional quantity limit, sales start and end |
-| Buyer | email address, first and last name; no account needed |
-| Payment | through the convention's own payment provider account; the money never passes through OPOS. One provider in the MVP, supporting BLIK, Przelewy24 and cards |
-| Unpaid order | holds its tickets for 15 minutes, then expires and releases them |
-| Delivery | an email in the buyer's language with one QR code per ticket |
-| Account | tickets belong to the order's email address; an account with that address sees them under "my tickets" |
-| Refund | done by the convention in its payment provider's dashboard; an org then cancels the order in the panel and its tickets stop being valid |
-| Invoices | issued by the convention outside OPOS |
-| Scanner | an org with tickets write access shows a pairing QR code in the panel; a phone that scans it works for that edition only, until the edition ends, the access of the org who paired it ends, or someone revokes it. No sign-in on the phone |
-| At the gate | a scan shows every ticket in the order with its state; the org ticks the ones handed in. Each ticket is redeemed once; the scanner works online only, and network coverage at the gate is the convention's responsibility |
+| Money | goes to the convention's own payment provider account, never through OPOS |
+| Provider credentials | given by an org with shop write access; stored encrypted, never shown again |
+| Scanner | serves one edition; its access ends no later than the enabling org's; revocable |
+| Link without sign-in | an order or ticket link carries a secret nobody can guess |
 
 ---
 
 ## 8. Design and public image
 
-OPOS is user-facing: attendees and organizers meet it directly, and its public image matters as
-much as its features.
+OPOS's public image matters as much as its features.
 
-- **No AI-generated graphics.** Illustrations, logos, images and icons in the product and in its
-  public materials are made by a human designer or come from a licensed icon set — never from an
-  image generator.
-- **No generic template look.** Screens follow the designer's designs. A UI component library is a
-  starting point for the code, not the final appearance.
-- **Placeholders are honest.** Until a design exists, a screen uses plain blocks and real copy,
-  not stand-in artwork.
-- **Every screen names itself.** The browser tab shows the screen, then the edition or convention
-  it belongs to, then "OPOS panel" in the panel or "OPOS" in the portal, in the interface language.
+- **No AI-generated graphics**: images, logos and icons come from a designer or a licensed icon set.
+- **No template look**: screens follow the designer's designs, not a component library's defaults.
+- **Honest placeholders**: until a design exists, plain blocks and real copy.
+- **Every screen names itself** in the browser tab: the screen, then its edition or convention.
 
 ---
 
 ## 9. Languages, markets and time zones
 
-Supported languages in the MVP: **Polish and English**. The default interface language is Polish.
-Texts are authored in code in English and ship together with their Polish translation. English is
-the fallback — a missing Polish translation shows the English original, never an empty label or a
-technical identifier. Czech and Slovak
-arrive together with their markets, beyond the MVP.
+The MVP speaks **Polish**, the default, and **English**; a missing Polish text falls back to
+English. The interface follows the user's choice, else the browser's language; an email, the
+recipient's language, or for an address with no account, the inviting convention's.
 
-| Where | Which language |
-|---|---|
-| panel and portal | the user's choice stored on the account; browser language by default and whenever nobody is signed in |
-| convention pages in the portal | the interface in the user's language; programme content as the organizer wrote it |
-| emails | the recipient's language: the choice stored on the account, else the language the account was registered in; for an address without a confirmed account, the inviting convention's language; Polish when nothing else decides |
-
-**One convention = one content language.** Programme items are written in the convention's
-language. Content translations — the same programme item in Czech and in English — are beyond the
-MVP.
-
-**The time zone is set per convention.** Programme hours are always shown in the convention's time
-zone, not the browser's: "Saturday 14:00" has to mean the same thing to an attendee in Prague and
-in Poznań.
-
-Adding another language is its translation catalogs plus registering it in the code — it requires
-no change to the database.
+**One convention, one content language and one time zone**: programme items are written in its
+language, and their hours always show in its zone, so "Saturday 14:00" means the same in Prague
+and in Poznań.
 
 ---
 
 ## 10. Personal data and privacy
 
-We store attendees' personal data: first name, last name, email address, and what they do on the
-platform: likes and reviews. Account deletion removes their likes and reviews too.
+OPOS stores an attendee's name, email address and activity; payment details stay with the payment
+provider.
 
-Orders store the buyer's email address, first and last name. They are the convention's sales
-records, so deleting an account does not delete orders placed with its address. Payment details
-stay with the payment provider; OPOS stores only the provider's payment reference.
+**Account deletion is self-service**, after a fresh sign-in, and takes likes, reviews, memberships
+and registrations with it. Orders stay as the convention's sales records; a last head hands the
+role over first.
 
-**The password comes after the confirmed email address.** Registering by email asks for the
-address and the name only; the account starts working once its owner opens the link sent to that
-address and presses the button on the page it leads to, which asks them to choose the password
-there. A password anyone set on the address before
-it was confirmed stops working then; only a failure of the sign-in service at that very moment can
-leave it, until the person saves a new one. A Google sign-in counts as confirmed. Setting a password,
-like deleting the account, needs a sign-in from the last few minutes: pressing that button counts as
-one, and a page left open longer offers to send a new link. Changing the
-account's email address comes after the MVP; it takes effect once both the current and the new
-address confirm it through the links sent to them.
+A password is set only after the email address is confirmed. A link from an email acts only when
+the button on its page is pressed. An email address leads to an account only once confirmed.
 
-**Opening a confirmation or password link does nothing until the person presses the button.** Such a
-link leads to a page in the portal or the panel, and only the button on that page uses it, so a mail
-scanner or a preview that follows the link leaves it working.
+**Two-factor authentication is each account's own choice**, required by no role. Once on, it guards
+every sign-in, password reset and account deletion. Ten one-time recovery codes, shown once and
+stored hashed, replace a lost device and turn it off; turning it off signs out the other sessions,
+removes the unused codes and sends an email, and the hash of a used code stays until the account is
+deleted. A person who has lost both device and codes asks the admin.
 
-**Two-factor authentication is each account's own choice.** A user turns it on for their own account
-in the account settings, with an authenticator app; no role requires it. From then on every sign-in
-— with a password, with Google or through a link from an email — asks for a code from the app before
-anything else, and the portal and the panel each ask for their own. A code entered in one browser
-ends the account's other sessions that are still waiting for one, so the other browser asks to sign
-in again. A browser that waits for a code can sign out from the code screen, which lets another
-person sign in; until then the public pages stay readable, with a way back to the code screen. A password reset asks for it too: after the code
-the page asks for the new password, without needing the link again. Confirming an account deletion
-asks for it as well, and the deletion goes on after the code. Turning it on shows ten one-time
-recovery codes, once, and the platform keeps only their hashes. A recovery code stands in for a lost
-device: using one turns two-factor authentication off, so the person signs in and may turn it on
-again, and an email tells them. Turning it off, either way, signs the account out of every other
-session. A recovery code that could not turn it off stays usable. Turning it off in the account
-settings needs the code and a sign-in from the last few minutes, and sends the same email. Turning
-it off removes the unused recovery codes; the hash of a code already used stays as a record until
-the account is deleted.
-
-A person who has lost both the device and the recovery codes cannot turn it off themselves. They ask
-the admin, who checks that it is them and removes it with a script, and the same email tells them.
-The script cannot sign the account out elsewhere: a device that was signed in keeps its session until
-the person changes the password.
-
-**An email address leads to an account only once it is confirmed.** Wherever the platform finds an
-account by its email address — the admin appointing a convention's first head organizer, the admin
-removing two-factor authentication, an organizer invitation, a speaker on a programme item, the tickets under "my tickets" — an account that has not confirmed its
-address counts as no account. The admin's script refuses it, and an invitation to it goes out as an
-invitation to a person without an account.
-
-**Account deletion is self-service.** The user deletes the account from settings, after confirming
-it is them: entering the password again or signing in with Google again, no more than a few minutes
-before. A Google sign-in that comes back with a different account deletes nothing and says so.
-Their sign-in identities, sessions, two-factor authentication with its recovery codes, memberships
-in convention teams and edition registrations go with it. The single exception: an account that is a convention's last head
-organizer must hand that role over first — otherwise the convention would be left without an
-owner.
-
-An organizer invitation stores nothing until it is accepted: the invited address travels only in
-the link sent to it ([5.7](#57-organizer-invitations-by-email)).
-
-The database and the sign-in service are hosted by Supabase in the EU, which processes this data
-on our behalf; the privacy policy names it. Personal data stays in production: the Dev environment and the developers' machines hold demo
-data and the team's own accounts only, and no production data or backup is ever copied there.
-Database backups contain personal data, so they are
-encrypted and share the retention policy of production data: Supabase's daily backups, and our own
-encrypted copies kept off Supabase for up to three months. Emails leave the platform for the mail
-provider only over an encrypted connection.
-
-The platform sets no tracking or advertising cookies. The sign-in session is kept in a cookie of
-the platform's API that no script on the page can read, separately for the portal and the panel; it
-is strictly necessary for signing in and needs no consent.
-
-**The privacy policy ships with the MVP.** It is published on the platform website in every
-interface language, linked from the registration form and from the footer of every portal page,
-and states what this chapter states. Its text is approved by a legal review before the production
-launch. The remaining obligations stay beyond the MVP: record of processing activities, data export
-and log retention.
+Supabase hosts the database and sign-in in the EU on our behalf. Production data never leaves
+production: Dev holds demo data and the team's own accounts. Backups are encrypted; our own copies
+are kept up to three months. Emails reach the mail provider only over an encrypted connection.
+There are no tracking or advertising cookies; the sign-in cookie is
+strictly necessary. **The privacy policy ships with the MVP**, after a legal review, in every
+interface language.
 
 ---
 
 ## 11. MVP scope vs beyond MVP
 
-### In the MVP
+**In the MVP:**
 
-- The core: accounts, conventions, editions, permissions on two levels, membership expiry
-- Creating conventions and their first head organizers with a database script
-- Multilingual interface (Polish, English) in the panel, portal and emails
-- Language and time zone per convention
-- Accounts: email with password, confirmed by email, and Google sign-in
-- Two-factor authentication an account turns on for itself, with one-time recovery codes
-- Password reset by email
-- Portal that works in a phone browser
-- Edition programme with speakers
-- Convention pages in the portal: the active edition's programme, past editions, item details
-- Likes, personal schedule and reviews of programme items
-- Tickets: ticket types, purchase without an account through the convention's payment provider
-  account, emailed QR tickets, "my tickets", order cancellation, scanning at the venue
-- Organizer invitations by email
-- Full data isolation between conventions
-- Account deletion by the user
-- Privacy policy, linked from the registration form
-- Interface following the designer's designs, with no AI-generated graphics
-- Demo data
-- Deployment: the applications on our own VPS, the database and sign-in on Supabase in the EU,
-  with backups, and a Dev environment for the team's testing
+- The core: accounts, conventions, editions, two-level permissions with expiry, data isolation
+- The admin's script for conventions and first heads; organizer invitations by email
+- Polish and English; language and time zone per convention
+- Sign-in by email or Google, confirmation and reset by email, two-factor authentication
+- The programme with speakers on the convention's page, likes, personal schedule, reviews
+- Tickets sold to the convention's own account and checked at the venue; attendee registrations
+- Account deletion; a privacy policy linked from registration
+- A portal for phone browsers; the designer's interface, with no AI-generated graphics
+- Demo data; our own server and Supabase in the EU, with backups and a Dev environment
 
-### Beyond the MVP
+**Beyond the MVP:**
 
-- Modules: CMS, booths (including virtual booths), friends ([chapter 7](#7-modules))
-- Tickets issued by the team to staff and guests without a purchase
-- Merchandise, passes and other products besides tickets; refunds triggered from the panel
-- Ticket sales embedded on the convention's own website (white label, iframe, public sales API)
-- Offline scanning
-- Public convention website on `<convention>.opos.land` and on custom domains
-- Platform admin panel at `admin.opos.land`
-- Fees for commercial exhibitors
-- OPOS shop for attendees
-- Push notifications
-- Localized portal paths (today the paths are English regardless of convention language)
-- Convention content translations and a language switcher on the public website
-- Further markets and languages: Czech, Slovak, German, currencies other than the złoty, local
-  payment methods
-- Further payment providers
-- Further sign-in providers
-- Our own address instead of Supabase's during Google sign-in
-- Changing an account's email address
-- Convention catalogue in the portal
-- Speaker profiles, rooms, block schedule
-- File uploads (logos, avatars)
-- Domain ownership verification and self-service for that field
-- Professional email templates
-- Custom permission roles beyond `head` and `org`
-- Audit log of permission and team changes
-- Remaining GDPR obligations
+- Modules: CMS with the website on `<convention>.opos.land` and custom domains, booths, friends
+- Domain ownership verification with self-service; the platform admin panel
+- Tickets without a purchase, merchandise and passes, refunds from the panel, sales embedded on a
+  convention's website, offline scanning
+- Fees for commercial exhibitors; an OPOS shop
+- Push notifications; professional email templates
+- Localized portal paths; content translations with a language switcher on the public website
+- Czech, Slovak, German; other currencies, payment methods and providers; more sign-in providers
+- Our own address during Google sign-in; changing an email address, confirmed by both addresses
+- Convention catalogue, speaker profiles, rooms, block schedule, file uploads
+- Custom roles, an audit log of team changes
+- The remaining GDPR obligations: record of processing, data export, log retention

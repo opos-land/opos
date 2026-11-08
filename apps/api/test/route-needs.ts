@@ -1,4 +1,4 @@
-// What every tenant route of the contract needs (PLAN.md 5, 7.3), shared by the tests that call
+// What every tenant route of the contract needs, shared by the tests that call
 // each route by its need: route-requirements.test.ts and the concurrent writes of
 // tenants-editions.test.ts.
 

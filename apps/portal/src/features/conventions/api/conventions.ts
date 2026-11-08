@@ -1,6 +1,6 @@
 import { accountApi, tenantApi } from '../../../shared/lib/api'
 
-// The convention pages' routes (PLAN.md 5.7), which need no sign-in.
+// The convention pages' routes, which need no sign-in.
 
 /** Every convention page query, whose like counts a like changes. */
 export const publicKey = () => accountApi.public.key()

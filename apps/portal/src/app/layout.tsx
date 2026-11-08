@@ -9,7 +9,7 @@ import { linkClass } from '../shared/ui'
 const holdsToken = (search: string) => new URLSearchParams(search).has('token_hash')
 
 /**
- * The frame of every portal screen, laid out for a 360 px phone first (PLAN.md 9): the platform's
+ * The frame of every portal screen, laid out for a 360 px phone first: the platform's
  * name, the way to the account or to sign-in, the content in one column and the privacy policy in
  * the footer.
  */

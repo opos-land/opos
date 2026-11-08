@@ -10,7 +10,7 @@ const label = (
 )
 
 /**
- * The edition of the top bar (PLAN.md 8): inside an edition, always under the label "Edition", a
+ * The edition of the top bar: inside an edition, always under the label "Edition", a
  * switch to the other editions the member sees, opening on their dashboard, or the edition's name
  * when it is the only one. The bar stands above every route of the tenant, so the edition comes
  * from the address.

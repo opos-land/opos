@@ -2,7 +2,7 @@ import { createServer } from 'node:net'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 
 // Supabase Auth sends its send-email hook to host.docker.internal:<PORT>, so a test file that
-// triggers emails runs the API on that one port (PLAN.md 15.1). Files run in parallel, so a file
+// triggers emails runs the API on that one port. Files run in parallel, so a file
 // that finds the port taken waits for the file holding it to close its API.
 
 /** The test files that take turns on the port, each holding it for its whole run. */

@@ -1,7 +1,7 @@
 /** The key of the flag in `sessionStorage`. */
 export const LOST_CODES_STORAGE_KEY = 'opos-recovery-codes-lost'
 
-// The recovery codes of a turn-on whose answer never arrived are lost (PLAN.md 7.12). The next
+// The recovery codes of a turn-on whose answer never arrived are lost. The next
 // request wants the code screen, which unmounts the card and the notice with it, so the notice is
 // kept as a flag until the person has read it. The flag holds no code and no secret.
 

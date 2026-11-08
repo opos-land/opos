@@ -11,7 +11,7 @@ try {
     process.exitCode = 1
   } else {
     console.log(
-      'Every public relation follows the isolation rules of PLAN.md 4.6, and the roles hold only the privileges the rules allow.',
+      'Every public relation follows the tenant isolation rules, and the roles hold only the privileges the rules allow.',
     )
   }
 } finally {

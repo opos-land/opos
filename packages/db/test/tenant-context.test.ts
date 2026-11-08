@@ -7,7 +7,7 @@ import { setTenantContext } from '../src/rls'
 import * as schema from '../src/schema'
 import { appGlobalPassword, appPassword, createTenant, supabaseAdmin, url } from './db'
 
-// setTenantContext opens tenant isolation only on a connection RLS holds to (PLAN.md 4.6): a pool
+// setTenantContext opens tenant isolation only on a connection RLS holds to: a pool
 // pointed at a role that bypasses RLS fails every tenant transaction instead of reading them all.
 
 class Rollback extends Error {}

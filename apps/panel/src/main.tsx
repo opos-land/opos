@@ -8,7 +8,7 @@ import { startSession } from './shared/lib/session'
 import './styles.css'
 
 // The browser's language until the account's is known; the session is restored meanwhile and the
-// pages show a loading view until it is (PLAN.md 8).
+// pages show a loading view until it is.
 void startSession()
 void loadLocale(pickLocale()).then(() => {
   createRoot(document.getElementById('root')!).render(

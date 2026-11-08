@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { loadEnv } from '../src/config/env'
 import { createApp } from './app'
 
-// PLAN.md 7.8: an explicit list of origins, the four request headers, Retry-After exposed,
+// An explicit list of origins, the four request headers, Retry-After exposed,
 // credentials for those two origins only.
 
 const env = loadEnv()

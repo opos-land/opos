@@ -21,7 +21,7 @@ interface HttpRequest {
 }
 
 /**
- * For a route marked with @RequireTenant or @RequireEdition (PLAN.md 7.2): resolves the tenant
+ * For a route marked with @RequireTenant or @RequireEdition: resolves the tenant
  * from X-Tenant-Slug, opens its transaction, loads the membership, checks the permission, runs the
  * handler and commits unless it failed; TenantContextService then sends oRPC's held response.
  * Other routes ignore the header.
@@ -87,7 +87,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
           // A write takes the tenant's write lock before it checks: every route that lowers a
           // member's access is a write, so the check sees each such change committed, and none
           // can land before this transaction ends. The lock comes before any row lock, so it adds
-          // no lock-order cycle (PLAN.md 7.3).
+          // no lock-order cycle.
           if (write) {
             enter()
             await this.access.lockTenantWrites()
@@ -101,7 +101,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     if (!write) return run()
     // A write is checked once in a short transaction of its own, so a refused one never queues,
     // then waits in its tenant's queue without a connection, then runs and gives its turn back
-    // when its transaction ends, before the after-commit queue and the response (PLAN.md 7.3).
+    // when its transaction ends, before the after-commit queue and the response.
     await this.context.transaction(tenant.id, admit)
     return this.queue.run(tenant.id, (release) => run(release))
   }

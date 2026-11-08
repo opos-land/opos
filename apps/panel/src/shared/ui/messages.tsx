@@ -5,7 +5,7 @@ import { describeError } from '../lib/errors'
 import { useScreenTitle } from '../lib/page-title'
 import { Button } from './button'
 
-/** An API error, shown by its code through the catalog (PLAN.md 6). */
+/** An API error, shown by its code through the catalog. */
 export function ErrorMessage({ error }: { error: unknown }) {
   const { i18n } = useLingui()
   if (!error) return null
@@ -34,7 +34,7 @@ export function LoadingView() {
   )
 }
 
-/** Shown when the account could not be asked for (PLAN.md 8): nobody is signed out meanwhile. */
+/** Shown when the account could not be asked for: nobody is signed out meanwhile. */
 export function UnavailableView({ onRetry }: { onRetry: () => void }) {
   const { i18n } = useLingui()
   return (
@@ -49,7 +49,7 @@ export function UnavailableView({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-/** The screen a `403` ends on (PLAN.md 8), and a page the member's permissions do not cover. */
+/** The screen a `403` ends on, and a page the member's permissions do not cover. */
 export function NoPermissionView() {
   const { t } = useLingui()
   useScreenTitle(t`No permissions`)

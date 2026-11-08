@@ -44,7 +44,7 @@ const reauthenticate = (what: string) =>
   )
 
 /**
- * Two-factor authentication (PLAN.md 7.12): TOTP on Supabase Auth's factors. The factors always
+ * Two-factor authentication: TOTP on Supabase Auth's factors. The factors always
  * come from the session's own `listFactors`, never from the browser alone. No code, secret or
  * recovery code is ever logged or put into an error.
  */
@@ -62,7 +62,7 @@ export class MfaService {
     private readonly mail: MailService,
   ) {}
 
-  /** The calling application is the `Origin`; anything else is refused (PLAN.md 5.1). */
+  /** The calling application is the `Origin`; anything else is refused. */
   private application(req: AuthRequest): Application {
     const app = applicationFromOrigin(req.headers.origin, this.env)
     if (!app) throw originDenied()
@@ -120,7 +120,7 @@ export class MfaService {
   }
 
   /**
-   * Ends every session of the account but this one, once its factors are gone (PLAN.md 7.12): a
+   * Ends every session of the account but this one, once its factors are gone: a
    * session at `aal2` from before the removal would otherwise keep that claim against a factor
    * enabled later. A failure is logged and does not undo the removal.
    */
@@ -141,7 +141,7 @@ export class MfaService {
     if (!this.context.signedInWithin(RECENT_SIGN_IN_SECONDS)) throw reauthenticate(what)
   }
 
-  /** The shared limit of `verify`, `recover` and `enable`, per account (PLAN.md 7.9). */
+  /** The shared limit of `verify`, `recover` and `enable`, per account. */
   private attempt() {
     return this.limiter.consume('mfa', `account:${this.context.account().id}`)
   }
@@ -152,7 +152,7 @@ export class MfaService {
     for (const factor of factors) await this.admin.deleteFactor(id, factor.id)
   }
 
-  /** The notice that 2FA is off; a failure is logged and the removal stands (PLAN.md 7.12). */
+  /** The notice that 2FA is off; a failure is logged and the removal stands. */
   private async notifyDisabled() {
     const account = this.context.account()
     try {
@@ -192,7 +192,7 @@ export class MfaService {
    * first would leave a verified factor with no codes and a `409` on the retry. A wrong code leaves
    * codes nobody has seen, unusable because `recover` needs the mirror on and replaced by the next
    * `enable`. When the answer never arrives the factor is verified and the codes are held by
-   * nobody: the way out is PLAN.md 7.12's, `DELETE /auth/mfa` and a new enrolment. Two requests
+   * nobody: the way out is `DELETE /auth/mfa` and a new enrolment. Two requests
    * that race each replace the other's codes, so the codes are read back once the factor is
    * verified, and a request whose codes are gone answers `409` instead of codes that do not exist.
    */

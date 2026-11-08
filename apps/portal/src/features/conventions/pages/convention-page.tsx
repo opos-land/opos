@@ -20,7 +20,7 @@ import {
 import { ProgramList } from '../components/program-list'
 import { useConventionTime } from '../hooks/use-convention-time'
 
-/** A convention's page (PLAN.md 9): the active edition's programme and the other editions. */
+/** A convention's page: the active edition's programme and the other editions. */
 export function ConventionPage() {
   const { tenantSlug = '' } = useParams()
   const convention = useQuery(conventionOptions(tenantSlug))

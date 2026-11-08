@@ -49,8 +49,8 @@ function assertSlug(slug: string) {
 }
 
 /**
- * Creates a tenant and its first head in one transaction (PLAN.md 14). The head's account must
- * already exist with a confirmed email (PLAN.md 4.2). Runs on a connection that may write tenants
+ * Creates a tenant and its first head in one transaction. The head's account must
+ * already exist with a confirmed email. Runs on a connection that may write tenants
  * outside a tenant context.
  */
 export async function createTenant(db: Database, input: CreateTenantInput) {
@@ -111,7 +111,7 @@ function violatedConstraint(error: unknown): string | undefined {
 }
 
 /**
- * Moves a tenant to another slug, its public address (PLAN.md 14). No endpoint changes a slug; the
+ * Moves a tenant to another slug, its public address. No endpoint changes a slug; the
  * admin does it through this function, on a connection that may write tenants. A taken slug is left
  * to tenants_slug_unique, so a rename racing another one still ends in `tenant.slug-taken`.
  */

@@ -66,11 +66,11 @@ const citedPaths = (file) => pathsIn(read(file))
 // Paths the documents cite that are not built yet.
 const absentOnPurpose = new Set()
 
-/** The section "Adding a feature" of PLAN.md, up to the next heading of its level or above. */
+/** The section "Adding a feature" of the architecture, up to the next heading of its level or above. */
 const recipe = () => {
-  const [, section] = read('docs/PLAN.md').split('\n### Adding a feature\n')
-  assert.ok(section, 'PLAN.md has the section "Adding a feature"')
-  return section.split(/\n#{1,3} /)[0]
+  const [, section] = read('docs/ARCHITECTURE.md').split('\n## Adding a feature\n')
+  assert.ok(section, 'the architecture has the section "Adding a feature"')
+  return section.split(/\n#{1,2} /)[0]
 }
 
 test('every repository path AGENTS.md and the agent files cite exists', () => {
@@ -116,9 +116,8 @@ test('every repository path the recipe for adding a feature cites exists', () =>
   )
 })
 
-test('the recipe for adding a feature is linked from the contents and from AGENTS.md', () => {
-  assert.match(read('docs/PLAN.md').split('\n---\n')[0], /\(#adding-a-feature\)/)
-  assert.match(read('AGENTS.md'), /\(docs\/PLAN\.md#adding-a-feature\)/)
+test('the recipe for adding a feature is linked from AGENTS.md', () => {
+  assert.match(read('AGENTS.md'), /\(docs\/ARCHITECTURE\.md#adding-a-feature\)/)
 })
 
 test('every step of the recipe for adding a feature says its test and what enforces it', () => {

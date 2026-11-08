@@ -17,7 +17,7 @@ import { EditionAccessRow } from '../components/edition-access-row'
 import { memberName } from '../model/member'
 import { ProgramLabel, TicketsLabel } from '../components/permission-labels'
 
-/** Team members' permissions in one edition (PLAN.md 8, `/access`). */
+/** Team members' permissions in one edition (`/access`). */
 export function EditionAccessPage() {
   const { t } = useLingui()
   const { editionSlug } = useParams()

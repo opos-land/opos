@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Button, ErrorMessage, Notice } from '../../../shared/ui'
 import { resendConfirmation } from '../api/auth'
 
-/** Sends the confirmation link of an unconfirmed address again (PLAN.md 9, `/login`). */
+/** Sends the confirmation link of an unconfirmed address again (`/login`). */
 export function ResendConfirmation({ email, returnTo }: { email: string; returnTo: string }) {
   const [state, setState] = useState<'idle' | 'pending' | 'sent'>('idle')
   const [error, setError] = useState<unknown>(null)

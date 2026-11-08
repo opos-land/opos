@@ -1,7 +1,7 @@
 import { readStorage, removeStorage, writeStorage } from '../../../shared/lib/storage'
 
 /**
- * The invitation the panel is accepting (PLAN.md 7.7), kept in localStorage so it survives the
+ * The invitation the panel is accepting, kept in localStorage so it survives the
  * confirmation link opening in another tab of the same browser.
  */
 export const INVITATION_STORAGE_KEY = 'opos-panel-invitation'

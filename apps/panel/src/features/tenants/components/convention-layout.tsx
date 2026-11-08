@@ -3,7 +3,7 @@ import { AreaFrame, SidebarLink } from './area-frame'
 import { useCurrentTenant } from './tenant-context'
 
 /**
- * The convention settings (PLAN.md 8): what belongs to the whole convention, for a member who may
+ * The convention settings: what belongs to the whole convention, for a member who may
  * open them. A section of one edition never appears here; it lives in the edition's own menu.
  */
 export function ConventionLayout() {

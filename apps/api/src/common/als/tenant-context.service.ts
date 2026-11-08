@@ -25,16 +25,16 @@ export interface TenantMembership {
 
 export type TenantInContext = Tenant
 
-/** What one request knows about itself (PLAN.md 7.2); the guards and the interceptor fill it. */
+/** What one request knows about itself; the guards and the interceptor fill it. */
 export interface RequestStore {
-  /** The client address, an IPv6 one by its /64, as the rate limit counts it (PLAN.md 7.9). */
+  /** The client address, an IPv6 one by its /64, as the rate limit counts it. */
   clientAddress?: string
-  /** The client address in full, IPv4-mapped reduced to IPv4: `Sb-Forwarded-For` (PLAN.md 10). */
+  /** The client address in full, IPv4-mapped reduced to IPv4: `Sb-Forwarded-For`. */
   clientIp?: string
   account?: Account
-  /** The latest sign-in the access token records, in seconds since the epoch (PLAN.md 7.4). */
+  /** The latest sign-in the access token records, in seconds since the epoch. */
   signedInAt?: number
-  /** The sign-in methods the access token names (PLAN.md 5.2). */
+  /** The sign-in methods the access token names. */
   signInMethods?: SignInMethod[]
   tenant?: TenantInContext
   membership?: TenantMembership | null
@@ -133,9 +133,9 @@ export class TenantContextService {
   }
 
   /**
-   * Opens a tenant context outside the X-Tenant-Slug flow (PLAN.md 7.2): transaction,
-   * set_config, `fn`, commit or rollback, after-commit queue. `tenantId` comes from a lookup in
-   * PLAN.md 4.6 or a verified token, never from the request.
+   * Opens a tenant context outside the X-Tenant-Slug flow: transaction, set_config, `fn`, commit
+   * or rollback, after-commit queue. `tenantId` comes from an allowed cross-tenant lookup or a
+   * verified token, never from the request.
    */
   withTenant<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
     return this.transaction(tenantId, fn)

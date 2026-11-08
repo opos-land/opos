@@ -23,16 +23,16 @@ export const tenantRoute =
   }
 
 /**
- * A tenant route for any signed-in account, in the team or not (PLAN.md 5.6): it runs in the tenant's
+ * A tenant route for any signed-in account, in the team or not: it runs in the tenant's
  * transaction with no membership to check. It takes no write lock, so it must not lower anyone's
- * access (PLAN.md 7.3).
+ * access.
  */
 export const InTenant = (): MethodDecorator => tenantRoute({ kind: 'account' })
 
 /**
  * A tenant route: the request carries X-Tenant-Slug and runs in that tenant's transaction.
  * Without arguments any membership will do; with them, that tenant-level permission. It goes on a
- * method that implements one contract route with @Implement (PLAN.md 7.3).
+ * method that implements one contract route with @Implement.
  */
 export function RequireTenant(): MethodDecorator
 export function RequireTenant(resource: TenantResource, level: Level): MethodDecorator

@@ -9,7 +9,7 @@ import { LikeButton } from '../components/like-button'
 import { useConventionTime } from '../hooks/use-convention-time'
 import { speakerNames } from '../model/program-days'
 
-/** One programme item's details and its like; ratings and comments come with the reviews (PLAN.md 9). */
+/** One programme item's details and its like; ratings and comments come with the reviews. */
 export function ProgramItemPage() {
   const { tenantSlug = '', editionSlug = '', programItemId = '' } = useParams()
   const convention = useQuery(conventionOptions(tenantSlug))

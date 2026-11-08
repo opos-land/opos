@@ -12,13 +12,13 @@ import { type CurrentTenant, TenantContext } from './tenant-context'
 
 /**
  * The frame of every page inside a tenant: the top bar, then the area of the page, one edition's
- * or the convention settings, each with its own menu (PLAN.md 8). Without the tenant there is no
+ * or the convention settings, each with its own menu. Without the tenant there is no
  * area, only the "no permissions" screen, an error or the loading view.
  */
 export function TenantLayout({
   editionSwitch,
 }: {
-  /** The edition switch of the top bar, handed in by the application (PLAN.md 8). */
+  /** The edition switch of the top bar, handed in by the application. */
   editionSwitch?: ReactNode
 }) {
   const { tenantSlug = '' } = useParams()

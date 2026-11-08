@@ -6,7 +6,7 @@ import { type CookieResponse } from './session-cookies'
 type Redirecting = CookieResponse & { redirect(status: number, url: string): void }
 
 // Plain Nest routes, documented by contract.auth.google and contract.auth.googleCallback: a
-// navigation takes a redirect, not JSON, and sends no Origin (PLAN.md 5.1).
+// navigation takes a redirect, not JSON, and sends no Origin.
 @Controller('auth/google')
 export class GoogleAuthController {
   constructor(private readonly google: GoogleAuthService) {}

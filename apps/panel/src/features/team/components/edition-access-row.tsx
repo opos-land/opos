@@ -55,7 +55,7 @@ export function EditionAccessRow({
   const submit = form.handleSubmit((levels) =>
     save.mutate({
       params,
-      // Website content has no screen yet (PRODUCT.md 5.3); its value stays as it is.
+      // Website content has no screen yet (PRODUCT.md 5); its value stays as it is.
       body: { ...levels, websiteContentAccess: row?.websiteContentAccess ?? 'none' },
     }),
   )

@@ -164,7 +164,7 @@ describe('accounts mirror auth.mfa_factors', () => {
     expect(await mfaEnabledAt(other.id)).toBeNull()
   })
 
-  // Supabase Auth runs each removal in a transaction of its own (PLAN.md 4.2, invariant 12): without
+  // Supabase Auth runs each removal in a transaction of its own: without
   // a lock on the account row, two removals that overlap each see the other's factor still there.
   it('clears mfa_enabled_at when two overlapping transactions remove the last two verified factors', async () => {
     const user = await createUser()

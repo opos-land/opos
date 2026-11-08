@@ -7,7 +7,7 @@ import { useScreenTitle } from '../lib/page-title'
 import { Button } from './button'
 import { linkClass } from './page'
 
-/** An API error, shown by its code through the catalog (PLAN.md 6). */
+/** An API error, shown by its code through the catalog. */
 export function ErrorMessage({ error }: { error: unknown }) {
   const { i18n } = useLingui()
   if (!error) return null
@@ -37,7 +37,7 @@ export function LoadingView() {
 }
 
 /**
- * Shown by a page that needs the account when it could not be asked for (PLAN.md 9): nobody is
+ * Shown by a page that needs the account when it could not be asked for: nobody is
  * signed out meanwhile.
  */
 export function UnavailableView({ onRetry }: { onRetry: () => void }) {
@@ -54,7 +54,7 @@ export function UnavailableView({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-/** Unknown paths, and anything the portal cannot find (PLAN.md 9). */
+/** Unknown paths, and anything the portal cannot find. */
 export function NotFoundView() {
   const { t } = useLingui()
   useScreenTitle(t`Page not found`)

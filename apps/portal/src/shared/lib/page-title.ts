@@ -39,7 +39,7 @@ function useTitle(parts: readonly (string | undefined)[], screen: boolean) {
 }
 
 /**
- * Names the page in the browser tab (PLAN.md 3.2): the page, then what it belongs to. Every page
+ * Names the page in the browser tab: the page, then what it belongs to. Every page
  * calls it before its first return, so the title holds while the page loads.
  */
 export function usePageTitle(...parts: (string | undefined)[]) {

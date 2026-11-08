@@ -28,7 +28,7 @@ import {
   recoveryCodeRows,
 } from './tenants'
 
-// Two-factor authentication against the real local Supabase Auth (PLAN.md 7.12, 15.1): TOTP
+// Two-factor authentication against the real local Supabase Auth: TOTP
 // factors, the recovery codes, the assurance level of the session and the email.
 
 let app: NestExpressApplication
@@ -373,8 +373,8 @@ describe('POST /auth/mfa/verify', () => {
     expect(res.body).toMatchObject({ code: 'mfa.code-invalid' })
   })
 
-  // Pinned, not wished for: Supabase Auth accepts a code again within its own 30 second step
-  // (PLAN.md 7.12). A Supabase Auth upgrade that changes this should be noticed here.
+  // Pinned, not wished for: Supabase Auth accepts a code again within its own 30 second step.
+  // A Supabase Auth upgrade that changes this should be noticed here.
   it('accepts a code a second time within its step', async () => {
     const { email, secret } = await personWith2fa()
     const code = totpCode(secret, 1)

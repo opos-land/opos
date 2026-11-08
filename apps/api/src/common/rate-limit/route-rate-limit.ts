@@ -4,7 +4,7 @@ import { ApiError } from '../errors/api-error'
 import { type RateLimit } from './rate-limit'
 
 /**
- * The endpoints with a limit of their own (PLAN.md 7.9), on top of the default. Each one counts in
+ * The endpoints with a limit of their own, on top of the default. Each one counts in
  * its handler, once the route's guards and permission check have passed, against the tracker it
  * names.
  */

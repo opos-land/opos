@@ -27,7 +27,7 @@ export function SidebarLink({
 }
 
 /**
- * One area of the panel (PLAN.md 8): the convention's or one edition's. Its menu stands beside the
+ * One area of the panel: the convention's or one edition's. Its menu stands beside the
  * page, and stays while a `403` gives the page way to the "no permissions" screen.
  */
 export function AreaFrame({

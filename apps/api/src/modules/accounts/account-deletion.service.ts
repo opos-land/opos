@@ -4,7 +4,7 @@ import { GlobalDbService } from '../../common/database/global-db.service'
 import { ApiError } from '../../common/errors/api-error'
 import { AuthAdminClient } from '../auth/auth-admin.client'
 
-/** How recent the sign-in recorded in the access token must be (PLAN.md 7.4). */
+/** How recent the sign-in recorded in the access token must be. */
 export const RECENT_SIGN_IN_SECONDS = 5 * 60
 
 const lastHead = () =>

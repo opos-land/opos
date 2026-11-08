@@ -3,20 +3,20 @@ import { z } from 'zod'
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    // The one switch between environments (PLAN.md 13): `NODE_ENV` is `production` on Dev too.
+    // The one switch between environments: `NODE_ENV` is `production` on Dev too.
     OPOS_ENV: z.enum(['local', 'dev', 'production']),
     PORT: z.coerce.number().int().positive().default(3001),
     DATABASE_URL: z.url(),
     DATABASE_GLOBAL_URL: z.url(),
-    // The project's gateway, with Supabase Auth at /auth/v1 (PLAN.md 10).
+    // The project's gateway, with Supabase Auth at /auth/v1.
     SUPABASE_URL: z.url(),
-    // The project's secret key, sent as apikey with every Supabase Auth call (PLAN.md 10).
+    // The project's secret key, sent as apikey with every Supabase Auth call.
     SUPABASE_SECRET_KEY: z.string().min(1),
     // GoTrue's hook secret format: a Standard Webhooks `whsec_` key behind the `v1,` version.
     SEND_EMAIL_HOOK_SECRET: z.string().regex(/^v1,whsec_[A-Za-z0-9+/]+={0,2}$/),
-    // Signs organizer invitations (PLAN.md 7.7); never the same as SUPABASE_SECRET_KEY.
+    // Signs organizer invitations; never the same as SUPABASE_SECRET_KEY.
     INVITE_SECRET: z.string().min(32),
-    // The API's own address, the one browsers and Supabase Auth reach it at (PLAN.md 7.4, 7.5).
+    // The API's own address, the one browsers and Supabase Auth reach it at.
     API_URL: z.url(),
     PANEL_URL: z.url(),
     PORTAL_URL: z.url(),
@@ -26,7 +26,7 @@ const envSchema = z
     SMTP_USER: z.string().default(''),
     SMTP_PASS: z.string().default(''),
     MAIL_FROM: z.string().min(1),
-    // Replaces the limit of every route that sets none of its own (PLAN.md 7.9). Only the e2e
+    // Replaces the limit of every route that sets none of its own. Only the e2e
     // suite sets it, and only on local: a fast run spends the default of an address in seconds.
     RATE_LIMIT_DEFAULT: z.coerce.number().int().positive().optional(),
   })
@@ -52,6 +52,6 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   return result.data
 }
 
-/** Supabase Auth's address on the project's gateway (PLAN.md 10). */
+/** Supabase Auth's address on the project's gateway. */
 export const authUrl = (env: { SUPABASE_URL: string }) =>
   `${env.SUPABASE_URL.replace(/\/+$/, '')}/auth/v1`

@@ -4,7 +4,7 @@ import { ErrorMessage, LoadingView } from '../../../shared/ui'
 import { membershipsOptions } from '../api/tenants'
 import { setMemberships } from '../model/permissions'
 
-/** Fills the permission store from GET /me/memberships after sign-in (PLAN.md 8). */
+/** Fills the permission store from GET /me/memberships after sign-in. */
 export function MembershipsGate({ children }: { children: ReactNode }) {
   const memberships = useQuery(membershipsOptions())
 

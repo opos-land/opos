@@ -1,8 +1,8 @@
 import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 
-// API error codes and Supabase Auth error codes (as `auth.<error_code>`) mapped onto messages
-// (PLAN.md 6, API errors). The client renders them with i18n._(errorMessage(code), params).
+// API error codes and Supabase Auth error codes (as `auth.<error_code>`) mapped onto messages.
+// The client renders them with i18n._(errorMessage(code), params).
 
 export const unknownError = msg`Something went wrong. Try again.`
 

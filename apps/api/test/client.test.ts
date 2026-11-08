@@ -32,7 +32,7 @@ const client = (headers: Record<string, string>) => {
   const link = new OpenAPILink(contract, {
     url: `http://127.0.0.1:${port}`,
     headers,
-    // { code, params, message } (PLAN.md 5) becomes ORPCError(code) with the params as its data.
+    // { code, params, message } becomes ORPCError(code) with the params as its data.
     customErrorResponseBodyDecoder: (body, response) => {
       const error = body as { code: string; message: string; params?: object }
       return new ORPCError(error.code, {

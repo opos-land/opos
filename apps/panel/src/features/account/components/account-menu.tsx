@@ -12,7 +12,7 @@ import { TwoFactorCard } from './two-factor-card'
 const BROWSER = 'browser'
 
 /**
- * The account menu (PLAN.md 8): who is signed in, the interface language, two-factor
+ * The account menu: who is signed in, the interface language, two-factor
  * authentication, sign-out.
  */
 export function AccountMenu() {

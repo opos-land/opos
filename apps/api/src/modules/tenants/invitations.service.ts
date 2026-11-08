@@ -47,7 +47,7 @@ const assertGrantsAccess = (claims: InvitationClaims) => {
   if (claims.expiresAt && new Date(claims.expiresAt) <= new Date()) throw invitationExpired()
 }
 
-/** Organizer invitations (PLAN.md 7.7). */
+/** Organizer invitations. */
 @Injectable()
 export class InvitationsService {
   private readonly key: Uint8Array

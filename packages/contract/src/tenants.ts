@@ -12,7 +12,7 @@ export const tenantSchema = z.object({
 
 export type Tenant = z.infer<typeof tenantSchema>
 
-/** The slug, the convention's address, changes only through the admin (PLAN.md 14). */
+/** The slug, the convention's address, changes only through the admin. */
 export const updateTenantSchema = z
   .object({
     name: z.string().trim().min(1).max(200),
@@ -76,7 +76,7 @@ export const editionGrantSchema = z
 export type EditionGrant = z.infer<typeof editionGrantSchema>
 
 /**
- * An organizer invitation (PLAN.md 7.7). Omitted permissions are `none`, an omitted role is `org`
+ * An organizer invitation. Omitted permissions are `none`, an omitted role is `org`
  * and an omitted expiry means none; a head takes no permissions, so they are dropped for one.
  */
 export const inviteMemberSchema = z

@@ -16,7 +16,7 @@ const deleted = (state: unknown) =>
   state !== null &&
   (state as Partial<AccountDeletedState>).accountDeleted === true
 
-/** The platform's home page (PLAN.md 9). */
+/** The platform's home page. */
 export function LandingPage() {
   const { t } = useLingui()
   usePageTitle(t`Fantasy conventions, in one place`)

@@ -27,7 +27,7 @@ import {
   recoveryCodeRows,
 } from './tenants'
 
-// `pnpm db:account:reset-2fa` (PLAN.md 14): what an admin runs for a person who lost both the
+// `pnpm db:account:reset-2fa`: what an admin runs for a person who lost both the
 // device and the recovery codes. It works as postgres and on the admin API, with no session.
 
 const env = loadEnv()

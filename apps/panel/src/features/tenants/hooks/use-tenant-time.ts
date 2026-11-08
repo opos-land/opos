@@ -3,7 +3,7 @@ import { formatDateTime, fromZonedWallTime, isLocale, toZonedWallTime } from '@o
 import { useCurrentTenant } from '../components/tenant-context'
 
 /**
- * Dates of the tenant, always in the tenant's time zone, never the browser's (PLAN.md 6): shown
+ * Dates of the tenant, always in the tenant's time zone, never the browser's: shown
  * in the interface language, and edited as the wall-clock time of that zone.
  */
 export function useTenantTime() {

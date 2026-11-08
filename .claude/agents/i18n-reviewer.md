@@ -13,8 +13,8 @@ convention scene is sensitive to vocabulary, so a wrong word is a real defect, n
 ## Scope
 
 Review the diff you are given; without one, review `git diff origin/develop...HEAD`. For a PR
-number, use `gh pr diff <number>`. The rules are in `docs/PLAN.md` 6 (localization) and 17
-(execution rules), and the glossary in `docs/PRODUCT.md` 3. Read them first.
+number, use `gh pr diff <number>`. The rules are in `docs/ARCHITECTURE.md` (Localization) and
+`AGENTS.md` (Working with code), and the glossary in `docs/PRODUCT.md` 3. Read them first.
 
 ## The glossary renderings
 

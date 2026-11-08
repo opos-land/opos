@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { loadEnv } from '../src/config/env'
 import { createApp } from './app'
 
-// PLAN.md 7.4, requests that change state: a session cookie needs the Origin of an application.
+// Requests that change state: a session cookie needs the Origin of an application.
 
 const env = loadEnv()
 const cookie = 'opos_portal_access=anything'

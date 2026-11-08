@@ -9,7 +9,7 @@ import { createApp } from './app'
 import { createAccount, deleteCreatedAccounts, mintToken, originOf } from './auth'
 import { addVerifiedFactor, closeTenantDb } from './tenants'
 
-// Google sign-in (PLAN.md 7.5) against the real API, with a stub standing in for Supabase Auth: no
+// Google sign-in against the real API, with a stub standing in for Supabase Auth: no
 // Google client exists locally, so the stub plays the authorize redirect and the PKCE exchange. It
 // binds each code it issues to the S256 challenge of the redirect and refuses an exchange whose
 // verifier does not hash to it, as Supabase Auth does. A call to anything else goes to the stack.

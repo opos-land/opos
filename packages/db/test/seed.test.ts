@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { migrator } from './db'
 
 // The seed refuses before it opens a connection: it runs where OPOS_ENV is local or dev, and a
-// missing variable stops it (PLAN.md 11, 14).
+// missing variable stops it.
 
 const seed = (env: Record<string, string | undefined>) =>
   spawnSync(process.execPath, ['--import', 'tsx', 'src/seed.ts'], {
@@ -76,8 +76,8 @@ describe('db:seed Auth URL', { timeout: 30_000 }, () => {
   })
 })
 
-// The two-factor demo account is enrolled through Supabase Auth, never written into auth
-// (PLAN.md 4.6, 14); it runs the whole seed against the local stack.
+// The two-factor demo account is enrolled through Supabase Auth, never written into auth; it
+// runs the whole seed against the local stack.
 describe('db:seed two-factor account', () => {
   const email = 'mfa@example.com'
   const authUrl = `${process.env.SUPABASE_URL?.replace(/\/+$/, '')}/auth/v1`
@@ -252,7 +252,7 @@ describe('db:seed run twice', () => {
 })
 
 // One account heads both conventions, so the panel's convention picker and switch have someone to
-// show (PLAN.md 8, 14); a head holds no tenant-level permission and never expires (PLAN.md 4.5).
+// show; a head holds no tenant-level permission and never expires.
 describe('db:seed head of two conventions', () => {
   it('makes multi@example.com a head organizer of both', { timeout: 120_000 }, async () => {
     const run = runSeed('local')

@@ -27,10 +27,7 @@ Attendees use the portal, on a phone or a desktop; organizers use the panel.
 **OPOS is free for conventions** and is not built to earn from the scene; the attendee accounts it
 gathers are the base for later products, such as virtual booths and an OPOS shop.
 
-The MVP targets Poland; Czechia and Slovakia come next. The applications run on our own server, the
-database and sign-in on Supabase in the EU, reached only through our API. The code is
-source-available under the PolyForm Internal Use License 1.0.0: it may be run and modified for
-internal use, not distributed.
+The MVP targets Poland; Czechia and Slovakia come next.
 
 ---
 

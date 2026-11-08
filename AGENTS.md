@@ -20,14 +20,16 @@ repository is written in English.
 | File | Holds |
 |---|---|
 | [docs/PRODUCT.md](docs/PRODUCT.md) | what we build and for whom: glossary, tenant and edition, roles and permissions, addresses, modules, design, languages, personal data, MVP scope |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the rules of the code that no single file shows: boundaries, tenant isolation, invariants, permissions, sessions, conventions, environments, what is still to be built, the checklist for adding a feature |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the rules of the code that no single file shows: boundaries, tenant isolation, invariants, permissions, sessions, conventions, environments, the rules the modules waiting for their owner keep, the checklist for adding a feature |
+| [docs/adr](docs/adr/README.md) | decision records: one decision each, with its context, the alternatives turned down and its consequences |
+| [docs/specs](docs/specs/README.md) | feature specs: a feature's business rules, shape and tests, accepted before its code, frozen once it is built |
 
 ## Documents hold rules, the code holds the rest
 
 The code and its tests are the documentation of how things work: read them. The two documents keep
-only what the code cannot say — the intent, the business rules, the rules whose breach is not
-visible in one file, and what is decided but not built. A detail the code holds (a column, a value,
-a screen's behaviour, a list of files) never enters them.
+only what the code cannot say — the intent, the business rules and the rules whose breach is not
+visible in one file. A detail the code holds (a column, a value, a screen's behaviour, a list of
+files) never enters them.
 
 - A change that alters a rule one of the documents states updates that document in the same change;
   a change of product behaviour also reads the other document for a sentence it makes untrue. The
@@ -35,6 +37,23 @@ a screen's behaviour, a list of files) never enters them.
 - Where a document and the code disagree, say so and ask which is right; never settle it silently.
 - A code comment explains its code on its own; it cites a document only by file and heading
   (`docs/ARCHITECTURE.md, Tenant isolation`).
+
+**Decisions get records, features get specs.** What is decided but not built, and why anything is
+the way it is, lives beside the documents
+([0001](docs/adr/0001-record-decisions-and-specify-features.md)):
+
+- A decision that is hard to reverse or that the code does not explain — a part of the stack, a
+  boundary, a security mechanism, a hosting choice, a way of working, an alternative turned down —
+  gets a record in `docs/adr/` in the change that makes it. An accepted record is not rewritten: a
+  new one supersedes it. The document that states the rule links the record.
+- A new module, table, group of routes or flow across screens starts with a spec in `docs/specs/`,
+  accepted by its domain owner and the team before its code. The PR that completes the feature
+  carries its lasting rules into the documents and its decisions into records, and marks the spec
+  `Implemented`; from then on it is frozen.
+- A record and an implemented spec hold what was decided at their date: where they disagree with
+  the documents or the code, those hold, and the disagreement needs no report. A record marked
+  `reconstructed, to confirm` holds reasons inferred later; correct them when the user knows the
+  real ones.
 
 **Meeting decisions take precedence** over the documents, this file and the configuration. When the
 user brings a meeting note, carry each decision into what it affects, as the target state; where the
@@ -46,7 +65,7 @@ enter the repository: roles instead.
 tickets with payments and the scanner, and attendee registrations — is not built, and its tables,
 routes, screens and flows are not invented: the documents hold only the rules any shape of it keeps
 ([architecture](docs/ARCHITECTURE.md#modules-waiting-for-their-domain-owner)). Asked to build one,
-say so and ask for the owner's rules first; they land in the documents before the code.
+say so and ask for the owner's rules first; they land in the module's spec before the code.
 
 ## Document style
 
@@ -54,8 +73,8 @@ say so and ask for the owner's rules first; they land in the documents before th
   including `lefthook.yml`, compose files, SQL migrations and `.env.example`), identifiers, route
   paths, source messages, branches and commits. The only Polish in the repository is the `pl`
   translation catalog. No emoji.
-- The target state only: no change history, no alternatives, no "why" chapters. A short operational
-  instruction is fine.
+- The documents and the specs state the target state only: no change history, no alternatives, no
+  "why" chapters; those belong in a decision record. A short operational instruction is fine.
 - Tables where the content has structure; anchors updated together with headings.
 - Terminology strictly from the glossary: tenant, edition, programme item, speaker, like, review,
   ticket type, order, ticket, scanner, attendee, admin, org, head, user, core, module, booth.
@@ -185,8 +204,8 @@ them to the repository. Where no design exists yet, use plain blocks and real co
 ([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)); component-library defaults are not a
 finished look.
 
-**Adding a feature.** A new table, route or screen follows the
-[checklist](docs/ARCHITECTURE.md#adding-a-feature) step by step, with the `program` slice as its
-reference. Between parts of the product the order follows the dependencies between packages, the
-scope is [the MVP](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp), and the readiness criteria are the
-[tests](docs/ARCHITECTURE.md#tests).
+**Adding a feature.** A new feature starts from its accepted spec, and a new table, route or screen
+follows the [checklist](docs/ARCHITECTURE.md#adding-a-feature) step by step, with the `program`
+slice as its reference. Between parts of the product the order follows the dependencies between
+packages, the scope is [the MVP](docs/PRODUCT.md#11-mvp-scope-vs-beyond-mvp), and the readiness
+criteria are the [tests](docs/ARCHITECTURE.md#tests).

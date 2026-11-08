@@ -170,6 +170,41 @@ test('the recipe for adding a feature names every gate and what a route and a sc
   }
 })
 
+/** The Markdown files of a docs directory but its README, by name. */
+const records = (dir) =>
+  readdirSync(join(root, dir))
+    .filter((name) => name.endsWith('.md') && name !== 'README.md')
+    .sort()
+
+test('every decision record is numbered in order and has the shape of docs/adr/README.md', () => {
+  const names = records('docs/adr')
+  assert.ok(names.length > 0, 'docs/adr holds the decision records')
+  names.forEach((name, index) => {
+    const number = String(index + 1).padStart(4, '0')
+    assert.match(name, new RegExp(`^${number}-[a-z0-9]+(-[a-z0-9]+)*\\.md$`), `${name} is record ${number}`)
+    const text = read(`docs/adr/${name}`)
+    assert.match(text, new RegExp(`^# ${number}\\. \\S`), `${name} starts with its number and title`)
+    assert.match(
+      text,
+      /^- Status: (Proposed|Accepted|Deprecated|Superseded by \[\d{4}\]\(\d{4}-[a-z0-9-]+\.md\))$/m,
+      `${name} has a status`,
+    )
+    assert.match(text, /^- Date: \d{4}-\d{2}-\d{2}$/m, `${name} has a date`)
+    const rationale = text.match(/^- Rationale: (.*)$/m)
+    if (rationale) assert.equal(rationale[1], 'reconstructed, to confirm', `${name} marks a reconstructed rationale`)
+    for (const section of ['Context', 'Decision', 'Alternatives', 'Consequences']) {
+      assert.match(text, new RegExp(`^## ${section}$`, 'm'), `${name} has the section ${section}`)
+    }
+  })
+})
+
+test('every spec has a status of docs/specs/README.md', () => {
+  for (const name of records('docs/specs')) {
+    assert.match(name, /^[a-z0-9]+(-[a-z0-9]+)*\.md$/, `${name} is named in kebab case`)
+    assert.match(read(`docs/specs/${name}`), /^- Status: (Draft|Accepted|Implemented)$/m, `${name} has a status`)
+  }
+})
+
 test('the area names of AGENTS.md equal those of tests-first.mjs', () => {
   const script = read('scripts/tests-first.mjs')
   const fromScript = new Set([

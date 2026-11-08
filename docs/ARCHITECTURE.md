@@ -1,8 +1,9 @@
 # OPOS — architecture
 
-The rules of the code that no single file shows, and what is decided but not built. How a part works
-is in its code and tests; product intent and business rules are in [PRODUCT.md](PRODUCT.md), how to
-work here in [AGENTS.md](../AGENTS.md).
+The rules of the code that no single file shows. How a part works is in its code and tests; product
+intent and business rules are in [PRODUCT.md](PRODUCT.md); why a rule is so, and what is decided but
+not built, in the [decision records](adr/README.md) and the [specs](specs/README.md); how to work
+here in [AGENTS.md](../AGENTS.md).
 
 ## Applications and packages
 
@@ -17,29 +18,36 @@ graph LR
 
 | Part | Role |
 |---|---|
-| `apps/api` | NestJS, Drizzle, oRPC: the only backend, and the only holder of a Supabase address or key |
+| `apps/api` | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key |
 | `apps/panel` | the organizers' SPA, desktop-first; later also the scanner under `/scanner` |
 | `apps/portal` | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule |
 | `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape |
 | `packages/db` | schema, migrations, database roles, seed, verification, the admin's scripts |
 | `packages/i18n` | locales, detection, formatters and the shared catalog |
-| Supabase | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off |
+| Supabase | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md)) |
 
 - The packages have no build step; only the translation catalogs compile.
-- **The BFF boundary.** The panel and the portal talk to the API alone: no `@supabase/*` package,
-  Supabase address or key, or `VITE_*` variable naming Supabase in their sources or bundles. The
-  `react` ESLint preset refuses the import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest
-  (a hook, `pre-commit`, and CI over the built bundles), and every e2e scenario a request that leaves
-  the API and the page's own origin.
+- **The BFF boundary**
+  ([0004](adr/0004-make-the-api-the-only-backend-with-the-session-in-cookies.md)). The panel and
+  the portal talk to the API alone: no `@supabase/*` package, Supabase address or key, or `VITE_*`
+  variable naming Supabase in their sources or bundles. The `react` ESLint preset refuses the
+  import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest (a hook, `pre-commit`, and CI
+  over the built bundles), and every e2e scenario a request that leaves the API and the page's own
+  origin.
 - **The admin** has no endpoint or screen: creating a tenant, changing its slug and resetting
-  two-factor authentication are scripts run on the server as `postgres`.
+  two-factor authentication are scripts run on the server as `postgres`
+  ([0009](adr/0009-ship-three-web-applications.md)).
 
-Deployment and the modules waiting for their domain owner are
-[still to be built](#still-to-be-built).
+Deployment is decided but not built
+([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),
+[0013](adr/0013-connect-to-postgres-directly-with-verified-tls.md),
+[0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
+[waiting for their domain owner](#modules-waiting-for-their-domain-owner) have only their rules.
 
 ## Tenant isolation
 
-Row-level multitenancy under RLS, not only a `where` in code. A tenant table carries its own
+Row-level multitenancy under RLS, not only a `where` in code
+([0002](adr/0002-isolate-tenants-by-row-under-postgres-rls.md)). A tenant table carries its own
 `tenant_id` (never only an `edition_id`), a composite foreign key to its parent's `(id, tenant_id)`
 and an index starting with `tenant_id`.
 
@@ -129,9 +137,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `@InTenant`: no membership, so the handler's filters are its only guard, and no write lock, so it
   lowers nobody's access. Each applies `JwtAuthGuard`.
 - A route at `write` checks, waits in its tenant's queue in the API process, takes the tenant's
-  advisory lock and checks again (`503` `request.busy` past the limit). Every route that lowers a
-  member's access is a write route, except `DELETE /me`, which lowers only the account's own; reads
-  neither queue nor lock.
+  advisory lock and checks again (`503` `request.busy` past the limit;
+  [0008](adr/0008-serialize-the-writes-of-a-tenant.md)). Every route that lowers a member's access
+  is a write route, except `DELETE /me`, which lowers only the account's own; reads neither queue
+  nor lock.
 - Anti-escalation is set in PRODUCT.md and enforced by the API on locked memberships. An invitation
   stands only while its sender could still send it.
 
@@ -139,7 +148,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 - The API keeps the session Supabase Auth issues in `HttpOnly`, `SameSite=Strict` cookies on its own
   host, `Secure` beyond local `http`, a pair per application chosen by the request's `Origin`. No
-  response carries a token.
+  response carries a token
+  ([0004](adr/0004-make-the-api-the-only-backend-with-the-session-in-cookies.md)).
 - Only the API calls Supabase Auth, with the secret key and the visitor's address in
   `Sb-Forwarded-For`; a refusal reaches the browser as a code `auth.<error_code>`, never as its
   text. Its emails go through a signed hook to the API, which renders them.
@@ -167,12 +177,14 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 ## API conventions
 
 - The contract is the single source of the API: a route starts from `publicRoute`, `accountRoute` or
-  `tenantRoute` of [common.ts](../packages/contract/src/common.ts).
+  `tenantRoute` of [common.ts](../packages/contract/src/common.ts)
+  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)).
 - An error is `{ code, params?, message }`, its code in
   [errors.ts](../packages/contract/src/errors.ts). The UI shows the code through the catalog, never
   the English `message`.
 - A tenant request is one transaction: an exception or a status of `300` or more rolls it back, and
-  the response waits for the commit.
+  the response waits for the commit
+  ([0007](adr/0007-run-each-tenant-request-in-one-transaction.md)).
 - Outbound I/O never runs inside a transaction. Started by a tenant request, it waits for the
   commit (`afterCommit`), and its failure is logged while the response stands; a send the business
   cannot lose keeps an outbox. A call to Supabase Auth outside a transaction answers with its own
@@ -220,7 +232,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 ## Localization
 
 - Lingui, English source messages as their own identifiers; `en` and `pl`, `pl` the default, English
-  the fallback; a new locale needs no migration.
+  the fallback; a new locale needs no migration
+  ([0011](adr/0011-localize-with-lingui-and-return-codes-from-the-api.md)).
 - Every user-facing string sits in a macro, plurals in `plural`, its `pl` translation in the same
   commit; `pnpm i18n:check` fails on drift or a missing one.
 - Every [glossary](PRODUCT.md#3-glossary) term has one rendering per locale:
@@ -245,6 +258,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 - `OPOS_ENV` is the one switch between environments; Mailpit and a fake payment provider serve
   `local` and `dev`.
+- Dev and production are not deployed yet; their hosting is decided in
+  [0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md).
 - A working checkout never points at Dev or production: no `supabase link`, remote URL, project
   reference or token in a `.env` or `mise.local.toml`. The `db:*` scripts, the seed and the schema
   tests refuse a remote host unless `OPOS_ENV` names its environment
@@ -259,7 +274,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - [mise.toml](../mise.toml) pins Node and the Supabase CLI, `packageManager` pnpm; `engines` repeats
   both, and a mismatch aborts the install.
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
-  `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory.
+  `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
+  ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).
 - turbo ([turbo.json](../turbo.json)) declares only what a rule needs: catalogs compile before `dev`,
   `build` and `test`; side effects such as `db:*` are never cached; runtime variables stay out of
   the hash; the schema and API suites never share the stack at once.
@@ -270,7 +286,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 ## Tests
 
-Where a test sits is in [AGENTS.md](../AGENTS.md#tests-first). Integration tests run on the local
+Where a test sits is in [AGENTS.md](../AGENTS.md#tests-first), and why it comes first in
+[0018](adr/0018-start-every-change-of-code-with-its-test.md). Integration tests run on the local
 stack and mock neither the database nor Supabase Auth. They cover the permission matrix (every
 contract route against every actor, an unlisted route failing the suite); RLS on every covered
 table, the covered tables equal to the catalog's, and each `db:verify` rule broken once; the
@@ -291,7 +308,8 @@ catalog checks, the BFF boundary over the built bundles), `e2e`, and `secrets` (
 whole history, `pnpm audit` on high advisories).
 
 - PRs target `develop`, where CI blocks nothing. `main` changes only through a PR from `develop`
-  with the three jobs green ([protect-main.json](../.github/rulesets/protect-main.json)).
+  with the three jobs green ([protect-main.json](../.github/rulesets/protect-main.json);
+  [0017](adr/0017-integrate-on-develop-and-release-through-main.md)).
 - A workflow reads the repository only, pins every action by a full commit hash, and passes
   `${{ github.* }}` to a `run` step only through `env`
   ([ci-shape.test.mjs](../scripts/ci-shape.test.mjs)).
@@ -299,8 +317,9 @@ whole history, `pnpm audit` on high advisories).
 ## Modules waiting for their domain owner
 
 Reviews, tickets with payments and the scanner, and attendee registrations get no code until their
-domain owner sets their rules in [PRODUCT.md](PRODUCT.md#7-modules) and they land here. Any shape
-keeps tenant tables under RLS, a read across tenants as a new
+domain owner sets their rules in the module's [spec](specs/README.md)
+([PRODUCT.md](PRODUCT.md#7-modules), [0019](adr/0019-documents-hold-rules-the-code-holds-the-rest.md));
+the lasting ones land here. Any shape keeps tenant tables under RLS, a read across tenants as a new
 [cross-tenant query](#tenant-isolation), organizer routes behind the module's permission and the
 steps of [adding a feature](#adding-a-feature).
 
@@ -311,7 +330,8 @@ steps of [adding a feature](#adding-a-feature).
 | scanner | invariants 10 and 11 |
 | attendee registrations | invariant 7 |
 
-- **Payments.** The money goes to the convention's own provider account; OPOS keeps only the
+- **Payments.** The money goes to the convention's own provider account
+  ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)); OPOS keeps only the
   payment reference, and provider credentials encrypted with a key the API alone holds, never
   returned. A notification counts once its signature or the provider confirms it; a repeat, or a
   different amount, changes nothing. Only `local` and `dev` load a fake provider.
@@ -320,22 +340,11 @@ steps of [adding a feature](#adding-a-feature).
   lookup returns only the ids that open the tenant context. A device's access ends no later than
   that of the org who enabled it.
 
-## Still to be built
-
-| Part | Decision |
-|---|---|
-| hosting | a VPS per environment, Docker Compose behind Traefik v3 with wildcard TLS through DNS-01; the apex serves the portal, `panel.` the panel, `api.` the API, nothing else; Dev behind basic auth but for the API |
-| images | built on their VPS from a `turbo prune`, exact tags; only the tools and backup containers hold the `postgres` URL; the frontends served with a strict CSP and HSTS |
-| database | the direct connection, not Supavisor, with TLS verified against the project's CA; `env.ts` refuses a pooler or a missing `DATABASE_CA_PATH` on Dev and production |
-| Supabase project | no automatic RLS, an ES256 key with the legacy keys revoked, IP address forwarding, a `[remotes.<environment>]` block pushed only by the deploy workflow |
-| deploy workflow | after `check`, `e2e` and `secrets`, production behind a reviewer: build, a dump first in production, `db:roles`, `db:migrate`, `db:verify`, the Supabase configuration, start |
-| backups | production only: Supabase's daily backups, and every 6 hours an encrypted `pg_dump` on the VPS and off it, kept up to three months; a monthly restore drill on a throwaway server |
-| smoke test | by hand after a deployment that changes sign-in: what e2e cannot reach, such as real TLS, Google, mail, a phone and the hosted project |
-
 ## Adding a feature
 
-The order of work for a tenant table, a route and a screen; skip what a feature does not need. The
-`program` slice is the reference, from its
+A feature starts from its accepted [spec](specs/README.md), and a decision it makes gets a
+[record](adr/README.md). Then the order of work for a tenant table, a route and a screen; skip what
+a feature does not need. The `program` slice is the reference, from its
 [privileges migration](../packages/db/drizzle/0017_program_items_privileges.sql) to its
 [panel feature](../apps/panel/src/features/program). **Test first** is the test to change before
 the code ([AGENTS.md](../AGENTS.md#tests-first)); **Enforced by** is what refuses a skipped step,
@@ -354,7 +363,7 @@ the code ([AGENTS.md](../AGENTS.md#tests-first)); **Enforced by** is what refuse
 | 9 | Feature in `apps/panel/src/features` or `apps/portal/src/features` with `api/`, `pages/`, `index.ts`, routed in `apps/panel/src/app/router.tsx` or `apps/portal/src/app/router.tsx`; a panel page uses `useCurrentTenant()` and `NoPermissionView`; every page `usePageTitle`; a page needing a session inside `RequireSession`, which answers `mfa-required` and `unavailable`; a new top-level panel path joins `RESERVED_TENANT_SLUGS` of `packages/db/src/schema/tenants.ts`, a migration | `apps/panel/src/features/program/pages/program-page.test.tsx` shows the shape | ESLint; `src/app/pages.test.ts`; `scripts/bff-boundary.mjs`; `RequireSession` and reserved paths: nothing |
 | 10 | Strings in Lingui macros, `pnpm i18n:extract`, `pl` in `apps/panel/src/locales/pl.po` or `apps/portal/src/locales/pl.po`; a new term first in `packages/i18n/src/glossary.ts` | a `packages/i18n` test for the glossary; none for a catalog | `pnpm i18n:check`; a bare literal: `i18n-reviewer` |
 | 11 | A scenario in `e2e/specs` for a new flow, on its own rows through `e2e/fixtures/index.ts` | the scenario | the `e2e` job; none written: nothing |
-| 12 | The documents, through `docs-sync`, where a rule changed | none | `.claude/skills/docs-sync/scripts/check-doc-links.mjs`; the truth of the text: nothing |
+| 12 | The documents, through `docs-sync`, where a rule changed; a record in `docs/adr` for each decision the feature made; the spec marked `Implemented` | none | `.claude/skills/docs-sync/scripts/check-doc-links.mjs`; `.claude/agent-docs.test.mjs` for the shape of records and specs; the truth of the text: nothing |
 | 13 | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:scripts`, `pnpm db:verify`, `pnpm i18n:check`, `pnpm format:check`; for the UI `pnpm test:e2e` and a click-through, the portal on a phone viewport; `tenant-isolation-reviewer` and `i18n-reviewer` where they apply | none | the `check` and `e2e` jobs; the agents and the click-through: nothing |
 
 ### A migration applied or in conflict

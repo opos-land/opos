@@ -108,11 +108,11 @@ function RedeemLink({
         )}
       </p>
       <ErrorMessage error={error} />
-      <Button pending={pending} onClick={() => void redeem()}>
+      <Button disabled={pending} onClick={() => void redeem()}>
         <Trans>Continue</Trans>
       </Button>
       {error ? (
-        <Link to={loginPath(returnTo)} className="text-accent text-sm underline">
+        <Link to={loginPath(returnTo)} className="text-primary text-sm underline">
           <Trans>Go to sign-in</Trans>
         </Link>
       ) : null}
@@ -169,7 +169,7 @@ export function ConfirmPage() {
       <p className="text-sm">
         <Trans>Open the link from your email to confirm your address or reset your password.</Trans>
       </p>
-      <Link to={loginPath(returnTo)} className="text-accent text-sm underline">
+      <Link to={loginPath(returnTo)} className="text-primary text-sm underline">
         <Trans>Go to sign-in</Trans>
       </Link>
     </AuthLayout>

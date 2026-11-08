@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useLingui } from '@lingui/react/macro'
 import { type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
-import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import { Button, ErrorMessage, FieldSet, FormField, Input, Textarea } from '../../../shared/ui'
 import { useTenantTime } from '../../tenants'
 import {
   endsAtProblem,
@@ -45,35 +45,27 @@ export function ProgramItemForm({
       noValidate
       className="flex max-w-lg flex-col gap-4"
     >
-      <fieldset disabled={disabled} className="flex flex-col gap-4">
-        <Field label={t`Title`} error={errors.title && t`Enter a title of 3 to 200 characters.`}>
-          {(control) => <input {...control} {...form.register('title')} className={inputClass} />}
-        </Field>
-        <Field label={t`Description`} error={errors.description && t`Use up to 5000 characters.`}>
-          {(control) => (
-            <textarea
-              {...control}
-              {...form.register('description')}
-              rows={4}
-              className={inputClass}
-            />
-          )}
-        </Field>
-        <Field
+      <FieldSet disabled={disabled}>
+        <FormField
+          label={t`Title`}
+          error={errors.title && t`Enter a title of 3 to 200 characters.`}
+        >
+          {(control) => <Input {...control} {...form.register('title')} />}
+        </FormField>
+        <FormField
+          label={t`Description`}
+          error={errors.description && t`Use up to 5000 characters.`}
+        >
+          {(control) => <Textarea {...control} {...form.register('description')} rows={4} />}
+        </FormField>
+        <FormField
           label={t`Starts`}
           hint={t`In the convention's time zone, ${zone}.`}
           error={errors.startsAt && t`Enter the start date and time.`}
         >
-          {(control) => (
-            <input
-              {...control}
-              {...form.register('startsAt')}
-              type="datetime-local"
-              className={inputClass}
-            />
-          )}
-        </Field>
-        <Field
+          {(control) => <Input {...control} {...form.register('startsAt')} type="datetime-local" />}
+        </FormField>
+        <FormField
           label={t`Ends`}
           hint={t`In the convention's time zone, ${zone}.`}
           error={
@@ -82,19 +74,12 @@ export function ProgramItemForm({
               : errors.endsAt && t`Enter the end date and time.`
           }
         >
-          {(control) => (
-            <input
-              {...control}
-              {...form.register('endsAt')}
-              type="datetime-local"
-              className={inputClass}
-            />
-          )}
-        </Field>
-      </fieldset>
+          {(control) => <Input {...control} {...form.register('endsAt')} type="datetime-local" />}
+        </FormField>
+      </FieldSet>
       <ErrorMessage error={error} />
       <div>
-        <Button type="submit" disabled={disabled} pending={pending}>
+        <Button type="submit" disabled={disabled || pending}>
           {submitLabel}
         </Button>
       </div>

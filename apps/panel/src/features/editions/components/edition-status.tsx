@@ -1,17 +1,18 @@
 import { Trans } from '@lingui/react/macro'
 import { type Edition } from '@opos/contract'
+import { Badge } from '../../../shared/ui'
 
 export function EditionStatus({ edition }: { edition: Edition }) {
   return (
     <span className="flex flex-wrap gap-2">
       {edition.isActive && (
-        <span className="rounded-box border-accent text-accent border px-1.5 text-xs">
+        <Badge>
           <Trans>Active</Trans>
-        </span>
+        </Badge>
       )}
-      <span className="rounded-box border-line text-muted border px-1.5 text-xs">
+      <Badge variant="outline">
         {edition.isPublished ? <Trans>Published</Trans> : <Trans>Not published</Trans>}
-      </span>
+      </Badge>
     </span>
   )
 }

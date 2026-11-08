@@ -47,14 +47,14 @@ export function LoginPage() {
     <AuthLayout title={<Trans>Sign in to the organizer panel</Trans>}>
       <ErrorMessage error={returned} />
       <SignInForm onSignedIn={() => void navigate(returnTo, { replace: true })} />
-      <Link to="/forgot-password" className="text-accent text-sm underline">
+      <Link to="/forgot-password" className="text-primary text-sm underline">
         <Trans>Forgot your password?</Trans>
       </Link>
-      <p className="text-muted text-center text-xs">
+      <p className="text-muted-foreground text-center text-xs">
         <Trans>or</Trans>
       </p>
       <GoogleButton returnTo={returnTo} />
-      <p className="text-muted text-sm">
+      <p className="text-muted-foreground text-sm">
         {t`Organizers join a convention's team through an invitation sent by email. The link in it lets you create an account here.`}
       </p>
     </AuthLayout>

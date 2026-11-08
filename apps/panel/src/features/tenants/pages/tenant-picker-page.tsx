@@ -1,7 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, Navigate } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
-import { PageHeader } from '../../../shared/ui'
+import { buttonVariants, Card, CardContent, PageHeader } from '../../../shared/ui'
 import { PanelHeader } from '../components/panel-header'
 import { tenantAccess, usePermissionStore } from '../model/permissions'
 
@@ -30,24 +30,29 @@ export function TenantPickerPage() {
         ) : (
           <ul className="flex flex-col gap-2">
             {memberships.map((m) => (
-              <li
-                key={m.tenant.id}
-                className="rounded-box border-line bg-surface hover:border-ink flex flex-wrap items-center gap-3 border p-4"
-              >
-                <Link to={`/${m.tenant.slug}`} className="flex min-w-0 flex-1 flex-col">
-                  <span className="font-medium">{m.tenant.name}</span>
-                  <span className="text-muted text-sm">
-                    {m.role === 'head' ? <Trans>Head organizer</Trans> : <Trans>Organizer</Trans>}
-                  </span>
-                </Link>
-                {tenantAccess(m).seesConventionSettings && (
-                  <Link
-                    to={`/${m.tenant.slug}/settings`}
-                    className="rounded-box border-line hover:border-ink border px-3 py-1 text-sm"
-                  >
-                    <Trans>Convention settings</Trans>
-                  </Link>
-                )}
+              <li key={m.tenant.id}>
+                <Card size="sm">
+                  <CardContent className="flex flex-wrap items-center gap-3">
+                    <Link to={`/${m.tenant.slug}`} className="flex min-w-0 flex-1 flex-col">
+                      <span className="font-medium">{m.tenant.name}</span>
+                      <span className="text-muted-foreground text-sm">
+                        {m.role === 'head' ? (
+                          <Trans>Head organizer</Trans>
+                        ) : (
+                          <Trans>Organizer</Trans>
+                        )}
+                      </span>
+                    </Link>
+                    {tenantAccess(m).seesConventionSettings && (
+                      <Link
+                        to={`/${m.tenant.slug}/settings`}
+                        className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                      >
+                        <Trans>Convention settings</Trans>
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
               </li>
             ))}
           </ul>

@@ -39,6 +39,7 @@ function stubApi(routes: Record<string, Response[]>) {
   return calls
 }
 
+/** Renders the menu; `languageSelect` opens it. */
 function renderMenu() {
   render(
     <I18nProvider i18n={i18n}>
@@ -54,8 +55,9 @@ function renderMenu() {
   return userEvent.setup()
 }
 
-/** The language select once the account is known. */
+/** Opens the menu from its button and finds the language select once the account is known. */
 async function languageSelect() {
+  await userEvent.click(await screen.findByRole('button', { name: account.email }))
   const select = screen.getByLabelText<HTMLSelectElement>('Interface language')
   await waitFor(() => expect(select.disabled).toBe(false))
   return select

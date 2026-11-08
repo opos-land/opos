@@ -17,7 +17,7 @@ export function ConventionLayout() {
       menu={{
         label: tenant.name,
         header: (
-          <p className="text-muted text-xs font-semibold tracking-wide uppercase">
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
             <Trans>Convention settings</Trans>
           </p>
         ),

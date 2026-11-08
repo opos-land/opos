@@ -32,8 +32,9 @@ beforeAll(() => {
 
 afterEach(cleanup)
 
-function renderMenu() {
-  return render(
+/** Renders the menu and opens it from its button, which names the signed-in address. */
+async function renderMenu() {
+  render(
     <I18nProvider i18n={i18n}>
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
@@ -42,14 +43,35 @@ function renderMenu() {
       </QueryClientProvider>
     </I18nProvider>,
   )
+  const user = userEvent.setup()
+  await user.click(await screen.findByRole('button', { name: 'a@x.test' }))
+  return user
 }
+
+describe('AccountMenu', () => {
+  it('stays closed until its button is pressed', async () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter>
+            <AccountMenu />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </I18nProvider>,
+    )
+
+    const trigger = await screen.findByRole('button', { name: 'a@x.test' })
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
+  })
+})
 
 describe('AccountMenu sign-out', () => {
   it('shows a failed sign-out, since the session cookies are still set', async () => {
     vi.mocked(signOut).mockResolvedValue(new ORPCError('server.unavailable', { status: 503 }))
-    renderMenu()
+    const user = await renderMenu()
 
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Sign out' }))
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
 
     expect((await screen.findByRole('alert')).textContent).toBe(
       'The service is temporarily unavailable. Try again in a moment.',
@@ -58,9 +80,9 @@ describe('AccountMenu sign-out', () => {
 
   it('shows nothing when the sign-out worked', async () => {
     vi.mocked(signOut).mockResolvedValue(null)
-    renderMenu()
+    const user = await renderMenu()
 
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Sign out' }))
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
 
     expect(signOut).toHaveBeenCalled()
     expect(screen.queryByRole('alert')).toBeNull()
@@ -69,7 +91,7 @@ describe('AccountMenu sign-out', () => {
 
 describe('AccountMenu two-factor authentication', () => {
   it('holds the two-factor card, off for an account without it', async () => {
-    renderMenu()
+    await renderMenu()
 
     expect(
       await screen.findByRole('button', { name: 'Turn on two-factor authentication' }),

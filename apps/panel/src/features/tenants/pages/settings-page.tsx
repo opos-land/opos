@@ -10,8 +10,11 @@ import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Button,
   ErrorMessage,
-  Field,
-  inputClass,
+  FieldSet,
+  FormField,
+  Input,
+  NativeSelect,
+  NativeSelectOption,
   Notice,
   PageHeader,
   Section,
@@ -68,50 +71,49 @@ export function SettingsPage() {
           noValidate
           className="flex max-w-lg flex-col gap-4"
         >
-          <fieldset disabled={!canWrite} className="flex flex-col gap-4">
-            <Field label={t`Name`} error={errors.name && t`Enter a name of up to 200 characters.`}>
-              {(control) => (
-                <input {...control} {...form.register('name')} className={inputClass} />
-              )}
-            </Field>
-            <Field
+          <FieldSet disabled={!canWrite}>
+            <FormField
+              label={t`Name`}
+              error={errors.name && t`Enter a name of up to 200 characters.`}
+            >
+              {(control) => <Input {...control} {...form.register('name')} />}
+            </FormField>
+            <FormField
               label={t`Address`}
               hint={t`The convention's address is set by the platform administrator.`}
             >
-              {(control) => (
-                <input {...control} value={tenant.slug} readOnly disabled className={inputClass} />
-              )}
-            </Field>
-            <Field
+              {(control) => <Input {...control} value={tenant.slug} readOnly disabled />}
+            </FormField>
+            <FormField
               label={t`Convention language`}
               hint={t`The language of the convention's content and of invitations to people without an account.`}
             >
               {(control) => (
-                <select {...control} {...form.register('defaultLocale')} className={inputClass}>
+                <NativeSelect {...control} {...form.register('defaultLocale')}>
                   {SUPPORTED_LOCALES.map((locale) => (
-                    <option key={locale} value={locale}>
+                    <NativeSelectOption key={locale} value={locale}>
                       {languageName(locale, i18n.locale)}
-                    </option>
+                    </NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               )}
-            </Field>
-            <Field
+            </FormField>
+            <FormField
               label={t`Time zone`}
               hint={t`Programme times and edition dates are shown in this time zone.`}
               error={errors.timezone && t`Choose a time zone from the list.`}
             >
               {(control) => (
-                <select {...control} {...form.register('timezone')} className={inputClass}>
+                <NativeSelect {...control} {...form.register('timezone')}>
                   {timeZones.map((zone) => (
-                    <option key={zone} value={zone}>
+                    <NativeSelectOption key={zone} value={zone}>
                       {zone}
-                    </option>
+                    </NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               )}
-            </Field>
-          </fieldset>
+            </FormField>
+          </FieldSet>
           <ErrorMessage error={update.error} />
           {saved && (
             <Notice>
@@ -119,7 +121,7 @@ export function SettingsPage() {
             </Notice>
           )}
           <div>
-            <Button type="submit" disabled={!canWrite} pending={update.isPending}>
+            <Button type="submit" disabled={!canWrite || update.isPending}>
               <Trans>Save</Trans>
             </Button>
           </div>

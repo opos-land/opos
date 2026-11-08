@@ -1,7 +1,8 @@
 import { type ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { useForbidden } from '../../../shared/lib/forbidden'
-import { NoPermissionView } from '../../../shared/ui'
+import { cn } from '../../../shared/lib/utils'
+import { buttonVariants, NoPermissionView } from '../../../shared/ui'
 
 /** One section of an area's menu, marked while its page is open. */
 export function SidebarLink({
@@ -18,7 +19,7 @@ export function SidebarLink({
       to={to}
       end={end}
       className={({ isActive }) =>
-        `rounded-box block px-3 py-1.5 text-sm ${isActive ? 'bg-accent text-accent-ink' : 'hover:bg-paper'}`
+        cn(buttonVariants({ variant: isActive ? 'secondary' : 'ghost' }), 'justify-start')
       }
     >
       {children}
@@ -42,7 +43,7 @@ export function AreaFrame({
       {menu && (
         <nav
           aria-label={menu.label}
-          className="border-line bg-surface flex flex-col gap-1 border-b p-3 md:w-56 md:shrink-0 md:border-r md:border-b-0"
+          className="flex flex-col gap-1 border-b p-3 md:w-56 md:shrink-0 md:border-r md:border-b-0"
         >
           <div className="flex flex-col gap-2 px-3 pb-2">{menu.header}</div>
           {menu.links}

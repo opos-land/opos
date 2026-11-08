@@ -1,10 +1,11 @@
 import { Trans } from '@lingui/react/macro'
 import { useMatch, useNavigate } from 'react-router'
+import { NativeSelect, NativeSelectOption } from '../../../shared/ui'
 import { useCurrentTenant } from '../../tenants'
 import { useEditionBySlug } from '../hooks/use-editions'
 
 const label = (
-  <span className="text-muted">
+  <span className="text-muted-foreground">
     <Trans>Edition</Trans>
   </span>
 )
@@ -34,17 +35,16 @@ export function EditionSwitch() {
   return (
     <label className="flex items-center gap-2 text-sm">
       {label}
-      <select
-        className="rounded-box border-line bg-surface border px-2 py-1 text-sm"
+      <NativeSelect
         value={edition.slug}
         onChange={(event) => void navigate(`/${tenant.slug}/editions/${event.target.value}`)}
       >
         {editions.map((other) => (
-          <option key={other.id} value={other.slug}>
+          <NativeSelectOption key={other.id} value={other.slug}>
             {other.name}
-          </option>
+          </NativeSelectOption>
         ))}
-      </select>
+      </NativeSelect>
     </label>
   )
 }

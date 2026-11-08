@@ -3,7 +3,19 @@ import { SUPPORTED_LOCALES, isLocale } from '@opos/i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
-import { ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import {
+  Button,
+  Card,
+  CardContent,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  ErrorMessage,
+  FormField,
+  NativeSelect,
+  NativeSelectOption,
+  Separator,
+} from '../../../shared/ui'
 import { signOut } from '../../auth'
 import { accountOptions, mergeSavedAccount, updateAccountOptions } from '../api/account'
 import { signInMethods } from '../model/sign-in-methods'
@@ -35,51 +47,56 @@ export function AccountMenu() {
     update.mutate({ body: { locale: isLocale(value) ? value : null } })
 
   return (
-    <details className="relative">
-      <summary className="rounded-box border-line bg-surface cursor-pointer border px-3 py-1.5 text-sm">
+    <Collapsible className="relative">
+      <CollapsibleTrigger render={<Button variant="outline" />}>
         {account.data?.email ?? <Trans>Account</Trans>}
-      </summary>
-      <div className="rounded-box border-line bg-surface absolute right-0 z-10 mt-2 flex w-80 flex-col gap-4 border p-4 shadow-sm">
-        <Field label={t`Interface language`} hint={t`Saved on your account.`}>
-          {(control) => (
-            <select
-              {...control}
-              className={inputClass}
-              value={account.data?.locale ?? BROWSER}
-              disabled={!account.data || update.isPending}
-              onChange={(event) => changeLanguage(event.target.value)}
-            >
-              <option value={BROWSER}>{t`The browser's language`}</option>
-              {SUPPORTED_LOCALES.map((locale) => (
-                <option key={locale} value={locale} lang={locale}>
-                  {languageName(locale)}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
-        <ErrorMessage error={update.error} />
-        {account.data && (
-          <section className="border-line flex flex-col gap-2 border-t pt-4">
-            <h2 className="text-sm font-medium">
-              <Trans>Two-factor authentication</Trans>
-            </h2>
-            <TwoFactorCard
-              email={account.data.email}
-              mfaEnabled={account.data.mfaEnabled}
-              methods={signInMethods(account.data.signInMethods)}
-            />
-          </section>
-        )}
-        <ErrorMessage error={signOutError} />
-        <button
-          type="button"
-          className="text-accent self-start text-sm underline"
-          onClick={() => void leave()}
-        >
-          <Trans>Sign out</Trans>
-        </button>
-      </div>
-    </details>
+      </CollapsibleTrigger>
+      {/* Kept mounted while closed: a two-factor step in progress, recovery codes included, stays. */}
+      <CollapsibleContent keepMounted className="absolute top-full right-0 z-10 mt-2 w-80">
+        <Card>
+          <CardContent className="flex flex-col gap-4">
+            <FormField label={t`Interface language`} hint={t`Saved on your account.`}>
+              {(control) => (
+                <NativeSelect
+                  {...control}
+                  value={account.data?.locale ?? BROWSER}
+                  disabled={!account.data || update.isPending}
+                  onChange={(event) => changeLanguage(event.target.value)}
+                >
+                  <NativeSelectOption
+                    value={BROWSER}
+                  >{t`The browser's language`}</NativeSelectOption>
+                  {SUPPORTED_LOCALES.map((locale) => (
+                    <NativeSelectOption key={locale} value={locale} lang={locale}>
+                      {languageName(locale)}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              )}
+            </FormField>
+            <ErrorMessage error={update.error} />
+            {account.data && (
+              <>
+                <Separator />
+                <section className="flex flex-col gap-2">
+                  <h2 className="text-sm font-medium">
+                    <Trans>Two-factor authentication</Trans>
+                  </h2>
+                  <TwoFactorCard
+                    email={account.data.email}
+                    mfaEnabled={account.data.mfaEnabled}
+                    methods={signInMethods(account.data.signInMethods)}
+                  />
+                </section>
+              </>
+            )}
+            <ErrorMessage error={signOutError} />
+            <Button variant="link" className="self-start" onClick={() => void leave()}>
+              <Trans>Sign out</Trans>
+            </Button>
+          </CardContent>
+        </Card>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

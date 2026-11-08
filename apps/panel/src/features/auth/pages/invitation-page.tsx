@@ -8,7 +8,7 @@ import { activeLocale } from '../../../shared/lib/i18n'
 import { errorCode } from '../../../shared/lib/errors'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import { startSession, useSession } from '../../../shared/lib/session'
-import { ErrorMessage, LoadingView, Notice, UnavailableView } from '../../../shared/ui'
+import { Button, ErrorMessage, LoadingView, Notice, UnavailableView } from '../../../shared/ui'
 import { sendPasswordLink, signUpWithEmail } from '../api/auth'
 import { invitationPreviewOptions } from '../api/invitations'
 import { INVITATION_PATH } from '../model/auth-return'
@@ -40,7 +40,7 @@ function PreviewSummary({ preview }: { preview: InvitationPreview }) {
           You are invited to the organizing team of <strong>{tenantName}</strong>.
         </Trans>
       </p>
-      <p className="text-muted">
+      <p className="text-muted-foreground">
         <Trans>
           The invitation is for {email} and is valid until {validUntil}.
         </Trans>
@@ -81,19 +81,15 @@ function JoinOptions({
             team.
           </Trans>
         </Notice>
-        <p className="text-muted text-sm">
+        <p className="text-muted-foreground text-sm">
           <Trans>
             If no message arrives within a few minutes, the address may already have an account:
             sign in, or ask for a password link.
           </Trans>
         </p>
-        <button
-          type="button"
-          className="text-accent self-start text-sm underline"
-          onClick={() => setSentTo(null)}
-        >
+        <Button variant="link" className="self-start" onClick={() => setSentTo(null)}>
           <Trans>Back to the invitation</Trans>
-        </button>
+        </Button>
       </div>
     )
   }
@@ -107,11 +103,11 @@ function JoinOptions({
         <SignInForm defaultEmail={preview.email} onMfaRequired={onMfaRequired} />
         <GoogleButton returnTo={INVITATION_PATH} />
       </section>
-      <section aria-labelledby="sign-up" className="border-line flex flex-col gap-3 border-t pt-6">
+      <section aria-labelledby="sign-up" className="flex flex-col gap-3 border-t pt-6">
         <h2 id="sign-up" className="font-semibold">
           <Trans>I am new to OPOS</Trans>
         </h2>
-        <p className="text-muted text-sm">
+        <p className="text-muted-foreground text-sm">
           <Trans>
             We will send a confirmation link to your address. Once you open it, you choose your
             password here and join the team. You can also continue with Google above.
@@ -123,14 +119,11 @@ function JoinOptions({
           onSubmit={signUp}
         />
       </section>
-      <section
-        aria-labelledby="password-link"
-        className="border-line flex flex-col gap-3 border-t pt-6"
-      >
+      <section aria-labelledby="password-link" className="flex flex-col gap-3 border-t pt-6">
         <h2 id="password-link" className="font-semibold">
           <Trans>Cannot sign in?</Trans>
         </h2>
-        <p className="text-muted text-sm">
+        <p className="text-muted-foreground text-sm">
           <Trans>
             If you confirmed your address in another browser, or someone else registered it before
             you, ask for a link that lets you set a new password.
@@ -138,7 +131,7 @@ function JoinOptions({
         </p>
         <EmailOnlyForm
           defaultEmail={preview.email}
-          variant="secondary"
+          variant="outline"
           submitLabel={<Trans>Send a password link</Trans>}
           onSubmit={passwordLink}
         />
@@ -154,7 +147,7 @@ function FinishSigningIn({ code }: { code: string }) {
       <p className="text-sm">
         <Trans>Your sign-in is not finished. Enter your code to join the team.</Trans>
       </p>
-      <Link to={code} className="text-accent inline-flex min-h-11 items-center text-sm underline">
+      <Link to={code} className="text-primary inline-flex min-h-11 items-center text-sm underline">
         <Trans>Finish signing in</Trans>
       </Link>
     </div>
@@ -207,7 +200,7 @@ export function InvitationPage() {
     return (
       <AuthLayout title={t`Invitation`}>
         <ErrorMessage error={preview.error} />
-        <Link to="/login" className="text-accent text-sm underline">
+        <Link to="/login" className="text-primary text-sm underline">
           <Trans>Go to sign-in</Trans>
         </Link>
       </AuthLayout>

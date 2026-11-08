@@ -99,7 +99,7 @@ export function EditionSettingsPage() {
             </p>
             {!edition.isActive && (
               <div>
-                <Button pending={activate.isPending} onClick={() => activate.mutate({ params })}>
+                <Button disabled={activate.isPending} onClick={() => activate.mutate({ params })}>
                   <Trans>Activate</Trans>
                 </Button>
               </div>
@@ -116,8 +116,9 @@ export function EditionSettingsPage() {
             </p>
             <div>
               <Button
-                variant="secondary"
-                pending={publish.isPending}
+                disabled={publish.isPending}
+                variant="outline"
+
                 onClick={() =>
                   publish.mutate({ params, body: { isPublished: !edition.isPublished } })
                 }
@@ -139,19 +140,20 @@ export function EditionSettingsPage() {
           {confirmDelete ? (
             <div className="flex flex-wrap gap-2">
               <Button
-                variant="danger"
-                pending={remove.isPending}
+                disabled={remove.isPending}
+                variant="destructive"
+
                 onClick={() => remove.mutate({ params })}
               >
                 <Trans>Yes, delete {editionName}</Trans>
               </Button>
-              <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
+              <Button variant="outline" onClick={() => setConfirmDelete(false)}>
                 <Trans>Cancel</Trans>
               </Button>
             </div>
           ) : (
             <div>
-              <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+              <Button variant="destructive" onClick={() => setConfirmDelete(true)}>
                 <Trans>Delete</Trans>
               </Button>
             </div>

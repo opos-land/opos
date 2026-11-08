@@ -37,9 +37,9 @@ export async function signOutOfPortal(page: Page) {
   await expect(page).toHaveURL(/\/login/)
 }
 
-/** Opens the panel's account menu, whose summary is the signed-in address. */
+/** Opens the panel's account menu, whose button names the signed-in address. */
 export async function openPanelAccountMenu(page: Page, email: string) {
-  await page.locator('summary', { hasText: email }).click()
+  await page.getByRole('button', { name: email, exact: true }).click()
 }
 
 /** Signs out of the panel from the account menu: this session ends, the account's others stay. */

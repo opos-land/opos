@@ -24,7 +24,9 @@ export function EditionLayout() {
       menu={{
         label: edition.name,
         header: (
-          <p className="text-muted text-xs font-semibold tracking-wide uppercase">{edition.name}</p>
+          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+            {edition.name}
+          </p>
         ),
         links: (
           <>

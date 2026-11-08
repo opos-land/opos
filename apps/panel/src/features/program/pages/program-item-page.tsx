@@ -67,7 +67,7 @@ export function ProgramItemPage() {
     <>
       <PageHeader title={item.title} description={time.range(item.startsAt, item.endsAt)} />
       <p className="text-sm">
-        <Link to={base} className="text-accent underline">
+        <Link to={base} className="text-primary underline">
           <Trans>All programme items</Trans>
         </Link>
       </p>
@@ -97,19 +97,20 @@ export function ProgramItemPage() {
           {confirmDelete ? (
             <div className="flex flex-wrap gap-2">
               <Button
-                variant="danger"
-                pending={remove.isPending}
+                disabled={remove.isPending}
+                variant="destructive"
+
                 onClick={() => remove.mutate({ params })}
               >
                 <Trans>Yes, delete {title}</Trans>
               </Button>
-              <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
+              <Button variant="outline" onClick={() => setConfirmDelete(false)}>
                 <Trans>Cancel</Trans>
               </Button>
             </div>
           ) : (
             <div>
-              <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+              <Button variant="destructive" onClick={() => setConfirmDelete(true)}>
                 <Trans>Delete</Trans>
               </Button>
             </div>

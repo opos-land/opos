@@ -1,10 +1,9 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type ReactNode } from 'react'
 import { Link, useMatch, useNavigate } from 'react-router'
+import { buttonVariants, NativeSelect, NativeSelectOption } from '../../../shared/ui'
 import { AccountMenu } from '../../account'
 import { usePermissionStore } from '../model/permissions'
-
-const button = 'rounded-box border-line hover:border-ink border px-3 py-1 text-sm'
 
 /**
  * The top bar: the panel's name, the convention (a switch for a member of several),
@@ -31,30 +30,31 @@ export function PanelHeader({
   const current = memberships.find((m) => m.tenant.slug === tenantSlug)
 
   return (
-    <header className="border-line bg-surface flex flex-wrap items-center gap-4 border-b px-4 py-3">
+    <header className="flex flex-wrap items-center gap-4 border-b px-4 py-3">
       <Link to="/" className="font-semibold">
         <Trans>OPOS panel</Trans>
       </Link>
       {memberships.length > 1 ? (
         <label className="flex items-center gap-2 text-sm">
-          <span className="text-muted">
+          <span className="text-muted-foreground">
             <Trans>Convention</Trans>
           </span>
-          <select
-            className="rounded-box border-line bg-surface border px-2 py-1 text-sm"
+          <NativeSelect
             value={tenantSlug ?? ''}
             onChange={(event) => void navigate(`/${event.target.value}`)}
           >
-            {!tenantSlug && <option value="">{t`Choose a convention`}</option>}
+            {!tenantSlug && (
+              <NativeSelectOption value="">{t`Choose a convention`}</NativeSelectOption>
+            )}
             {memberships.map((m) => (
-              <option key={m.tenant.id} value={m.tenant.slug}>
+              <NativeSelectOption key={m.tenant.id} value={m.tenant.slug}>
                 {m.tenant.name}
-              </option>
+              </NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       ) : (
-        current && <span className="text-muted text-sm">{current.tenant.name}</span>
+        current && <span className="text-muted-foreground text-sm">{current.tenant.name}</span>
       )}
       {editionSwitch}
       <div className="ml-auto flex items-center gap-4">
@@ -62,12 +62,12 @@ export function PanelHeader({
           conventionSettings &&
           (inSettings ? (
             seesAnEdition && (
-              <Link to={`/${tenantSlug}`} className={button}>
+              <Link to={`/${tenantSlug}`} className={buttonVariants({ variant: 'outline' })}>
                 <Trans>Back to the edition</Trans>
               </Link>
             )
           ) : (
-            <Link to={`/${tenantSlug}/settings`} className={button}>
+            <Link to={`/${tenantSlug}/settings`} className={buttonVariants({ variant: 'outline' })}>
               <Trans>Convention settings</Trans>
             </Link>
           ))}

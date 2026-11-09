@@ -208,9 +208,9 @@ them to the repository. Where no design exists yet, use shadcn/ui's defaults unc
 `pnpm --dir apps/panel exec shadcn add <name>` or the same for `apps/portal`, never
 `npx shadcn@latest`, and stays as the CLI writes it but for formatting, lint fixes and its own texts
 moved into Lingui macros; the look changes through the tokens of `src/styles.css`. The `shadcn`
-skill ([.claude/skills/shadcn/SKILL.md](.claude/skills/shadcn/SKILL.md)) and the `shadcn` MCP server
-of [.mcp.json](.mcp.json) run that CLI; [.claude/shadcn.test.mjs](.claude/shadcn.test.mjs) keeps
-them so.
+skill ([.claude/skills/shadcn/SKILL.md](.claude/skills/shadcn/SKILL.md)) runs that CLI, and no MCP
+server runs it ([0021](docs/adr/0021-run-the-shadcn-skill-through-the-pinned-cli.md));
+[.claude/shadcn.test.mjs](.claude/shadcn.test.mjs) keeps them so.
 
 **Adding a feature.** A new feature starts from its accepted spec, and a new table, route or screen
 follows the [checklist](docs/ARCHITECTURE.md#adding-a-feature) step by step, with the `program`

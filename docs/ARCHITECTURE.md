@@ -279,10 +279,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
   `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
   ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).
-- The shadcn/ui CLI, its agent skill and its MCP server run the version an application pins, as
+- The shadcn/ui CLI and its agent skill run the version an application pins, as
   `pnpm --dir apps/<app> exec shadcn`, never `npx shadcn@latest` or `pnpm dlx`, which pass
-  `minimumReleaseAge` by
-  ([0021](adr/0021-run-the-shadcn-skill-and-mcp-server-through-the-pinned-cli.md)).
+  `minimumReleaseAge` by; the CLI's MCP server is not used
+  ([0021](adr/0021-run-the-shadcn-skill-through-the-pinned-cli.md)).
 - turbo ([turbo.json](../turbo.json)) declares only what a rule needs: catalogs compile before `dev`,
   `build` and `test`; side effects such as `db:*` are never cached; runtime variables stay out of
   the hash; the schema and API suites never share the stack at once.

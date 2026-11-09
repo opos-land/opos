@@ -4,9 +4,10 @@ import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-// The shadcn/ui skill and MCP server run the CLI an application pins in its package.json, so the
-// 7-day minimumReleaseAge of pnpm-workspace.yaml covers it: never `npx shadcn@latest` or
-// `pnpm dlx`, which fetch whatever was published last.
+// The shadcn/ui skill runs the CLI an application pins in its package.json, so the 7-day
+// minimumReleaseAge of pnpm-workspace.yaml covers it: never `npx shadcn@latest` or `pnpm dlx`,
+// which fetch whatever was published last. The CLI's MCP server is not used
+// (docs/ARCHITECTURE.md, Tooling and versions).
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const read = (path) => readFileSync(join(root, path), 'utf8')
@@ -30,11 +31,17 @@ test('the context the skill injects comes from the pinned CLI', () => {
   for (const command of injected) assert.match(command, pinned)
 })
 
-test('the MCP server runs the pinned CLI', () => {
-  const { mcpServers } = JSON.parse(read('.mcp.json'))
-  const { command, args } = mcpServers.shadcn
-  assert.match([command, ...args].join(' '), pinned)
-  assert.equal(args.at(-1), 'mcp')
+// The server answers in the Radix style whatever components.json says, and suggests
+// `pnpm dlx shadcn@latest`; the pinned CLI's search, view and docs answer the same questions.
+test('no MCP server runs the shadcn CLI', () => {
+  const { mcpServers = {} } = existsSync(join(root, '.mcp.json')) ? JSON.parse(read('.mcp.json')) : {}
+  for (const [name, { command = '', args = [] }] of Object.entries(mcpServers)) {
+    assert.doesNotMatch([command, ...args].join(' '), /\bshadcn\b/, `.mcp.json server ${name}`)
+  }
+})
+
+test('the vendored skill carries no guide to the MCP server', () => {
+  assert.ok(!existsSync(join(root, skillDir, 'mcp.md')), `${skillDir}/mcp.md`)
 })
 
 test('each application the skill names pins the CLI and has a components.json', () => {

@@ -2,7 +2,7 @@ import { i18n, type MessageDescriptor } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -68,10 +68,13 @@ function renderAt(path: string, methods = { password: true, google: false }, use
   return userEvent.setup()
 }
 
+/** The modal of the deletion, open. */
+const modal = () => within(screen.getByRole('alertdialog', { name: 'Delete your account?' }))
+
 async function confirmWithPassword(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Delete my account' }))
-  await user.type(screen.getByLabelText('Your password'), 'secret password')
-  await user.click(screen.getByRole('button', { name: 'Delete my account' }))
+  await user.type(modal().getByLabelText('Your password'), 'secret password')
+  await user.click(modal().getByRole('button', { name: 'Delete my account' }))
 }
 
 beforeAll(() => {
@@ -89,6 +92,20 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('DeleteAccount', () => {
+  it('asks in a modal that says what goes with the account and that it cannot be undone', async () => {
+    const user = renderAt('/account')
+
+    await user.click(screen.getByRole('button', { name: 'Delete my account' }))
+    expect(modal().getByText(/cannot be undone/).textContent).toContain(
+      'Your likes, reviews, edition sign-ups and memberships in convention teams go with it.',
+    )
+    await user.click(modal().getByRole('button', { name: 'Keep my account' }))
+
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(signInWithPassword).not.toHaveBeenCalled()
+    expect(deleteMe).not.toHaveBeenCalled()
+  })
+
   it('signs in with the password again, deletes the account and leaves for the home page', async () => {
     vi.mocked(signInWithPassword).mockResolvedValue(null)
     deleteMe.mockResolvedValue(undefined)
@@ -133,8 +150,8 @@ describe('DeleteAccount', () => {
     deleteMe.mockResolvedValue(undefined)
     const user = renderAt('/account?confirm=deletion', bothMethods)
 
-    expect(screen.getByText(/You confirmed it is you again/)).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Delete my account' }))
+    expect(modal().getByText(/You confirmed it is you again/)).toBeTruthy()
+    await user.click(modal().getByRole('button', { name: 'Delete my account' }))
 
     expect(await screen.findByText('home null')).toBeTruthy()
   })
@@ -170,13 +187,13 @@ describe('DeleteAccount', () => {
 
     const before = renderAt('/account', methods)
     await before.click(screen.getByRole('button', { name: 'Delete my account' }))
-    expect(screen.queryByLabelText('Your password')).toBeNull()
-    await before.click(screen.getByText('google back to /account?confirm=deletion'))
+    expect(modal().queryByLabelText('Your password')).toBeNull()
+    await before.click(modal().getByText('google back to /account?confirm=deletion'))
     cleanup()
 
     const after = renderAt('/account?confirm=deletion', methods)
     expect(await screen.findByText('search ""')).toBeTruthy()
-    await after.click(screen.getByRole('button', { name: 'Delete my account' }))
+    await after.click(modal().getByRole('button', { name: 'Delete my account' }))
 
     expect(await screen.findByText('home null')).toBeTruthy()
     expect(signInWithPassword).not.toHaveBeenCalled()
@@ -223,10 +240,10 @@ describe('DeleteAccount', () => {
     deleteMe.mockRejectedValue(new ORPCError('session.reauthentication-required', { status: 401 }))
     const user = renderAt('/account?confirm=deletion', bothMethods)
 
-    await user.click(screen.getByRole('button', { name: 'Delete my account' }))
+    await user.click(modal().getByRole('button', { name: 'Delete my account' }))
 
-    // The refusal itself is a notification (query-client.ts); the card asks again.
-    expect(await screen.findByLabelText('Your password')).toBeTruthy()
+    // The refusal itself is a notification (query-client.ts); the modal asks again.
+    expect(await modal().findByLabelText('Your password')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.getByText('google back to /account?confirm=deletion')).toBeTruthy()
     expect(forgetSession).not.toHaveBeenCalled()

@@ -145,9 +145,7 @@ msgstr "breadcrumb"
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
-#: src/features/editions/pages/edition-settings-page.tsx
-#: src/features/program/pages/program-item-page.tsx
-#: src/features/team/components/remove-member.tsx
+#: src/shared/ui/irreversible-action.tsx
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -249,9 +247,17 @@ msgstr "Delete"
 msgid "Delete the edition"
 msgstr "Delete the edition"
 
+#: src/features/editions/pages/edition-settings-page.tsx
+msgid "Delete the edition {editionName}?"
+msgstr "Delete the edition {editionName}?"
+
 #: src/features/program/pages/program-item-page.tsx
 msgid "Delete the programme item"
 msgstr "Delete the programme item"
+
+#: src/features/program/pages/program-item-page.tsx
+msgid "Delete the programme item {title}?"
+msgstr "Delete the programme item {title}?"
 
 #: src/features/program/pages/program-item-page.tsx
 msgid "Deleting a programme item cannot be undone."
@@ -458,6 +464,14 @@ msgstr "Invite"
 msgid "Invite to the team"
 msgstr "Invite to the team"
 
+#: src/features/program/pages/program-item-page.tsx
+msgid "Its likes and its list of speakers go with it."
+msgstr "Its likes and its list of speakers go with it."
+
+#: src/features/editions/pages/edition-settings-page.tsx
+msgid "Its programme items, with their likes and lists of speakers, and the team’s access to the edition go with it."
+msgstr "Its programme items, with their likes and lists of speakers, and the team’s access to the edition go with it."
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Join the organizing team"
 msgstr "Join the organizing team"
@@ -643,6 +657,10 @@ msgstr "Remove"
 msgid "Remove {email}"
 msgstr "Remove {email}"
 
+#: src/features/team/components/remove-member.tsx
+msgid "Remove {name} from the team?"
+msgstr "Remove {name} from the team?"
+
 #: src/features/team/components/edition-access-row.tsx
 msgid "Remove access"
 msgstr "Remove access"
@@ -745,6 +763,10 @@ msgstr "Sign out"
 #: src/features/auth/components/accept-invitation.tsx
 msgid "Sign out and use another account"
 msgstr "Sign out and use another account"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Signing in no longer asks for a code, and the codes of your authenticator app and the recovery codes stop working. Turning it on again starts with a new QR code."
+msgstr "Signing in no longer asks for a code, and the codes of your authenticator app and the recovery codes stop working. Turning it on again starts with a new QR code."
 
 #: src/features/team/pages/invite-page.tsx
 msgid "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
@@ -885,6 +907,11 @@ msgstr "There are no editions yet."
 msgid "There are no programme items yet."
 msgstr "There are no programme items yet."
 
+#. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
+#: src/shared/ui/irreversible-action.tsx
+msgid "This action cannot be undone."
+msgstr "This action cannot be undone."
+
 #: src/features/editions/pages/edition-dashboard-page.tsx
 msgid "This edition is not the convention's active one."
 msgstr "This edition is not the convention's active one."
@@ -937,8 +964,16 @@ msgid "Try again"
 msgstr "Try again"
 
 #: src/features/account/components/two-factor-card.tsx
+msgid "Turn off"
+msgstr "Turn off"
+
+#: src/features/account/components/two-factor-card.tsx
 msgid "Turn off two-factor authentication"
 msgstr "Turn off two-factor authentication"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn off two-factor authentication?"
+msgstr "Turn off two-factor authentication?"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Turn on"
@@ -1033,18 +1068,6 @@ msgstr "We will send you a link to set a new password."
 #: src/features/team/components/members-table.tsx
 msgid "Write"
 msgstr "Write"
-
-#: src/features/editions/pages/edition-settings-page.tsx
-msgid "Yes, delete {editionName}"
-msgstr "Yes, delete {editionName}"
-
-#: src/features/program/pages/program-item-page.tsx
-msgid "Yes, delete {title}"
-msgstr "Yes, delete {title}"
-
-#: src/features/team/components/remove-member.tsx
-msgid "Yes, remove {name} from the team"
-msgstr "Yes, remove {name} from the team"
 
 #: src/features/team/components/edition-access-row.tsx
 #: src/features/team/components/members-table.tsx

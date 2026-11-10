@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,6 +30,16 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
 const wantsCode = () => json(401, { code: 'session.mfa-required' })
+
+/** Turns 2FA off as the person does: the card's button, then the modal's own. */
+async function turnOff(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    await screen.findByRole('button', { name: 'Turn off two-factor authentication' }),
+  )
+  await user.click(
+    within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Turn off' }),
+  )
+}
 
 /** Answers by method and path, in order. */
 function stubApi(routes: Record<string, Response[]>) {
@@ -136,9 +146,7 @@ describe('TwoFactorCard through the API link', () => {
     })
     const user = renderPage()
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Turn off two-factor authentication' }),
-    )
+    await turnOff(user)
 
     expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
     expect(screen.queryByRole('status')).toBeNull()
@@ -163,9 +171,7 @@ describe('TwoFactorCard through the API link', () => {
     })
     const user = renderPage()
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Turn off two-factor authentication' }),
-    )
+    await turnOff(user)
 
     expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
     expect(screen.queryByText(/recovery codes could not be shown/)).toBeNull()
@@ -179,9 +185,7 @@ describe('TwoFactorCard through the API link', () => {
     })
     const user = renderPage()
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Turn off two-factor authentication' }),
-    )
+    await turnOff(user)
 
     expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Turn off two-factor authentication' })).toBeNull()
@@ -213,9 +217,7 @@ describe('TwoFactorCard through the API link', () => {
     })
     const user = renderPage()
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Turn off two-factor authentication' }),
-    )
+    await turnOff(user)
 
     expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Turn off two-factor authentication' })).toBeNull()

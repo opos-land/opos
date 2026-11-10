@@ -195,6 +195,18 @@ breach is fixed in the application, never allowed by an exception.
 called before the page's first `return`; `src/app/pages.test.ts` of each application fails on a page
 that does not ([frontends](docs/ARCHITECTURE.md#frontends)).
 
+**Every write tells its outcome in a notification**: a success, a warning for a refusal the member
+can act on, an error for a failure. The query client of each application notifies every mutation; a
+new one names its success in `meta.success` when "The changes are saved." says too little, and a
+write outside a mutation calls `notifySuccess` or `notifyFailure` of `shared/lib/notify.ts`. Beside
+a form stays only the validation of its fields
+([0022](docs/adr/0022-tell-the-outcome-of-every-write-in-a-notification.md)).
+
+**An action no screen can undo asks first in a modal** that names what goes, says what goes with it
+and that it cannot be undone: `IrreversibleAction` of `shared/ui`, or its `alert-dialog` composed
+the same way when the action needs more than one press. A change the same screen reverses asks
+nothing ([0023](docs/adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
+
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`, no
 remote database URL, project reference or access token in a `.env` or `mise.local.toml`; they change
 only through the deploy workflow ([environments](docs/ARCHITECTURE.md#environments)).

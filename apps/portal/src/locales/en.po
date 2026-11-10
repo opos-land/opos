@@ -63,6 +63,7 @@ msgstr "By creating an account you confirm that you have read the <0>privacy pol
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
+#: src/shared/ui/irreversible-action.tsx
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -130,6 +131,10 @@ msgstr "Delete my account"
 #: src/features/account/pages/account-page.tsx
 msgid "Delete the account"
 msgstr "Delete the account"
+
+#: src/features/account/components/delete-account.tsx
+msgid "Delete your account?"
+msgstr "Delete your account?"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Deleting your account"
@@ -451,6 +456,10 @@ msgstr "Sign out"
 msgid "Signed in as {email}"
 msgstr "Signed in as {email}"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Signing in no longer asks for a code, and the codes of your authenticator app and the recovery codes stop working. Turning it on again starts with a new QR code."
+msgstr "Signing in no longer asks for a code, and the codes of your authenticator app and the recovery codes stop working. Turning it on again starts with a new QR code."
+
 #: src/features/account/pages/account-page.tsx
 msgid "Signing out ends your session on this device."
 msgstr "Signing out ends your session on this device."
@@ -487,6 +496,11 @@ msgstr "The whole programme"
 msgid "There is no programme yet."
 msgstr "There is no programme yet."
 
+#. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
+#: src/shared/ui/irreversible-action.tsx
+msgid "This action cannot be undone."
+msgstr "This action cannot be undone."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
 msgstr "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
@@ -500,8 +514,16 @@ msgid "Try again"
 msgstr "Try again"
 
 #: src/features/account/components/two-factor-card.tsx
+msgid "Turn off"
+msgstr "Turn off"
+
+#: src/features/account/components/two-factor-card.tsx
 msgid "Turn off two-factor authentication"
 msgstr "Turn off two-factor authentication"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn off two-factor authentication?"
+msgstr "Turn off two-factor authentication?"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Turn on"

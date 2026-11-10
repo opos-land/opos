@@ -1,11 +1,27 @@
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation } from '@tanstack/react-query'
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
 import { notifySuccess } from '../../../shared/lib/notify'
-import { Alert, AlertDescription, Button, ErrorMessage, FormField, Input } from '../../../shared/ui'
+import {
+  Alert,
+  AlertDescription,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Button,
+  ErrorMessage,
+  FormField,
+  Input,
+} from '../../../shared/ui'
 import { GoogleButton, signInWithPassword, withMfaReturn } from '../../auth'
 import { deleteAccountOptions, forgetSession } from '../api/account'
 import { deletionRefusal } from '../model/deletion'
@@ -51,10 +67,11 @@ function OtherAccountRefusal({ email }: { email: string }) {
 }
 
 /**
- * Account deletion: the user confirms it is them — the password again, or Google
- * again — and `DELETE /me` follows within the 5 minutes the API allows. A return from
- * Google, or from the code screen of an account with two-factor authentication, offers the
- * deletion only to the account that left.
+ * Account deletion, asked in a modal that says what goes with the account and that it cannot be
+ * undone (docs/ARCHITECTURE.md, Frontends). In it the user confirms it is them — the password
+ * again, or Google again — and `DELETE /me` follows within the 5 minutes the API allows. A return
+ * from Google, or from the code screen of an account with two-factor authentication, opens the
+ * modal again only for the account that left.
  */
 export function DeleteAccount({
   userId,
@@ -66,6 +83,7 @@ export function DeleteAccount({
   methods: SignInMethods
 }) {
   const { t } = useLingui()
+  const passwordForm = useId()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const [googleReturn, setGoogleReturn] = useState<GoogleReturn>(() =>
@@ -147,81 +165,105 @@ export function DeleteAccount({
     setOpen(false)
   }
 
-  if (!open) {
-    return (
-      <>
-        {googleReturn === 'other-account' && <OtherAccountRefusal email={email} />}
-        <Button variant="destructive" className="self-start" onClick={start}>
-          <Trans>Delete my account</Trans>
-        </Button>
-      </>
-    )
-  }
-
   const refusal = error ? deletionRefusal(error) : null
+  const footer = (action: ReactNode) => (
+    <AlertDialogFooter>
+      <AlertDialogCancel disabled={pending}>
+        <Trans>Keep my account</Trans>
+      </AlertDialogCancel>
+      {action}
+    </AlertDialogFooter>
+  )
 
   return (
-    <div className="flex flex-col gap-4">
-      <p>
-        <Trans>
-          Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and
-          memberships in convention teams go with it. Orders placed with your address stay with the
-          conventions as their sales records.
-        </Trans>
-      </p>
-      {refusal === 'last-head' ? <LastHeadRefusal /> : <ErrorMessage error={error} />}
-      {googleReturn === 'confirmed' ? (
-        <>
-          <p className="text-sm">
-            <Trans>You confirmed it is you again. Delete the account within 5 minutes.</Trans>
-          </p>
-          <Button
-            disabled={pending}
-            variant="destructive"
-            className="self-start"
-
-            onClick={() => void deleteAfterGoogle()}
-          >
-            <Trans>Delete my account</Trans>
-          </Button>
-        </>
-      ) : (
-        <>
-          {methods.password && (
-            <form
-              onSubmit={(event) => void confirmWithPassword(event)}
-              className="flex flex-col gap-4"
-            >
-              <FormField label={t`Your password`} hint={t`Enter it again to confirm it is you.`}>
-                {(control) => (
-                  <Input
-                    {...control}
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
-                )}
-              </FormField>
-              <Button disabled={pending} type="submit" variant="destructive" className="self-start">
-                <Trans>Delete my account</Trans>
-              </Button>
-            </form>
+    <>
+      {googleReturn === 'other-account' && <OtherAccountRefusal email={email} />}
+      <AlertDialog
+        open={open}
+        // Not closed halfway: a deletion under way ends on its own.
+        onOpenChange={(next) => !pending && (next ? start() : keep())}
+      >
+        <AlertDialogTrigger render={<Button variant="destructive" className="self-start" />}>
+          <Trans>Delete my account</Trans>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              <Trans>Delete your account?</Trans>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <Trans>
+                Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and
+                memberships in convention teams go with it. Orders placed with your address stay
+                with the conventions as their sales records.
+              </Trans>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {refusal === 'last-head' ? <LastHeadRefusal /> : <ErrorMessage error={error} />}
+          {googleReturn === 'confirmed' ? (
+            <>
+              <p className="text-sm">
+                <Trans>You confirmed it is you again. Delete the account within 5 minutes.</Trans>
+              </p>
+              {footer(
+                <AlertDialogAction
+                  disabled={pending}
+                  variant="destructive"
+                  onClick={() => void deleteAfterGoogle()}
+                >
+                  <Trans>Delete my account</Trans>
+                </AlertDialogAction>,
+              )}
+            </>
+          ) : (
+            <>
+              {methods.password && (
+                <form
+                  id={passwordForm}
+                  onSubmit={(event) => void confirmWithPassword(event)}
+                  className="flex flex-col gap-4"
+                >
+                  <FormField
+                    label={t`Your password`}
+                    hint={t`Enter it again to confirm it is you.`}
+                  >
+                    {(control) => (
+                      <Input
+                        {...control}
+                        type="password"
+                        autoComplete="current-password"
+                        required
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                      />
+                    )}
+                  </FormField>
+                </form>
+              )}
+              {methods.google && (
+                <GoogleButton
+                  returnTo={CONFIRM_DELETION_PATH}
+                  onLeave={() => rememberDeletionConfirmation(userId)}
+                >
+                  <Trans>Confirm with Google</Trans>
+                </GoogleButton>
+              )}
+              {footer(
+                methods.password && (
+                  <Button
+                    disabled={pending}
+                    type="submit"
+                    form={passwordForm}
+                    variant="destructive"
+                  >
+                    <Trans>Delete my account</Trans>
+                  </Button>
+                ),
+              )}
+            </>
           )}
-          {methods.google && (
-            <GoogleButton
-              returnTo={CONFIRM_DELETION_PATH}
-              onLeave={() => rememberDeletionConfirmation(userId)}
-            >
-              <Trans>Confirm with Google</Trans>
-            </GoogleButton>
-          )}
-        </>
-      )}
-      <Button variant="outline" className="self-start" onClick={keep}>
-        <Trans>Keep my account</Trans>
-      </Button>
-    </div>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

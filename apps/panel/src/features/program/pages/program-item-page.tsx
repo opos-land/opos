@@ -1,12 +1,11 @@
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
-  Button,
   ErrorMessage,
+  IrreversibleAction,
   LoadingView,
   NoPermissionView,
   NotFoundView,
@@ -33,7 +32,6 @@ export function ProgramItemPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
-  const [confirmDelete, setConfirmDelete] = useState(false)
   const level = edition ? access.edition(edition.id).program : 'none'
   const canWrite = atLeast(level, 'write')
   const items = useQuery({
@@ -100,27 +98,16 @@ export function ProgramItemPage() {
           <p className="text-sm">
             <Trans>Deleting a programme item cannot be undone.</Trans>
           </p>
-          {confirmDelete ? (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                disabled={remove.isPending}
-                variant="destructive"
-
-                onClick={() => remove.mutate({ params })}
-              >
-                <Trans>Yes, delete {title}</Trans>
-              </Button>
-              <Button variant="outline" onClick={() => setConfirmDelete(false)}>
-                <Trans>Cancel</Trans>
-              </Button>
-            </div>
-          ) : (
-            <div>
-              <Button variant="destructive" onClick={() => setConfirmDelete(true)}>
-                <Trans>Delete</Trans>
-              </Button>
-            </div>
-          )}
+          <div>
+            <IrreversibleAction
+              label={<Trans>Delete</Trans>}
+              title={<Trans>Delete the programme item {title}?</Trans>}
+              action={<Trans>Delete the programme item</Trans>}
+              onConfirm={() => remove.mutateAsync({ params })}
+            >
+              <Trans>Its likes and its list of speakers go with it.</Trans>
+            </IrreversibleAction>
+          </div>
         </Section>
       )}
     </>

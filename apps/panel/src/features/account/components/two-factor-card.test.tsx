@@ -18,6 +18,16 @@ import { notifyFailure, notifySuccess } from '../../../shared/lib/notify'
 import { type SignInMethods } from '../model/sign-in-methods'
 import { TwoFactorCard } from './two-factor-card'
 
+/** Turns 2FA off as the person does: the card's button, then the modal's own. */
+async function turnOff(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    await screen.findByRole('button', { name: 'Turn off two-factor authentication' }),
+  )
+  await user.click(
+    within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Turn off' }),
+  )
+}
+
 /** The successes the card notified, as the person reads them. */
 const successes = () =>
   vi.mocked(notifySuccess).mock.calls.map(([meta]) => i18n._(meta?.success as MessageDescriptor))
@@ -205,10 +215,23 @@ describe('TwoFactorCard', () => {
     expect(document.body.textContent).not.toContain(SECRET)
   })
 
-  it('turns 2FA off and then shows it as off', async () => {
+  it('asks in a modal before turning 2FA off, and a cancel leaves it on', async () => {
     const user = renderCard(true)
 
     await user.click(screen.getByRole('button', { name: 'Turn off two-factor authentication' }))
+    const dialog = screen.getByRole('alertdialog', { name: 'Turn off two-factor authentication?' })
+    expect(dialog.textContent).toContain('the recovery codes stop working')
+    expect(dialog.textContent).toContain('This action cannot be undone.')
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+
+    expect(disableTwoFactor).not.toHaveBeenCalled()
+    expect(screen.getByText(/Two-factor authentication is on/)).toBeTruthy()
+  })
+
+  it('turns 2FA off and then shows it as off', async () => {
+    const user = renderCard(true)
+
+    await turnOff(user)
 
     expect(disableTwoFactor).toHaveBeenCalledOnce()
     expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
@@ -245,7 +268,7 @@ describe('TwoFactorCard', () => {
     vi.mocked(disableTwoFactor).mockRejectedValue(gone)
     const user = renderCard(true)
 
-    await user.click(screen.getByRole('button', { name: 'Turn off two-factor authentication' }))
+    await turnOff(user)
 
     await vi.waitFor(() => expect(refreshAccount).toHaveBeenCalledExactlyOnceWith(client, false))
     expect(notifyFailure).toHaveBeenCalledExactlyOnceWith(gone)
@@ -275,7 +298,7 @@ describe('TwoFactorCard', () => {
       vi.mocked(disableTwoFactor).mockRejectedValueOnce(tooOld())
       const user = renderCard(true)
 
-      await user.click(screen.getByRole('button', { name: 'Turn off two-factor authentication' }))
+      await turnOff(user)
       await user.type(await screen.findByLabelText('Your password'), 'secret password')
       await user.click(screen.getByRole('button', { name: 'Confirm' }))
 
@@ -290,7 +313,7 @@ describe('TwoFactorCard', () => {
       )
       const user = renderCard(true)
 
-      await user.click(screen.getByRole('button', { name: 'Turn off two-factor authentication' }))
+      await turnOff(user)
       await user.type(await screen.findByLabelText('Your password'), 'secret password')
       await user.click(screen.getByRole('button', { name: 'Confirm' }))
 

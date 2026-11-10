@@ -2,17 +2,15 @@ import { msg } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import { type Member } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Button } from '../../../shared/ui'
+import { IrreversibleAction } from '../../../shared/ui'
 import { membershipsKey, useCurrentTenant } from '../../tenants'
 import { membersKey, removeMemberOptions } from '../api/members'
 import { memberName } from '../model/member'
 
-/** Removal from the team, asked twice; the last head's removal is refused by the API. */
+/** Removal from the team, asked first in a modal; the last head's removal is refused by the API. */
 export function RemoveMember({ member, onRemoved }: { member: Member; onRemoved: () => void }) {
   const { api } = useCurrentTenant()
   const queryClient = useQueryClient()
-  const [confirming, setConfirming] = useState(false)
   const name = memberName(member)
 
   const remove = useMutation({
@@ -26,33 +24,24 @@ export function RemoveMember({ member, onRemoved }: { member: Member; onRemoved:
     },
   })
 
+  const consequence = (
+    <Trans>
+      {name} loses access to the convention at once. Coming back takes a new invitation.
+    </Trans>
+  )
   return (
     <>
-      <p className="text-sm">
-        <Trans>
-          {name} loses access to the convention at once. Coming back takes a new invitation.
-        </Trans>
-      </p>
-      {confirming ? (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            disabled={remove.isPending}
-            variant="destructive"
-            onClick={() => remove.mutate({ params: { membershipId: member.id } })}
-          >
-            <Trans>Yes, remove {name} from the team</Trans>
-          </Button>
-          <Button variant="outline" onClick={() => setConfirming(false)}>
-            <Trans>Cancel</Trans>
-          </Button>
-        </div>
-      ) : (
-        <div>
-          <Button variant="destructive" onClick={() => setConfirming(true)}>
-            <Trans>Remove from the team</Trans>
-          </Button>
-        </div>
-      )}
+      <p className="text-sm">{consequence}</p>
+      <div>
+        <IrreversibleAction
+          label={<Trans>Remove from the team</Trans>}
+          title={<Trans>Remove {name} from the team?</Trans>}
+          action={<Trans>Remove from the team</Trans>}
+          onConfirm={() => remove.mutateAsync({ params: { membershipId: member.id } })}
+        >
+          {consequence}
+        </IrreversibleAction>
+      </div>
     </>
   )
 }

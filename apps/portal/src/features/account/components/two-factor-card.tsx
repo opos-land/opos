@@ -5,7 +5,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
 import { notifyFailure, notifySuccess } from '../../../shared/lib/notify'
-import { Button, FormField, Input, Notice } from '../../../shared/ui'
+import { Button, FormField, Input, IrreversibleAction, Notice } from '../../../shared/ui'
 import {
   disableTwoFactor,
   enableTwoFactor,
@@ -270,15 +270,19 @@ export function TwoFactorCard({
               time you sign in.
             </Trans>
           </p>
-          <Button
+          <IrreversibleAction
             disabled={pending}
-            variant="destructive"
             className="self-start"
-
-            onClick={() => void run('disable')}
+            label={<Trans>Turn off two-factor authentication</Trans>}
+            title={<Trans>Turn off two-factor authentication?</Trans>}
+            action={<Trans>Turn off</Trans>}
+            onConfirm={() => run('disable')}
           >
-            <Trans>Turn off two-factor authentication</Trans>
-          </Button>
+            <Trans>
+              Signing in no longer asks for a code, and the codes of your authenticator app and the
+              recovery codes stop working. Turning it on again starts with a new QR code.
+            </Trans>
+          </IrreversibleAction>
         </>
       ) : (
         <>

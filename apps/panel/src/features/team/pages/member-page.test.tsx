@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { type Member } from '@opos/contract'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { type ReactNode } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -157,13 +157,16 @@ describe('MemberPage', () => {
     })
   })
 
-  it('removes the member only once confirmed, then returns to the team', async () => {
+  it('removes the member only once its modal is confirmed, then returns to the team', async () => {
     const user = userEvent.setup()
     view('m-org')
 
     await user.click(await screen.findByRole('button', { name: 'Remove from the team' }))
+    const dialog = screen.getByRole('alertdialog', { name: 'Remove Tom Baker from the team?' })
+    expect(dialog.textContent).toContain('Coming back takes a new invitation.')
+    expect(dialog.textContent).toContain('This action cannot be undone.')
     expect(remove).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Yes, remove Tom Baker from the team' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Remove from the team' }))
 
     expect(await screen.findByText('The team table')).toBeDefined()
     expect(remove.mock.calls[0]?.[0]).toEqual({ params: { membershipId: 'm-org' } })

@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { type Edition } from '@opos/contract'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EditionSettingsPage } from './edition-settings-page'
@@ -130,16 +130,21 @@ describe('EditionSettingsPage', () => {
     })
   })
 
-  it('leads to the editions of the convention settings once the edition is deleted', async () => {
+  it('deletes the edition once its modal is confirmed, then leads to the editions', async () => {
     state.settings = 'write'
     remove.mockResolvedValue(undefined)
     view()
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete Edition 2026' }))
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete the edition Edition 2026?' })
+    expect(dialog.textContent).toContain('programme items')
+    expect(dialog.textContent).toContain('This action cannot be undone.')
+    expect(remove).not.toHaveBeenCalled()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete the edition' }))
 
     expect(
       await screen.findByText('/convention-a/settings/editions', { selector: 'output' }),
     ).toBeDefined()
+    expect(remove.mock.calls[0]?.[0]).toEqual({ params: { editionId: 'edition-1' } })
   })
 })

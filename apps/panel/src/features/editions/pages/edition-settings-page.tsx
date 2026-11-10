@@ -2,12 +2,12 @@ import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type Edition } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Button,
   ErrorMessage,
+  IrreversibleAction,
   LoadingView,
   NoPermissionView,
   PageHeader,
@@ -37,7 +37,6 @@ export function EditionSettingsPage() {
   const queryClient = useQueryClient()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
   usePageTitle(t`Edition settings`, edition?.name ?? tenant.name)
-  const [confirmDelete, setConfirmDelete] = useState(false)
   const canWrite = atLeast(access.settings, 'write')
   const base = `/${tenant.slug}/editions`
   const list = `/${tenant.slug}/settings/editions`
@@ -151,27 +150,19 @@ export function EditionSettingsPage() {
               Deleting an edition cannot be undone. The active edition cannot be deleted.
             </Trans>
           </p>
-          {confirmDelete ? (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                disabled={remove.isPending}
-                variant="destructive"
-
-                onClick={() => remove.mutate({ params })}
-              >
-                <Trans>Yes, delete {editionName}</Trans>
-              </Button>
-              <Button variant="outline" onClick={() => setConfirmDelete(false)}>
-                <Trans>Cancel</Trans>
-              </Button>
-            </div>
-          ) : (
-            <div>
-              <Button variant="destructive" onClick={() => setConfirmDelete(true)}>
-                <Trans>Delete</Trans>
-              </Button>
-            </div>
-          )}
+          <div>
+            <IrreversibleAction
+              label={<Trans>Delete</Trans>}
+              title={<Trans>Delete the edition {editionName}?</Trans>}
+              action={<Trans>Delete the edition</Trans>}
+              onConfirm={() => remove.mutateAsync({ params })}
+            >
+              <Trans>
+                Its programme items, with their likes and lists of speakers, and the team’s access
+                to the edition go with it.
+              </Trans>
+            </IrreversibleAction>
+          </div>
         </Section>
       )}
     </>

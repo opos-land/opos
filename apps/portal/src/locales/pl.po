@@ -63,6 +63,7 @@ msgstr "Zakładając konto, potwierdzasz, że znasz <0>politykę prywatności</0
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
+#: src/shared/ui/irreversible-action.tsx
 msgid "Cancel"
 msgstr "Anuluj"
 
@@ -130,6 +131,10 @@ msgstr "Usuń moje konto"
 #: src/features/account/pages/account-page.tsx
 msgid "Delete the account"
 msgstr "Usuwanie konta"
+
+#: src/features/account/components/delete-account.tsx
+msgid "Delete your account?"
+msgstr "Usunąć konto?"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Deleting your account"
@@ -451,6 +456,10 @@ msgstr "Wyloguj się"
 msgid "Signed in as {email}"
 msgstr "Zalogowano jako {email}"
 
+#: src/features/account/components/two-factor-card.tsx
+msgid "Signing in no longer asks for a code, and the codes of your authenticator app and the recovery codes stop working. Turning it on again starts with a new QR code."
+msgstr "Logowanie nie będzie już wymagało kodu, a kody z aplikacji uwierzytelniającej i kody odzyskiwania przestaną działać. Aby ponownie włączyć uwierzytelnianie dwuskładnikowe, trzeba będzie zeskanować nowy kod QR."
+
 #: src/features/account/pages/account-page.tsx
 msgid "Signing out ends your session on this device."
 msgstr "Wylogowanie kończy twoją sesję na tym urządzeniu."
@@ -487,6 +496,11 @@ msgstr "Cały program"
 msgid "There is no programme yet."
 msgstr "Nie ma jeszcze programu."
 
+#. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
+#: src/shared/ui/irreversible-action.tsx
+msgid "This action cannot be undone."
+msgstr "Tej operacji nie można cofnąć."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
 msgstr "Aby prowadzić twoje konto i umożliwiać logowanie; aby konwenty mogły sprzedawać ci akredytacje, wysyłać je i sprawdzać na miejscu; aby przechowywać twoje zapisy na edycje, twój plan i twoje opinie; oraz aby wysyłać wiadomości e-mail, których wymaga twoje konto: potwierdzenie adresu, reset hasła, powiadomienie o wyłączeniu uwierzytelniania dwuskładnikowego, akredytacje i zaproszenia do zespołu konwentu."
@@ -500,8 +514,16 @@ msgid "Try again"
 msgstr "Spróbuj ponownie"
 
 #: src/features/account/components/two-factor-card.tsx
+msgid "Turn off"
+msgstr "Wyłącz"
+
+#: src/features/account/components/two-factor-card.tsx
 msgid "Turn off two-factor authentication"
 msgstr "Wyłącz uwierzytelnianie dwuskładnikowe"
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Turn off two-factor authentication?"
+msgstr "Wyłączyć uwierzytelnianie dwuskładnikowe?"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Turn on"

@@ -162,15 +162,17 @@ test.describe('two-factor authentication', () => {
       await expect(page).toHaveURL(portalUrl('/account'))
 
       await page.getByRole('button', { name: 'Delete my account' }).click()
-      await page.getByLabel('Your password').fill(account.password)
-      await page.getByRole('button', { name: 'Delete my account' }).click()
+      const deletion = page.getByRole('alertdialog', { name: 'Delete your account?' })
+      await deletion.getByLabel('Your password').fill(account.password)
+      await deletion.getByRole('button', { name: 'Delete my account' }).click()
       await expect(page).toHaveURL(portalUrl('/auth/mfa?redirect=%2Faccount%3Fconfirm%3Ddeletion'))
       expect(await accountIds(db, [account.email])).toEqual([account.id])
       await enterCode(page, codeFor(secret))
 
       await expect(page).toHaveURL(portalUrl('/account'))
-      await expect(page.getByText('You confirmed it is you again.')).toBeVisible()
-      await page.getByRole('button', { name: 'Delete my account' }).click()
+      // The return opens the modal again, with the deletion one press away.
+      await expect(deletion.getByText('You confirmed it is you again.')).toBeVisible()
+      await deletion.getByRole('button', { name: 'Delete my account' }).click()
 
       await expect(page).toHaveURL(portalUrl('/'))
       await expect(notification(page, 'success', 'Your account has been deleted.')).toBeVisible()

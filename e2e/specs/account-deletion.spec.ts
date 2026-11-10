@@ -14,8 +14,10 @@ test.describe('account deletion in the portal', () => {
       await signInToPortal(page, account.email, account.password)
 
       await page.getByRole('button', { name: 'Delete my account' }).click()
-      await page.getByLabel('Your password').fill(account.password)
-      await page.getByRole('button', { name: 'Delete my account' }).click()
+      const deletion = page.getByRole('alertdialog', { name: 'Delete your account?' })
+      await expect(deletion).toContainText('cannot be undone')
+      await deletion.getByLabel('Your password').fill(account.password)
+      await deletion.getByRole('button', { name: 'Delete my account' }).click()
 
       await expect(page).toHaveURL(portalUrl('/'))
       await expect(notification(page, 'success', 'Your account has been deleted.')).toBeVisible()
@@ -40,10 +42,11 @@ test.describe('account deletion in the portal', () => {
     await signInToPortal(page, head.email, head.password)
 
     await page.getByRole('button', { name: 'Delete my account' }).click()
-    await page.getByLabel('Your password').fill(head.password)
-    await page.getByRole('button', { name: 'Delete my account' }).click()
+    const deletion = page.getByRole('alertdialog', { name: 'Delete your account?' })
+    await deletion.getByLabel('Your password').fill(head.password)
+    await deletion.getByRole('button', { name: 'Delete my account' }).click()
 
-    await expect(page.getByRole('alert')).toContainText(
+    await expect(deletion.getByRole('alert')).toContainText(
       'You are the last head organizer of a convention',
     )
     await expect(

@@ -75,9 +75,11 @@ test.describe('team management in the panel', () => {
     await row.getByRole('link', { name: 'Celina Colleague' }).click()
     const removal = page.getByRole('region', { name: 'Remove from the team' })
     await removal.getByRole('button', { name: 'Remove from the team' }).click()
-    await removal
-      .getByRole('button', { name: 'Yes, remove Celina Colleague from the team' })
-      .click()
+    const confirm = page.getByRole('alertdialog', {
+      name: 'Remove Celina Colleague from the team?',
+    })
+    await expect(confirm).toContainText('This action cannot be undone.')
+    await confirm.getByRole('button', { name: 'Remove from the team' }).click()
     await expect(page).toHaveURL(team)
     await expect(
       notification(page, 'success', 'Removed from the team: Celina Colleague.'),

@@ -15,9 +15,10 @@ import {
   EditionLayout,
   EditionSettingsPage,
   EditionsPage,
+  NewEditionPage,
 } from '../features/editions'
 import { ProgramItemPage, ProgramPage } from '../features/program'
-import { EditionAccessPage, TeamPage } from '../features/team'
+import { EditionAccessPage, InvitePage, MemberPage, TeamPage } from '../features/team'
 import {
   AreaFrame,
   ConventionLayout,
@@ -101,7 +102,10 @@ export const router = createBrowserRouter([
                 children: [
                   { index: true, element: <SettingsPage /> },
                   { path: 'editions', element: <EditionsPage /> },
+                  { path: 'editions/new', element: <NewEditionPage /> },
                   { path: 'team', element: <TeamPage /> },
+                  { path: 'team/invite', element: <InvitePage /> },
+                  { path: 'team/:membershipId', element: <MemberPage /> },
                   { path: '*', element: <NotFoundView /> },
                 ],
               },

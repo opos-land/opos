@@ -54,8 +54,8 @@ test.describe('organizer invitation to an address without an account', () => {
     const invitee = accounts.freshEmail('invitee')
 
     await signInToPanel(page, head.email, head.password)
-    await page.goto(panelUrl(`/${tenant.slug}/settings/team`))
-    const invite = page.getByRole('region', { name: 'Invite to the team' })
+    await page.goto(panelUrl(`/${tenant.slug}/settings/team/invite`))
+    const invite = page.getByRole('region', { name: 'Invitation' })
     await invite.getByLabel('Email').fill(invitee)
     await invite.getByLabel('Programme in Spring edition').selectOption('write')
     await invite.getByRole('button', { name: 'Invite' }).click()

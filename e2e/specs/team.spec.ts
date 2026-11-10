@@ -1,12 +1,17 @@
+import { type Page } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import { waitForMail } from '../fixtures/mailpit'
 import { stack } from '../fixtures/stack'
 import { panelUrl, signInToPanel } from '../fixtures/ui'
 
-// The convention's team in the panel: invitations of confirmed accounts, changes,
-// removal, and the anti-escalation refusals shown next to the form that caused them
-// (PRODUCT.md 5). The team's rows are looked up in the page: the account at the foot of the
-// sidebar holds the signed-in address too.
+// The convention's team in the panel: the table of members, the invitation and the member's
+// page with its change and removal, and the anti-escalation refusals shown next to the form that
+// caused them (PRODUCT.md 5). The team's rows are looked up in the page: the account at the foot
+// of the sidebar holds the signed-in address too.
+
+/** The member's row in the team table; its cells are the role, settings, shop and expiry. */
+const memberRow = (page: Page, email: string) =>
+  page.getByRole('main').getByRole('row').filter({ hasText: email })
 
 test.describe('team management in the panel', () => {
   test('a head adds a confirmed account, changes its permissions and removes it', async ({
@@ -19,11 +24,14 @@ test.describe('team management in the panel', () => {
     const colleague = await accounts.create({
       metadata: { first_name: 'Celina', last_name: 'Colleague' },
     })
+    const team = panelUrl(`/${tenant.slug}/settings/team`)
 
     await signInToPanel(page, head.email, head.password)
-    await page.goto(panelUrl(`/${tenant.slug}/settings/team`))
+    await page.goto(team)
+    await page.getByRole('link', { name: 'Invite to the team' }).click()
+    await expect(page).toHaveURL(`${team}/invite`)
 
-    const invite = page.getByRole('region', { name: 'Invite to the team' })
+    const invite = page.getByRole('region', { name: 'Invitation' })
     await invite.getByLabel('Email').fill(colleague.email)
     await invite.getByLabel('Settings').selectOption('read')
     await invite.getByRole('button', { name: 'Invite' }).click()
@@ -32,25 +40,38 @@ test.describe('team management in the panel', () => {
     )
     // The notification links to the convention in the panel.
     expect((await waitForMail(colleague.email)).Text).toContain(`${stack.panel}/${tenant.slug}`)
+    await page.getByRole('link', { name: 'Back to the team' }).click()
 
     // Nobody edits their own membership.
-    const own = page.getByRole('main').getByRole('listitem').filter({ hasText: head.email })
+    const own = memberRow(page, head.email)
     await expect(own.getByText('(you)')).toBeVisible()
-    await expect(own.getByRole('button', { name: 'Edit' })).toHaveCount(0)
+    await expect(own.getByRole('link')).toHaveCount(0)
 
-    const row = page.getByRole('main').getByRole('listitem').filter({ hasText: colleague.email })
-    await expect(row.getByRole('definition').filter({ hasText: 'Read' })).toBeVisible()
-    await row.getByRole('button', { name: 'Edit' }).click()
-    await row.getByLabel('Settings').selectOption('write')
-    await row.getByRole('button', { name: 'Save' }).click()
-    await expect(row.getByRole('button', { name: 'Edit' })).toBeVisible()
-    await expect(row.getByRole('definition').filter({ hasText: 'Write' })).toBeVisible()
+    const row = memberRow(page, colleague.email)
+    await expect(row.getByRole('cell')).toHaveText([
+      'Organizer',
+      'Read',
+      'No access',
+      'No end date',
+    ])
+    // The whole row opens the member's page, not only the name.
+    await row.getByRole('cell', { name: 'Organizer' }).click()
+    const membership = page.getByRole('region', { name: 'Membership' })
+    await membership.getByLabel('Settings').selectOption('write')
+    await membership.getByRole('button', { name: 'Save' }).click()
+    await expect(page).toHaveURL(team)
+    await expect(row.getByRole('cell').nth(1)).toHaveText('Write')
     expect(await tenants.membership(tenant.id, colleague.id)).toMatchObject({
       settingsAccess: 'write',
     })
 
-    await row.getByRole('button', { name: 'Remove from the team' }).click()
-    await row.getByRole('button', { name: 'Yes, remove Celina Colleague from the team' }).click()
+    await row.getByRole('link', { name: 'Celina Colleague' }).click()
+    const removal = page.getByRole('region', { name: 'Remove from the team' })
+    await removal.getByRole('button', { name: 'Remove from the team' }).click()
+    await removal
+      .getByRole('button', { name: 'Yes, remove Celina Colleague from the team' })
+      .click()
+    await expect(page).toHaveURL(team)
     await expect(row).toHaveCount(0)
     expect(await tenants.membership(tenant.id, colleague.id)).toBeUndefined()
   })
@@ -67,12 +88,13 @@ test.describe('team management in the panel', () => {
     const member = await accounts.create()
     await tenants.addOrg(tenant.id, member.id)
     const newcomer = await accounts.create()
+    const team = panelUrl(`/${tenant.slug}/settings/team`)
 
     await signInToPanel(page, org.email, org.password)
-    await page.goto(panelUrl(`/${tenant.slug}/settings/team`))
+    await page.goto(`${team}/invite`)
 
     // The org holds no shop permission, so it grants none.
-    const invite = page.getByRole('region', { name: 'Invite to the team' })
+    const invite = page.getByRole('region', { name: 'Invitation' })
     await expect(invite.getByLabel('Role').getByRole('option')).toHaveText(['Organizer'])
     await invite.getByLabel('Email').fill(newcomer.email)
     await invite.getByLabel('Shop').selectOption('write')
@@ -82,20 +104,21 @@ test.describe('team management in the panel', () => {
     )
     expect(await tenants.membership(tenant.id, newcomer.id)).toBeUndefined()
 
-    const row = page.getByRole('main').getByRole('listitem').filter({ hasText: member.email })
-    await row.getByRole('button', { name: 'Edit' }).click()
-    await row.getByLabel('Shop').selectOption('write')
-    await row.getByRole('button', { name: 'Save' }).click()
-    await expect(row.getByRole('alert')).toHaveText(
+    await page.goto(team)
+    await memberRow(page, member.email).getByRole('link').click()
+    const membership = page.getByRole('region', { name: 'Membership' })
+    await membership.getByLabel('Shop').selectOption('write')
+    await membership.getByRole('button', { name: 'Save' }).click()
+    await expect(membership.getByRole('alert')).toHaveText(
       'You cannot grant permissions higher than your own.',
     )
 
-    // A head and the org's own membership offer no change at all.
+    // A head and the org's own membership lead to no page of change.
+    await page.getByRole('link', { name: 'Back to the team' }).click()
     for (const email of [head.email, org.email]) {
-      const untouchable = page.getByRole('main').getByRole('listitem').filter({ hasText: email })
+      const untouchable = memberRow(page, email)
       await expect(untouchable).toBeVisible()
-      await expect(untouchable.getByRole('button', { name: 'Edit' })).toHaveCount(0)
-      await expect(untouchable.getByRole('button', { name: 'Remove from the team' })).toHaveCount(0)
+      await expect(untouchable.getByRole('link')).toHaveCount(0)
     }
   })
 })

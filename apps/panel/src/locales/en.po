@@ -19,11 +19,15 @@ msgstr "{limit, plural, one {An item can have up to # speaker.} other {An item c
 msgid "{name} has joined the team and has been told by email."
 msgstr "{name} has joined the team and has been told by email."
 
+#: src/features/team/components/remove-member.tsx
+msgid "{name} loses access to the convention at once. Coming back takes a new invitation."
+msgstr "{name} loses access to the convention at once. Coming back takes a new invitation."
+
 #: src/features/team/pages/edition-access-page.tsx
 msgid "A head organizer already has access to every edition."
 msgstr "A head organizer already has access to every edition."
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
 msgid "A head organizer has every permission in every edition and never expires; the member's own permissions and expiry are cleared."
 msgstr "A head organizer has every permission in every edition and never expires; the member's own permissions and expiry are cleared."
 
@@ -31,7 +35,7 @@ msgstr "A head organizer has every permission in every edition and never expires
 msgid "A head organizer has every permission, in every edition, and never expires."
 msgstr "A head organizer has every permission, in every edition, and never expires."
 
-#: src/features/editions/pages/editions-page.tsx
+#: src/features/editions/pages/new-edition-page.tsx
 msgid "A new edition starts inactive and unpublished."
 msgstr "A new edition starts inactive and unpublished."
 
@@ -48,7 +52,8 @@ msgid "Access to {editionName}"
 msgstr "Access to {editionName}"
 
 #: src/features/team/components/invite-form.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
+#: src/features/team/components/members-table.tsx
 msgid "Access until"
 msgstr "Access until"
 
@@ -114,9 +119,17 @@ msgstr "Back to sign-in"
 msgid "Back to the edition"
 msgstr "Back to the edition"
 
+#: src/features/editions/pages/new-edition-page.tsx
+msgid "Back to the editions"
+msgstr "Back to the editions"
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Back to the invitation"
 msgstr "Back to the invitation"
+
+#: src/features/team/components/back-to-team.tsx
+msgid "Back to the team"
+msgstr "Back to the team"
 
 #: src/shared/ui/breadcrumb.tsx
 msgid "breadcrumb"
@@ -126,7 +139,7 @@ msgstr "breadcrumb"
 #: src/features/account/components/two-factor-card.tsx
 #: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/remove-member.tsx
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -206,7 +219,7 @@ msgstr "Conventions"
 msgid "Create an account"
 msgstr "Create an account"
 
-#: src/features/editions/pages/editions-page.tsx
+#: src/features/editions/pages/new-edition-page.tsx
 msgid "Create the edition"
 msgstr "Create the edition"
 
@@ -251,16 +264,13 @@ msgstr "Dismiss"
 msgid "Displays the mobile sidebar."
 msgstr "Displays the mobile sidebar."
 
-#: src/features/team/components/member-row.tsx
-msgid "Edit"
-msgstr "Edit"
-
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Edition"
 msgstr "Edition"
 
 #: src/features/editions/pages/edition-settings-page.tsx
+#: src/features/editions/pages/new-edition-page.tsx
 msgid "Edition data"
 msgstr "Edition data"
 
@@ -282,7 +292,7 @@ msgstr "Editions"
 msgid "Email"
 msgstr "Email"
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
 msgid "Empty for no end date. In the convention's time zone, {zone}."
 msgstr "Empty for no end date. In the convention's time zone, {zone}."
 
@@ -304,7 +314,7 @@ msgstr "Enter a name of up to 200 characters."
 msgid "Enter a title of 3 to 200 characters."
 msgstr "Enter a title of 3 to 200 characters."
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
 msgid "Enter a valid date and time."
 msgstr "Enter a valid date and time."
 
@@ -351,7 +361,7 @@ msgstr "Enter the start date and time."
 msgid "Enter your password."
 msgstr "Enter your password."
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "expired"
 msgstr "expired"
 
@@ -362,6 +372,10 @@ msgstr "Finish signing in"
 #: src/features/auth/pages/login-page.tsx
 msgid "Forgot your password?"
 msgstr "Forgot your password?"
+
+#: src/features/team/components/members-table.tsx
+msgid "Full access"
+msgstr "Full access"
 
 #: src/features/tenants/components/convention-layout.tsx
 #: src/features/tenants/pages/settings-page.tsx
@@ -378,7 +392,8 @@ msgid "Go to your conventions"
 msgstr "Go to your conventions"
 
 #: src/features/team/components/invite-form.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
+#: src/features/team/components/members-table.tsx
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "Head organizer"
 msgstr "Head organizer"
@@ -421,6 +436,7 @@ msgid "Interface language"
 msgstr "Interface language"
 
 #: src/features/auth/pages/invitation-page.tsx
+#: src/features/team/pages/invite-page.tsx
 msgid "Invitation"
 msgstr "Invitation"
 
@@ -428,6 +444,7 @@ msgstr "Invitation"
 msgid "Invite"
 msgstr "Invite"
 
+#: src/features/team/pages/invite-page.tsx
 #: src/features/team/pages/team-page.tsx
 msgid "Invite to the team"
 msgstr "Invite to the team"
@@ -440,6 +457,7 @@ msgstr "Join the organizing team"
 msgid "Loading…"
 msgstr "Loading…"
 
+#: src/features/team/components/members-table.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Member"
 msgstr "Member"
@@ -447,6 +465,10 @@ msgstr "Member"
 #: src/features/team/pages/team-page.tsx
 msgid "Members"
 msgstr "Members"
+
+#: src/features/team/pages/member-page.tsx
+msgid "Membership"
+msgstr "Membership"
 
 #: src/shared/ui/breadcrumb.tsx
 msgid "More"
@@ -458,6 +480,7 @@ msgid "Name"
 msgstr "Name"
 
 #: src/features/editions/pages/editions-page.tsx
+#: src/features/editions/pages/new-edition-page.tsx
 msgid "New edition"
 msgstr "New edition"
 
@@ -470,11 +493,11 @@ msgid "New programme item"
 msgstr "New programme item"
 
 #: src/features/team/components/level-select.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "No access"
 msgstr "No access"
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "No end date"
 msgstr "No end date"
 
@@ -509,7 +532,8 @@ msgid "or"
 msgstr "or"
 
 #: src/features/team/components/invite-form.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
+#: src/features/team/components/members-table.tsx
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "Organizer"
 msgstr "Organizer"
@@ -590,7 +614,7 @@ msgid "QR code for your authenticator app"
 msgstr "QR code for your authenticator app"
 
 #: src/features/team/components/level-select.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "Read"
 msgstr "Read"
 
@@ -610,7 +634,8 @@ msgstr "Remove {email}"
 msgid "Remove access"
 msgstr "Remove access"
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/remove-member.tsx
+#: src/features/team/pages/member-page.tsx
 msgid "Remove from the team"
 msgstr "Remove from the team"
 
@@ -624,14 +649,15 @@ msgid "Reset your password"
 msgstr "Reset your password"
 
 #: src/features/team/components/invite-form.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
+#: src/features/team/components/members-table.tsx
 msgid "Role"
 msgstr "Role"
 
 #: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/edition-access-row.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Save"
 msgstr "Save"
@@ -703,7 +729,7 @@ msgstr "Sign out"
 msgid "Sign out and use another account"
 msgstr "Sign out and use another account"
 
-#: src/features/team/pages/team-page.tsx
+#: src/features/team/pages/invite-page.tsx
 msgid "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
 msgstr "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
 
@@ -726,6 +752,7 @@ msgstr "Starts"
 msgid "Status"
 msgstr "Status"
 
+#: src/features/team/pages/member-page.tsx
 #: src/features/team/pages/team-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
 msgid "Team"
@@ -926,7 +953,7 @@ msgid "We will send you a link to set a new password."
 msgstr "We will send you a link to set a new password."
 
 #: src/features/team/components/level-select.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "Write"
 msgstr "Write"
 
@@ -938,12 +965,12 @@ msgstr "Yes, delete {editionName}"
 msgid "Yes, delete {title}"
 msgstr "Yes, delete {title}"
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/remove-member.tsx
 msgid "Yes, remove {name} from the team"
 msgstr "Yes, remove {name} from the team"
 
 #: src/features/team/components/edition-access-row.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "you"
 msgstr "you"
 

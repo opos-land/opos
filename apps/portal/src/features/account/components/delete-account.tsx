@@ -1,8 +1,10 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
+import { notifySuccess } from '../../../shared/lib/notify'
 import { Alert, AlertDescription, Button, ErrorMessage, FormField, Input } from '../../../shared/ui'
 import { GoogleButton, signInWithPassword, withMfaReturn } from '../../auth'
 import { deleteAccountOptions, forgetSession } from '../api/account'
@@ -20,11 +22,6 @@ import {
   CONFIRM_DELETION_VALUE,
   type SignInMethods,
 } from '../model/sign-in-methods'
-
-/** The landing page reads this from the navigation state and says the account is gone. */
-export interface AccountDeletedState {
-  accountDeleted: true
-}
 
 function LastHeadRefusal() {
   return (
@@ -80,7 +77,11 @@ export function DeleteAccount({
   const [password, setPassword] = useState('')
   const [error, setError] = useState<unknown>(null)
   const [pending, setPending] = useState(false)
-  const remove = useMutation(deleteAccountOptions())
+  const remove = useMutation({
+    ...deleteAccountOptions(),
+    // Told below, once the session is gone: an account change closes the account's notifications.
+    meta: { success: false },
+  })
 
   // A Google return is used once: a reload or a copied link confirms nothing.
   useEffect(() => {
@@ -99,17 +100,18 @@ export function DeleteAccount({
     try {
       await remove.mutateAsync({})
     } catch (failure) {
-      setError(failure)
+      // The refusal is a notification (query-client.ts); the last head is told what to do first.
+      if (deletionRefusal(failure) === 'last-head') setError(failure)
       // A sign-in older than the API allows: confirm again with the password or Google.
       if (deletionRefusal(failure) === 'reauthenticate') setGoogleReturn('none')
       return
     }
-    const state: AccountDeletedState = { accountDeleted: true }
     // Rendered before the session is forgotten: the account page, which needs a session, must be
     // gone by then, or it would send the visitor to sign-in instead of the home page. `flushSync`
     // needs the `RouterProvider` of `react-router/dom`, which main.tsx mounts.
-    await navigate('/', { replace: true, state, flushSync: true })
+    await navigate('/', { replace: true, flushSync: true })
     forgetSession()
+    notifySuccess({ success: msg`Your account has been deleted.` }, null)
   }
 
   const confirmWithPassword = async (event: FormEvent) => {

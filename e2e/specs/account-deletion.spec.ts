@@ -1,7 +1,7 @@
 import { passwordGrant } from '../fixtures/auth-admin'
 import { expect, test } from '../fixtures'
 import { accountIds } from '../fixtures/tenants'
-import { portalUrl, signInToPortal } from '../fixtures/ui'
+import { notification, portalUrl, signInToPortal } from '../fixtures/ui'
 
 // DELETE /me after the password confirms it is the account's owner.
 
@@ -18,7 +18,7 @@ test.describe('account deletion in the portal', () => {
       await page.getByRole('button', { name: 'Delete my account' }).click()
 
       await expect(page).toHaveURL(portalUrl('/'))
-      await expect(page.getByRole('status')).toHaveText('Your account has been deleted.')
+      await expect(notification(page, 'success', 'Your account has been deleted.')).toBeVisible()
       // The 204 cleared the session cookies, and the portal shows nobody signed in.
       expect(
         (await page.context().cookies()).filter((cookie) => cookie.name.startsWith('opos_portal_')),
@@ -46,6 +46,9 @@ test.describe('account deletion in the portal', () => {
     await expect(page.getByRole('alert')).toContainText(
       'You are the last head organizer of a convention',
     )
+    await expect(
+      notification(page, 'warning', 'A convention must keep at least one head organizer.'),
+    ).toBeVisible()
     await expect(page).toHaveURL(portalUrl('/account'))
     expect(await accountIds(db, [head.email])).toEqual([head.id])
   })

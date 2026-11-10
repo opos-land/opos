@@ -74,6 +74,10 @@ msgstr "Sprawdź skrzynkę pocztową"
 msgid "Choose your password"
 msgstr "Wybierz hasło"
 
+#: src/shared/ui/toast.tsx
+msgid "Close"
+msgstr "Zamknij"
+
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Code"
 msgstr "Kod"
@@ -302,6 +306,10 @@ msgstr "Nie masz jeszcze konta? <0>Załóż konto</0>"
 msgid "No edition of this convention is active."
 msgstr "Żadna edycja tego konwentu nie jest teraz aktywna."
 
+#: src/shared/ui/toast.tsx
+msgid "Notifications"
+msgstr "Powiadomienia"
+
 #: src/features/auth/pages/register-page.tsx
 msgid "One account for every convention on OPOS."
 msgstr "Jedno konto na wszystkie konwenty w OPOS."
@@ -451,9 +459,17 @@ msgstr "Wylogowanie kończy twoją sesję na tym urządzeniu."
 msgid "The browser's language"
 msgstr "Język przeglądarki"
 
+#: src/shared/lib/notify.ts
+msgid "The changes are saved."
+msgstr "Zmiany zostały zapisane."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "The hash of a recovery code you have used: as a record, until you delete the account."
 msgstr "Skrót kodu odzyskiwania, który został użyty: jako zapis, do usunięcia konta."
+
+#: src/features/account/components/language-form.tsx
+msgid "The interface language is saved."
+msgstr "Język interfejsu został zapisany."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "The number of likes of a programme item is public. Who liked it is never shown to anyone."
@@ -501,12 +517,20 @@ msgid "Two-factor authentication"
 msgstr "Uwierzytelnianie dwuskładnikowe"
 
 #: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is off."
+msgstr "Uwierzytelnianie dwuskładnikowe jest wyłączone."
+
+#: src/features/account/components/two-factor-card.tsx
 msgid "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
 msgstr "Uwierzytelnianie dwuskładnikowe jest wyłączone. Włącz je, aby przy każdym logowaniu podawać kod z aplikacji uwierzytelniającej."
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
 msgstr "Uwierzytelnianie dwuskładnikowe jest włączone, ale nie udało się pokazać kodów odzyskiwania. Aby dostać nowe, zaloguj się kodem z aplikacji, wyłącz uwierzytelnianie dwuskładnikowe i włącz je ponownie."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on."
+msgstr "Uwierzytelnianie dwuskładnikowe jest włączone."
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
@@ -608,7 +632,7 @@ msgstr "Twoje konto"
 msgid "Your account and what you did on the platform: until you delete the account."
 msgstr "Twoje konto i to, co robisz na platformie: do czasu usunięcia konta."
 
-#: src/features/landing/pages/landing-page.tsx
+#: src/features/account/components/delete-account.tsx
 msgid "Your account has been deleted."
 msgstr "Twoje konto zostało usunięte."
 

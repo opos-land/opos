@@ -1,9 +1,10 @@
 import { i18n } from '@lingui/core'
 import { type QueryClient, useQueryClient } from '@tanstack/react-query'
-import { act, cleanup, render } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadLocale } from '../shared/lib/i18n'
 import { startSession, useSession } from '../shared/lib/session'
+import { toast } from '../shared/ui'
 import { AccountChangeCleanup, Providers, SignedOutLocale } from './providers'
 
 vi.mock('../shared/lib/i18n', async (importOriginal) => ({
@@ -49,6 +50,26 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+})
+
+describe('Providers', () => {
+  it('closes the notifications of an account another account replaces', async () => {
+    useSession.setState({ status: 'ready', account: accountOf('a') })
+    render(
+      <Providers>
+        <p>page</p>
+      </Providers>,
+    )
+    const warning = 'No confirmed account uses the email address nobody@x.test.'
+    act(() => {
+      toast.add({ type: 'warning', title: warning, timeout: 0 })
+    })
+    expect(await screen.findByText(warning)).toBeDefined()
+
+    act(() => useSession.setState({ account: accountOf('b') }))
+
+    await vi.waitFor(() => expect(screen.queryByText(warning)).toBeNull())
+  })
 })
 
 describe('AccountChangeCleanup', () => {

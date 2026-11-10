@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useLingui } from '@lingui/react/macro'
 import { type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
-import { Button, ErrorMessage, FieldSet, FormField, Input, Textarea } from '../../../shared/ui'
+import { Button, FieldSet, FormField, Input, Textarea } from '../../../shared/ui'
 import { useTenantTime } from '../../tenants'
 import {
   endsAtProblem,
@@ -16,14 +16,12 @@ export function ProgramItemForm({
   defaultValues,
   disabled = false,
   pending,
-  error,
   submitLabel,
   onSubmit,
 }: {
   defaultValues: ProgramItemFormValues
   disabled?: boolean
   pending: boolean
-  error: unknown
   submitLabel: ReactNode
   onSubmit: (body: ProgramItemBody) => void
 }) {
@@ -77,7 +75,6 @@ export function ProgramItemForm({
           {(control) => <Input {...control} {...form.register('endsAt')} type="datetime-local" />}
         </FormField>
       </FieldSet>
-      <ErrorMessage error={error} />
       <div>
         <Button type="submit" disabled={disabled || pending}>
           {submitLabel}

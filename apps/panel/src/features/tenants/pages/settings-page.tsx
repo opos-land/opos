@@ -1,21 +1,21 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { msg } from '@lingui/core/macro'
+
 import { Trans, useLingui } from '@lingui/react/macro'
 import { SUPPORTED_LOCALES } from '@opos/i18n'
 import { updateTenantSchema } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { languageName } from '../../../shared/lib/i18n'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Button,
-  ErrorMessage,
   FieldSet,
   FormField,
   Input,
   NativeSelect,
   NativeSelectOption,
-  Notice,
   PageHeader,
   Section,
 } from '../../../shared/ui'
@@ -33,7 +33,6 @@ export function SettingsPage() {
   usePageTitle(t`General`, tenant.name)
   const queryClient = useQueryClient()
   const canWrite = atLeast(access.settings, 'write')
-  const [saved, setSaved] = useState(false)
   const timeZones = useMemo(() => {
     const zones = Intl.supportedValuesOf('timeZone')
     return zones.includes(tenant.timezone) ? zones : [tenant.timezone, ...zones]
@@ -49,8 +48,8 @@ export function SettingsPage() {
   })
   const update = useMutation({
     ...updateTenantOptions(api),
+    meta: { success: msg`The settings are saved.` },
     onSuccess: async (updated) => {
-      setSaved(true)
       queryClient.setQueryData(tenantOptions(api).queryKey, updated)
       await queryClient.invalidateQueries({ queryKey: membershipsKey() })
     },
@@ -58,7 +57,6 @@ export function SettingsPage() {
   const { errors } = form.formState
 
   const submit = form.handleSubmit((body) => {
-    setSaved(false)
     update.mutate({ body })
   })
 
@@ -114,12 +112,7 @@ export function SettingsPage() {
               )}
             </FormField>
           </FieldSet>
-          <ErrorMessage error={update.error} />
-          {saved && (
-            <Notice>
-              <Trans>The settings are saved.</Trans>
-            </Notice>
-          )}
+
           <div>
             <Button type="submit" disabled={!canWrite || update.isPending}>
               <Trans>Save</Trans>

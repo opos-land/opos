@@ -1,4 +1,4 @@
-import { i18n } from '@lingui/core'
+import { i18n, type MessageDescriptor } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -6,6 +6,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { notifySuccess } from '../../../shared/lib/notify'
 import { mfaReturnFor, signInWithPassword } from '../../auth'
 import { forgetSession } from '../api/account'
 import {
@@ -15,6 +16,8 @@ import {
 import { DeleteAccount } from './delete-account'
 
 const deleteMe = vi.fn()
+
+vi.mock('../../../shared/lib/notify', () => ({ notifySuccess: vi.fn(), notifyFailure: vi.fn() }))
 
 vi.mock(import('../../auth'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -80,6 +83,7 @@ beforeEach(() => {
   deleteMe.mockReset()
   vi.mocked(signInWithPassword).mockReset()
   vi.mocked(forgetSession).mockClear()
+  vi.mocked(notifySuccess).mockClear()
 })
 
 afterEach(cleanup)
@@ -96,8 +100,14 @@ describe('DeleteAccount', () => {
       email: 'anna@example.test',
       password: 'secret password',
     })
-    expect(await screen.findByText('home {"accountDeleted":true}')).toBeTruthy()
+    expect(await screen.findByText('home null')).toBeTruthy()
     expect(forgetSession).toHaveBeenCalledOnce()
+    // Told once the session is gone: an account change closes the notifications of the account.
+    const [meta] = vi.mocked(notifySuccess).mock.calls[0] ?? []
+    expect(i18n._(meta?.success as MessageDescriptor)).toBe('Your account has been deleted.')
+    expect(vi.mocked(forgetSession).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(notifySuccess).mock.invocationCallOrder[0] ?? 0,
+    )
   })
 
   it('on an account with two-factor authentication the password leads through the code and back to the deletion', async () => {
@@ -126,7 +136,7 @@ describe('DeleteAccount', () => {
     expect(screen.getByText(/You confirmed it is you again/)).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Delete my account' }))
 
-    expect(await screen.findByText('home {"accountDeleted":true}')).toBeTruthy()
+    expect(await screen.findByText('home null')).toBeTruthy()
   })
 
   it('deletes nothing when the password is wrong', async () => {
@@ -168,7 +178,7 @@ describe('DeleteAccount', () => {
     expect(await screen.findByText('search ""')).toBeTruthy()
     await after.click(screen.getByRole('button', { name: 'Delete my account' }))
 
-    expect(await screen.findByText('home {"accountDeleted":true}')).toBeTruthy()
+    expect(await screen.findByText('home null')).toBeTruthy()
     expect(signInWithPassword).not.toHaveBeenCalled()
   })
 
@@ -215,10 +225,9 @@ describe('DeleteAccount', () => {
 
     await user.click(screen.getByRole('button', { name: 'Delete my account' }))
 
-    expect((await screen.findByRole('alert')).textContent).toBe(
-      'Confirm it is you: enter your password again or sign in with Google again.',
-    )
-    expect(screen.getByLabelText('Your password')).toBeTruthy()
+    // The refusal itself is a notification (query-client.ts); the card asks again.
+    expect(await screen.findByLabelText('Your password')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.getByText('google back to /account?confirm=deletion')).toBeTruthy()
     expect(forgetSession).not.toHaveBeenCalled()
   })

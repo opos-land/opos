@@ -1,34 +1,22 @@
 import { Trans, useLingui } from '@lingui/react/macro'
-import { Link, useLocation } from 'react-router'
+import { Link } from 'react-router'
 import { SIGNED_IN_HOME } from '../../../shared/config/routes'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import { useSession } from '../../../shared/lib/session'
-import { buttonVariants, Notice, Section } from '../../../shared/ui'
-import { type AccountDeletedState } from '../../account'
+import { buttonVariants, Section } from '../../../shared/ui'
 
 const primaryLink = buttonVariants({ size: 'lg' })
 const secondaryLink = buttonVariants({ variant: 'outline', size: 'lg' })
-
-const deleted = (state: unknown) =>
-  typeof state === 'object' &&
-  state !== null &&
-  (state as Partial<AccountDeletedState>).accountDeleted === true
 
 /** The platform's home page. */
 export function LandingPage() {
   const { t } = useLingui()
   usePageTitle(t`Fantasy conventions, in one place`)
-  const location = useLocation()
   const status = useSession((state) => state.status)
   const account = useSession((state) => state.account)
 
   return (
     <div className="flex flex-col gap-8 py-8">
-      {deleted(location.state) && (
-        <Notice>
-          <Trans>Your account has been deleted.</Trans>
-        </Notice>
-      )}
       <header className="flex flex-col gap-4">
         <h1 className="text-3xl leading-tight font-semibold">
           <Trans>Fantasy conventions, in one place</Trans>

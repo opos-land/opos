@@ -4,6 +4,7 @@ import { type Accounts, expect, test } from '../fixtures'
 import { confirmLinkIn, invitationLinkIn, waitForMail } from '../fixtures/mailpit'
 import { accountIds } from '../fixtures/tenants'
 import {
+  notification,
   panelUrl,
   portalUrl,
   signInToPanel,
@@ -38,7 +39,8 @@ async function turnOn(page: Page) {
     true,
   )
   await page.getByRole('button', { name: 'I have saved my codes' }).click()
-  await expect(page.getByText('Two-factor authentication is on.')).toBeVisible()
+  await expect(notification(page, 'success', 'Two-factor authentication is on.')).toBeVisible()
+  await expect(page.getByRole('main').getByText('Two-factor authentication is on.')).toBeVisible()
   return { secret, recoveryCodes }
 }
 
@@ -171,7 +173,7 @@ test.describe('two-factor authentication', () => {
       await page.getByRole('button', { name: 'Delete my account' }).click()
 
       await expect(page).toHaveURL(portalUrl('/'))
-      await expect(page.getByRole('status')).toHaveText('Your account has been deleted.')
+      await expect(notification(page, 'success', 'Your account has been deleted.')).toBeVisible()
       expect(await accountIds(db, [account.email])).toEqual([])
     },
   )
@@ -214,7 +216,9 @@ test.describe('two-factor authentication', () => {
     await invite.getByLabel('Email').fill(invitee)
     await invite.getByLabel(`Programme in ${edition.name}`).selectOption('write')
     await invite.getByRole('button', { name: 'Invite' }).click()
-    await expect(invite.getByRole('status')).toContainText(`An invitation has gone to ${invitee}.`)
+    await expect(
+      notification(page, 'success', `An invitation has gone to ${invitee}.`),
+    ).toBeVisible()
     await signOutOfPanel(page, head.email)
     const invitation = invitationLinkIn(await waitForMail(invitee))
     await page.goto(invitation)

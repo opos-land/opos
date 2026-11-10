@@ -1,3 +1,4 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -44,9 +45,15 @@ export function ProgramItemPage() {
   const base = `/${tenant.slug}/editions/${editionSlug ?? ''}/program`
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: programKey(api) })
-  const update = useMutation({ ...updateProgramItemOptions(api), onSuccess: refresh })
+  const itemTitle = item?.title ?? ''
+  const update = useMutation({
+    ...updateProgramItemOptions(api),
+    meta: { success: msg`The programme item is saved.` },
+    onSuccess: refresh,
+  })
   const remove = useMutation({
     ...removeProgramItemOptions(api),
+    meta: { success: msg`The programme item ${itemTitle} is deleted.` },
     onSuccess: async () => {
       await refresh()
       void navigate(base, { replace: true })
@@ -81,7 +88,6 @@ export function ProgramItemPage() {
           }}
           disabled={!canWrite}
           pending={update.isPending}
-          error={update.error}
           submitLabel={<Trans>Save</Trans>}
           onSubmit={(body) => update.mutate({ params, body })}
         />
@@ -115,7 +121,6 @@ export function ProgramItemPage() {
               </Button>
             </div>
           )}
-          <ErrorMessage error={remove.error} />
         </Section>
       )}
     </>

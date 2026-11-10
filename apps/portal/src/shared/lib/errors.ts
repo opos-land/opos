@@ -58,6 +58,15 @@ export function describeError(error: unknown): DescribedError {
   return { message: errorMessage(code), values }
 }
 
+/**
+ * A refusal the member can act on: the API answered below `500` with a code. A `401` the refresh
+ * could not settle is a failure of the service instead, as `describeError` words it.
+ */
+export function isRefusal(error: unknown) {
+  if (!(error instanceof ORPCError) || error.status >= 500) return false
+  return !(error.code === 'session.invalid' && !sessionReallyEnded())
+}
+
 /** A plain `403`, as opposed to an anti-escalation refusal with a code of its own. */
 export const isPermissionDenied = (error: unknown) =>
   error instanceof ORPCError && error.code === 'permission.denied'

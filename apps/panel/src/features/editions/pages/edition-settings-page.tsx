@@ -1,4 +1,6 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { type Edition } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
@@ -40,9 +42,11 @@ export function EditionSettingsPage() {
   const base = `/${tenant.slug}/editions`
   const list = `/${tenant.slug}/settings/editions`
 
+  const editionName = edition?.name ?? ''
   const refresh = () => queryClient.invalidateQueries({ queryKey: editionsKey(api) })
   const update = useMutation({
     ...updateEditionOptions(api),
+    meta: { success: msg`The edition is saved.` },
     onSuccess: async (saved) => {
       await refresh()
       if (saved.slug !== editionSlug) {
@@ -50,10 +54,24 @@ export function EditionSettingsPage() {
       }
     },
   })
-  const publish = useMutation({ ...updateEditionOptions(api), onSuccess: refresh })
-  const activate = useMutation({ ...activateEditionOptions(api), onSuccess: refresh })
+  const publish = useMutation({
+    ...updateEditionOptions(api),
+    meta: {
+      success: (saved: Edition) =>
+        saved.isPublished
+          ? msg`The edition ${editionName} is published.`
+          : msg`The edition ${editionName} is no longer published.`,
+    },
+    onSuccess: refresh,
+  })
+  const activate = useMutation({
+    ...activateEditionOptions(api),
+    meta: { success: msg`The edition ${editionName} is now the active one.` },
+    onSuccess: refresh,
+  })
   const remove = useMutation({
     ...removeEditionOptions(api),
+    meta: { success: msg`The edition ${editionName} is deleted.` },
     onSuccess: async () => {
       await refresh()
       void navigate(list, { replace: true })
@@ -66,7 +84,6 @@ export function EditionSettingsPage() {
   if (!edition) return <NoPermissionView />
 
   const params = { editionId: edition.id }
-  const editionName = edition.name
   return (
     <>
       <PageHeader
@@ -84,7 +101,6 @@ export function EditionSettingsPage() {
           }}
           disabled={!canWrite}
           pending={update.isPending}
-          error={update.error}
           submitLabel={<Trans>Save</Trans>}
           onSubmit={(body) => update.mutate({ params, body })}
         />
@@ -104,7 +120,6 @@ export function EditionSettingsPage() {
                 </Button>
               </div>
             )}
-            <ErrorMessage error={activate.error} />
           </div>
           <div className="flex flex-col gap-2 text-sm">
             <p>
@@ -126,7 +141,6 @@ export function EditionSettingsPage() {
                 {edition.isPublished ? <Trans>Unpublish</Trans> : <Trans>Publish</Trans>}
               </Button>
             </div>
-            <ErrorMessage error={publish.error} />
           </div>
         </Section>
       )}
@@ -158,7 +172,6 @@ export function EditionSettingsPage() {
               </Button>
             </div>
           )}
-          <ErrorMessage error={remove.error} />
         </Section>
       )}
     </>

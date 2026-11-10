@@ -1,4 +1,6 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { type ProgramItem } from '@opos/contract'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
@@ -41,6 +43,12 @@ export function ProgramPage() {
   const base = `/${tenant.slug}/editions/${editionSlug ?? ''}/program`
   const create = useMutation({
     ...createProgramItemOptions(api),
+    meta: {
+      success: (item: ProgramItem) => {
+        const title = item.title
+        return msg`The programme item ${title} is added.`
+      },
+    },
     onSuccess: async (item) => {
       await queryClient.invalidateQueries({ queryKey: programKey(api) })
       void navigate(`${base}/${item.id}`)
@@ -100,7 +108,7 @@ export function ProgramPage() {
           <ProgramItemForm
             defaultValues={EMPTY}
             pending={create.isPending}
-            error={create.error}
+
             submitLabel={<Trans>Add the item</Trans>}
             onSubmit={(body) => create.mutate({ params: { editionId }, body })}
           />

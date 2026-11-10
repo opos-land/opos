@@ -32,8 +32,17 @@ export function LikeButton({
       queryClient.invalidateQueries({ queryKey: publicKey() }),
       queryClient.invalidateQueries({ queryKey: scheduleOptions().queryKey }),
     ])
-  const like = useMutation({ ...likeOptions(tenantSlug), onSuccess: refresh })
-  const unlike = useMutation({ ...unlikeOptions(tenantSlug), onSuccess: refresh })
+  // The button shows a like at once; only a failure is a notification (query-client.ts).
+  const like = useMutation({
+    ...likeOptions(tenantSlug),
+    meta: { success: false },
+    onSuccess: refresh,
+  })
+  const unlike = useMutation({
+    ...unlikeOptions(tenantSlug),
+    meta: { success: false },
+    onSuccess: refresh,
+  })
   const params = { editionId, programItemId }
 
   if (status === 'loading') return null
@@ -80,7 +89,6 @@ export function LikeButton({
           </Button>
         )}
       </div>
-      <ErrorMessage error={like.error ?? unlike.error} />
     </div>
   )
 }

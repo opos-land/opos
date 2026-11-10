@@ -232,6 +232,12 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   every tab, each tenant has its own API client, and a page to return to belongs to the account that
   left it.
 - The API stays the authority: the panel only hides and disables what a member cannot do.
+- A write tells its outcome in a notification: a success, a warning for a refusal the member can act
+  on, an error for a failure of the service or the network, the last two kept until closed. The
+  query client of each application notifies every mutation; beside a form stays only the
+  validation of its fields. A plain `403` in the panel ends on the "no permissions" screen, and the
+  sign-in flows show their outcome as their next screen
+  ([0022](adr/0022-tell-the-outcome-of-every-write-in-a-notification.md)).
 
 ## Localization
 

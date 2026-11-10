@@ -1,9 +1,11 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 import { errorCode } from '../../../shared/lib/errors'
-import { Button, ErrorMessage, FormField, Input, Notice } from '../../../shared/ui'
+import { notifyFailure, notifySuccess } from '../../../shared/lib/notify'
+import { Button, FormField, Input, Notice } from '../../../shared/ui'
 import {
   disableTwoFactor,
   enableTwoFactor,
@@ -42,19 +44,17 @@ function Enrolling({
   const { t } = useLingui()
   const [code, setCode] = useState('')
   const [invalid, setInvalid] = useState(false)
-  const [error, setError] = useState<unknown>(null)
   const [pending, setPending] = useState(false)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    setError(null)
     const wrong = !SIX_DIGITS.test(code.trim())
     setInvalid(wrong)
     if (wrong) return
     setPending(true)
     const failure = await onEnable(code.trim())
     setPending(false)
-    if (failure) setError(failure)
+    if (failure) notifyFailure(failure)
   }
 
   return (
@@ -90,7 +90,6 @@ function Enrolling({
           />
         )}
       </FormField>
-      <ErrorMessage error={error} />
       <div className="flex flex-wrap gap-2">
         <Button disabled={pending} type="submit">
           <Trans>Turn on</Trans>
@@ -145,7 +144,6 @@ export function TwoFactorCard({
   const location = useLocation()
   const [view, setView] = useState<View>({ step: 'idle' })
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<unknown>(null)
   // Read when the card mounts: the notice outlives the card, which the code screen unmounts. It
   // belongs to an account whose 2FA is on: seen off, it is out of date.
   const [lostCodes, setLostCodes] = useState(() => mfaEnabled && lostCodesRemembered())
@@ -169,7 +167,6 @@ export function TwoFactorCard({
   }
 
   const run = async (action: Action) => {
-    setError(null)
     setPending(true)
     try {
       if (action === 'enroll') {
@@ -179,13 +176,14 @@ export function TwoFactorCard({
         await disableTwoFactor()
         dismissLostCodes()
         setView({ step: 'idle' })
+        notifySuccess({ success: msg`Two-factor authentication is off.` }, null)
         await refresh(false)
       }
     } catch (failure) {
       if (errorCode(failure) === 'session.reauthentication-required') {
         setView({ step: 'reauthenticate', action, error: failure })
       } else {
-        setError(failure)
+        notifyFailure(failure)
         // What the card shows was out of date: 2FA is already on, or already off.
         if (errorCode(failure) === 'mfa.already-enabled') await refresh(true)
         if (errorCode(failure) === 'mfa.not-enabled') {
@@ -202,6 +200,7 @@ export function TwoFactorCard({
     try {
       const { recoveryCodes } = await enableTwoFactor(factorId, code)
       setView({ step: 'codes', codes: recoveryCodes })
+      notifySuccess({ success: msg`Two-factor authentication is on.` }, null)
       await refresh(true)
       return null
     } catch (failure) {
@@ -263,7 +262,6 @@ export function TwoFactorCard({
           </Button>
         </Notice>
       )}
-      <ErrorMessage error={error} />
       {mfaEnabled ? (
         <>
           <p className="text-sm">

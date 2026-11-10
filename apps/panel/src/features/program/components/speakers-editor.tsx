@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { MAX_SPEAKERS, type ProgramItem } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Button, ErrorMessage, FormField, Input } from '../../../shared/ui'
+import { Button, FormField, Input } from '../../../shared/ui'
 import { useCurrentTenant } from '../../tenants'
 import { programKey, putSpeakersOptions } from '../api/program'
 import { addSpeakerSchema, emailsWith, emailsWithout, speakerName } from '../model/speakers'
@@ -15,6 +16,7 @@ export function SpeakersEditor({ item, canWrite }: { item: ProgramItem; canWrite
   const queryClient = useQueryClient()
   const put = useMutation({
     ...putSpeakersOptions(api),
+    meta: { success: msg`The speakers are saved.` },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: programKey(api) }),
   })
   const form = useForm({
@@ -92,7 +94,6 @@ export function SpeakersEditor({ item, canWrite }: { item: ProgramItem; canWrite
             />
           </p>
         ))}
-      <ErrorMessage error={put.error} />
     </div>
   )
 }

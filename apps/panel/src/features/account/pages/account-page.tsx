@@ -1,3 +1,4 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { SUPPORTED_LOCALES, isLocale } from '@opos/i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -25,6 +26,7 @@ export function AccountPage() {
   const account = useQuery(accountOptions())
   const update = useMutation({
     ...updateAccountOptions(),
+    meta: { success: msg`The interface language is saved.` },
     onSuccess: async (saved) => {
       mergeSavedAccount(queryClient, saved)
       await loadLocale(pickLocale(saved.locale))
@@ -56,8 +58,8 @@ export function AccountPage() {
             </NativeSelect>
           )}
         </FormField>
-        <ErrorMessage error={update.error} />
       </Section>
+
       {account.data && (
         <Section title={<Trans>Two-factor authentication</Trans>}>
           <TwoFactorCard

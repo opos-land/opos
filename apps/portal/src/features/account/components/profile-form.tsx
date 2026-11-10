@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type Account } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Button, ErrorMessage, FormField, Input, Notice } from '../../../shared/ui'
+import { Button, FormField, Input } from '../../../shared/ui'
 import { mergeSavedAccount, updateAccountOptions } from '../api/account'
 import { profileSchema, profileUpdate, profileValues } from '../model/profile'
 
@@ -14,6 +15,7 @@ export function ProfileForm({ account }: { account: Account }) {
   const form = useForm({ resolver: zodResolver(profileSchema), values: profileValues(account) })
   const update = useMutation({
     ...updateAccountOptions(),
+    meta: { success: msg`Your name is saved.` },
     onSuccess: (saved) => mergeSavedAccount(queryClient, saved),
   })
   const { errors } = form.formState
@@ -32,12 +34,7 @@ export function ProfileForm({ account }: { account: Account }) {
           <Input {...control} {...form.register('lastName')} autoComplete="family-name" />
         )}
       </FormField>
-      <ErrorMessage error={update.error} />
-      {update.isSuccess && !form.formState.isDirty && (
-        <Notice>
-          <Trans>Your name is saved.</Trans>
-        </Notice>
-      )}
+
       <Button disabled={update.isPending} type="submit" className="self-start">
         <Trans>Save</Trans>
       </Button>

@@ -15,10 +15,6 @@ msgstr "{count, plural, one {Permissions in the edition} other {Permissions in t
 msgid "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
 msgstr "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
 
-#: src/features/team/components/invite-form.tsx
-msgid "{name} has joined the team and has been told by email."
-msgstr "{name} has joined the team and has been told by email."
-
 #: src/features/team/components/remove-member.tsx
 msgid "{name} loses access to the convention at once. Coming back takes a new invitation."
 msgstr "{name} loses access to the convention at once. Coming back takes a new invitation."
@@ -50,6 +46,14 @@ msgstr "access expired"
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Access to {editionName}"
 msgstr "Access to {editionName}"
+
+#: src/features/team/components/edition-access-row.tsx
+msgid "Access to the edition {editionName} is saved: {name}."
+msgstr "Access to the edition {editionName} is saved: {name}."
+
+#: src/features/team/components/edition-access-row.tsx
+msgid "Access to the edition {editionName} is taken away: {name}."
+msgstr "Access to the edition {editionName} is taken away: {name}."
 
 #: src/features/team/components/invite-form.tsx
 #: src/features/team/components/member-form.tsx
@@ -90,6 +94,10 @@ msgstr "Add"
 msgid "Add the item"
 msgstr "Add the item"
 
+#: src/features/team/model/invitation.ts
+msgid "Added to the team: {name}. They have been told by email."
+msgstr "Added to the team: {name}. They have been told by email."
+
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Address"
@@ -103,7 +111,7 @@ msgstr "All editions"
 msgid "All programme items"
 msgstr "All programme items"
 
-#: src/features/team/components/invite-form.tsx
+#: src/features/team/model/invitation.ts
 msgid "An invitation has gone to {email}. Its link works once, until {validUntil}."
 msgstr "An invitation has gone to {email}. Its link works once, until {validUntil}."
 
@@ -160,6 +168,7 @@ msgid "Choose your password"
 msgstr "Choose your password"
 
 #: src/shared/ui/sheet.tsx
+#: src/shared/ui/toast.tsx
 msgid "Close"
 msgstr "Close"
 
@@ -509,6 +518,10 @@ msgstr "No permissions"
 msgid "Not published"
 msgstr "Not published"
 
+#: src/shared/ui/toast.tsx
+msgid "Notifications"
+msgstr "Notifications"
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Open the invitation link from your email to join a convention's team."
 msgstr "Open the invitation link from your email to join a convention's team."
@@ -639,6 +652,10 @@ msgstr "Remove access"
 msgid "Remove from the team"
 msgstr "Remove from the team"
 
+#: src/features/team/components/remove-member.tsx
+msgid "Removed from the team: {name}."
+msgstr "Removed from the team: {name}."
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
 msgstr "Repeat the password"
@@ -766,9 +783,33 @@ msgstr "The address of the speaker's confirmed account."
 msgid "The browser's language"
 msgstr "The browser's language"
 
+#: src/shared/lib/notify.ts
+msgid "The changes are saved."
+msgstr "The changes are saved."
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "The convention's address is set by the platform administrator."
 msgstr "The convention's address is set by the platform administrator."
+
+#: src/features/editions/pages/edition-settings-page.tsx
+msgid "The edition {editionName} is deleted."
+msgstr "The edition {editionName} is deleted."
+
+#: src/features/editions/pages/edition-settings-page.tsx
+msgid "The edition {editionName} is no longer published."
+msgstr "The edition {editionName} is no longer published."
+
+#: src/features/editions/pages/edition-settings-page.tsx
+msgid "The edition {editionName} is now the active one."
+msgstr "The edition {editionName} is now the active one."
+
+#: src/features/editions/pages/edition-settings-page.tsx
+msgid "The edition {editionName} is published."
+msgstr "The edition {editionName} is published."
+
+#: src/features/editions/pages/new-edition-page.tsx
+msgid "The edition {name} is created."
+msgstr "The edition {name} is created."
 
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/edition-settings-page.tsx
@@ -780,9 +821,17 @@ msgstr "The edition is not published: the portal does not show it."
 msgid "The edition is published: the portal shows it to everyone."
 msgstr "The edition is published: the portal shows it to everyone."
 
+#: src/features/editions/pages/edition-settings-page.tsx
+msgid "The edition is saved."
+msgstr "The edition is saved."
+
 #: src/features/editions/components/edition-form.tsx
 msgid "The edition must end after it starts."
 msgstr "The edition must end after it starts."
+
+#: src/features/account/pages/account-page.tsx
+msgid "The interface language is saved."
+msgstr "The interface language is saved."
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "The invitation is for {email} and is valid until {validUntil}."
@@ -792,9 +841,25 @@ msgstr "The invitation is for {email} and is valid until {validUntil}."
 msgid "The language of the convention's content and of invitations to people without an account."
 msgstr "The language of the convention's content and of invitations to people without an account."
 
+#: src/features/team/components/member-form.tsx
+msgid "The membership is saved: {name}."
+msgstr "The membership is saved: {name}."
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "The passwords differ."
+
+#: src/features/program/pages/program-item-page.tsx
+msgid "The programme item {itemTitle} is deleted."
+msgstr "The programme item {itemTitle} is deleted."
+
+#: src/features/program/pages/program-page.tsx
+msgid "The programme item {title} is added."
+msgstr "The programme item {title} is added."
+
+#: src/features/program/pages/program-item-page.tsx
+msgid "The programme item is saved."
+msgstr "The programme item is saved."
 
 #: src/features/program/components/program-item-form.tsx
 msgid "The programme item must end after it starts."
@@ -803,6 +868,10 @@ msgstr "The programme item must end after it starts."
 #: src/features/tenants/pages/settings-page.tsx
 msgid "The settings are saved."
 msgstr "The settings are saved."
+
+#: src/features/program/components/speakers-editor.tsx
+msgid "The speakers are saved."
+msgstr "The speakers are saved."
 
 #: src/features/team/pages/edition-access-page.tsx
 msgid "The team has no organizers besides its head organizers."
@@ -885,12 +954,20 @@ msgid "Two-factor authentication"
 msgstr "Two-factor authentication"
 
 #: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is off."
+msgstr "Two-factor authentication is off."
+
+#: src/features/account/components/two-factor-card.tsx
 msgid "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
 msgstr "Two-factor authentication is off. Turn it on to be asked for a code from an authenticator app each time you sign in."
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
 msgstr "Two-factor authentication is on, but the recovery codes could not be shown. To get new ones, sign in with a code from your app, turn two-factor authentication off, and turn it on again."
+
+#: src/features/account/components/two-factor-card.tsx
+msgid "Two-factor authentication is on."
+msgstr "Two-factor authentication is on."
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
@@ -981,6 +1058,10 @@ msgstr "You are invited to the organizing team of <0>{tenantName}</0>."
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "You are not in any convention's team. A convention's organizers can invite you by email."
 msgstr "You are not in any convention's team. A convention's organizers can invite you by email."
+
+#: src/features/auth/components/accept-invitation.tsx
+msgid "You are now in the team of {tenantName}."
+msgstr "You are now in the team of {tenantName}."
 
 #: src/features/auth/components/accept-invitation.tsx
 msgid "You are signed in as {email}."

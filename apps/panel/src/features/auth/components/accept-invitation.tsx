@@ -1,4 +1,6 @@
+import { msg } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
+import { type AcceptedInvitation } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
@@ -19,6 +21,14 @@ export function AcceptInvitation({ token, email }: { token: string; email: strin
   const queryClient = useQueryClient()
   const accept = useMutation({
     ...acceptInvitationOptions(),
+    meta: {
+      success: ({ tenant }: AcceptedInvitation) => {
+        const tenantName = tenant.name
+        return msg`You are now in the team of ${tenantName}.`
+      },
+      // The screen is the acceptance and nothing else: a failure is all it shows.
+      failure: false,
+    },
     onSuccess: async ({ tenant }) => {
       forgetInvitation()
       await queryClient.invalidateQueries({ queryKey: membershipsKey() })

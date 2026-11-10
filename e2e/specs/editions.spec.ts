@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures'
-import { panelUrl, signInToPanel } from '../fixtures/ui'
+import { panelUrl, signInToPanel, switchPanelArea } from '../fixtures/ui'
 
 // A head enters the convention into its active edition, creates an edition in the convention
 // settings, then activates and publishes it in the edition's own settings; the edition active
@@ -14,7 +14,7 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
   // A single convention opens straight into its active edition.
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/this-year`))
 
-  await page.getByRole('link', { name: 'Convention settings' }).click()
+  await switchPanelArea(page, 'Convention settings')
   await page
     .getByRole('navigation', { name: tenant.name })
     .getByRole('link', { name: 'Editions' })
@@ -59,13 +59,12 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
     { slug: 'this-year', isActive: false, isPublished: false },
   ])
 
-  // The switch of the top bar leads to another edition; the way back from the convention settings
-  // to the active one, now the new edition.
-  await page.getByRole('banner').getByLabel('Edition').selectOption({ label: 'This year' })
+  // The area switcher leads to another edition, to the convention settings and back to an edition.
+  await switchPanelArea(page, 'This year')
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/this-year`))
-  await page.getByRole('link', { name: 'Convention settings' }).click()
+  await switchPanelArea(page, 'Convention settings')
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/settings`))
-  await page.getByRole('link', { name: 'Back to the edition' }).click()
+  await switchPanelArea(page, 'Next year')
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/next-year`))
 })
 

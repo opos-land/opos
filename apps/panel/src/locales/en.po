@@ -52,7 +52,8 @@ msgstr "Access to {editionName}"
 msgid "Access until"
 msgstr "Access until"
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/components/nav-user.tsx
+#: src/features/account/pages/account-page.tsx
 msgid "Account"
 msgstr "Account"
 
@@ -110,13 +111,16 @@ msgid "Back to sign-in"
 msgstr "Back to sign-in"
 
 #: src/features/team/pages/edition-access-page.tsx
-#: src/features/tenants/components/panel-header.tsx
 msgid "Back to the edition"
 msgstr "Back to the edition"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Back to the invitation"
 msgstr "Back to the invitation"
+
+#: src/shared/ui/breadcrumb.tsx
+msgid "breadcrumb"
+msgstr "breadcrumb"
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
@@ -130,7 +134,7 @@ msgstr "Cancel"
 msgid "Cannot sign in?"
 msgstr "Cannot sign in?"
 
-#: src/features/tenants/components/panel-header.tsx
+#: src/features/tenants/components/area-switcher.tsx
 msgid "Choose a convention"
 msgstr "Choose a convention"
 
@@ -141,6 +145,10 @@ msgstr "Choose a time zone from the list."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Choose your password"
 msgstr "Choose your password"
+
+#: src/shared/ui/sheet.tsx
+msgid "Close"
+msgstr "Close"
 
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Code"
@@ -176,7 +184,6 @@ msgstr "Continue"
 msgid "Continue with Google"
 msgstr "Continue with Google"
 
-#: src/features/tenants/components/panel-header.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Convention"
 msgstr "Convention"
@@ -185,11 +192,15 @@ msgstr "Convention"
 msgid "Convention language"
 msgstr "Convention language"
 
+#: src/features/tenants/components/area-switcher.tsx
 #: src/features/tenants/components/convention-layout.tsx
-#: src/features/tenants/components/panel-header.tsx
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "Convention settings"
 msgstr "Convention settings"
+
+#: src/features/tenants/components/area-switcher.tsx
+msgid "Conventions"
+msgstr "Conventions"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Create an account"
@@ -236,11 +247,14 @@ msgstr "Description"
 msgid "Dismiss"
 msgstr "Dismiss"
 
+#: src/shared/ui/sidebar.tsx
+msgid "Displays the mobile sidebar."
+msgstr "Displays the mobile sidebar."
+
 #: src/features/team/components/member-row.tsx
 msgid "Edit"
 msgstr "Edit"
 
-#: src/features/editions/components/edition-switch.tsx
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Edition"
@@ -256,6 +270,7 @@ msgid "Edition settings"
 msgstr "Edition settings"
 
 #: src/features/editions/pages/editions-page.tsx
+#: src/features/tenants/components/area-switcher.tsx
 #: src/features/tenants/components/convention-layout.tsx
 msgid "Editions"
 msgstr "Editions"
@@ -401,7 +416,7 @@ msgstr "If you confirmed your address in another browser, or someone else regist
 msgid "In the convention's time zone, {zone}."
 msgstr "In the convention's time zone, {zone}."
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/pages/account-page.tsx
 msgid "Interface language"
 msgstr "Interface language"
 
@@ -432,6 +447,10 @@ msgstr "Member"
 #: src/features/team/pages/team-page.tsx
 msgid "Members"
 msgstr "Members"
+
+#: src/shared/ui/breadcrumb.tsx
+msgid "More"
+msgstr "More"
 
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
@@ -476,7 +495,7 @@ msgid "Open the link from your email to confirm your address or reset your passw
 msgstr "Open the link from your email to confirm your address or reset your password."
 
 #: src/features/auth/components/auth-layout.tsx
-#: src/features/tenants/components/panel-header.tsx
+#: src/features/tenants/components/area-switcher.tsx
 #: src/shared/lib/page-title.ts
 msgid "OPOS panel"
 msgstr "OPOS panel"
@@ -518,6 +537,10 @@ msgstr "Password"
 #: src/features/team/pages/team-page.tsx
 msgid "Permissions in each edition are set on the edition's access page."
 msgstr "Permissions in each edition are set on the edition's access page."
+
+#: src/features/account/pages/account-page.tsx
+msgid "Preferences"
+msgstr "Preferences"
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
@@ -625,7 +648,7 @@ msgstr "Save the password and join the team"
 msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
 msgstr "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/pages/account-page.tsx
 msgid "Saved on your account."
 msgstr "Saved on your account."
 
@@ -658,6 +681,10 @@ msgstr "Settings"
 msgid "Shop"
 msgstr "Shop"
 
+#: src/shared/ui/sidebar.tsx
+msgid "Sidebar"
+msgstr "Sidebar"
+
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/login-page.tsx
 msgid "Sign in"
@@ -667,7 +694,7 @@ msgstr "Sign in"
 msgid "Sign in to the organizer panel"
 msgstr "Sign in to the organizer panel"
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/components/nav-user.tsx
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Sign out"
 msgstr "Sign out"
@@ -708,7 +735,7 @@ msgstr "Team"
 msgid "The address of the speaker's confirmed account."
 msgstr "The address of the speaker's confirmed account."
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/pages/account-page.tsx
 msgid "The browser's language"
 msgstr "The browser's language"
 
@@ -800,6 +827,10 @@ msgstr "Time zone"
 msgid "Title"
 msgstr "Title"
 
+#: src/shared/ui/sidebar.tsx
+msgid "Toggle Sidebar"
+msgstr "Toggle Sidebar"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Too much time has passed since you opened the link. Ask for a new one."
 msgstr "Too much time has passed since you opened the link. Ask for a new one."
@@ -821,7 +852,7 @@ msgstr "Turn on"
 msgid "Turn on two-factor authentication"
 msgstr "Turn on two-factor authentication"
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/pages/account-page.tsx
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Two-factor authentication"
 msgstr "Two-factor authentication"

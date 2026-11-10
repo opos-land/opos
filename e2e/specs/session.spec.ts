@@ -1,7 +1,7 @@
 import { type BrowserContext, type Page, type Response } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import {
-  openPanelAccountMenu,
+  openPanelAccountPage,
   panelUrl,
   portalUrl,
   signInToPanel,
@@ -130,6 +130,7 @@ test.describe('the panel session', () => {
     tenants,
   }) => {
     const { head, team } = await signedInHead({ page, accounts, tenants })
+    await openPanelAccountPage(page, head.email)
     await page.route('**/auth/refresh', (route) =>
       route.fulfill({
         status: 503,
@@ -140,7 +141,6 @@ test.describe('the panel session', () => {
     await expireAccess(page.context())
 
     // Saving the interface language is a request the screen has not made yet, so it needs a session.
-    await openPanelAccountMenu(page, head.email)
     await page.getByLabel('Interface language').selectOption('pl')
 
     await expect(page.getByRole('alert')).toHaveText(

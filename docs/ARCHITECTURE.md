@@ -215,7 +215,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   ([react.js](../packages/eslint-config/react.js)) enforces it. Routes stay thin; network traffic
   goes only through a feature's `api/`.
 - Every page calls `usePageTitle` before its first `return`, naming the page, then its edition or
-  convention; `src/app/pages.test.ts` enforces it.
+  convention, as the tab title and the panel's breadcrumb show them; `src/app/pages.test.ts`
+  enforces it.
 - Screens are built from shadcn/ui components on Base UI, which the CLI of each application adds to
   its `shared/ui` as it writes them, but for formatting, lint fixes and their own texts moved into
   Lingui macros; an application's own compositions of them sit beside them. They are styled only

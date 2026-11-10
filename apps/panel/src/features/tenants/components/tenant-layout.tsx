@@ -5,22 +5,18 @@ import { tenantApi } from '../../../shared/lib/api'
 import { isPermissionDenied } from '../../../shared/lib/errors'
 import { clearForbidden } from '../../../shared/lib/forbidden'
 import { ErrorMessage, LoadingView, NoPermissionView } from '../../../shared/ui'
-import { editionListOptions, tenantOptions } from '../api/tenants'
+import { tenantOptions } from '../api/tenants'
 import { membershipFor, tenantAccess, usePermissionStore } from '../model/permissions'
-import { PanelHeader } from './panel-header'
+import { ConventionSwitcher } from './area-switcher'
+import { PanelFrame } from './panel-frame'
 import { type CurrentTenant, TenantContext } from './tenant-context'
 
 /**
- * The frame of every page inside a tenant: the top bar, then the area of the page, one edition's
- * or the convention settings, each with its own menu. Without the tenant there is no
- * area, only the "no permissions" screen, an error or the loading view.
+ * Every page inside a tenant: the tenant for the area of the page, one edition's or the convention
+ * settings, which frames itself with its menu. Without the tenant there is no area, only the
+ * "no permissions" screen, an error or the loading view in a frame without one.
  */
-export function TenantLayout({
-  editionSwitch,
-}: {
-  /** The edition switch of the top bar, handed in by the application. */
-  editionSwitch?: ReactNode
-}) {
+export function TenantLayout() {
   const { tenantSlug = '' } = useParams()
   const location = useLocation()
   const memberships = usePermissionStore((state) => state.memberships)
@@ -38,15 +34,6 @@ export function TenantLayout({
     [membership, tenant.data, api],
   )
 
-  // Only the convention settings offer a way back to an edition, and only when there is one.
-  const editions = useQuery({
-    ...editionListOptions(api),
-    enabled: Boolean(current?.access.seesConventionSettings),
-  })
-  const seesAnEdition = Boolean(
-    current && editions.data?.some((edition) => current.access.seesEdition(edition.id)),
-  )
-
   let screen: ReactNode = null
   if (!membership || isPermissionDenied(tenant.error)) screen = <NoPermissionView />
   else if (tenant.isError) screen = <ErrorMessage error={tenant.error} />
@@ -54,15 +41,7 @@ export function TenantLayout({
 
   return (
     <TenantContext.Provider value={current}>
-      <div className="flex min-h-screen flex-col">
-        <PanelHeader
-          tenantSlug={tenantSlug}
-          conventionSettings={current?.access.seesConventionSettings}
-          editionSwitch={current && editionSwitch}
-          seesAnEdition={seesAnEdition}
-        />
-        {screen ? <main className="flex-1 p-4 md:p-8">{screen}</main> : <Outlet />}
-      </div>
+      {screen ? <PanelFrame switcher={<ConventionSwitcher />}>{screen}</PanelFrame> : <Outlet />}
     </TenantContext.Provider>
   )
 }

@@ -3,7 +3,7 @@ import { I18nProvider } from '@lingui/react'
 import { cleanup, render } from '@testing-library/react'
 import { type ReactNode } from 'react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { formatTitle, usePageTitle, useScreenTitle } from './page-title'
+import { formatTitle, usePageTitle, usePageTrail, useScreenTitle } from './page-title'
 
 beforeAll(() => {
   i18n.loadAndActivate({ locale: 'en', messages: {} })
@@ -20,6 +20,11 @@ function Page({ parts, children }: { parts: (string | undefined)[]; children?: R
 function NotFound() {
   useScreenTitle('Page not found')
   return null
+}
+
+/** The trail of the shown title, as text. */
+function Trail() {
+  return usePageTrail().join(' > ')
 }
 
 const inI18n = (node: ReactNode) => <I18nProvider i18n={i18n}>{node}</I18nProvider>
@@ -107,5 +112,38 @@ describe('useScreenTitle', () => {
     view.rerender(inI18n(<Page parts={['Programme', 'Convention A 2026']} />))
 
     expect(document.title).toBe('Programme · Convention A 2026 · OPOS panel')
+  })
+})
+
+describe('usePageTrail', () => {
+  it("gives the shown title's parts, the most general first", () => {
+    const { container } = render(
+      inI18n(
+        <Page parts={['Programme', undefined, 'Convention A 2026']}>
+          <Trail />
+        </Page>,
+      ),
+    )
+
+    expect(container.textContent).toBe('Convention A 2026 > Programme')
+  })
+
+  it('follows a screen that stands in for the page', () => {
+    const { container } = render(
+      inI18n(
+        <Page parts={['Programme', 'Convention A 2026']}>
+          <NotFound />
+          <Trail />
+        </Page>,
+      ),
+    )
+
+    expect(container.textContent).toBe('Page not found')
+  })
+
+  it('is empty while no page names itself', () => {
+    const { container } = render(inI18n(<Trail />))
+
+    expect(container.textContent).toBe('')
   })
 })

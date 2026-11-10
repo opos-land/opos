@@ -3,7 +3,7 @@ import { accessToken, callApi } from '../fixtures/api'
 import { passwordGrant } from '../fixtures/auth-admin'
 import { expect, test } from '../fixtures'
 import { confirmLinkIn, invitationLinkIn, waitForMail } from '../fixtures/mailpit'
-import { panelUrl, signInToPanel, signOutOfPanel } from '../fixtures/ui'
+import { openPanelSwitcher, panelUrl, signInToPanel, signOutOfPanel } from '../fixtures/ui'
 
 // An invitee without an account registers in the panel on /invitation, confirms the address,
 // chooses a password and joins the team.
@@ -70,8 +70,8 @@ test.describe('organizer invitation to an address without an account', () => {
     // no convention settings and no other edition to switch to.
     const editionMenu = page.getByRole('navigation', { name: spring.name })
     await expect(editionMenu.getByRole('link')).toHaveText(['Dashboard', 'Programme'])
-    await expect(page.getByRole('banner').getByRole('combobox')).toHaveCount(0)
-    await expect(page.getByRole('link', { name: 'Convention settings' })).toHaveCount(0)
+    await openPanelSwitcher(page)
+    await expect(page.getByRole('menuitem')).toHaveText([spring.name])
     await expect(page.getByText('Autumn edition')).toHaveCount(0)
     expect((await passwordGrant(invitee, INVITEE_PASSWORD)).status).toBe(200)
   })

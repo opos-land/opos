@@ -1,4 +1,5 @@
 import { Trans } from '@lingui/react/macro'
+import { CalendarRangeIcon, SlidersHorizontalIcon, UsersIcon } from 'lucide-react'
 import { AreaFrame, SidebarLink } from './area-frame'
 import { useCurrentTenant } from './tenant-context'
 
@@ -16,20 +17,16 @@ export function ConventionLayout() {
     <AreaFrame
       menu={{
         label: tenant.name,
-        header: (
-          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-            <Trans>Convention settings</Trans>
-          </p>
-        ),
+        title: <Trans>Convention settings</Trans>,
         links: (
           <>
-            <SidebarLink to={base} end>
+            <SidebarLink to={base} end icon={<SlidersHorizontalIcon />}>
               <Trans>General</Trans>
             </SidebarLink>
-            <SidebarLink to={`${base}/editions`}>
+            <SidebarLink to={`${base}/editions`} icon={<CalendarRangeIcon />}>
               <Trans>Editions</Trans>
             </SidebarLink>
-            <SidebarLink to={`${base}/team`}>
+            <SidebarLink to={`${base}/team`} icon={<UsersIcon />}>
               <Trans>Team</Trans>
             </SidebarLink>
           </>

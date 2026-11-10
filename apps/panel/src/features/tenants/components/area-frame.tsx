@@ -1,55 +1,72 @@
 import { type ReactNode } from 'react'
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useMatch, useResolvedPath } from 'react-router'
 import { useForbidden } from '../../../shared/lib/forbidden'
-import { cn } from '../../../shared/lib/utils'
-import { buttonVariants, NoPermissionView } from '../../../shared/ui'
+import {
+  NoPermissionView,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '../../../shared/ui'
+import { AreaSwitcher } from './area-switcher'
+import { PanelFrame } from './panel-frame'
 
-/** One section of an area's menu, marked while its page is open. */
+/** One section of an area's menu, marked while its page is open; its icon stays when the sidebar collapses. */
 export function SidebarLink({
   to,
   end,
+  icon,
   children,
 }: {
   to: string
   end?: boolean
+  icon: ReactNode
   children: ReactNode
 }) {
+  const { pathname } = useResolvedPath(to)
+  const active = Boolean(useMatch({ path: pathname, end: Boolean(end) }))
   return (
-    <NavLink
-      to={to}
-      end={end}
-      className={({ isActive }) =>
-        cn(buttonVariants({ variant: isActive ? 'secondary' : 'ghost' }), 'justify-start')
-      }
-    >
-      {children}
-    </NavLink>
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        isActive={active}
+        tooltip={{ children }}
+        render={<NavLink to={to} end={end} />}
+      >
+        {icon}
+        <span>{children}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   )
 }
 
 /**
- * One area of the panel: the convention's or one edition's. Its menu stands beside the
- * page, and stays while a `403` gives the page way to the "no permissions" screen.
+ * One area of the panel: the convention settings or one edition. Its menu stands in the sidebar,
+ * under the area switcher, and stays while a `403` gives the page way to the "no permissions"
+ * screen.
  */
 export function AreaFrame({
   menu,
 }: {
-  /** The menu of the area; left out until the area knows what it is. */
-  menu?: { label: string; header: ReactNode; links: ReactNode }
+  /** The menu of the area, named by `label`; left out until the area knows what it is. */
+  menu?: { label: string; title: ReactNode; links: ReactNode }
 }) {
   const forbidden = useForbidden((state) => state.forbidden)
   return (
-    <div className="flex flex-1 flex-col md:flex-row">
-      {menu && (
-        <nav
-          aria-label={menu.label}
-          className="flex flex-col gap-1 border-b p-3 md:w-56 md:shrink-0 md:border-r md:border-b-0"
-        >
-          <div className="flex flex-col gap-2 px-3 pb-2">{menu.header}</div>
-          {menu.links}
-        </nav>
-      )}
-      <main className="flex-1 p-4 md:p-8">{forbidden ? <NoPermissionView /> : <Outlet />}</main>
-    </div>
+    <PanelFrame
+      switcher={<AreaSwitcher />}
+      menu={
+        menu && (
+          <nav aria-label={menu.label}>
+            <SidebarGroup>
+              <SidebarGroupLabel>{menu.title}</SidebarGroupLabel>
+              <SidebarMenu>{menu.links}</SidebarMenu>
+            </SidebarGroup>
+          </nav>
+        )
+      }
+    >
+      {forbidden ? <NoPermissionView /> : <Outlet />}
+    </PanelFrame>
   )
 }

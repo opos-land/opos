@@ -73,6 +73,8 @@ describe('createTenant', () => {
   it.each([
     [{ slug: 'Bad_Slug' }, 'tenant.slug-invalid'],
     [{ slug: 'panel' }, 'tenant.slug-reserved'],
+    // The panel's account page.
+    [{ slug: 'account' }, 'tenant.slug-reserved'],
     [{ name: '  ' }, 'tenant.name-empty'],
     [{ defaultLocale: 'cs' }, 'tenant.locale-invalid'],
     [{ timezone: 'Mars/Olympus' }, 'tenant.timezone-invalid'],

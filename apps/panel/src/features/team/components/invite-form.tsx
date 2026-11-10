@@ -2,19 +2,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { type EditionGrant, type InvitationOutcome, level } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import {
   Button,
-  ErrorMessage,
   FieldLegend,
   FieldSet,
   FormField,
   Input,
   NativeSelect,
   NativeSelectOption,
-  Notice,
   Table,
   TableBody,
   TableCell,
@@ -25,7 +23,7 @@ import {
 import { useEditions } from '../../editions'
 import { useCurrentTenant, useTenantTime } from '../../tenants'
 import { inviteMemberOptions, membersKey } from '../api/members'
-import { memberName } from '../model/member'
+import { invitationNotice } from '../model/invitation'
 import { LevelSelect } from './level-select'
 import { ProgramLabel, SettingsLabel, ShopLabel, TicketsLabel } from './permission-labels'
 
@@ -47,27 +45,6 @@ const schema = z.object({
 
 type InviteValues = z.infer<typeof schema>
 
-function Outcome({ outcome }: { outcome: InvitationOutcome }) {
-  const time = useTenantTime()
-  if (outcome.outcome === 'added') {
-    const name = memberName(outcome.member)
-    return (
-      <Notice>
-        <Trans>{name} has joined the team and has been told by email.</Trans>
-      </Notice>
-    )
-  }
-  const email = outcome.email
-  const validUntil = time.format(outcome.validUntil)
-  return (
-    <Notice>
-      <Trans>
-        An invitation has gone to {email}. Its link works once, until {validUntil}.
-      </Trans>
-    </Notice>
-  )
-}
-
 /** An invitation by email (PRODUCT.md 5): the role, both levels and an optional expiry. */
 export function InviteForm() {
   const { t } = useLingui()
@@ -75,7 +52,6 @@ export function InviteForm() {
   const time = useTenantTime()
   const queryClient = useQueryClient()
   const editions = useEditions()
-  const [outcome, setOutcome] = useState<InvitationOutcome | null>(null)
 
   const blank = (): InviteValues => ({
     email: '',
@@ -102,15 +78,14 @@ export function InviteForm() {
 
   const invite = useMutation({
     ...inviteMemberOptions(api),
-    onSuccess: async (result) => {
-      setOutcome(result)
+    meta: { success: (result: InvitationOutcome) => invitationNotice(result, time.format) },
+    onSuccess: async () => {
       form.reset(blank())
       await queryClient.invalidateQueries({ queryKey: membersKey(api) })
     },
   })
 
   const submit = form.handleSubmit((values) => {
-    setOutcome(null)
     if (values.role === 'head') {
       invite.mutate({ body: { email: values.email, role: 'head' } })
       return
@@ -229,8 +204,7 @@ export function InviteForm() {
           )}
         </>
       )}
-      <ErrorMessage error={invite.error} />
-      {outcome && <Outcome outcome={outcome} />}
+
       <div>
         <Button disabled={invite.isPending} type="submit">
           <Trans>Invite</Trans>

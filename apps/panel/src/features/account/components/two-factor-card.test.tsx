@@ -1,4 +1,4 @@
-import { i18n } from '@lingui/core'
+import { i18n, type MessageDescriptor } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -14,8 +14,13 @@ import {
   enrollTwoFactor,
   refreshAccount,
 } from '../api/two-factor'
+import { notifyFailure, notifySuccess } from '../../../shared/lib/notify'
 import { type SignInMethods } from '../model/sign-in-methods'
 import { TwoFactorCard } from './two-factor-card'
+
+/** The successes the card notified, as the person reads them. */
+const successes = () =>
+  vi.mocked(notifySuccess).mock.calls.map(([meta]) => i18n._(meta?.success as MessageDescriptor))
 
 vi.mock('../../auth', () => ({
   signInWithPassword: vi.fn(),
@@ -23,6 +28,7 @@ vi.mock('../../auth', () => ({
     <button type="button">google back to {returnTo}</button>
   ),
 }))
+vi.mock('../../../shared/lib/notify', () => ({ notifySuccess: vi.fn(), notifyFailure: vi.fn() }))
 vi.mock('../api/two-factor', () => ({
   enrollTwoFactor: vi.fn(),
   enableTwoFactor: vi.fn(),
@@ -81,6 +87,8 @@ beforeAll(() => {
 beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
+  vi.mocked(notifySuccess).mockReset()
+  vi.mocked(notifyFailure).mockReset()
   vi.mocked(enrollTwoFactor).mockReset().mockResolvedValue(enrolled)
   vi.mocked(enableTwoFactor).mockReset().mockResolvedValue({ recoveryCodes: CODES })
   vi.mocked(disableTwoFactor).mockReset().mockResolvedValue(undefined)
@@ -114,6 +122,7 @@ describe('TwoFactorCard', () => {
     expect(screen.queryByAltText('QR code for your authenticator app')).toBeNull()
     expect(screen.queryByText(SECRET)).toBeNull()
     expect(refreshAccount).toHaveBeenCalledExactlyOnceWith(client, true)
+    expect(successes()).toEqual(['Two-factor authentication is on.'])
   })
 
   it('the codes view stays until the person confirms they saved them', async () => {
@@ -133,14 +142,17 @@ describe('TwoFactorCard', () => {
     expect(screen.getByRole('button', { name: 'Turn off two-factor authentication' })).toBeTruthy()
   })
 
-  it('a wrong code shows the translated message and keeps the form', async () => {
-    vi.mocked(enableTwoFactor).mockRejectedValue(new ORPCError('mfa.code-invalid', { status: 400 }))
+  it('a wrong code is a notification of its own, and the form stays', async () => {
+    const wrong = new ORPCError('mfa.code-invalid', { status: 400 })
+    vi.mocked(enableTwoFactor).mockRejectedValue(wrong)
     const user = renderCard(false)
     await startEnrolling(user)
 
     await enterCode(user)
 
-    expect((await screen.findByRole('alert')).textContent).toContain('The code is wrong')
+    await vi.waitFor(() => expect(notifyFailure).toHaveBeenCalledExactlyOnceWith(wrong))
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(successes()).toEqual([])
     expect(screen.getByLabelText<HTMLInputElement>('Code from the app').value).toBe('123456')
     expect(screen.getByAltText('QR code for your authenticator app')).toBeTruthy()
     expect(refreshAccount).not.toHaveBeenCalled()
@@ -201,6 +213,7 @@ describe('TwoFactorCard', () => {
     expect(disableTwoFactor).toHaveBeenCalledOnce()
     expect(await screen.findByText(/Two-factor authentication is off/)).toBeTruthy()
     expect(refreshAccount).toHaveBeenCalledExactlyOnceWith(client, false)
+    expect(successes()).toEqual(['Two-factor authentication is off.'])
   })
 
   it('tells how to get new codes when the codes of a turn-on were lost to a racing request', async () => {
@@ -228,12 +241,14 @@ describe('TwoFactorCard', () => {
   })
 
   it('refreshes at once when turning off finds 2FA already off, and shows it as off', async () => {
-    vi.mocked(disableTwoFactor).mockRejectedValue(new ORPCError('mfa.not-enabled', { status: 404 }))
+    const gone = new ORPCError('mfa.not-enabled', { status: 404 })
+    vi.mocked(disableTwoFactor).mockRejectedValue(gone)
     const user = renderCard(true)
 
     await user.click(screen.getByRole('button', { name: 'Turn off two-factor authentication' }))
 
     await vi.waitFor(() => expect(refreshAccount).toHaveBeenCalledExactlyOnceWith(client, false))
+    expect(notifyFailure).toHaveBeenCalledExactlyOnceWith(gone)
   })
 
   describe('when the sign-in is too old', () => {

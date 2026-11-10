@@ -75,3 +75,17 @@ export async function switchPanelArea(page: Page, choice: string) {
   await openPanelSwitcher(page)
   await page.getByRole('menuitem', { name: choice, exact: true }).click()
 }
+
+/**
+ * The notification of a write's outcome holding `text`: success, a warning for a refusal or an
+ * error for a failure. Several can show at once, so the text picks one.
+ */
+export const notification = (
+  page: Page,
+  type: 'success' | 'warning' | 'error',
+  text: string | RegExp,
+) =>
+  page
+    .getByRole('region', { name: 'Notifications' })
+    .locator(`[data-slot="toast"][data-type="${type}"]`)
+    .filter({ hasText: text })

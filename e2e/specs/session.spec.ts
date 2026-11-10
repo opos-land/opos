@@ -1,6 +1,7 @@
 import { type BrowserContext, type Page, type Response } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import {
+  notification,
   openPanelAccountPage,
   panelUrl,
   portalUrl,
@@ -143,9 +144,9 @@ test.describe('the panel session', () => {
     // Saving the interface language is a request the screen has not made yet, so it needs a session.
     await page.getByLabel('Interface language').selectOption('pl')
 
-    await expect(page.getByRole('alert')).toHaveText(
-      'The service is temporarily unavailable. Try again in a moment.',
-    )
+    await expect(
+      notification(page, 'error', 'The service is temporarily unavailable. Try again in a moment.'),
+    ).toBeVisible()
     await expect(page.getByText('Your session has ended')).toHaveCount(0)
     await expect(page).not.toHaveURL(/\/login/)
 
@@ -234,9 +235,9 @@ test.describe('the portal session', () => {
     // Saving the interface language is a request the screen has not made yet, so it needs a session.
     await page.getByLabel('Interface language').selectOption('pl')
 
-    await expect(page.getByRole('alert')).toHaveText(
-      'The service is temporarily unavailable. Try again in a moment.',
-    )
+    await expect(
+      notification(page, 'error', 'The service is temporarily unavailable. Try again in a moment.'),
+    ).toBeVisible()
     await expect(page.getByText('Your session has ended')).toHaveCount(0)
     await expect(page).not.toHaveURL(/\/login/)
 

@@ -1,4 +1,6 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { type Edition } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftIcon } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
@@ -19,6 +21,12 @@ export function NewEditionPage() {
   const queryClient = useQueryClient()
   const create = useMutation({
     ...createEditionOptions(api),
+    meta: {
+      success: (edition: Edition) => {
+        const name = edition.name
+        return msg`The edition ${name} is created.`
+      },
+    },
     onSuccess: async (edition) => {
       await queryClient.invalidateQueries({ queryKey: editionsKey(api) })
       void navigate(`/${tenant.slug}/editions/${edition.slug}`)
@@ -46,7 +54,7 @@ export function NewEditionPage() {
         <EditionForm
           defaultValues={EMPTY}
           pending={create.isPending}
-          error={create.error}
+
           submitLabel={<Trans>Create the edition</Trans>}
           onSubmit={(body) => create.mutate({ body })}
         />

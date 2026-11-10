@@ -2,11 +2,11 @@ import { type Page } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import { waitForMail } from '../fixtures/mailpit'
 import { stack } from '../fixtures/stack'
-import { panelUrl, signInToPanel } from '../fixtures/ui'
+import { notification, panelUrl, signInToPanel } from '../fixtures/ui'
 
 // The convention's team in the panel: the table of members, the invitation and the member's
-// page with its change and removal, and the anti-escalation refusals shown next to the form that
-// caused them (PRODUCT.md 5). The team's rows are looked up in the page: the account at the foot
+// page with its change and removal, each outcome a notification, and the anti-escalation refusals
+// as warnings (PRODUCT.md 5). The team's rows are looked up in the page: the account at the foot
 // of the sidebar holds the signed-in address too.
 
 /** The member's row in the team table; its cells are the role, settings, shop and expiry. */
@@ -35,9 +35,13 @@ test.describe('team management in the panel', () => {
     await invite.getByLabel('Email').fill(colleague.email)
     await invite.getByLabel('Settings').selectOption('read')
     await invite.getByRole('button', { name: 'Invite' }).click()
-    await expect(invite.getByRole('status')).toHaveText(
-      'Celina Colleague has joined the team and has been told by email.',
-    )
+    await expect(
+      notification(
+        page,
+        'success',
+        'Added to the team: Celina Colleague. They have been told by email.',
+      ),
+    ).toBeVisible()
     // The notification links to the convention in the panel.
     expect((await waitForMail(colleague.email)).Text).toContain(`${stack.panel}/${tenant.slug}`)
     await page.getByRole('link', { name: 'Back to the team' }).click()
@@ -60,6 +64,9 @@ test.describe('team management in the panel', () => {
     await membership.getByLabel('Settings').selectOption('write')
     await membership.getByRole('button', { name: 'Save' }).click()
     await expect(page).toHaveURL(team)
+    await expect(
+      notification(page, 'success', 'The membership is saved: Celina Colleague.'),
+    ).toBeVisible()
     await expect(row.getByRole('cell').nth(1)).toHaveText('Write')
     expect(await tenants.membership(tenant.id, colleague.id)).toMatchObject({
       settingsAccess: 'write',
@@ -72,6 +79,9 @@ test.describe('team management in the panel', () => {
       .getByRole('button', { name: 'Yes, remove Celina Colleague from the team' })
       .click()
     await expect(page).toHaveURL(team)
+    await expect(
+      notification(page, 'success', 'Removed from the team: Celina Colleague.'),
+    ).toBeVisible()
     await expect(row).toHaveCount(0)
     expect(await tenants.membership(tenant.id, colleague.id)).toBeUndefined()
   })
@@ -99,9 +109,9 @@ test.describe('team management in the panel', () => {
     await invite.getByLabel('Email').fill(newcomer.email)
     await invite.getByLabel('Shop').selectOption('write')
     await invite.getByRole('button', { name: 'Invite' }).click()
-    await expect(invite.getByRole('alert')).toHaveText(
-      'You cannot grant permissions higher than your own.',
-    )
+    await expect(
+      notification(page, 'warning', 'You cannot grant permissions higher than your own.'),
+    ).toBeVisible()
     expect(await tenants.membership(tenant.id, newcomer.id)).toBeUndefined()
 
     await page.goto(team)
@@ -109,9 +119,9 @@ test.describe('team management in the panel', () => {
     const membership = page.getByRole('region', { name: 'Membership' })
     await membership.getByLabel('Shop').selectOption('write')
     await membership.getByRole('button', { name: 'Save' }).click()
-    await expect(membership.getByRole('alert')).toHaveText(
-      'You cannot grant permissions higher than your own.',
-    )
+    await expect(
+      notification(page, 'warning', 'You cannot grant permissions higher than your own.'),
+    ).toBeVisible()
 
     // A head and the org's own membership lead to no page of change.
     await page.getByRole('link', { name: 'Back to the team' }).click()

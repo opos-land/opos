@@ -1,8 +1,9 @@
+import { msg } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import { type Member } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Button, ErrorMessage } from '../../../shared/ui'
+import { Button } from '../../../shared/ui'
 import { membershipsKey, useCurrentTenant } from '../../tenants'
 import { membersKey, removeMemberOptions } from '../api/members'
 import { memberName } from '../model/member'
@@ -12,9 +13,11 @@ export function RemoveMember({ member, onRemoved }: { member: Member; onRemoved:
   const { api } = useCurrentTenant()
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState(false)
+  const name = memberName(member)
 
   const remove = useMutation({
     ...removeMemberOptions(api),
+    meta: { success: msg`Removed from the team: ${name}.` },
     // Leaves the page first: the refreshed team no longer holds the member it shows.
     onSuccess: async () => {
       onRemoved()
@@ -23,7 +26,6 @@ export function RemoveMember({ member, onRemoved }: { member: Member; onRemoved:
     },
   })
 
-  const name = memberName(member)
   return (
     <>
       <p className="text-sm">
@@ -51,7 +53,6 @@ export function RemoveMember({ member, onRemoved }: { member: Member; onRemoved:
           </Button>
         </div>
       )}
-      <ErrorMessage error={remove.error} />
     </>
   )
 }

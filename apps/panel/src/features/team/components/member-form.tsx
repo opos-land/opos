@@ -1,18 +1,12 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type Member } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, useWatch } from 'react-hook-form'
-import {
-  Button,
-  ErrorMessage,
-  FormField,
-  Input,
-  NativeSelect,
-  NativeSelectOption,
-} from '../../../shared/ui'
+import { Button, FormField, Input, NativeSelect, NativeSelectOption } from '../../../shared/ui'
 import { membershipsKey, useCurrentTenant, useTenantTime } from '../../tenants'
 import { membersKey, updateMemberOptions } from '../api/members'
-import { memberChange, type MemberFormValues } from '../model/member'
+import { memberChange, type MemberFormValues, memberName } from '../model/member'
 import { LevelSelect } from './level-select'
 import { SettingsLabel, ShopLabel } from './permission-labels'
 
@@ -34,9 +28,11 @@ export function MemberForm({ member, onSaved }: { member: Member; onSaved: () =>
   }
   const form = useForm<MemberFormValues>({ values: current })
   const promoting = useWatch({ control: form.control, name: 'role' }) === 'head'
+  const name = memberName(member)
 
   const update = useMutation({
     ...updateMemberOptions(api),
+    meta: { success: msg`The membership is saved: ${name}.` },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: membersKey(api) })
       await queryClient.invalidateQueries({ queryKey: membershipsKey() })
@@ -94,7 +90,7 @@ export function MemberForm({ member, onSaved }: { member: Member; onSaved: () =>
           {t`A head organizer has every permission in every edition and never expires; the member's own permissions and expiry are cleared.`}
         </p>
       )}
-      <ErrorMessage error={update.error} />
+
       <div>
         <Button disabled={update.isPending} type="submit">
           <Trans>Save</Trans>

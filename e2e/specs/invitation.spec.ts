@@ -3,7 +3,13 @@ import { accessToken, callApi } from '../fixtures/api'
 import { passwordGrant } from '../fixtures/auth-admin'
 import { expect, test } from '../fixtures'
 import { confirmLinkIn, invitationLinkIn, waitForMail } from '../fixtures/mailpit'
-import { openPanelSwitcher, panelUrl, signInToPanel, signOutOfPanel } from '../fixtures/ui'
+import {
+  notification,
+  openPanelSwitcher,
+  panelUrl,
+  signInToPanel,
+  signOutOfPanel,
+} from '../fixtures/ui'
 
 // An invitee without an account registers in the panel on /invitation, confirms the address,
 // chooses a password and joins the team.
@@ -59,7 +65,9 @@ test.describe('organizer invitation to an address without an account', () => {
     await invite.getByLabel('Email').fill(invitee)
     await invite.getByLabel('Programme in Spring edition').selectOption('write')
     await invite.getByRole('button', { name: 'Invite' }).click()
-    await expect(invite.getByRole('status')).toContainText(`An invitation has gone to ${invitee}.`)
+    await expect(
+      notification(page, 'success', `An invitation has gone to ${invitee}.`),
+    ).toBeVisible()
 
     // The head leaves the browser to the invitee.
     await signOutOfPanel(page, head.email)

@@ -91,11 +91,12 @@ describe('AccountPage through the query cache', () => {
     await user.type(screen.getByLabelText('First name'), 'Anna')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
-    expect(await screen.findByText('Your name is saved.')).toBeTruthy()
-    expect(queryClient.getQueryData(accountOptions().queryKey)).toEqual({
-      ...me,
-      firstName: 'Anna',
-    })
+    await waitFor(() =>
+      expect(queryClient.getQueryData(accountOptions().queryKey)).toEqual({
+        ...me,
+        firstName: 'Anna',
+      }),
+    )
   })
 
   it('keeps the two-factor card, though the answer names no sign-in methods', async () => {

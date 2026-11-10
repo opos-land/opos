@@ -1,8 +1,9 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type Edition, type EditionMember, type Member } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Button, ErrorMessage, TableCell, TableHead, TableRow } from '../../../shared/ui'
+import { Button, TableCell, TableHead, TableRow } from '../../../shared/ui'
 import { atLeast, membershipsKey, useCurrentTenant } from '../../tenants'
 import {
   editionMembersKey,
@@ -42,15 +43,21 @@ export function EditionAccessRow({
     await queryClient.invalidateQueries({ queryKey: editionMembersKey(api) })
     await queryClient.invalidateQueries({ queryKey: membershipsKey() })
   }
-  const save = useMutation({ ...putEditionMemberOptions(api), onSuccess: refresh })
+  const name = memberName(member)
+  const editionName = edition.name
+  const save = useMutation({
+    ...putEditionMemberOptions(api),
+    meta: { success: msg`Access to the edition ${editionName} is saved: ${name}.` },
+    onSuccess: refresh,
+  })
   const remove = useMutation({
     ...removeEditionMemberOptions(api),
+    meta: { success: msg`Access to the edition ${editionName} is taken away: ${name}.` },
     onSuccess: refresh,
   })
 
   const params = { editionId: edition.id, tenantMembershipId: member.id }
   const editable = atLeast(access.settings, 'write') && !isSelf
-  const name = memberName(member)
 
   const submit = form.handleSubmit((levels) =>
     save.mutate({
@@ -103,7 +110,6 @@ export function EditionAccessRow({
             </Button>
           )}
         </form>
-        <ErrorMessage error={save.error ?? remove.error} />
       </TableCell>
     </TableRow>
   )

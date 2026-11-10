@@ -1,9 +1,10 @@
+import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import { type Account } from '@opos/contract'
 import { isLocale, SUPPORTED_LOCALES } from '@opos/i18n'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
-import { ErrorMessage, FormField, NativeSelect, NativeSelectOption } from '../../../shared/ui'
+import { FormField, NativeSelect, NativeSelectOption } from '../../../shared/ui'
 import { mergeSavedAccount, updateAccountOptions } from '../api/account'
 
 const BROWSER = 'browser'
@@ -17,6 +18,7 @@ export function LanguageForm({ account }: { account: Account }) {
   const queryClient = useQueryClient()
   const update = useMutation({
     ...updateAccountOptions(),
+    meta: { success: msg`The interface language is saved.` },
     onSuccess: async (saved) => {
       mergeSavedAccount(queryClient, saved)
       await loadLocale(pickLocale(saved.locale))
@@ -45,7 +47,6 @@ export function LanguageForm({ account }: { account: Account }) {
           </NativeSelect>
         )}
       </FormField>
-      <ErrorMessage error={update.error} />
     </div>
   )
 }

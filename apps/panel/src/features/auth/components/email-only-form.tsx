@@ -3,7 +3,7 @@ import { useLingui } from '@lingui/react/macro'
 import { type ReactNode, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import { Button, ErrorMessage, FormField, Input } from '../../../shared/ui'
 
 const schema = z.object({ email: z.email() })
 
@@ -11,12 +11,12 @@ const schema = z.object({ email: z.email() })
 export function EmailOnlyForm({
   defaultEmail,
   submitLabel,
-  variant = 'primary',
+  variant = 'default',
   onSubmit,
 }: {
   defaultEmail: string
   submitLabel: ReactNode
-  variant?: 'primary' | 'secondary'
+  variant?: 'default' | 'outline'
   /** Resolves to the API's error, or null once the message is on its way. */
   onSubmit: (email: string) => Promise<unknown>
 }) {
@@ -32,19 +32,13 @@ export function EmailOnlyForm({
 
   return (
     <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-3">
-      <Field label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
+      <FormField label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
         {(control) => (
-          <input
-            {...control}
-            {...form.register('email')}
-            type="email"
-            autoComplete="email"
-            className={inputClass}
-          />
+          <Input {...control} {...form.register('email')} type="email" autoComplete="email" />
         )}
-      </Field>
+      </FormField>
       <ErrorMessage error={error} />
-      <Button type="submit" variant={variant} pending={isSubmitting}>
+      <Button disabled={isSubmitting} type="submit" variant={variant}>
         {submitLabel}
       </Button>
     </form>

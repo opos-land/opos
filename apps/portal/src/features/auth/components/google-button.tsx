@@ -21,8 +21,9 @@ export function GoogleButton({
 
   return (
     <Button
-      variant="secondary"
-      pending={pending}
+      disabled={pending}
+      variant="outline"
+
       onClick={() => {
         setPending(true)
         onLeave?.()

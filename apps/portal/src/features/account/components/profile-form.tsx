@@ -3,7 +3,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { type Account } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
+import { Button, ErrorMessage, FormField, Input, Notice } from '../../../shared/ui'
 import { mergeSavedAccount, updateAccountOptions } from '../api/account'
 import { profileSchema, profileUpdate, profileValues } from '../model/profile'
 
@@ -22,33 +22,23 @@ export function ProfileForm({ account }: { account: Account }) {
 
   return (
     <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-4">
-      <Field label={t`First name`} error={errors.firstName && t`Enter up to 100 characters.`}>
+      <FormField label={t`First name`} error={errors.firstName && t`Enter up to 100 characters.`}>
         {(control) => (
-          <input
-            {...control}
-            {...form.register('firstName')}
-            autoComplete="given-name"
-            className={inputClass}
-          />
+          <Input {...control} {...form.register('firstName')} autoComplete="given-name" />
         )}
-      </Field>
-      <Field label={t`Last name`} error={errors.lastName && t`Enter up to 100 characters.`}>
+      </FormField>
+      <FormField label={t`Last name`} error={errors.lastName && t`Enter up to 100 characters.`}>
         {(control) => (
-          <input
-            {...control}
-            {...form.register('lastName')}
-            autoComplete="family-name"
-            className={inputClass}
-          />
+          <Input {...control} {...form.register('lastName')} autoComplete="family-name" />
         )}
-      </Field>
+      </FormField>
       <ErrorMessage error={update.error} />
       {update.isSuccess && !form.formState.isDirty && (
         <Notice>
           <Trans>Your name is saved.</Trans>
         </Notice>
       )}
-      <Button type="submit" pending={update.isPending} className="self-start">
+      <Button disabled={update.isPending} type="submit" className="self-start">
         <Trans>Save</Trans>
       </Button>
     </form>

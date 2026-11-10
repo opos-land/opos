@@ -209,7 +209,8 @@ OPOS's public image matters as much as its features.
 
 - **No AI-generated graphics**: images, logos and icons come from a designer or a licensed icon set.
 - **No template look**: screens follow the designer's designs, not a component library's defaults.
-- **Honest placeholders**: until a design exists, plain blocks and real copy.
+- **Honest placeholders**: until a design exists, the component library's default look, unchanged,
+  and real copy.
 - **Every screen names itself** in the browser tab: the screen, then its edition or convention.
 
 ---

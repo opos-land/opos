@@ -51,18 +51,18 @@ export function AcceptInvitation({ token, email }: { token: string; email: strin
           <p className="text-sm">
             <Trans>You are signed in as {email}.</Trans>
           </p>
-          <Button variant="secondary" onClick={() => void signOut()}>
+          <Button variant="outline" onClick={() => void signOut()}>
             <Trans>Sign out and use another account</Trans>
           </Button>
         </>
       )}
       {code === 'invitation.already-member' || code === 'invitation.used' ? (
-        <Link to="/" className="text-accent text-sm underline">
+        <Link to="/" className="text-primary text-sm underline">
           <Trans>Go to your conventions</Trans>
         </Link>
       ) : (
         code !== 'invitation.email-mismatch' && (
-          <Button variant="secondary" onClick={() => accept.mutate({ body: { token } })}>
+          <Button variant="outline" onClick={() => accept.mutate({ body: { token } })}>
             <Trans>Try again</Trans>
           </Button>
         )

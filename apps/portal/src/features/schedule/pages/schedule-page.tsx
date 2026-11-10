@@ -42,8 +42,8 @@ export function SchedulePage() {
                   timeZone: item.tenant.timezone,
                 }).formatRange(new Date(item.startsAt), new Date(item.endsAt))
                 return (
-                  <li key={item.id} className="border-line flex flex-col gap-1 border-t pt-3">
-                    <span className="text-muted text-sm">{hours}</span>
+                  <li key={item.id} className="flex flex-col gap-1 border-t pt-3">
+                    <span className="text-muted-foreground text-sm">{hours}</span>
                     <Link
                       to={`/conventions/${item.tenant.slug}/${item.edition.slug}/program/${item.id}`}
                       className={linkClass}

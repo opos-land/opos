@@ -5,7 +5,23 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
+import {
+  Button,
+  ErrorMessage,
+  FieldLegend,
+  FieldSet,
+  FormField,
+  Input,
+  NativeSelect,
+  NativeSelectOption,
+  Notice,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../../shared/ui'
 import { useEditions } from '../../editions'
 import { useCurrentTenant, useTenantTime } from '../../tenants'
 import { inviteMemberOptions, membersKey } from '../api/members'
@@ -126,104 +142,97 @@ export function InviteForm() {
   return (
     <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
+        <FormField label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
+          {(control) => <Input {...control} {...form.register('email')} type="email" />}
+        </FormField>
+        <FormField label={t`Role`}>
           {(control) => (
-            <input {...control} {...form.register('email')} type="email" className={inputClass} />
+            <NativeSelect {...control} {...form.register('role')}>
+              <NativeSelectOption value="org">{t`Organizer`}</NativeSelectOption>
+              {access.isHead && (
+                <NativeSelectOption value="head">{t`Head organizer`}</NativeSelectOption>
+              )}
+            </NativeSelect>
           )}
-        </Field>
-        <Field label={t`Role`}>
-          {(control) => (
-            <select {...control} {...form.register('role')} className={inputClass}>
-              <option value="org">{t`Organizer`}</option>
-              {access.isHead && <option value="head">{t`Head organizer`}</option>}
-            </select>
-          )}
-        </Field>
+        </FormField>
       </div>
       {isHead ? (
-        <p className="text-muted text-sm">
+        <p className="text-muted-foreground text-sm">
           <Trans>A head organizer has every permission, in every edition, and never expires.</Trans>
         </p>
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-3">
-            <Field label={<SettingsLabel />}>
+            <FormField label={<SettingsLabel />}>
               {(control) => <LevelSelect {...control} {...form.register('settingsAccess')} />}
-            </Field>
-            <Field label={<ShopLabel />}>
+            </FormField>
+            <FormField label={<ShopLabel />}>
               {(control) => <LevelSelect {...control} {...form.register('shopConfigAccess')} />}
-            </Field>
-            <Field
+            </FormField>
+            <FormField
               label={t`Access until`}
               hint={t`Optional, in the convention's time zone, ${zone}.`}
               error={errors.expiresAt && t`Enter a date and time in the future.`}
             >
               {(control) => (
-                <input
-                  {...control}
-                  {...form.register('expiresAt')}
-                  type="datetime-local"
-                  className={inputClass}
-                />
+                <Input {...control} {...form.register('expiresAt')} type="datetime-local" />
               )}
-            </Field>
+            </FormField>
           </div>
           {count > 0 && (
-            <fieldset className="flex flex-col gap-2">
-              <legend className="text-sm font-medium">
+            <FieldSet>
+              <FieldLegend variant="label">
                 <Plural
                   value={count}
                   one="Permissions in the edition"
                   other="Permissions in the editions"
                 />
-              </legend>
-              <table className="text-left text-sm">
-                <thead className="text-muted">
-                  <tr>
-                    <th scope="col" className="py-1 pr-4 font-medium">
+              </FieldLegend>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead scope="col">
                       <Trans>Edition</Trans>
-                    </th>
-                    <th scope="col" className="py-1 pr-4 font-medium">
+                    </TableHead>
+                    <TableHead scope="col">
                       <ProgramLabel />
-                    </th>
-                    <th scope="col" className="py-1 font-medium">
+                    </TableHead>
+                    <TableHead scope="col">
                       <TicketsLabel />
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {rows.fields.map((row, index) => {
                     const edition = row.name
                     return (
-                      <tr key={row.id} className="border-line border-t">
-                        <th scope="row" className="py-1 pr-4 font-normal">
-                          {edition}
-                        </th>
-                        <td className="py-1 pr-4">
+                      <TableRow key={row.id}>
+                        <TableHead scope="row">{edition}</TableHead>
+                        <TableCell>
                           <LevelSelect
                             aria-label={t`Programme in ${edition}`}
                             {...form.register(`editions.${index}.programAccess`)}
                           />
-                        </td>
-                        <td className="py-1">
+                        </TableCell>
+                        <TableCell>
                           <LevelSelect
                             aria-label={t`Tickets in ${edition}`}
                             {...form.register(`editions.${index}.ticketsAccess`)}
                           />
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )
                   })}
-                </tbody>
-              </table>
-            </fieldset>
+                </TableBody>
+              </Table>
+            </FieldSet>
           )}
         </>
       )}
       <ErrorMessage error={invite.error} />
       {outcome && <Outcome outcome={outcome} />}
       <div>
-        <Button type="submit" pending={invite.isPending}>
+        <Button disabled={invite.isPending} type="submit">
           <Trans>Invite</Trans>
         </Button>
       </div>

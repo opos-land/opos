@@ -7,6 +7,7 @@ import { id, timestamps } from './columns'
  * panel's top-level paths, which would hide a tenant's `/:tenantSlug` dashboard.
  */
 export const RESERVED_TENANT_SLUGS = [
+  'account',
   'admin',
   'api',
   'auth',

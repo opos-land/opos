@@ -115,7 +115,7 @@ function RedeemLink({
         )}
       </p>
       <ErrorMessage error={error} />
-      <Button pending={pending} onClick={() => void redeem()}>
+      <Button disabled={pending} onClick={() => void redeem()}>
         <Trans>Continue</Trans>
       </Button>
       {error ? (

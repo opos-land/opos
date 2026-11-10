@@ -37,14 +37,41 @@ export async function signOutOfPortal(page: Page) {
   await expect(page).toHaveURL(/\/login/)
 }
 
-/** Opens the panel's account menu, whose summary is the signed-in address. */
+/** On a screen under 768 px the panel's sidebar is a sheet over the page: opens it. */
+async function revealPanelSidebar(page: Page) {
+  if ((page.viewportSize()?.width ?? Infinity) < 768) {
+    await page.getByRole('button', { name: 'Toggle Sidebar' }).click()
+  }
+}
+
+/** Opens the panel's account menu at the foot of the sidebar, whose button names the signed-in address. */
 export async function openPanelAccountMenu(page: Page, email: string) {
-  await page.locator('summary', { hasText: email }).click()
+  await revealPanelSidebar(page)
+  await page.getByRole('button', { name: email }).click()
+}
+
+/** Opens the panel's `/account` from the account menu. */
+export async function openPanelAccountPage(page: Page, email: string) {
+  await openPanelAccountMenu(page, email)
+  await page.getByRole('menuitem', { name: 'Account' }).click()
+  await expect(page).toHaveURL(panelUrl('/account'))
 }
 
 /** Signs out of the panel from the account menu: this session ends, the account's others stay. */
 export async function signOutOfPanel(page: Page, email: string) {
   await openPanelAccountMenu(page, email)
-  await page.getByRole('button', { name: 'Sign out' }).click()
+  await page.getByRole('menuitem', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/login/)
+}
+
+/** Opens the switcher at the head of the panel's sidebar: the editions, the convention settings, the conventions. */
+export async function openPanelSwitcher(page: Page) {
+  await revealPanelSidebar(page)
+  await page.locator('[data-slot="sidebar-header"]').getByRole('button').click()
+}
+
+/** Opens an edition, the convention settings or another convention from the switcher. */
+export async function switchPanelArea(page: Page, choice: string) {
+  await openPanelSwitcher(page)
+  await page.getByRole('menuitem', { name: choice, exact: true }).click()
 }

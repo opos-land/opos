@@ -27,7 +27,7 @@ export function TeamPage() {
       />
       {atLeast(access.settings, 'write') && (
         <Section title={<Trans>Invite to the team</Trans>}>
-          <p className="text-muted text-sm">
+          <p className="text-muted-foreground text-sm">
             <Trans>
               Someone with a confirmed account joins at once; anyone else gets a link valid for 7
               days. You cannot grant more than you hold yourself.

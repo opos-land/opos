@@ -4,6 +4,7 @@ import { type Edition } from '@opos/contract'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { SidebarProvider } from '../../../shared/ui'
 import type * as Tenants from '../../tenants'
 import { EditionLayout } from './edition-layout'
 
@@ -38,6 +39,10 @@ vi.mock('../../tenants', async (importOriginal) => ({
   }),
 }))
 
+// The switcher and the account menu of the sidebar have tests of their own.
+vi.mock('../../tenants/components/area-switcher', () => ({ AreaSwitcher: () => null }))
+vi.mock('../../account', () => ({ NavUser: () => null }))
+
 const edition = (slug: string, name: string): Edition => ({
   id: `edition-${slug}`,
   slug,
@@ -52,12 +57,14 @@ const view = (path: string) =>
   render(
     <I18nProvider i18n={i18n}>
       <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/:tenantSlug/editions/:editionSlug" element={<EditionLayout />}>
-            <Route index element={<p>the edition dashboard</p>} />
-            <Route path="program" element={<p>the programme</p>} />
-          </Route>
-        </Routes>
+        <SidebarProvider>
+          <Routes>
+            <Route path="/:tenantSlug/editions/:editionSlug" element={<EditionLayout />}>
+              <Route index element={<p>the edition dashboard</p>} />
+              <Route path="program" element={<p>the programme</p>} />
+            </Route>
+          </Routes>
+        </SidebarProvider>
       </MemoryRouter>
     </I18nProvider>,
   )
@@ -117,12 +124,25 @@ describe('EditionLayout', () => {
     ])
   })
 
-  it('names its edition at the head of the menu, and leaves the switch to the top bar', () => {
+  it('names its edition at the head of the menu, and leaves the switch to the area switcher', () => {
     view('/convention-a/editions/2026')
 
     const menu = screen.getByRole('navigation', { name: 'Edition 2026' })
     expect(within(menu).getByText('Edition 2026')).toBeDefined()
-    expect(within(menu).queryByRole('combobox')).toBeNull()
+    expect(within(menu).queryByRole('button')).toBeNull()
+  })
+
+  it('marks the section of the page in the menu', () => {
+    state.program = 'write'
+    view('/convention-a/editions/2026/program')
+
+    const menu = screen.getByRole('navigation', { name: 'Edition 2026' })
+    expect(within(menu).getByRole('link', { name: 'Programme' }).getAttribute('aria-current')).toBe(
+      'page',
+    )
+    expect(
+      within(menu).getByRole('link', { name: 'Dashboard' }).getAttribute('aria-current'),
+    ).toBeNull()
   })
 
   it('shows no menu for an edition the member does not see, and leaves the page to say so', () => {

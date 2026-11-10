@@ -1,2 +1,3 @@
 export { AccountLocale } from './components/account-locale'
-export { AccountMenu } from './components/account-menu'
+export { NavUser } from './components/nav-user'
+export { AccountPage } from './pages/account-page'

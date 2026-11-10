@@ -3,7 +3,14 @@ import { type Member } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import {
+  Button,
+  ErrorMessage,
+  FormField,
+  Input,
+  NativeSelect,
+  NativeSelectOption,
+} from '../../../shared/ui'
 import { atLeast, membershipsKey, useCurrentTenant, useTenantTime } from '../../tenants'
 import { membersKey, removeMemberOptions, updateMemberOptions } from '../api/members'
 import { memberChange, type MemberFormValues, memberName } from '../model/member'
@@ -67,16 +74,16 @@ export function MemberRow({ member, isSelf }: { member: Member; isSelf: boolean 
   const zone = time.timeZone
 
   return (
-    <li className="border-line flex flex-col gap-3 border-t py-3">
+    <li className="flex flex-col gap-3 border-t py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex flex-col">
           <span className="font-medium">
-            {name} {isSelf && <span className="text-muted text-sm">({t`you`})</span>}
+            {name} {isSelf && <span className="text-muted-foreground text-sm">({t`you`})</span>}
           </span>
-          <span className="text-muted text-sm">{member.account.email}</span>
+          <span className="text-muted-foreground text-sm">{member.account.email}</span>
         </div>
         <dl className="grid grid-cols-[auto_auto] gap-x-3 text-sm">
-          <dt className="text-muted">
+          <dt className="text-muted-foreground">
             <Trans>Role</Trans>
           </dt>
           <dd>
@@ -84,25 +91,25 @@ export function MemberRow({ member, isSelf }: { member: Member; isSelf: boolean 
           </dd>
           {member.role === 'org' && (
             <>
-              <dt className="text-muted">
+              <dt className="text-muted-foreground">
                 <SettingsLabel />
               </dt>
               <dd>
                 <LevelText level={member.settingsAccess} />
               </dd>
-              <dt className="text-muted">
+              <dt className="text-muted-foreground">
                 <ShopLabel />
               </dt>
               <dd>
                 <LevelText level={member.shopConfigAccess} />
               </dd>
-              <dt className="text-muted">
+              <dt className="text-muted-foreground">
                 <Trans>Access until</Trans>
               </dt>
               <dd>
                 {member.expiresAt ? time.format(member.expiresAt) : <Trans>No end date</Trans>}
                 {member.expired && (
-                  <strong className="text-danger ml-2">
+                  <strong className="text-destructive ml-2">
                     <Trans>expired</Trans>
                   </strong>
                 )}
@@ -113,24 +120,25 @@ export function MemberRow({ member, isSelf }: { member: Member; isSelf: boolean 
       </div>
       {manageable && !editing && (
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => setEditing(true)}>
+          <Button variant="outline" onClick={() => setEditing(true)}>
             <Trans>Edit</Trans>
           </Button>
           {confirmRemove ? (
             <>
               <Button
-                variant="danger"
-                pending={remove.isPending}
+                disabled={remove.isPending}
+                variant="destructive"
+
                 onClick={() => remove.mutate({ params })}
               >
                 <Trans>Yes, remove {name} from the team</Trans>
               </Button>
-              <Button variant="secondary" onClick={() => setConfirmRemove(false)}>
+              <Button variant="outline" onClick={() => setConfirmRemove(false)}>
                 <Trans>Cancel</Trans>
               </Button>
             </>
           ) : (
-            <Button variant="danger" onClick={() => setConfirmRemove(true)}>
+            <Button variant="destructive" onClick={() => setConfirmRemove(true)}>
               <Trans>Remove from the team</Trans>
             </Button>
           )}
@@ -141,18 +149,20 @@ export function MemberRow({ member, isSelf }: { member: Member; isSelf: boolean 
         <form
           onSubmit={(event) => void submit(event)}
           noValidate
-          className="rounded-box bg-paper flex flex-col gap-4 p-4"
+          className="rounded-lg bg-muted flex flex-col gap-4 p-4"
         >
           <div className="grid gap-4 md:grid-cols-4">
-            <Field label={t`Role`}>
+            <FormField label={t`Role`}>
               {(control) => (
-                <select {...control} {...form.register('role')} className={inputClass}>
-                  <option value="org">{t`Organizer`}</option>
-                  {access.isHead && <option value="head">{t`Head organizer`}</option>}
-                </select>
+                <NativeSelect {...control} {...form.register('role')}>
+                  <NativeSelectOption value="org">{t`Organizer`}</NativeSelectOption>
+                  {access.isHead && (
+                    <NativeSelectOption value="head">{t`Head organizer`}</NativeSelectOption>
+                  )}
+                </NativeSelect>
               )}
-            </Field>
-            <Field label={<SettingsLabel />}>
+            </FormField>
+            <FormField label={<SettingsLabel />}>
               {(control) => (
                 <LevelSelect
                   {...control}
@@ -160,8 +170,8 @@ export function MemberRow({ member, isSelf }: { member: Member; isSelf: boolean 
                   disabled={promoting}
                 />
               )}
-            </Field>
-            <Field label={<ShopLabel />}>
+            </FormField>
+            <FormField label={<ShopLabel />}>
               {(control) => (
                 <LevelSelect
                   {...control}
@@ -169,35 +179,34 @@ export function MemberRow({ member, isSelf }: { member: Member; isSelf: boolean 
                   disabled={promoting}
                 />
               )}
-            </Field>
-            <Field
+            </FormField>
+            <FormField
               label={t`Access until`}
               hint={t`Empty for no end date. In the convention's time zone, ${zone}.`}
               error={form.formState.errors.expiresAt && t`Enter a valid date and time.`}
             >
               {(control) => (
-                <input
+                <Input
                   {...control}
                   {...form.register('expiresAt')}
                   type="datetime-local"
                   disabled={promoting}
-                  className={inputClass}
                 />
               )}
-            </Field>
+            </FormField>
           </div>
           {promoting && member.role === 'org' && (
-            <p className="text-muted text-sm">
+            <p className="text-muted-foreground text-sm">
               {t`A head organizer has every permission in every edition and never expires; the member's own permissions and expiry are cleared.`}
             </p>
           )}
           <ErrorMessage error={update.error} />
           <div className="flex gap-2">
-            <Button type="submit" pending={update.isPending}>
+            <Button disabled={update.isPending} type="submit">
               <Trans>Save</Trans>
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={() => {
                 form.reset(current)
                 update.reset()

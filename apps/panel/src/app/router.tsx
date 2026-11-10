@@ -1,5 +1,5 @@
 import { createBrowserRouter, Outlet } from 'react-router'
-import { AccountLocale } from '../features/account'
+import { AccountLocale, AccountPage } from '../features/account'
 import {
   ConfirmPage,
   ForgotPasswordPage,
@@ -15,7 +15,6 @@ import {
   EditionLayout,
   EditionSettingsPage,
   EditionsPage,
-  EditionSwitch,
 } from '../features/editions'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionAccessPage, TeamPage } from '../features/team'
@@ -23,19 +22,27 @@ import {
   AreaFrame,
   ConventionLayout,
   MembershipsGate,
+  PlatformLayout,
   SettingsPage,
   TenantLayout,
   TenantPickerPage,
 } from '../features/tenants'
-import { NotFoundView } from '../shared/ui'
+import { NotFoundView, SidebarProvider, TooltipProvider } from '../shared/ui'
 
-/** Pages for a signed-in member, with the permission store filled. */
+/**
+ * Pages for a signed-in member, with the permission store filled. Each frames itself in the
+ * sidebar, whose open or collapsed state is held here, across pages and areas.
+ */
 function SignedIn() {
   return (
     <RequireSession>
       <AccountLocale />
       <MembershipsGate>
-        <Outlet />
+        <TooltipProvider>
+          <SidebarProvider>
+            <Outlet />
+          </SidebarProvider>
+        </TooltipProvider>
       </MembershipsGate>
     </RequireSession>
   )
@@ -67,11 +74,17 @@ export const router = createBrowserRouter([
       {
         element: <SignedIn />,
         children: [
-          { path: '/', element: <TenantPickerPage /> },
+          {
+            // Above any convention; `account` is a reserved tenant slug.
+            element: <PlatformLayout />,
+            children: [
+              { path: '/', element: <TenantPickerPage /> },
+              { path: '/account', element: <AccountPage /> },
+            ],
+          },
           {
             path: '/:tenantSlug',
-            // The edition switch of the top bar belongs to `editions`, which builds on `tenants`.
-            element: <TenantLayout editionSwitch={<EditionSwitch />} />,
+            element: <TenantLayout />,
             children: [
               {
                 // Entering the convention opens the member's edition.

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
 import { z } from 'zod'
 import { usePageTitle } from '../../../shared/lib/page-title'
-import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
+import { Button, ErrorMessage, FormField, Input, Notice } from '../../../shared/ui'
 import { sendPasswordLink } from '../api/auth'
 import { AuthLayout } from '../components/auth-layout'
 
@@ -44,25 +44,24 @@ export function ForgotPasswordPage() {
         </Notice>
       ) : (
         <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-4">
-          <Field label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
+          <FormField label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
             {(control) => (
-              <input
+              <Input
                 {...control}
                 {...form.register('email')}
                 type="email"
                 autoComplete="email"
                 inputMode="email"
-                className={inputClass}
               />
             )}
-          </Field>
+          </FormField>
           <ErrorMessage error={error} />
-          <Button type="submit" pending={isSubmitting}>
+          <Button disabled={isSubmitting} type="submit">
             <Trans>Send the link</Trans>
           </Button>
         </form>
       )}
-      <Link to="/login" className="text-accent text-sm underline">
+      <Link to="/login" className="text-primary text-sm underline">
         <Trans>Back to sign-in</Trans>
       </Link>
     </AuthLayout>

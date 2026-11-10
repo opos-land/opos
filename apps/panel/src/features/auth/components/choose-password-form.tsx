@@ -5,7 +5,15 @@ import { useForm } from 'react-hook-form'
 import { newPasswordSchema } from '@opos/contract'
 import { z } from 'zod'
 import { errorCode } from '../../../shared/lib/errors'
-import { Button, ErrorMessage, Field, inputClass, Notice } from '../../../shared/ui'
+import {
+  Alert,
+  AlertTitle,
+  Button,
+  ErrorMessage,
+  FormField,
+  Input,
+  Notice,
+} from '../../../shared/ui'
 import { sendPasswordLink, setPassword } from '../api/auth'
 import { INVITATION_PATH } from '../model/auth-return'
 
@@ -76,7 +84,7 @@ export function ChoosePasswordForm({
       <p className="text-sm">
         <Trans>Your address {email} is confirmed. Choose the password you will sign in with.</Trans>
       </p>
-      <Field
+      <FormField
         label={t`New password`}
         hint={t`At least 8 characters.`}
         error={
@@ -87,42 +95,39 @@ export function ChoosePasswordForm({
         }
       >
         {(control) => (
-          <input
+          <Input
             {...control}
             {...form.register('password')}
             type="password"
             autoComplete="new-password"
-            className={inputClass}
           />
         )}
-      </Field>
-      <Field label={t`Repeat the password`} error={errors.repeat && t`The passwords differ.`}>
+      </FormField>
+      <FormField label={t`Repeat the password`} error={errors.repeat && t`The passwords differ.`}>
         {(control) => (
-          <input
+          <Input
             {...control}
             {...form.register('repeat')}
             type="password"
             autoComplete="new-password"
-            className={inputClass}
           />
         )}
-      </Field>
+      </FormField>
       {tooOld ? (
         <>
-          <p
-            role="alert"
-            className="rounded-box border-danger text-danger border px-3 py-2 text-sm"
-          >
-            <Trans>Too much time has passed since you opened the link. Ask for a new one.</Trans>
-          </p>
-          <Button variant="secondary" onClick={() => void sendLink()}>
+          <Alert variant="destructive">
+            <AlertTitle>
+              <Trans>Too much time has passed since you opened the link. Ask for a new one.</Trans>
+            </AlertTitle>
+          </Alert>
+          <Button variant="outline" onClick={() => void sendLink()}>
             <Trans>Send a new link</Trans>
           </Button>
         </>
       ) : (
         <ErrorMessage error={error} />
       )}
-      <Button type="submit" pending={isSubmitting}>
+      <Button disabled={isSubmitting} type="submit">
         {returnTo === INVITATION_PATH ? (
           <Trans>Save the password and join the team</Trans>
         ) : (

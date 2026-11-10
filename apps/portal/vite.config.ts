@@ -12,6 +12,8 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react(), lingui({ macroTransform: true }), tailwindcss()],
+    // `@/` from tsconfig.json: the import alias of the shadcn/ui components.
+    resolve: { tsconfigPaths: true },
     define: Object.fromEntries(
       missing.map(([key, value]) => [`import.meta.env.${key}`, JSON.stringify(value)]),
     ),

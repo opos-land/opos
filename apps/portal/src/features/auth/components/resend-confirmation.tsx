@@ -23,7 +23,7 @@ export function ResendConfirmation({ email, returnTo }: { email: string; returnT
           <Trans>We sent a new confirmation link to {email}.</Trans>
         </Notice>
       ) : (
-        <Button variant="secondary" pending={state === 'pending'} onClick={() => void resend()}>
+        <Button disabled={state === 'pending'} variant="outline" onClick={() => void resend()}>
           <Trans>Send the confirmation link again</Trans>
         </Button>
       )}

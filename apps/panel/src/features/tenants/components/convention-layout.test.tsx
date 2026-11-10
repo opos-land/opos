@@ -3,12 +3,17 @@ import { I18nProvider } from '@lingui/react'
 import { type Membership, type Tenant } from '@opos/contract'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { type Api } from '../../../shared/lib/api'
 import { clearForbidden, markForbidden } from '../../../shared/lib/forbidden'
+import { SidebarProvider } from '../../../shared/ui'
 import { tenantAccess } from '../model/permissions'
 import { ConventionLayout } from './convention-layout'
 import { TenantContext } from './tenant-context'
+
+// The switcher and the account menu of the sidebar have tests of their own.
+vi.mock('./area-switcher', () => ({ AreaSwitcher: () => null }))
+vi.mock('../../account', () => ({ NavUser: () => null }))
 
 const tenant = { id: 'tenant-a', slug: 'convention-a', name: 'Convention A' } as Tenant
 
@@ -30,11 +35,13 @@ const view = (member: Membership) =>
         value={{ tenant, membership: member, access: tenantAccess(member), api: {} as Api }}
       >
         <MemoryRouter initialEntries={['/convention-a/settings']}>
-          <Routes>
-            <Route path="/:tenantSlug/settings" element={<ConventionLayout />}>
-              <Route index element={<p>the general settings</p>} />
-            </Route>
-          </Routes>
+          <SidebarProvider>
+            <Routes>
+              <Route path="/:tenantSlug/settings" element={<ConventionLayout />}>
+                <Route index element={<p>the general settings</p>} />
+              </Route>
+            </Routes>
+          </SidebarProvider>
         </MemoryRouter>
       </TenantContext.Provider>
     </I18nProvider>,

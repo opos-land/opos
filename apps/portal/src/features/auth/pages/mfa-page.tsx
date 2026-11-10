@@ -8,8 +8,8 @@ import { startSession, useSession } from '../../../shared/lib/session'
 import {
   Button,
   ErrorMessage,
-  Field,
-  inputClass,
+  FormField,
+  Input,
   LoadingView,
   UnavailableView,
 } from '../../../shared/ui'
@@ -99,7 +99,7 @@ export function MfaPage() {
       }
     >
       <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-4">
-        <Field
+        <FormField
           label={recovery ? t`Recovery code` : t`Code`}
           error={
             invalid &&
@@ -109,7 +109,7 @@ export function MfaPage() {
           }
         >
           {(control) => (
-            <input
+            <Input
               {...control}
               type="text"
               value={value}
@@ -117,20 +117,19 @@ export function MfaPage() {
               {...(recovery
                 ? { autoComplete: 'off', autoCapitalize: 'none', spellCheck: false }
                 : { inputMode: 'numeric', autoComplete: 'one-time-code' })}
-              className={inputClass}
             />
           )}
-        </Field>
+        </FormField>
         <ErrorMessage error={error} />
-        <Button type="submit" pending={pending} disabled={leaving}>
+        <Button type="submit" disabled={leaving || pending}>
           <Trans>Continue</Trans>
         </Button>
       </form>
-      <Button variant="secondary" onClick={() => switchTo(!recovery)}>
+      <Button variant="outline" onClick={() => switchTo(!recovery)}>
         {recovery ? <Trans>Use the code of the app</Trans> : <Trans>Use a recovery code</Trans>}
       </Button>
       <ErrorMessage error={leaveError} />
-      <Button variant="secondary" pending={leaving} disabled={pending} onClick={() => void leave()}>
+      <Button variant="outline" disabled={pending || leaving} onClick={() => void leave()}>
         <Trans>Sign out</Trans>
       </Button>
     </AuthCard>

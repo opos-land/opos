@@ -5,9 +5,9 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { AccountMenu } from './account-menu'
+import { AccountPage } from './account-page'
 
-// The menu through the real API link and query cache, with only `fetch` stubbed: where the answer
+// The page through the real API link and query cache, with only `fetch` stubbed: where the answer
 // of `PATCH /me` lands is the point here, so no call of the feature is replaced.
 
 const account = {
@@ -39,14 +39,15 @@ function stubApi(routes: Record<string, Response[]>) {
   return calls
 }
 
-function renderMenu() {
+/** Renders the page. */
+function renderPage() {
   render(
     <I18nProvider i18n={i18n}>
       <QueryClientProvider
         client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
       >
         <MemoryRouter>
-          <AccountMenu />
+          <AccountPage />
         </MemoryRouter>
       </QueryClientProvider>
     </I18nProvider>,
@@ -54,9 +55,9 @@ function renderMenu() {
   return userEvent.setup()
 }
 
-/** The language select once the account is known. */
+/** The language select, once the account is known. */
 async function languageSelect() {
-  const select = screen.getByLabelText<HTMLSelectElement>('Interface language')
+  const select = await screen.findByLabelText<HTMLSelectElement>('Interface language')
   await waitFor(() => expect(select.disabled).toBe(false))
   return select
 }
@@ -70,13 +71,13 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('AccountMenu through the query cache', () => {
+describe('AccountPage through the query cache', () => {
   it('shows the language it saved, and asks GET /me no more', async () => {
     const calls = stubApi({
       'GET /me': [json(200, me)],
       'PATCH /me': [json(200, { ...account, locale: 'en' })],
     })
-    const user = renderMenu()
+    const user = renderPage()
     const select = await languageSelect()
 
     await user.selectOptions(select, 'en')
@@ -90,7 +91,7 @@ describe('AccountMenu through the query cache', () => {
       'GET /me': [json(200, me)],
       'PATCH /me': [json(200, { ...account, locale: 'en' })],
     })
-    const user = renderMenu()
+    const user = renderPage()
     const select = await languageSelect()
 
     await user.selectOptions(select, 'en')

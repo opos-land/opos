@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { accessToken, callApi } from '../fixtures/api'
 import { expect, test } from '../fixtures'
-import { panelUrl, seeded, signInToPanel } from '../fixtures/ui'
+import { openPanelSwitcher, panelUrl, seeded, signInToPanel, switchPanelArea } from '../fixtures/ui'
 
 // What the panel shows follows the member's permissions, and the API refuses what the UI hides.
 
@@ -23,7 +23,9 @@ test.describe('permissions in the panel', () => {
     await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
     const editionMenu = page.getByRole('navigation', { name: edition.name })
     await expect(editionMenu.getByRole('link')).toHaveText(['Dashboard', 'Programme'])
-    await expect(page.getByRole('link', { name: 'Convention settings' })).toHaveCount(0)
+    await openPanelSwitcher(page)
+    await expect(page.getByRole('menuitem')).toHaveText([edition.name])
+    await page.keyboard.press('Escape')
 
     for (const path of [
       'settings',
@@ -60,10 +62,12 @@ test.describe('permissions in the panel', () => {
     await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
     await expect(page.getByRole('button', { name: 'Activate' })).toHaveCount(0)
 
-    await page.getByRole('link', { name: 'Convention settings' }).click()
+    await switchPanelArea(page, 'Convention settings')
     const settings = page.getByRole('navigation', { name: tenant.name })
     await settings.getByRole('link', { name: 'Team' }).click()
-    await expect(page.getByRole('listitem').filter({ hasText: head.email })).toBeVisible()
+    await expect(
+      page.getByRole('main').getByRole('listitem').filter({ hasText: head.email }),
+    ).toBeVisible()
     await expect(page.getByRole('region', { name: 'Invite to the team' })).toHaveCount(0)
 
     await settings.getByRole('link', { name: 'General' }).click()

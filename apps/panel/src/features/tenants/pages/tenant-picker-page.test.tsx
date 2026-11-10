@@ -3,11 +3,9 @@ import { I18nProvider } from '@lingui/react'
 import { type Membership } from '@opos/contract'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { setMemberships } from '../model/permissions'
 import { TenantPickerPage } from './tenant-picker-page'
-
-vi.mock('../../account', () => ({ AccountMenu: () => null }))
 
 const membership = (slug: string, name: string, fields: Partial<Membership> = {}): Membership => ({
   tenant: { id: `tenant-${slug}`, slug, name },

@@ -52,7 +52,8 @@ msgstr "Dostęp do edycji {editionName}"
 msgid "Access until"
 msgstr "Dostęp ważny do"
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/components/nav-user.tsx
+#: src/features/account/pages/account-page.tsx
 msgid "Account"
 msgstr "Konto"
 
@@ -110,13 +111,16 @@ msgid "Back to sign-in"
 msgstr "Wróć do logowania"
 
 #: src/features/team/pages/edition-access-page.tsx
-#: src/features/tenants/components/panel-header.tsx
 msgid "Back to the edition"
 msgstr "Wróć do edycji"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Back to the invitation"
 msgstr "Wróć do zaproszenia"
+
+#: src/shared/ui/breadcrumb.tsx
+msgid "breadcrumb"
+msgstr "Ścieżka nawigacji"
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
@@ -130,7 +134,7 @@ msgstr "Anuluj"
 msgid "Cannot sign in?"
 msgstr "Nie możesz się zalogować?"
 
-#: src/features/tenants/components/panel-header.tsx
+#: src/features/tenants/components/area-switcher.tsx
 msgid "Choose a convention"
 msgstr "Wybierz konwent"
 
@@ -141,6 +145,10 @@ msgstr "Wybierz strefę czasową z listy."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Choose your password"
 msgstr "Wybierz hasło"
+
+#: src/shared/ui/sheet.tsx
+msgid "Close"
+msgstr "Zamknij"
 
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Code"
@@ -176,7 +184,6 @@ msgstr "Dalej"
 msgid "Continue with Google"
 msgstr "Kontynuuj przez Google"
 
-#: src/features/tenants/components/panel-header.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Convention"
 msgstr "Konwent"
@@ -185,11 +192,15 @@ msgstr "Konwent"
 msgid "Convention language"
 msgstr "Język konwentu"
 
+#: src/features/tenants/components/area-switcher.tsx
 #: src/features/tenants/components/convention-layout.tsx
-#: src/features/tenants/components/panel-header.tsx
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "Convention settings"
 msgstr "Ustawienia konwentu"
+
+#: src/features/tenants/components/area-switcher.tsx
+msgid "Conventions"
+msgstr "Konwenty"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Create an account"
@@ -236,11 +247,14 @@ msgstr "Opis"
 msgid "Dismiss"
 msgstr "Zamknij"
 
+#: src/shared/ui/sidebar.tsx
+msgid "Displays the mobile sidebar."
+msgstr "Wyświetla pasek boczny na małym ekranie."
+
 #: src/features/team/components/member-row.tsx
 msgid "Edit"
 msgstr "Edytuj"
 
-#: src/features/editions/components/edition-switch.tsx
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Edition"
@@ -256,6 +270,7 @@ msgid "Edition settings"
 msgstr "Ustawienia edycji"
 
 #: src/features/editions/pages/editions-page.tsx
+#: src/features/tenants/components/area-switcher.tsx
 #: src/features/tenants/components/convention-layout.tsx
 msgid "Editions"
 msgstr "Edycje"
@@ -401,7 +416,7 @@ msgstr "Jeśli adres został potwierdzony w innej przeglądarce albo ktoś inny 
 msgid "In the convention's time zone, {zone}."
 msgstr "W strefie czasowej konwentu, {zone}."
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/pages/account-page.tsx
 msgid "Interface language"
 msgstr "Język interfejsu"
 
@@ -432,6 +447,10 @@ msgstr "Członek zespołu"
 #: src/features/team/pages/team-page.tsx
 msgid "Members"
 msgstr "Członkowie zespołu"
+
+#: src/shared/ui/breadcrumb.tsx
+msgid "More"
+msgstr "Więcej"
 
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
@@ -476,7 +495,7 @@ msgid "Open the link from your email to confirm your address or reset your passw
 msgstr "Otwórz link z wiadomości e-mail, aby potwierdzić adres lub ustawić nowe hasło."
 
 #: src/features/auth/components/auth-layout.tsx
-#: src/features/tenants/components/panel-header.tsx
+#: src/features/tenants/components/area-switcher.tsx
 #: src/shared/lib/page-title.ts
 msgid "OPOS panel"
 msgstr "Panel OPOS"
@@ -518,6 +537,10 @@ msgstr "Hasło"
 #: src/features/team/pages/team-page.tsx
 msgid "Permissions in each edition are set on the edition's access page."
 msgstr "Uprawnienia w poszczególnych edycjach ustawia się na stronie dostępu danej edycji."
+
+#: src/features/account/pages/account-page.tsx
+msgid "Preferences"
+msgstr "Preferencje"
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
@@ -625,7 +648,7 @@ msgstr "Zapisz hasło i dołącz do zespołu"
 msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
 msgstr "Zapisz te dziesięć kodów odzyskiwania w bezpiecznym miejscu. Każdy działa raz, zamiast kodu z aplikacji, a użycie któregokolwiek wyłącza uwierzytelnianie dwuskładnikowe. Widzisz je tylko teraz."
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/pages/account-page.tsx
 msgid "Saved on your account."
 msgstr "Zapisywany na twoim koncie."
 
@@ -658,6 +681,10 @@ msgstr "Ustawienia"
 msgid "Shop"
 msgstr "Sklep"
 
+#: src/shared/ui/sidebar.tsx
+msgid "Sidebar"
+msgstr "Pasek boczny"
+
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/login-page.tsx
 msgid "Sign in"
@@ -667,7 +694,7 @@ msgstr "Zaloguj się"
 msgid "Sign in to the organizer panel"
 msgstr "Zaloguj się do panelu organizatora"
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/components/nav-user.tsx
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Sign out"
 msgstr "Wyloguj się"
@@ -708,7 +735,7 @@ msgstr "Zespół"
 msgid "The address of the speaker's confirmed account."
 msgstr "Adres e-mail potwierdzonego konta prelegenta."
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/pages/account-page.tsx
 msgid "The browser's language"
 msgstr "Język przeglądarki"
 
@@ -800,6 +827,10 @@ msgstr "Strefa czasowa"
 msgid "Title"
 msgstr "Tytuł"
 
+#: src/shared/ui/sidebar.tsx
+msgid "Toggle Sidebar"
+msgstr "Pokaż lub ukryj pasek boczny"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Too much time has passed since you opened the link. Ask for a new one."
 msgstr "Od otwarcia linku minęło zbyt dużo czasu. Poproś o nowy."
@@ -821,7 +852,7 @@ msgstr "Włącz"
 msgid "Turn on two-factor authentication"
 msgstr "Włącz uwierzytelnianie dwuskładnikowe"
 
-#: src/features/account/components/account-menu.tsx
+#: src/features/account/pages/account-page.tsx
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Two-factor authentication"
 msgstr "Uwierzytelnianie dwuskładnikowe"

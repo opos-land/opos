@@ -183,6 +183,13 @@
       "when": 1793792366642,
       "tag": "0025_reserve_forgot_password_slug",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794249593179,
+      "tag": "0026_reserve_account_slug",
+      "breakpoints": true
     }
   ]
 }

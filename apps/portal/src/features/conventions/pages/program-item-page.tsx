@@ -43,7 +43,7 @@ export function ProgramItemPage() {
           <Plural value={count} one={`Speaker: ${names}`} other={`Speakers: ${names}`} />
         </p>
       )}
-      <p className="text-muted text-sm">
+      <p className="text-muted-foreground text-sm">
         <Plural value={likes} one="# like" other="# likes" />
       </p>
       {edition.data && (

@@ -8,6 +8,12 @@ import {
   NoPermissionView,
   PageHeader,
   Section,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '../../../shared/ui'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
 import { createEditionOptions, editionsKey } from '../api/editions'
@@ -48,39 +54,39 @@ export function EditionsPage() {
         ) : editions.isError ? (
           <ErrorMessage error={editions.error} />
         ) : editions.data?.length ? (
-          <table className="w-full text-left text-sm">
-            <thead className="text-muted">
-              <tr>
-                <th scope="col" className="py-2 pr-4 font-medium">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col">
                   <Trans>Edition</Trans>
-                </th>
-                <th scope="col" className="py-2 pr-4 font-medium">
+                </TableHead>
+                <TableHead scope="col">
                   <Trans>Dates</Trans>
-                </th>
-                <th scope="col" className="py-2 font-medium">
+                </TableHead>
+                <TableHead scope="col">
                   <Trans>Status</Trans>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {editions.data.map((edition) => (
-                <tr key={edition.id} className="border-line border-t">
-                  <td className="py-2 pr-4">
+                <TableRow key={edition.id}>
+                  <TableCell>
                     <Link
                       to={`/${tenant.slug}/editions/${edition.slug}`}
-                      className="text-accent font-medium underline"
+                      className="text-primary font-medium underline"
                     >
                       {edition.name}
                     </Link>
-                  </td>
-                  <td className="py-2 pr-4">{time.range(edition.startsAt, edition.endsAt)}</td>
-                  <td className="py-2">
+                  </TableCell>
+                  <TableCell>{time.range(edition.startsAt, edition.endsAt)}</TableCell>
+                  <TableCell>
                     <EditionStatus edition={edition} />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         ) : (
           <p className="text-sm">
             <Trans>There are no editions yet.</Trans>
@@ -89,7 +95,7 @@ export function EditionsPage() {
       </Section>
       {atLeast(access.settings, 'write') && (
         <Section title={<Trans>New edition</Trans>}>
-          <p className="text-muted text-sm">
+          <p className="text-muted-foreground text-sm">
             <Trans>A new edition starts inactive and unpublished.</Trans>
           </p>
           <EditionForm

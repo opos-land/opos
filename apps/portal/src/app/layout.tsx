@@ -22,7 +22,7 @@ export function Layout() {
     <div className="flex min-h-screen flex-col">
       {account && <AccountLocale />}
       <MfaGate />
-      <header className="border-line bg-surface border-b">
+      <header className="border-b">
         <nav className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="text-lg font-semibold tracking-wide">
             <Trans>OPOS</Trans>
@@ -56,7 +56,7 @@ export function Layout() {
       <main className="mx-auto w-full max-w-2xl flex-1 px-4">
         <Outlet />
       </main>
-      <footer className="border-line text-muted border-t">
+      <footer className="text-muted-foreground border-t">
         <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm">
           <p>
             <Trans>OPOS is free for conventions.</Trans>

@@ -5,7 +5,8 @@ import { panelUrl, signInToPanel } from '../fixtures/ui'
 
 // The convention's team in the panel: invitations of confirmed accounts, changes,
 // removal, and the anti-escalation refusals shown next to the form that caused them
-// (PRODUCT.md 5).
+// (PRODUCT.md 5). The team's rows are looked up in the page: the account at the foot of the
+// sidebar holds the signed-in address too.
 
 test.describe('team management in the panel', () => {
   test('a head adds a confirmed account, changes its permissions and removes it', async ({
@@ -33,11 +34,11 @@ test.describe('team management in the panel', () => {
     expect((await waitForMail(colleague.email)).Text).toContain(`${stack.panel}/${tenant.slug}`)
 
     // Nobody edits their own membership.
-    const own = page.getByRole('listitem').filter({ hasText: head.email })
+    const own = page.getByRole('main').getByRole('listitem').filter({ hasText: head.email })
     await expect(own.getByText('(you)')).toBeVisible()
     await expect(own.getByRole('button', { name: 'Edit' })).toHaveCount(0)
 
-    const row = page.getByRole('listitem').filter({ hasText: colleague.email })
+    const row = page.getByRole('main').getByRole('listitem').filter({ hasText: colleague.email })
     await expect(row.getByRole('definition').filter({ hasText: 'Read' })).toBeVisible()
     await row.getByRole('button', { name: 'Edit' }).click()
     await row.getByLabel('Settings').selectOption('write')
@@ -81,7 +82,7 @@ test.describe('team management in the panel', () => {
     )
     expect(await tenants.membership(tenant.id, newcomer.id)).toBeUndefined()
 
-    const row = page.getByRole('listitem').filter({ hasText: member.email })
+    const row = page.getByRole('main').getByRole('listitem').filter({ hasText: member.email })
     await row.getByRole('button', { name: 'Edit' }).click()
     await row.getByLabel('Shop').selectOption('write')
     await row.getByRole('button', { name: 'Save' }).click()
@@ -91,7 +92,7 @@ test.describe('team management in the panel', () => {
 
     // A head and the org's own membership offer no change at all.
     for (const email of [head.email, org.email]) {
-      const untouchable = page.getByRole('listitem').filter({ hasText: email })
+      const untouchable = page.getByRole('main').getByRole('listitem').filter({ hasText: email })
       await expect(untouchable).toBeVisible()
       await expect(untouchable.getByRole('button', { name: 'Edit' })).toHaveCount(0)
       await expect(untouchable.getByRole('button', { name: 'Remove from the team' })).toHaveCount(0)

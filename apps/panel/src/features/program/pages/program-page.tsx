@@ -8,6 +8,12 @@ import {
   NoPermissionView,
   PageHeader,
   Section,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '../../../shared/ui'
 import { useEditionBySlug } from '../../editions'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
@@ -55,34 +61,34 @@ export function ProgramPage() {
         ) : items.isError ? (
           <ErrorMessage error={items.error} />
         ) : items.data?.length ? (
-          <table className="w-full text-left text-sm">
-            <thead className="text-muted">
-              <tr>
-                <th scope="col" className="py-2 pr-4 font-medium">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col">
                   <Trans>Title</Trans>
-                </th>
-                <th scope="col" className="py-2 pr-4 font-medium">
+                </TableHead>
+                <TableHead scope="col">
                   <Trans>Time</Trans>
-                </th>
-                <th scope="col" className="py-2 font-medium">
+                </TableHead>
+                <TableHead scope="col">
                   <Trans>Speakers</Trans>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.data.map((item) => (
-                <tr key={item.id} className="border-line border-t">
-                  <td className="py-2 pr-4">
-                    <Link to={`${base}/${item.id}`} className="text-accent font-medium underline">
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <Link to={`${base}/${item.id}`} className="text-primary font-medium underline">
                       {item.title}
                     </Link>
-                  </td>
-                  <td className="py-2 pr-4">{time.range(item.startsAt, item.endsAt)}</td>
-                  <td className="py-2">{item.speakers.map(speakerName).join(', ')}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{time.range(item.startsAt, item.endsAt)}</TableCell>
+                  <TableCell>{item.speakers.map(speakerName).join(', ')}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         ) : (
           <p className="text-sm">
             <Trans>There are no programme items yet.</Trans>

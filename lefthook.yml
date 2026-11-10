@@ -17,6 +17,9 @@ pre-commit:
       stage_fixed: true
     - name: eslint
       glob: '*.{ts,tsx,astro}'
+      # A vendored skill's assets belong to no package and its lint config
+      exclude:
+        - '.claude/skills/**'
       run: pnpm eslint --fix --max-warnings 0 {staged_files}
       stage_fixed: true
     # Nothing in the panel or the portal names Supabase (docs/ARCHITECTURE.md); other staged files pass

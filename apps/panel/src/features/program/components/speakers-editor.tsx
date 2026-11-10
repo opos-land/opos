@@ -3,7 +3,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { MAX_SPEAKERS, type ProgramItem } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import { Button, ErrorMessage, FormField, Input } from '../../../shared/ui'
 import { useCurrentTenant } from '../../tenants'
 import { programKey, putSpeakersOptions } from '../api/program'
 import { addSpeakerSchema, emailsWith, emailsWithout, speakerName } from '../model/speakers'
@@ -41,10 +41,10 @@ export function SpeakersEditor({ item, canWrite }: { item: ProgramItem; canWrite
             return (
               <li key={email} className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{name}</span>
-                {name !== email && <span className="text-muted">{email}</span>}
+                {name !== email && <span className="text-muted-foreground">{email}</span>}
                 {canWrite && (
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     aria-label={t`Remove ${email}`}
                     disabled={put.isPending}
                     onClick={() =>
@@ -70,28 +70,21 @@ export function SpeakersEditor({ item, canWrite }: { item: ProgramItem; canWrite
             noValidate
             className="flex max-w-lg flex-col gap-2"
           >
-            <Field
+            <FormField
               label={t`Speaker email`}
               hint={t`The address of the speaker's confirmed account.`}
               error={form.formState.errors.email && t`Enter a valid email address.`}
             >
-              {(control) => (
-                <input
-                  {...control}
-                  {...form.register('email')}
-                  type="email"
-                  className={inputClass}
-                />
-              )}
-            </Field>
+              {(control) => <Input {...control} {...form.register('email')} type="email" />}
+            </FormField>
             <div>
-              <Button type="submit" pending={put.isPending}>
+              <Button disabled={put.isPending} type="submit">
                 <Trans>Add</Trans>
               </Button>
             </div>
           </form>
         ) : (
-          <p className="text-muted text-sm">
+          <p className="text-muted-foreground text-sm">
             <Plural
               value={limit}
               one="An item can have up to # speaker."

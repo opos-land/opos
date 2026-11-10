@@ -1,7 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type FormEvent, useState } from 'react'
 import { errorCode } from '../../../shared/lib/errors'
-import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import { Button, ErrorMessage, FormField, Input } from '../../../shared/ui'
 import { GoogleButton, signInWithPassword } from '../../auth'
 import { type SignInMethods } from '../model/sign-in-methods'
 
@@ -49,20 +49,19 @@ export function ReauthenticateForm({
       <ErrorMessage error={failure ?? error} />
       {methods.password && (
         <form onSubmit={(event) => void confirm(event)} className="flex flex-col gap-4">
-          <Field label={t`Your password`} hint={t`Enter it again to confirm it is you.`}>
+          <FormField label={t`Your password`} hint={t`Enter it again to confirm it is you.`}>
             {(control) => (
-              <input
+              <Input
                 {...control}
                 type="password"
                 autoComplete="current-password"
                 required
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className={inputClass}
               />
             )}
-          </Field>
-          <Button type="submit" className="self-start" pending={pending}>
+          </FormField>
+          <Button disabled={pending} type="submit" className="self-start">
             <Trans>Confirm</Trans>
           </Button>
         </form>
@@ -72,7 +71,7 @@ export function ReauthenticateForm({
           <Trans>Confirm with Google</Trans>
         </GoogleButton>
       )}
-      <Button variant="secondary" className="self-start" disabled={pending} onClick={onCancel}>
+      <Button variant="outline" className="self-start" disabled={pending} onClick={onCancel}>
         <Trans>Cancel</Trans>
       </Button>
     </div>

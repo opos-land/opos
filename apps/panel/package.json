@@ -14,6 +14,8 @@
     "i18n:check": "lingui check sync && lingui check missing --mode catalog --locale pl"
   },
   "dependencies": {
+    "@base-ui/react": "catalog:",
+    "@fontsource-variable/geist": "catalog:",
     "@hookform/resolvers": "^5.9.2",
     "@lingui/core": "catalog:",
     "@lingui/react": "^6.10.0",
@@ -24,10 +26,15 @@
     "@orpc/openapi-client": "catalog:",
     "@orpc/tanstack-query": "catalog:",
     "@tanstack/react-query": "^5.104.4",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "lucide-react": "catalog:",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-hook-form": "^7.90.0",
     "react-router": "^8.4.0",
+    "shadcn": "catalog:",
+    "tw-animate-css": "catalog:",
     "zod": "catalog:",
     "zustand": "^5.0.15"
   },
@@ -38,6 +45,7 @@
     "@lingui/vite-plugin": "catalog:",
     "@opos/eslint-config": "workspace:*",
     "@opos/tsconfig": "workspace:*",
+    "@tailwindcss/node": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",

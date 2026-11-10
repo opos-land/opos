@@ -42,7 +42,7 @@ export function RegisterPage() {
       lead={<Trans>One account for every convention on OPOS.</Trans>}
     >
       <RegisterForm returnTo={returnTo} onRegistered={setSentTo} />
-      <p className="text-muted text-center text-sm">
+      <p className="text-muted-foreground text-center text-sm">
         <Trans>or</Trans>
       </p>
       <GoogleButton returnTo={returnTo} />

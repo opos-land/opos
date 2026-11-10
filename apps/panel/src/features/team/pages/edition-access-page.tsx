@@ -9,6 +9,11 @@ import {
   NoPermissionView,
   PageHeader,
   Section,
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '../../../shared/ui'
 import { useEditionBySlug } from '../../editions'
 import { atLeast, RequireAccess, useCurrentTenant } from '../../tenants'
@@ -46,7 +51,7 @@ export function EditionAccessPage() {
       <PageHeader
         title={<Trans>Access to {editionName}</Trans>}
         description={
-          <Link to={`/${tenant.slug}/editions/${edition.slug}`} className="text-accent underline">
+          <Link to={`/${tenant.slug}/editions/${edition.slug}`} className="text-primary underline">
             <Trans>Back to the edition</Trans>
           </Link>
         }
@@ -61,26 +66,26 @@ export function EditionAccessPage() {
             <Trans>The team has no organizers besides its head organizers.</Trans>
           </p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="text-muted">
-              <tr>
-                <th scope="col" className="py-2 pr-4 font-medium">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col">
                   <Trans>Member</Trans>
-                </th>
-                <th scope="col" className="py-2 pr-4 font-medium">
+                </TableHead>
+                <TableHead scope="col">
                   <ProgramLabel />
-                </th>
-                <th scope="col" className="py-2 pr-4 font-medium">
+                </TableHead>
+                <TableHead scope="col">
                   <TicketsLabel />
-                </th>
-                <th scope="col" className="py-2 font-medium">
+                </TableHead>
+                <TableHead scope="col">
                   <span className="sr-only">
                     <Trans>Actions</Trans>
                   </span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {orgs.map((member) => (
                 <EditionAccessRow
                   key={member.id}
@@ -90,13 +95,13 @@ export function EditionAccessPage() {
                   isSelf={member.account.id === accountId}
                 />
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </Section>
       {heads.length > 0 && (
         <Section title={<Trans>Head organizers</Trans>}>
-          <p className="text-muted text-sm">
+          <p className="text-muted-foreground text-sm">
             <Trans>A head organizer already has access to every edition.</Trans>
           </p>
           <ul className="text-sm">

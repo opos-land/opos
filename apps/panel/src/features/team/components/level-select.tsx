@@ -1,15 +1,15 @@
 import { useLingui } from '@lingui/react/macro'
-import { type SelectHTMLAttributes } from 'react'
-import { inputClass } from '../../../shared/ui'
+import { type ComponentProps } from 'react'
+import { NativeSelect, NativeSelectOption } from '../../../shared/ui'
 
 /** A permission value (PRODUCT.md 5): none, read or write. */
-export function LevelSelect(props: SelectHTMLAttributes<HTMLSelectElement>) {
+export function LevelSelect(props: ComponentProps<typeof NativeSelect>) {
   const { t } = useLingui()
   return (
-    <select {...props} className={inputClass}>
-      <option value="none">{t`No access`}</option>
-      <option value="read">{t`Read`}</option>
-      <option value="write">{t`Write`}</option>
-    </select>
+    <NativeSelect {...props}>
+      <NativeSelectOption value="none">{t`No access`}</NativeSelectOption>
+      <NativeSelectOption value="read">{t`Read`}</NativeSelectOption>
+      <NativeSelectOption value="write">{t`Write`}</NativeSelectOption>
+    </NativeSelect>
   )
 }

@@ -1,11 +1,12 @@
 import { Trans } from '@lingui/react/macro'
+import { CalendarClockIcon, KeyRoundIcon, LayoutDashboardIcon, Settings2Icon } from 'lucide-react'
 import { useParams } from 'react-router'
 import { AreaFrame, atLeast, SidebarLink, useCurrentTenant } from '../../tenants'
 import { useEditionBySlug } from '../hooks/use-editions'
 
 /**
  * The edition area, where most members work: the menu of everything about one edition,
- * its settings and team access included; the switch to another edition is in the top bar. Until
+ * its settings and team access included; the switch to another edition is the area switcher's. Until
  * the edition is known, or when the member does not see it, there is no menu and the page says
  * why.
  */
@@ -23,25 +24,23 @@ export function EditionLayout() {
     <AreaFrame
       menu={{
         label: edition.name,
-        header: (
-          <p className="text-muted text-xs font-semibold tracking-wide uppercase">{edition.name}</p>
-        ),
+        title: edition.name,
         links: (
           <>
-            <SidebarLink to={base} end>
+            <SidebarLink to={base} end icon={<LayoutDashboardIcon />}>
               <Trans>Dashboard</Trans>
             </SidebarLink>
             {atLeast(level.program, 'read') && (
-              <SidebarLink to={`${base}/program`}>
+              <SidebarLink to={`${base}/program`} icon={<CalendarClockIcon />}>
                 <Trans>Programme</Trans>
               </SidebarLink>
             )}
             {atLeast(access.settings, 'read') && (
               <>
-                <SidebarLink to={`${base}/access`}>
+                <SidebarLink to={`${base}/access`} icon={<KeyRoundIcon />}>
                   <Trans>Access</Trans>
                 </SidebarLink>
-                <SidebarLink to={`${base}/settings`}>
+                <SidebarLink to={`${base}/settings`} icon={<Settings2Icon />}>
                   <Trans>Edition settings</Trans>
                 </SidebarLink>
               </>

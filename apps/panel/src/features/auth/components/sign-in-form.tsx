@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { errorCode } from '../../../shared/lib/errors'
-import { Button, ErrorMessage, Field, inputClass } from '../../../shared/ui'
+import { Button, ErrorMessage, FormField, Input } from '../../../shared/ui'
 import { signInWithPassword } from '../api/auth'
 
 const schema = z.object({ email: z.email(), password: z.string().min(1) })
@@ -41,30 +41,23 @@ export function SignInForm({
 
   return (
     <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-3">
-      <Field label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
+      <FormField label={t`Email`} error={errors.email && t`Enter a valid email address.`}>
         {(control) => (
-          <input
-            {...control}
-            {...form.register('email')}
-            type="email"
-            autoComplete="email"
-            className={inputClass}
-          />
+          <Input {...control} {...form.register('email')} type="email" autoComplete="email" />
         )}
-      </Field>
-      <Field label={t`Password`} error={errors.password && t`Enter your password.`}>
+      </FormField>
+      <FormField label={t`Password`} error={errors.password && t`Enter your password.`}>
         {(control) => (
-          <input
+          <Input
             {...control}
             {...form.register('password')}
             type="password"
             autoComplete="current-password"
-            className={inputClass}
           />
         )}
-      </Field>
+      </FormField>
       <ErrorMessage error={error} />
-      <Button type="submit" pending={isSubmitting}>
+      <Button disabled={isSubmitting} type="submit">
         <Trans>Sign in</Trans>
       </Button>
     </form>

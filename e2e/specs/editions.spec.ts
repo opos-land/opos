@@ -22,7 +22,9 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/settings/editions`))
   await expect(page.getByRole('link', { name: 'This year' })).toBeVisible()
 
-  const create = page.getByRole('region', { name: 'New edition' })
+  await page.getByRole('link', { name: 'New edition' }).click()
+  await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/settings/editions/new`))
+  const create = page.getByRole('region', { name: 'Edition data' })
   await create.getByLabel('Name').fill('Next year')
   await create.getByLabel('Address').fill('next-year')
   await create.getByLabel('Starts').fill('2027-06-04T10:00')

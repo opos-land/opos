@@ -1,14 +1,15 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
+import { UserPlusIcon } from 'lucide-react'
+import { Link } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import { useSession } from '../../../shared/lib/session'
-import { ErrorMessage, LoadingView, PageHeader, Section } from '../../../shared/ui'
+import { buttonVariants, ErrorMessage, LoadingView, PageHeader, Section } from '../../../shared/ui'
 import { atLeast, RequireAccess, useCurrentTenant } from '../../tenants'
 import { membersOptions } from '../api/members'
-import { InviteForm } from '../components/invite-form'
-import { MemberRow } from '../components/member-row'
+import { MembersTable } from '../components/members-table'
 
-/** The convention's team: members, invitations, permissions and expiry. */
+/** The convention's team; a member with `settings=write` invites and opens the members to change. */
 export function TeamPage() {
   const { t } = useLingui()
   const { tenant, access, api } = useCurrentTenant()
@@ -24,29 +25,22 @@ export function TeamPage() {
       <PageHeader
         title={<Trans>Team</Trans>}
         description={t`Permissions in each edition are set on the edition's access page.`}
+        actions={
+          atLeast(access.settings, 'write') && (
+            <Link to={`/${tenant.slug}/settings/team/invite`} className={buttonVariants()}>
+              <UserPlusIcon data-icon="inline-start" />
+              <Trans>Invite to the team</Trans>
+            </Link>
+          )
+        }
       />
-      {atLeast(access.settings, 'write') && (
-        <Section title={<Trans>Invite to the team</Trans>}>
-          <p className="text-muted-foreground text-sm">
-            <Trans>
-              Someone with a confirmed account joins at once; anyone else gets a link valid for 7
-              days. You cannot grant more than you hold yourself.
-            </Trans>
-          </p>
-          <InviteForm />
-        </Section>
-      )}
       <Section title={<Trans>Members</Trans>}>
         {members.isPending ? (
           <LoadingView />
         ) : members.isError ? (
           <ErrorMessage error={members.error} />
         ) : (
-          <ul className="flex flex-col">
-            {members.data.map((member) => (
-              <MemberRow key={member.id} member={member} isSelf={member.account.id === accountId} />
-            ))}
-          </ul>
+          <MembersTable members={members.data} accountId={accountId} />
         )}
       </Section>
     </RequireAccess>

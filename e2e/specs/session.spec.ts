@@ -38,7 +38,7 @@ async function signedInHead({
   await signInToPanel(page, head.email, head.password)
   const team = panelUrl(`/${tenant.slug}/settings/team`)
   await page.goto(team)
-  await expect(page.getByRole('region', { name: 'Invite to the team' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Invite to the team' })).toBeVisible()
   return { head, tenant, team }
 }
 
@@ -60,7 +60,7 @@ test.describe('the panel session', () => {
     await page.goto(team)
 
     expect((await refreshed).ok()).toBe(true)
-    await expect(page.getByRole('region', { name: 'Invite to the team' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Invite to the team' })).toBeVisible()
     expect(await accessCookie(page.context())).toBeDefined()
   })
 
@@ -68,13 +68,13 @@ test.describe('the panel session', () => {
     const { team } = await signedInHead({ page, accounts, tenants })
     const other = await page.context().newPage()
     await other.goto(team)
-    await expect(other.getByRole('region', { name: 'Invite to the team' })).toBeVisible()
+    await expect(other.getByRole('link', { name: 'Invite to the team' })).toBeVisible()
     await expireAccess(page.context())
 
     await Promise.all([page.reload(), other.reload()])
 
     for (const tab of [page, other]) {
-      await expect(tab.getByRole('region', { name: 'Invite to the team' })).toBeVisible()
+      await expect(tab.getByRole('link', { name: 'Invite to the team' })).toBeVisible()
       await expect(tab).not.toHaveURL(/\/login/)
     }
     expect(await accessCookie(page.context())).toBeDefined()
@@ -88,7 +88,7 @@ test.describe('the panel session', () => {
     const { head, team } = await signedInHead({ page, accounts, tenants })
     const other = await page.context().newPage()
     await other.goto(team)
-    await expect(other.getByRole('region', { name: 'Invite to the team' })).toBeVisible()
+    await expect(other.getByRole('link', { name: 'Invite to the team' })).toBeVisible()
 
     await signOutOfPanel(page, head.email)
 
@@ -152,7 +152,7 @@ test.describe('the panel session', () => {
     // The refresh cookie was never spent, so the session is still there once the API answers.
     await page.unroute('**/auth/refresh')
     await page.goto(team)
-    await expect(page.getByRole('region', { name: 'Invite to the team' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Invite to the team' })).toBeVisible()
   })
 })
 

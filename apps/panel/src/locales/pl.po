@@ -19,11 +19,15 @@ msgstr "{limit, plural, one {Punkt programu może mieć do # prelegenta.} few {P
 msgid "{name} has joined the team and has been told by email."
 msgstr "{name} dołącza do zespołu i dostaje o tym wiadomość e-mail."
 
+#: src/features/team/components/remove-member.tsx
+msgid "{name} loses access to the convention at once. Coming back takes a new invitation."
+msgstr "{name} od razu straci dostęp do konwentu. Powrót do zespołu wymaga nowego zaproszenia."
+
 #: src/features/team/pages/edition-access-page.tsx
 msgid "A head organizer already has access to every edition."
 msgstr "Główny organizator ma już dostęp do każdej edycji."
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
 msgid "A head organizer has every permission in every edition and never expires; the member's own permissions and expiry are cleared."
 msgstr "Główny organizator ma wszystkie uprawnienia w każdej edycji, a jego dostęp nigdy nie wygasa; dotychczasowe uprawnienia i data wygaśnięcia tej osoby zostaną usunięte."
 
@@ -31,7 +35,7 @@ msgstr "Główny organizator ma wszystkie uprawnienia w każdej edycji, a jego d
 msgid "A head organizer has every permission, in every edition, and never expires."
 msgstr "Główny organizator ma wszystkie uprawnienia w każdej edycji, a jego dostęp nigdy nie wygasa."
 
-#: src/features/editions/pages/editions-page.tsx
+#: src/features/editions/pages/new-edition-page.tsx
 msgid "A new edition starts inactive and unpublished."
 msgstr "Nowa edycja jest na początku nieaktywna i nieopublikowana."
 
@@ -48,7 +52,8 @@ msgid "Access to {editionName}"
 msgstr "Dostęp do edycji {editionName}"
 
 #: src/features/team/components/invite-form.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
+#: src/features/team/components/members-table.tsx
 msgid "Access until"
 msgstr "Dostęp ważny do"
 
@@ -114,9 +119,17 @@ msgstr "Wróć do logowania"
 msgid "Back to the edition"
 msgstr "Wróć do edycji"
 
+#: src/features/editions/pages/new-edition-page.tsx
+msgid "Back to the editions"
+msgstr "Wróć do listy edycji"
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Back to the invitation"
 msgstr "Wróć do zaproszenia"
+
+#: src/features/team/components/back-to-team.tsx
+msgid "Back to the team"
+msgstr "Wróć do zespołu"
 
 #: src/shared/ui/breadcrumb.tsx
 msgid "breadcrumb"
@@ -126,7 +139,7 @@ msgstr "Ścieżka nawigacji"
 #: src/features/account/components/two-factor-card.tsx
 #: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/remove-member.tsx
 msgid "Cancel"
 msgstr "Anuluj"
 
@@ -206,7 +219,7 @@ msgstr "Konwenty"
 msgid "Create an account"
 msgstr "Załóż konto"
 
-#: src/features/editions/pages/editions-page.tsx
+#: src/features/editions/pages/new-edition-page.tsx
 msgid "Create the edition"
 msgstr "Utwórz edycję"
 
@@ -251,16 +264,13 @@ msgstr "Zamknij"
 msgid "Displays the mobile sidebar."
 msgstr "Wyświetla pasek boczny na małym ekranie."
 
-#: src/features/team/components/member-row.tsx
-msgid "Edit"
-msgstr "Edytuj"
-
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Edition"
 msgstr "Edycja"
 
 #: src/features/editions/pages/edition-settings-page.tsx
+#: src/features/editions/pages/new-edition-page.tsx
 msgid "Edition data"
 msgstr "Dane edycji"
 
@@ -282,7 +292,7 @@ msgstr "Edycje"
 msgid "Email"
 msgstr "E-mail"
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
 msgid "Empty for no end date. In the convention's time zone, {zone}."
 msgstr "Puste pole oznacza brak daty końcowej. W strefie czasowej konwentu, {zone}."
 
@@ -304,7 +314,7 @@ msgstr "Podaj nazwę o długości do 200 znaków."
 msgid "Enter a title of 3 to 200 characters."
 msgstr "Podaj tytuł o długości od 3 do 200 znaków."
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
 msgid "Enter a valid date and time."
 msgstr "Podaj prawidłową datę i godzinę."
 
@@ -351,7 +361,7 @@ msgstr "Podaj datę i godzinę rozpoczęcia."
 msgid "Enter your password."
 msgstr "Podaj hasło."
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "expired"
 msgstr "wygasł"
 
@@ -362,6 +372,10 @@ msgstr "Dokończ logowanie"
 #: src/features/auth/pages/login-page.tsx
 msgid "Forgot your password?"
 msgstr "Nie pamiętasz hasła?"
+
+#: src/features/team/components/members-table.tsx
+msgid "Full access"
+msgstr "Pełny dostęp"
 
 #: src/features/tenants/components/convention-layout.tsx
 #: src/features/tenants/pages/settings-page.tsx
@@ -378,7 +392,8 @@ msgid "Go to your conventions"
 msgstr "Przejdź do swoich konwentów"
 
 #: src/features/team/components/invite-form.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
+#: src/features/team/components/members-table.tsx
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "Head organizer"
 msgstr "Główny organizator"
@@ -421,6 +436,7 @@ msgid "Interface language"
 msgstr "Język interfejsu"
 
 #: src/features/auth/pages/invitation-page.tsx
+#: src/features/team/pages/invite-page.tsx
 msgid "Invitation"
 msgstr "Zaproszenie"
 
@@ -428,6 +444,7 @@ msgstr "Zaproszenie"
 msgid "Invite"
 msgstr "Zaproś"
 
+#: src/features/team/pages/invite-page.tsx
 #: src/features/team/pages/team-page.tsx
 msgid "Invite to the team"
 msgstr "Zaproś do zespołu"
@@ -440,6 +457,7 @@ msgstr "Dołącz do zespołu organizatorów"
 msgid "Loading…"
 msgstr "Wczytywanie…"
 
+#: src/features/team/components/members-table.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Member"
 msgstr "Członek zespołu"
@@ -447,6 +465,10 @@ msgstr "Członek zespołu"
 #: src/features/team/pages/team-page.tsx
 msgid "Members"
 msgstr "Członkowie zespołu"
+
+#: src/features/team/pages/member-page.tsx
+msgid "Membership"
+msgstr "Członkostwo"
 
 #: src/shared/ui/breadcrumb.tsx
 msgid "More"
@@ -458,6 +480,7 @@ msgid "Name"
 msgstr "Nazwa"
 
 #: src/features/editions/pages/editions-page.tsx
+#: src/features/editions/pages/new-edition-page.tsx
 msgid "New edition"
 msgstr "Nowa edycja"
 
@@ -470,11 +493,11 @@ msgid "New programme item"
 msgstr "Nowy punkt programu"
 
 #: src/features/team/components/level-select.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "No access"
 msgstr "Brak dostępu"
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "No end date"
 msgstr "Bez daty końcowej"
 
@@ -509,7 +532,8 @@ msgid "or"
 msgstr "albo"
 
 #: src/features/team/components/invite-form.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
+#: src/features/team/components/members-table.tsx
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "Organizer"
 msgstr "Organizator"
@@ -590,7 +614,7 @@ msgid "QR code for your authenticator app"
 msgstr "Kod QR dla aplikacji uwierzytelniającej"
 
 #: src/features/team/components/level-select.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "Read"
 msgstr "Odczyt"
 
@@ -610,7 +634,8 @@ msgstr "Usuń {email}"
 msgid "Remove access"
 msgstr "Odbierz dostęp"
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/remove-member.tsx
+#: src/features/team/pages/member-page.tsx
 msgid "Remove from the team"
 msgstr "Usuń z zespołu"
 
@@ -624,14 +649,15 @@ msgid "Reset your password"
 msgstr "Zresetuj hasło"
 
 #: src/features/team/components/invite-form.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
+#: src/features/team/components/members-table.tsx
 msgid "Role"
 msgstr "Rola"
 
 #: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/edition-access-row.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/member-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Save"
 msgstr "Zapisz"
@@ -703,7 +729,7 @@ msgstr "Wyloguj się"
 msgid "Sign out and use another account"
 msgstr "Wyloguj się i użyj innego konta"
 
-#: src/features/team/pages/team-page.tsx
+#: src/features/team/pages/invite-page.tsx
 msgid "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
 msgstr "Osoba z potwierdzonym kontem dołącza od razu; pozostali dostają link ważny 7 dni. Nie możesz nadać nikomu więcej uprawnień, niż posiadasz."
 
@@ -726,6 +752,7 @@ msgstr "Początek"
 msgid "Status"
 msgstr "Stan"
 
+#: src/features/team/pages/member-page.tsx
 #: src/features/team/pages/team-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
 msgid "Team"
@@ -926,7 +953,7 @@ msgid "We will send you a link to set a new password."
 msgstr "Wyślemy ci link do ustawienia nowego hasła."
 
 #: src/features/team/components/level-select.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "Write"
 msgstr "Zapis"
 
@@ -938,12 +965,12 @@ msgstr "Tak, usuń edycję {editionName}"
 msgid "Yes, delete {title}"
 msgstr "Tak, usuń punkt programu „{title}”"
 
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/remove-member.tsx
 msgid "Yes, remove {name} from the team"
 msgstr "Tak, usuń z zespołu: {name}"
 
 #: src/features/team/components/edition-access-row.tsx
-#: src/features/team/components/member-row.tsx
+#: src/features/team/components/members-table.tsx
 msgid "you"
 msgstr "to ty"
 

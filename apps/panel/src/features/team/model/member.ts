@@ -1,4 +1,17 @@
 import { type Member } from '@opos/contract'
+import { atLeast, type TenantAccess } from '../../tenants'
+
+/**
+ * Whether the panel offers to change or remove the membership: at `settings=write`, never the
+ * own one, and a head's only to a head (PRODUCT.md 5.2). The API stays the authority.
+ */
+export function canManage(
+  access: Pick<TenantAccess, 'settings' | 'isHead'>,
+  member: Pick<Member, 'role'>,
+  isSelf: boolean,
+) {
+  return atLeast(access.settings, 'write') && !isSelf && (member.role === 'org' || access.isHead)
+}
 
 /** The member's name, or the email address when the account has none. */
 export function memberName(member: Pick<Member, 'account'>) {

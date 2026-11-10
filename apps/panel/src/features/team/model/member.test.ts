@@ -1,6 +1,6 @@
 import { fromZonedWallTime } from '@opos/i18n'
 import { describe, expect, it } from 'vitest'
-import { memberChange, type MemberFormValues, memberName } from './member'
+import { canManage, memberChange, type MemberFormValues, memberName } from './member'
 
 const warsaw = (value: string) => fromZonedWallTime(value, 'Europe/Warsaw')?.toISOString() ?? null
 
@@ -19,6 +19,29 @@ describe('memberName', () => {
       'Ann Lee',
     )
     expect(memberName({ account })).toBe('ann@example.com')
+  })
+})
+
+describe('canManage', () => {
+  const writer = { settings: 'write', isHead: false } as const
+  const head = { settings: 'write', isHead: true } as const
+
+  it('lets a member with settings=write change another org', () => {
+    expect(canManage(writer, { role: 'org' }, false)).toBe(true)
+  })
+
+  it('leaves a head to the heads', () => {
+    expect(canManage(writer, { role: 'head' }, false)).toBe(false)
+    expect(canManage(head, { role: 'head' }, false)).toBe(true)
+  })
+
+  it('never offers the own membership', () => {
+    expect(canManage(head, { role: 'org' }, true)).toBe(false)
+    expect(canManage(head, { role: 'head' }, true)).toBe(false)
+  })
+
+  it('offers nothing below settings=write', () => {
+    expect(canManage({ settings: 'read', isHead: false }, { role: 'org' }, false)).toBe(false)
   })
 })
 

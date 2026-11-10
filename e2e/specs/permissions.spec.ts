@@ -30,7 +30,9 @@ test.describe('permissions in the panel', () => {
     for (const path of [
       'settings',
       'settings/editions',
+      'settings/editions/new',
       'settings/team',
+      'settings/team/invite',
       `editions/${edition.slug}/access`,
       `editions/${edition.slug}/settings`,
     ]) {
@@ -65,10 +67,11 @@ test.describe('permissions in the panel', () => {
     await switchPanelArea(page, 'Convention settings')
     const settings = page.getByRole('navigation', { name: tenant.name })
     await settings.getByRole('link', { name: 'Team' }).click()
-    await expect(
-      page.getByRole('main').getByRole('listitem').filter({ hasText: head.email }),
-    ).toBeVisible()
-    await expect(page.getByRole('region', { name: 'Invite to the team' })).toHaveCount(0)
+    const members = page.getByRole('region', { name: 'Members' })
+    await expect(members.getByRole('row').filter({ hasText: head.email })).toBeVisible()
+    // No member's page and no invitation: reading the team is all.
+    await expect(members.getByRole('link')).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'Invite to the team' })).toHaveCount(0)
 
     await settings.getByRole('link', { name: 'General' }).click()
     await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()

@@ -287,6 +287,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 - [mise.toml](../mise.toml) pins Node and the Supabase CLI, `packageManager` pnpm; `engines` repeats
   both, and a mismatch aborts the install.
+- A root script is the command, and it runs as `pnpm <name>` without mise. A mise task of the same
+  name in [mise-tasks.toml](../mise-tasks.toml) runs it and says what it does, so `mise tasks` lists
+  the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,
+  which turbo hashes, and [mise-tasks.test.mjs](../scripts/mise-tasks.test.mjs) keeps both lists
+  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)).
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
   `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
   ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).

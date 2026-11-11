@@ -115,7 +115,8 @@ push to `main` directly.
 ## Working with code
 
 `mise install` installs Node and enables corepack for pnpm; `pnpm install` installs dependencies and
-wires up the hooks. Dependencies younger than 7 days are rejected by `minimumReleaseAge` — that is
+wires up the hooks. `mise tasks` lists the root commands with what each does; every one also runs
+as `pnpm <name>`, the form the documents use. Dependencies younger than 7 days are rejected by `minimumReleaseAge` — that is
 policy, not a failure ([versions](docs/ARCHITECTURE.md#tooling-and-versions)). The API tests need
 the database: `pnpm infra:init` once in a new checkout, then `pnpm infra:up`. `pnpm test:e2e` also
 needs `pnpm db:migrate && pnpm db:seed` and Chromium (`pnpm --filter @opos/e2e exec playwright

@@ -79,6 +79,7 @@ describe('LoginPage ?error=', () => {
         firstName: null,
         lastName: null,
         locale: null,
+        theme: null,
         mfaEnabled: false,
       },
     })
@@ -97,6 +98,7 @@ describe('LoginPage ?error=', () => {
           firstName: null,
           lastName: null,
           locale: null,
+          theme: null,
           mfaEnabled: false,
         },
       })

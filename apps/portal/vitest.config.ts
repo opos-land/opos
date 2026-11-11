@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     // Unit tests sit next to the file they test.
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', '*.test.ts'],
     setupFiles: ['./test/setup.ts'],
     env: devEnvDefaults(import.meta.dirname),
   },

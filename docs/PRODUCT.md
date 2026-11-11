@@ -212,6 +212,9 @@ OPOS's public image matters as much as its features.
 - **Honest placeholders**: until a design exists, the component library's default look, unchanged,
   and real copy.
 - **Every screen names itself** in the browser tab: the screen, then its edition or convention.
+- **Light and dark**: every screen offers a toggle between a light and a dark theme. A signed-in
+  account keeps its choice on the account, on every device; a visitor's stays in the browser. With
+  no choice, the interface follows the system's theme.
 
 ---
 

@@ -25,6 +25,7 @@ interface SeedAccount {
   firstName: string
   lastName: string
   locale?: string
+  theme?: 'light' | 'dark'
 }
 
 interface SeedMember {
@@ -90,7 +91,13 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'head@convention-a.test', firstName: 'Anna', lastName: 'Nowak' },
   { email: 'program@convention-a.test', firstName: 'Piotr', lastName: 'Lis' },
   { email: 'settings@convention-a.test', firstName: 'Ewa', lastName: 'Wilk' },
-  { email: 'viewer@convention-a.test', firstName: 'Tom', lastName: 'Baker', locale: 'en' },
+  {
+    email: 'viewer@convention-a.test',
+    firstName: 'Tom',
+    lastName: 'Baker',
+    locale: 'en',
+    theme: 'dark',
+  },
   { email: 'expired@convention-a.test', firstName: 'Marek', lastName: 'Sowa' },
   { email: 'gate@convention-a.test', firstName: 'Ola', lastName: 'Kruk' },
   { email: 'head@convention-b.test', firstName: 'Jana', lastName: 'Novak' },
@@ -283,13 +290,14 @@ async function ensureAccount(account: SeedAccount) {
   } else if (!existing.emailConfirmedAt) {
     await authAdmin('PUT', `/admin/users/${existing.id}`, { email_confirm: true })
   }
-  // The auth.users trigger created the row; the seed owns the names and the locale.
+  // The auth.users trigger created the row; the seed owns the names, the locale and the theme.
   await db
     .update(accounts)
     .set({
       firstName: account.firstName,
       lastName: account.lastName,
       locale: account.locale ?? null,
+      theme: account.theme ?? null,
     })
     .where(eq(accounts.email, account.email))
 }

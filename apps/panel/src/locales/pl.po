@@ -230,6 +230,14 @@ msgstr "Załóż konto"
 msgid "Create the edition"
 msgstr "Utwórz edycję"
 
+#: src/features/account/pages/account-page.tsx
+msgid "Dark"
+msgstr "Ciemny"
+
+#: src/features/theme/components/theme-toggle.tsx
+msgid "Dark theme"
+msgstr "Ciemny motyw"
+
 #: src/features/editions/components/edition-layout.tsx
 msgid "Dashboard"
 msgstr "Pulpit"
@@ -450,6 +458,10 @@ msgstr "W strefie czasowej konwentu, {zone}."
 msgid "Interface language"
 msgstr "Język interfejsu"
 
+#: src/features/account/pages/account-page.tsx
+msgid "Interface theme"
+msgstr "Motyw interfejsu"
+
 #: src/features/auth/pages/invitation-page.tsx
 #: src/features/team/pages/invite-page.tsx
 msgid "Invitation"
@@ -475,6 +487,10 @@ msgstr "Razem z nią znikną jej punkty programu z polubieniami i listami preleg
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Join the organizing team"
 msgstr "Dołącz do zespołu organizatorów"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Light"
+msgstr "Jasny"
 
 #: src/shared/ui/messages.tsx
 msgid "Loading…"
@@ -855,6 +871,11 @@ msgstr "Edycja musi kończyć się po swoim początku."
 msgid "The interface language is saved."
 msgstr "Język interfejsu został zapisany."
 
+#: src/features/account/pages/account-page.tsx
+#: src/features/theme/components/theme-toggle.tsx
+msgid "The interface theme is saved."
+msgstr "Motyw interfejsu został zapisany."
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "The invitation is for {email} and is valid until {validUntil}."
 msgstr "Zaproszenie jest dla adresu {email} i jest ważne do {validUntil}."
@@ -894,6 +915,10 @@ msgstr "Ustawienia zostały zapisane."
 #: src/features/program/components/speakers-editor.tsx
 msgid "The speakers are saved."
 msgstr "Lista prelegentów została zapisana."
+
+#: src/features/account/pages/account-page.tsx
+msgid "The system's theme"
+msgstr "Motyw systemu"
 
 #: src/features/team/pages/edition-access-page.tsx
 msgid "The team has no organizers besides its head organizers."

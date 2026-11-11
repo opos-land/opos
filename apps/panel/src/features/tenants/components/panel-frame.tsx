@@ -13,11 +13,13 @@ import {
   useSidebar,
 } from '../../../shared/ui'
 import { NavUser } from '../../account'
+import { ThemeToggle } from '../../theme'
 
 /**
  * The frame of every signed-in page, shadcn/ui's `sidebar-07` block: the sidebar, collapsing to
  * icons, with the switcher at its head, the menu of the area and the account at its foot; beside
- * it the page, under a bar that toggles the sidebar and says where the page stands. Whether the
+ * it the page, under a bar that toggles the sidebar, says where the page stands and switches the
+ * theme. Whether the
  * sidebar is open lives in the `SidebarProvider` above, so it survives a change of area.
  */
 export function PanelFrame({
@@ -54,6 +56,9 @@ export function PanelFrame({
               className="mr-2 data-vertical:h-4 data-vertical:self-auto"
             />
             <PageBreadcrumb />
+          </div>
+          <div className="ml-auto px-4">
+            <ThemeToggle />
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>

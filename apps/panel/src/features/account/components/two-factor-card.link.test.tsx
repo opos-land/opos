@@ -22,6 +22,7 @@ const me = (mfaEnabled: boolean) => ({
   firstName: null,
   lastName: null,
   locale: null,
+  theme: null,
   mfaEnabled,
   signInMethods: ['password'],
 })

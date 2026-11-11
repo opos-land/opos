@@ -13,6 +13,7 @@ const columns = {
   firstName: accounts.firstName,
   lastName: accounts.lastName,
   locale: accounts.locale,
+  theme: accounts.theme,
   mfaEnabledAt: accounts.mfaEnabledAt,
 }
 

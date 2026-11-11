@@ -11,6 +11,7 @@ const me = {
   firstName: null,
   lastName: null,
   locale: null,
+  theme: null,
   mfaEnabled: true,
   signInMethods: ['password'],
 }

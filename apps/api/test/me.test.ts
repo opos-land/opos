@@ -48,6 +48,7 @@ describe('JwtAuthGuard', () => {
       firstName: 'Anna',
       lastName: 'Nowak',
       locale: null,
+      theme: null,
     })
   })
 
@@ -208,7 +209,18 @@ describe('PATCH /me', () => {
     expect(res.body).toMatchObject({ locale: null })
   })
 
+  it('changes the theme and resets it to the system one with null', async () => {
+    const res = await patch({ theme: 'dark' }).expect(200)
+
+    expect(res.body).toMatchObject({ theme: 'dark' })
+    expect((await me().use(session(token))).body).toMatchObject({ theme: 'dark' })
+
+    expect((await patch({ theme: null }).expect(200)).body).toMatchObject({ theme: null })
+    expect((await me().use(session(token))).body).toMatchObject({ theme: null })
+  })
+
   it.each([
+    [{ theme: 'blue' }, 'theme'],
     [{ locale: 'cs' }, 'locale'],
     [{ firstName: '' }, 'firstName'],
     [{ email: 'other@example.test' }, 'email'],

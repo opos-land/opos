@@ -10,6 +10,8 @@ import { sendPasswordLink, setPassword, verifyLink } from '../api/auth'
 import { AUTH_RETURN_STORAGE_KEY, rememberAuthReturn } from '../model/auth-return'
 import { ConfirmPage } from './confirm-page'
 
+// The theme toggle has tests of its own.
+vi.mock('../../theme', () => ({ ThemeToggle: () => null }))
 vi.mock('../api/auth', () => ({
   verifyLink: vi.fn(),
   setPassword: vi.fn(),
@@ -22,6 +24,7 @@ const account = {
   firstName: null,
   lastName: null,
   locale: null,
+  theme: null,
   mfaEnabled: false,
 }
 

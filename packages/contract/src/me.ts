@@ -4,6 +4,11 @@ import { accountRoute, level, timestamp } from './common'
 
 const name = z.string().trim().min(1).max(100)
 
+/** An interface theme an account can choose. */
+export const themeSchema = z.enum(['light', 'dark'])
+
+export type Theme = z.infer<typeof themeSchema>
+
 export const accountSchema = z.object({
   id: z.uuid(),
   email: z.string(),
@@ -11,6 +16,8 @@ export const accountSchema = z.object({
   lastName: z.string().nullable(),
   /** The account's interface language; `null` means detect it from Accept-Language. */
   locale: z.enum(SUPPORTED_LOCALES).nullable(),
+  /** The account's interface theme; `null` means follow the system's. */
+  theme: themeSchema.nullable(),
   /** Whether the account holds a verified two-factor factor. */
   mfaEnabled: z.boolean(),
 })
@@ -32,6 +39,7 @@ export const updateAccountSchema = z
     firstName: name.nullable(),
     lastName: name.nullable(),
     locale: z.enum(SUPPORTED_LOCALES).nullable(),
+    theme: themeSchema.nullable(),
   })
   .partial()
   .strict()
@@ -79,7 +87,7 @@ export const meContract = {
     .route({
       method: 'PATCH',
       path: '/me',
-      summary: 'Change the name or the interface language of the signed-in account',
+      summary: 'Change the name, the interface language or the theme of the signed-in account',
     })
     .input(z.object({ body: updateAccountSchema }))
     .output(accountSchema),

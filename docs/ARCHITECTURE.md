@@ -231,6 +231,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - Nothing of one account outlives it: a sign-out or another account clears caches and permissions in
   every tab, each tenant has its own API client, and a page to return to belongs to the account that
   left it.
+- The theme of a signed-in account is its own from `GET /me`, or the system's when it has none; the
+  browser keeps only the one a visitor with no account signed in chose, and never an account's
+  ([0025](adr/0025-keep-the-theme-on-the-account-and-a-visitors-in-the-browser.md)).
 - The API stays the authority: the panel only hides and disables what a member cannot do.
 - A write tells its outcome in a notification: a success, a warning for a refusal the member can act
   on, an error for a failure of the service or the network, the last two kept until closed. The

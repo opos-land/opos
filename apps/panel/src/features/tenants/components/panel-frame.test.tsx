@@ -9,6 +9,7 @@ import { PanelFrame } from './panel-frame'
 
 // The account menu has tests of its own.
 vi.mock('../../account', () => ({ NavUser: () => <p>the account</p> }))
+vi.mock('../../theme', () => ({ ThemeToggle: () => <button type="button">Dark theme</button> }))
 
 const view = () =>
   render(
@@ -52,6 +53,13 @@ describe('PanelFrame', () => {
     expect(screen.getByText('the page')).toBeDefined()
     // The bar's button and the rail on the sidebar's edge.
     expect(screen.getAllByRole('button', { name: 'Toggle Sidebar' })).toHaveLength(2)
+  })
+
+  it('offers the theme toggle in the bar above the page', () => {
+    view()
+
+    const bar = screen.getByRole('banner')
+    expect(within(bar).getByRole('button', { name: 'Dark theme' })).toBeDefined()
   })
 
   it('closes the sidebar of a narrow screen once a link in it opens another page', async () => {

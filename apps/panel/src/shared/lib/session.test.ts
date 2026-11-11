@@ -11,6 +11,7 @@ const account = (id: string) => ({
   firstName: null,
   lastName: null,
   locale: null,
+  theme: null,
   mfaEnabled: false,
   signInMethods: ['password'],
 })

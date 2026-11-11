@@ -2,9 +2,12 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
 import { LoginPage } from './login-page'
+
+// The theme toggle has tests of its own.
+vi.mock('../../theme', () => ({ ThemeToggle: () => null }))
 
 const renderLogin = (search: string) =>
   render(
@@ -79,6 +82,7 @@ describe('LoginPage ?error=', () => {
         firstName: null,
         lastName: null,
         locale: null,
+        theme: null,
         mfaEnabled: false,
       },
     })
@@ -97,6 +101,7 @@ describe('LoginPage ?error=', () => {
           firstName: null,
           lastName: null,
           locale: null,
+          theme: null,
           mfaEnabled: false,
         },
       })

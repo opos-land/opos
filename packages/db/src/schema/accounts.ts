@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import { check, foreignKey, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { authUsers } from 'drizzle-orm/supabase'
 import { timestamps } from './columns'
+import { theme } from './enums'
 
 export const accounts = pgTable(
   'accounts',
@@ -11,6 +12,8 @@ export const accounts = pgTable(
     firstName: text(),
     lastName: text(),
     locale: text(),
+    // The interface theme the account chose; null follows the system's.
+    theme: theme(),
     // auth.users.email_confirmed_at, mirrored by the auth.users triggers; null until confirmed.
     emailConfirmedAt: timestamp({ withTimezone: true }),
     // Set while the user holds a verified auth.mfa_factors row, by the factor trigger; null when off.

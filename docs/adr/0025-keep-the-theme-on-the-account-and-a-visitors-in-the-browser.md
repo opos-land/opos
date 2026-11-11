@@ -1,4 +1,4 @@
-# 0024. Keep the theme on the account, and a visitor's in the browser
+# 0025. Keep the theme on the account, and a visitor's in the browser
 
 - Status: Accepted
 - Date: 2026-11-11

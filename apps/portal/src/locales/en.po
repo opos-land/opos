@@ -120,6 +120,14 @@ msgstr "Continue with Google"
 msgid "Create an account"
 msgstr "Create an account"
 
+#: src/features/account/components/theme-form.tsx
+msgid "Dark"
+msgstr "Dark"
+
+#: src/features/theme/components/theme-toggle.tsx
+msgid "Dark theme"
+msgstr "Dark theme"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Database backups contain personal data. They are encrypted and kept under the same rules as the data itself."
 msgstr "Database backups contain personal data. They are encrypted and kept under the same rules as the data itself."
@@ -273,6 +281,10 @@ msgstr "If you turn on two-factor authentication: the secret of your authenticat
 msgid "Interface language"
 msgstr "Interface language"
 
+#: src/features/account/components/theme-form.tsx
+msgid "Interface theme"
+msgstr "Interface theme"
+
 #: src/features/account/components/delete-account.tsx
 msgid "Keep my account"
 msgstr "Keep my account"
@@ -285,6 +297,10 @@ msgstr "Language"
 #: src/features/auth/components/register-form.tsx
 msgid "Last name"
 msgstr "Last name"
+
+#: src/features/account/components/theme-form.tsx
+msgid "Light"
+msgstr "Light"
 
 #: src/features/conventions/components/like-button.tsx
 msgid "Like"
@@ -412,6 +428,7 @@ msgid "Save these ten recovery codes somewhere safe. Each works once, in place o
 msgstr "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
 
 #: src/features/account/components/language-form.tsx
+#: src/features/account/components/theme-form.tsx
 msgid "Saved on your account."
 msgstr "Saved on your account."
 
@@ -480,6 +497,11 @@ msgstr "The hash of a recovery code you have used: as a record, until you delete
 msgid "The interface language is saved."
 msgstr "The interface language is saved."
 
+#: src/features/account/components/theme-form.tsx
+#: src/features/theme/components/theme-toggle.tsx
+msgid "The interface theme is saved."
+msgstr "The interface theme is saved."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "The number of likes of a programme item is public. Who liked it is never shown to anyone."
 msgstr "The number of likes of a programme item is public. Who liked it is never shown to anyone."
@@ -488,9 +510,17 @@ msgstr "The number of likes of a programme item is public. Who liked it is never
 msgid "The passwords differ."
 msgstr "The passwords differ."
 
+#: src/features/account/components/theme-form.tsx
+msgid "The system's theme"
+msgstr "The system's theme"
+
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "The whole programme"
 msgstr "The whole programme"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Theme"
+msgstr "Theme"
 
 #: src/features/conventions/components/program-list.tsx
 msgid "There is no programme yet."

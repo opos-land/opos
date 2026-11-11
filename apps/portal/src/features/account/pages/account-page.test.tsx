@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,10 +16,13 @@ const me = vi.hoisted(() => ({
     firstName: null,
     lastName: null,
     locale: null,
+    theme: null as 'light' | 'dark' | null,
     mfaEnabled: false,
     signInMethods: ['password'] as string[],
   },
 }))
+
+const update = vi.hoisted(() => vi.fn((_input: unknown) => Promise.resolve({})))
 
 vi.mock('../../auth', () => ({
   signOut: vi.fn(),
@@ -29,7 +32,7 @@ vi.mock('../../auth', () => ({
 vi.mock('../api/account', () => ({
   mergeSavedAccount: vi.fn(),
   accountOptions: () => ({ queryKey: ['account'], queryFn: () => Promise.resolve(me.current) }),
-  updateAccountOptions: () => ({ mutationFn: () => Promise.resolve(me.current) }),
+  updateAccountOptions: () => ({ mutationFn: update }),
   deleteAccountOptions: () => ({ mutationFn: () => Promise.resolve() }),
   forgetSession: vi.fn(),
 }))
@@ -39,7 +42,8 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
-  me.current = { ...me.current, mfaEnabled: false, signInMethods: ['password'] }
+  me.current = { ...me.current, theme: null, mfaEnabled: false, signInMethods: ['password'] }
+  update.mockClear()
   vi.mocked(signOut).mockReset()
 })
 
@@ -87,6 +91,41 @@ describe('AccountPage sign-out', () => {
     await openPage()
 
     expect(screen.getByText('Signing out ends your session on this device.')).toBeTruthy()
+  })
+})
+
+describe('AccountPage theme', () => {
+  it('offers the interface theme, the system’s by default', async () => {
+    await openPage()
+
+    expect(screen.getByRole('heading', { name: 'Theme' })).toBeTruthy()
+    const select = screen.getByLabelText<HTMLSelectElement>('Interface theme')
+    expect(select.value).toBe('system')
+    expect([...select.options].map((option) => option.textContent)).toEqual([
+      "The system's theme",
+      'Light',
+      'Dark',
+    ])
+  })
+
+  it('shows the theme GET /me names', async () => {
+    me.current = { ...me.current, theme: 'dark' }
+    await openPage()
+
+    expect(screen.getByLabelText<HTMLSelectElement>('Interface theme').value).toBe('dark')
+  })
+
+  it('saves the chosen theme on the account, and the system’s as no theme', async () => {
+    const user = await openPage()
+    const select = screen.getByLabelText<HTMLSelectElement>('Interface theme')
+    const enabled = () => waitFor(() => expect(select.disabled).toBe(false))
+
+    await user.selectOptions(select, 'light')
+    await waitFor(() => expect(update.mock.lastCall?.[0]).toEqual({ body: { theme: 'light' } }))
+
+    await enabled()
+    await user.selectOptions(select, 'system')
+    await waitFor(() => expect(update.mock.lastCall?.[0]).toEqual({ body: { theme: null } }))
   })
 })
 

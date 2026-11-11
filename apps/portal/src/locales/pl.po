@@ -120,6 +120,14 @@ msgstr "Kontynuuj przez Google"
 msgid "Create an account"
 msgstr "Załóż konto"
 
+#: src/features/account/components/theme-form.tsx
+msgid "Dark"
+msgstr "Ciemny"
+
+#: src/features/theme/components/theme-toggle.tsx
+msgid "Dark theme"
+msgstr "Ciemny motyw"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Database backups contain personal data. They are encrypted and kept under the same rules as the data itself."
 msgstr "Kopie zapasowe bazy danych zawierają dane osobowe. Są szyfrowane i przechowywane na tych samych zasadach co same dane."
@@ -273,6 +281,10 @@ msgstr "Jeśli włączysz uwierzytelnianie dwuskładnikowe: sekret twojej aplika
 msgid "Interface language"
 msgstr "Język interfejsu"
 
+#: src/features/account/components/theme-form.tsx
+msgid "Interface theme"
+msgstr "Motyw interfejsu"
+
 #: src/features/account/components/delete-account.tsx
 msgid "Keep my account"
 msgstr "Zachowaj moje konto"
@@ -285,6 +297,10 @@ msgstr "Język"
 #: src/features/auth/components/register-form.tsx
 msgid "Last name"
 msgstr "Nazwisko"
+
+#: src/features/account/components/theme-form.tsx
+msgid "Light"
+msgstr "Jasny"
 
 #: src/features/conventions/components/like-button.tsx
 msgid "Like"
@@ -412,6 +428,7 @@ msgid "Save these ten recovery codes somewhere safe. Each works once, in place o
 msgstr "Zapisz te dziesięć kodów odzyskiwania w bezpiecznym miejscu. Każdy działa raz, zamiast kodu z aplikacji, a użycie któregokolwiek wyłącza uwierzytelnianie dwuskładnikowe. Widzisz je tylko teraz."
 
 #: src/features/account/components/language-form.tsx
+#: src/features/account/components/theme-form.tsx
 msgid "Saved on your account."
 msgstr "Zapisywany na twoim koncie."
 
@@ -480,6 +497,11 @@ msgstr "Skrót kodu odzyskiwania, który został użyty: jako zapis, do usunięc
 msgid "The interface language is saved."
 msgstr "Język interfejsu został zapisany."
 
+#: src/features/account/components/theme-form.tsx
+#: src/features/theme/components/theme-toggle.tsx
+msgid "The interface theme is saved."
+msgstr "Motyw interfejsu został zapisany."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "The number of likes of a programme item is public. Who liked it is never shown to anyone."
 msgstr "Liczba polubień punktu programu jest publiczna. To, kto go polubił, nie jest nikomu pokazywane."
@@ -488,9 +510,17 @@ msgstr "Liczba polubień punktu programu jest publiczna. To, kto go polubił, ni
 msgid "The passwords differ."
 msgstr "Hasła się różnią."
 
+#: src/features/account/components/theme-form.tsx
+msgid "The system's theme"
+msgstr "Motyw systemu"
+
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "The whole programme"
 msgstr "Cały program"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Theme"
+msgstr "Motyw"
 
 #: src/features/conventions/components/program-list.tsx
 msgid "There is no programme yet."

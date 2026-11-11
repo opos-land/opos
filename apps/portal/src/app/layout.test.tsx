@@ -7,6 +7,11 @@ import { useSession } from '../shared/lib/session'
 import { Layout } from './layout'
 
 vi.mock('../features/account', () => ({ AccountLocale: () => null }))
+// The theme has tests of its own.
+vi.mock('../features/theme', () => ({
+  AccountTheme: () => null,
+  ThemeToggle: () => <button type="button">Dark theme</button>,
+}))
 
 const account = {
   id: 'a',
@@ -38,6 +43,21 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('Layout', () => {
+  it('offers the theme toggle in the header, signed in or not', () => {
+    view()
+    expect(screen.getByRole('button', { name: 'Dark theme' })).toBeDefined()
+
+    cleanup()
+    useSession.setState({ status: 'ready', account })
+    view()
+    expect(screen.getByRole('button', { name: 'Dark theme' })).toBeDefined()
+
+    cleanup()
+    useSession.setState({ status: 'loading', account: null })
+    view()
+    expect(screen.getByRole('button', { name: 'Dark theme' })).toBeDefined()
+  })
+
   it('offers sign-in to a visitor without a session', () => {
     view()
 

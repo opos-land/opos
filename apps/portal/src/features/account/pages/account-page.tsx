@@ -8,11 +8,12 @@ import { accountOptions } from '../api/account'
 import { DeleteAccount } from '../components/delete-account'
 import { LanguageForm } from '../components/language-form'
 import { ProfileForm } from '../components/profile-form'
+import { ThemeForm } from '../components/theme-form'
 import { TwoFactorCard } from '../components/two-factor-card'
 import { signInMethods } from '../model/sign-in-methods'
 
 /**
- * Account settings: the names, the interface language, two-factor authentication,
+ * Account settings: the names, the interface language and theme, two-factor authentication,
  * sign-out and deletion.
  */
 export function AccountPage() {
@@ -34,6 +35,9 @@ export function AccountPage() {
       </Section>
       <Section title={<Trans>Language</Trans>}>
         <LanguageForm account={account.data} />
+      </Section>
+      <Section title={<Trans>Theme</Trans>}>
+        <ThemeForm account={account.data} />
       </Section>
       <Section title={<Trans>Two-factor authentication</Trans>}>
         <TwoFactorCard

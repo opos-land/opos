@@ -5,9 +5,9 @@
 # command, for turbo's interface and the prompts of drizzle-kit.
 # This file sits outside mise.toml, which turbo hashes: a description changes no cache.
 
-[dev]
+[local]
 description = "Run the API, the panel, the portal and the admin application in watch mode"
-run = "pnpm dev"
+run = "pnpm local"
 raw = true
 
 [build]

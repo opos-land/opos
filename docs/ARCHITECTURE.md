@@ -359,7 +359,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `pnpm --dir apps/<app> exec shadcn`, never `npx shadcn@latest` or `pnpm dlx`, which pass
   `minimumReleaseAge` by; the CLI's MCP server is not used
   ([0021](adr/0021-run-the-shadcn-skill-through-the-pinned-cli.md)).
-- turbo ([turbo.json](../turbo.json)) declares only what a rule needs: catalogs compile before `dev`,
+- turbo ([turbo.json](../turbo.json)) declares only what a rule needs: catalogs compile before `local`,
   `build` and `test`; side effects such as `db:*` are never cached; runtime variables stay out of
   the hash; the schema and API suites never share the stack at once.
 - No `.env` at the root: each application, `packages/db` and `supabase/` keep their own beside a

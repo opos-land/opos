@@ -1,6 +1,6 @@
 # 0012. Host each environment on a VPS with Docker Compose behind Traefik
 
-- Status: Accepted
+- Status: Superseded by [0033](0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)
 - Date: 2026-10-27
 - Rationale: reconstructed, to confirm
 

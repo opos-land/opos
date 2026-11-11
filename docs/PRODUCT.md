@@ -292,7 +292,7 @@ interface language.
 - Tickets sold to the convention's own account and checked at the venue; attendee registrations
 - Account deletion; a privacy policy linked from registration
 - A portal for phone browsers; the designer's interface, with no AI-generated graphics
-- Demo data; our own server and Supabase in the EU, with backups and a Dev environment
+- Demo data; hosting and Supabase in the EU, with backups and a Dev environment
 
 **Beyond the MVP:**
 

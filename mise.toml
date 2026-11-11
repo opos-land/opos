@@ -9,6 +9,11 @@ node = "24.15.0"
 # pnpm is pinned by packageManager in package.json; corepack provides it
 node.corepack = true
 
+[hooks]
+# One command sets a checkout up: after the tools, the dependencies and the git hooks. It runs on
+# every `mise install`, also when every tool is already there.
+postinstall = "pnpm install"
+
 [task_config]
 # The root commands, outside this file so that turbo, which hashes it, keeps its cache
 includes = ["mise-tasks.toml"]

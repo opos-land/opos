@@ -1,0 +1,136 @@
+# The root commands as mise tasks: `mise tasks` lists them with what they do, `mise run` opens a
+# picker. Each task runs the root script of the same name, which stays the only definition of the
+# command and works without mise; extra arguments go through to it. turbo orders and caches what the
+# scripts run, so a task declares no sources, outputs or depends. `raw` hands the terminal to the
+# command, for turbo's interface and the prompts of drizzle-kit.
+# This file sits outside mise.toml, which turbo hashes: a description changes no cache.
+
+[dev]
+description = "Run the API, the panel and the portal in watch mode"
+run = "pnpm dev"
+raw = true
+
+[build]
+description = "Build the API, the panel and the portal for production"
+run = "pnpm build"
+raw = true
+
+[typecheck]
+description = "Type-check every package"
+run = "pnpm typecheck"
+raw = true
+
+[lint]
+description = "Lint every package with ESLint"
+run = "pnpm lint"
+raw = true
+
+[test]
+description = "Run the tests of every package; the API and database suites need the local stack (infra:up)"
+run = "pnpm test"
+raw = true
+
+["test:e2e"]
+description = "Run the Playwright tests against the migrated and seeded local stack; never beside test"
+run = "pnpm test:e2e"
+raw = true
+
+["test:scripts"]
+description = "Test the root scripts and the Claude Code hooks and skills, with full coverage of the scripts"
+run = "pnpm test:scripts"
+raw = true
+
+["i18n:extract"]
+description = "Extract the source messages into the .po catalogs"
+run = "pnpm i18n:extract"
+raw = true
+
+["i18n:compile"]
+description = "Compile the .po catalogs of the panel, the portal and packages/i18n"
+run = "pnpm i18n:compile"
+raw = true
+
+["i18n:check"]
+description = "Check that the catalogs match the code and every message has its pl translation"
+run = "pnpm i18n:check"
+raw = true
+
+["db:generate"]
+description = "Generate a Drizzle migration from the schema; to name it, pnpm --filter @opos/db db:generate --name=<name>"
+run = "pnpm db:generate"
+raw = true
+
+["db:migrate"]
+description = "Apply the pending Drizzle migrations"
+run = "pnpm db:migrate"
+raw = true
+
+["db:push"]
+description = "Push the schema to the database without writing a migration (drizzle-kit push)"
+run = "pnpm db:push"
+raw = true
+
+["db:seed"]
+description = "Fill a local or dev database with the seed tenants and accounts; safe to run again"
+run = "pnpm db:seed"
+raw = true
+
+["db:roles"]
+description = "Set up the runtime database roles with their passwords and defaults"
+run = "pnpm db:roles"
+raw = true
+
+["db:studio"]
+description = "Open Drizzle Studio on the database"
+run = "pnpm db:studio"
+raw = true
+
+["db:verify"]
+description = "Check that every table follows the tenant isolation rules and the roles hold only the privileges they may"
+run = "pnpm db:verify"
+raw = true
+
+["db:tenant:create"]
+description = "Create a tenant and its first head, whose account must exist: --slug <slug> --name <name> --head-email <email> [--locale pl] [--timezone Europe/Warsaw]"
+run = "pnpm db:tenant:create"
+raw = true
+
+["db:tenant:rename"]
+description = "Change a tenant's slug: --slug <current slug> --new-slug <new slug>"
+run = "pnpm db:tenant:rename"
+raw = true
+
+["db:account:reset-2fa"]
+description = "Remove the two-factor factors and recovery codes of an account and email its owner: <email>"
+run = "pnpm db:account:reset-2fa"
+raw = true
+
+[format]
+description = "Format every file with Prettier"
+run = "pnpm format"
+raw = true
+
+["format:check"]
+description = "Check that every file is formatted with Prettier"
+run = "pnpm format:check"
+raw = true
+
+["infra:init"]
+description = "Set up the local stack once per checkout: .env files, secrets, signing key, Supabase, database roles"
+run = "pnpm infra:init"
+raw = true
+
+["infra:up"]
+description = "Start the local Supabase stack"
+run = "pnpm infra:up"
+raw = true
+
+["infra:down"]
+description = "Stop the local Supabase stack, keeping its data"
+run = "pnpm infra:down"
+raw = true
+
+["infra:reset"]
+description = "Wipe the local Supabase stack's data, start it again and set the database roles"
+run = "pnpm infra:reset"
+raw = true

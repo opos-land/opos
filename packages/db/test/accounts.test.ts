@@ -28,6 +28,13 @@ describe('accounts mirror auth.users', () => {
     })
   })
 
+  it('creates an account with no theme, so the interface follows the system', async () => {
+    const user = await createUser({ first_name: 'Anna' })
+
+    const [row] = await migrator`select theme from accounts where id = ${user.id}`
+    expect(row).toEqual({ theme: null })
+  })
+
   it('splits a Google full name on the first space', async () => {
     const user = await createUser({ full_name: 'Jan Maria Kowalski' })
 
@@ -322,18 +329,29 @@ describe('accounts constraints', () => {
       migrator`update accounts set email = 'Mixed@Example.test' where id = ${user.id}`,
     ).rejects.toThrow(/accounts_email_lowercase/)
   })
+
+  it('refuses a theme other than light or dark', async () => {
+    const user = await createUser()
+
+    await expect(
+      migrator`update accounts set theme = 'blue' where id = ${user.id}`,
+    ).rejects.toThrow(/invalid input value for enum theme/)
+  })
 })
 
 describe('accounts on the runtime roles', () => {
-  it('lets opos_app read every column and change only the names and the locale', async () => {
+  it('lets opos_app read every column and change only the names, the locale and the theme', async () => {
     const user = await createUser()
 
-    await app`update accounts set first_name = 'Ola', last_name = 'Lis', locale = 'en' where id = ${user.id}`
+    await app`update accounts set first_name = 'Ola', last_name = 'Lis', locale = 'en', theme = 'dark' where id = ${user.id}`
     expect(await account(user.id)).toMatchObject({
       first_name: 'Ola',
       last_name: 'Lis',
       locale: 'en',
     })
+    expect(await app`select theme from accounts where id = ${user.id}`).toEqual([{ theme: 'dark' }])
+    await app`update accounts set theme = null where id = ${user.id}`
+    expect(await app`select theme from accounts where id = ${user.id}`).toEqual([{ theme: null }])
     expect(await app`select email from accounts where id = ${user.id}`).toHaveLength(1)
     for (const query of [
       app`update accounts set email = 'other@example.test' where id = ${user.id}`,

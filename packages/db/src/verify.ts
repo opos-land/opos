@@ -80,6 +80,7 @@ const appUpdates = [
   'accounts.first_name',
   'accounts.last_name',
   'accounts.locale',
+  'accounts.theme',
   'tenants.name',
   'tenants.default_locale',
   'tenants.timezone',

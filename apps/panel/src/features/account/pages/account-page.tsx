@@ -4,6 +4,7 @@ import { SUPPORTED_LOCALES, isLocale } from '@opos/i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
 import { usePageTitle } from '../../../shared/lib/page-title'
+import { isTheme } from '../../../shared/lib/theme'
 import {
   ErrorMessage,
   FormField,
@@ -17,8 +18,12 @@ import { TwoFactorCard } from '../components/two-factor-card'
 import { signInMethods } from '../model/sign-in-methods'
 
 const BROWSER = 'browser'
+const SYSTEM = 'system'
 
-/** The signed-in account, above any convention: its interface language and two-factor authentication. */
+/**
+ * The signed-in account, above any convention: its interface language and theme, and two-factor
+ * authentication.
+ */
 export function AccountPage() {
   const { t } = useLingui()
   usePageTitle(t`Account`)
@@ -33,8 +38,18 @@ export function AccountPage() {
     },
   })
 
+  // AccountTheme shows the saved theme once it is in the cached account.
+  const saveTheme = useMutation({
+    ...updateAccountOptions(),
+    meta: { success: msg`The interface theme is saved.` },
+    onSuccess: (saved) => mergeSavedAccount(queryClient, saved),
+  })
+
   const changeLanguage = (value: string) =>
     update.mutate({ body: { locale: isLocale(value) ? value : null } })
+
+  const changeTheme = (value: string) =>
+    saveTheme.mutate({ body: { theme: isTheme(value) ? value : null } })
 
   return (
     <div className="mx-auto w-full max-w-3xl">
@@ -55,6 +70,20 @@ export function AccountPage() {
                   {languageName(locale)}
                 </NativeSelectOption>
               ))}
+            </NativeSelect>
+          )}
+        </FormField>
+        <FormField label={t`Interface theme`} hint={t`Saved on your account.`}>
+          {(control) => (
+            <NativeSelect
+              {...control}
+              value={account.data?.theme ?? SYSTEM}
+              disabled={!account.data || saveTheme.isPending}
+              onChange={(event) => changeTheme(event.target.value)}
+            >
+              <NativeSelectOption value={SYSTEM}>{t`The system's theme`}</NativeSelectOption>
+              <NativeSelectOption value="light">{t`Light`}</NativeSelectOption>
+              <NativeSelectOption value="dark">{t`Dark`}</NativeSelectOption>
             </NativeSelect>
           )}
         </FormField>

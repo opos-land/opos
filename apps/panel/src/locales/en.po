@@ -230,6 +230,14 @@ msgstr "Create an account"
 msgid "Create the edition"
 msgstr "Create the edition"
 
+#: src/features/account/pages/account-page.tsx
+msgid "Dark"
+msgstr "Dark"
+
+#: src/features/theme/components/theme-toggle.tsx
+msgid "Dark theme"
+msgstr "Dark theme"
+
 #: src/features/editions/components/edition-layout.tsx
 msgid "Dashboard"
 msgstr "Dashboard"
@@ -450,6 +458,10 @@ msgstr "In the convention's time zone, {zone}."
 msgid "Interface language"
 msgstr "Interface language"
 
+#: src/features/account/pages/account-page.tsx
+msgid "Interface theme"
+msgstr "Interface theme"
+
 #: src/features/auth/pages/invitation-page.tsx
 #: src/features/team/pages/invite-page.tsx
 msgid "Invitation"
@@ -475,6 +487,10 @@ msgstr "Its programme items, with their likes and lists of speakers, and the tea
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Join the organizing team"
 msgstr "Join the organizing team"
+
+#: src/features/account/pages/account-page.tsx
+msgid "Light"
+msgstr "Light"
 
 #: src/shared/ui/messages.tsx
 msgid "Loading…"
@@ -855,6 +871,11 @@ msgstr "The edition must end after it starts."
 msgid "The interface language is saved."
 msgstr "The interface language is saved."
 
+#: src/features/account/pages/account-page.tsx
+#: src/features/theme/components/theme-toggle.tsx
+msgid "The interface theme is saved."
+msgstr "The interface theme is saved."
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "The invitation is for {email} and is valid until {validUntil}."
 msgstr "The invitation is for {email} and is valid until {validUntil}."
@@ -894,6 +915,10 @@ msgstr "The settings are saved."
 #: src/features/program/components/speakers-editor.tsx
 msgid "The speakers are saved."
 msgstr "The speakers are saved."
+
+#: src/features/account/pages/account-page.tsx
+msgid "The system's theme"
+msgstr "The system's theme"
 
 #: src/features/team/pages/edition-access-page.tsx
 msgid "The team has no organizers besides its head organizers."

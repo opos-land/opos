@@ -28,6 +28,8 @@ import {
   TenantLayout,
   TenantPickerPage,
 } from '../features/tenants'
+import { AccountTheme } from '../features/theme'
+import { useSession } from '../shared/lib/session'
 import { NotFoundView, SidebarProvider, TooltipProvider } from '../shared/ui'
 
 /**
@@ -50,11 +52,14 @@ function SignedIn() {
 }
 
 /**
- * Every screen, with `MfaGate` leading the sign-in pages of a pending session to `/auth/mfa`.
+ * Every screen, with `MfaGate` leading the sign-in pages of a pending session to `/auth/mfa`, in
+ * the signed-in account's theme on any page.
  */
 function Root() {
+  const account = useSession((state) => state.account)
   return (
     <>
+      {account && <AccountTheme />}
       <MfaGate />
       <Outlet />
     </>

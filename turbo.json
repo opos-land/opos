@@ -21,7 +21,12 @@
       "dependsOn": ["i18n:compile"],
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["OPOS_PANEL_PORT", "OPOS_PORTAL_PORT"]
+      "passThroughEnv": [
+        "OPOS_PANEL_HOST",
+        "OPOS_PANEL_PORT",
+        "OPOS_PORTAL_HOST",
+        "OPOS_PORTAL_PORT"
+      ]
     },
     "typecheck": {
       "dependsOn": ["transit"]
@@ -55,7 +60,9 @@
       "passThroughEnv": [
         "CI",
         "SUPABASE_LOCAL_SMTP_PORT",
+        "OPOS_PANEL_HOST",
         "OPOS_PANEL_PORT",
+        "OPOS_PORTAL_HOST",
         "OPOS_PORTAL_PORT",
         "PLAYWRIGHT_BROWSERS_PATH"
       ]

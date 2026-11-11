@@ -16,3 +16,21 @@ export function devEnvDefaults(root: string): Record<string, string> {
     ),
   )
 }
+
+/**
+ * The interface and port the dev server binds: OPOS_PORTAL_HOST and OPOS_PORTAL_PORT, from the
+ * environment or `.env`, move them; an empty value keeps the loopback interface and port 5174. The
+ * browser still opens PORTAL_URL of the API, whose `*.localhost` name the browser resolves itself.
+ */
+export function devServerAddress(env: Record<string, string | undefined>): {
+  host: string
+  port: number
+} {
+  const host = env.OPOS_PORTAL_HOST?.trim() || '127.0.0.1'
+  const rawPort = env.OPOS_PORTAL_PORT?.trim() || '5174'
+  const port = Number(rawPort)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`OPOS_PORTAL_PORT must be a port from 1 to 65535, got ${rawPort}`)
+  }
+  return { host, port }
+}

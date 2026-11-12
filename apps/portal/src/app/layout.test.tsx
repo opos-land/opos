@@ -1,12 +1,17 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../shared/lib/session'
 import { Layout } from './layout'
 
 vi.mock('../features/account', () => ({ AccountLocale: () => null }))
+// The consent banner and its settings have tests of their own.
+vi.mock('../features/consent', () => ({
+  ConsentBanner: () => <section aria-label="Optional tools" />,
+  ConsentSettingsLink: () => <button type="button">Privacy settings</button>,
+}))
 // The theme has tests of its own.
 vi.mock('../features/theme', () => ({
   AccountTheme: () => null,
@@ -56,6 +61,15 @@ describe('Layout', () => {
     useSession.setState({ status: 'loading', account: null })
     view()
     expect(screen.getByRole('button', { name: 'Dark theme' })).toBeDefined()
+  })
+
+  it('asks for consent on every screen, and keeps its settings in the footer', () => {
+    view()
+
+    expect(screen.getByRole('region', { name: 'Optional tools' })).toBeDefined()
+    const footer = screen.getByRole('contentinfo')
+    expect(within(footer).getByRole('button', { name: 'Privacy settings' })).toBeDefined()
+    expect(within(footer).getByRole('link', { name: 'Privacy policy' })).toBeDefined()
   })
 
   it('offers sign-in to a visitor without a session', () => {

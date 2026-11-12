@@ -21,6 +21,11 @@ msgstr "{likes, plural, one {# polubienie} few {# polubienia} many {# polubień}
 msgid "{tenantName}, {editionName}"
 msgstr "{tenantName}, {editionName}"
 
+#. A category of optional tools, then the providers of its tools joined into a list
+#: src/features/consent/components/consent-banner.tsx
+msgid "<0>{label}:</0> <1>{providers}</1>"
+msgstr "<0>{label}:</0> <1>{providers}</1>"
+
 #: src/features/landing/pages/landing-page.tsx
 msgid "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
 msgstr "Konwent prowadzi swój zespół, edycje, program i sprzedaż akredytacji w panelu organizatora. Płatności za akredytacje trafiają prosto na własne konto konwentu u operatora płatności: OPOS nigdy nie przechowuje tych pieniędzy."
@@ -37,6 +42,11 @@ msgstr "Opinia pokazuje twoje imię i nazwisko albo „anonimowo”, jeśli tak 
 msgid "Account"
 msgstr "Konto"
 
+#: src/features/consent/components/consent-banner.tsx
+#: src/features/consent/components/consent-settings.tsx
+msgid "Allow all"
+msgstr "Zezwól na wszystkie"
+
 #: src/features/auth/pages/register-page.tsx
 msgid "Already have an account? <0>Sign in</0>"
 msgstr "Masz już konto? <0>Zaloguj się</0>"
@@ -44,6 +54,10 @@ msgstr "Masz już konto? <0>Zaloguj się</0>"
 #: src/features/landing/pages/privacy-page.tsx
 msgid "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
 msgstr "Zaproszenie do zespołu konwentu niczego nie zapisuje, dopóki nie zostanie przyjęte: zaproszony adres jest zawarty wyłącznie w wysłanym na niego linku."
+
+#: src/features/consent/model/tracker.ts
+msgid "Analytics"
+msgstr "Analityka"
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
@@ -71,10 +85,15 @@ msgstr "Anuluj"
 msgid "Check your inbox"
 msgstr "Sprawdź skrzynkę pocztową"
 
+#: src/features/consent/components/consent-settings.tsx
+msgid "Choose which optional tools OPOS may use in this browser. OPOS works the same without them."
+msgstr "Wybierz, których narzędzi opcjonalnych OPOS może używać w tej przeglądarce. Bez nich OPOS działa tak samo."
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Choose your password"
 msgstr "Wybierz hasło"
 
+#: src/shared/ui/dialog.tsx
 #: src/shared/ui/toast.tsx
 msgid "Close"
 msgstr "Zamknij"
@@ -114,11 +133,19 @@ msgstr "Dalej"
 msgid "Continue with Google"
 msgstr "Kontynuuj przez Google"
 
+#: src/features/consent/model/tracker.ts
+msgid "Counting visits and seeing how the pages are used, to improve OPOS."
+msgstr "Liczenie odwiedzin i sprawdzanie, jak używane są strony, aby ulepszać OPOS."
+
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/pages/register-page.tsx
 #: src/features/landing/pages/landing-page.tsx
 msgid "Create an account"
 msgstr "Załóż konto"
+
+#: src/features/consent/components/consent-banner.tsx
+msgid "Customize"
+msgstr "Dostosuj"
 
 #: src/features/account/components/theme-form.tsx
 msgid "Dark"
@@ -310,6 +337,14 @@ msgstr "Polub"
 msgid "Loading…"
 msgstr "Wczytywanie…"
 
+#: src/features/consent/model/tracker.ts
+msgid "Marketing"
+msgstr "Marketing"
+
+#: src/features/consent/model/tracker.ts
+msgid "Measuring the results of advertising campaigns and showing advertising on other websites."
+msgstr "Mierzenie skuteczności kampanii reklamowych i wyświetlanie reklam w innych serwisach."
+
 #: src/app/layout.tsx
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "My schedule"
@@ -326,6 +361,10 @@ msgstr "Nie masz jeszcze konta? <0>Załóż konto</0>"
 #: src/features/conventions/pages/convention-page.tsx
 msgid "No edition of this convention is active."
 msgstr "Żadna edycja tego konwentu nie jest teraz aktywna."
+
+#: src/features/consent/components/consent-banner.tsx
+msgid "None of them runs until you allow it. You can change your choice at any time in the privacy settings at the bottom of the page."
+msgstr "Żadne z nich nie uruchomi się, dopóki na to nie pozwolisz. Wybór zmienisz w każdej chwili w ustawieniach prywatności na dole strony."
 
 #: src/shared/ui/toast.tsx
 msgid "Notifications"
@@ -360,6 +399,14 @@ msgstr "OPOS to platforma, na której konwenty prowadzą swój program, akredyta
 msgid "OPOS uses no tracking or advertising cookies. Your sign-in session is kept in cookies that your browser sends to OPOS alone, which no script of the page can read. Signing out removes them."
 msgstr "OPOS nie używa śledzących ani reklamowych plików cookie. Twoja sesja logowania jest przechowywana w plikach cookie, które przeglądarka wysyła wyłącznie do OPOS i których nie odczyta żaden skrypt strony. Wylogowanie je usuwa."
 
+#: src/features/consent/components/consent-banner.tsx
+msgid "OPOS works without them. With your consent, it would also use:"
+msgstr "OPOS działa bez nich. Za twoją zgodą będzie też używać tych narzędzi:"
+
+#: src/features/consent/components/consent-banner.tsx
+msgid "Optional tools"
+msgstr "Narzędzia opcjonalne"
+
 #: src/features/auth/pages/login-page.tsx
 #: src/features/auth/pages/register-page.tsx
 msgid "or"
@@ -390,9 +437,15 @@ msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
 
 #: src/app/layout.tsx
+#: src/features/consent/components/consent-banner.tsx
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Privacy policy"
 msgstr "Polityka prywatności"
+
+#: src/features/consent/components/consent-settings-link.tsx
+#: src/features/consent/components/consent-settings.tsx
+msgid "Privacy settings"
+msgstr "Ustawienia prywatności"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "QR code for your authenticator app"
@@ -401,6 +454,11 @@ msgstr "Kod QR dla aplikacji uwierzytelniającej"
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Recovery code"
 msgstr "Kod odzyskiwania"
+
+#: src/features/consent/components/consent-banner.tsx
+#: src/features/consent/components/consent-settings.tsx
+msgid "Refuse all"
+msgstr "Odrzuć wszystkie"
 
 #: src/features/conventions/components/like-button.tsx
 msgid "Remove the like"
@@ -418,6 +476,10 @@ msgstr "Zresetuj hasło"
 #: src/features/account/components/profile-form.tsx
 msgid "Save"
 msgstr "Zapisz"
+
+#: src/features/consent/components/consent-settings.tsx
+msgid "Save my choice"
+msgstr "Zapisz mój wybór"
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password"

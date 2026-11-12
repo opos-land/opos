@@ -252,7 +252,12 @@ Supabase hosts the database and sign-in in the EU on our behalf. Production data
 production: Dev holds demo data and the team's own accounts. Backups are encrypted; our own copies
 are kept up to three months. Emails reach the mail provider only over an encrypted connection.
 There are no tracking or advertising cookies; the sign-in cookie is
-strictly necessary. **The privacy policy ships with the MVP**, after a legal review, in every
+strictly necessary. **A tracker runs only with the visitor's consent**: analytics, advertising or any
+other tool the portal does not strictly need, allowed or refused per category in the consent banner
+and withdrawn as easily from the footer; with no tracker, no banner shows. The panel, which shows
+attendees' data, runs none
+([0026](adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)). **The privacy policy
+ships with the MVP**, after a legal review, in every
 interface language.
 
 ---

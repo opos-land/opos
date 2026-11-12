@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { adminReads, adminUpdates, adminWrites } from '../src/verify'
+import { adminInserts, adminReads, adminUpdates, adminWrites } from '../src/verify'
 import { admin, app, global, migrator } from './db'
 
 // opos_admin bypasses RLS, so its privileges are its only limit. db:verify refuses what it holds
-// beyond the three lists; this holds the lists and the grants of the migrations together from
-// the other side, table by table: the role reaches what a list names and nothing else.
+// beyond its lists; this holds the lists and the grants of the migrations together from the
+// other side, table by table: the role reaches what a list names and nothing else.
 
 const tables = await migrator<{ name: string }[]>`
   select c.relname as name from pg_class c
@@ -27,7 +27,7 @@ describe('opos_admin', () => {
       existing.add(`${name} INSERT`).add(`${name} DELETE`)
       for (const column of await columnsOf(name)) existing.add(`${name}.${column}`)
     }
-    for (const entry of [...adminReads, ...adminWrites, ...adminUpdates]) {
+    for (const entry of [...adminReads, ...adminWrites, ...adminInserts, ...adminUpdates]) {
       expect(existing.has(entry), entry).toBe(true)
     }
   })
@@ -47,7 +47,10 @@ describe('opos_admin', () => {
         else await expect(update, `update ${column}`).rejects.toThrow(/permission denied/)
       }
       const insert = admin.unsafe(`insert into ${table} default values`)
-      if (adminWrites.includes(`${table} INSERT`)) {
+      const inserts =
+        adminWrites.includes(`${table} INSERT`) ||
+        adminInserts.some((entry) => entry.startsWith(`${table}.`))
+      if (inserts) {
         // The privilege holds, so a constraint refuses the empty row instead.
         await expect(insert, 'insert').rejects.not.toThrow(/permission denied/)
       } else await expect(insert, 'insert').rejects.toThrow(/permission denied/)
@@ -70,6 +73,20 @@ describe('opos_admin', () => {
     }
     await admin.unsafe(`update tenants set suspended_at = now() where false`)
   })
+
+  it.each(['admins', 'admin_actions'])(
+    'keeps %s from opos_app and opos_app_global',
+    async (table) => {
+      for (const sql of [app, global]) {
+        await expect(sql.unsafe(`select * from ${table} limit 1`)).rejects.toThrow(
+          /permission denied/,
+        )
+        await expect(sql.unsafe(`insert into ${table} default values`)).rejects.toThrow(
+          /permission denied/,
+        )
+      }
+    },
+  )
 
   it.each(['retired_tenant_slugs'])('shares %s with no runtime role', async (table) => {
     for (const sql of [app, global, admin]) {

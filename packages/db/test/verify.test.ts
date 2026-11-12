@@ -419,23 +419,41 @@ describe('verifyDatabase', () => {
     })
 
     // The tables of the admin application: opos_app and opos_app_global hold nothing on them, a
-    // read included, and opos_admin only what its lists name.
+    // read included, and opos_admin only what its lists name: it writes no admin, changes and
+    // removes no entry of the log, and gives an entry neither its time nor its identifier.
     it.each([
-      ['opos_app', 'select', /opos_app SELECT on retired_tenant_slugs/],
-      ['opos_app', 'select (slug)', /opos_app SELECT \(slug\) on retired_tenant_slugs/],
-      ['opos_app', 'insert', /opos_app INSERT on retired_tenant_slugs/],
-      [
-        'opos_app_global',
-        'select (slug)',
-        /opos_app_global SELECT \(slug\) on retired_tenant_slugs/,
-      ],
-      ['opos_admin', 'select (slug)', /opos_admin SELECT \(slug\) on retired_tenant_slugs/],
-      ['opos_admin', 'delete', /opos_admin DELETE on retired_tenant_slugs/],
-    ])('reports %s holding %s on retired_tenant_slugs', async (role, privilege, report) => {
+      ['opos_app', 'select', 'retired_tenant_slugs'],
+      ['opos_app', 'select (slug)', 'retired_tenant_slugs'],
+      ['opos_app', 'insert', 'retired_tenant_slugs'],
+      ['opos_app_global', 'select (slug)', 'retired_tenant_slugs'],
+      ['opos_admin', 'select (slug)', 'retired_tenant_slugs'],
+      ['opos_admin', 'delete', 'retired_tenant_slugs'],
+      ['opos_app', 'select', 'admins'],
+      ['opos_app', 'select (account_id)', 'admins'],
+      ['opos_app_global', 'select (account_id)', 'admins'],
+      ['opos_admin', 'insert', 'admins'],
+      ['opos_admin', 'insert (account_id)', 'admins'],
+      ['opos_admin', 'update (granted_at)', 'admins'],
+      ['opos_admin', 'delete', 'admins'],
+      ['opos_app', 'select', 'admin_actions'],
+      ['opos_app', 'insert', 'admin_actions'],
+      ['opos_app', 'insert (action)', 'admin_actions'],
+      ['opos_app_global', 'select (action)', 'admin_actions'],
+      ['opos_admin', 'insert', 'admin_actions'],
+      ['opos_admin', 'insert (created_at)', 'admin_actions'],
+      ['opos_admin', 'insert (id)', 'admin_actions'],
+      ['opos_admin', 'update (action)', 'admin_actions'],
+      ['opos_admin', 'delete', 'admin_actions'],
+      ['opos_admin', 'select (code_hash)', 'account_recovery_codes'],
+      ['opos_admin', 'insert', 'account_recovery_codes'],
+      ['opos_admin', 'update (used_at)', 'account_recovery_codes'],
+    ])('reports %s holding %s on %s', async (role, privilege, table) => {
       const problems = await problemsAfter((sql) =>
-        sql.unsafe(`grant ${privilege} on public.retired_tenant_slugs to ${role}`),
+        sql.unsafe(`grant ${privilege} on public.${table} to ${role}`),
       )
-      expect(problems.join('\n')).toMatch(report)
+      const [, name, column] = /^(\w+)(?: \((\w+)\))?$/.exec(privilege)!
+      const held = column ? `${name!.toUpperCase()} \\(${column}\\)` : name!.toUpperCase()
+      expect(problems.join('\n')).toMatch(new RegExp(`${role} ${held} on ${table}`))
     })
 
     it.each(['opos_app', 'opos_admin'])(

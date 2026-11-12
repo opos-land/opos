@@ -69,7 +69,7 @@ The three new tables are platform level, outside RLS: none is a tenant or an edi
 | Table | Holds |
 |---|---|
 | `tenants` | one more column, `suspended_at`, empty while the tenant is not suspended |
-| `admins` | `account_id`, the primary key, going with its account; `granted_at` |
+| `admins` | `account_id`, the primary key, going with its account; `granted_at`; `mfa_enabled_at`, the account's own as the grant found it: the role holds while the two are equal |
 | `admin_actions` | `action`, `admin_account_id` (empty for a script), `subject_tenant_id`, `tenant_slug` as the action left it, `subject_account_id`, `created_at`; no foreign key, so an entry outlives its tenant and its accounts |
 | `retired_tenant_slugs` | `slug`, the primary key: the address of every deleted tenant; `retired_at` |
 
@@ -87,7 +87,7 @@ The three new tables are platform level, outside RLS: none is a tenant or an edi
 | `accounts` | read the identifier, name, email address, language, and whether the address is confirmed and two-factor authentication is on |
 | `account_recovery_codes` | delete the unused ones |
 | `admins` | read |
-| `admin_actions` | read; insert |
+| `admin_actions` | read; insert, but for an entry's identifier and time, which the database gives |
 
 `opos_app` gains nothing, and `opos_app_global` gains the read of `tenants.suspended_at`. Triggers
 of `tenants` retire the address of a deleted tenant and refuse a retired one, so no runtime role

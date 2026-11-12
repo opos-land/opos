@@ -71,6 +71,32 @@ export async function createUser(
   return { id, email }
 }
 
+/**
+ * An account an admin's grant accepts: confirmed, with a password and a verified factor, both
+ * written as Supabase Auth stores them.
+ */
+export async function createAdminCandidate() {
+  const user = await createUser()
+  await setPassword(user.id)
+  await addFactor(user.id)
+  return user
+}
+
+export const setPassword = (userId: string) =>
+  authAdmin`update auth.users set encrypted_password = '$2a$10$stored-hash' where id = ${userId}`
+
+export async function addFactor(userId: string, status: 'unverified' | 'verified' = 'verified') {
+  const [factor] = await authAdmin<{ id: string }[]>`
+    insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
+    values (gen_random_uuid(), ${userId}, gen_random_uuid()::text, 'totp', ${status}, now(), now(), 'JBSWY3DPEHPK3PXP')
+    returning id
+  `
+  return factor!.id
+}
+
+export const removeFactors = (userId: string) =>
+  authAdmin`delete from auth.mfa_factors where user_id = ${userId}`
+
 export async function createTenant() {
   const slug = `tenant-${unique()}`
   const head = await createUser()

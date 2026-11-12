@@ -135,6 +135,14 @@
       "cache": false,
       "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
     },
+    "db:admin:grant": {
+      "cache": false,
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
+    },
+    "db:admin:revoke": {
+      "cache": false,
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
+    },
     "db:studio": {
       "cache": false,
       "persistent": true,

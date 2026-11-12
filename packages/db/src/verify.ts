@@ -49,8 +49,9 @@ export const globalReads = [
 
 /**
  * What opos_admin holds, and nothing else: it bypasses RLS, so its privileges are its only limit.
- * The columns it reads, the tables it inserts into and deletes from, and the columns it updates;
- * an admin route that needs more adds it here in the PR of its migration.
+ * The columns it reads, the tables it inserts into and deletes from, the columns it inserts where
+ * the database gives the others, and the columns it updates; an admin route that needs more adds
+ * it here in the PR of its migration.
  */
 export const adminReads = [
   'tenants.id',
@@ -69,15 +70,42 @@ export const adminReads = [
   'accounts.first_name',
   'accounts.last_name',
   'accounts.email_confirmed_at',
+  'accounts.locale',
+  'accounts.mfa_enabled_at',
+  'account_recovery_codes.account_id',
+  'account_recovery_codes.used_at',
+  'admins.account_id',
+  'admins.granted_at',
+  'admins.mfa_enabled_at',
+  'admin_actions.id',
+  'admin_actions.action',
+  'admin_actions.admin_account_id',
+  'admin_actions.subject_tenant_id',
+  'admin_actions.tenant_slug',
+  'admin_actions.subject_account_id',
+  'admin_actions.created_at',
 ]
-export const adminWrites = ['tenants INSERT', 'tenants DELETE', 'tenant_memberships INSERT']
+export const adminWrites = [
+  'tenants INSERT',
+  'tenants DELETE',
+  'tenant_memberships INSERT',
+  'account_recovery_codes DELETE',
+]
+/** An entry of the log takes its identifier and its time from the database, never from the role. */
+export const adminInserts = [
+  'admin_actions.action',
+  'admin_actions.admin_account_id',
+  'admin_actions.subject_tenant_id',
+  'admin_actions.tenant_slug',
+  'admin_actions.subject_account_id',
+]
 export const adminUpdates = ['tenants.slug', 'tenants.suspended_at']
 
 /**
  * The tables of the admin application. opos_app and opos_app_global hold nothing on them, a read
  * included; opos_admin holds what its lists name.
  */
-const adminTables = ['retired_tenant_slugs']
+const adminTables = ['admins', 'admin_actions', 'retired_tenant_slugs']
 
 /** The public tables outside tenant isolation. */
 const globalTables = ['accounts', 'account_recovery_codes', ...adminTables]
@@ -327,7 +355,8 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
         or (r.role = 'opos_admin' and p.privilege = 'SELECT'
           and not (c.relname || '.' || a.attname) = any(${adminReads}))
         or (r.role = 'opos_admin' and p.privilege = 'INSERT'
-          and not (c.relname || ' INSERT') = any(${adminWrites}))
+          and not (c.relname || ' INSERT') = any(${adminWrites})
+          and not (c.relname || '.' || a.attname) = any(${adminInserts}))
         or (r.role = 'opos_admin' and p.privilege = 'UPDATE'
           and not (c.relname || '.' || a.attname) = any(${adminUpdates}))
         or r.role in ('anon', 'authenticated', 'service_role')

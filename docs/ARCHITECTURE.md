@@ -77,8 +77,10 @@ and after every restore.
   them, and the API reaches there only the account a verified token, a fresh session or a signed
   hook names. Another account is read only in a tenant transaction, through a tenant table or by a
   confirmed email behind a write permission and a rate limit of the tenant.
-  `retired_tenant_slugs` is global too, and out of every runtime role's reach: triggers of
-  `tenants` write and read it.
+  The admin's tables are global too, and `opos_app` and `opos_app_global` hold nothing on them:
+  `admins` is written by `postgres` alone, `admin_actions` only grows, each entry dated by the
+  database, and `retired_tenant_slugs` is out of every runtime role's reach, written and read by
+  triggers of `tenants`.
 
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):

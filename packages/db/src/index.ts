@@ -1,3 +1,4 @@
+export * from './admins'
 export * from './client'
 export * from './migration-url'
 export * from './rls'

@@ -29,6 +29,10 @@ msgstr "administrator"
 msgid "An account with this email address already exists."
 msgstr "An account with this email address already exists."
 
+#: src/errors.ts
+msgid "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
+msgstr "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
+
 #. Glossary term: attendee
 #: src/glossary.ts
 msgctxt "glossary"
@@ -188,6 +192,10 @@ msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Only a head organizer can edit or remove another head organizer."
 
 #: src/errors.ts
+msgid "Only a suspended convention can be deleted. Suspend it first."
+msgstr "Only a suspended convention can be deleted. Suspend it first."
+
+#: src/errors.ts
 msgid "Open the link in the browser where you asked for it, or ask for a new link there."
 msgstr "Open the link in the browser where you asked for it, or ask for a new link there."
 
@@ -294,12 +302,24 @@ msgid "The service is temporarily unavailable. Try again in a moment."
 msgstr "The service is temporarily unavailable. Try again in a moment."
 
 #: src/errors.ts
+msgid "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."
+msgstr "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."
+
+#: src/errors.ts
+msgid "This account belongs to an administrator. The administrator role has to be taken away first."
+msgstr "This account belongs to an administrator. The administrator role has to be taken away first."
+
+#: src/errors.ts
 msgid "This account does not need a code right now."
 msgstr "This account does not need a code right now."
 
 #: src/errors.ts
 msgid "This account uses two-factor authentication. Enter the code from your authenticator app to continue."
 msgstr "This account uses two-factor authentication. Enter the code from your authenticator app to continue."
+
+#: src/errors.ts
+msgid "This address belonged to a deleted convention and cannot be used again."
+msgstr "This address belonged to a deleted convention and cannot be used again."
 
 #: src/errors.ts
 msgid "This address is already taken by another convention."

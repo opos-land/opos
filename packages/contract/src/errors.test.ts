@@ -26,6 +26,20 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain('tenant.suspended')
   })
 
+  it.each([
+    'tenant.not-suspended',
+    'tenant.slug-taken',
+    'tenant.slug-reserved',
+    'tenant.slug-retired',
+    'account.not-found',
+    'account.unconfirmed',
+    'account.is-admin',
+    'admin.mfa-not-enabled',
+    'admin.grant-outdated',
+  ])('lists %s of the admin routes', (code) => {
+    expect(errorCodes).toContain(code)
+  })
+
   it('lists the code of a session below aal2 on an account with 2FA', () => {
     expect(errorCodes).toContain('session.mfa-required')
   })

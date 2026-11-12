@@ -29,6 +29,10 @@ msgstr "administrator"
 msgid "An account with this email address already exists."
 msgstr "Konto z tym adresem e-mail już istnieje."
 
+#: src/errors.ts
+msgid "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
+msgstr "Administrator musi mieć włączone uwierzytelnianie dwuskładnikowe. Włącz je w portalu, a potem poproś o ponowne nadanie roli."
+
 #. Glossary term: attendee
 #: src/glossary.ts
 msgctxt "glossary"
@@ -188,6 +192,10 @@ msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Tylko główny organizator może edytować lub usunąć innego głównego organizatora."
 
 #: src/errors.ts
+msgid "Only a suspended convention can be deleted. Suspend it first."
+msgstr "Usunąć można tylko zawieszony konwent. Najpierw go zawieś."
+
+#: src/errors.ts
 msgid "Open the link in the browser where you asked for it, or ask for a new link there."
 msgstr "Otwórz link w przeglądarce, w której o niego poproszono, albo poproś tam o nowy link."
 
@@ -294,12 +302,24 @@ msgid "The service is temporarily unavailable. Try again in a moment."
 msgstr "Usługa jest chwilowo niedostępna. Spróbuj ponownie za chwilę."
 
 #: src/errors.ts
+msgid "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."
+msgstr "Uwierzytelnianie dwuskładnikowe tego konta zmieniło się od nadania roli administratora. Poproś o ponowne nadanie roli."
+
+#: src/errors.ts
+msgid "This account belongs to an administrator. The administrator role has to be taken away first."
+msgstr "To konto należy do administratora. Najpierw trzeba mu odebrać rolę administratora."
+
+#: src/errors.ts
 msgid "This account does not need a code right now."
 msgstr "To konto nie potrzebuje teraz kodu."
 
 #: src/errors.ts
 msgid "This account uses two-factor authentication. Enter the code from your authenticator app to continue."
 msgstr "To konto używa uwierzytelniania dwuskładnikowego. Wpisz kod z aplikacji uwierzytelniającej, aby kontynuować."
+
+#: src/errors.ts
+msgid "This address belonged to a deleted convention and cannot be used again."
+msgstr "Ten adres należał do usuniętego konwentu i nie można go użyć ponownie."
 
 #: src/errors.ts
 msgid "This address is already taken by another convention."

@@ -29,6 +29,7 @@ import { DEFAULT_RATE_LIMIT, type RateLimit, rateLimitModule } from './common/ra
 import { RouteRateLimiter } from './common/rate-limit/route-rate-limit'
 import { ENV, type Env } from './config/env'
 import { MeModule } from './modules/accounts/me.module'
+import { AdminModule } from './modules/admin/admin.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { EditionsModule } from './modules/editions/editions.module'
 import { EngagementModule } from './modules/engagement/engagement.module'
@@ -64,6 +65,8 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
         ProgramModule,
         PublicModule,
         EngagementModule,
+        // Only a process that holds the connection of opos_admin serves the admin routes.
+        ...(env.DATABASE_ADMIN_URL ? [AdminModule] : []),
       ],
       providers: [
         { provide: ENV, useValue: env },

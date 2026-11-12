@@ -251,11 +251,14 @@ role over first.
 A password is set only after the email address is confirmed. A link from an email acts only when
 the button on its page is pressed. An email address leads to an account only once confirmed.
 
-**Two-factor authentication is each account's own choice**, required by no role. Once on, it guards
-every sign-in, password reset and account deletion. Ten one-time recovery codes, shown once and
-stored hashed, replace a lost device and turn it off; turning it off signs out the other sessions,
-removes the unused codes and sends an email, and the hash of a used code stays until the account is
-deleted. A person who has lost both device and codes asks the admin.
+**Two-factor authentication is each account's own choice**, required of one role alone: an admin,
+whose role holds only with the second factor it was granted with
+([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)). Once on,
+it guards every sign-in, password reset and account deletion. Ten one-time recovery codes, shown
+once and stored hashed, replace a lost device and turn it off; turning it off signs out the other
+sessions, removes the unused codes and sends an email, and the hash of a used code stays until the
+account is deleted. A person who has lost both device and codes asks the admin, who resets it; an
+admin who lost both has the role taken away first.
 
 Supabase hosts the database and sign-in in the EU on our behalf. Production data never leaves
 production: Dev holds demo data and the team's own accounts. Backups are encrypted; our own copies

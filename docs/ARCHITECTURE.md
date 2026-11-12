@@ -58,7 +58,7 @@ and an index starting with `tenant_id`.
 | `postgres` | owns the OPOS tables; `BYPASSRLS`, not a superuser | migrations, `db:*` scripts, the seed, the backup; never the running API |
 | `opos_app` | `select`; `insert`, `delete` and per-column `update` only where the API writes; bypasses nothing, owns nothing, member of no role | the API |
 | `opos_app_global` | `BYPASSRLS`; `select` on the columns the cross-tenant queries read, nothing else | `GlobalDbService` alone |
-| `opos_admin` | `BYPASSRLS`; only what the admin routes read and write, its reads by column | the admin routes' own service, not built yet ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
+| `opos_admin` | `BYPASSRLS`; only what the admin routes read and write, its reads by column | `AdminDbService` alone ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
 | `anon`, `authenticated`, `service_role` | nothing in `public` | nobody |
 
 `pnpm db:roles` ([roles.ts](../packages/db/src/roles.ts)) sets the runtime roles up with their
@@ -100,6 +100,13 @@ and after every restore.
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token) or the API's own job; it joins this table and puts its
 columns into `globalReads` of [verify.ts](../packages/db/src/verify.ts).
+
+**The admin routes** read and write across tenants on `opos_admin`, only in
+[AdminDbService](../apps/api/src/modules/admin/admin-db.service.ts) and only behind
+`@RequireAdmin`: their bound is the admin role of the session's account. They never open a tenant
+transaction, read nothing of a tenant's team but its heads and nothing of its editions or
+programme, and write each change with its entry of the log in one transaction; what the role may
+reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of verify.ts.
 
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
@@ -150,6 +157,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - A tenant route takes exactly one of `@RequireTenant`, `@RequireEdition` or, as the exception,
   `@InTenant`: no membership, so the handler's filters are its only guard, and no write lock, so it
   lowers nobody's access. Each applies `JwtAuthGuard`.
+- An admin route takes `@RequireAdmin` and nothing else: `JwtAuthGuard`, then the admin
+  application's `Origin` (`403` `request.origin-denied`), the role (`403` `permission.denied`),
+  two-factor authentication on (`403` `admin.mfa-not-enabled`) with the factor of the grant (`403`
+  `admin.grant-outdated`), and a recent sign-in. No route grants the role or takes it away
+  ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)).
 - A route at `write` checks, waits in its tenant's queue in the API process, takes the tenant's
   advisory lock and checks again (`503` `request.busy` past the limit;
   [0008](adr/0008-serialize-the-writes-of-a-tenant.md)). Every route that lowers a member's access
@@ -186,7 +198,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   password reset answer alike for any address.
 - `DELETE /me`, `PUT /auth/password`, `POST /auth/mfa/enroll` and `DELETE /auth/mfa` need a
   sign-in younger than 5 minutes (`session.reauthentication-required`); a recovery code needs none,
-  it is the proof. A new password and a removed factor end the account's other sessions.
+  it is the proof. A new password and a removed factor end the account's other sessions. Every
+  admin route needs a sign-in younger than 30 minutes, and deleting a tenant and resetting an
+  account's two-factor authentication one younger than 5.
 - **Two-factor authentication.** With a verified factor, a session below `aal2` reaches only the
   code routes, refresh and sign-out; every other route answers `401` `session.mfa-required` before
   any permission check, by invariant 12, so an older token loses access at once.
@@ -196,9 +210,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 ## API conventions
 
-- The contract is the single source of the API: a route starts from `publicRoute`, `accountRoute` or
-  `tenantRoute` of [common.ts](../packages/contract/src/common.ts)
-  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)).
+- The contract is the single source of the API: a route starts from `publicRoute`, `accountRoute`,
+  `tenantRoute` or `adminRoute` of [common.ts](../packages/contract/src/common.ts)
+  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)). An admin route lives under `/admin/`,
+  and nothing else does.
 - An error is `{ code, params?, message }`, its code in
   [errors.ts](../packages/contract/src/errors.ts). The UI shows the code through the catalog, never
   the English `message`.
@@ -341,7 +356,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 Where a test sits is in [AGENTS.md](../AGENTS.md#tests-first), and why it comes first in
 [0018](adr/0018-start-every-change-of-code-with-its-test.md). Integration tests run on the local
 stack and mock neither the database nor Supabase Auth. They cover the permission matrix (every
-contract route against every actor, an unlisted route failing the suite); RLS on every covered
+contract route against every actor, an unlisted route failing the suite; every admin route against
+every way of not being an admin); RLS on every covered
 table, the covered tables equal to the catalog's, and each `db:verify` rule broken once; the
 invariants under concurrency; anti-escalation and every write route judging its actor again under
 the lock; sessions (refused tokens, cookies, `Origin`, the password after confirmation, `aal2` on

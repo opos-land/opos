@@ -1,3 +1,4 @@
+import { adminContract } from './admin'
 import { authContract } from './auth'
 import { editionsContract } from './editions'
 import { engagementContract } from './engagement'
@@ -19,10 +20,12 @@ export const contract = {
   program: programContract,
   public: publicContract,
   engagement: engagementContract,
+  admin: adminContract,
 }
 
 export type Contract = typeof contract
 
+export * from './admin'
 export * from './auth'
 export * from './auth-mfa'
 export * from './common'

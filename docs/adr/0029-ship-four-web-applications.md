@@ -32,7 +32,8 @@ team is small and the MVP has to reach a convention's first edition.
   suspends, restores and deletes a tenant, resets an account's two-factor authentication and reads
   the log of the admins' actions.
 - **The scripts stay**: they are the way to work when the admin application cannot be used, and the
-  only way to grant the admin role or take it away.
+  only way to grant the admin role or take it away
+  ([0030](0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)).
 - **No native app.** The portal is mobile-first and runs in a phone's browser.
 - **No convention site in the MVP.** A convention's public page, with its programme, is part of the
   portal at `opos.land/conventions/<convention>`; the CMS with its own website comes after the MVP.
@@ -58,7 +59,8 @@ team is small and the MVP has to reach a convention's first edition.
 
 - The admin application is not built yet; until it is, the admin works through the scripts.
 - A route with power over every tenant exists, which 0009 avoided; how it is guarded is a decision
-  of its own.
+  of its own
+  ([0030](0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)).
 - One frontend stack and three SPAs to build and test; the portal's design starts at 360 px. The
   admin application holds its own `shared/`, as the other two do
   ([0020](0020-build-the-frontends-from-shadcn-ui-with-its-default-look.md)), keeps the rules the

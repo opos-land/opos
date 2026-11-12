@@ -251,6 +251,12 @@ msgctxt "glossary"
 msgid "speaker"
 msgstr "speaker"
 
+#. Glossary term: suspended (a convention the admin took off the platform)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "suspended"
+msgstr "suspended"
+
 #: src/errors.ts
 msgid "The account with this email address has not been confirmed yet."
 msgstr "The account with this email address has not been confirmed yet."
@@ -310,6 +316,10 @@ msgstr "This convention already has an edition with this address."
 #: src/errors.ts
 msgid "This convention is being changed right now. Try again in a moment."
 msgstr "This convention is being changed right now. Try again in a moment."
+
+#: src/errors.ts
+msgid "This convention is suspended. Contact the OPOS administrators to learn more."
+msgstr "This convention is suspended. Contact the OPOS administrators to learn more."
 
 #: src/errors.ts
 msgid "This edition has ended, so its programme items take no new likes."

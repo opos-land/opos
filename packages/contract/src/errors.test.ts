@@ -22,6 +22,10 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain(code)
   })
 
+  it('lists the code of a suspended tenant', () => {
+    expect(errorCodes).toContain('tenant.suspended')
+  })
+
   it('lists the code of a session below aal2 on an account with 2FA', () => {
     expect(errorCodes).toContain('session.mfa-required')
   })

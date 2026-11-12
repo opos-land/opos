@@ -8,7 +8,13 @@ import { Reflector } from '@nestjs/core'
 import { from, lastValueFrom, type Observable } from 'rxjs'
 import { GlobalDbService } from '../database/global-db.service'
 import { TENANT_REQUIREMENT } from '../decorators/require-tenant.decorator'
-import { ApiError, forbidden, notFound, unauthenticated } from '../errors/api-error'
+import {
+  ApiError,
+  forbidden,
+  notFound,
+  tenantSuspended,
+  unauthenticated,
+} from '../errors/api-error'
 import { AccessRepository } from '../permissions/access.repository'
 import { decideEdition, decideTenant, type Requirement } from '../permissions/permissions'
 import { TenantWriteQueue } from '../permissions/tenant-write-queue'
@@ -61,8 +67,11 @@ export class TenantTransactionInterceptor implements NestInterceptor {
         field: 'x-tenant-slug',
       })
     }
-    const tenant = await this.global.tenantBySlug(slug)
-    if (!tenant) throw notFound('tenant')
+    const found = await this.global.tenantBySlug(slug)
+    if (!found) throw notFound('tenant')
+    // Before any transaction or membership: the transaction would refuse it all the same.
+    if (found.suspended) throw tenantSuspended()
+    const { tenant } = found
 
     const write = requirement.level === 'write'
     /** Puts the tenant into the store of the open transaction. */

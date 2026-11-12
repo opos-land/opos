@@ -18,7 +18,7 @@ vi.mock('../../account', () => ({ NavUser: () => null }))
 const tenant = { id: 'tenant-a', slug: 'convention-a', name: 'Convention A' } as Tenant
 
 const membership = (fields: Partial<Membership>): Membership => ({
-  tenant: { id: 'tenant-a', slug: 'convention-a', name: 'Convention A' },
+  tenant: { id: 'tenant-a', slug: 'convention-a', name: 'Convention A', suspended: false },
   role: 'org',
   settingsAccess: 'none',
   brandingAccess: 'none',

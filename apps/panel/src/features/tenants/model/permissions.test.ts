@@ -16,6 +16,7 @@ const membership = (overrides: Partial<Membership> = {}): Membership => ({
     id: '00000000-0000-4000-8000-00000000000a',
     slug: 'convention-a',
     name: 'Convention A',
+    suspended: false,
   },
   role: 'org',
   settingsAccess: 'none',
@@ -145,7 +146,7 @@ describe('the permission store', () => {
   it('finds the membership by the tenant slug', () => {
     setMemberships([
       membership(),
-      membership({ tenant: { id: 'b', slug: 'convention-b', name: 'B' } }),
+      membership({ tenant: { id: 'b', slug: 'convention-b', name: 'B', suspended: false } }),
     ])
     const { memberships } = usePermissionStore.getState()
 

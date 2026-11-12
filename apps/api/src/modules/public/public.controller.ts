@@ -16,12 +16,15 @@ export class PublicController {
     private readonly repository: PublicRepository,
   ) {}
 
-  /** An address outside the slugs' alphabet names nothing, and must not reach a query. */
+  /**
+   * An address outside the slugs' alphabet names nothing, and must not reach a query. A suspended
+   * convention is not found, as an unknown address is.
+   */
   private async tenant(slug: string) {
     if (!editionSlug.safeParse(slug).success) throw notFound('convention')
-    const tenant = await this.global.tenantBySlug(slug)
-    if (!tenant) throw notFound('convention')
-    return tenant
+    const found = await this.global.tenantBySlug(slug)
+    if (!found || found.suspended) throw notFound('convention')
+    return found.tenant
   }
 
   private async inConvention<T>(slug: string, read: () => Promise<T>) {

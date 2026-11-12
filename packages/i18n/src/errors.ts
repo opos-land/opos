@@ -22,6 +22,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'permission.denied': msg`You do not have permission to do this.`,
   'server.error': unknownError,
   'server.unavailable': msg`The service is temporarily unavailable. Try again in a moment.`,
+  'tenant.suspended': msg`This convention is suspended. Contact the OPOS administrators to learn more.`,
   'membership.last-head': msg`A convention must keep at least one head organizer. Make someone else a head organizer first.`,
   'member.self': msg`You cannot change your own role or permissions, or remove yourself from the team.`,
   'member.head-only': msg`Only a head organizer can edit or remove another head organizer.`,

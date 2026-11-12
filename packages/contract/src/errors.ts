@@ -14,6 +14,7 @@ export const errorCodes = [
   'permission.denied',
   'server.error',
   'server.unavailable',
+  'tenant.suspended',
   'membership.last-head',
   'member.self',
   'member.head-only',

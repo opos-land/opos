@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { createTenant, migrationDb, migrationUrl, tenants, type Transaction } from '@opos/db'
+import {
+  createTenant,
+  migrationDb,
+  migrationUrl,
+  restoreTenant,
+  suspendTenant,
+  tenants,
+  type Transaction,
+} from '@opos/db'
 import { inArray, sql } from 'drizzle-orm'
 import { createAccount, signIn } from './auth'
 
@@ -41,6 +49,12 @@ export async function tenantWithHead(defaultLocale?: string) {
   tenantIds.push(id)
   return { id, slug, head }
 }
+
+/** Suspends the tenant, as the admin does. */
+export const suspend = (tenantId: string) => suspendTenant(db, tenantId)
+
+/** Restores a suspended tenant. */
+export const restore = (tenantId: string) => restoreTenant(db, tenantId)
 
 export async function addEdition(
   tenantId: string,

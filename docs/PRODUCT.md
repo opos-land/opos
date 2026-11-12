@@ -80,6 +80,7 @@ a ticket; what the scene calls accreditation is the ticket.
 | **booth** | an exhibitor's stand at an edition, or online as a virtual booth |
 | **locale** | a language in BCP 47 form (`pl`, `en`) |
 | **two-factor authentication** | a second sign-in step an account turns on for itself; 2FA, `mfa` in code |
+| **suspended** | of a convention: taken off the platform by the admin until restored |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.
@@ -90,6 +91,11 @@ different convention.
 
 **A tenant is the convention brand**, not a single edition: its team, branding, configuration and
 address carry over between editions, and an attendee keeps their history with it.
+
+**A suspended convention is off for everyone but the admin**: its page is not found, its programme
+items leave every personal schedule, and its organizers see only that it is suspended. Restored, it
+is as it was. Only a suspended convention can be deleted, at once and for good, with everything it
+owns; the accounts stay ([0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
 
 **OPOS does not touch the conventions' money.** Ticket payments go straight to a payment provider
 account the convention owns, and OPOS charges no fees.

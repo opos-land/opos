@@ -73,7 +73,10 @@ and after every restore.
   [setTenantContext](../packages/db/src/rls.ts) sets `set_config('app.tenant_id', $1, true)` and
   refuses any other role, and repositories take it from `TenantContextService.tx()`, which throws
   outside one. Without the tenant header, `withTenant` opens it from a cross-tenant lookup or a
-  verified token. The queries that decide access filter on the tenant themselves too.
+  verified token. The queries that decide access filter on the tenant themselves too. No tenant
+  transaction goes on for a suspended tenant: the check sits where the transaction opens, so it
+  holds for every way in (`403` `tenant.suspended`;
+  [0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
 - **Global tables.** `accounts` and `account_recovery_codes` have no RLS: column privileges limit
   them, and the API reaches there only the account a verified token, a fresh session or a signed
   hook names. Another account is read only in a tenant transaction, through a tenant table or by a
@@ -89,9 +92,9 @@ and after every restore.
 
 | Query | Bound |
 |---|---|
-| a tenant by slug | its public columns |
-| `GET /me/memberships` | the session's account; expired memberships left out |
-| `GET /me/schedule` | the session's own likes; published editions only |
+| a tenant by slug | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address |
+| `GET /me/memberships` | the session's account; expired memberships left out, and the editions of a suspended tenant |
+| `GET /me/schedule` | the session's own likes; published editions only, of tenants not suspended |
 | `DELETE /me` | the session's account; answers only whether it is a tenant's last head |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
@@ -210,7 +213,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 |---|---|---|
 | `400` | validation; `params.field` names the field | `request.invalid` |
 | `401` | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own | `session.invalid` |
-| `403` | insufficient permission; anti-escalation and `Origin` have their own | `permission.denied` |
+| `403` | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own | `permission.denied` |
 | `404` | absent or of another tenant | `request.not-found` |
 | `409` | an invariant or unique constraint, by constraint name | always specific |
 | `410` | an invitation expired or revoked | `invitation.expired`, `invitation.revoked` |

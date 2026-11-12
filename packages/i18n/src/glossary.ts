@@ -36,6 +36,11 @@ export const glossary = {
     comment: 'Glossary term: two-factor authentication',
   }),
   locale: msg({ message: 'language', context: 'glossary', comment: 'Glossary term: locale' }),
+  suspended: msg({
+    message: 'suspended',
+    context: 'glossary',
+    comment: 'Glossary term: suspended (a convention the admin took off the platform)',
+  }),
 }
 
 export type GlossaryTerm = keyof typeof glossary

@@ -54,6 +54,10 @@ export const unavailable = (reason?: string) =>
 export const forbidden = (message = 'Insufficient permissions') =>
   new ApiError(403, 'permission.denied', message)
 
+/** The tenant is suspended: off for everyone but the admin. */
+export const tenantSuspended = () =>
+  new ApiError(403, 'tenant.suspended', 'The convention is suspended')
+
 export const notFound = (what: string) => new ApiError(404, 'request.not-found', `Unknown ${what}`)
 
 /** The request did not come from the panel or the portal. */

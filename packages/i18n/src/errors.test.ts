@@ -13,6 +13,16 @@ describe('errorMessage', () => {
     )
   })
 
+  it('says that a convention is suspended, with the glossary rendering', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('tenant.suspended')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('tenant.suspended'))).toBe(
+      'Ten konwent jest zawieszony. Skontaktuj się z administratorami OPOS, aby dowiedzieć się więcej.',
+    )
+  })
+
   it('tells an outage of Supabase Auth apart from a generic failure', async () => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

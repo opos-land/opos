@@ -46,9 +46,12 @@ export const updateAccountSchema = z
 
 export type UpdateAccount = z.infer<typeof updateAccountSchema>
 
-/** One of the account's memberships, edition-level permissions included; never an expired one. */
+/**
+ * One of the account's memberships, edition-level permissions included; never an expired one. A
+ * suspended tenant says so and lists no edition.
+ */
 export const membershipSchema = z.object({
-  tenant: z.object({ id: z.uuid(), slug: z.string(), name: z.string() }),
+  tenant: z.object({ id: z.uuid(), slug: z.string(), name: z.string(), suspended: z.boolean() }),
   role: z.enum(['head', 'org']),
   settingsAccess: level,
   brandingAccess: level,

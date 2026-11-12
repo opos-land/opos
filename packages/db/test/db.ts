@@ -20,6 +20,7 @@ const required = (name: string) => {
 /** The passwords of the runtime roles, as pnpm db:roles set them. */
 export const appPassword = required('OPOS_APP_PASSWORD')
 export const appGlobalPassword = required('OPOS_APP_GLOBAL_PASSWORD')
+export const adminPassword = required('OPOS_ADMIN_PASSWORD')
 /** The local stack gives Supabase's own roles the password of postgres. */
 const localPassword = new URL(migrationUrl()).password
 
@@ -30,6 +31,8 @@ export const migrator = connect(migrationUrl())
 const appUrl = url('opos_app', appPassword)
 export const app = connect(appUrl)
 export const global = connect(url('opos_app_global', appGlobalPassword))
+/** opos_admin, the role of the admin routes. */
+export const admin = connect(url('opos_admin', adminPassword))
 
 /** A connection that has never run set_config, for checks that need a clean session. */
 export const freshApp = () => postgres(appUrl, { max: 1, onnotice: () => {} })
@@ -45,7 +48,9 @@ const userIds: string[] = []
 afterAll(async () => {
   await migrator`delete from tenants where id = any(${tenantIds}::uuid[])`
   await authAdmin`delete from auth.users where id = any(${userIds}::uuid[])`
-  await Promise.all([migrator, app, global, authAdmin, supabaseAdmin].map((sql) => sql.end()))
+  await Promise.all(
+    [migrator, app, global, admin, authAdmin, supabaseAdmin].map((sql) => sql.end()),
+  )
 })
 
 export const unique = () => randomUUID().slice(0, 8)

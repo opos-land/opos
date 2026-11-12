@@ -14,6 +14,7 @@ function required(name: string) {
 const passwords = {
   app: required('OPOS_APP_PASSWORD'),
   appGlobal: required('OPOS_APP_GLOBAL_PASSWORD'),
+  admin: required('OPOS_ADMIN_PASSWORD'),
 }
 
 const sql = postgres(migrationUrl(), { max: 1, onnotice: () => {} })

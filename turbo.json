@@ -41,6 +41,7 @@
         "OPOS_ENV",
         "OPOS_APP_PASSWORD",
         "OPOS_APP_GLOBAL_PASSWORD",
+        "OPOS_ADMIN_PASSWORD",
         "SUPABASE_LOCAL_SMTP_PORT"
       ]
     },
@@ -51,6 +52,7 @@
         "OPOS_ENV",
         "OPOS_APP_PASSWORD",
         "OPOS_APP_GLOBAL_PASSWORD",
+        "OPOS_ADMIN_PASSWORD",
         "SUPABASE_LOCAL_SMTP_PORT"
       ]
     },
@@ -93,7 +95,8 @@
         "DATABASE_MIGRATION_URL",
         "OPOS_ENV",
         "OPOS_APP_PASSWORD",
-        "OPOS_APP_GLOBAL_PASSWORD"
+        "OPOS_APP_GLOBAL_PASSWORD",
+        "OPOS_ADMIN_PASSWORD"
       ]
     },
     "db:seed": {

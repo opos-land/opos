@@ -215,6 +215,7 @@ export async function initInfra({
     hex,
     passwordIn('DATABASE_GLOBAL_URL'),
   )
+  const adminPassword = pick(['packages/db'], 'OPOS_ADMIN_PASSWORD', hex)
   const dbPort = env.SUPABASE_DB_PORT ?? '54322'
   const databaseUrl = (role, password) =>
     `postgres://${role}:${password}@127.0.0.1:${dbPort}/postgres`
@@ -228,6 +229,7 @@ export async function initInfra({
   fill('packages/db', {
     OPOS_APP_PASSWORD: appPassword,
     OPOS_APP_GLOBAL_PASSWORD: appGlobalPassword,
+    OPOS_ADMIN_PASSWORD: adminPassword,
   })
 
   // 3. the local signing key: config.toml names the file, and the CLI refuses when it is missing.

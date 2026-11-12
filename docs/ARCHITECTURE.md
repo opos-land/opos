@@ -57,6 +57,7 @@ and an index starting with `tenant_id`.
 | `postgres` | owns the OPOS tables; `BYPASSRLS`, not a superuser | migrations, `db:*` scripts, the seed, the backup; never the running API |
 | `opos_app` | `select`; `insert`, `delete` and per-column `update` only where the API writes; bypasses nothing, owns nothing, member of no role | the API |
 | `opos_app_global` | `BYPASSRLS`; `select` on the columns the cross-tenant queries read, nothing else | `GlobalDbService` alone |
+| `opos_admin` | `BYPASSRLS`; only what the admin routes read and write, its reads by column | the admin routes' own service, not built yet ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
 | `anon`, `authenticated`, `service_role` | nothing in `public` | nobody |
 
 `pnpm db:roles` ([roles.ts](../packages/db/src/roles.ts)) sets the runtime roles up with their

@@ -211,19 +211,19 @@ describe('verifyDatabase', () => {
         `),
       )
       expect(problems.join('\n')).toMatch(
-        /executable by opos_app, opos_app_global, .*: verify_probe/,
+        /executable by opos_app, opos_app_global, opos_admin, .*: verify_probe/,
       )
     })
 
-    it('reports one granted to opos_app_global', async () => {
+    it.each(['opos_app_global', 'opos_admin'])('reports one granted to %s', async (role) => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`
           ${definer(`set search_path = ''`)}
           revoke execute on function public.verify_probe() from public;
-          grant execute on function public.verify_probe() to opos_app_global;
+          grant execute on function public.verify_probe() to ${role};
         `),
       )
-      expect(problems.join('\n')).toMatch(/executable by opos_app_global: verify_probe/)
+      expect(problems.join('\n')).toMatch(new RegExp(`executable by ${role}: verify_probe`))
     })
   })
 
@@ -384,6 +384,19 @@ describe('verifyDatabase', () => {
       expect(problems.join('\n')).toMatch(/owned by a runtime role: verify_probe \(opos_app\)/)
     })
 
+    it('reports a relation in public owned by opos_admin', async () => {
+      const problems = await problemsAfter(
+        (sql) =>
+          sql.unsafe(`
+            create table public.verify_probe (id uuid primary key, tenant_id uuid not null);
+            ${isolated('verify_probe')}
+            alter table public.verify_probe owner to opos_admin;
+          `),
+        supabaseAdmin,
+      )
+      expect(problems.join('\n')).toMatch(/owned by a runtime role: verify_probe \(opos_admin\)/)
+    })
+
     it.each(['anon', 'opos_app_global'])(
       'reports a table-level grant on a view to %s',
       async (role) => {
@@ -398,17 +411,59 @@ describe('verifyDatabase', () => {
       },
     )
 
-    it('reports a privilege on a sequence in public', async () => {
-      const problems = await problemsAfter((sql) =>
-        sql.unsafe(`
-          create sequence public.verify_probe;
-          grant usage on sequence public.verify_probe to opos_app;
-        `),
-      )
-      expect(problems.join('\n')).toMatch(/opos_app USAGE on verify_probe/)
+    it.each(['opos_app', 'opos_admin'])(
+      'reports a privilege on a sequence in public held by %s',
+      async (role) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`
+            create sequence public.verify_probe;
+            grant usage on sequence public.verify_probe to ${role};
+          `),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`${role} USAGE on verify_probe`))
+      },
+    )
+
+    // opos_admin bypasses RLS, so its privileges are its only limit: what the admin routes do
+    // not use is a violation, on a tenant table and on a global one alike.
+    it.each([
+      [
+        'a read of a table',
+        'grant select on public.editions to opos_admin',
+        /opos_admin SELECT on editions/,
+      ],
+      ['a write', 'grant insert on public.editions to opos_admin', /opos_admin INSERT on editions/],
+      [
+        'a delete',
+        'grant delete on public.accounts to opos_admin',
+        /opos_admin DELETE on accounts/,
+      ],
+      [
+        'a table-level update',
+        'grant update on public.tenants to opos_admin',
+        /opos_admin UPDATE on tenants/,
+      ],
+      [
+        'a read of a column',
+        'grant select (title) on public.program_items to opos_admin',
+        /opos_admin SELECT \(title\) on program_items/,
+      ],
+      [
+        'an update of a column',
+        'grant update (name) on public.tenants to opos_admin',
+        /opos_admin UPDATE \(name\) on tenants/,
+      ],
+      [
+        'an insert of a column',
+        'grant insert (name) on public.editions to opos_admin',
+        /opos_admin INSERT \(name\) on editions/,
+      ],
+    ])('reports %s that no admin route needs, held by opos_admin', async (_, grant, report) => {
+      const problems = await problemsAfter((sql) => sql.unsafe(grant))
+      expect(problems.join('\n')).toMatch(report)
     })
 
-    it.each(['opos_app', 'opos_app_global'])(
+    it.each(['opos_app', 'opos_app_global', 'opos_admin'])(
       'reports %s as a member of another role',
       async (role) => {
         const problems = await problemsAfter(
@@ -462,6 +517,16 @@ describe('verifyDatabase', () => {
         'grant execute on function auth.uid() to opos_app',
         /opos_app EXECUTE on auth\.uid/,
       ],
+      [
+        'a table, as opos_admin',
+        'grant select on auth.users to opos_admin',
+        /opos_admin SELECT on auth\.users/,
+      ],
+      [
+        'a column, as opos_admin',
+        'grant select (encrypted_password) on auth.users to opos_admin',
+        /opos_admin SELECT \(encrypted_password\) on auth\.users/,
+      ],
     ])('reports a runtime role holding %s in auth', async (_, grant, report) => {
       const problems = await problemsAfter((sql) => sql.unsafe(grant), supabaseAdmin)
       expect(problems.join('\n')).toMatch(report)
@@ -490,12 +555,15 @@ describe('verifyDatabase', () => {
       )
     })
 
-    it.each(['opos_app', 'opos_app_global'])('reports %s without a limit', async (role) => {
-      await expectProblem(
-        (sql) => sql.unsafe(`alter role ${role} reset statement_timeout`),
-        new RegExp(`${role} lacks statement_timeout=15s`),
-      )
-    })
+    it.each(['opos_app', 'opos_app_global', 'opos_admin'])(
+      'reports %s without a limit',
+      async (role) => {
+        await expectProblem(
+          (sql) => sql.unsafe(`alter role ${role} reset statement_timeout`),
+          new RegExp(`${role} lacks statement_timeout=15s`),
+        )
+      },
+    )
 
     it.each(Object.entries(RUNTIME_TIMEOUTS))(
       'reports opos_app with %s set to another value than %s',
@@ -514,7 +582,7 @@ describe('verifyDatabase', () => {
       )
     }
 
-    it.each(['opos_app', 'opos_app_global'])(
+    it.each(['opos_app', 'opos_app_global', 'opos_admin'])(
       'reports %s with a per-database override of a limit, which beats the role setting',
       async (role) => {
         await expectProblem(
@@ -538,6 +606,8 @@ describe('verifyDatabase', () => {
       ['opos_app', 'createdb', 'CREATEDB'],
       ['opos_app_global', 'replication', 'REPLICATION'],
       ['opos_app_global', 'createdb', 'CREATEDB'],
+      ['opos_admin', 'createrole', 'CREATEROLE'],
+      ['opos_admin', 'replication', 'REPLICATION'],
     ])('reports %s holding %s', async (role, attribute, label) => {
       await expectProblem(
         (sql) => sql.unsafe(`alter role ${role} ${attribute}`),
@@ -545,15 +615,18 @@ describe('verifyDatabase', () => {
       )
     })
 
-    it.each(['opos_app', 'opos_app_global'])('reports %s holding SUPERUSER', async (role) => {
-      await expectProblem(
-        (sql) => sql.unsafe(`alter role ${role} superuser`),
-        new RegExp(`attributes they must not hold: .*${role} \\(.*SUPERUSER`),
-        supabaseAdmin,
-      )
-    })
+    it.each(['opos_app', 'opos_app_global', 'opos_admin'])(
+      'reports %s holding SUPERUSER',
+      async (role) => {
+        await expectProblem(
+          (sql) => sql.unsafe(`alter role ${role} superuser`),
+          new RegExp(`attributes they must not hold: .*${role} \\(.*SUPERUSER`),
+          supabaseAdmin,
+        )
+      },
+    )
 
-    it.each(['opos_app', 'opos_app_global'])(
+    it.each(['opos_app', 'opos_app_global', 'opos_admin'])(
       'reports CREATE on schema public held by %s',
       async (role) => {
         await expectProblem(

@@ -209,6 +209,20 @@ and that it cannot be undone: `IrreversibleAction` of `shared/ui`, or its `alert
 the same way when the action needs more than one press. A change the same screen reverses asks
 nothing ([0023](docs/adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
 
+**A tracker runs only through the consent banner.** Anything the portal does not strictly need for
+what the visitor asked is a tracker: analytics, an advertising pixel, a screen recorder, a
+third-party embed, a script, stylesheet or font from another origin, and the cookies or browser
+storage of such a tool. It becomes an entry of `TRACKERS` in
+[apps/portal/src/features/consent/trackers.ts](apps/portal/src/features/consent/trackers.ts), its
+script loaded in `load` through `loadScript`, its purpose in a Lingui macro with its `pl`
+translation, its cookies named; the banner, the privacy settings and the withdrawal then cover it
+with no change, and the banner shows only while the list holds an entry. Never a tag manager, which
+loads tools out of the list's sight. The first tracker is a product decision: ask before adding it,
+and change `docs/PRODUCT.md` 10 and the privacy page with it, in a decision record. **The panel
+holds no tracker.** `src/app/third-party.test.ts` of each application refuses a script or an iframe
+created outside the consent feature and anything loaded from another origin by `index.html` or a
+stylesheet ([0026](docs/adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
+
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`, no
 remote database URL, project reference or access token in a `.env` or `mise.local.toml`; they change
 only through the deploy workflow ([environments](docs/ARCHITECTURE.md#environments)).

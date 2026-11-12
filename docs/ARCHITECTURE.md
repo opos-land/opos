@@ -245,6 +245,12 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   authentication off, asks first in a modal that names what goes, says what goes with it and that
   it cannot be undone; only the modal's own button acts. A change the same screen reverses asks
   nothing ([0023](adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
+- A tracker, anything the portal does not strictly need (analytics, a pixel, an embed, a script,
+  stylesheet or font from another origin, its cookies), is an entry of the consent feature's
+  `TRACKERS`, started by that feature alone after the visitor allowed its category. Only it creates
+  a script or an iframe; no `index.html` or stylesheet loads anything from another origin, and the
+  panel holds no tracker; `src/app/third-party.test.ts` of each application enforces it
+  ([0026](adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 ## Localization
 

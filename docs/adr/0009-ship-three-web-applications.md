@@ -1,6 +1,6 @@
 # 0009. Ship three web applications: no native app, convention site, scanner app or admin app
 
-- Status: Accepted
+- Status: Superseded by [0029](0029-ship-four-web-applications.md)
 - Date: 2026-10-22
 - Rationale: reconstructed, to confirm
 

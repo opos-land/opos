@@ -2,6 +2,7 @@ import { Trans } from '@lingui/react/macro'
 import { Link, Outlet, useLocation } from 'react-router'
 import { AccountLocale } from '../features/account'
 import { MFA_PATH, MfaGate, mfaPath, mfaReturnFor } from '../features/auth'
+import { ConsentBanner, ConsentSettingsLink } from '../features/consent'
 import { AccountTheme, ThemeToggle } from '../features/theme'
 import { PRIVACY_PATH } from '../shared/config/routes'
 import { useSession } from '../shared/lib/session'
@@ -11,8 +12,8 @@ const holdsToken = (search: string) => new URLSearchParams(search).has('token_ha
 
 /**
  * The frame of every portal screen, laid out for a 360 px phone first: the platform's
- * name, the way to the account or to sign-in, the theme toggle, the content in one column and the
- * privacy policy in the footer.
+ * name, the way to the account or to sign-in, the theme toggle, the content in one column, the
+ * privacy policy and settings in the footer, and the consent banner while it asks.
  */
 export function Layout() {
   const status = useSession((state) => state.status)
@@ -66,11 +67,15 @@ export function Layout() {
           <p>
             <Trans>OPOS is free for conventions.</Trans>
           </p>
-          <Link to={PRIVACY_PATH} className={linkClass}>
-            <Trans>Privacy policy</Trans>
-          </Link>
+          <div className="flex flex-wrap items-center gap-4">
+            <ConsentSettingsLink />
+            <Link to={PRIVACY_PATH} className={linkClass}>
+              <Trans>Privacy policy</Trans>
+            </Link>
+          </div>
         </div>
       </footer>
+      <ConsentBanner />
     </div>
   )
 }

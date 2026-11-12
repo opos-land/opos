@@ -5,7 +5,7 @@ import { loadEnv } from '../src/config/env'
 import { createApp } from './app'
 
 // An explicit list of origins, the four request headers, Retry-After exposed,
-// credentials for those two origins only.
+// credentials for the applications' origins only.
 
 const env = loadEnv()
 let app: NestExpressApplication
@@ -26,7 +26,7 @@ const preflight = (origin: string, headers = 'authorization,content-type') =>
     .set('Access-Control-Request-Headers', headers)
 
 describe('CORS', () => {
-  it.each([env.PANEL_URL, env.PORTAL_URL])('allows %s by name', async (origin) => {
+  it.each([env.PANEL_URL, env.PORTAL_URL, env.ADMIN_URL!])('allows %s by name', async (origin) => {
     const res = await preflight(origin).expect(204)
 
     expect(res.headers['access-control-allow-origin']).toBe(origin)

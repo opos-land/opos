@@ -4,6 +4,16 @@ import { type Env } from '../../config/env'
 
 const REFRESH_MAX_AGE_SECONDS = 30 * 24 * 3600
 
+/**
+ * How long an admin's sign-in opens the admin routes: 30 minutes, after which the admin signs in
+ * again (docs/adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md).
+ * The refresh cookie of the admin application lives no longer.
+ */
+export const ADMIN_SESSION_SECONDS = 30 * 60
+
+const refreshMaxAge = (app: Application) =>
+  app === 'admin' ? ADMIN_SESSION_SECONDS : REFRESH_MAX_AGE_SECONDS
+
 const names = (app: Application) => ({
   access: `opos_${app}_access`,
   refresh: `opos_${app}_refresh`,
@@ -36,7 +46,8 @@ const attributes = (env: Pick<Env, 'API_URL'>, path: string) => ({
 
 /**
  * Sets the session of `app`: the access token to its `exp`, the refresh token for 30
- * days, on the API's own host with no `Domain`. Nothing of the other application's pair changes.
+ * days, or 30 minutes in the admin application, on the API's own host with no `Domain`. Nothing
+ * of another application's pair changes.
  */
 export function setSessionCookies(
   res: CookieResponse,
@@ -53,7 +64,7 @@ export function setSessionCookies(
   })
   res.cookie(refresh, session.refresh_token, {
     ...attributes(env, '/auth'),
-    maxAge: REFRESH_MAX_AGE_SECONDS * 1000,
+    maxAge: refreshMaxAge(app) * 1000,
   })
 }
 

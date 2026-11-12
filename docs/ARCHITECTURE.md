@@ -173,7 +173,13 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   answer `503`, never `401`: an outage signs nobody out.
 - A request that changes state with a session cookie needs the `Origin` of an application (`403`
   `request.origin-denied`) and a JSON body (`415`): with `SameSite=Strict`, the CSRF protection.
-  CORS names the two applications, never `*`.
+  CORS names the applications, never `*`.
+- **The admin application** has an origin and a cookie pair of its own, its refresh cookie kept for
+  30 minutes. Its origin reaches only the admin routes, sign-in, refresh, sign-out, the code of
+  two-factor authentication and the account's own name, language and theme; anything else answers
+  `403` `request.origin-denied`, so a flaw in it cannot change an admin's credentials
+  ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)). An API
+  process without the admin application's address and the connection of `opos_admin` serves none.
 - **The password comes after the confirmation**: a sign-up takes none, and the button of a link
   that confirms the address, never its opening, replaces any password set before. **An email address
   leads to an account only once confirmed**, in every lookup by email; sign-up, resending and

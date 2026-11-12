@@ -4,7 +4,11 @@ import { isAuthError, type SupportedStorage } from '@supabase/auth-js'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError } from '../../common/errors/api-error'
 import { isAal2 } from '../../common/guards/access-token'
-import { type Application } from '../../common/http/application'
+import {
+  type Application,
+  type ApplicationUrls,
+  applicationUrl,
+} from '../../common/http/application'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
 import { AccountsRepository } from '../accounts/accounts.repository'
@@ -35,10 +39,9 @@ export interface GoogleFlow {
 /** A PKCE verifier is 43 to 128 characters of the unreserved set (RFC 7636). */
 const VERIFIER = /^[A-Za-z0-9._~-]{43,128}$/
 
-type ApplicationUrls = Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>
-
+/** The admin application offers no Google sign-in, so a flow never names it; the portal stands in. */
 const applicationOrigin = (app: Application, env: ApplicationUrls) =>
-  new URL(app === 'portal' ? env.PORTAL_URL : env.PANEL_URL).origin
+  new URL(applicationUrl(app, env) ?? env.PORTAL_URL).origin
 
 /**
  * The login page of `app`, which shows the code of a Google sign-in that did not go through, with

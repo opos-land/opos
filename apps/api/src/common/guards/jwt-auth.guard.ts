@@ -1,10 +1,11 @@
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { ENV, type Env } from '../../config/env'
+import { ENV } from '../../config/env'
 import { AccountsRepository } from '../../modules/accounts/accounts.repository'
 import { TenantContextService } from '../als/tenant-context.service'
 import { ALLOW_MFA_PENDING } from '../decorators/allow-mfa-pending.decorator'
 import { mfaRequired, unauthenticated, unavailable } from '../errors/api-error'
+import { type ApplicationUrls } from '../http/application'
 import {
   ACCESS_TOKEN_VERIFIER,
   type AccessTokenVerifier,
@@ -23,7 +24,7 @@ export class JwtAuthGuard implements CanActivate {
     @Inject(ACCESS_TOKEN_VERIFIER) private readonly verifier: AccessTokenVerifier,
     private readonly accounts: AccountsRepository,
     private readonly context: TenantContextService,
-    @Inject(ENV) private readonly env: Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>,
+    @Inject(ENV) private readonly env: ApplicationUrls,
     private readonly reflector: Reflector,
   ) {}
 

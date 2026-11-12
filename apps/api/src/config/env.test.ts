@@ -85,6 +85,45 @@ describe('loadEnv', () => {
     expect(message).not.toContain(secret)
   })
 
+  describe('the admin application', () => {
+    const admin = {
+      ADMIN_URL: 'http://admin.opos.localhost:5175',
+      DATABASE_ADMIN_URL: 'postgres://opos_admin:c@127.0.0.1:54322/postgres',
+    }
+
+    it('is not served by default', () => {
+      const env = loadEnv(valid)
+
+      expect(env.ADMIN_URL).toBeUndefined()
+      expect(env.DATABASE_ADMIN_URL).toBeUndefined()
+    })
+
+    it('is served with its address and the connection of opos_admin', () => {
+      expect(loadEnv({ ...valid, ...admin })).toMatchObject(admin)
+    })
+
+    it.each(Object.keys(admin))('refuses %s alone, naming the other', (key) => {
+      const other = Object.keys(admin).find((name) => name !== key)!
+
+      expect(() => loadEnv({ ...valid, [key]: admin[key as keyof typeof admin] })).toThrow(
+        new RegExp(other),
+      )
+    })
+
+    it.each(['PANEL_URL', 'PORTAL_URL'])('refuses the address of %s', (key) => {
+      expect(() =>
+        loadEnv({ ...valid, ...admin, ADMIN_URL: valid[key as 'PANEL_URL' | 'PORTAL_URL'] }),
+      ).toThrow(/ADMIN_URL/)
+    })
+
+    it('takes an empty value as unset, as a template leaves it', () => {
+      const env = loadEnv({ ...valid, ADMIN_URL: '', DATABASE_ADMIN_URL: '' })
+
+      expect(env.ADMIN_URL).toBeUndefined()
+      expect(env.DATABASE_ADMIN_URL).toBeUndefined()
+    })
+  })
+
   it('ignores the variables of the old stack', () => {
     const env = loadEnv({ ...valid, AUTH_URL: 'http://old', JWT_SECRET: 'x' })
 

@@ -43,6 +43,20 @@ describe('Origin of a request that changes state', () => {
     },
   )
 
+  it('lets the admin application through to the session check, with its own cookie', async () => {
+    const res = await patch({ cookie: 'opos_admin_access=anything', origin: env.ADMIN_URL! })
+
+    expect(res.status).toBe(401)
+    expect(res.body).toMatchObject({ code: 'session.invalid' })
+  })
+
+  it('refuses a cookie of the admin application without the Origin of an application', async () => {
+    const res = await patch({ cookie: 'opos_admin_access=anything', origin: env.API_URL })
+
+    expect(res.status).toBe(403)
+    expect(res.body).toMatchObject({ code: 'request.origin-denied' })
+  })
+
   it('looks at a request with a session cookie only', async () => {
     const res = await patch({ origin: 'https://evil.example' })
 

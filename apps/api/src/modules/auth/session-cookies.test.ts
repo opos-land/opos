@@ -36,6 +36,19 @@ function recorder() {
 }
 
 describe('setSessionCookies', () => {
+  // An admin signs in again every 30 minutes (docs/adr/0030), so the refresh cookie of the admin
+  // application lives no longer than that.
+  it('keeps the refresh cookie of the admin application for 30 minutes', () => {
+    const { res, set } = recorder()
+
+    setSessionCookies(res, 'admin', session, local, 1_900_000_000)
+
+    expect(set.map((cookie) => [cookie.name, cookie.options.maxAge])).toEqual([
+      ['opos_admin_access', 900_000],
+      ['opos_admin_refresh', 30 * 60 * 1000],
+    ])
+  })
+
   it('sets the access and the refresh cookie of the application, and no Domain', () => {
     const { res, set } = recorder()
 

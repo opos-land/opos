@@ -6,7 +6,11 @@ import { AuthApiError, type GoTrueClient, isAuthError, type Session } from '@sup
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError, mfaRequired, originDenied, unauthenticated } from '../../common/errors/api-error'
 import { isAal2, meOf, signInMethodsOf } from '../../common/guards/access-token'
-import { type Application, applicationFromOrigin } from '../../common/http/application'
+import {
+  type Application,
+  applicationFromOrigin,
+  applicationUrl,
+} from '../../common/http/application'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
 import { RECENT_SIGN_IN_SECONDS } from '../accounts/account-deletion.service'
@@ -97,7 +101,9 @@ export class AuthService {
 
   /** `<app URL>/auth/confirm`, where the links of the emails lead. */
   private confirmUrl(app: Application) {
-    const base = app === 'portal' ? this.env.PORTAL_URL : this.env.PANEL_URL
+    // The admin application has no such page, and none of the routes that email a link serve it.
+    const base = app === 'admin' ? undefined : applicationUrl(app, this.env)
+    if (!base) throw originDenied()
     return `${new URL(base).origin}/auth/confirm`
   }
 

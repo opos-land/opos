@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { totp } from '@opos/db/totp'
 import request from 'supertest'
 import { type CryptoKey, generateKeyPair, importJWK, type JWK, SignJWT } from 'jose'
-import { type Application } from '../src/common/http/application'
+import { type Application, applicationUrl } from '../src/common/http/application'
 import { authUrl, loadEnv } from '../src/config/env'
 
 // Test accounts go through the real Supabase Auth: the admin API creates them and the password
@@ -136,8 +136,11 @@ export function bindApi(server: Parameters<typeof request>[0]) {
 }
 
 /** The Origin of an application, as a browser sends it. */
-export const originOf = (app: Application) =>
-  new URL(app === 'portal' ? env.PORTAL_URL : env.PANEL_URL).origin
+export const originOf = (app: Application) => {
+  const url = applicationUrl(app, env)
+  if (!url) throw new Error(`The test environment names no address for the ${app} application`)
+  return new URL(url).origin
+}
 
 /**
  * The headers the portal's browser sends for `token`: its access cookie and the portal's Origin.

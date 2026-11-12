@@ -1,6 +1,5 @@
 import { readSessionCookies } from '../../modules/auth/session-cookies'
-import { type Env } from '../../config/env'
-import { applicationFromOrigin } from '../http/application'
+import { type ApplicationUrls, applicationFromOrigin } from '../http/application'
 import { type AccessTokenVerifier, type TokenCheck } from './access-token'
 
 interface CredentialRequest {
@@ -12,10 +11,7 @@ interface CredentialRequest {
  * `Origin` names, and nothing else. A request without the `Origin` of an application has no
  * session cookie to read, and `Authorization` is read by the scanner's guard alone.
  */
-export function credentialOf(
-  req: CredentialRequest,
-  env: Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>,
-): string | undefined {
+export function credentialOf(req: CredentialRequest, env: ApplicationUrls): string | undefined {
   const app = applicationFromOrigin(req.headers.origin, env)
   return app ? readSessionCookies(req, app).access : undefined
 }

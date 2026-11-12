@@ -22,7 +22,8 @@ What we build and for whom: the intent and the business rules. The rules of the 
 ## 1. What OPOS is
 
 A multitenant platform for running fantasy conventions, with full data isolation between them.
-Attendees use the portal, on a phone or a desktop; organizers use the panel.
+Attendees use the portal, on a phone or a desktop; organizers use the panel; the admins use the
+admin application.
 
 **OPOS is free for conventions** and is not built to earn from the scene; the attendee accounts it
 gathers are the base for later products, such as virtual booths and an OPOS shop.
@@ -34,9 +35,9 @@ The MVP targets Poland; Czechia and Slovakia come next.
 ## 2. MVP goal and end-to-end flow
 
 The MVP is the core plus the programme and tickets; other modules are built only after it. It is
-done when this flow works with no manual database edits beyond step 1:
+done when this flow works with no manual database edits:
 
-1. The admin creates a convention and its first head with a script.
+1. The admin creates a convention and its first head in the admin application.
 2. The head creates an edition, marks it active and publishes it.
 3. They add programme items and assign a speaker to one.
 4. They connect the convention's own payment provider account and put tickets on sale.
@@ -70,7 +71,7 @@ a ticket; what the scene calls accreditation is the ticket.
 | **ticket** | admission to an edition |
 | **scanner** | a device checking tickets at the venue, with no account signed in |
 | **attendee** | an account's registration for an edition |
-| **admin** | runs the platform; creates conventions and their first heads |
+| **admin** | runs the platform; creates conventions and their first heads; works in the admin application |
 | **org** | a member of a convention's organizing team; works in the panel |
 | **head** | a convention's head organizer: an org with no permission limits |
 | **user** | a convention attendee; works in the portal |
@@ -156,7 +157,7 @@ convention sends up to 20 an hour.
 | `panel.opos.land` | the panel; the scanner at `/scanner` | yes |
 | `api.opos.land` | the API; public documentation at `/docs` | yes |
 | `<convention>.opos.land`, a custom domain | the public convention website | no |
-| `admin.opos.land` | the platform admin panel | no |
+| `admin.opos.land` | the admin application | yes |
 
 **Only the admin sets a convention's address and custom domain.** Changing the address breaks every
 old link, and no address is a word the platform uses itself, such as `panel` or `api`.
@@ -267,7 +268,8 @@ interface language.
 **In the MVP:**
 
 - The core: accounts, conventions, editions, two-level permissions with expiry, data isolation
-- The admin's script for conventions and first heads; organizer invitations by email
+- The admin application: conventions with their first heads, their addresses, suspension and
+  deletion ([0029](adr/0029-ship-four-web-applications.md)); organizer invitations by email
 - Polish and English; language and time zone per convention
 - Sign-in by email or Google, confirmation and reset by email, two-factor authentication
 - The programme with speakers on the convention's page, likes, personal schedule, reviews
@@ -279,7 +281,7 @@ interface language.
 **Beyond the MVP:**
 
 - Modules: CMS with the website on `<convention>.opos.land` and custom domains, booths, friends
-- Domain ownership verification with self-service; the platform admin panel
+- Domain ownership verification with self-service
 - Tickets without a purchase, merchandise and passes, refunds from the panel, sales embedded on a
   convention's website, offline scanning
 - Fees for commercial exhibitors; an OPOS shop

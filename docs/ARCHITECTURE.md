@@ -34,9 +34,10 @@ graph LR
   import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest (a hook, `pre-commit`, and CI
   over the built bundles), and every e2e scenario a request that leaves the API and the page's own
   origin.
-- **The admin** has no endpoint or screen: creating a tenant, changing its slug and resetting
-  two-factor authentication are scripts run on the server as `postgres`
-  ([0009](adr/0009-ship-three-web-applications.md)).
+- **The admin** works through scripts run on the server as `postgres`: creating a tenant, changing
+  its slug and resetting two-factor authentication. The admin application, `apps/admin`, is decided
+  but not built ([0029](adr/0029-ship-four-web-applications.md)); until it is, there is no admin
+  endpoint or screen.
 
 Deployment is decided but not built
 ([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),

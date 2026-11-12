@@ -23,6 +23,7 @@ repository is written in English.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the rules of the code that no single file shows: boundaries, tenant isolation, invariants, permissions, sessions, conventions, environments, the rules the modules waiting for their owner keep, the checklist for adding a feature |
 | [docs/adr](docs/adr/README.md) | decision records: one decision each, with its context, the alternatives turned down and its consequences |
 | [docs/specs](docs/specs/README.md) | feature specs: a feature's business rules, shape and tests, accepted before its code, frozen once it is built |
+| [CONTRIBUTORS.md](CONTRIBUTORS.md) | who holds each role the documents name, such as each module's domain owner; the one file naming people ([0027](docs/adr/0027-name-the-holders-of-roles-in-contributors-md.md)) |
 
 ## Documents hold rules, the code holds the rest
 
@@ -57,8 +58,8 @@ the way it is, lives beside the documents
 
 **Meeting decisions take precedence** over the documents, this file and the configuration. When the
 user brings a meeting note, carry each decision into what it affects, as the target state; where the
-note is ambiguous or contradicts itself, ask before writing. The note itself and personal names never
-enter the repository: roles instead.
+note is ambiguous or contradicts itself, ask before writing. The note itself never enters the
+repository, and personal names only in [CONTRIBUTORS.md](CONTRIBUTORS.md): roles instead.
 
 **Business rules come from the domain owner.** Each module's rules are set by its domain owner
 ([PRODUCT.md 7](docs/PRODUCT.md#7-modules)). A module still waiting for its owner — today reviews,

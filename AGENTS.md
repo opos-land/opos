@@ -23,6 +23,7 @@ repository is written in English.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the rules of the code that no single file shows: boundaries, tenant isolation, invariants, permissions, sessions, conventions, environments, the rules the modules waiting for their owner keep, the checklist for adding a feature |
 | [docs/adr](docs/adr/README.md) | decision records: one decision each, with its context, the alternatives turned down and its consequences |
 | [docs/specs](docs/specs/README.md) | feature specs: a feature's business rules, shape and tests, accepted before its code, frozen once it is built |
+| [docs/briefs](docs/briefs/README.md) | working material that binds nothing: briefs, reviews, research before a spec; everything above holds over it ([0028](docs/adr/0028-keep-non-binding-briefs-in-docs-briefs.md)) |
 | [CONTRIBUTORS.md](CONTRIBUTORS.md) | who holds each role the documents name, such as each module's domain owner; the one file naming people ([0027](docs/adr/0027-name-the-holders-of-roles-in-contributors-md.md)) |
 
 ## Documents hold rules, the code holds the rest
@@ -73,7 +74,7 @@ say so and ask for the owner's rules first; they land in the module's spec befor
 - **English everywhere** — documents, code, comments (`//`, `/* */`, `#`, `--`, JSDoc, TODO,
   including `lefthook.yml`, compose files, SQL migrations and `.env.example`), identifiers, route
   paths, source messages, branches and commits. The only Polish in the repository is the `pl`
-  translation catalog. No emoji.
+  translation catalog and the renderings a brief quotes. No emoji.
 - The documents and the specs state the target state only: no change history, no alternatives, no
   "why" chapters; those belong in a decision record. A short operational instruction is fine.
 - Tables where the content has structure; anchors updated together with headings.

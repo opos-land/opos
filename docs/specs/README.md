@@ -40,6 +40,7 @@ report. A later change of the feature gets a new spec when it meets the bar abov
 - A spec follows the [checklist for adding a feature](../ARCHITECTURE.md#adding-a-feature) and keeps
   every rule of [ARCHITECTURE.md](../ARCHITECTURE.md); a rule it needs to break is a decision record
   first.
+- A spec built from a [brief](../briefs/README.md) links it; the brief binds nothing, the spec does.
 - `.claude/agent-docs.test.mjs` checks the status.
 
 ## Template

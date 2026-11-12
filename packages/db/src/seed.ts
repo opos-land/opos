@@ -1,19 +1,22 @@
 import { createHash } from 'node:crypto'
-import { and, eq, notInArray } from 'drizzle-orm'
+import { and, eq, notInArray, sql } from 'drizzle-orm'
+import { grantAdmin } from './admins'
 import { migrationDb } from './client'
 import { migrationUrl, reachableUrl } from './migration-url'
 import {
   accountRecoveryCodes,
   accounts,
+  admins,
   editionMemberships,
   editions,
   programItemLikes,
   programItems,
   programItemSpeakers,
+  retiredTenantSlugs,
   tenantMemberships,
   tenants,
 } from './schema'
-import { createTenant } from './tenants'
+import { createTenant, restoreTenant, suspendTenant } from './tenants'
 import { totp } from './totp'
 
 // Demo data. Idempotent: every run converges on the same rows.
@@ -63,6 +66,8 @@ interface SeedTenant {
   defaultLocale: string
   timezone: string
   headEmail: string
+  /** Suspended by the admin: off for everyone else, with everything it owns kept. */
+  suspended?: boolean
   editions: SeedEdition[]
   team: SeedMember[]
 }
@@ -101,15 +106,19 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'expired@convention-a.test', firstName: 'Marek', lastName: 'Sowa' },
   { email: 'gate@convention-a.test', firstName: 'Ola', lastName: 'Kruk' },
   { email: 'head@convention-b.test', firstName: 'Jana', lastName: 'Novak' },
+  { email: 'head@convention-c.test', firstName: 'Igor', lastName: 'Bielik' },
   { email: 'speaker@example.com', firstName: 'Kasia', lastName: 'Mazur' },
   { email: 'attendee@example.com', firstName: 'Jan', lastName: 'Kowal' },
   { email: 'mfa@example.com', firstName: 'Maria', lastName: 'Zielinska' },
   { email: 'multi@example.com', firstName: 'Olga', lastName: 'Duda' },
+  { email: 'admin@example.com', firstName: 'Adam', lastName: 'Wrona' },
 ]
 
-// The account with two-factor authentication: a TOTP factor enrolled and verified
+// The accounts with two-factor authentication: a TOTP factor enrolled and verified
 // through Supabase Auth, and ten recovery codes of the length the API issues.
 const MFA_EMAIL = 'mfa@example.com'
+// The admin: two-factor authentication on, as the role needs, and the role granted on that factor.
+const ADMIN_EMAIL = 'admin@example.com'
 const RECOVERY_CODES = Array.from(
   { length: 10 },
   (_, index) => `DEMORECOVERYCOD${'ABCDEFGHIJ'[index]}`,
@@ -215,6 +224,29 @@ const TENANTS: SeedTenant[] = [
       },
     ],
     team: [{ email: 'multi@example.com', role: 'head' }],
+  },
+  {
+    slug: 'convention-c',
+    name: 'Convention C',
+    defaultLocale: 'pl',
+    timezone: 'Europe/Warsaw',
+    headEmail: 'head@convention-c.test',
+    suspended: true,
+    editions: [
+      {
+        slug: '2026',
+        name: 'Convention C 2026',
+        ...upcoming(1),
+        isActive: true,
+        isPublished: true,
+        program: [
+          { title: 'Welcome talk' },
+          { title: 'Heraldry for invented kingdoms', likedBy: ['attendee@example.com'] },
+          { title: 'Closing panel' },
+        ],
+      },
+    ],
+    team: [],
   },
 ]
 
@@ -375,6 +407,19 @@ async function enrollFactor(email: string) {
   if (process.env.OPOS_ENV === 'local') console.log(`${email} TOTP secret: ${secret}`)
 }
 
+/**
+ * Grants the account the admin role unless a grant of its present factor stands, so a rerun
+ * leaves no second entry in the log and a replaced factor gets a new grant.
+ */
+async function ensureAdmin(email: string) {
+  const [grant] = await db
+    .select({ stands: sql<boolean>`${admins.mfaEnabledAt} = ${accounts.mfaEnabledAt}` })
+    .from(admins)
+    .innerJoin(accounts, eq(accounts.id, admins.accountId))
+    .where(eq(accounts.email, email))
+  if (!grant?.stands) await grantAdmin(db, email)
+}
+
 async function accountId(email: string) {
   const [row] = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.email, email))
   if (!row) throw new Error(`Seed account ${email} is missing`)
@@ -382,6 +427,9 @@ async function accountId(email: string) {
 }
 
 async function seedTenant(spec: SeedTenant) {
+  // The seed owns the slugs of its tenants: one an admin deleted is retired for good, and freed
+  // here, so the demo tenant returns.
+  await db.delete(retiredTenantSlugs).where(eq(retiredTenantSlugs.slug, spec.slug))
   const [existing] = await db
     .select({ id: tenants.id })
     .from(tenants)
@@ -536,11 +584,15 @@ async function seedTenant(spec: SeedTenant) {
       }
     }
   })
+
+  // A demo tenant is suspended or not as the list says, whatever an admin did to it since.
+  await (spec.suspended ? suspendTenant(db, tenantId) : restoreTenant(db, tenantId))
 }
 
 try {
   for (const account of ACCOUNTS) await ensureAccount(account)
-  await ensureTwoFactor(MFA_EMAIL)
+  for (const email of [MFA_EMAIL, ADMIN_EMAIL]) await ensureTwoFactor(email)
+  await ensureAdmin(ADMIN_EMAIL)
   for (const tenant of TENANTS) await seedTenant(tenant)
   console.log(
     `Seeded ${TENANTS.length} tenants and ${ACCOUNTS.length} accounts; password ${DEV_PASSWORD}.`,

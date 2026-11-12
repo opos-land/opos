@@ -275,3 +275,107 @@ describe('db:seed head of two conventions', () => {
     ])
   })
 })
+
+// The admin of the demo data: two-factor authentication on, and the role bound to that factor, so
+// the admin application has someone to sign in.
+describe('db:seed admin', () => {
+  const email = 'admin@example.com'
+  const authUrl = `${process.env.SUPABASE_URL?.replace(/\/+$/, '')}/auth/v1`
+  const admin = (method: string, path: string) =>
+    fetch(`${authUrl}${path}`, { method, headers: { apikey: process.env.SUPABASE_SECRET_KEY! } })
+
+  const state = async () =>
+    (
+      await migrator<{ id: string; mfa: boolean; bound: boolean | null }[]>`
+        select c.id, c.mfa_enabled_at is not null as mfa,
+          a.mfa_enabled_at = c.mfa_enabled_at as bound
+        from accounts c left join admins a on a.account_id = c.id where c.email = ${email}
+      `
+    )[0]
+
+  const grants = async (id: string) =>
+    (
+      await migrator<{ count: number }[]>`
+        select count(*)::int as count from admin_actions
+        where action = 'admin.grant' and subject_account_id = ${id}
+      `
+    )[0]!.count
+
+  it('grants the role to an account with a second factor, once', { timeout: 120_000 }, async () => {
+    const first = runSeed('local')
+    expect(first.status, first.stderr).toBe(0)
+
+    const granted = await state()
+    expect(granted).toMatchObject({ mfa: true, bound: true })
+    const logged = await grants(granted!.id)
+    expect(logged).toBeGreaterThan(0)
+
+    // A rerun finds the grant standing and leaves no second entry in the log.
+    const second = runSeed('local')
+    expect(second.status, second.stderr).toBe(0)
+    expect(await grants(granted!.id)).toBe(logged)
+  })
+
+  it('grants the role anew once the factor was replaced', { timeout: 120_000 }, async () => {
+    const before = await state()
+    const user = await admin('GET', `/admin/users/${before!.id}`)
+    const { factors = [] } = (await user.json()) as { factors?: { id: string }[] }
+    for (const factor of factors) {
+      await admin('DELETE', `/admin/users/${before!.id}/factors/${factor.id}`)
+    }
+    expect(await state()).toMatchObject({ mfa: false })
+
+    const run = runSeed('local')
+
+    expect(run.status, run.stderr).toBe(0)
+    expect(run.stdout).toMatch(/admin@example\.com TOTP secret: [A-Z2-7]{16,}/)
+    expect(await state()).toMatchObject({ mfa: true, bound: true })
+  })
+})
+
+// A suspended convention with a head of its own, for the admin application, the panel and the
+// portal to show; the other two are not suspended, whatever was done to them since the last run.
+describe('db:seed suspended tenant', () => {
+  const suspended = () =>
+    migrator<{ slug: string; suspended: boolean }[]>`
+      select slug, suspended_at is not null as suspended from tenants
+      where slug like 'convention-%' order by slug
+    `
+
+  it('suspends convention-c and no other', { timeout: 120_000 }, async () => {
+    await migrator`update tenants set suspended_at = now() where slug = 'convention-a'`
+    await migrator`update tenants set suspended_at = null where slug = 'convention-c'`
+
+    const run = runSeed('local')
+
+    expect(run.status, run.stderr).toBe(0)
+    expect(await suspended()).toEqual([
+      { slug: 'convention-a', suspended: false },
+      { slug: 'convention-b', suspended: false },
+      { slug: 'convention-c', suspended: true },
+    ])
+    expect(
+      await migrator`
+        select a.email, m.role from tenant_memberships m
+        join tenants t on t.id = m.tenant_id join accounts a on a.id = m.account_id
+        where t.slug = 'convention-c'
+      `,
+    ).toEqual([{ email: 'head@convention-c.test', role: 'head' }])
+  })
+
+  // The slug of a deleted tenant is held back for good; the seed owns the slugs of its tenants.
+  it('brings back a demo tenant an admin deleted', { timeout: 120_000 }, async () => {
+    await migrator`delete from tenants where slug = 'convention-c'`
+    expect(
+      await migrator`select 1 from retired_tenant_slugs where slug = 'convention-c'`,
+    ).toHaveLength(1)
+
+    const run = runSeed('local')
+
+    expect(run.status, run.stderr).toBe(0)
+    expect(await suspended()).toContainEqual({ slug: 'convention-c', suspended: true })
+    expect(
+      await migrator`select 1 from retired_tenant_slugs where slug = 'convention-c'`,
+    ).toHaveLength(0)
+  })
+})

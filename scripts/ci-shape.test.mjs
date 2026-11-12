@@ -62,6 +62,16 @@ test('the run block reader follows block scalars, folded or not', () => {
   assert.deepEqual(blocks, ['one', '          two\n          three', '          four'])
 })
 
+test('no job installs the tools of the deploy commands', () => {
+  const tools = read('../mise.toml').split('\n[tools]\n')[1].split(/\n\[/)[0]
+  const names = [...tools.matchAll(/^(?!#)"?([^"=\s]+)"? = /gm)].map((match) => match[1])
+  const deploy = names.filter((name) => !['node', 'aqua:supabase/cli'].includes(name))
+  assert.ok(deploy.length > 0)
+  const disabled = /^env:\n {2}MISE_DISABLE_TOOLS: (\S+)$/m.exec(ci)
+  assert.ok(disabled, 'the workflow disables tools for every job')
+  assert.deepEqual(disabled[1].split(',').sort(), deploy.sort())
+})
+
 test('check runs the doc links and the migration journal', () => {
   assert.match(ci, /check-doc-links\.mjs/)
   assert.match(ci, /check-migrations\.mjs --base/)

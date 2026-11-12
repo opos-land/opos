@@ -13,6 +13,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# mise installs every tool of mise.toml but these: no job runs a deploy command
+env:
+  MISE_DISABLE_TOOLS: aqua:opentofu/opentofu,aqua:gruntwork-io/terragrunt,aqua:scaleway/scaleway-cli,aqua:cli/cli
+
 jobs:
   check:
     runs-on: ubuntu-latest

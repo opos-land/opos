@@ -16,3 +16,12 @@ Each module's domain owner sets its rules ([PRODUCT.md 7](docs/PRODUCT.md#7-modu
 | reviews | not named |
 | attendee registrations | not named |
 | profile | not named |
+
+## Admins
+
+The admins run the platform and set the rules of its administration
+([spec](docs/specs/platform-administration.md)).
+
+| Role | Held by |
+|---|---|
+| admin | not named |

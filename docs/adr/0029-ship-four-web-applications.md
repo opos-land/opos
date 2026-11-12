@@ -1,6 +1,6 @@
 # 0029. Ship four web applications: an admin application, and no native app, convention site or scanner app
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-12
 
 ## Context
@@ -33,9 +33,10 @@ team is small and the MVP has to reach a convention's first edition.
   ([0031](0031-suspend-a-tenant-before-deleting-it.md)), resets an account's two-factor
   authentication and reads the log of the admins' actions
   ([spec](../specs/platform-administration.md)).
-- **The scripts stay**: they are the way to work when the admin application cannot be used, and the
-  only way to grant the admin role or take it away
-  ([0030](0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)).
+- **The admin's scripts go, but for two**: granting the admin role and taking it away stay scripts
+  run on the server
+  ([0030](0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)). The admin
+  application does everything else.
 - **No native app.** The portal is mobile-first and runs in a phone's browser.
 - **No convention site in the MVP.** A convention's public page, with its programme, is part of the
   portal at `opos.land/conventions/<convention>`; the CMS with its own website comes after the MVP.
@@ -45,6 +46,9 @@ team is small and the MVP has to reach a convention's first edition.
 
 - **The scripts alone**, as 0009 decided. Every admin needs the server, a mistyped argument acts on
   production, and suspending and deleting a tenant would add more of them.
+- **The scripts kept beside the admin application**, for when it cannot be used. Two ways to the same
+  action: a script passes by the application's guards, and each needs its own tests and its own
+  entry in the log.
 - **An admin area inside the panel.** The routes with power over every tenant would share an origin,
   a session and a bundle with every organizer's work, so a flaw in any screen of the panel would
   reach them.
@@ -60,6 +64,8 @@ team is small and the MVP has to reach a convention's first edition.
 ## Consequences
 
 - The admin application is not built yet; until it is, the admin works through the scripts.
+- With the admin application out of reach the admin's work waits: nothing stands in for it but the
+  database itself, as `postgres`.
 - A route with power over every tenant exists, which 0009 avoided; how it is guarded is a decision
   of its own
   ([0030](0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)).

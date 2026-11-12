@@ -370,7 +370,12 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   name in [mise-tasks.toml](../mise-tasks.toml) runs it and says what it does, so `mise tasks` lists
   the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,
   which turbo hashes, and [mise-tasks.test.mjs](../scripts/mise-tasks.test.mjs) keeps both lists
-  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)).
+  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). The
+  `deploy:*` commands alone are mise tasks with no root script: their tools come from mise.
+- The infrastructure lives in [infra](../infra/README.md): an environment is one directory with
+  one `env.yaml`, its plain settings and the names of its secrets, and nothing else configures it.
+  Every provider is pinned to an exact version with its lock file committed, at least 7 days old
+  like a dependency; `mise run deploy:check` validates every unit without a sign-in.
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
   `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
   ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).

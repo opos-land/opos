@@ -238,7 +238,8 @@ remote database URL, project reference or access token in a `.env` or `mise.loca
 infrastructure changes only through the `deploy:*` commands, which an operator runs under their own
 identity, and a release only through CI. An agent never runs a deploy command that applies, destroys
 or sets a secret
-([environments](docs/ARCHITECTURE.md#environments)).
+([environments](docs/ARCHITECTURE.md#environments)). The infrastructure code and its runbook are in
+[infra](infra/README.md); after a change there, `mise run deploy:check`.
 
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
 them to the repository. Where no design exists yet, use shadcn/ui's defaults unchanged and real copy

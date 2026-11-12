@@ -2,7 +2,8 @@
 # picker. Each task runs the root script of the same name, which stays the only definition of the
 # command and works without mise; extra arguments go through to it. turbo orders and caches what the
 # scripts run, so a task declares no sources, outputs or depends. `raw` hands the terminal to the
-# command, for turbo's interface and the prompts of drizzle-kit.
+# command, for turbo's interface and the prompts of drizzle-kit. The deploy commands at the end are
+# the exception: they have no root script.
 # This file sits outside mise.toml, which turbo hashes: a description changes no cache.
 
 [local]
@@ -134,3 +135,94 @@ raw = true
 description = "Wipe the local Supabase stack's data, start it again and set the database roles"
 run = "pnpm infra:reset"
 raw = true
+
+# The deploy commands. They are mise tasks without a root script: OpenTofu, Terragrunt and the CLIs
+# of Scaleway and GitHub come from mise. <environment> is a directory of infra/live, whose
+# terragrunt.stack.hcl generates its units, and [unit] the name of one of them; without a unit a
+# command runs every unit of the environment, in the order of their dependencies, but shared, which
+# only an administrator of the organisation applies and only by its name. What reaches the
+# state or the secrets runs through infra/run.sh, under the operator's own key. The state is
+# encrypted by OpenTofu, so a unit reads another's outputs through OpenTofu and never from the
+# bucket itself.
+
+["deploy:login"]
+description = "Sign in to Scaleway and GitHub as yourself for the deploy commands of an environment; the Scaleway key expires after 12 hours: <environment>"
+usage = 'arg "<environment>" help="A directory of infra/live"'
+run = 'infra/run.sh --signed-out "$usage_environment" infra/login.sh'
+raw = true
+
+["deploy:bootstrap"]
+description = "Once per environment, by an administrator of the Scaleway organisation, make the state bucket and its passphrase and register the environment's domain: <environment>"
+run = "infra/bootstrap.sh"
+raw = true
+
+["deploy:grant"]
+description = "Let people run the deploy commands of an environment, once its shared unit is applied; run by an administrator of the Scaleway organisation, never by an agent: <environment> <email>..."
+run = "infra/grant.sh"
+raw = true
+
+["deploy:grant:revoke"]
+description = "Stop people from running the deploy commands of an environment; run by an administrator of the Scaleway organisation, never by an agent: <environment> <email>..."
+run = "infra/grant.sh --revoke"
+raw = true
+
+["deploy:plan"]
+description = "Show what applying an environment would change: <environment> [unit]"
+usage = '''
+arg "<environment>" help="A directory of infra/live"
+arg "[unit]" help="One unit of the environment; every unit but shared when left out"
+'''
+env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true" }
+run = 'infra/run.sh "$usage_environment" terragrunt stack run --working-dir "infra/live/$usage_environment" --filter "${usage_unit:-!shared}" -- plan'
+raw = true
+
+["deploy:apply"]
+description = "Apply an environment, after asking; run by an operator, never by an agent: <environment> [unit]"
+usage = '''
+arg "<environment>" help="A directory of infra/live"
+arg "[unit]" help="One unit of the environment; every unit but shared when left out"
+'''
+env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true" }
+run = 'infra/run.sh "$usage_environment" terragrunt stack run --working-dir "infra/live/$usage_environment" --filter "${usage_unit:-!shared}" -- apply'
+raw = true
+
+["deploy:destroy"]
+description = "Destroy one unit of an environment, after asking; run by an operator, never by an agent: <environment> <unit>"
+usage = '''
+arg "<environment>" help="A directory of infra/live"
+arg "<unit>" help="The unit to destroy"
+'''
+env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true" }
+run = 'infra/run.sh "$usage_environment" terragrunt stack run --working-dir "infra/live/$usage_environment" --filter "$usage_unit" -- destroy'
+raw = true
+
+["deploy:output"]
+description = "Print the outputs of an environment's units: <environment> [unit]"
+usage = '''
+arg "<environment>" help="A directory of infra/live"
+arg "[unit]" help="One unit of the environment; every unit when left out"
+'''
+run = 'infra/run.sh "$usage_environment" terragrunt stack output --working-dir "infra/live/$usage_environment" ${usage_unit:-}'
+raw = true
+
+["deploy:secret-set"]
+description = "Enter the value of a secret a third party issued, read without echo; run by an operator, never by an agent: <environment> <name>"
+usage = '''
+arg "<environment>" help="A directory of infra/live"
+arg "<name>" help="A name under secrets.entered of the environment's env.yaml"
+'''
+run = 'infra/run.sh "$usage_environment" infra/secret-set.sh "$usage_name"'
+raw = true
+
+["deploy:lock"]
+description = "Write the provider lock file of every module, for Linux and macOS, after a provider's version changed"
+run = 'for module in infra/modules/*/; do tofu -chdir="$module" providers lock -platform=linux_amd64 -platform=linux_arm64 -platform=darwin_arm64 || exit 1; done'
+
+["deploy:check"]
+description = "Check the format of the infrastructure code and validate every unit against its providers and its module's lock file; needs no sign-in"
+run = [
+  "tofu fmt -check -recursive infra",
+  "terragrunt hcl fmt --check --working-dir infra",
+  "terragrunt run --all --working-dir infra/live --no-auto-init --non-interactive --no-dependency-outputs -- init -backend=false -input=false -lockfile=readonly",
+  "terragrunt run --all --working-dir infra/live --no-auto-init --non-interactive --no-dependency-outputs -- validate",
+]

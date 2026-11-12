@@ -299,7 +299,7 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "default": "clock_timestamp()"
         }
       },
       "indexes": {
@@ -326,7 +326,7 @@
       "checkConstraints": {
         "admin_actions_subject_matches_action": {
           "name": "admin_actions_subject_matches_action",
-          "value": "case\n        when \"admin_actions\".\"action\" in ('tenant.create', 'tenant.rename', 'tenant.suspend', 'tenant.restore', 'tenant.delete')\n          then \"admin_actions\".\"subject_tenant_id\" is not null and \"admin_actions\".\"tenant_slug\" is not null\n            and (\"admin_actions\".\"subject_account_id\" is null or \"admin_actions\".\"action\" = 'tenant.create')\n        else \"admin_actions\".\"subject_account_id\" is not null and \"admin_actions\".\"subject_tenant_id\" is null and \"admin_actions\".\"tenant_slug\" is null\n      end"
+          "value": "case\n        when \"admin_actions\".\"action\" in ('tenant.create', 'tenant.rename', 'tenant.suspend', 'tenant.restore', 'tenant.delete')\n          then \"admin_actions\".\"subject_tenant_id\" is not null and \"admin_actions\".\"tenant_slug\" is not null\n            and (\"admin_actions\".\"subject_account_id\" is not null) = (\"admin_actions\".\"action\" = 'tenant.create')\n        else \"admin_actions\".\"subject_account_id\" is not null and \"admin_actions\".\"subject_tenant_id\" is null and \"admin_actions\".\"tenant_slug\" is null\n      end"
         },
         "admin_actions_script_or_admin": {
           "name": "admin_actions_script_or_admin",

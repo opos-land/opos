@@ -21,7 +21,11 @@ export const adminActions = pgTable(
     tenantSlug: text(),
     // The account acted on; with `tenant.create`, the tenant's first head.
     subjectAccountId: uuid(),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    // The clock's time, not the start of the transaction: an entry cannot be dated back by
+    // holding its transaction open.
+    createdAt: timestamp({ withTimezone: true })
+      .notNull()
+      .default(sql`clock_timestamp()`),
   },
   (t) => [
     index('admin_actions_created_at_idx').on(t.createdAt),
@@ -30,7 +34,7 @@ export const adminActions = pgTable(
       sql`case
         when ${t.action} in ('tenant.create', 'tenant.rename', 'tenant.suspend', 'tenant.restore', 'tenant.delete')
           then ${t.subjectTenantId} is not null and ${t.tenantSlug} is not null
-            and (${t.subjectAccountId} is null or ${t.action} = 'tenant.create')
+            and (${t.subjectAccountId} is not null) = (${t.action} = 'tenant.create')
         else ${t.subjectAccountId} is not null and ${t.subjectTenantId} is null and ${t.tenantSlug} is null
       end`,
     ),

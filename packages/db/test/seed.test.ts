@@ -277,7 +277,9 @@ describe('db:seed head of two conventions', () => {
 })
 
 // The admin of the demo data: two-factor authentication on, and the role bound to that factor, so
-// the admin application has someone to sign in.
+// the admin application has someone to sign in. On the local stack alone: the demo password and
+// recovery codes are public, so on the shared Dev anyone could take such an account over, and a
+// seed that granted it the role again would hand them every tenant.
 describe('db:seed admin', () => {
   const email = 'admin@example.com'
   const authUrl = `${process.env.SUPABASE_URL?.replace(/\/+$/, '')}/auth/v1`
@@ -330,6 +332,23 @@ describe('db:seed admin', () => {
     expect(run.status, run.stderr).toBe(0)
     expect(run.stdout).toMatch(/admin@example\.com TOTP secret: [A-Z2-7]{16,}/)
     expect(await state()).toMatchObject({ mfa: true, bound: true })
+  })
+
+  it('grants no admin role where OPOS_ENV is dev', { timeout: 120_000 }, async () => {
+    const before = await state()
+    await migrator`delete from admins where account_id = ${before!.id}`
+    const logged = await grants(before!.id)
+
+    const dev = runSeed('dev')
+
+    expect(dev.status, dev.stderr).toBe(0)
+    expect(await state()).toMatchObject({ bound: null })
+    expect(await grants(before!.id)).toBe(logged)
+
+    // Back on the local stack for the tests after this one.
+    const local = runSeed('local')
+    expect(local.status, local.stderr).toBe(0)
+    expect(await state()).toMatchObject({ bound: true })
   })
 })
 

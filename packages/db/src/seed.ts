@@ -111,14 +111,17 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'attendee@example.com', firstName: 'Jan', lastName: 'Kowal' },
   { email: 'mfa@example.com', firstName: 'Maria', lastName: 'Zielinska' },
   { email: 'multi@example.com', firstName: 'Olga', lastName: 'Duda' },
-  { email: 'admin@example.com', firstName: 'Adam', lastName: 'Wrona' },
 ]
 
 // The accounts with two-factor authentication: a TOTP factor enrolled and verified
 // through Supabase Auth, and ten recovery codes of the length the API issues.
 const MFA_EMAIL = 'mfa@example.com'
 // The admin: two-factor authentication on, as the role needs, and the role granted on that factor.
-const ADMIN_EMAIL = 'admin@example.com'
+// On the local stack alone. The demo password and recovery codes are public: on the shared Dev
+// anyone could sign in with them, replace the factor and wait for the next run to grant the role
+// to the new one. On Dev a person's own account is granted the role with `pnpm db:admin:grant`.
+const ADMIN: SeedAccount = { email: 'admin@example.com', firstName: 'Adam', lastName: 'Wrona' }
+const SEEDS_ADMIN = process.env.OPOS_ENV === 'local'
 const RECOVERY_CODES = Array.from(
   { length: 10 },
   (_, index) => `DEMORECOVERYCOD${'ABCDEFGHIJ'[index]}`,
@@ -590,12 +593,16 @@ async function seedTenant(spec: SeedTenant) {
 }
 
 try {
-  for (const account of ACCOUNTS) await ensureAccount(account)
-  for (const email of [MFA_EMAIL, ADMIN_EMAIL]) await ensureTwoFactor(email)
-  await ensureAdmin(ADMIN_EMAIL)
+  const seeded = SEEDS_ADMIN ? [...ACCOUNTS, ADMIN] : ACCOUNTS
+  for (const account of seeded) await ensureAccount(account)
+  await ensureTwoFactor(MFA_EMAIL)
+  if (SEEDS_ADMIN) {
+    await ensureTwoFactor(ADMIN.email)
+    await ensureAdmin(ADMIN.email)
+  }
   for (const tenant of TENANTS) await seedTenant(tenant)
   console.log(
-    `Seeded ${TENANTS.length} tenants and ${ACCOUNTS.length} accounts; password ${DEV_PASSWORD}.`,
+    `Seeded ${TENANTS.length} tenants and ${seeded.length} accounts; password ${DEV_PASSWORD}.`,
   )
 } finally {
   await db.$client.end()

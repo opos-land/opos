@@ -519,6 +519,31 @@ describe('verifyDatabase', () => {
       },
     )
 
+    // Postgres 17: MAINTAIN lets a role lock a table in any mode, and vacuum and reindex it.
+    it.each(['opos_app', 'opos_app_global', 'opos_admin', 'anon'])(
+      'reports MAINTAIN on a table held by %s',
+      async (role) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant maintain on public.tenants to ${role}`),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`${role} MAINTAIN on tenants`))
+      },
+    )
+
+    // A member of a runtime role may take it, with what it holds: BYPASSRLS on two of them.
+    it.each(['opos_app', 'opos_app_global', 'opos_admin'])(
+      'reports another role as a member of %s',
+      async (role) => {
+        const problems = await problemsAfter(
+          (sql) => sql.unsafe(`grant ${role} to authenticator`),
+          supabaseAdmin,
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`Roles that may act as a runtime role: authenticator as ${role}`),
+        )
+      },
+    )
+
     it('reports opos_app able to bypass RLS', async () => {
       const problems = await problemsAfter((sql) => sql.unsafe(`alter role opos_app bypassrls`))
       expect(problems.join('\n')).toMatch(/opos_app must not bypass RLS/)

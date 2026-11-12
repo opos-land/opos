@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { sql } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
 import { grantAdmin, recordAdminAction, revokeAdmin } from '../src/admins'
 import { adminDb, migrationDb } from '../src/client'
@@ -101,6 +102,17 @@ describe('grantAdmin', () => {
         return user.email
       },
       'mfa.not-enabled',
+    ],
+    [
+      'an account with two verified factors, where the grant could name neither',
+      async () => {
+        const user = await createUser()
+        await setPassword(user.id)
+        await addFactor(user.id)
+        await addFactor(user.id)
+        return user.email
+      },
+      'mfa.several-factors',
     ],
     [
       'an account whose only factor is unverified',
@@ -296,9 +308,24 @@ describe('recordAdminAction', () => {
       'admin_actions_subject_matches_action',
     ],
     [
+      'the creation of a tenant that names no first head',
+      { action: 'tenant.create', adminAccountId: true, tenant: true },
+      'admin_actions_subject_matches_action',
+    ],
+    [
       'a grant that names an admin, which a script alone makes',
       { action: 'admin.grant', adminAccountId: true, accountId: true },
-      'admin_actions_script_or_admin',
+      'admin_actions_scripts_only',
+    ],
+    [
+      'a grant that names no admin, which the application cannot forge for a script',
+      { action: 'admin.grant', accountId: true },
+      'admin_actions_scripts_only',
+    ],
+    [
+      'a withdrawal that names no admin, forged the same way',
+      { action: 'admin.revoke', accountId: true },
+      'admin_actions_scripts_only',
     ],
     [
       'an action of the admin application that names no admin',
@@ -316,6 +343,42 @@ describe('recordAdminAction', () => {
         ...('accountId' in shape ? { accountId: tenant.headId } : {}),
       }),
     ).rejects.toMatchObject({ cause: { constraint_name: constraint } })
+  })
+
+  it('lets a script name no admin for a grant, and never one', async () => {
+    const [adminAccountId, user] = await Promise.all([actor(), createAdminCandidate()])
+
+    await recordAdminAction(db, { action: 'admin.revoke', accountId: user.id })
+    await expect(
+      recordAdminAction(db, { action: 'admin.grant', adminAccountId, accountId: user.id }),
+    ).rejects.toMatchObject({ cause: { constraint_name: 'admin_actions_script_or_admin' } })
+
+    expect(await entriesAbout(user.id)).toEqual([
+      { action: 'admin.revoke', admin_account_id: null, subject_tenant_id: null },
+    ])
+  })
+
+  // The default is the clock's time, not the start of the transaction, so an entry cannot be
+  // dated back by holding its transaction open.
+  it('dates an entry when it is written, not when its transaction began', async () => {
+    const [adminAccountId, tenant] = await Promise.all([actor(), createTenant()])
+    let later: boolean | undefined
+
+    await asAdmin.transaction(async (tx) => {
+      await tx.execute(sql`select pg_sleep(0.05)`)
+      await recordAdminAction(tx, {
+        action: 'tenant.suspend',
+        adminAccountId,
+        tenant: { id: tenant.id, slug: tenant.slug },
+      })
+      const [row] = await tx.execute<{ later: boolean }>(sql`
+        select created_at > now() as later from admin_actions
+        where subject_tenant_id = ${tenant.id}
+      `)
+      later = row?.later
+    })
+
+    expect(later).toBe(true)
   })
 
   it('lets opos_admin set neither the time nor the identifier of an entry', async () => {

@@ -35,9 +35,10 @@ graph LR
   over the built bundles), and every e2e scenario a request that leaves the API and the page's own
   origin.
 - **The admin** works through scripts run on the server as `postgres`: creating a tenant, changing
-  its slug and resetting two-factor authentication. The admin application, `apps/admin`, is decided
-  but not built ([0029](adr/0029-ship-four-web-applications.md)); until it is, there is no admin
-  endpoint or screen.
+  its slug, resetting two-factor authentication, and granting the admin role or taking it away. The
+  admin application, `apps/admin`, is decided but not built
+  ([0029](adr/0029-ship-four-web-applications.md)); until it is, there is no admin endpoint or
+  screen.
 
 Deployment is decided but not built
 ([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),
@@ -78,9 +79,10 @@ and after every restore.
   hook names. Another account is read only in a tenant transaction, through a tenant table or by a
   confirmed email behind a write permission and a rate limit of the tenant.
   The admin's tables are global too, and `opos_app` and `opos_app_global` hold nothing on them:
-  `admins` is written by `postgres` alone, `admin_actions` only grows, each entry dated by the
-  database, and `retired_tenant_slugs` is out of every runtime role's reach, written and read by
-  triggers of `tenants`.
+  `admins` is written by `postgres` alone, each grant bound to the one verified factor its account
+  holds; `admin_actions` only grows, each entry dated by the database, a grant and a withdrawal
+  of the role recorded by a script alone; and `retired_tenant_slugs` is out of every runtime
+  role's reach, written and read by triggers of `tenants`.
 
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
@@ -124,7 +126,7 @@ checks the policies, grants, roles, functions and triggers, each check with a ca
 | 11 | A scanner works only inside its tenant and edition | its tenant's context; every query filters on its edition |
 | 12 | `accounts.mfaEnabledAt` is set exactly while a verified factor exists | the trigger on `auth.mfa_factors`, locking the account row |
 | 13 | A tenant is deleted only while suspended | the statement that deletes it judges the suspension itself |
-| 14 | The slug of a deleted tenant is never a tenant's again | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index |
+| 14 | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since |
 
 Invariants 7 and 9–11 belong to [modules not built yet](#modules-waiting-for-their-domain-owner);
 [invariants.test.ts](../packages/db/test/invariants.test.ts),

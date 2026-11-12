@@ -6,11 +6,11 @@ CREATE TABLE "admin_actions" (
 	"subject_tenant_id" uuid,
 	"tenant_slug" text,
 	"subject_account_id" uuid,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
 	CONSTRAINT "admin_actions_subject_matches_action" CHECK (case
         when "admin_actions"."action" in ('tenant.create', 'tenant.rename', 'tenant.suspend', 'tenant.restore', 'tenant.delete')
           then "admin_actions"."subject_tenant_id" is not null and "admin_actions"."tenant_slug" is not null
-            and ("admin_actions"."subject_account_id" is null or "admin_actions"."action" = 'tenant.create')
+            and ("admin_actions"."subject_account_id" is not null) = ("admin_actions"."action" = 'tenant.create')
         else "admin_actions"."subject_account_id" is not null and "admin_actions"."subject_tenant_id" is null and "admin_actions"."tenant_slug" is null
       end),
 	CONSTRAINT "admin_actions_script_or_admin" CHECK (("admin_actions"."admin_account_id" is null) = ("admin_actions"."action" in ('admin.grant', 'admin.revoke')))

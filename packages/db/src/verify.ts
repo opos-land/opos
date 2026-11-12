@@ -305,17 +305,18 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
     cross join (values ('opos_app'), ('opos_app_global'), ('opos_admin'), ('anon'), ('authenticated'), ('service_role')) r(role)
-    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) p(privilege)
+    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER'), ('MAINTAIN')) p(privilege)
     where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege(r.role, c.oid, p.privilege)
       and (
         r.role = 'opos_app_global'
-        or (r.role = 'opos_app' and p.privilege in ('UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'))
+        or (r.role = 'opos_app'
+          and p.privilege in ('UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'))
         or (r.role = 'opos_app' and p.privilege in ('INSERT', 'DELETE')
           and not (c.relname || ' ' || p.privilege) = any(${appWrites}))
         or (r.role = 'opos_app' and c.relname = any(${adminTables}))
         or (r.role = 'opos_admin'
-          and p.privilege in ('SELECT', 'UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'))
+          and p.privilege in ('SELECT', 'UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'))
         or (r.role = 'opos_admin' and p.privilege in ('INSERT', 'DELETE')
           and not (c.relname || ' ' || p.privilege) = any(${adminWrites}))
         or r.role in ('anon', 'authenticated', 'service_role')
@@ -397,6 +398,22 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   if (memberships.length > 0) {
     problems.push(
       `Runtime roles that are members of other roles: ${memberships.map((r) => `${r.member} in ${r.role}`).join(', ')}`,
+    )
+  }
+
+  // The other way round: a member of a runtime role may take it, with what it holds, BYPASSRLS on
+  // two of them. The role that created one holds a membership that lets it do neither, only
+  // manage the role, which is how Postgres leaves it.
+  const actors = await sql<{ member: string; role: string }[]>`
+    select pg_get_userbyid(a.member) as member, pg_get_userbyid(a.roleid) as role
+    from pg_auth_members a
+    where pg_get_userbyid(a.roleid) in ('opos_app', 'opos_app_global', 'opos_admin')
+      and (a.inherit_option or a.set_option)
+    order by 1, 2
+  `
+  if (actors.length > 0) {
+    problems.push(
+      `Roles that may act as a runtime role: ${actors.map((r) => `${r.member} as ${r.role}`).join(', ')}`,
     )
   }
 
@@ -530,7 +547,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     select r.role || ' ' || p.privilege || ' on auth.' || c.relname
     from pg_class c
     cross join runtime r
-    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) p(privilege)
+    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER'), ('MAINTAIN')) p(privilege)
     where c.relnamespace = 'auth'::regnamespace and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege(r.role, c.oid, p.privilege)
     union all

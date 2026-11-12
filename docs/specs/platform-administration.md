@@ -164,7 +164,9 @@ shows only that message inside one. The portal shows a suspended convention's pa
 
 ### Seed
 
-An admin account with two-factor authentication on, and a suspended tenant with a head of its own.
+A suspended tenant with a head of its own; and, on the local stack alone, an admin account with
+two-factor authentication on. The demo password and recovery codes are public, so on Dev a
+person's own account is granted the role by the script.
 
 ## Tenant isolation and permissions
 

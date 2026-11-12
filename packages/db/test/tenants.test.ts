@@ -128,6 +128,35 @@ describe.each(Object.entries(pools))('as %s', (_, db) => {
       expect(await migrator`select 1 from tenants where slug = ${gone.slug}`).toHaveLength(0)
     })
 
+    // The insert waits on the unique index for the deletion to commit and is then refused by
+    // the slug it retired, not by a conflict.
+    it('refuses the slug of a tenant whose deletion is still open', async () => {
+      const gone = await tenant()
+      const head = await createUser()
+      let release!: () => void
+      const held = new Promise<void>((resolve) => (release = resolve))
+      let deleted!: () => void
+      const deleting = new Promise<void>((resolve) => (deleted = resolve))
+
+      const deletion = migrator.begin(async (sql) => {
+        await sql`delete from tenants where id = ${gone.id}`
+        deleted()
+        await held
+      })
+      await deleting
+      let settled = false
+      const creation = createTenant(db, { slug: gone.slug, name: 'Heir', headEmail: head.email })
+        .catch((error: unknown) => error)
+        .finally(() => (settled = true))
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      expect(settled).toBe(false)
+      release()
+      await deletion
+
+      expect(await creation).toMatchObject({ code: 'tenant.slug-retired' })
+      expect(await migrator`select 1 from tenants where slug = ${gone.slug}`).toHaveLength(0)
+    })
+
     it('creates the tenant in the transaction of its caller, and goes with it', async () => {
       const head = await createUser()
       const free = slug()

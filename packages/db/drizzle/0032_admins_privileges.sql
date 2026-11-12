@@ -16,6 +16,30 @@ grant select (id, action, admin_account_id, subject_tenant_id, tenant_slug, subj
 grant insert (action, admin_account_id, subject_tenant_id, tenant_slug, subject_account_id) on admin_actions to opos_admin;
 --> statement-breakpoint
 
+-- A grant of the admin role and its withdrawal are recorded by the two scripts alone, which run
+-- as the owner of the table: opos_admin cannot add an entry saying a script did either. Not a
+-- security definer function, so current_user is the role that inserts.
+create function public.ensure_admin_action_by_script() returns trigger
+  language plpgsql set search_path = '' as $$
+begin
+  if current_user <> (
+    select pg_catalog.pg_get_userbyid(c.relowner) from pg_catalog.pg_class c where c.oid = tg_relid
+  ) then
+    raise exception 'only a script records %', new.action
+      using errcode = 'insufficient_privilege', constraint = 'admin_actions_scripts_only';
+  end if;
+  return new;
+end;
+$$;
+--> statement-breakpoint
+create trigger admin_actions_scripts_only
+  before insert on admin_actions
+  for each row when (new.action in ('admin.grant', 'admin.revoke'))
+  execute function public.ensure_admin_action_by_script();
+--> statement-breakpoint
+revoke execute on function public.ensure_admin_action_by_script() from public, anon, authenticated, service_role;
+--> statement-breakpoint
+
 -- The reset of an account's two-factor authentication: whether it is on, the language of the
 -- notice, and the unused recovery codes, which go with the factors.
 grant select (locale, mfa_enabled_at) on accounts to opos_admin;

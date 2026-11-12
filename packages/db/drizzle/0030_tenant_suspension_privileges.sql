@@ -22,10 +22,15 @@ create trigger tenants_retire_slug
 
 -- No tenant takes a retired slug. An insert or an update that meets a slug being deleted waits on
 -- tenants_slug_unique for that deletion to commit; this runs after the wait, so it reads the slug
--- the deletion retired.
+-- the deletion retired. That holds at READ COMMITTED alone: above it a transaction reads the
+-- snapshot of its start and would miss a slug retired since, so such a transaction takes no slug.
 create function public.ensure_tenant_slug_not_retired() returns trigger
   language plpgsql security definer set search_path = '' as $$
 begin
+  if current_setting('transaction_isolation') <> 'read committed' then
+    raise exception 'a tenant takes a slug only in a read committed transaction'
+      using errcode = 'feature_not_supported', constraint = 'tenants_slug_at_read_committed';
+  end if;
   if exists (select 1 from public.retired_tenant_slugs where slug = new.slug) then
     raise exception 'the slug % belonged to a deleted tenant', new.slug
       using errcode = 'check_violation', constraint = 'tenants_slug_not_retired';
@@ -41,8 +46,8 @@ create trigger tenants_slug_not_retired
 revoke execute on function public.retire_tenant_slug(), public.ensure_tenant_slug_not_retired() from public, anon, authenticated, service_role;
 --> statement-breakpoint
 
--- The lookup of a tenant by its slug and the account's own memberships answer whether the tenant
--- is suspended (docs/ARCHITECTURE.md, Tenant isolation).
+-- The API refuses a suspended tenant wherever it enters one, so its cross-tenant lookups read
+-- whether a tenant is suspended.
 grant select (suspended_at) on tenants to opos_app_global;
 --> statement-breakpoint
 

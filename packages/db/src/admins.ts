@@ -11,6 +11,7 @@ export type AdminErrorCode =
   | 'account.no-password'
   | 'account.not-admin'
   | 'mfa.not-enabled'
+  | 'mfa.several-factors'
 
 export class AdminError extends Error {
   constructor(
@@ -50,8 +51,8 @@ export async function recordAdminAction(db: Executor, entry: AdminActionEntry): 
  * Grants the admin role to the account with this address, and binds it to the second factor the
  * account has now: the grant keeps `accounts.mfa_enabled_at` as it found it, and the role holds
  * only while the two are equal. The account is confirmed, signs in with a password and has
- * two-factor authentication on. A grant of an account that is an admin already replaces the old
- * one. Runs as `postgres` alone, behind `pnpm db:admin:grant`: it reads `auth.users` for the
+ * two-factor authentication on, with one verified factor. A grant of an account that is an admin
+ * already replaces the old one. Runs as `postgres` alone, behind `pnpm db:admin:grant`: it reads `auth.users` for the
  * password, and no runtime role writes `admins`.
  */
 export async function grantAdmin(db: Database, address: string) {
@@ -76,9 +77,11 @@ export async function grantAdmin(db: Database, address: string) {
       )
     }
     // The admin application signs in by password alone, which an account of Google sign-in lacks.
-    const [user] = await tx.execute<{ has_password: boolean }>(sql`
-      select coalesce(encrypted_password, '') <> '' as has_password
-      from auth.users where id = ${account.id}
+    const [user] = await tx.execute<{ has_password: boolean; factors: number }>(sql`
+      select coalesce(u.encrypted_password, '') <> '' as has_password,
+        (select count(*)::int from auth.mfa_factors f
+          where f.user_id = u.id and f.status = 'verified') as factors
+      from auth.users u where u.id = ${account.id}
     `)
     if (!user?.has_password) {
       throw new AdminError('account.no-password', `The account ${email} has no password`)
@@ -87,6 +90,16 @@ export async function grantAdmin(db: Database, address: string) {
       throw new AdminError(
         'mfa.not-enabled',
         `The account ${email} has two-factor authentication off`,
+      )
+    }
+
+    // `mfa_enabled_at` moves only when the account passes through no verified factor, so with
+    // two of them one could go and the grant would still match. An account holds one at most,
+    // by Supabase Auth's limit and the API's `mfa.already-enabled`; the grant takes no other.
+    if (user.factors > 1) {
+      throw new AdminError(
+        'mfa.several-factors',
+        `The account ${email} has ${user.factors} verified factors; the grant binds to one`,
       )
     }
 

@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -138,7 +138,8 @@ describe('ConfirmPage with a token', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }))
     await screen.findByLabelText(/New password/)
 
-    expect(screen.getByTestId('address').textContent).toBe('/auth/confirm')
+    // React Router navigates in a transition, which can commit after the password form shows.
+    await waitFor(() => expect(screen.getByTestId('address').textContent).toBe('/auth/confirm'))
   })
 
   it('after a signup link shows the password form, then opens the page the round trip started on', async () => {

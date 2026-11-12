@@ -1,0 +1,49 @@
+# The Turborepo remote cache: two instances over one volume. Only `cache` can write; `cache-ro`
+# refuses a write itself and mounts the volume read-only as well. Written out twice, without
+# anchors, so that Coolify reads it as it stands.
+#
+# STORAGE_PATH sits under the home of the image's own user: a new volume takes its owner from there.
+# TURBO_REMOTE_CACHE_SIGNATURE_KEY, at any value, makes the server keep each artifact's signature
+# beside it. It never checks one: the real key stays with the runs that sign and verify.
+services:
+  cache:
+    image: ${image}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      STORAGE_PROVIDER: local
+      STORAGE_PATH: /home/app/artifacts
+      STORAGE_PATH_USE_TMP_FOLDER: 'false'
+      TURBO_REMOTE_CACHE_SIGNATURE_KEY: stored-with-its-tag
+      TURBO_TOKEN: $${TURBO_TOKEN_RW}
+    volumes:
+      - artifacts:/home/app
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:3000/v8/artifacts/status']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  cache-ro:
+    image: ${image}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      STORAGE_PROVIDER: local
+      STORAGE_PATH: /home/app/artifacts
+      STORAGE_PATH_USE_TMP_FOLDER: 'false'
+      TURBO_REMOTE_CACHE_SIGNATURE_KEY: stored-with-its-tag
+      TURBO_TOKEN: $${TURBO_TOKEN_RO}
+      READ_ONLY: 'true'
+    volumes:
+      - artifacts:/home/app:ro
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:3000/v8/artifacts/status']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  artifacts:

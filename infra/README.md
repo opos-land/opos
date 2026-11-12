@@ -7,6 +7,7 @@ The deployed environments, described in OpenTofu units that Terragrunt runs. The
 | Path                                      | Holds                                                                                   |
 | ----------------------------------------- | --------------------------------------------------------------------------------------- |
 | `root.hcl`                                | what every unit shares: the state, its encryption, the Scaleway provider                |
+| `coolify.hcl`                             | the Coolify provider, for the units that change Coolify                                 |
 | `modules/`                                | the OpenTofu modules, each with its committed provider lock file                        |
 | `units/`                                  | the catalog: one unit per module, configured by the values a stack hands it             |
 | `live/<environment>/env.yaml`             | the one place an environment is configured: plain settings and the names of its secrets |
@@ -89,13 +90,56 @@ The steps for Dev; another environment follows them with its own names.
    Run the grant again to add someone, and `mise run deploy:grant:revoke dev <email>...` to take
    someone out.
 
-5. Make the secrets, then apply the rest. The entered ones stay without a value until
-   `mise run deploy:secret-set dev <name>`.
+5. Make the secrets. The entered ones stay without a value until the next step.
+
+   ```sh
+   mise run deploy:apply dev secrets
+   ```
+
+6. Create Coolify's API token and enter it:
+   1. In Coolify, under Settings, Advanced, set API access to Enabled.
+   2. Under Keys & Tokens, API Tokens, select New token.
+   3. Permissions: `read`, `read:sensitive`, `write`, `delete` and `deploy`, not `root`.
+   4. Access: all resources in the team. Coolify limits a token only to projects that already
+      exist, and the apply of step 8 creates Dev's project.
+   5. Expiry: at most a year. Before it lapses, enter a new token the same way.
+   6. Enter it:
+
+      ```sh
+      mise run deploy:secret-set dev coolify-api-token
+      ```
+
+7. Write the dashboard's address, the server's id (Servers, then the server's page) and its public
+   addresses into the `coolify` block of `live/dev/env.yaml`.
+
+8. Apply the rest. The `github` unit needs your GitHub account to administer the repository.
 
    ```sh
    mise run deploy:plan dev
    mise run deploy:apply dev
    ```
+
+   The hosts' certificates follow on their own once their records resolve.
+
+9. Check the remote cache, below.
+
+## The remote cache
+
+The `cache` and `github` units run CI's Turborepo cache and give CI its tokens
+([0037](../docs/adr/0037-share-a-turborepo-remote-cache-that-only-develop-and-main-write.md)).
+Until they are applied, CI runs without it.
+
+| Check                                                                                          | Expect                                                |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| the cache's service in Coolify, after the first apply                                          | running                                               |
+| a `PUT` to `https://cache-ro.dev.opos.land/v8/artifacts/<id>?slug=opos` with the reading token | `403`                                                 |
+| the `check` job of a push to `develop`                                                         | "Remote caching enabled", and artifacts on the volume |
+| the `check` job of a pull request after it                                                     | cache hits it did not compute itself                  |
+| the `check` job of a pull request from a fork                                                  | green, without the remote cache                       |
+
+- To empty the cache, delete the contents of the `artifacts` directory on the service's volume.
+  The server never evicts on its own.
+- To invalidate everything in it, raise the number of `turbo-signature-key` in `env.yaml` and apply.
 
 ## Secrets
 
@@ -117,6 +161,8 @@ secrets:
   `mise run deploy:secret-set dev <name>`, apply, then revoke the old value.
 - **Rotate a generated secret:** raise its number, then apply.
 
+An apply carries a new value to every place it is copied to: Coolify's variables and GitHub's
+secrets.
 
 ## State
 

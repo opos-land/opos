@@ -29,8 +29,9 @@ team is small and the MVP has to reach a convention's first edition.
   application for the admins.
 - **The admin application** is `apps/admin`, at `admin.opos.land`, and part of the MVP. In it an
   admin lists the tenants, creates a tenant with its first head, changes a tenant's address,
-  suspends, restores and deletes a tenant, resets an account's two-factor authentication and reads
-  the log of the admins' actions.
+  suspends, restores and deletes a tenant
+  ([0031](0031-suspend-a-tenant-before-deleting-it.md)), resets an account's two-factor
+  authentication and reads the log of the admins' actions.
 - **The scripts stay**: they are the way to work when the admin application cannot be used, and the
   only way to grant the admin role or take it away
   ([0030](0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)).

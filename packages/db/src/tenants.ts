@@ -15,8 +15,10 @@ export interface CreateTenantInput {
   timezone?: string
 }
 
-/** The tenant by its identifier, or by the slug it has now. */
-export type RenameTenantInput = { newSlug: string } & ({ id: string } | { slug: string })
+export interface RenameTenantInput {
+  id: string
+  newSlug: string
+}
 
 export type TenantErrorCode =
   | 'tenant.not-found'
@@ -143,17 +145,12 @@ export async function renameTenant(db: Executor, input: RenameTenantInput) {
   const [tenant] = await db
     .update(tenants)
     .set({ slug: input.newSlug })
-    .where('id' in input ? eq(tenants.id, input.id) : eq(tenants.slug, input.slug))
+    .where(eq(tenants.id, input.id))
     .returning({ id: tenants.id, slug: tenants.slug })
     .catch((error: unknown) => {
       throw slugRefusal(error, input.newSlug) ?? error
     })
-  if (!tenant) {
-    throw new TenantError(
-      'tenant.not-found',
-      'id' in input ? `No tenant ${input.id}` : `No tenant with the slug ${input.slug}`,
-    )
-  }
+  if (!tenant) throw new TenantError('tenant.not-found', `No tenant ${input.id}`)
   return tenant
 }
 

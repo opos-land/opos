@@ -90,21 +90,6 @@ description = "Check that every table follows the tenant isolation rules and the
 run = "pnpm db:verify"
 raw = true
 
-["db:tenant:create"]
-description = "Create a tenant and its first head, whose account must exist: --slug <slug> --name <name> --head-email <email> [--locale pl] [--timezone Europe/Warsaw]"
-run = "pnpm db:tenant:create"
-raw = true
-
-["db:tenant:rename"]
-description = "Change a tenant's slug: --slug <current slug> --new-slug <new slug>"
-run = "pnpm db:tenant:rename"
-raw = true
-
-["db:account:reset-2fa"]
-description = "Remove the two-factor factors and recovery codes of an account and email its owner: <email>"
-run = "pnpm db:account:reset-2fa"
-raw = true
-
 ["db:admin:grant"]
 description = "Grant the admin role to a confirmed account with a password and two-factor authentication on: --email <email>"
 run = "pnpm db:admin:grant"

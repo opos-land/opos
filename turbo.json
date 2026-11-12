@@ -112,29 +112,6 @@
       "cache": false,
       "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
     },
-    "db:tenant:create": {
-      "cache": false,
-      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
-    },
-    "db:account:reset-2fa": {
-      "cache": false,
-      "dependsOn": ["i18n:compile"],
-      "passThroughEnv": [
-        "DATABASE_MIGRATION_URL",
-        "OPOS_ENV",
-        "SUPABASE_URL",
-        "SUPABASE_SECRET_KEY",
-        "SMTP_HOST",
-        "SMTP_PORT",
-        "SMTP_USER",
-        "SMTP_PASS",
-        "MAIL_FROM"
-      ]
-    },
-    "db:tenant:rename": {
-      "cache": false,
-      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
-    },
     "db:admin:grant": {
       "cache": false,
       "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]

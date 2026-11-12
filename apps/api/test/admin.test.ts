@@ -599,6 +599,52 @@ describe('POST /admin/accounts/reset-2fa', () => {
     expect(await countLoggedActions()).toBe(before)
   })
 
+  it.each([
+    ['pl', 'Uwierzytelnianie dwuskładnikowe zostało wyłączone'],
+    ['en', 'Two-factor authentication was turned off'],
+  ])('mails an account that chose no locale in the sign-up locale %s', async (locale, subject) => {
+    const account = await createAccount({ locale })
+    addresses.push(account.email)
+    const agent = await signedInAgent('portal', account.email)
+    await enableMfa(agent)
+    await agent.patch('/me').send({ locale: null }).expect(200)
+
+    expect((await reset(account.email)).status).toBe(200)
+
+    const [sent] = await waitForMail(account.email)
+    expect(sent!.Subject).toBe(subject)
+  })
+
+  it('keeps the codes already used, as a record', async () => {
+    const person = await personWith2fa()
+    const browser = request.agent(app.getHttpServer()).set('Origin', originOf('portal'))
+    await browser.post('/auth/sign-in').send({ email: person.email, password: TEST_PASSWORD })
+    await browser.post('/auth/mfa/recover').send({ code: person.recoveryCodes[0] }).expect(204)
+    await enableMfa(await signedInAgent('portal', person.email))
+    expect(await recoveryCodeRows(person.id)).toHaveLength(11)
+
+    expect((await reset(person.email)).status).toBe(200)
+
+    const rows = await recoveryCodeRows(person.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.used_at).not.toBeNull()
+  })
+
+  it('takes a factor that was never verified for two-factor authentication off, and sends nothing', async () => {
+    const account = await createAccount()
+    addresses.push(account.email)
+    await addVerifiedFactor(account.id, 'unverified')
+    await addRecoveryCodeHash(account.id, 'd'.repeat(64))
+
+    const res = await reset(account.email)
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject({ code: 'mfa.not-enabled' })
+    expect(await mfaState(account.id)).toEqual({ mirrored: false, factors: 1 })
+    expect(await recoveryCodeRows(account.id)).toHaveLength(1)
+    await expect(waitForMail(account.email, 1, 500)).rejects.toThrow(/no email/)
+  })
+
   it('never resets an admin, whatever became of the grant', async () => {
     const other = await adminAccount()
     const outdated = await adminAccount()

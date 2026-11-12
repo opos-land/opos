@@ -22,7 +22,7 @@ graph LR
 | `apps/panel` | the organizers' SPA, desktop-first; later also the scanner under `/scanner` |
 | `apps/portal` | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule |
 | `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape |
-| `packages/db` | schema, migrations, database roles, seed, verification, the admin's scripts |
+| `packages/db` | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away |
 | `packages/i18n` | locales, detection, formatters and the shared catalog |
 | Supabase | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md)) |
 
@@ -34,11 +34,10 @@ graph LR
   import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest (a hook, `pre-commit`, and CI
   over the built bundles), and every e2e scenario a request that leaves the API and the page's own
   origin.
-- **The admin** works through scripts run on the server as `postgres`: creating a tenant, changing
-  its slug, resetting two-factor authentication, and granting the admin role or taking it away. The
-  admin application, `apps/admin`, is decided but not built
-  ([0029](adr/0029-ship-four-web-applications.md)); until it is, there is no admin endpoint or
-  screen.
+- **The admin** works through the admin routes of the API, which the admin application calls
+  ([0029](adr/0029-ship-four-web-applications.md)); `apps/admin` itself is not built yet. Only
+  granting the admin role and taking it away are scripts, run on the server as `postgres`
+  (`pnpm db:admin:grant`, `pnpm db:admin:revoke`): no route and no screen does either.
 
 Deployment is decided but not built
 ([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),
@@ -111,7 +110,7 @@ reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of ve
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
 account or another row. `tenants` rows are inserted, deleted, suspended and given a new slug only
-by `opos_admin` and the admin's scripts; `opos_app` updates `name`, `default_locale` and `timezone`
+by `opos_admin`, behind the admin routes; `opos_app` updates `name`, `default_locale` and `timezone`
 alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and `auth.mfa_factors` are
 listed in verify.ts. A `security definer` function pins `search_path = ''` and no runtime role may
 execute it; constraints have explicit names, since errors map to codes by them. `pnpm db:verify`

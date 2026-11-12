@@ -4,15 +4,16 @@ The deployed environments, described in OpenTofu units that Terragrunt runs. The
 [ARCHITECTURE.md](../docs/ARCHITECTURE.md#environments); the reasons in the records it links.
 `live/dev` is the Dev environment.
 
-| Path                                      | Holds                                                                                   |
-| ----------------------------------------- | --------------------------------------------------------------------------------------- |
-| `root.hcl`                                | what every unit shares: the state, its encryption, the Scaleway provider                |
-| `coolify.hcl`                             | the Coolify provider, for the units that change Coolify                                 |
-| `modules/`                                | the OpenTofu modules, each with its committed provider lock file                        |
-| `units/`                                  | the catalog: one unit per module, configured by the values a stack hands it             |
-| `live/<environment>/env.yaml`             | the one place an environment is configured: plain settings and the names of its secrets |
-| `live/<environment>/terragrunt.stack.hcl` | the environment's units, generated into `.terragrunt-stack` on every run                |
-| `*.sh`                                    | the scripts the deploy tasks run                                                        |
+| Path                                      | Holds                                                                                          |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `root.hcl`                                | what every unit shares: the state, its encryption, the Scaleway provider                       |
+| `coolify.hcl`                             | the Coolify provider, for the units that change Coolify                                        |
+| `modules/`                                | the OpenTofu modules, each with its committed provider lock file                               |
+| `units/`                                  | the catalog: one unit per module, configured by the values a stack hands it                    |
+| `live/<environment>/env.yaml`             | the one place an environment is configured: plain settings and the names of its secrets        |
+| `live/<environment>/terragrunt.stack.hcl` | the environment's units, generated into `.terragrunt-stack` on every run                       |
+| `*.sh`                                    | the scripts the deploy tasks run                                                               |
+| `docker/`                                 | the images of a deployment: the API, the database tools, the panel and the portal behind Caddy |
 
 ## Commands
 
@@ -23,6 +24,7 @@ command that changes anything: bootstrap, grant, revoke, apply, secret-set or de
 | ------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | **On your machine, without signing in**                 |                                                                              |
 | `mise run deploy:check`                                 | checks the format and validates every unit                                   |
+| `mise run deploy:images`                                | builds the images as the server does and tries the API and the portal        |
 | `mise run deploy:lock`                                  | rewrites the modules' provider lock files after a provider's version changed |
 | **Signed in**                                           |                                                                              |
 | `mise run deploy:login <environment>`                   | signs you in to Scaleway and GitHub, unless you are; the key lasts 12 hours  |
@@ -163,6 +165,12 @@ secrets:
 
 An apply carries a new value to every place it is copied to: Coolify's variables and GitHub's
 secrets.
+
+## Images
+
+[docker/Dockerfile](docker/Dockerfile) builds every image from the repository root. Run
+`mise run deploy:images` after a change to `docker/`, to the dependencies or to the packages of the
+workspace. The Content-Security-Policy is checked in a browser, by the smoke test of a deployment.
 
 ## State
 

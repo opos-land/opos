@@ -1,0 +1,28 @@
+# What no image is built from. The build context is the repository root
+# (infra/docker/Dockerfile).
+.git
+.claude
+.github
+docs
+infra/live
+
+# Installed and built inside the image
+**/node_modules
+**/dist
+**/build
+**/.turbo
+**/coverage
+**/locales/*.mjs
+e2e/playwright-report
+e2e/test-results
+
+# Never part of an image: a deployment's variables come from its environment
+**/.env
+**/.env.*
+!**/.env.example
+supabase/signing_keys.json
+supabase/.branches
+supabase/.temp
+mise.local.toml
+**/.terraform
+**/.terragrunt-cache

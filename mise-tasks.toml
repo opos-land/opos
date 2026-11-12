@@ -218,6 +218,10 @@ raw = true
 description = "Write the provider lock file of every module, for Linux and macOS, after a provider's version changed"
 run = 'for module in infra/modules/*/; do tofu -chdir="$module" providers lock -platform=linux_amd64 -platform=linux_arm64 -platform=darwin_arm64 || exit 1; done'
 
+["deploy:images"]
+description = "Build the images as a deployment's server does and try the API and the portal; needs Docker and no sign-in"
+run = "infra/docker/check.sh"
+
 ["deploy:check"]
 description = "Check the format of the infrastructure code and validate every unit against its providers and its module's lock file; needs no sign-in"
 run = [

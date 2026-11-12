@@ -411,6 +411,33 @@ describe('verifyDatabase', () => {
       },
     )
 
+    it("reports opos_app updating tenants.suspended_at, which is the admin's alone", async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (suspended_at) on public.tenants to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app UPDATE \(suspended_at\) on tenants/)
+    })
+
+    // The tables of the admin application: opos_app and opos_app_global hold nothing on them, a
+    // read included, and opos_admin only what its lists name.
+    it.each([
+      ['opos_app', 'select', /opos_app SELECT on retired_tenant_slugs/],
+      ['opos_app', 'select (slug)', /opos_app SELECT \(slug\) on retired_tenant_slugs/],
+      ['opos_app', 'insert', /opos_app INSERT on retired_tenant_slugs/],
+      [
+        'opos_app_global',
+        'select (slug)',
+        /opos_app_global SELECT \(slug\) on retired_tenant_slugs/,
+      ],
+      ['opos_admin', 'select (slug)', /opos_admin SELECT \(slug\) on retired_tenant_slugs/],
+      ['opos_admin', 'delete', /opos_admin DELETE on retired_tenant_slugs/],
+    ])('reports %s holding %s on retired_tenant_slugs', async (role, privilege, report) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant ${privilege} on public.retired_tenant_slugs to ${role}`),
+      )
+      expect(problems.join('\n')).toMatch(report)
+    })
+
     it.each(['opos_app', 'opos_admin'])(
       'reports a privilege on a sequence in public held by %s',
       async (role) => {

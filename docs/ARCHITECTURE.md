@@ -77,6 +77,8 @@ and after every restore.
   them, and the API reaches there only the account a verified token, a fresh session or a signed
   hook names. Another account is read only in a tenant transaction, through a tenant table or by a
   confirmed email behind a write permission and a rate limit of the tenant.
+  `retired_tenant_slugs` is global too, and out of every runtime role's reach: triggers of
+  `tenants` write and read it.
 
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
@@ -94,12 +96,12 @@ columns into `globalReads` of [verify.ts](../packages/db/src/verify.ts).
 
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
-account or another row. `tenants` rows are inserted, deleted and given a new slug only by the
-admin's scripts; `opos_app` updates `name`, `default_locale` and `timezone` alone. Nothing is written
-into `auth`; OPOS's triggers on `auth.users` and `auth.mfa_factors` are listed in verify.ts. A
-`security definer` function pins `search_path = ''` and no runtime role may execute it; constraints
-have explicit names, since errors map to codes by them. `pnpm db:verify` checks the policies, grants,
-roles, functions and triggers, each check with a case in
+account or another row. `tenants` rows are inserted, deleted, suspended and given a new slug only
+by `opos_admin` and the admin's scripts; `opos_app` updates `name`, `default_locale` and `timezone`
+alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and `auth.mfa_factors` are
+listed in verify.ts. A `security definer` function pins `search_path = ''` and no runtime role may
+execute it; constraints have explicit names, since errors map to codes by them. `pnpm db:verify`
+checks the policies, grants, roles, functions and triggers, each check with a case in
 [verify.test.ts](../packages/db/test/verify.test.ts);
 [check-migrations.mjs](../scripts/check-migrations.mjs) refuses a change to a merged migration.
 
@@ -119,9 +121,12 @@ roles, functions and triggers, each check with a case in
 | 10 | Two scans of one ticket never act on the same state | a conditional update or a row lock, never a read first |
 | 11 | A scanner works only inside its tenant and edition | its tenant's context; every query filters on its edition |
 | 12 | `accounts.mfaEnabledAt` is set exactly while a verified factor exists | the trigger on `auth.mfa_factors`, locking the account row |
+| 13 | A tenant is deleted only while suspended | the statement that deletes it judges the suspension itself |
+| 14 | The slug of a deleted tenant is never a tenant's again | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index |
 
 Invariants 7 and 9–11 belong to [modules not built yet](#modules-waiting-for-their-domain-owner);
-[invariants.test.ts](../packages/db/test/invariants.test.ts) and
+[invariants.test.ts](../packages/db/test/invariants.test.ts),
+[tenants.test.ts](../packages/db/test/tenants.test.ts) and
 [accounts.test.ts](../packages/db/test/accounts.test.ts) cover the database-side ones.
 
 ## Permissions

@@ -18,6 +18,7 @@ export const globalReads = [
   'tenants.name',
   'tenants.default_locale',
   'tenants.timezone',
+  'tenants.suspended_at',
   'tenant_memberships.id',
   'tenant_memberships.tenant_id',
   'tenant_memberships.account_id',
@@ -51,12 +52,35 @@ export const globalReads = [
  * The columns it reads, the tables it inserts into and deletes from, and the columns it updates;
  * an admin route that needs more adds it here in the PR of its migration.
  */
-export const adminReads: string[] = []
-const adminWrites: string[] = []
-const adminUpdates: string[] = []
+export const adminReads = [
+  'tenants.id',
+  'tenants.slug',
+  'tenants.name',
+  'tenants.default_locale',
+  'tenants.timezone',
+  'tenants.suspended_at',
+  'tenants.created_at',
+  'tenant_memberships.id',
+  'tenant_memberships.tenant_id',
+  'tenant_memberships.account_id',
+  'tenant_memberships.role',
+  'accounts.id',
+  'accounts.email',
+  'accounts.first_name',
+  'accounts.last_name',
+  'accounts.email_confirmed_at',
+]
+export const adminWrites = ['tenants INSERT', 'tenants DELETE', 'tenant_memberships INSERT']
+export const adminUpdates = ['tenants.slug', 'tenants.suspended_at']
+
+/**
+ * The tables of the admin application. opos_app and opos_app_global hold nothing on them, a read
+ * included; opos_admin holds what its lists name.
+ */
+const adminTables = ['retired_tenant_slugs']
 
 /** The public tables outside tenant isolation. */
-const globalTables = ['accounts', 'account_recovery_codes']
+const globalTables = ['accounts', 'account_recovery_codes', ...adminTables]
 
 /**
  * The triggers OPOS attaches to the tables of the auth schema: table, then trigger,
@@ -261,10 +285,11 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
         or (r.role = 'opos_app' and p.privilege in ('UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'))
         or (r.role = 'opos_app' and p.privilege in ('INSERT', 'DELETE')
           and not (c.relname || ' ' || p.privilege) = any(${appWrites}))
+        or (r.role = 'opos_app' and c.relname = any(${adminTables}))
         or (r.role = 'opos_admin'
           and p.privilege in ('SELECT', 'UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'))
         or (r.role = 'opos_admin' and p.privilege in ('INSERT', 'DELETE')
-          and not (c.relname || ' ' || p.privilege) = any(${adminWrites}::text[]))
+          and not (c.relname || ' ' || p.privilege) = any(${adminWrites}))
         or r.role in ('anon', 'authenticated', 'service_role')
       )
     order by 1, 2, 3
@@ -297,13 +322,14 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
           and not (c.relname || ' INSERT') = any(${appWrites}))
         or (r.role = 'opos_app' and p.privilege = 'UPDATE'
           and not (c.relname || '.' || a.attname) = any(${appUpdates}))
+        or (r.role = 'opos_app' and c.relname = any(${adminTables}))
         or (r.role = 'opos_admin' and p.privilege = 'REFERENCES')
         or (r.role = 'opos_admin' and p.privilege = 'SELECT'
-          and not (c.relname || '.' || a.attname) = any(${adminReads}::text[]))
+          and not (c.relname || '.' || a.attname) = any(${adminReads}))
         or (r.role = 'opos_admin' and p.privilege = 'INSERT'
-          and not (c.relname || ' INSERT') = any(${adminWrites}::text[]))
+          and not (c.relname || ' INSERT') = any(${adminWrites}))
         or (r.role = 'opos_admin' and p.privilege = 'UPDATE'
-          and not (c.relname || '.' || a.attname) = any(${adminUpdates}::text[]))
+          and not (c.relname || '.' || a.attname) = any(${adminUpdates}))
         or r.role in ('anon', 'authenticated', 'service_role')
       )
     order by 1, 2, 4, 3

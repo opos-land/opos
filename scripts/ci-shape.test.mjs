@@ -41,6 +41,9 @@ function requiredChecks(rules) {
 
 test('the workflow reads the repository and nothing more', () => {
   assert.match(ci, /^permissions:\n {2}contents: read$/m)
+  // No job widens it: the remote cache comes from the secrets of an environment, not a sign-in
+  assert.doesNotMatch(ci, /^ {4}permissions:/m)
+  assert.doesNotMatch(ci, /id-token/)
 })
 
 test('every action is pinned by a full commit hash', () => {
@@ -226,6 +229,68 @@ test('a pull request runs the tests on what it affects, and a push uncached, in 
     assert.match(step, /TURBO_FORCE: \$\{\{ github\.event_name == 'push' \}\}/, tasks)
     assert.match(step, /TURBO_SCM_BASE: /, tasks)
   }
+})
+
+/** The text of one step of a job, from the line that starts it to the next step. */
+const step = (name, first) => {
+  const steps = job(name)
+  const start = steps.indexOf(first)
+  assert.notEqual(start, -1, first)
+  const end = steps.indexOf('\n      - ', start + 1)
+  return end === -1 ? steps.slice(start) : steps.slice(start, end)
+}
+
+test('check enters the environment that writes to the remote cache only on a push, and records no deployment', () => {
+  assert.match(
+    job('check'),
+    /^ {4}environment:\n {6}name: \$\{\{ github\.event_name == 'push' && 'cache-write' \|\| 'cache-read' \}\}\n {6}deployment: false\n {4}steps:$/m,
+  )
+  for (const name of ['e2e', 'secrets']) assert.doesNotMatch(job(name), /^ {4}environment:/m, name)
+})
+
+test('OpenTofu writes both environments of check, and only develop and main enter the one that writes', () => {
+  const unit = read('../infra/live/dev/terragrunt.stack.hcl')
+  assert.match(unit, /^ {6}"cache-write" += \{$/m)
+  assert.match(unit, /^ {6}"cache-read" += \{$/m)
+  const env = read('../infra/live/dev/env.yaml')
+  const branches = /^ {2}write_branches:\n((?: {4}- \S+\n)+)/m.exec(env)
+  assert.ok(branches, 'cache.write_branches in env.yaml')
+  assert.deepEqual([...branches[1].matchAll(/- (\S+)/g)].map((match) => match[1]).sort(), [
+    'develop',
+    'main',
+  ])
+})
+
+test('every step that runs turbo tasks gets the remote cache of its environment, and never an empty cache mode', () => {
+  for (const first of [
+    '- run: pnpm turbo run typecheck lint $TURBO_ARGS',
+    '- run: pnpm turbo run test $TURBO_ARGS',
+    '- run: pnpm build',
+  ]) {
+    const text = step('check', first)
+    assert.match(text, /TURBO_API: \$\{\{ vars\.TURBO_API \}\}$/m, first)
+    assert.match(text, /TURBO_TEAM: opos$/m, first)
+    assert.match(text, /TURBO_TOKEN: \$\{\{ secrets\.TURBO_TOKEN \}\}$/m, first)
+    assert.match(
+      text,
+      /TURBO_REMOTE_CACHE_SIGNATURE_KEY: \$\{\{ secrets\.TURBO_REMOTE_CACHE_SIGNATURE_KEY \}\}$/m,
+      first,
+    )
+    // turbo reads an empty mode as "no cache at all"
+    assert.match(
+      text,
+      /TURBO_CACHE: \$\{\{ github\.event_name == 'push' && 'local:rw,remote:rw' \|\| 'local:rw,remote:r' \}\}/,
+      first,
+    )
+  }
+})
+
+test('no run step holds a secret', () => {
+  for (const block of runBlocks(ci)) assert.doesNotMatch(block, /secrets\./)
+})
+
+test('turbo signs what it stores in the remote cache and verifies what it takes from it', () => {
+  assert.equal(JSON.parse(read('../turbo.json')).remoteCache.signature, true)
 })
 
 test('the tests get a step of their own, on a runner that also hosts the stack', () => {

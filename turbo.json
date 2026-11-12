@@ -7,6 +7,9 @@
     "scripts/infra-init.mjs",
     "mise.toml"
   ],
+  "remoteCache": {
+    "signature": true
+  },
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]

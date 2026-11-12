@@ -420,7 +420,15 @@ whole history, `pnpm audit` on high advisories).
   [0017](adr/0017-integrate-on-develop-and-release-through-main.md)).
 - A workflow reads the repository only, pins every action by a full commit hash, and passes
   `${{ github.* }}` to a `run` step only through `env`
-  ([ci-shape.test.mjs](../scripts/ci-shape.test.mjs)).
+  ([ci-shape.test.mjs](../scripts/ci-shape.test.mjs)). No workflow signs in to a cloud: the
+  secrets it reads are those OpenTofu writes into GitHub
+  ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
+- turbo's remote cache is written only by a run on a push to `develop` or `main`; any other run of
+  the repository reads it, and a run without its secrets, such as a fork's, works without it.
+  GitHub admits only those two branches to the environment that holds the writing token, the
+  artifacts are signed with a key the cache server never holds, and no failure of the cache fails
+  a job
+  ([0037](adr/0037-share-a-turborepo-remote-cache-that-only-develop-and-main-write.md)).
 
 ## Modules waiting for their domain owner
 

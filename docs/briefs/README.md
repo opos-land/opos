@@ -20,3 +20,8 @@ through the browser, research or notes that state business needs before they bec
 - Briefs are not checked for links or shape.
 - A brief nobody works from any more is deleted; git keeps it.
 
+## Index
+
+| Brief | Holds |
+|---|---|
+| [0001](0001-convention-shop.md) | the convention shop, from an outside review of a running system reworked against the product's decisions: the working copy toward the specs of the tickets module |

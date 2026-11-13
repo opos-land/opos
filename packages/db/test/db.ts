@@ -85,10 +85,13 @@ export async function createAdminCandidate() {
 export const setPassword = (userId: string) =>
   authAdmin`update auth.users set encrypted_password = '$2a$10$stored-hash' where id = ${userId}`
 
+/** What every factor `addFactor` writes holds, in base32, for a test that computes its code. */
+export const FACTOR_BASE32 = 'JBSWY3DPEHPK3PXP'
+
 export async function addFactor(userId: string, status: 'unverified' | 'verified' = 'verified') {
   const [factor] = await authAdmin<{ id: string }[]>`
     insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
-    values (gen_random_uuid(), ${userId}, gen_random_uuid()::text, 'totp', ${status}, now(), now(), 'JBSWY3DPEHPK3PXP')
+    values (gen_random_uuid(), ${userId}, gen_random_uuid()::text, 'totp', ${status}, now(), now(), ${FACTOR_BASE32})
     returning id
   `
   return factor!.id

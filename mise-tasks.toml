@@ -100,6 +100,11 @@ description = "Take the admin role away from an account: --email <email>"
 run = "pnpm db:admin:revoke"
 raw = true
 
+["db:totp"]
+description = "Print the current two-factor code of an account, where OPOS_ENV is local alone: --email <email>"
+run = "pnpm db:totp"
+raw = true
+
 [format]
 description = "Format every file with Prettier"
 run = "pnpm format"

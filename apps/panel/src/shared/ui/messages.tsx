@@ -74,14 +74,16 @@ export function NoPermissionView() {
  * nothing of it opens until it is restored.
  */
 export function SuspendedView() {
-  const { t, i18n } = useLingui()
+  const { t } = useLingui()
   useScreenTitle(t`This convention is suspended`)
   return (
     <section className="flex max-w-xl flex-col gap-2 p-8">
       <h1 className="text-xl font-semibold">
         <Trans>This convention is suspended</Trans>
       </h1>
-      <p className="text-muted-foreground text-sm">{i18n._(errorMessage('tenant.suspended'))}</p>
+      <p className="text-muted-foreground text-sm">
+        <Trans>Contact the OPOS administrators to learn more.</Trans>
+      </p>
     </section>
   )
 }

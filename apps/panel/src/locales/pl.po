@@ -18,7 +18,7 @@ msgstr "{limit, plural, one {Punkt programu może mieć do # prelegenta.} few {P
 #. A convention in a list of conventions, with the note that the admin suspended it
 #: src/features/tenants/components/area-switcher.tsx
 msgid "{name} (suspended)"
-msgstr "{name} (zawieszony)"
+msgstr "{name} (konwent zawieszony)"
 
 #: src/features/team/components/remove-member.tsx
 msgid "{name} loses access to the convention at once. Coming back takes a new invitation."
@@ -198,6 +198,10 @@ msgstr "Potwierdź swój adres"
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Confirmation link"
 msgstr "Link potwierdzający"
+
+#: src/shared/ui/messages.tsx
+msgid "Contact the OPOS administrators to learn more."
+msgstr "Skontaktuj się z administratorami OPOS, aby dowiedzieć się więcej."
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/login-page.tsx

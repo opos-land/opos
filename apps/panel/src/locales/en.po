@@ -199,6 +199,10 @@ msgstr "Confirm your address"
 msgid "Confirmation link"
 msgstr "Confirmation link"
 
+#: src/shared/ui/messages.tsx
+msgid "Contact the OPOS administrators to learn more."
+msgstr "Contact the OPOS administrators to learn more."
+
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/login-page.tsx
 #: src/features/auth/pages/mfa-page.tsx

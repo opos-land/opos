@@ -95,7 +95,8 @@ describe('TenantLayout', () => {
     expect(
       await screen.findByRole('heading', { name: 'This convention is suspended' }),
     ).toBeDefined()
-    expect(screen.getByText(/Contact the OPOS administrators/)).toBeDefined()
+    // The heading says that it is suspended; the text below it does not say so again.
+    expect(screen.getByText('Contact the OPOS administrators to learn more.')).toBeDefined()
     expect(screen.queryByText('the settings of the convention')).toBeNull()
     expect(load).not.toHaveBeenCalled()
     expect(document.title).toBe('This convention is suspended · OPOS panel')

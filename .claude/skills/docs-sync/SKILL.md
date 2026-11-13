@@ -10,19 +10,19 @@ skill is the procedure that applies them.
 
 ## 1. Decide what changes
 
-| The change | Changes |
-|---|---|
-| alters product intent or a business rule | [PRODUCT.md](../../../docs/PRODUCT.md) |
-| alters a rule of the code no single file shows — a boundary, tenant isolation, an invariant, a permission rule, a convention | [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md) |
-| makes a decision that is hard to reverse or that the code does not explain | a new record in `docs/adr` ([when](../../../docs/adr/README.md#when-to-write-one)) |
-| reverses or changes the decision of an accepted record | a new record; the old one's status becomes `Superseded by` it |
-| starts a new module, table, group of routes or flow across screens | a new spec in `docs/specs`, accepted before the code |
-| completes the feature of a spec | the spec's lasting rules into the documents, its decisions into records, its status `Implemented` |
-| keeps every stated rule | nothing |
+| The change                                                                                                                   | Changes                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| alters product intent or a business rule                                                                                     | [PRODUCT.md](../../../docs/PRODUCT.md)                                                            |
+| alters a rule of the code no single file shows — a boundary, tenant isolation, an invariant, a permission rule, a convention | [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md)                                                  |
+| makes a decision that is hard to reverse or that the code does not explain                                                   | a new record in `docs/adr` ([when](../../../docs/adr/README.md#when-to-write-one))                |
+| reverses or changes the decision of an accepted record                                                                       | a new record; the old one's status becomes `Superseded by` it                                     |
+| starts a new module, table, group of routes or flow across screens                                                           | a new spec in `docs/specs`, accepted before the code                                              |
+| completes the feature of a spec                                                                                              | the spec's lasting rules into the documents, its decisions into records, its status `Implemented` |
+| keeps every stated rule                                                                                                      | nothing                                                                                           |
 
 A record marked `reconstructed, to confirm` whose real reasons the user gives is corrected, and the
 line dropped. An accepted record and an implemented spec are otherwise never edited, but to fix a
-broken link.
+broken link or space a table.
 
 ## 2. Write the rule, not the detail
 

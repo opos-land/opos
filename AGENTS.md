@@ -17,14 +17,14 @@ core of `apps/panel`, the account screens of `apps/portal`, `apps/admin`, and th
 they need exist; deployment and the modules waiting for their domain owner are still to be built.
 Everything in this repository is written in English.
 
-| File | Holds |
-|---|---|
-| [docs/PRODUCT.md](docs/PRODUCT.md) | what we build and for whom: glossary, tenant and edition, roles and permissions, addresses, modules, design, languages, personal data, MVP scope |
+| File                                         | Holds                                                                                                                                                                                                                               |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [docs/PRODUCT.md](docs/PRODUCT.md)           | what we build and for whom: glossary, tenant and edition, roles and permissions, addresses, modules, design, languages, personal data, MVP scope                                                                                    |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the rules of the code that no single file shows: boundaries, tenant isolation, invariants, permissions, sessions, conventions, environments, the rules the modules waiting for their owner keep, the checklist for adding a feature |
-| [docs/adr](docs/adr/README.md) | decision records: one decision each, with its context, the alternatives turned down and its consequences |
-| [docs/specs](docs/specs/README.md) | feature specs: a feature's business rules, shape and tests, accepted before its code, frozen once it is built |
-| [docs/briefs](docs/briefs/README.md) | working material that binds nothing: briefs, reviews, research before a spec; everything above holds over it ([0028](docs/adr/0028-keep-non-binding-briefs-in-docs-briefs.md)) |
-| [CONTRIBUTORS.md](CONTRIBUTORS.md) | who holds each role the documents name, such as each module's domain owner; the one file naming people ([0027](docs/adr/0027-name-the-holders-of-roles-in-contributors-md.md)) |
+| [docs/adr](docs/adr/README.md)               | decision records: one decision each, with its context, the alternatives turned down and its consequences                                                                                                                            |
+| [docs/specs](docs/specs/README.md)           | feature specs: a feature's business rules, shape and tests, accepted before its code, frozen once it is built                                                                                                                       |
+| [docs/briefs](docs/briefs/README.md)         | working material that binds nothing: briefs, reviews, research before a spec; everything above holds over it ([0028](docs/adr/0028-keep-non-binding-briefs-in-docs-briefs.md))                                                      |
+| [CONTRIBUTORS.md](CONTRIBUTORS.md)           | who holds each role the documents name, such as each module's domain owner; the one file naming people ([0027](docs/adr/0027-name-the-holders-of-roles-in-contributors-md.md))                                                      |
 
 ## Documents hold rules, the code holds the rest
 
@@ -77,7 +77,12 @@ say so and ask for the owner's rules first; they land in the module's spec befor
   translation catalog and the renderings a brief quotes. No emoji.
 - The documents and the specs state the target state only: no change history, no alternatives, no
   "why" chapters; those belong in a decision record. A short operational instruction is fine.
-- Tables where the content has structure; anchors updated together with headings.
+- Tables where the content has structure, spaced into aligned columns: every cell padded to its
+  column's width, the dashes of the delimiter row filling it, the text of a cell unchanged.
+  `pnpm format` spaces them, and [scripts/markdown-tables.mjs](scripts/markdown-tables.mjs) refuses
+  an unspaced one in lefthook `pre-commit` and in CI
+  ([0032](docs/adr/0032-space-markdown-tables-into-aligned-columns.md)).
+- Anchors updated together with headings.
 - Terminology strictly from the glossary: tenant, edition, programme item, speaker, like, review,
   ticket type, order, ticket, scanner, attendee, admin, org, head, user, core, module, booth.
 
@@ -87,18 +92,18 @@ Conventional Commits, in English, atomic, enforced by commitlint in the `commit-
 `<type>(<scope>): <subject>`, the subject imperative and lowercase with no trailing period, the
 header up to 72 characters; an optional body says why.
 
-| Type | When |
-|---|---|
-| `feat` | new feature or new endpoint |
-| `fix` | bug fix |
+| Type       | When                                       |
+| ---------- | ------------------------------------------ |
+| `feat`     | new feature or new endpoint                |
+| `fix`      | bug fix                                    |
 | `refactor` | structural change without behaviour change |
-| `perf` | optimisation |
-| `test` | integration tests, e2e, fixtures |
-| `docs` | project documents, README |
-| `chore` | dependencies, configuration, tooling |
-| `build` | Dockerfile, compose, bundlers |
-| `ci` | GitHub Actions workflows |
-| `revert` | reverting a commit |
+| `perf`     | optimisation                               |
+| `test`     | integration tests, e2e, fixtures           |
+| `docs`     | project documents, README                  |
+| `chore`    | dependencies, configuration, tooling       |
+| `build`    | Dockerfile, compose, bundlers              |
+| `ci`       | GitHub Actions workflows                   |
+| `revert`   | reverting a commit                         |
 
 Scopes: `api`, `panel`, `portal`, `admin`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (Traefik,
 compose, `infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs` and this
@@ -151,14 +156,14 @@ Every change of code starts with its test: write or change the test, watch it fa
 the change addresses, then change the code. A rule that already holds gets a test that passes at
 once — break the code on purpose once to see the test catch it.
 
-| Area | Code | Its tests |
-|---|---|---|
-| `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client,roles,migration-url}.ts`, `packages/db/src/scripts/roles.ts` | `packages/db/test/*.test.ts` |
-| `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
-| `api`, `panel`, `portal`, `admin` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
-| `db`, `contract`, `i18n`, `eslint-config` | the rest of `packages/<name>/` | a `*.test.*` anywhere in the same package |
-| `scripts`, `claude` | `scripts/`, `.claude/` | a `*.test.*` in the same directory tree, run by `pnpm test:scripts` |
-| `unlisted` | code anywhere else | none: a new directory of code gets its area here and in the script first |
+| Area                                      | Code                                                                                                                                                                                                              | Its tests                                                                |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `rls`                                     | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client,roles,migration-url}.ts`, `packages/db/src/scripts/roles.ts`                                                  | `packages/db/test/*.test.ts`                                             |
+| `rbac`                                    | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts`                   |
+| `api`, `panel`, `portal`, `admin`         | the rest of `apps/<name>/`                                                                                                                                                                                        | a `*.test.*` anywhere in the same application                            |
+| `db`, `contract`, `i18n`, `eslint-config` | the rest of `packages/<name>/`                                                                                                                                                                                    | a `*.test.*` anywhere in the same package                                |
+| `scripts`, `claude`                       | `scripts/`, `.claude/`                                                                                                                                                                                            | a `*.test.*` in the same directory tree, run by `pnpm test:scripts`      |
+| `unlisted`                                | code anywhere else                                                                                                                                                                                                | none: a new directory of code gets its area here and in the script first |
 
 Code is a script or SQL file. Tests and what serves them (`test/` helpers, `fixtures/`, the `e2e`
 package), type declarations, tool configuration files, `locales/` catalogs and built output are not.

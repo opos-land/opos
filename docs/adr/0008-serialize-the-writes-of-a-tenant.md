@@ -16,11 +16,11 @@ still passed the check on the locked row.
 
 A route at `write` goes through three steps:
 
-| Step | What happens |
-|---|---|
-| check | a short transaction reads the membership and checks it; a refused write ends here and never waits |
+| Step  | What happens                                                                                                                                          |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| check | a short transaction reads the membership and checks it; a refused write ends here and never waits                                                     |
 | queue | the write waits in its tenant's queue inside the API process, in arrival order and without a database connection; `503` `request.busy` past the bound |
-| lock | its transaction takes the tenant's advisory write lock, reads the membership again and checks it, then runs the handler; `503` past the lock timeout |
+| lock  | its transaction takes the tenant's advisory write lock, reads the membership again and checks it, then runs the handler; `503` past the lock timeout  |
 
 - Every route that lowers a member's access is a write route, so it waits for and stops the writes
   behind it; reads neither queue nor lock.

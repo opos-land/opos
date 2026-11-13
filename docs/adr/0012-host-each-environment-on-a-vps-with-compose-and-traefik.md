@@ -15,14 +15,14 @@ records or data.
 
 ## Decision
 
-| Part | Decision |
-|---|---|
-| hosting | a VPS per environment, Docker Compose behind Traefik v3 with wildcard TLS through DNS-01; the apex serves the portal, `panel.` the panel, `api.` the API, nothing else; Dev behind basic auth but for the API |
-| Dev domain | a registrable domain of its own, never under `opos.land`, with its own DNS zone and token |
-| images | built on their VPS from a `turbo prune`, with exact tags; only the tools and backup containers hold the `postgres` URL; the frontends served with a strict CSP and HSTS |
-| Supabase project | no automatic RLS, an ES256 key with the legacy keys revoked, IP address forwarding, a `[remotes.<environment>]` block pushed only by the deploy workflow |
-| deploy workflow | after `check`, `e2e` and `secrets`, production behind a reviewer: build, a dump first in production, `db:roles`, `db:migrate`, `db:verify`, the Supabase configuration, start |
-| smoke test | by hand after a deployment that changes sign-in: what e2e cannot reach, such as real TLS, Google, mail, a phone and the hosted project |
+| Part             | Decision                                                                                                                                                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| hosting          | a VPS per environment, Docker Compose behind Traefik v3 with wildcard TLS through DNS-01; the apex serves the portal, `panel.` the panel, `api.` the API, nothing else; Dev behind basic auth but for the API |
+| Dev domain       | a registrable domain of its own, never under `opos.land`, with its own DNS zone and token                                                                                                                     |
+| images           | built on their VPS from a `turbo prune`, with exact tags; only the tools and backup containers hold the `postgres` URL; the frontends served with a strict CSP and HSTS                                       |
+| Supabase project | no automatic RLS, an ES256 key with the legacy keys revoked, IP address forwarding, a `[remotes.<environment>]` block pushed only by the deploy workflow                                                      |
+| deploy workflow  | after `check`, `e2e` and `secrets`, production behind a reviewer: build, a dump first in production, `db:roles`, `db:migrate`, `db:verify`, the Supabase configuration, start                                 |
+| smoke test       | by hand after a deployment that changes sign-in: what e2e cannot reach, such as real TLS, Google, mail, a phone and the hosted project                                                                        |
 
 ## Alternatives
 

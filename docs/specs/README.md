@@ -13,11 +13,11 @@ with the owner's rules ([PRODUCT.md 7](../PRODUCT.md#7-modules)).
 
 ## Lifecycle
 
-| Status | Meaning |
-|---|---|
-| `Draft` | in an open PR; open questions allowed |
-| `Accepted` | merged before the code, in a PR of its own or as the first commit of the feature's PR, once the domain owner and the team have accepted it; corrected while the feature is built when the work proves it wrong |
-| `Implemented` | the feature is merged; the spec is frozen |
+| Status        | Meaning                                                                                                                                                                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Draft`       | in an open PR; open questions allowed                                                                                                                                                                          |
+| `Accepted`    | merged before the code, in a PR of its own or as the first commit of the feature's PR, once the domain owner and the team have accepted it; corrected while the feature is built when the work proves it wrong |
+| `Implemented` | the feature is merged; the spec is frozen                                                                                                                                                                      |
 
 The PR that completes the feature:
 
@@ -27,9 +27,10 @@ The PR that completes the feature:
    a record, and links it from the spec;
 3. sets the status to `Implemented`.
 
-An implemented spec is not edited again, but to fix a broken link. It holds what was decided at its
-date: where it disagrees with the code or the documents, they hold, and the disagreement needs no
-report. A later change of the feature gets a new spec when it meets the bar above.
+An implemented spec is not edited again, but to fix a broken link or space a table. It holds what
+was decided at its date: where it disagrees with the code or the documents, they hold, and the
+disagreement needs no report. A later change of the feature gets a new spec when it meets the bar
+above.
 
 ## Rules
 

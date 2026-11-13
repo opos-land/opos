@@ -47,7 +47,7 @@ suspension and their deletion.
 
 | # | Rule |
 |---|---|
-| C1 | The admin resets the two-factor authentication of the account with a given confirmed email address: its factors and unused recovery codes go, and the account gets the email that says so. |
+| C1 | The admin resets the two-factor authentication of the account with a given confirmed email address: its factors and unused recovery codes go, and the account gets the email that says so. The reset ends none of the account's sessions. |
 | C2 | An unknown or unconfirmed address, and an account without two-factor authentication, are refused and change nothing. |
 | C3 | The two-factor authentication of an admin is never reset in the admin application. An admin who lost both device and codes has the role taken away by the script, is reset as any account is, and is granted the role anew. |
 

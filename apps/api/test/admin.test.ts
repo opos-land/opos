@@ -1,11 +1,15 @@
 import { randomUUID } from 'node:crypto'
+import { GUARDS_METADATA, PATH_METADATA } from '@nestjs/common/constants'
+import { MetadataScanner, ModulesContainer } from '@nestjs/core'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { type AdminAction, type AdminTenant, type AdminTenantDetails } from '@opos/contract'
 import { adminContract } from '@opos/contract'
 import { type AnyContractProcedure } from '@orpc/contract'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { JwtAuthGuard } from '../src/common/guards/jwt-auth.guard'
 import { ROUTE_RATE_LIMITS } from '../src/common/rate-limit/route-rate-limit'
+import { ADMIN_REQUIREMENT, AdminGuard } from '../src/modules/admin/require-admin.decorator'
 import { createApp } from './app'
 import {
   bindApi,
@@ -213,6 +217,42 @@ describe('every admin route', () => {
   })
 })
 
+// The origin check lets every path under /admin/ through to its route, so a route there that is
+// no admin route would be open to any session of the admin application.
+describe('the routes the API registers under /admin/', () => {
+  it('are admin routes, each behind JwtAuthGuard and AdminGuard, and no admin route is elsewhere', () => {
+    const scanner = new MetadataScanner()
+    const controllers = [...app.get(ModulesContainer).values()].flatMap((module) => [
+      ...module.controllers.values(),
+    ])
+    const routes = controllers
+      .flatMap(({ instance }) => {
+        const prototype = Object.getPrototypeOf(instance) as Record<string, object>
+        return scanner.getAllMethodNames(prototype).map((name) => {
+          const handler = prototype[name]!
+          const path = Reflect.getMetadata(PATH_METADATA, handler) as string | string[] | undefined
+          return {
+            name,
+            paths: [path ?? []].flat().map((entry) => `/${entry}`.replace(/^\/+/, '/')),
+            admin: Reflect.getMetadata(ADMIN_REQUIREMENT, handler) !== undefined,
+            guards: (Reflect.getMetadata(GUARDS_METADATA, handler) ?? []) as unknown[],
+          }
+        })
+      })
+      .filter((route) => route.paths.length > 0)
+
+    const underAdmin = routes.filter((route) =>
+      route.paths.some((path) => path === '/admin' || path.startsWith('/admin/')),
+    )
+    expect(underAdmin.map((route) => route.name).sort()).toEqual(Object.keys(adminContract).sort())
+    for (const route of routes) {
+      const isUnder = underAdmin.includes(route)
+      expect(route.admin, route.name).toBe(isUnder)
+      if (isUnder) expect(route.guards, route.name).toEqual([JwtAuthGuard, AdminGuard])
+    }
+  })
+})
+
 describe('an API without the admin application', () => {
   it('serves no admin route and knows no admin origin', async () => {
     const plain = await createApp({ ADMIN_URL: '', DATABASE_ADMIN_URL: '' })
@@ -338,13 +378,16 @@ describe('POST /admin/tenants', () => {
       'account.unconfirmed',
     ],
   ])('creates nothing for %s', async (_, email, status, code) => {
-    const sent = body({ headEmail: await email() })
+    const headEmail = await email()
+    const sent = body({ headEmail })
     const before = await countLoggedActions()
 
     const res = await create(sent)
 
     expect(res.status).toBe(status)
     expect(res.body).toMatchObject({ code })
+    // The answer names no address, the admin's own input included.
+    expect(JSON.stringify(res.body)).not.toContain(headEmail)
     expect((await api().get(`/public/tenants/${sent.slug}`)).status).toBe(404)
     expect(await countLoggedActions()).toBe(before)
   })

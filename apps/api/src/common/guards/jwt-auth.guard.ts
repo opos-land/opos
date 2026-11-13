@@ -48,7 +48,12 @@ export class JwtAuthGuard implements CanActivate {
     if (account.mfaEnabled && check.payload.aal !== 'aal2' && !this.mfaPendingAllowed(ctx)) {
       throw mfaRequired()
     }
-    this.context.setAccount(account, lastSignInAt(check.payload), signInMethodsOf(check.payload))
+    this.context.setAccount(
+      account,
+      lastSignInAt(check.payload),
+      signInMethodsOf(check.payload),
+      check.payload.aal === 'aal2',
+    )
     return true
   }
 

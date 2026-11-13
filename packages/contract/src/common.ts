@@ -80,6 +80,8 @@ export const tenantRoute = oc.$meta<ContractMeta>({ tenant: true }).$route({
  * A route of the admin application: its session cookie, an account holding the admin role with
  * the second factor of its grant, and a recent sign-in. Its path starts with `/admin/`.
  */
-export const adminRoute = oc
-  .$meta<ContractMeta>({ admin: true })
-  .$route({ inputStructure: 'detailed', spec: withErrors })
+export const adminRoute = oc.$meta<ContractMeta>({ admin: true }).$route({
+  inputStructure: 'detailed',
+  // The admin application's own cookie, not the portal's or the panel's the document defaults to.
+  spec: (operation) => withErrors({ ...operation, security: [{ adminSession: [] }] }),
+})

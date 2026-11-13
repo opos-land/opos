@@ -79,7 +79,9 @@ and after every restore.
 - **Global tables.** `accounts` and `account_recovery_codes` have no RLS: column privileges limit
   them, and the API reaches there only the account a verified token, a fresh session or a signed
   hook names. Another account is read only in a tenant transaction, through a tenant table or by a
-  confirmed email behind a write permission and a rate limit of the tenant.
+  confirmed email behind a write permission and a rate limit of the tenant; or behind
+  `@RequireAdmin`, as a tenant's head, as an account an entry of the log names, or by its email
+  address for a new tenant's first head and for a reset of two-factor authentication.
   The admin's tables are global too, and `opos_app` and `opos_app_global` hold nothing on them:
   `admins` is written by `postgres` alone, each grant bound to the one verified factor its account
   holds; `admin_actions` only grows, each entry dated by the database, a grant and a withdrawal
@@ -109,13 +111,13 @@ reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of ve
 
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
-account or another row. `tenants` rows are inserted, deleted, suspended and given a new slug only
-by `opos_admin`, behind the admin routes; `opos_app` updates `name`, `default_locale` and `timezone`
-alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and `auth.mfa_factors` are
-listed in verify.ts. A `security definer` function pins `search_path = ''` and no runtime role may
-execute it; constraints have explicit names, since errors map to codes by them. `pnpm db:verify`
-checks the policies, grants, roles, functions and triggers, each check with a case in
-[verify.test.ts](../packages/db/test/verify.test.ts);
+account or another row. `tenants` rows are inserted, deleted, suspended and given a new slug only by
+`opos_admin`, behind the admin routes, and by the seed; `opos_app` updates `name`, `default_locale`
+and `timezone` alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and
+`auth.mfa_factors` are listed in verify.ts. A `security definer` function pins `search_path = ''`
+and no runtime role may execute it; constraints have explicit names, since errors map to codes by
+them. `pnpm db:verify` checks the policies, grants, roles, functions and triggers, each check with a
+case in [verify.test.ts](../packages/db/test/verify.test.ts);
 [check-migrations.mjs](../scripts/check-migrations.mjs) refuses a change to a merged migration.
 
 ## Invariants
@@ -197,9 +199,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   password reset answer alike for any address.
 - `DELETE /me`, `PUT /auth/password`, `POST /auth/mfa/enroll` and `DELETE /auth/mfa` need a
   sign-in younger than 5 minutes (`session.reauthentication-required`); a recovery code needs none,
-  it is the proof. A new password and a removed factor end the account's other sessions. Every
-  admin route needs a sign-in younger than 30 minutes, and deleting a tenant and resetting an
-  account's two-factor authentication one younger than 5.
+  it is the proof. A new password and a factor the account removes itself end the account's other
+  sessions; a reset of two-factor authentication by an admin ends none, since Supabase Auth's
+  admin API ends a session only with that session's own token. Every admin route needs a sign-in
+  younger than 30 minutes, and deleting a tenant and resetting an account's two-factor
+  authentication one younger than 5.
 - **Two-factor authentication.** With a verified factor, a session below `aal2` reaches only the
   code routes, refresh and sign-out; every other route answers `401` `session.mfa-required` before
   any permission check, by invariant 12, so an older token loses access at once.

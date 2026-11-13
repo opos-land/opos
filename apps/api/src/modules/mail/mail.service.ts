@@ -6,7 +6,7 @@ import { ENV, type Env } from '../../config/env'
 import { renderLinkEmail, renderNoticeEmail } from './render'
 import { sendWithDeadline, smtpOptions } from './smtp'
 
-/** What sending takes of the environment: the scripts of `tools` have no more. */
+/** What sending takes of the environment. */
 export type MailEnv = Pick<
   Env,
   'OPOS_ENV' | 'SMTP_HOST' | 'SMTP_PORT' | 'SMTP_USER' | 'SMTP_PASS' | 'MAIL_FROM'

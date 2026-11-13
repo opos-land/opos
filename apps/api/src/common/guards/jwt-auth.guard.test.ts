@@ -79,7 +79,21 @@ describe('JwtAuthGuard', () => {
     expect(await subject.canActivate(signedIn())).toBe(true)
 
     expect(accounts.findForToken).toHaveBeenCalledWith(account.id)
-    expect(context.setAccount).toHaveBeenCalledWith(account, 1_900_000_000, ['password', 'google'])
+    expect(context.setAccount).toHaveBeenCalledWith(
+      account,
+      1_900_000_000,
+      ['password', 'google'],
+      false,
+    )
+  })
+
+  it('records that the session gave the code of a second factor', async () => {
+    const payload = { sub: account.id, aal: 'aal2' as const }
+    const { subject, context } = guard({ status: 'valid', payload })
+
+    expect(await subject.canActivate(signedIn())).toBe(true)
+
+    expect(context.setAccount).toHaveBeenCalledWith(account, undefined, [], true)
   })
 
   it('answers 401 session.invalid without a token, asking the verifier nothing', async () => {

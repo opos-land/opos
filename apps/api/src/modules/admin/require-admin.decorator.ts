@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { TenantContextService } from '../../common/als/tenant-context.service'
-import { ApiError, forbidden, originDenied } from '../../common/errors/api-error'
+import { ApiError, forbidden, mfaRequired, originDenied } from '../../common/errors/api-error'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 import { type ApplicationUrls, applicationFromOrigin } from '../../common/http/application'
 import { ENV } from '../../config/env'
@@ -27,11 +27,11 @@ interface AdminRequirement {
 /**
  * Lets an admin through, and nobody else
  * (docs/adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md). After
- * JwtAuthGuard, which reads the cookie pair of the request's `Origin` alone and holds an account
- * with two-factor authentication to `aal2`: the request comes from the admin application, so the
- * same account's session in the panel or the portal has no admin power; the account holds the
- * role, with two-factor authentication on and the factor of its grant; and it signed in within
- * the last 30 minutes, or 5 for an action that cannot be undone.
+ * JwtAuthGuard, which reads the cookie pair of the request's `Origin` alone: the request comes
+ * from the admin application, so the same account's session in the panel or the portal has no
+ * admin power; the account holds the role, with two-factor authentication on and the factor of
+ * its grant; its session gave the code; and it signed in within the last 30 minutes, or 5 for an
+ * action that cannot be undone.
  */
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -64,6 +64,10 @@ export class AdminGuard implements CanActivate {
         'The second factor of the account is not the one the admin role was granted with',
       )
     }
+
+    // JwtAuthGuard already holds an account with a second factor to `aal2`, on a read of its own;
+    // an admin route does not lean on that read.
+    if (!this.context.sessionAtAal2()) throw mfaRequired()
 
     // The handler alone: metadata on a controller would loosen every route of it.
     const requirement = this.reflector.get<AdminRequirement | undefined>(

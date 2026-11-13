@@ -39,6 +39,8 @@ export interface RequestStore {
   signedInAt?: number
   /** The sign-in methods the access token names. */
   signInMethods?: SignInMethod[]
+  /** Whether the access token is at `aal2`: its session gave the code of a second factor. */
+  aal2?: boolean
   tenant?: TenantInContext
   membership?: TenantMembership | null
   tx?: Transaction
@@ -85,11 +87,22 @@ export class TenantContextService {
     return store
   }
 
-  setAccount(account: Account, signedInAt?: number, signInMethods: SignInMethod[] = []) {
+  setAccount(
+    account: Account,
+    signedInAt?: number,
+    signInMethods: SignInMethod[] = [],
+    aal2 = false,
+  ) {
     const store = TenantContextService.store()
     store.account = account
     store.signedInAt = signedInAt
     store.signInMethods = signInMethods
+    store.aal2 = aal2
+  }
+
+  /** Whether the session of the verified account gave the code of a second factor. */
+  sessionAtAal2(): boolean {
+    return TenantContextService.store().aal2 === true
   }
 
   /** The sign-in methods of the verified account; only behind JwtAuthGuard. */

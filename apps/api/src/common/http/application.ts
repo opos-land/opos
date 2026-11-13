@@ -92,7 +92,6 @@ export const requireOriginForSession =
  * (docs/adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md).
  */
 const ADMIN_ORIGIN_ROUTES = new Set([
-  'GET /health',
   'POST /auth/sign-in',
   'POST /auth/refresh',
   'POST /auth/sign-out',

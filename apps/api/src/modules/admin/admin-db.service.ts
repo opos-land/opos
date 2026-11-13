@@ -45,7 +45,10 @@ const toTenant = ({ suspendedAt, createdAt, ...row }: TenantRow): AdminTenant =>
   createdAt: createdAt.toISOString(),
 })
 
-/** What a refusal of the tenant functions means to the admin application. */
+/**
+ * What a refusal of the tenant functions means to the admin application. The messages are fixed:
+ * those of the functions name the address or the slug they were given.
+ */
 function refusal(error: unknown): unknown {
   if (!(error instanceof TenantError)) return error
   switch (error.code) {
@@ -53,15 +56,19 @@ function refusal(error: unknown): unknown {
       return notFound('tenant')
     case 'account.not-found':
       return new ApiError(404, error.code, 'No account uses this email address')
-    case 'tenant.not-suspended':
-    case 'tenant.slug-taken':
-    case 'tenant.slug-reserved':
-    case 'tenant.slug-retired':
     case 'account.unconfirmed':
-      return new ApiError(409, error.code, error.message)
+      return new ApiError(409, error.code, 'The email address is not confirmed')
+    case 'tenant.not-suspended':
+      return new ApiError(409, error.code, 'Only a suspended tenant can be deleted')
+    case 'tenant.slug-taken':
+      return new ApiError(409, error.code, 'The slug is taken by another tenant')
+    case 'tenant.slug-reserved':
+      return new ApiError(409, error.code, 'The slug is reserved for the platform')
+    case 'tenant.slug-retired':
+      return new ApiError(409, error.code, 'The slug belonged to a deleted tenant')
     // The contract refuses these shapes before a handler runs.
     default:
-      return new ApiError(400, 'request.invalid', error.message)
+      return new ApiError(400, 'request.invalid', 'The tenant is not valid')
   }
 }
 

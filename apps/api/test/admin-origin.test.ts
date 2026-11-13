@@ -30,7 +30,6 @@ const routeOf = (procedure: AnyContractProcedure) => {
 
 /** What the admin application may call outside `/admin`. */
 const allowed = [
-  'GET /health',
   'POST /auth/sign-in',
   'POST /auth/refresh',
   'POST /auth/sign-out',

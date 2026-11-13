@@ -25,6 +25,13 @@ export async function createOpenApiDocument(): Promise<OpenAPIObject> {
           name: 'opos_panel_access',
           description: 'The panel session, set by POST /auth/sign-in with the Origin of the panel',
         },
+        adminSession: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'opos_admin_access',
+          description:
+            'The admin application session, set by POST /auth/sign-in with its Origin; the admin routes take no other',
+        },
       },
     },
     security: [{ portalSession: [] }, { panelSession: [] }],

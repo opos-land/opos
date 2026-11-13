@@ -146,12 +146,14 @@ describe('restrictAdminOrigin', () => {
     ['POST', '/auth/mfa/verify'],
     ['GET', '/me'],
     ['PATCH', '/me'],
-    ['GET', '/health'],
   ])('lets %s %s through from the admin application', (method, path) => {
     expect(run(method, path, admin).next).toHaveBeenCalled()
   })
 
   it.each([
+    ['GET', '/health'],
+    ['GET', '/docs'],
+    ['GET', '/docs/json'],
     ['POST', '/auth/sign-up'],
     ['POST', '/auth/resend'],
     ['POST', '/auth/verify'],

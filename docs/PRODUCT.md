@@ -260,6 +260,11 @@ sessions, removes the unused codes and sends an email, and the hash of a used co
 account is deleted. A person who has lost both device and codes asks the admin, who resets it; an
 admin who lost both has the role taken away first.
 
+**Every action of an admin is logged**: who, what, on which convention or account, and when. The
+log holds identifiers and a convention's address, never an email address; no admin can change or
+remove an entry, and an entry outlives the convention and the accounts it names
+([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)).
+
 Supabase hosts the database and sign-in in the EU on our behalf. Production data never leaves
 production: Dev holds demo data and the team's own accounts. Backups are encrypted; our own copies
 are kept up to three months. Emails reach the mail provider only over an encrypted connection.
@@ -267,7 +272,7 @@ There are no tracking or advertising cookies; the sign-in cookie is
 strictly necessary. **A tracker runs only with the visitor's consent**: analytics, advertising or any
 other tool the portal does not strictly need, allowed or refused per category in the consent banner
 and withdrawn as easily from the footer; with no tracker, no banner shows. The panel, which shows
-attendees' data, runs none
+attendees' data, and the admin application run none
 ([0026](adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)). **The privacy policy
 ships with the MVP**, after a legal review, in every
 interface language.

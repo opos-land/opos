@@ -1,6 +1,6 @@
 # Platform administration
 
-- Status: Accepted
+- Status: Implemented
 - Domain owner: admin
 - Decisions: [0029](../adr/0029-ship-four-web-applications.md),
   [0030](../adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md),
@@ -100,7 +100,7 @@ holds anything on `retired_tenant_slugs`.
 | `createTenant`, `renameTenant` | as today, also in the caller's transaction; `renameTenant` finds the tenant by its identifier |
 | `suspendTenant`, `restoreTenant` | set and clear `suspended_at`; say whether anything changed |
 | `deleteTenant` | deletes in one statement that matches only a suspended tenant, so a tenant restored meanwhile is refused |
-| `grantAdmin`, `revokeAdmin` | write `admins` and the log entry; behind the scripts `db:admin:grant` and `db:admin:revoke` alone. The grant refuses an account without a confirmed address, a password or two-factor authentication |
+| `grantAdmin`, `revokeAdmin` | write `admins` and the log entry; behind the scripts `db:admin:grant` and `db:admin:revoke` alone. The grant refuses an account without a confirmed address, a password or two-factor authentication, and one with more than one verified factor |
 | `recordAdminAction` | adds a log entry in the caller's transaction |
 
 The scripts `db:tenant:create`, `db:tenant:rename` and `db:account:reset-2fa` go with the routes

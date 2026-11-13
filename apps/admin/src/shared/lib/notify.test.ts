@@ -6,7 +6,7 @@ import { createElement, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { toast } from '../ui/toast'
-import { notifyFailure, notifySuccess } from './notify'
+import { notifyFailure, notifySignInAgain, notifySuccess } from './notify'
 import { useSession } from './session'
 
 vi.mock('../ui/toast', () => ({ toast: { add: vi.fn() } }))
@@ -108,6 +108,22 @@ describe('notifyFailure', () => {
         title: 'The service is temporarily unavailable. Try again in a moment.',
         timeout: 0,
         priority: 'high',
+      },
+    ])
+  })
+})
+
+describe('notifySignInAgain', () => {
+  it('says that the sign-in is too old and the action has to be repeated, and stays', () => {
+    notifySignInAgain()
+
+    expect(added()).toEqual([
+      {
+        type: 'warning',
+        title:
+          'Your sign-in is too old for this action. Sign in again with your password and the code, then repeat it.',
+        timeout: 0,
+        priority: 'low',
       },
     ])
   })

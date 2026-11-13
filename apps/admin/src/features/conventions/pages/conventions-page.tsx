@@ -1,10 +1,13 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { formatDateTime } from '@opos/i18n'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { PlusIcon } from 'lucide-react'
+import { Link } from 'react-router'
 import { activeLocale } from '../../../shared/lib/i18n'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Badge,
+  buttonVariants,
   PageHeader,
   Table,
   TableBody,
@@ -32,6 +35,12 @@ export function ConventionsPage() {
       <PageHeader
         title={<Trans>Conventions</Trans>}
         description={<Trans>Every convention on the platform, by name.</Trans>}
+        actions={
+          <Link to="/conventions/new" className={buttonVariants()}>
+            <PlusIcon data-icon="inline-start" />
+            <Trans>New convention</Trans>
+          </Link>
+        }
       />
       {conventions.length === 0 ? (
         <p className="text-muted-foreground text-sm">
@@ -58,7 +67,11 @@ export function ConventionsPage() {
           <TableBody>
             {conventions.map((convention) => (
               <TableRow key={convention.id}>
-                <TableCell className="font-medium">{convention.name}</TableCell>
+                <TableCell className="font-medium">
+                  <Link to={`/conventions/${convention.id}`} className="underline">
+                    {convention.name}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   <code>{convention.slug}</code>
                 </TableCell>

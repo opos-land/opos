@@ -72,6 +72,17 @@ describe('ConventionsPage', () => {
     expect(within(row!).queryByText('2026-03-01T10:00:00.000Z')).toBeNull()
   })
 
+  it('leads to each convention and to a new one', () => {
+    renderPage([convention({})])
+
+    expect(screen.getByRole('link', { name: 'Convention A' }).getAttribute('href')).toBe(
+      '/conventions/00000000-0000-4000-8000-00000000000a',
+    )
+    expect(screen.getByRole('link', { name: 'New convention' }).getAttribute('href')).toBe(
+      '/conventions/new',
+    )
+  })
+
   it('says that there is none yet instead of an empty table', () => {
     renderPage([])
 

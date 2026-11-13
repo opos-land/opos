@@ -54,3 +54,14 @@ export function notifyFailure(error: unknown, meta?: WriteMeta) {
     priority: refusal ? 'low' : 'high',
   })
 }
+
+const SIGN_IN_AGAIN = msg`Your sign-in is too old for this action. Sign in again with your password and the code, then repeat it.`
+
+/**
+ * A write the API refused for the age of the admin's sign-in: the application leads back to
+ * sign-in, and this says why and what to do next. The catalog's own message for the refusal
+ * offers Google, which the admin application does not have.
+ */
+export function notifySignInAgain() {
+  toast.add({ type: 'warning', title: shown(SIGN_IN_AGAIN), timeout: 0, priority: 'low' })
+}

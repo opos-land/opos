@@ -22,7 +22,7 @@ graph LR
 | `apps/api` | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key |
 | `apps/panel` | the organizers' SPA, desktop-first; later also the scanner under `/scanner` |
 | `apps/portal` | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule |
-| `apps/admin` | the admins' SPA: sign-in by password and code, the conventions ([0029](adr/0029-ship-four-web-applications.md)) |
+| `apps/admin` | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md)) |
 | `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape |
 | `packages/db` | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away |
 | `packages/i18n` | locales, detection, formatters and the shared catalog |
@@ -37,10 +37,9 @@ graph LR
   hook, `pre-commit`, and CI over the built bundles), and every e2e scenario a request that leaves
   the API and the page's own origin.
 - **The admin** works in the admin application, through the admin routes of the API
-  ([0029](adr/0029-ship-four-web-applications.md)); its screens beyond the list of conventions
-  are not built yet. Only granting the admin role and taking it away are scripts, run on the
-  server as `postgres` (`pnpm db:admin:grant`, `pnpm db:admin:revoke`): no route and no screen
-  does either.
+  ([0029](adr/0029-ship-four-web-applications.md)). Only granting the admin role and taking it
+  away are scripts, run on the server as `postgres` (`pnpm db:admin:grant`,
+  `pnpm db:admin:revoke`): no route and no screen does either.
 
 Deployment is decided but not built
 ([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),
@@ -278,8 +277,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - The API stays the authority: the panel only hides and disables what a member cannot do, and the
   admin application shows an account the admin routes refuse one screen that says why.
 - The admin application signs in by email, password and the code alone, and calls nothing the API
-  refuses its origin. A read that finds the admin's sign-in older than 30 minutes leads back to
-  sign-in, and the screen opens again afterwards.
+  refuses its origin. A call that finds the admin's sign-in too old, 30 minutes, or 5 for the two
+  actions that cannot be undone, leads back to sign-in, and the screen opens again afterwards. The
+  deletion of a convention is the one modal that asks for more than a press: the convention's
+  address typed in ([0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
 - A write tells its outcome in a notification: a success, a warning for a refusal the member can act
   on, an error for a failure of the service or the network, the last two kept until closed. The
   query client of each application notifies every mutation; beside a form stays only the

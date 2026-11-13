@@ -2,11 +2,15 @@ import { msg } from '@lingui/core/macro'
 import { ORPCError } from '@orpc/client'
 import { MutationObserver, QueryObserver } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { notifyFailure, notifySuccess } from '../shared/lib/notify'
+import { notifyFailure, notifySignInAgain, notifySuccess } from '../shared/lib/notify'
 import { signInAgain } from '../shared/lib/session'
 import { createQueryClient } from './query-client'
 
-vi.mock('../shared/lib/notify', () => ({ notifySuccess: vi.fn(), notifyFailure: vi.fn() }))
+vi.mock('../shared/lib/notify', () => ({
+  notifySuccess: vi.fn(),
+  notifyFailure: vi.fn(),
+  notifySignInAgain: vi.fn(),
+}))
 vi.mock('../shared/lib/session', () => ({ signInAgain: vi.fn() }))
 
 const write = (mutationFn: () => Promise<unknown>, meta?: Record<string, unknown>) =>
@@ -18,6 +22,7 @@ const read = (queryFn: () => Promise<unknown>) =>
 beforeEach(() => {
   vi.mocked(notifySuccess).mockReset()
   vi.mocked(notifyFailure).mockReset()
+  vi.mocked(notifySignInAgain).mockReset()
   vi.mocked(signInAgain).mockReset()
 })
 
@@ -45,6 +50,8 @@ describe('createQueryClient', () => {
     )
 
     expect(signInAgain).toHaveBeenCalledOnce()
+    // The sign-in page says the rest; a read has nothing to repeat.
+    expect(notifySignInAgain).not.toHaveBeenCalled()
   })
 
   it.each(['permission.denied', 'admin.grant-outdated', 'server.error'])(
@@ -56,11 +63,13 @@ describe('createQueryClient', () => {
     },
   )
 
-  it('leaves a write answered with a stale sign-in to its screen, which asks in place', async () => {
+  it('leads a write refused for the age of the sign-in back to sign-in, and says to repeat it', async () => {
     const stale = new ORPCError('session.reauthentication-required', { status: 401 })
-    await write(() => Promise.reject(stale))
+    await write(() => Promise.reject(stale), { failure: false })
 
-    expect(signInAgain).not.toHaveBeenCalled()
-    expect(notifyFailure).toHaveBeenCalledWith(stale, undefined)
+    expect(signInAgain).toHaveBeenCalledOnce()
+    expect(notifySignInAgain).toHaveBeenCalledOnce()
+    // Not the catalog's message for the refusal, which offers Google.
+    expect(notifyFailure).not.toHaveBeenCalled()
   })
 })

@@ -1,6 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type ReactNode, useState } from 'react'
-import { NavLink } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { useSession } from '../../../shared/lib/session'
 import { Button, ErrorMessage } from '../../../shared/ui'
 import { cn } from '../../../shared/lib/utils'
@@ -44,27 +44,41 @@ export function AdminFrame({ children }: { children: ReactNode }) {
   )
 }
 
-/** The screens of an admin, shown only behind AdminGate. */
+/**
+ * The screens of an admin, shown only behind AdminGate. A convention's own page and the form of a
+ * new one belong to the conventions, which the start page lists.
+ */
 export function AdminNavigation() {
   const { t } = useLingui()
-  const links = [{ to: '/', label: t`Conventions`, end: true }]
+  const { pathname } = useLocation()
+  const links = [
+    {
+      to: '/',
+      label: t`Conventions`,
+      current: pathname === '/' || pathname.startsWith('/conventions/'),
+    },
+    {
+      to: '/two-factor-reset',
+      label: t`Two-factor reset`,
+      current: pathname === '/two-factor-reset',
+    },
+    { to: '/log', label: t`Log`, current: pathname === '/log' },
+  ]
 
   return (
     <nav aria-label={t`Administration`} className="flex flex-wrap gap-1 border-b py-2">
-      {links.map(({ to, label, end }) => (
-        <NavLink
+      {links.map(({ to, label, current }) => (
+        <Link
           key={to}
           to={to}
-          end={end}
-          className={({ isActive }) =>
-            cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium',
-              isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground',
-            )
-          }
+          aria-current={current ? 'page' : undefined}
+          className={cn(
+            'rounded-md px-3 py-1.5 text-sm font-medium',
+            current ? 'bg-accent text-accent-foreground' : 'text-muted-foreground',
+          )}
         >
           {label}
-        </NavLink>
+        </Link>
       ))}
     </nav>
   )

@@ -77,11 +77,39 @@ describe('AdminFrame', () => {
 })
 
 describe('AdminNavigation', () => {
-  it('leads to the conventions, and marks the screen the admin is on', () => {
+  const current = () =>
+    screen
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('aria-current') === 'page')
+      .map((link) => link.textContent)
+
+  it('leads to the conventions, the two-factor reset and the log', () => {
     renderFrame('/')
 
-    const link = screen.getByRole('link', { name: 'Conventions' })
-    expect(link.getAttribute('href')).toBe('/')
-    expect(link.getAttribute('aria-current')).toBe('page')
+    expect(
+      screen.getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')]),
+    ).toEqual([
+      ['Conventions', '/'],
+      ['Two-factor reset', '/two-factor-reset'],
+      ['Log', '/log'],
+    ])
+  })
+
+  it.each([
+    ['/', 'Conventions'],
+    ['/conventions/new', 'Conventions'],
+    ['/conventions/00000000-0000-4000-8000-00000000000a', 'Conventions'],
+    ['/two-factor-reset', 'Two-factor reset'],
+    ['/log', 'Log'],
+  ])('marks the screen the admin is on at %s', (path, label) => {
+    renderFrame(path)
+
+    expect(current()).toEqual([label])
+  })
+
+  it('marks nothing on a page that is not found', () => {
+    renderFrame('/nowhere')
+
+    expect(current()).toEqual([])
   })
 })

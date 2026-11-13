@@ -1,7 +1,9 @@
 import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale, AdminFrame, AdminGate, AdminNavigation } from '../features/access'
+import { TwoFactorResetPage } from '../features/accounts'
 import { LoginPage, MfaGate, MfaPage, RequireSession } from '../features/auth'
-import { ConventionsPage } from '../features/conventions'
+import { ConventionPage, ConventionsPage, NewConventionPage } from '../features/conventions'
+import { LogPage } from '../features/log'
 import { AccountTheme } from '../features/theme'
 import { useSession } from '../shared/lib/session'
 import { NotFoundView } from '../shared/ui'
@@ -49,6 +51,10 @@ export const router = createBrowserRouter([
         element: <SignedIn />,
         children: [
           { path: '/', element: <ConventionsPage /> },
+          { path: '/conventions/new', element: <NewConventionPage /> },
+          { path: '/conventions/:conventionId', element: <ConventionPage /> },
+          { path: '/two-factor-reset', element: <TwoFactorResetPage /> },
+          { path: '/log', element: <LogPage /> },
           { path: '*', element: <NotFoundView /> },
         ],
       },

@@ -13,9 +13,9 @@ Write responses in the language the user writes in.
 ## Repository
 
 OPOS — a multitenant platform for running fantasy conventions, free for conventions. `apps/api`, the
-core of `apps/panel`, the account screens of `apps/portal`, the sign-in and the conventions list of
-`apps/admin`, and the shared packages they need exist; deployment and the modules waiting for their
-domain owner are still to be built. Everything in this repository is written in English.
+core of `apps/panel`, the account screens of `apps/portal`, `apps/admin`, and the shared packages
+they need exist; deployment and the modules waiting for their domain owner are still to be built.
+Everything in this repository is written in English.
 
 | File | Holds |
 |---|---|

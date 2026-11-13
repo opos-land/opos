@@ -6,12 +6,12 @@
 # This file sits outside mise.toml, which turbo hashes: a description changes no cache.
 
 [dev]
-description = "Run the API, the panel and the portal in watch mode"
+description = "Run the API, the panel, the portal and the admin application in watch mode"
 run = "pnpm dev"
 raw = true
 
 [build]
-description = "Build the API, the panel and the portal for production"
+description = "Build the API, the panel, the portal and the admin application for production"
 run = "pnpm build"
 raw = true
 

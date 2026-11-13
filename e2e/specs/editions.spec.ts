@@ -97,11 +97,11 @@ test('a head adds a programme item with a speaker', async ({ page, accounts, ten
 
   const speakers = page.getByRole('region', { name: 'Speakers' })
   await speakers.getByLabel('Speaker email').fill(speaker.email)
-  await speakers.getByRole('button', { name: 'Add' }).click()
+  await speakers.getByRole('button', { name: 'Add', exact: true }).click()
   await expect(speakers.getByRole('button', { name: `Remove ${speaker.email}` })).toBeVisible()
 
   await speakers.getByLabel('Speaker email').fill('nobody@example.test')
-  await speakers.getByRole('button', { name: 'Add' }).click()
+  await speakers.getByRole('button', { name: 'Add', exact: true }).click()
   await expect(notification(page, 'warning', 'nobody@example.test')).toBeVisible()
 
   await page.getByRole('link', { name: 'All programme items' }).click()

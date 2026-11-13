@@ -37,9 +37,12 @@ export async function signOutOfPortal(page: Page) {
   await expect(page).toHaveURL(/\/login/)
 }
 
+/** Whether the screen is under 768 px, where the panel's sidebar is a sheet over the page. */
+const isNarrow = (page: Page) => (page.viewportSize()?.width ?? Infinity) < 768
+
 /** On a screen under 768 px the panel's sidebar is a sheet over the page: opens it. */
 async function revealPanelSidebar(page: Page) {
-  if ((page.viewportSize()?.width ?? Infinity) < 768) {
+  if (isNarrow(page)) {
     await page.getByRole('button', { name: 'Toggle Sidebar' }).click()
   }
 }
@@ -64,16 +67,27 @@ export async function signOutOfPanel(page: Page, email: string) {
   await expect(page).toHaveURL(/\/login/)
 }
 
+/** The switcher at the head of the panel's sidebar, which names the area that is open. */
+const panelSwitcher = (page: Page) =>
+  page.locator('[data-slot="sidebar-header"]').getByRole('button')
+
 /** Opens the switcher at the head of the panel's sidebar: the editions, the convention settings, the conventions. */
 export async function openPanelSwitcher(page: Page) {
   await revealPanelSidebar(page)
-  await page.locator('[data-slot="sidebar-header"]').getByRole('button').click()
+  await panelSwitcher(page).click()
 }
 
-/** Opens an edition, the convention settings or another convention from the switcher. */
+/**
+ * Opens an edition, the convention settings or another convention from the switcher, and waits
+ * for the switch to end. The address changes before the area does, and each area mounts a switcher
+ * of its own: a click on the one being left opens a menu that goes away with it.
+ */
 export async function switchPanelArea(page: Page, choice: string) {
   await openPanelSwitcher(page)
   await page.getByRole('menuitem', { name: choice, exact: true }).click()
+  await expect(page.getByRole('menu')).toHaveCount(0)
+  // Beside the page the switcher names its area; under 768 px it left with the sheet it sits in.
+  if (!isNarrow(page)) await expect(panelSwitcher(page)).toContainText(choice)
 }
 
 /**

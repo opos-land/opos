@@ -15,6 +15,11 @@ msgstr "{count, plural, one {Uprawnienia w edycji} few {Uprawnienia w edycjach} 
 msgid "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
 msgstr "{limit, plural, one {Punkt programu może mieć do # prelegenta.} few {Punkt programu może mieć do # prelegentów.} many {Punkt programu może mieć do # prelegentów.} other {Punkt programu może mieć do # prelegentów.}}"
 
+#. A convention in a list of conventions, with the note that the admin suspended it
+#: src/features/tenants/components/area-switcher.tsx
+msgid "{name} (suspended)"
+msgstr "{name} (zawieszony)"
+
 #: src/features/team/components/remove-member.tsx
 msgid "{name} loses access to the convention at once. Coming back takes a new invitation."
 msgstr "{name} od razu straci dostęp do konwentu. Powrót do zespołu wymaga nowego zaproszenia."
@@ -807,6 +812,11 @@ msgstr "Początek"
 msgid "Status"
 msgstr "Stan"
 
+#. The state of a convention the admin suspended
+#: src/features/tenants/pages/tenant-picker-page.tsx
+msgid "Suspended"
+msgstr "Zawieszony"
+
 #: src/features/team/pages/member-page.tsx
 #: src/features/team/pages/team-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
@@ -936,6 +946,10 @@ msgstr "Nie ma jeszcze punktów programu."
 #: src/shared/ui/irreversible-action.tsx
 msgid "This action cannot be undone."
 msgstr "Tej operacji nie można cofnąć."
+
+#: src/shared/ui/messages.tsx
+msgid "This convention is suspended"
+msgstr "Ten konwent jest zawieszony"
 
 #: src/features/editions/pages/edition-dashboard-page.tsx
 msgid "This edition is not the convention's active one."

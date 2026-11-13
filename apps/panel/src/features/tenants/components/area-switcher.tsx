@@ -79,6 +79,15 @@ function Choice({ to, icon, children }: { to: string; icon: ReactNode; children:
   )
 }
 
+/** A convention the admin suspended, as the list of conventions names it. */
+function SuspendedName({ name }: { name: string }) {
+  return (
+    <Trans comment="A convention in a list of conventions, with the note that the admin suspended it">
+      {name} (suspended)
+    </Trans>
+  )
+}
+
 /** The conventions to switch to, each opening on the member's edition. */
 function Conventions({ memberships }: { memberships: Membership[] }) {
   return (
@@ -88,7 +97,7 @@ function Conventions({ memberships }: { memberships: Membership[] }) {
       </DropdownMenuLabel>
       {memberships.map((m) => (
         <Choice key={m.tenant.id} to={`/${m.tenant.slug}`} icon={<Building2Icon />}>
-          {m.tenant.name}
+          {m.tenant.suspended ? <SuspendedName name={m.tenant.name} /> : m.tenant.name}
         </Choice>
       ))}
     </DropdownMenuGroup>

@@ -163,6 +163,24 @@ describe('AreaSwitcher', () => {
   })
 })
 
+describe('a suspended convention in the switcher', () => {
+  it('is marked among the conventions to switch to', async () => {
+    setMemberships([
+      head,
+      membership('convention-b', 'Convention B', {
+        tenant: { id: 'tenant-b', slug: 'convention-b', name: 'Convention B', suspended: true },
+      }),
+    ])
+    frame('/account', <ConventionSwitcher />)
+    await open(/^OPOS panel ?Choose a convention$/)
+
+    expect(items('Conventions')).toEqual([
+      ['Convention A', '/convention-a'],
+      ['Convention B (suspended)', '/convention-b'],
+    ])
+  })
+})
+
 describe('ConventionSwitcher', () => {
   it('outside any convention, offers each of the member’s conventions', async () => {
     setMemberships([head, membership('convention-b', 'Convention B')])

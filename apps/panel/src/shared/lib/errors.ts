@@ -71,6 +71,10 @@ export function isRefusal(error: unknown) {
 export const isPermissionDenied = (error: unknown) =>
   error instanceof ORPCError && error.code === 'permission.denied'
 
+/** The admin suspended the convention: nothing of it opens until it is restored. */
+export const isTenantSuspended = (error: unknown) =>
+  error instanceof ORPCError && error.code === 'tenant.suspended'
+
 export const isNotFound = (error: unknown) =>
   error instanceof ORPCError && error.code === 'request.not-found'
 

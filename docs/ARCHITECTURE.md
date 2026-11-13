@@ -287,6 +287,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   validation of its fields. A plain `403` in the panel ends on the "no permissions" screen, and the
   sign-in flows show their outcome as their next screen
   ([0022](adr/0022-tell-the-outcome-of-every-write-in-a-notification.md)).
+- The panel shows a suspended convention as suspended where it lists the member's conventions, and
+  inside it only the message that it is suspended, asking the API nothing; a `403`
+  `tenant.suspended` under an open page has the memberships read again, so the page gives way to
+  that message.
 - An action no screen can undo, such as a deletion, a removal from the team or turning two-factor
   authentication off, asks first in a modal that names what goes, says what goes with it and that
   it cannot be undone; only the modal's own button acts. A change the same screen reverses asks

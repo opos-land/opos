@@ -18,47 +18,47 @@ suspension and their deletion.
 
 ### Access
 
-| # | Rule |
-|---|---|
-| A1 | Only an account holding the admin role reaches an admin route. Any other account is refused and sees nothing of any tenant. |
-| A2 | The role is granted and taken away only by a script run on the server. No route and no screen grants it, and the grant needs a confirmed account with a password and two-factor authentication on. |
-| A3 | An admin has two-factor authentication on, and an admin route passes only a session that gave its code. An admin who turned it off is told to turn it on in the portal. |
-| A4 | The role holds only with the second factor the account had when it was granted. With a factor turned on again or replaced since, the account is refused and told to ask for a new grant. |
-| A5 | An admin route answers only the admin application: the same account's session in the panel or the portal has no admin power, and the admin application's session opens neither of them. |
-| A6 | The admin application signs in by email, password and the code. It offers no sign-up, no Google sign-in, no password reset, no recovery code and no account screen. |
-| A7 | Every admin route needs a sign-in younger than 30 minutes; deleting a tenant and resetting two-factor authentication need one younger than 5 minutes. |
+| #   | Rule                                                                                                                                                                                               |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1  | Only an account holding the admin role reaches an admin route. Any other account is refused and sees nothing of any tenant.                                                                        |
+| A2  | The role is granted and taken away only by a script run on the server. No route and no screen grants it, and the grant needs a confirmed account with a password and two-factor authentication on. |
+| A3  | An admin has two-factor authentication on, and an admin route passes only a session that gave its code. An admin who turned it off is told to turn it on in the portal.                            |
+| A4  | The role holds only with the second factor the account had when it was granted. With a factor turned on again or replaced since, the account is refused and told to ask for a new grant.           |
+| A5  | An admin route answers only the admin application: the same account's session in the panel or the portal has no admin power, and the admin application's session opens neither of them.            |
+| A6  | The admin application signs in by email, password and the code. It offers no sign-up, no Google sign-in, no password reset, no recovery code and no account screen.                                |
+| A7  | Every admin route needs a sign-in younger than 30 minutes; deleting a tenant and resetting two-factor authentication need one younger than 5 minutes.                                              |
 
 ### Tenants
 
-| # | Rule |
-|---|---|
-| T1 | The list shows every tenant: its name, its address, whether it is suspended and when it was created. A tenant's page also shows its heads, by name and email address, so that the admin can reach them. |
-| T2 | A tenant is created with its name, address, language, time zone and the email address of its first head. The first head is an account with a confirmed email address; with any other address nothing is created and nothing is sent. |
-| T3 | An address keeps the rules of [PRODUCT.md 6](../PRODUCT.md#6-addresses-and-domains): a taken address, a word the platform uses itself and the address of a deleted tenant are refused, at creation and at a change. |
-| T4 | A changed address answers at once, and the old one is not found. |
-| T5 | A suspended tenant is off for everyone but the admin: its page is not found in the portal, a user's personal schedule leaves its programme items out, an invitation to it is refused, and every tenant route answers its organizers only that the convention is suspended. A membership stays and shows the convention as suspended. |
-| T6 | Restoring a suspended tenant brings everything back as it was. Suspending a suspended tenant and restoring one that is not change nothing. |
-| T7 | Only a suspended tenant can be deleted. The deletion is immediate and permanent and takes everything the tenant owns: its team, editions, programme and likes. The accounts stay, and its former head still signs in. Its address is never given to another tenant. |
-| T8 | The deletion asks in a modal that names the convention, says what goes and that it cannot be undone, and acts only once the tenant's address is typed in. |
-| T9 | No email goes to the heads when their tenant is suspended, restored or deleted. |
-| T10 | The last head of a suspended tenant cannot hand the role over, and so cannot delete their account: they ask the admin. |
+| #   | Rule                                                                                                                                                                                                                                                                                                                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T1  | The list shows every tenant: its name, its address, whether it is suspended and when it was created. A tenant's page also shows its heads, by name and email address, so that the admin can reach them.                                                                                                                              |
+| T2  | A tenant is created with its name, address, language, time zone and the email address of its first head. The first head is an account with a confirmed email address; with any other address nothing is created and nothing is sent.                                                                                                 |
+| T3  | An address keeps the rules of [PRODUCT.md 6](../PRODUCT.md#6-addresses-and-domains): a taken address, a word the platform uses itself and the address of a deleted tenant are refused, at creation and at a change.                                                                                                                  |
+| T4  | A changed address answers at once, and the old one is not found.                                                                                                                                                                                                                                                                     |
+| T5  | A suspended tenant is off for everyone but the admin: its page is not found in the portal, a user's personal schedule leaves its programme items out, an invitation to it is refused, and every tenant route answers its organizers only that the convention is suspended. A membership stays and shows the convention as suspended. |
+| T6  | Restoring a suspended tenant brings everything back as it was. Suspending a suspended tenant and restoring one that is not change nothing.                                                                                                                                                                                           |
+| T7  | Only a suspended tenant can be deleted. The deletion is immediate and permanent and takes everything the tenant owns: its team, editions, programme and likes. The accounts stay, and its former head still signs in. Its address is never given to another tenant.                                                                  |
+| T8  | The deletion asks in a modal that names the convention, says what goes and that it cannot be undone, and acts only once the tenant's address is typed in.                                                                                                                                                                            |
+| T9  | No email goes to the heads when their tenant is suspended, restored or deleted.                                                                                                                                                                                                                                                      |
+| T10 | The last head of a suspended tenant cannot hand the role over, and so cannot delete their account: they ask the admin.                                                                                                                                                                                                               |
 
 ### Accounts
 
-| # | Rule |
-|---|---|
-| C1 | The admin resets the two-factor authentication of the account with a given confirmed email address: its factors and unused recovery codes go, and the account gets the email that says so. The reset ends none of the account's sessions. |
-| C2 | An unknown or unconfirmed address, and an account without two-factor authentication, are refused and change nothing. |
-| C3 | The two-factor authentication of an admin is never reset in the admin application. An admin who lost both device and codes has the role taken away by the script, is reset as any account is, and is granted the role anew. |
+| #   | Rule                                                                                                                                                                                                                                      |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | The admin resets the two-factor authentication of the account with a given confirmed email address: its factors and unused recovery codes go, and the account gets the email that says so. The reset ends none of the account's sessions. |
+| C2  | An unknown or unconfirmed address, and an account without two-factor authentication, are refused and change nothing.                                                                                                                      |
+| C3  | The two-factor authentication of an admin is never reset in the admin application. An admin who lost both device and codes has the role taken away by the script, is reset as any account is, and is granted the role anew.               |
 
 ### Log
 
-| # | Rule |
-|---|---|
-| L1 | Every action of an admin that changes anything leaves an entry: who, what, on which tenant or account, and when. Granting the role and taking it away leave one too, with no admin named. |
-| L2 | The application only adds entries; none is changed or removed. An entry holds identifiers and the tenant's address, never an email address. |
-| L3 | An entry exists whenever its action happened: it commits with the action, and before the reset of two-factor authentication acts. |
-| L4 | The log's screen lists the entries, newest first, to every admin. |
+| #   | Rule                                                                                                                                                                                      |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L1  | Every action of an admin that changes anything leaves an entry: who, what, on which tenant or account, and when. Granting the role and taking it away leave one too, with no admin named. |
+| L2  | The application only adds entries; none is changed or removed. An entry holds identifiers and the tenant's address, never an email address.                                               |
+| L3  | An entry exists whenever its action happened: it commits with the action, and before the reset of two-factor authentication acts.                                                         |
+| L4  | The log's screen lists the entries, newest first, to every admin.                                                                                                                         |
 
 ## Shape
 
@@ -66,12 +66,12 @@ suspension and their deletion.
 
 The three new tables are platform level, outside RLS: none is a tenant or an edition table.
 
-| Table | Holds |
-|---|---|
-| `tenants` | one more column, `suspended_at`, empty while the tenant is not suspended |
-| `admins` | `account_id`, the primary key, going with its account; `granted_at`; `mfa_enabled_at`, the account's own as the grant found it: the role holds while the two are equal |
-| `admin_actions` | `action`, `admin_account_id` (empty for a script), `subject_tenant_id`, `tenant_slug` as the action left it, `subject_account_id`, `created_at`; no foreign key, so an entry outlives its tenant and its accounts |
-| `retired_tenant_slugs` | `slug`, the primary key: the address of every deleted tenant; `retired_at` |
+| Table                  | Holds                                                                                                                                                                                                             |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tenants`              | one more column, `suspended_at`, empty while the tenant is not suspended                                                                                                                                          |
+| `admins`               | `account_id`, the primary key, going with its account; `granted_at`; `mfa_enabled_at`, the account's own as the grant found it: the role holds while the two are equal                                            |
+| `admin_actions`        | `action`, `admin_account_id` (empty for a script), `subject_tenant_id`, `tenant_slug` as the action left it, `subject_account_id`, `created_at`; no foreign key, so an entry outlives its tenant and its accounts |
+| `retired_tenant_slugs` | `slug`, the primary key: the address of every deleted tenant; `retired_at`                                                                                                                                        |
 
 `admin_actions.action` is one of `tenant.create`, `tenant.rename`, `tenant.suspend`,
 `tenant.restore`, `tenant.delete`, `account.reset-2fa`, `admin.grant` and `admin.revoke`.
@@ -80,14 +80,14 @@ The three new tables are platform level, outside RLS: none is a tenant or an edi
 
 `opos_admin`: a third runtime role, with `BYPASSRLS` and these privileges only.
 
-| On | May |
-|---|---|
-| `tenants` | read; insert; delete; update `slug` and `suspended_at` |
-| `tenant_memberships` | read the heads; insert the first head |
-| `accounts` | read the identifier, name, email address, language, and whether the address is confirmed and two-factor authentication is on |
-| `account_recovery_codes` | delete the unused ones |
-| `admins` | read |
-| `admin_actions` | read; insert, but for an entry's identifier and time, which the database gives |
+| On                       | May                                                                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `tenants`                | read; insert; delete; update `slug` and `suspended_at`                                                                       |
+| `tenant_memberships`     | read the heads; insert the first head                                                                                        |
+| `accounts`               | read the identifier, name, email address, language, and whether the address is confirmed and two-factor authentication is on |
+| `account_recovery_codes` | delete the unused ones                                                                                                       |
+| `admins`                 | read                                                                                                                         |
+| `admin_actions`          | read; insert, but for an entry's identifier and time, which the database gives                                               |
 
 `opos_app` gains nothing, and `opos_app_global` gains the read of `tenants.suspended_at`. Triggers
 of `tenants` retire the address of a deleted tenant and refuse a retired one, so no runtime role
@@ -95,13 +95,13 @@ holds anything on `retired_tenant_slugs`.
 
 ### Functions and scripts of `packages/db`
 
-| Function | Does |
-|---|---|
-| `createTenant`, `renameTenant` | as today, also in the caller's transaction; `renameTenant` finds the tenant by its identifier |
-| `suspendTenant`, `restoreTenant` | set and clear `suspended_at`; say whether anything changed |
-| `deleteTenant` | deletes in one statement that matches only a suspended tenant, so a tenant restored meanwhile is refused |
-| `grantAdmin`, `revokeAdmin` | write `admins` and the log entry; behind the scripts `db:admin:grant` and `db:admin:revoke` alone. The grant refuses an account without a confirmed address, a password or two-factor authentication, and one with more than one verified factor |
-| `recordAdminAction` | adds a log entry in the caller's transaction |
+| Function                         | Does                                                                                                                                                                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createTenant`, `renameTenant`   | as today, also in the caller's transaction; `renameTenant` finds the tenant by its identifier                                                                                                                                                    |
+| `suspendTenant`, `restoreTenant` | set and clear `suspended_at`; say whether anything changed                                                                                                                                                                                       |
+| `deleteTenant`                   | deletes in one statement that matches only a suspended tenant, so a tenant restored meanwhile is refused                                                                                                                                         |
+| `grantAdmin`, `revokeAdmin`      | write `admins` and the log entry; behind the scripts `db:admin:grant` and `db:admin:revoke` alone. The grant refuses an account without a confirmed address, a password or two-factor authentication, and one with more than one verified factor |
+| `recordAdminAction`              | adds a log entry in the caller's transaction                                                                                                                                                                                                     |
 
 The scripts `db:tenant:create`, `db:tenant:rename` and `db:account:reset-2fa` go with the routes
 that replace them.
@@ -110,17 +110,17 @@ that replace them.
 
 Every admin route starts from `adminRoute` and lives under `/admin`.
 
-| Route | Needs | Refuses with |
-|---|---|---|
-| `GET /admin/tenants` | admin | |
-| `GET /admin/tenants/{tenantId}` | admin | `request.not-found` |
-| `POST /admin/tenants` | admin | `tenant.slug-taken`, `tenant.slug-reserved`, `tenant.slug-retired`, `account.not-found`, `account.unconfirmed` |
-| `PUT /admin/tenants/{tenantId}/slug` | admin | `request.not-found`, `tenant.slug-taken`, `tenant.slug-reserved`, `tenant.slug-retired` |
-| `POST /admin/tenants/{tenantId}/suspend` | admin | `request.not-found` |
-| `POST /admin/tenants/{tenantId}/restore` | admin | `request.not-found` |
-| `DELETE /admin/tenants/{tenantId}` | admin, fresh sign-in | `request.not-found`, `tenant.not-suspended` |
-| `POST /admin/accounts/reset-2fa` | admin, fresh sign-in | `account.not-found`, `account.unconfirmed`, `mfa.not-enabled`, `account.is-admin` |
-| `GET /admin/actions` | admin; a page of at most 100 entries, older than a given one | |
+| Route                                    | Needs                                                        | Refuses with                                                                                                   |
+| ---------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `GET /admin/tenants`                     | admin                                                        |                                                                                                                |
+| `GET /admin/tenants/{tenantId}`          | admin                                                        | `request.not-found`                                                                                            |
+| `POST /admin/tenants`                    | admin                                                        | `tenant.slug-taken`, `tenant.slug-reserved`, `tenant.slug-retired`, `account.not-found`, `account.unconfirmed` |
+| `PUT /admin/tenants/{tenantId}/slug`     | admin                                                        | `request.not-found`, `tenant.slug-taken`, `tenant.slug-reserved`, `tenant.slug-retired`                        |
+| `POST /admin/tenants/{tenantId}/suspend` | admin                                                        | `request.not-found`                                                                                            |
+| `POST /admin/tenants/{tenantId}/restore` | admin                                                        | `request.not-found`                                                                                            |
+| `DELETE /admin/tenants/{tenantId}`       | admin, fresh sign-in                                         | `request.not-found`, `tenant.not-suspended`                                                                    |
+| `POST /admin/accounts/reset-2fa`         | admin, fresh sign-in                                         | `account.not-found`, `account.unconfirmed`, `mfa.not-enabled`, `account.is-admin`                              |
+| `GET /admin/actions`                     | admin; a page of at most 100 entries, older than a given one |                                                                                                                |
 
 An account that is no admin gets `403` `permission.denied`; an admin with two-factor authentication
 off `403` `admin.mfa-not-enabled`; an admin whose factor is newer than the grant `403`
@@ -129,13 +129,13 @@ off `403` `admin.mfa-not-enabled`; an admin whose factor is newer than the grant
 
 Changed outside `/admin`:
 
-| Route | Change |
-|---|---|
-| every tenant route | `403` `tenant.suspended` for a suspended tenant, before the membership is read |
-| `GET /public/tenants/{slug}` and the routes under it | `404`, as for an unknown address |
-| the preview and the acceptance of an invitation | `403` `tenant.suspended` |
-| `GET /me/memberships` | each tenant says whether it is suspended; a suspended one lists no editions |
-| `GET /me/schedule` | leaves the programme items of a suspended tenant out |
+| Route                                                | Change                                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------ |
+| every tenant route                                   | `403` `tenant.suspended` for a suspended tenant, before the membership is read |
+| `GET /public/tenants/{slug}` and the routes under it | `404`, as for an unknown address                                               |
+| the preview and the acceptance of an invitation      | `403` `tenant.suspended`                                                       |
+| `GET /me/memberships`                                | each tenant says whether it is suspended; a suspended one lists no editions    |
+| `GET /me/schedule`                                   | leaves the programme items of a suspended tenant out                           |
 
 From the admin application's origin the API serves `/admin`, sign-in, refresh, sign-out, the code of
 two-factor authentication, `GET /me` and `PATCH /me`; anything else is `403`
@@ -146,14 +146,14 @@ two-factor authentication, `GET /me` and `PATCH /me`; anything else is `403`
 
 The admin application:
 
-| Screen | Holds |
-|---|---|
-| sign-in | email and password; then the code |
-| conventions | the list of T1; the way to a new convention |
-| new convention | the form of T2 |
-| a convention | its data and heads; the change of its address; suspending and restoring; the deletion of T8, offered only while suspended |
-| two-factor reset | an email address and the action of C1, asked in a modal |
-| log | the list of L4 |
+| Screen           | Holds                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| sign-in          | email and password; then the code                                                                                         |
+| conventions      | the list of T1; the way to a new convention                                                                               |
+| new convention   | the form of T2                                                                                                            |
+| a convention     | its data and heads; the change of its address; suspending and restoring; the deletion of T8, offered only while suspended |
+| two-factor reset | an email address and the action of C1, asked in a modal                                                                   |
+| log              | the list of L4                                                                                                            |
 
 An account that is no admin, an admin without two-factor authentication and an admin whose grant is
 outdated each see one screen that says so, with a sign-out. A stale sign-in asks for the password

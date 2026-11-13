@@ -17,16 +17,16 @@ graph LR
     auth --> pg
 ```
 
-| Part | Role |
-|---|---|
-| `apps/api` | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key |
-| `apps/panel` | the organizers' SPA, desktop-first; later also the scanner under `/scanner` |
-| `apps/portal` | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule |
-| `apps/admin` | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md)) |
-| `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape |
-| `packages/db` | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away |
-| `packages/i18n` | locales, detection, formatters and the shared catalog |
-| Supabase | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md)) |
+| Part                | Role                                                                                                                                                                                                           |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api`          | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key |
+| `apps/panel`        | the organizers' SPA, desktop-first; later also the scanner under `/scanner`                                                                                                                                    |
+| `apps/portal`       | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule                                                                                                                     |
+| `apps/admin`        | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md))                             |
+| `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape                                                                                                                                       |
+| `packages/db`       | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away                                                                                                 |
+| `packages/i18n`     | locales, detection, formatters and the shared catalog                                                                                                                                                          |
+| Supabase            | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md))                                            |
 
 - The packages have no build step; only the translation catalogs compile.
 - **The BFF boundary**
@@ -54,13 +54,13 @@ Row-level multitenancy under RLS, not only a `where` in code
 `tenant_id` (never only an `edition_id`), a composite foreign key to its parent's `(id, tenant_id)`
 and an index starting with `tenant_id`.
 
-| Role | May | Used by |
-|---|---|---|
-| `postgres` | owns the OPOS tables; `BYPASSRLS`, not a superuser | migrations, `db:*` scripts, the seed, the backup; never the running API |
-| `opos_app` | `select`; `insert`, `delete` and per-column `update` only where the API writes; bypasses nothing, owns nothing, member of no role | the API |
-| `opos_app_global` | `BYPASSRLS`; `select` on the columns the cross-tenant queries read, nothing else | `GlobalDbService` alone |
-| `opos_admin` | `BYPASSRLS`; only what the admin routes read and write, its reads by column | `AdminDbService` alone ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
-| `anon`, `authenticated`, `service_role` | nothing in `public` | nobody |
+| Role                                    | May                                                                                                                               | Used by                                                                                                         |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `postgres`                              | owns the OPOS tables; `BYPASSRLS`, not a superuser                                                                                | migrations, `db:*` scripts, the seed, the backup; never the running API                                         |
+| `opos_app`                              | `select`; `insert`, `delete` and per-column `update` only where the API writes; bypasses nothing, owns nothing, member of no role | the API                                                                                                         |
+| `opos_app_global`                       | `BYPASSRLS`; `select` on the columns the cross-tenant queries read, nothing else                                                  | `GlobalDbService` alone                                                                                         |
+| `opos_admin`                            | `BYPASSRLS`; only what the admin routes read and write, its reads by column                                                       | `AdminDbService` alone ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
+| `anon`, `authenticated`, `service_role` | nothing in `public`                                                                                                               | nobody                                                                                                          |
 
 `pnpm db:roles` ([roles.ts](../packages/db/src/roles.ts)) sets the runtime roles up with their
 timeouts and strips Supabase's default grants; it runs on every new database, after a change to it
@@ -93,12 +93,12 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query | Bound |
-|---|---|
-| a tenant by slug | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address |
-| `GET /me/memberships` | the session's account; expired memberships left out, and the editions of a suspended tenant |
-| `GET /me/schedule` | the session's own likes; published editions only, of tenants not suspended |
-| `DELETE /me` | the session's account; answers only whether it is a tenant's last head |
+| Query                 | Bound                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| a tenant by slug      | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address |
+| `GET /me/memberships` | the session's account; expired memberships left out, and the editions of a suspended tenant                   |
+| `GET /me/schedule`    | the session's own likes; published editions only, of tenants not suspended                                    |
+| `DELETE /me`          | the session's account; answers only whether it is a tenant's last head                                        |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token) or the API's own job; it joins this table and puts its
@@ -124,22 +124,22 @@ case in [verify.test.ts](../packages/db/test/verify.test.ts);
 
 ## Invariants
 
-| # | Invariant | Enforced by |
-|---|---|---|
-| 1 | At most one active edition per tenant | a partial unique index; activation locks the tenant row |
-| 2 | At least one `head` per tenant, also against deleting the last head's account | constraint triggers deferred to commit, locking the tenant row |
-| 3 | An edition membership stays in the tenant of its membership and edition | composite foreign keys |
-| 4 | A tenant write carries the tenant of the context | `TenantContextService.tx()`; `WITH CHECK` |
-| 5 | Every `auth.users` row has exactly one `accounts` row | an insert trigger, a cascading foreign key |
-| 6 | A `head` never expires and holds no tenant-level permission | check constraints |
-| 7 | An attendee registration stays in its edition's tenant and goes with its account | a composite foreign key, a cascade |
-| 8 | Speakers, likes and reviews stay in the tenant of their programme item | composite foreign keys |
-| 9 | A limit on what is sold holds under concurrent sales | a sale locks the rows carrying the limit before counting |
-| 10 | Two scans of one ticket never act on the same state | a conditional update or a row lock, never a read first |
-| 11 | A scanner works only inside its tenant and edition | its tenant's context; every query filters on its edition |
-| 12 | `accounts.mfaEnabledAt` is set exactly while a verified factor exists | the trigger on `auth.mfa_factors`, locking the account row |
-| 13 | A tenant is deleted only while suspended | the statement that deletes it judges the suspension itself |
-| 14 | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since |
+| #   | Invariant                                                                                                  | Enforced by                                                                                                                                                                     |
+| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | At most one active edition per tenant                                                                      | a partial unique index; activation locks the tenant row                                                                                                                         |
+| 2   | At least one `head` per tenant, also against deleting the last head's account                              | constraint triggers deferred to commit, locking the tenant row                                                                                                                  |
+| 3   | An edition membership stays in the tenant of its membership and edition                                    | composite foreign keys                                                                                                                                                          |
+| 4   | A tenant write carries the tenant of the context                                                           | `TenantContextService.tx()`; `WITH CHECK`                                                                                                                                       |
+| 5   | Every `auth.users` row has exactly one `accounts` row                                                      | an insert trigger, a cascading foreign key                                                                                                                                      |
+| 6   | A `head` never expires and holds no tenant-level permission                                                | check constraints                                                                                                                                                               |
+| 7   | An attendee registration stays in its edition's tenant and goes with its account                           | a composite foreign key, a cascade                                                                                                                                              |
+| 8   | Speakers, likes and reviews stay in the tenant of their programme item                                     | composite foreign keys                                                                                                                                                          |
+| 9   | A limit on what is sold holds under concurrent sales                                                       | a sale locks the rows carrying the limit before counting                                                                                                                        |
+| 10  | Two scans of one ticket never act on the same state                                                        | a conditional update or a row lock, never a read first                                                                                                                          |
+| 11  | A scanner works only inside its tenant and edition                                                         | its tenant's context; every query filters on its edition                                                                                                                        |
+| 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                      | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                      |
+| 13  | A tenant is deleted only while suspended                                                                   | the statement that deletes it judges the suspension itself                                                                                                                      |
+| 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since |
 
 Invariants 7 and 9–11 belong to [modules not built yet](#modules-waiting-for-their-domain-owner);
 [invariants.test.ts](../packages/db/test/invariants.test.ts),
@@ -235,18 +235,18 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - A log line written on purpose names no token, password or email address; an unexpected error is
   logged whole, never sent in the body.
 
-| Status | Meaning | Default code |
-|---|---|---|
-| `400` | validation; `params.field` names the field | `request.invalid` |
-| `401` | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own | `session.invalid` |
-| `403` | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own | `permission.denied` |
-| `404` | absent or of another tenant | `request.not-found` |
-| `409` | an invariant or unique constraint, by constraint name | always specific |
-| `410` | an invitation expired or revoked | `invitation.expired`, `invitation.revoked` |
-| `415` | a body that is not JSON | `request.invalid` |
-| `429` | rate limit, with `Retry-After` | `request.rate-limited` |
-| `500` | unexpected; no details in the body | `server.error` |
-| `503` | a write waiting too long; Supabase Auth out of reach | `request.busy`, `server.unavailable` |
+| Status | Meaning                                                                                  | Default code                               |
+| ------ | ---------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `400`  | validation; `params.field` names the field                                               | `request.invalid`                          |
+| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own    | `session.invalid`                          |
+| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own | `permission.denied`                        |
+| `404`  | absent or of another tenant                                                              | `request.not-found`                        |
+| `409`  | an invariant or unique constraint, by constraint name                                    | always specific                            |
+| `410`  | an invitation expired or revoked                                                         | `invitation.expired`, `invitation.revoked` |
+| `415`  | a body that is not JSON                                                                  | `request.invalid`                          |
+| `429`  | rate limit, with `Retry-After`                                                           | `request.rate-limited`                     |
+| `500`  | unexpected; no details in the body                                                       | `server.error`                             |
+| `503`  | a write waiting too long; Supabase Auth out of reach                                     | `request.busy`, `server.unavailable`       |
 
 ## Frontends
 
@@ -323,12 +323,12 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 ## Environments
 
-| | Local | Dev | Production |
-|---|---|---|---|
-| `OPOS_ENV` | `local` | `dev` | `production` |
-| Supabase | the CLI's local stack | a Free project of its own | the Pro project, `eu-central-1` |
-| Addresses | `*.opos.localhost` | a domain of its own, never under `opos.land` | `opos.land` |
-| Deployed by | the developer | a push to `develop` | a push to `main`, after a reviewer |
+|             | Local                 | Dev                                          | Production                         |
+| ----------- | --------------------- | -------------------------------------------- | ---------------------------------- |
+| `OPOS_ENV`  | `local`               | `dev`                                        | `production`                       |
+| Supabase    | the CLI's local stack | a Free project of its own                    | the Pro project, `eu-central-1`    |
+| Addresses   | `*.opos.localhost`    | a domain of its own, never under `opos.land` | `opos.land`                        |
+| Deployed by | the developer         | a push to `develop`                          | a push to `main`, after a reviewer |
 
 - `OPOS_ENV` is the one switch between environments; Mailpit and a fake payment provider serve
   `local` and `dev`.
@@ -407,12 +407,12 @@ the lasting ones land here. Any shape keeps tenant tables under RLS, a read acro
 [cross-tenant query](#tenant-isolation), organizer routes behind the module's permission and the
 steps of [adding a feature](#adding-a-feature).
 
-| Module | Rules any shape keeps |
-|---|---|
-| reviews | invariant 8; deleted with the item or the author's account; organizer routes need `program` |
-| tickets | invariants 9 and 10; organizer routes need `tickets`, the provider configuration `shop` |
-| scanner | invariants 10 and 11 |
-| attendee registrations | invariant 7 |
+| Module                 | Rules any shape keeps                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| reviews                | invariant 8; deleted with the item or the author's account; organizer routes need `program` |
+| tickets                | invariants 9 and 10; organizer routes need `tickets`, the provider configuration `shop`     |
+| scanner                | invariants 10 and 11                                                                        |
+| attendee registrations | invariant 7                                                                                 |
 
 - **Payments.** The money goes to the convention's own provider account
   ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)); OPOS keeps only the
@@ -434,21 +434,21 @@ a feature does not need. The `program` slice is the reference, from its
 the code ([AGENTS.md](../AGENTS.md#tests-first)); **Enforced by** is what refuses a skipped step,
 "nothing" meaning the author and the reviewer alone.
 
-| Order | Step | Test first | Enforced by |
-|---|---|---|---|
-| 1 | Table in `packages/db/src/schema/<table>.ts` with the columns of `packages/db/src/schema/columns.ts`, exported from `packages/db/src/schema/index.ts`: its own `tenant_id`, a composite foreign key, an index starting with `tenant_id` | `packages/db/test/rls.test.ts`: `covered`, `populated()`; a foreign parent in `packages/db/test/invariants.test.ts` | `rls.test.ts` on a table missing from `covered` or its index; the foreign key: `tenant-isolation-reviewer` |
-| 2 | `pnpm --filter @opos/db db:generate --name=<table>` | step 1's | `scripts/check-migrations.mjs` in `pre-push` and CI ([conflicts](#a-migration-applied-or-in-conflict)) |
-| 3 | `db:generate --custom --name=<table>_privileges`, written by hand before it is applied: forced RLS, `tenant_isolation`, revokes, narrowest grants, `<table>_set_updated_at` | step 1's | `pnpm db:verify` in CI; `.claude/hooks/migration-reminder.mjs` reminds; the trigger: nothing |
-| 4 | New privileges in `appWrites`, `appUpdates` or `globalReads` of `packages/db/src/verify.ts`; `pnpm db:migrate`, `pnpm db:verify` | `rls.test.ts`: each write, `rejects an insert with another tenant id` | `pnpm db:verify`; `rls.test.ts` for `globalReads` |
-| 5 | Route in `packages/contract/src/<module>.ts` from `packages/contract/src/common.ts`, exported in `packages/contract/src/index.ts`; an error code in `packages/contract/src/errors.ts`, its message in `packages/i18n/src/errors.ts` | `apps/api/test/<module>.test.ts` (`apps/api/test/route-needs.ts` is no test); `packages/contract/src/errors.test.ts` | `packages/contract/src/errors.test.ts` on a code without a message; `apps/api/test/tenant-routes.test.ts`, `apps/api/test/route-requirements.test.ts` on a route not served |
-| 6 | The route's need in `tenantRequirements` of `apps/api/test/route-needs.ts` or `publicRoutes` of `route-requirements.test.ts`; a write route in `writes` of `apps/api/test/tenants-editions.test.ts`, its table in `tenantState` of `apps/api/test/tenants.ts` | the lists are the test | `route-requirements.test.ts` until listed, then every actor; `tenants-editions.test.ts` for `writes`; `tenantState`: nothing |
-| 7 | Module in `apps/api/src/modules/<name>`, registered in `apps/api/src/app.module.ts`: an `@Implement` method per route with `@RequireTenant`, `@RequireEdition` or `@InTenant`, which bring `JwtAuthGuard` (`401` `session.invalid`, `session.mfa-required`) and at `write` the queue and lock; an account route `@UseGuards(JwtAuthGuard)`; a repository on `TenantContextService.tx()`, rows found inside the path's parent | `apps/api/test/<module>.test.ts`, with another tenant's and edition's identifiers | `tenant-routes.test.ts`, `route-requirements.test.ts`, `apps/api/test/mfa-guard.test.ts`; `apps/api/test/tenant-filters.test.ts` for a repository that decides access; a forgotten parent: `tenant-isolation-reviewer` |
-| 8 | Rows in `packages/db/src/seed.ts`, then `pnpm db:seed` twice | any test of `packages/db` | `packages/db/test/seed.test.ts`; a missing seed: nothing |
-| 9 | Feature in `apps/panel/src/features` or `apps/portal/src/features` with `api/`, `pages/`, `index.ts`, routed in `apps/panel/src/app/router.tsx` or `apps/portal/src/app/router.tsx`; a panel page uses `useCurrentTenant()` and `NoPermissionView`; every page `usePageTitle`; a page needing a session inside `RequireSession`, which answers `mfa-required` and `unavailable`; a new top-level panel path joins `RESERVED_TENANT_SLUGS` of `packages/db/src/schema/tenants.ts`, a migration | `apps/panel/src/features/program/pages/program-page.test.tsx` shows the shape | ESLint; `src/app/pages.test.ts`; `scripts/bff-boundary.mjs`; `RequireSession` and reserved paths: nothing |
-| 10 | Strings in Lingui macros, `pnpm i18n:extract`, `pl` in the application's `src/locales/pl.po` (`apps/panel`, `apps/portal`, `apps/admin`); a new term first in `packages/i18n/src/glossary.ts` | a `packages/i18n` test for the glossary; none for a catalog | `pnpm i18n:check`; a bare literal: `i18n-reviewer` |
-| 11 | A scenario in `e2e/specs` for a new flow, on its own rows through `e2e/fixtures/index.ts` | the scenario | the `e2e` job; none written: nothing |
-| 12 | The documents, through `docs-sync`, where a rule changed; a record in `docs/adr` for each decision the feature made; the spec marked `Implemented` | none | `.claude/skills/docs-sync/scripts/check-doc-links.mjs`; `.claude/agent-docs.test.mjs` for the shape of records and specs; the truth of the text: nothing |
-| 13 | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:scripts`, `pnpm db:verify`, `pnpm i18n:check`, `pnpm format:check`; for the UI `pnpm test:e2e` and a click-through, the portal on a phone viewport; `tenant-isolation-reviewer` and `i18n-reviewer` where they apply | none | the `check` and `e2e` jobs; the agents and the click-through: nothing |
+| Order | Step                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Test first                                                                                                           | Enforced by                                                                                                                                                                                                            |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Table in `packages/db/src/schema/<table>.ts` with the columns of `packages/db/src/schema/columns.ts`, exported from `packages/db/src/schema/index.ts`: its own `tenant_id`, a composite foreign key, an index starting with `tenant_id`                                                                                                                                                                                                                                                       | `packages/db/test/rls.test.ts`: `covered`, `populated()`; a foreign parent in `packages/db/test/invariants.test.ts`  | `rls.test.ts` on a table missing from `covered` or its index; the foreign key: `tenant-isolation-reviewer`                                                                                                             |
+| 2     | `pnpm --filter @opos/db db:generate --name=<table>`                                                                                                                                                                                                                                                                                                                                                                                                                                           | step 1's                                                                                                             | `scripts/check-migrations.mjs` in `pre-push` and CI ([conflicts](#a-migration-applied-or-in-conflict))                                                                                                                 |
+| 3     | `db:generate --custom --name=<table>_privileges`, written by hand before it is applied: forced RLS, `tenant_isolation`, revokes, narrowest grants, `<table>_set_updated_at`                                                                                                                                                                                                                                                                                                                   | step 1's                                                                                                             | `pnpm db:verify` in CI; `.claude/hooks/migration-reminder.mjs` reminds; the trigger: nothing                                                                                                                           |
+| 4     | New privileges in `appWrites`, `appUpdates` or `globalReads` of `packages/db/src/verify.ts`; `pnpm db:migrate`, `pnpm db:verify`                                                                                                                                                                                                                                                                                                                                                              | `rls.test.ts`: each write, `rejects an insert with another tenant id`                                                | `pnpm db:verify`; `rls.test.ts` for `globalReads`                                                                                                                                                                      |
+| 5     | Route in `packages/contract/src/<module>.ts` from `packages/contract/src/common.ts`, exported in `packages/contract/src/index.ts`; an error code in `packages/contract/src/errors.ts`, its message in `packages/i18n/src/errors.ts`                                                                                                                                                                                                                                                           | `apps/api/test/<module>.test.ts` (`apps/api/test/route-needs.ts` is no test); `packages/contract/src/errors.test.ts` | `packages/contract/src/errors.test.ts` on a code without a message; `apps/api/test/tenant-routes.test.ts`, `apps/api/test/route-requirements.test.ts` on a route not served                                            |
+| 6     | The route's need in `tenantRequirements` of `apps/api/test/route-needs.ts` or `publicRoutes` of `route-requirements.test.ts`; a write route in `writes` of `apps/api/test/tenants-editions.test.ts`, its table in `tenantState` of `apps/api/test/tenants.ts`                                                                                                                                                                                                                                 | the lists are the test                                                                                               | `route-requirements.test.ts` until listed, then every actor; `tenants-editions.test.ts` for `writes`; `tenantState`: nothing                                                                                           |
+| 7     | Module in `apps/api/src/modules/<name>`, registered in `apps/api/src/app.module.ts`: an `@Implement` method per route with `@RequireTenant`, `@RequireEdition` or `@InTenant`, which bring `JwtAuthGuard` (`401` `session.invalid`, `session.mfa-required`) and at `write` the queue and lock; an account route `@UseGuards(JwtAuthGuard)`; a repository on `TenantContextService.tx()`, rows found inside the path's parent                                                                  | `apps/api/test/<module>.test.ts`, with another tenant's and edition's identifiers                                    | `tenant-routes.test.ts`, `route-requirements.test.ts`, `apps/api/test/mfa-guard.test.ts`; `apps/api/test/tenant-filters.test.ts` for a repository that decides access; a forgotten parent: `tenant-isolation-reviewer` |
+| 8     | Rows in `packages/db/src/seed.ts`, then `pnpm db:seed` twice                                                                                                                                                                                                                                                                                                                                                                                                                                  | any test of `packages/db`                                                                                            | `packages/db/test/seed.test.ts`; a missing seed: nothing                                                                                                                                                               |
+| 9     | Feature in `apps/panel/src/features` or `apps/portal/src/features` with `api/`, `pages/`, `index.ts`, routed in `apps/panel/src/app/router.tsx` or `apps/portal/src/app/router.tsx`; a panel page uses `useCurrentTenant()` and `NoPermissionView`; every page `usePageTitle`; a page needing a session inside `RequireSession`, which answers `mfa-required` and `unavailable`; a new top-level panel path joins `RESERVED_TENANT_SLUGS` of `packages/db/src/schema/tenants.ts`, a migration | `apps/panel/src/features/program/pages/program-page.test.tsx` shows the shape                                        | ESLint; `src/app/pages.test.ts`; `scripts/bff-boundary.mjs`; `RequireSession` and reserved paths: nothing                                                                                                              |
+| 10    | Strings in Lingui macros, `pnpm i18n:extract`, `pl` in the application's `src/locales/pl.po` (`apps/panel`, `apps/portal`, `apps/admin`); a new term first in `packages/i18n/src/glossary.ts`                                                                                                                                                                                                                                                                                                 | a `packages/i18n` test for the glossary; none for a catalog                                                          | `pnpm i18n:check`; a bare literal: `i18n-reviewer`                                                                                                                                                                     |
+| 11    | A scenario in `e2e/specs` for a new flow, on its own rows through `e2e/fixtures/index.ts`                                                                                                                                                                                                                                                                                                                                                                                                     | the scenario                                                                                                         | the `e2e` job; none written: nothing                                                                                                                                                                                   |
+| 12    | The documents, through `docs-sync`, where a rule changed; a record in `docs/adr` for each decision the feature made; the spec marked `Implemented`                                                                                                                                                                                                                                                                                                                                            | none                                                                                                                 | `.claude/skills/docs-sync/scripts/check-doc-links.mjs`; `.claude/agent-docs.test.mjs` for the shape of records and specs; the truth of the text: nothing                                                               |
+| 13    | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:scripts`, `pnpm db:verify`, `pnpm i18n:check`, `pnpm format:check`; for the UI `pnpm test:e2e` and a click-through, the portal on a phone viewport; `tenant-isolation-reviewer` and `i18n-reviewer` where they apply                                                                                                                                                                                                                   | none                                                                                                                 | the `check` and `e2e` jobs; the agents and the click-through: nothing                                                                                                                                                  |
 
 ### A migration applied or in conflict
 

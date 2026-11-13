@@ -123,7 +123,7 @@ test('the recipe for adding a feature is linked from AGENTS.md', () => {
 test('every step of the recipe for adding a feature says its test and what enforces it', () => {
   const steps = recipe()
     .split('\n')
-    .filter((line) => /^\| \d+ \|/.test(line))
+    .filter((line) => /^\| \d+ +\|/.test(line))
     .map((line) =>
       line
         .split(/(?<!\\)\|/)

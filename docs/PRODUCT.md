@@ -58,29 +58,29 @@ interface language, following the scene's own vocabulary rather than a literal t
 Polish, **ticket** is rendered with the scene's word for admission to a convention, not the word for
 a ticket; what the scene calls accreditation is the ticket.
 
-| Term | Meaning |
-|---|---|
-| **tenant** | a convention brand across the years, e.g. "Convention A" |
-| **edition** | its annual instance, e.g. "Convention A 2026" |
-| **programme item** | an entry in an edition's programme; `ProgramItem` in code |
-| **speaker** | an account an org assigns to a programme item |
-| **like** | a user's mark adding a programme item to their personal schedule |
-| **review** | a user's rating of a programme item |
-| **ticket type** | a kind of ticket an edition sells |
-| **order** | one purchase of tickets for an edition, with its payment |
-| **ticket** | admission to an edition |
-| **scanner** | a device checking tickets at the venue, with no account signed in |
-| **attendee** | an account's registration for an edition |
-| **admin** | runs the platform; creates conventions and their first heads; works in the admin application |
-| **org** | a member of a convention's organizing team; works in the panel |
-| **head** | a convention's head organizer: an org with no permission limits |
-| **user** | a convention attendee; works in the portal |
-| **core** | accounts, conventions, editions and permissions |
-| **module** | a functional area built on the core |
-| **booth** | an exhibitor's stand at an edition, or online as a virtual booth |
-| **locale** | a language in BCP 47 form (`pl`, `en`) |
-| **two-factor authentication** | a second sign-in step an account turns on for itself; 2FA, `mfa` in code |
-| **suspended** | of a convention: taken off the platform by the admin until restored |
+| Term                          | Meaning                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------- |
+| **tenant**                    | a convention brand across the years, e.g. "Convention A"                                     |
+| **edition**                   | its annual instance, e.g. "Convention A 2026"                                                |
+| **programme item**            | an entry in an edition's programme; `ProgramItem` in code                                    |
+| **speaker**                   | an account an org assigns to a programme item                                                |
+| **like**                      | a user's mark adding a programme item to their personal schedule                             |
+| **review**                    | a user's rating of a programme item                                                          |
+| **ticket type**               | a kind of ticket an edition sells                                                            |
+| **order**                     | one purchase of tickets for an edition, with its payment                                     |
+| **ticket**                    | admission to an edition                                                                      |
+| **scanner**                   | a device checking tickets at the venue, with no account signed in                            |
+| **attendee**                  | an account's registration for an edition                                                     |
+| **admin**                     | runs the platform; creates conventions and their first heads; works in the admin application |
+| **org**                       | a member of a convention's organizing team; works in the panel                               |
+| **head**                      | a convention's head organizer: an org with no permission limits                              |
+| **user**                      | a convention attendee; works in the portal                                                   |
+| **core**                      | accounts, conventions, editions and permissions                                              |
+| **module**                    | a functional area built on the core                                                          |
+| **booth**                     | an exhibitor's stand at an edition, or online as a virtual booth                             |
+| **locale**                    | a language in BCP 47 form (`pl`, `en`)                                                       |
+| **two-factor authentication** | a second sign-in step an account turns on for itself; 2FA, `mfa` in code                     |
+| **suspended**                 | of a convention: taken off the platform by the admin until restored                          |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.
@@ -100,9 +100,9 @@ owns; the accounts stay ([0031](adr/0031-suspend-a-tenant-before-deleting-it.md)
 **OPOS does not touch the conventions' money.** Ticket payments go straight to a payment provider
 account the convention owns, and OPOS charges no fees.
 
-| Convention level | Edition level |
-|---|---|
-| name, address, custom domain, language, time zone | programme items, speakers, likes, reviews |
+| Convention level                                  | Edition level                                    |
+| ------------------------------------------------- | ------------------------------------------------ |
+| name, address, custom domain, language, time zone | programme items, speakers, likes, reviews        |
 | team, shop (payment provider, currency), branding | tickets, attendee registrations, website content |
 
 The panel keeps the levels apart, so the organizers of one edition never meet the convention's
@@ -119,10 +119,10 @@ permissions open.
 An org holds permissions **per resource** on two levels, each **none** (the default), **read** or
 **write**: a new org has no access until granted, and need not have it in every edition.
 
-| Level | Permissions |
-|---|---|
+| Level      | Permissions                                                         |
+| ---------- | ------------------------------------------------------------------- |
 | convention | settings (data and team), shop (payment provider account), branding |
-| edition | programme, tickets (sales and scanners), website content |
+| edition    | programme, tickets (sales and scanners), website content            |
 
 A **head** bypasses every permission, and the membership never expires. Every convention keeps at
 least one, handed over by promoting another member first; a demoted head keeps only the permissions
@@ -156,14 +156,14 @@ convention sends up to 20 an hour.
 
 ## 6. Addresses and domains
 
-| Address | What is there | MVP |
-|---|---|---|
-| `opos.land` | the portal | yes |
-| `opos.land/conventions/<convention>` | a convention's page: programme, past editions, sign-up | yes |
-| `panel.opos.land` | the panel; the scanner at `/scanner` | yes |
-| `api.opos.land` | the API; public documentation at `/docs` | yes |
-| `<convention>.opos.land`, a custom domain | the public convention website | no |
-| `admin.opos.land` | the admin application | yes |
+| Address                                   | What is there                                          | MVP |
+| ----------------------------------------- | ------------------------------------------------------ | --- |
+| `opos.land`                               | the portal                                             | yes |
+| `opos.land/conventions/<convention>`      | a convention's page: programme, past editions, sign-up | yes |
+| `panel.opos.land`                         | the panel; the scanner at `/scanner`                   | yes |
+| `api.opos.land`                           | the API; public documentation at `/docs`               | yes |
+| `<convention>.opos.land`, a custom domain | the public convention website                          | no  |
+| `admin.opos.land`                         | the admin application                                  | yes |
 
 **Only the admin sets a convention's address and custom domain.** Changing the address breaks every
 old link, and no address is a word the platform uses itself, such as `panel` or `api`. The address
@@ -180,14 +180,14 @@ module still waiting for its owner, this document states only what it delivers a
 shape of it keeps. Reviews, tickets with the scanner, and attendee registrations wait for their
 owners.
 
-| Module | Covers | MVP |
-|---|---|---|
+| Module    | Covers                                                       | MVP |
+| --------- | ------------------------------------------------------------ | --- |
 | programme | programme items, speakers, likes, personal schedule, reviews | yes |
-| tickets | ticket sales, checking tickets at the venue | yes |
-| profile | the user's account and "my conventions" | yes |
-| CMS | the public convention website | no |
-| booths | exhibitor booths, at the venue and virtual | no |
-| friends | connections between users | no |
+| tickets   | ticket sales, checking tickets at the venue                  | yes |
+| profile   | the user's account and "my conventions"                      | yes |
+| CMS       | the public convention website                                | no  |
+| booths    | exhibitor booths, at the venue and virtual                   | no  |
+| friends   | connections between users                                    | no  |
 
 **Likes.** A signed-in user likes programme items of a published edition, before or during it, and
 can take a like back. The like count is public; who liked an item is not.
@@ -195,20 +195,20 @@ can take a like back. The like count is public; who liked an item is not.
 **Reviews.** Users review programme items and a speaker reads the reviews of their own; the rest is
 set by the programme's domain owner. Any shape keeps these rules:
 
-| Rule | Value |
-|---|---|
+| Rule       | Value                                                              |
+| ---------- | ------------------------------------------------------------------ |
 | Belongs to | a programme item; goes with the item and with its author's account |
-| Organizers | act on it with the programme permission of the item's edition |
+| Organizers | act on it with the programme permission of the item's edition      |
 
 **Tickets.** What is sold, on what terms, and how tickets reach the buyer and are checked are set by
 the domain owner of tickets. Any shape keeps these rules:
 
-| Rule | Value |
-|---|---|
-| Money | goes to the convention's own payment provider account, never through OPOS |
-| Provider credentials | given by an org with shop write access; stored encrypted, never shown again |
-| Scanner | serves one edition; its access ends no later than the enabling org's; revocable |
-| Link without sign-in | an order or ticket link carries a secret nobody can guess |
+| Rule                 | Value                                                                           |
+| -------------------- | ------------------------------------------------------------------------------- |
+| Money                | goes to the convention's own payment provider account, never through OPOS       |
+| Provider credentials | given by an org with shop write access; stored encrypted, never shown again     |
+| Scanner              | serves one edition; its access ends no later than the enabling org's; revocable |
+| Link without sign-in | an order or ticket link carries a secret nobody can guess                       |
 
 ---
 

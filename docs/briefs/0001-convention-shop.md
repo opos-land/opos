@@ -34,51 +34,51 @@ from the convention's page to a paid order with a QR code in under five minutes 
 
 ### Business requirements
 
-| ID | Requirement |
-| --- | --- |
-| BR-01 | A convention runs any number of editions; each edition has its own catalog, prices, dates, legal documents and sales settings. The payment provider account, the seller's details and the currency are the convention's. |
-| BR-02 | An edition offers several ticket types (e.g. standard, supporter), each with its own price, description, perks, capacity and sale window. |
-| BR-03 | Prices can change by date (e.g. cheaper online than on-site, early-bird tiers). A placed order keeps its price. A checkout keeps a price tier or a sale window for 30 minutes after it ended; later the buyer is shown the new total and confirms it, or is told the sale closed. |
-| BR-04 | Some ticket types are excluded from discounts; the shop says so on the ticket type's page. |
-| BR-05 | A ticket can include perks (e.g. pin, special badge) shown to the buyer but not sold separately. |
-| BR-06 | Merchandise is sold with a ticket or on its own ("merch-only" order). The shop is not fit for purpose without merchandise. |
-| BR-07 | Merchandise can have variants (e.g. cut × size) with stock per variant; a variant at zero stock cannot be bought. |
-| BR-08 | Merchandise has a pre-order deadline; after it, only remaining stock is sold. |
-| BR-09 | Fulfillment is pick-up at the edition only; the shop never promises shipping. |
-| BR-10 | Add-ons can be paid, free, capacity-limited, or a non-binding headcount (e.g. sleeping-room interest). |
-| BR-11 | A paid shop order has one QR code, used at the scanner for entry and merchandise pick-up. An order that is not paid has none, and neither has a manual order, handed over as it is recorded (B4.5). An account's "Buy more" order joins the QR code of the order it extends (F9.4). |
-| BR-12 | Each edition sets three age bands, child, teen and adult, by age on its first day. A child enters only with a guardian present; a teen enters with a guardian's written consent, a paper document brought to the edition, which the buyer acknowledges with a checkbox at checkout; an adult needs nothing. The edition can link a consent form for the guardian to print. A ticket type allows some of the bands. |
-| BR-13 | Consents (e.g. shop terms, edition rules, minors' protection, the privacy policy) are configurable per edition, each required or optional, and stored with the order. The shop treats them as given: their kind and wording are the convention's, settled with its lawyer, not the shop's. A payment provider's own consent, when it requires one, comes from its module. |
-| BR-14 | Payments run through Przelewy24 (BLIK, bank transfer, cards). Another provider may follow. |
-| BR-15 | Each convention is paid into its own payment provider account; OPOS never holds the money. |
-| BR-16 | Organizers see live sales, stock and ticket holder lists, and can export them. |
-| BR-18 | Beyond name, email and age band, the convention decides what it asks a ticket holder, as custom fields of the edition: short, non-sensitive text answers. |
-| BR-19 | Custom field answers, and a visitor's details, are the convention's data: they are kept in the convention, with the order or the attendee registration, never in the account. |
-| BR-20 | One order holds at most one ticket, for one ticket holder. One email can hold several orders, each ticket under its own name: the name is the convention's data point, not an identity. |
-| BR-21 | A buyer buys only under their own email. A visitor's order under an email that belongs to an account is attached to that account once it is paid, and its emails ask the owner to sign in to see it; checkout never tells the visitor whether the email has an account. |
-| BR-22 | A ticket passes to another person only when an organizer changes the order's email, which replaces its QR code and order link (B4.3). |
-| BR-23 | OPOS carries out no refunds. An organizer can cancel a paid order; returning the money is the convention's matter, outside OPOS. |
+| ID    | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BR-01 | A convention runs any number of editions; each edition has its own catalog, prices, dates, legal documents and sales settings. The payment provider account, the seller's details and the currency are the convention's.                                                                                                                                                                                                                                   |
+| BR-02 | An edition offers several ticket types (e.g. standard, supporter), each with its own price, description, perks, capacity and sale window.                                                                                                                                                                                                                                                                                                                  |
+| BR-03 | Prices can change by date (e.g. cheaper online than on-site, early-bird tiers). A placed order keeps its price. A checkout keeps a price tier or a sale window for 30 minutes after it ended; later the buyer is shown the new total and confirms it, or is told the sale closed.                                                                                                                                                                          |
+| BR-04 | Some ticket types are excluded from discounts; the shop says so on the ticket type's page.                                                                                                                                                                                                                                                                                                                                                                 |
+| BR-05 | A ticket can include perks (e.g. pin, special badge) shown to the buyer but not sold separately.                                                                                                                                                                                                                                                                                                                                                           |
+| BR-06 | Merchandise is sold with a ticket or on its own ("merch-only" order). The shop is not fit for purpose without merchandise.                                                                                                                                                                                                                                                                                                                                 |
+| BR-07 | Merchandise can have variants (e.g. cut × size) with stock per variant; a variant at zero stock cannot be bought.                                                                                                                                                                                                                                                                                                                                          |
+| BR-08 | Merchandise has a pre-order deadline; after it, only remaining stock is sold.                                                                                                                                                                                                                                                                                                                                                                              |
+| BR-09 | Fulfillment is pick-up at the edition only; the shop never promises shipping.                                                                                                                                                                                                                                                                                                                                                                              |
+| BR-10 | Add-ons can be paid, free, capacity-limited, or a non-binding headcount (e.g. sleeping-room interest).                                                                                                                                                                                                                                                                                                                                                     |
+| BR-11 | A paid shop order has one QR code, used at the scanner for entry and merchandise pick-up. An order that is not paid has none, and neither has a manual order, handed over as it is recorded (B4.5). An account's "Buy more" order joins the QR code of the order it extends (F9.4).                                                                                                                                                                        |
+| BR-12 | Each edition sets three age bands, child, teen and adult, by age on its first day. A child enters only with a guardian present; a teen enters with a guardian's written consent, a paper document brought to the edition, which the buyer acknowledges with a checkbox at checkout; an adult needs nothing. The edition can link a consent form for the guardian to print. A ticket type allows some of the bands.                                         |
+| BR-13 | Consents (e.g. shop terms, edition rules, minors' protection, the privacy policy) are configurable per edition, each required or optional, and stored with the order. The shop treats them as given: their kind and wording are the convention's, settled with its lawyer, not the shop's. A payment provider's own consent, when it requires one, comes from its module.                                                                                  |
+| BR-14 | Payments run through Przelewy24 (BLIK, bank transfer, cards). Another provider may follow.                                                                                                                                                                                                                                                                                                                                                                 |
+| BR-15 | Each convention is paid into its own payment provider account; OPOS never holds the money.                                                                                                                                                                                                                                                                                                                                                                 |
+| BR-16 | Organizers see live sales, stock and ticket holder lists, and can export them.                                                                                                                                                                                                                                                                                                                                                                             |
+| BR-18 | Beyond name, email and age band, the convention decides what it asks a ticket holder, as custom fields of the edition: short, non-sensitive text answers.                                                                                                                                                                                                                                                                                                  |
+| BR-19 | Custom field answers, and a visitor's details, are the convention's data: they are kept in the convention, with the order or the attendee registration, never in the account.                                                                                                                                                                                                                                                                              |
+| BR-20 | One order holds at most one ticket, for one ticket holder. One email can hold several orders, each ticket under its own name: the name is the convention's data point, not an identity.                                                                                                                                                                                                                                                                    |
+| BR-21 | A buyer buys only under their own email. A visitor's order under an email that belongs to an account is attached to that account once it is paid, and its emails ask the owner to sign in to see it; checkout never tells the visitor whether the email has an account.                                                                                                                                                                                    |
+| BR-22 | A ticket passes to another person only when an organizer changes the order's email, which replaces its QR code and order link (B4.3).                                                                                                                                                                                                                                                                                                                      |
+| BR-23 | OPOS carries out no refunds. An organizer can cancel a paid order; returning the money is the convention's matter, outside OPOS.                                                                                                                                                                                                                                                                                                                           |
 | BR-24 | A payment confirmed after its order's hold ended still pays the order while its stock and capacity last. One that cannot simply mark its order paid (a different amount, or stock or capacity gone) puts the order in "Needs review" for an organizer. A payment the order no longer needs is refused where its provider allows; one that still arrives is shown to the organizers. No payment passes unnoticed, and the buyer is told where the money is. |
-| BR-25 | An unpaid order holds its stock and capacity for 30 minutes (the hold). The hold does not limit when the order can be paid, and an order is not expired while its provider reports a payment made within the hold. In the first shop a payment attempt starts only within the hold. |
-| BR-26 | Orders are kept for at least five years from the end of their edition, which is never earlier than their payment. Nothing is purged in the first shop. |
-| BR-27 | For an account, holding a paid ticket is being registered: when an order with a ticket on an account is paid, placed signed in or attached (BR-21), the account becomes an attendee of the edition, one registration per account and edition, whatever the ticket holder's name. A visitor with no account holds a ticket and no registration. |
+| BR-25 | An unpaid order holds its stock and capacity for 30 minutes (the hold). The hold does not limit when the order can be paid, and an order is not expired while its provider reports a payment made within the hold. In the first shop a payment attempt starts only within the hold.                                                                                                                                                                        |
+| BR-26 | Orders are kept for at least five years from the end of their edition, which is never earlier than their payment. Nothing is purged in the first shop.                                                                                                                                                                                                                                                                                                     |
+| BR-27 | For an account, holding a paid ticket is being registered: when an order with a ticket on an account is paid, placed signed in or attached (BR-21), the account becomes an attendee of the edition, one registration per account and edition, whatever the ticket holder's name. A visitor with no account holds a ticket and no registration.                                                                                                             |
 
 ### User requirements
 
-| ID | As a… | I want to… |
-| --- | --- | --- |
-| UR-01 | Buyer | compare ticket types and their prices and perks on one page |
-| UR-02 | Buyer | see the running total at every checkout step |
-| UR-03 | Buyer | choose merchandise sizes using a size chart for each cut |
-| UR-04 | Buyer | check out without an account or with one, my choice |
-| UR-05 | Buyer | pay with BLIK, bank transfer or card |
-| UR-06 | Buyer | get the QR code by email right after payment |
-| UR-07 | Account holder | buy more items, resend a QR code and see my orders in a convention |
-| UR-08 | Visitor | open a read-only order page from a link in my email |
-| UR-09 | Buyer | retry a failed payment without re-entering everything |
-| UR-10 | Organizer | set up an edition's catalog and rules myself |
-| UR-11 | Organizer | correct or cancel an order without developer help |
-| UR-12 | Organizer | see and settle every order that needs review |
+| ID    | As a…                 | I want to…                                                                            |
+| ----- | --------------------- | ------------------------------------------------------------------------------------- |
+| UR-01 | Buyer                 | compare ticket types and their prices and perks on one page                           |
+| UR-02 | Buyer                 | see the running total at every checkout step                                          |
+| UR-03 | Buyer                 | choose merchandise sizes using a size chart for each cut                              |
+| UR-04 | Buyer                 | check out without an account or with one, my choice                                   |
+| UR-05 | Buyer                 | pay with BLIK, bank transfer or card                                                  |
+| UR-06 | Buyer                 | get the QR code by email right after payment                                          |
+| UR-07 | Account holder        | buy more items, resend a QR code and see my orders in a convention                    |
+| UR-08 | Visitor               | open a read-only order page from a link in my email                                   |
+| UR-09 | Buyer                 | retry a failed payment without re-entering everything                                 |
+| UR-10 | Organizer             | set up an edition's catalog and rules myself                                          |
+| UR-11 | Organizer             | correct or cancel an order without developer help                                     |
+| UR-12 | Organizer             | see and settle every order that needs review                                          |
 | UR-13 | Organizer at the desk | scan a QR code with the edition's scanner and see what to hand over and what to check |
 
 ## What the shop takes from other modules
@@ -86,14 +86,14 @@ from the convention's page to a paid order with a QR code in under five minutes 
 The shop builds on these and sets none of their rules: this brief states only what the shop needs
 of them.
 
-| From | The shop takes | Set there, not here |
-| --- | --- | --- |
-| Core | Accounts and their confirmed emails. Organizers and their permissions: the tickets permission of an edition opens its catalog, orders, exports and scanners (read sees them, write changes them), the shop permission of the convention opens its payment provider account and seller's details, and a head organizer holds both. The convention's language, time zone (every date and deadline of the shop is in it), currency (PLN in the first shop) and branding, shown in the shop and its emails. An edition, published or not. The isolation of conventions' data and payment accounts. | Sign-in, invitations, the account's own emails, how branding is set |
-| Portal | The bot check, at checkout and at sign-in (NF-05); the consent banner, for a tracker that comes later (NF-06). | [0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md) and the record of D12 |
-| A payment provider's module | [What the shop asks of it](#what-the-shop-asks-of-a-providers-module). | How the provider processes a transaction |
-| Attendee registrations | The registration a paid ticket makes for an account (BR-27). | Everything else about a registration, and its owner ([open questions](#open-questions)) |
-| Scanner | A device with no account signed in, serving one edition; B6 says what it reads and records. | How a device is enabled and revoked; undoing a hand-out marked by mistake |
-| Programme sign-ups | Nothing. | How the attendee badge handed out at the desk is identified (B4.5) |
+| From                        | The shop takes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Set there, not here                                                                                |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Core                        | Accounts and their confirmed emails. Organizers and their permissions: the tickets permission of an edition opens its catalog, orders, exports and scanners (read sees them, write changes them), the shop permission of the convention opens its payment provider account and seller's details, and a head organizer holds both. The convention's language, time zone (every date and deadline of the shop is in it), currency (PLN in the first shop) and branding, shown in the shop and its emails. An edition, published or not. The isolation of conventions' data and payment accounts. | Sign-in, invitations, the account's own emails, how branding is set                                |
+| Portal                      | The bot check, at checkout and at sign-in (NF-05); the consent banner, for a tracker that comes later (NF-06).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md) and the record of D12 |
+| A payment provider's module | [What the shop asks of it](#what-the-shop-asks-of-a-providers-module).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | How the provider processes a transaction                                                           |
+| Attendee registrations      | The registration a paid ticket makes for an account (BR-27).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Everything else about a registration, and its owner ([open questions](#open-questions))            |
+| Scanner                     | A device with no account signed in, serving one edition; B6 says what it reads and records.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | How a device is enabled and revoked; undoing a hand-out marked by mistake                          |
+| Programme sign-ups          | Nothing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | How the attendee badge handed out at the desk is identified (B4.5)                                 |
 
 ## Glossary
 
@@ -106,43 +106,43 @@ wherever tenant isolation is the subject. Every term below is new, but for order
 changes (D5); each enters the product's glossary, with the quoted `pl` rendering, through the
 specs.
 
-| Term | `pl` | Meaning |
-| --- | --- | --- |
-| Shop | "sklep" | The edition's sales to buyers; also the convention's permission over its payment provider account. |
-| Order | "zamówienie" | One checkout of an edition with its payment: at most one ticket, for one ticket holder, with its add-ons and merchandise. A merch-only order has no ticket. |
-| Ticket holder | "posiadacz akredytacji" | The name a ticket is issued to, with its age band and custom field answers. |
-| Buyer | "kupujący" | The person paying an order under their own email, who gets its QR code: a visitor or an account holder. |
-| Visitor | "odwiedzający" | A person with no account signed in. Not "guest", which the scene uses for a convention's invited guests. |
-| Price tier | "próg cenowy" | A price valid within a date window (e.g. online pre-sale vs on-site). |
-| Supporter price | "cena wspierająca" | An optional higher price a buyer may choose for a ticket type. |
-| Perk | "bonus" | Something included with a ticket type (pin, special badge); visible, not priced separately. |
-| Add-on | "dodatek" | An optional extra attached to a ticket: paid, free, capacity-limited or headcount-only. |
-| Merchandise item | "merch", or "gadżet" | A physical product picked up at the edition ("merch" on screen). |
-| Variant | "wariant" | A buyable option of a merchandise item (e.g. "Women's - M"); holds its own stock. |
-| Size chart | "tabela rozmiarów" | The measurements of a merchandise item's sizes, one per cut. |
-| Pre-order deadline | "termin przedsprzedaży" | The date until which merchandise can be ordered without a stock limit. |
-| Age band | "przedział wiekowy": "dziecko", "nastolatek", "dorosły" | One of an edition's three, child, teen or adult, by age on the edition's first day (BR-12). |
-| Consent | "zgoda" | A buyer's acceptance of a document of the edition, stored with its version. |
-| Guardian consent | "zgoda opiekuna" | A guardian's written consent for a teen, brought on paper to the edition (BR-12). |
-| Custom field | "pole dodatkowe" | A short, non-sensitive text an edition's organizers ask a ticket holder for. |
-| Discount code | "kod rabatowy" | A code lowering the price of the products it applies to. |
-| QR code | "kod QR" | A paid shop order's credential, read by the scanner for entry and merchandise pick-up. |
-| Order link | "link do zamówienia" | An emailed link opening one order read-only, without a sign-in. |
-| Payment attempt | "próba płatności" | One try at paying an order through its payment provider; an order can have several. |
-| Hold | "rezerwacja" | The 30 minutes an unpaid order holds its stock and capacity; it does not limit when the order can be paid. |
-| Manual order | "zamówienie ręczne" | A sale an organizer records in the panel as paid outside the shop (desk sale, invoice, complimentary), handed over as it is recorded. |
+| Term               | `pl`                                                    | Meaning                                                                                                                                                     |
+| ------------------ | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shop               | "sklep"                                                 | The edition's sales to buyers; also the convention's permission over its payment provider account.                                                          |
+| Order              | "zamówienie"                                            | One checkout of an edition with its payment: at most one ticket, for one ticket holder, with its add-ons and merchandise. A merch-only order has no ticket. |
+| Ticket holder      | "posiadacz akredytacji"                                 | The name a ticket is issued to, with its age band and custom field answers.                                                                                 |
+| Buyer              | "kupujący"                                              | The person paying an order under their own email, who gets its QR code: a visitor or an account holder.                                                     |
+| Visitor            | "odwiedzający"                                          | A person with no account signed in. Not "guest", which the scene uses for a convention's invited guests.                                                    |
+| Price tier         | "próg cenowy"                                           | A price valid within a date window (e.g. online pre-sale vs on-site).                                                                                       |
+| Supporter price    | "cena wspierająca"                                      | An optional higher price a buyer may choose for a ticket type.                                                                                              |
+| Perk               | "bonus"                                                 | Something included with a ticket type (pin, special badge); visible, not priced separately.                                                                 |
+| Add-on             | "dodatek"                                               | An optional extra attached to a ticket: paid, free, capacity-limited or headcount-only.                                                                     |
+| Merchandise item   | "merch", or "gadżet"                                    | A physical product picked up at the edition ("merch" on screen).                                                                                            |
+| Variant            | "wariant"                                               | A buyable option of a merchandise item (e.g. "Women's - M"); holds its own stock.                                                                           |
+| Size chart         | "tabela rozmiarów"                                      | The measurements of a merchandise item's sizes, one per cut.                                                                                                |
+| Pre-order deadline | "termin przedsprzedaży"                                 | The date until which merchandise can be ordered without a stock limit.                                                                                      |
+| Age band           | "przedział wiekowy": "dziecko", "nastolatek", "dorosły" | One of an edition's three, child, teen or adult, by age on the edition's first day (BR-12).                                                                 |
+| Consent            | "zgoda"                                                 | A buyer's acceptance of a document of the edition, stored with its version.                                                                                 |
+| Guardian consent   | "zgoda opiekuna"                                        | A guardian's written consent for a teen, brought on paper to the edition (BR-12).                                                                           |
+| Custom field       | "pole dodatkowe"                                        | A short, non-sensitive text an edition's organizers ask a ticket holder for.                                                                                |
+| Discount code      | "kod rabatowy"                                          | A code lowering the price of the products it applies to.                                                                                                    |
+| QR code            | "kod QR"                                                | A paid shop order's credential, read by the scanner for entry and merchandise pick-up.                                                                      |
+| Order link         | "link do zamówienia"                                    | An emailed link opening one order read-only, without a sign-in.                                                                                             |
+| Payment attempt    | "próba płatności"                                       | One try at paying an order through its payment provider; an order can have several.                                                                         |
+| Hold               | "rezerwacja"                                            | The 30 minutes an unpaid order holds its stock and capacity; it does not limit when the order can be paid.                                                  |
+| Manual order       | "zamówienie ręczne"                                     | A sale an organizer records in the panel as paid outside the shop (desk sale, invoice, complimentary), handed over as it is recorded.                       |
 
 Order statuses:
 
-| Status | `pl` | Meaning |
-| --- | --- | --- |
-| Awaiting payment | "oczekuje na płatność" | Sent to the payment provider, holding its stock and capacity for the hold. |
-| Paid | "opłacone" | The payment provider confirmed the total, or the total was zero; the QR code is issued. |
-| Paid - manual | "opłacone ręcznie" | A manual order; it has no QR code. |
-| Expired | "wygasłe" | Unpaid when its hold ended; holds nothing, and a payment that still comes pays it while stock and capacity last. |
-| Needs review | "do wyjaśnienia" | A payment did not match the order, or came once its stock or capacity was gone; an organizer settles it. |
-| Declined | "odrzucone" | An organizer declined a payment that needed review. |
-| Canceled | "anulowane" | An organizer canceled a paid order. |
+| Status           | `pl`                   | Meaning                                                                                                          |
+| ---------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Awaiting payment | "oczekuje na płatność" | Sent to the payment provider, holding its stock and capacity for the hold.                                       |
+| Paid             | "opłacone"             | The payment provider confirmed the total, or the total was zero; the QR code is issued.                          |
+| Paid - manual    | "opłacone ręcznie"     | A manual order; it has no QR code.                                                                               |
+| Expired          | "wygasłe"              | Unpaid when its hold ended; holds nothing, and a payment that still comes pays it while stock and capacity last. |
+| Needs review     | "do wyjaśnienia"       | A payment did not match the order, or came once its stock or capacity was gone; an organizer settles it.         |
+| Declined         | "odrzucone"            | An organizer declined a payment that needed review.                                                              |
+| Canceled         | "anulowane"            | An organizer canceled a paid order.                                                                              |
 
 ## Shop frontend
 
@@ -449,18 +449,18 @@ The contract between the shop's specs and a provider's. The right column names w
 the Przelewy24 module decides; it starts from [0002](0002-convention-shop-review.md): its facts
 a–p, its points 2–5 and 7–10, and its list of what to check in the sandbox.
 
-| The shop asks the module to | For Przelewy24 |
-| --- | --- |
-| start a payment attempt for an order: the amount and currency, the order number as its reference, a description with no personal data, where the buyer returns | each attempt is its own transaction; its time limit and method mask (points 3, 4) |
-| confirm a payment to the API: which attempt, the amount paid and when it was made; a repeat changes nothing | the notification, then the verification (facts b, c, f, g) |
-| tell the state of an attempt when asked: before an order expires, and before a new attempt starts | fact h |
-| report a failure and its reason, where the provider does | cards and BLIK only, by an additional notification (point 2) |
-| refuse a payment its order no longer needs, where the provider can | leaving it unverified (point 3) |
-| say where the money of a payment is, with the convention or still with the buyer, for the shop's pages and emails | when a payment that needs review is verified (point 4) |
-| list the methods the shop names | BLIK, Polish bank transfers (pay-by-link), cards (point 9) |
-| say what it requires of the shop's pages: a consent, its logo, limits on fields | the consent's wording and place (point 7); an email of up to 50 characters (point 8) |
-| keep information with each attempt, shown on the order (B4.2) and in the payments export (B7.2) | the transaction number, by which an organizer finds the payment in Przelewy24's panel; the payout batch number and the commission (point 10) |
-| connect the convention's own account, by an organizer with the shop permission, and say when it is ready to sell (B1.4) | the credentials; the email finishing an abandoned payment turned off (point 4) |
+| The shop asks the module to                                                                                                                                    | For Przelewy24                                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| start a payment attempt for an order: the amount and currency, the order number as its reference, a description with no personal data, where the buyer returns | each attempt is its own transaction; its time limit and method mask (points 3, 4)                                                            |
+| confirm a payment to the API: which attempt, the amount paid and when it was made; a repeat changes nothing                                                    | the notification, then the verification (facts b, c, f, g)                                                                                   |
+| tell the state of an attempt when asked: before an order expires, and before a new attempt starts                                                              | fact h                                                                                                                                       |
+| report a failure and its reason, where the provider does                                                                                                       | cards and BLIK only, by an additional notification (point 2)                                                                                 |
+| refuse a payment its order no longer needs, where the provider can                                                                                             | leaving it unverified (point 3)                                                                                                              |
+| say where the money of a payment is, with the convention or still with the buyer, for the shop's pages and emails                                              | when a payment that needs review is verified (point 4)                                                                                       |
+| list the methods the shop names                                                                                                                                | BLIK, Polish bank transfers (pay-by-link), cards (point 9)                                                                                   |
+| say what it requires of the shop's pages: a consent, its logo, limits on fields                                                                                | the consent's wording and place (point 7); an email of up to 50 characters (point 8)                                                         |
+| keep information with each attempt, shown on the order (B4.2) and in the payments export (B7.2)                                                                | the transaction number, by which an organizer finds the payment in Przelewy24's panel; the payout batch number and the commission (point 10) |
+| connect the convention's own account, by an organizer with the shop permission, and say when it is ready to sell (B1.4)                                        | the credentials; the email finishing an abandoned payment turned off (point 4)                                                               |
 
 ### P1: Paying an order
 
@@ -715,72 +715,72 @@ Every email has a fixed text with the convention's simple branding, and is logge
 "Organizers" below are those who can settle the order, as P2 says. Where the money is, in an
 email to a buyer, is the sentence the provider's module gives.
 
-| Email | Sent when | Contains |
-| --- | --- | --- |
-| Order confirmation | Order becomes "Paid" | Lines, total, QR code, pick-up notice, order link, the seller's details, links to the documents accepted; for a teen, the guardian consent rule and form link; for an email with an account, a sign-in link |
-| Order expired | Unpaid order expires | Link to start again |
-| Order changed | Organizer edits the ticket holder, the email or a variant | What changed; on a new email, the new QR code and order link to the new address and a notice to the old one |
-| Payment under review | Order goes to "Needs review" | That the payment arrived, where the money is, that an organizer will get in touch |
-| Order declined | Organizer declines an order that needed review | That the payment was declined, where the money is; the convention's contact |
-| Order canceled | Organizer cancels a paid order | That the QR code is no longer valid; the convention's contact |
-| Payment not needed | An order gets a payment it no longer needs | Where the money is; the convention's contact |
-| Order link | Buyer asks for a fresh link | Read-only order link |
-| Needs review | Order goes to "Needs review" (to the organizers) | Order number, what did not match |
-| Payment not needed | An order gets a payment it no longer needs (to the organizers) | Order number, the payment |
-| Pre-edition reminder | N days before the edition, set by organizer | QR code, opening hours, pick-up info, guardian rules and consent form link |
+| Email                | Sent when                                                      | Contains                                                                                                                                                                                                    |
+| -------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Order confirmation   | Order becomes "Paid"                                           | Lines, total, QR code, pick-up notice, order link, the seller's details, links to the documents accepted; for a teen, the guardian consent rule and form link; for an email with an account, a sign-in link |
+| Order expired        | Unpaid order expires                                           | Link to start again                                                                                                                                                                                         |
+| Order changed        | Organizer edits the ticket holder, the email or a variant      | What changed; on a new email, the new QR code and order link to the new address and a notice to the old one                                                                                                 |
+| Payment under review | Order goes to "Needs review"                                   | That the payment arrived, where the money is, that an organizer will get in touch                                                                                                                           |
+| Order declined       | Organizer declines an order that needed review                 | That the payment was declined, where the money is; the convention's contact                                                                                                                                 |
+| Order canceled       | Organizer cancels a paid order                                 | That the QR code is no longer valid; the convention's contact                                                                                                                                               |
+| Payment not needed   | An order gets a payment it no longer needs                     | Where the money is; the convention's contact                                                                                                                                                                |
+| Order link           | Buyer asks for a fresh link                                    | Read-only order link                                                                                                                                                                                        |
+| Needs review         | Order goes to "Needs review" (to the organizers)               | Order number, what did not match                                                                                                                                                                            |
+| Payment not needed   | An order gets a payment it no longer needs (to the organizers) | Order number, the payment                                                                                                                                                                                   |
+| Pre-edition reminder | N days before the edition, set by organizer                    | QR code, opening hours, pick-up info, guardian rules and consent form link                                                                                                                                  |
 
 ### Non-functional requirements
 
-| ID | Requirement |
-| --- | --- |
-| NF-01 | Mobile-first: full checkout works on a 360 px wide screen. |
-| NF-02 | Accessibility: WCAG 2.1 AA for shop and buyer pages. |
+| ID    | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NF-01 | Mobile-first: full checkout works on a 360 px wide screen.                                                                                                                                                                                                                                                                                                                                                                                            |
+| NF-02 | Accessibility: WCAG 2.1 AA for shop and buyer pages.                                                                                                                                                                                                                                                                                                                                                                                                  |
 | NF-05 | Security: Google reCAPTCHA as the bot check on checkout, strictly necessary and so asked for in no banner (D12), without puzzles for most buyers and with a fallback that meets NF-02; protection against cross-site scripting, injection and the other common attacks; secure HTTP headers; general hardening; a limit of unpaid orders per email address, so nobody fills another person's inbox or holds stock with addresses that are not theirs. |
-| NF-06 | The first shop sets no analytics or advertising cookies. A tracker that comes later, a convention's own analytics tag for one, runs only through the portal's consent banner ([0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)). |
-| NF-07 | Every consent is stored with the exact document version accepted and a timestamp. |
-| NF-09 | Prices are shown with currency and as gross amounts; totals in the shop, emails and the payment provider always match to the cent. |
+| NF-06 | The first shop sets no analytics or advertising cookies. A tracker that comes later, a convention's own analytics tag for one, runs only through the portal's consent banner ([0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).                                                                                                                                                                                          |
+| NF-07 | Every consent is stored with the exact document version accepted and a timestamp.                                                                                                                                                                                                                                                                                                                                                                     |
+| NF-09 | Prices are shown with currency and as gross amounts; totals in the shop, emails and the payment provider always match to the cent.                                                                                                                                                                                                                                                                                                                    |
 
 ## Postponed
 
 Wanted later, not in the first shop.
 
-| Item | From |
-| --- | --- |
-| Refunds through OPOS, full and partial; a buyer canceling and getting a refund before a deadline | M1 P2, open question "Buyer cancellation" |
-| Canceling a single line of an order; until then an organizer cancels the whole order or swaps a variant | [0002](0002-convention-shop-review.md) point 12 |
-| Automatic refund of a payment that arrives after its order expired | M1 P1.8 |
-| An opt-in fiscal receipt and invoice helper (company details at checkout, VAT), and a receipt to download | M1 open question "Invoices", F9.3 |
-| A buyer passing a ticket to another person themselves | M1 open question "Ticket transfer" |
-| Custom fields beyond short text (choices, dates, sensitive data) | M1 open question "Custom fields" |
-| Stripe or another provider; choosing providers per edition and which is shown first | M1 BR-14, Payments, P1.2 |
-| The payment methods as the provider returns them for the account and the amount; until then a fixed list per provider | [0002](0002-convention-shop-review.md) point 9 |
+| Item                                                                                                                                                                                      | From                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Refunds through OPOS, full and partial; a buyer canceling and getting a refund before a deadline                                                                                          | M1 P2, open question "Buyer cancellation"                           |
+| Canceling a single line of an order; until then an organizer cancels the whole order or swaps a variant                                                                                   | [0002](0002-convention-shop-review.md) point 12                     |
+| Automatic refund of a payment that arrives after its order expired                                                                                                                        | M1 P1.8                                                             |
+| An opt-in fiscal receipt and invoice helper (company details at checkout, VAT), and a receipt to download                                                                                 | M1 open question "Invoices", F9.3                                   |
+| A buyer passing a ticket to another person themselves                                                                                                                                     | M1 open question "Ticket transfer"                                  |
+| Custom fields beyond short text (choices, dates, sensitive data)                                                                                                                          | M1 open question "Custom fields"                                    |
+| Stripe or another provider; choosing providers per edition and which is shown first                                                                                                       | M1 BR-14, Payments, P1.2                                            |
+| The payment methods as the provider returns them for the account and the amount; until then a fixed list per provider                                                                     | [0002](0002-convention-shop-review.md) point 9                      |
 | An order payable for longer than its hold (24 hours was suggested), a reminder carrying "Pay now", a visitor's way back to an unpaid order, and a countdown of the hold; until then BR-25 | domain owner, [0002](0002-convention-shop-review.md) points 2 and 4 |
-| Named organizer roles (e.g. owner, manager, finance, desk, viewer) on top of the permissions | M1 B1.2 |
-| A new edition made from the convention's previous one: its catalog, age bands, custom fields and consents copied as drafts, with dates, prices and stock cleared | B1.3 |
-| An email alerting the organizers when a variant's stock falls below a threshold they set | B5.2 |
-| Emails an organizer edits per edition | M1 Notifications |
-| Organizer texts per language; emails in the buyer's checkout language | M1 NF-03 |
-| Data export on request; purging orders past their retention, and what a purge removes; retention set per convention beyond the five-year minimum | M1 NF-06, BR-26 |
-| A convention's own analytics tag in its shop, through the consent banner | domain owner |
-| An "interested" phase before buying: an account follows an edition and gets its news ahead of the sale | domain owner |
-| Audit log and order change history (who, when, before/after) | M1 NF-08, B4.2, B4.3 |
-| Orders across conventions on the account, and a link to the panel there | M1 F9.3 |
-| Claiming a visitor's orders after an account is created with their email, and offering an account after the purchase | M1 F9.5, [0002](0002-convention-shop-review.md) point 18 |
-| Sale-opening peaks beyond one convention's writes running one at a time | M1 NF-04 |
-| Several tickets in one order, and "Buy another ticket" after a payment with the email and consents carried over | D5, [0002](0002-convention-shop-review.md) point 17 |
-| The QR code and the order link on the result page once paid, and a way back to that page | [0002](0002-convention-shop-review.md) point 19 |
-| Moving an order and its attendee registration to the account of its new email after an organizer changes it (B4.3) | domain owner |
-| Releasing the holds of orders that have held an item for longer than a set time, once the item reaches zero stock | domain owner |
+| Named organizer roles (e.g. owner, manager, finance, desk, viewer) on top of the permissions                                                                                              | M1 B1.2                                                             |
+| A new edition made from the convention's previous one: its catalog, age bands, custom fields and consents copied as drafts, with dates, prices and stock cleared                          | B1.3                                                                |
+| An email alerting the organizers when a variant's stock falls below a threshold they set                                                                                                  | B5.2                                                                |
+| Emails an organizer edits per edition                                                                                                                                                     | M1 Notifications                                                    |
+| Organizer texts per language; emails in the buyer's checkout language                                                                                                                     | M1 NF-03                                                            |
+| Data export on request; purging orders past their retention, and what a purge removes; retention set per convention beyond the five-year minimum                                          | M1 NF-06, BR-26                                                     |
+| A convention's own analytics tag in its shop, through the consent banner                                                                                                                  | domain owner                                                        |
+| An "interested" phase before buying: an account follows an edition and gets its news ahead of the sale                                                                                    | domain owner                                                        |
+| Audit log and order change history (who, when, before/after)                                                                                                                              | M1 NF-08, B4.2, B4.3                                                |
+| Orders across conventions on the account, and a link to the panel there                                                                                                                   | M1 F9.3                                                             |
+| Claiming a visitor's orders after an account is created with their email, and offering an account after the purchase                                                                      | M1 F9.5, [0002](0002-convention-shop-review.md) point 18            |
+| Sale-opening peaks beyond one convention's writes running one at a time                                                                                                                   | M1 NF-04                                                            |
+| Several tickets in one order, and "Buy another ticket" after a payment with the email and consents carried over                                                                           | D5, [0002](0002-convention-shop-review.md) point 17                 |
+| The QR code and the order link on the result page once paid, and a way back to that page                                                                                                  | [0002](0002-convention-shop-review.md) point 19                     |
+| Moving an order and its attendee registration to the account of its new email after an organizer changes it (B4.3)                                                                        | domain owner                                                        |
+| Releasing the holds of orders that have held an item for longer than a set time, once the item reaches zero stock                                                                         | domain owner                                                        |
 
 ## Dropped
 
-| Item | Why | From |
-| --- | --- | --- |
+| Item                                     | Why                                                         | From                       |
+| ---------------------------------------- | ----------------------------------------------------------- | -------------------------- |
 | Organizations owning several conventions | a convention is the top level; an account organizes several | M1 BR-01, BR-15, B1, NF-10 |
-| Saved attendee profiles on the account | custom field answers are the convention's data (BR-19) | M1 F2.8 |
-| Buying under someone else's email | a buyer buys only under their own email (BR-21) | M1 F2.3 |
-| A signed-in desk user scanning | the scanner is a device with no account | M1 B6, UR-12 |
-| Platform fees | OPOS is free for conventions | M1 open question |
+| Saved attendee profiles on the account   | custom field answers are the convention's data (BR-19)      | M1 F2.8                    |
+| Buying under someone else's email        | a buyer buys only under their own email (BR-21)             | M1 F2.3                    |
+| A signed-in desk user scanning           | the scanner is a device with no account                     | M1 B6, UR-12               |
+| Platform fees                            | OPOS is free for conventions                                | M1 open question           |
 
 ## Where this brief departs from the documents
 
@@ -788,50 +788,50 @@ Decided here by the domain owner; each reaches the documents through the tickets
 decision records they bring, never by editing the documents ahead of them. D1, D10 and D12 need
 their place in the documents before the first spec that leans on them.
 
-| # | Decision | Departs from | Carried by |
-| --- | --- | --- | --- |
-| D1 | The tickets module has a domain owner, named in CONTRIBUTORS.md. | PRODUCT.md 7, ARCHITECTURE.md "Modules waiting for their domain owner", AGENTS.md: tickets waits for its owner | the first tickets spec |
-| D2 | Merchandise, discount codes, 100% codes, manual and complimentary orders and desk sales are in the MVP. | PRODUCT.md 11: merchandise and tickets without a purchase are beyond the MVP | a record and PRODUCT.md 11 |
-| D3 | Przelewy24 is the MVP's payment provider. | 0010 leaves the provider to be chosen with the module | a record |
-| D4 | The person on a ticket is the ticket holder; "attendee" keeps its meaning. A person with no account signed in is a visitor. | PRODUCT.md 3 has neither term | PRODUCT.md 3 and `glossary.ts`, through the spec |
-| D5 | An order holds at most one ticket, for one ticket holder, and may hold merchandise alone. | PRODUCT.md 3: an order is "one purchase of tickets" | a record and PRODUCT.md 3, through the spec |
-| D6 | The shop's terms and statuses enter the glossary with their `pl` renderings. | PRODUCT.md 3 | PRODUCT.md 3, `glossary.ts` and the `pl` catalog, through the spec |
-| D7 | The shop stores age band, consents, guardian consent and the convention's custom fields as the convention's data, never in the account. | PRODUCT.md 10 lists name, email and activity only | PRODUCT.md 10, through the spec |
-| D8 | "Needs review" is in the MVP, a payment after the hold can still pay its order, and each payment attempt keeps its provider's information. | ARCHITECTURE.md "Modules waiting for their domain owner" and 0010: a different amount "changes nothing", and OPOS keeps only the payment reference | a record superseding that part of 0010, and ARCHITECTURE.md, through the spec |
-| D9 | Shop and buyer pages meet WCAG 2.1 AA. | PRODUCT.md 8 states no accessibility level | a record and PRODUCT.md 8 |
-| D10 | The documents say convention and organizer; `tenant` stays the code's name and the isolation rules'. | PRODUCT.md 3 and AGENTS.md use tenant and org as terms | a record and PRODUCT.md 3, before the first spec |
-| D11 | A visitor's order under an account's email is attached to that account once paid and makes it an attendee, and checkout answers alike for any email. | ARCHITECTURE.md "Sessions and sign-in" (it fits: nobody learns which addresses have an account; the spec should say so) | the spec |
-| D12 | Checkout and sign-in run Google reCAPTCHA, a fit with the deployment on Google Cloud, as strictly necessary: loaded only there, with no consent and outside the consent banner. | [0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md): a script from another origin is a tracker, and neither application loads one (a test enforces it); PRODUCT.md 10 | a record of the team amending 0026, before the checkout spec, and PRODUCT.md 10 |
-| D13 | Orders are kept for at least five years from the end of their edition. | PRODUCT.md 10 states no retention for orders | PRODUCT.md 10, through the spec |
-| D14 | Organizers cancel paid orders and decline payments that need review; OPOS returns no money. | PRODUCT.md 11 and 0010: refunds from the panel are beyond the MVP (no refund runs through OPOS, so this fits; the spec should say so) | the spec |
-| D15 | A paid ticket on an account makes it an attendee of the edition: the shop creates the registration. | PRODUCT.md 7, ARCHITECTURE.md "Modules waiting for their domain owner", AGENTS.md: attendee registrations wait for their own owner | the first tickets spec, and CONTRIBUTORS.md if tickets' owner takes registrations |
-| D16 | Merchandise pictures and size charts are uploaded files. | PRODUCT.md 11: file uploads are beyond the MVP | a record and PRODUCT.md 11 |
+| #   | Decision                                                                                                                                                                        | Departs from                                                                                                                                                                                   | Carried by                                                                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| D1  | The tickets module has a domain owner, named in CONTRIBUTORS.md.                                                                                                                | PRODUCT.md 7, ARCHITECTURE.md "Modules waiting for their domain owner", AGENTS.md: tickets waits for its owner                                                                                 | the first tickets spec                                                            |
+| D2  | Merchandise, discount codes, 100% codes, manual and complimentary orders and desk sales are in the MVP.                                                                         | PRODUCT.md 11: merchandise and tickets without a purchase are beyond the MVP                                                                                                                   | a record and PRODUCT.md 11                                                        |
+| D3  | Przelewy24 is the MVP's payment provider.                                                                                                                                       | 0010 leaves the provider to be chosen with the module                                                                                                                                          | a record                                                                          |
+| D4  | The person on a ticket is the ticket holder; "attendee" keeps its meaning. A person with no account signed in is a visitor.                                                     | PRODUCT.md 3 has neither term                                                                                                                                                                  | PRODUCT.md 3 and `glossary.ts`, through the spec                                  |
+| D5  | An order holds at most one ticket, for one ticket holder, and may hold merchandise alone.                                                                                       | PRODUCT.md 3: an order is "one purchase of tickets"                                                                                                                                            | a record and PRODUCT.md 3, through the spec                                       |
+| D6  | The shop's terms and statuses enter the glossary with their `pl` renderings.                                                                                                    | PRODUCT.md 3                                                                                                                                                                                   | PRODUCT.md 3, `glossary.ts` and the `pl` catalog, through the spec                |
+| D7  | The shop stores age band, consents, guardian consent and the convention's custom fields as the convention's data, never in the account.                                         | PRODUCT.md 10 lists name, email and activity only                                                                                                                                              | PRODUCT.md 10, through the spec                                                   |
+| D8  | "Needs review" is in the MVP, a payment after the hold can still pay its order, and each payment attempt keeps its provider's information.                                      | ARCHITECTURE.md "Modules waiting for their domain owner" and 0010: a different amount "changes nothing", and OPOS keeps only the payment reference                                             | a record superseding that part of 0010, and ARCHITECTURE.md, through the spec     |
+| D9  | Shop and buyer pages meet WCAG 2.1 AA.                                                                                                                                          | PRODUCT.md 8 states no accessibility level                                                                                                                                                     | a record and PRODUCT.md 8                                                         |
+| D10 | The documents say convention and organizer; `tenant` stays the code's name and the isolation rules'.                                                                            | PRODUCT.md 3 and AGENTS.md use tenant and org as terms                                                                                                                                         | a record and PRODUCT.md 3, before the first spec                                  |
+| D11 | A visitor's order under an account's email is attached to that account once paid and makes it an attendee, and checkout answers alike for any email.                            | ARCHITECTURE.md "Sessions and sign-in" (it fits: nobody learns which addresses have an account; the spec should say so)                                                                        | the spec                                                                          |
+| D12 | Checkout and sign-in run Google reCAPTCHA, a fit with the deployment on Google Cloud, as strictly necessary: loaded only there, with no consent and outside the consent banner. | [0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md): a script from another origin is a tracker, and neither application loads one (a test enforces it); PRODUCT.md 10 | a record of the team amending 0026, before the checkout spec, and PRODUCT.md 10   |
+| D13 | Orders are kept for at least five years from the end of their edition.                                                                                                          | PRODUCT.md 10 states no retention for orders                                                                                                                                                   | PRODUCT.md 10, through the spec                                                   |
+| D14 | Organizers cancel paid orders and decline payments that need review; OPOS returns no money.                                                                                     | PRODUCT.md 11 and 0010: refunds from the panel are beyond the MVP (no refund runs through OPOS, so this fits; the spec should say so)                                                          | the spec                                                                          |
+| D15 | A paid ticket on an account makes it an attendee of the edition: the shop creates the registration.                                                                             | PRODUCT.md 7, ARCHITECTURE.md "Modules waiting for their domain owner", AGENTS.md: attendee registrations wait for their own owner                                                             | the first tickets spec, and CONTRIBUTORS.md if tickets' owner takes registrations |
+| D16 | Merchandise pictures and size charts are uploaded files.                                                                                                                        | PRODUCT.md 11: file uploads are beyond the MVP                                                                                                                                                 | a record and PRODUCT.md 11                                                        |
 
 ## Where the review landed
 
 [0002](0002-convention-shop-review.md) stays as written; this says what became of its points.
 
-| Outcome | Points of 0002 |
-| --- | --- |
-| Carried | 1–6, 8, 10, 11, 13, 20, 21; 15 as "strictly necessary"; 18 as the choice at the start; of the smaller ones: the registration on a cancellation and on a changed email, voiding the old QR code, B4.7, B6.5, B5.3, the merch step |
-| Handed to the Przelewy24 module's spec | 7; of 2, the additional notification; of 3 and 4, the time limit, the method mask, the abandoned-payment email and when a payment is verified; the list of what the documentation does not settle |
-| Postponed | the countdown (2, 4); the methods as the provider returns them (9); canceling a single line (12); 17; an account offered after the purchase (18); 19; a visitor's "Pay now" |
-| Turned down | 12: the shop takes no position on withdrawal ([open questions](#open-questions)); 14: consents are the convention's (BR-13); 15: another tool than reCAPTCHA; 16 and a shared capacity: out of scope; a ticket under another name: the account that holds it is the attendee (BR-27) |
+| Outcome                                | Points of 0002                                                                                                                                                                                                                                                                       |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Carried                                | 1–6, 8, 10, 11, 13, 20, 21; 15 as "strictly necessary"; 18 as the choice at the start; of the smaller ones: the registration on a cancellation and on a changed email, voiding the old QR code, B4.7, B6.5, B5.3, the merch step                                                     |
+| Handed to the Przelewy24 module's spec | 7; of 2, the additional notification; of 3 and 4, the time limit, the method mask, the abandoned-payment email and when a payment is verified; the list of what the documentation does not settle                                                                                    |
+| Postponed                              | the countdown (2, 4); the methods as the provider returns them (9); canceling a single line (12); 17; an account offered after the purchase (18); 19; a visitor's "Pay now"                                                                                                          |
+| Turned down                            | 12: the shop takes no position on withdrawal ([open questions](#open-questions)); 14: consents are the convention's (BR-13); 15: another tool than reCAPTCHA; 16 and a shared capacity: out of scope; a ticket under another name: the account that holds it is the attendee (BR-27) |
 
 ## Toward the specs
 
 One feature per spec ([specs](../specs/README.md)). A proposal for the split, in the order of
 their dependencies; each is accepted on its own.
 
-| # | Spec | From this brief |
-| --- | --- | --- |
-| 1 | Shop setup | the provider account, the seller's details, documents and consents, opening the shop (B1.4); carries D1 |
-| 2 | Catalog | B2, with uploads (D16) |
-| 3 | Checkout and orders | F1–F8, stock and the hold, the order statuses; the contract with a provider's module, against the fake provider |
-| 4 | Przelewy24 | the provider's module, from 0002 |
-| 5 | Order management | B4, P2, B5, manual orders and the sale at the desk |
-| 6 | Scanner | the device and B6; its enabling and revoking need the owner's rules first |
-| 7 | Later slices | discount codes (B3), self-service (F9), reports (B7), the reminder |
+| #   | Spec                | From this brief                                                                                                 |
+| --- | ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1   | Shop setup          | the provider account, the seller's details, documents and consents, opening the shop (B1.4); carries D1         |
+| 2   | Catalog             | B2, with uploads (D16)                                                                                          |
+| 3   | Checkout and orders | F1–F8, stock and the hold, the order statuses; the contract with a provider's module, against the fake provider |
+| 4   | Przelewy24          | the provider's module, from 0002                                                                                |
+| 5   | Order management    | B4, P2, B5, manual orders and the sale at the desk                                                              |
+| 6   | Scanner             | the device and B6; its enabling and revoking need the owner's rules first                                       |
+| 7   | Later slices        | discount codes (B3), self-service (F9), reports (B7), the reminder                                              |
 
 ## Open questions
 

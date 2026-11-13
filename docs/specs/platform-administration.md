@@ -235,8 +235,10 @@ e2e, each scenario making its own tenants and accounts and checking the BFF boun
 7. Suspended: the page is not found in the portal, and the head sees the message where the
    conventions are listed, inside the convention and on the next action of an open page.
 8. Restored: the page and the panel work again, with the data as it was.
-9. The deletion is offered only while suspended, asks for the password and the code after a stale
-   sign-in and for the address typed in; then the convention is gone and its head still signs in.
+9. The deletion is offered only while suspended and asks for the address typed in; then the
+   convention is gone and its head still signs in. A stale sign-in cannot be made in a scenario:
+   the API's tests refuse one on the two routes, and the admin application's own tests lead such
+   a refusal back to sign-in.
 10. Two-factor reset: that account next signs in to the portal without a code; an unknown address
     is refused.
 11. The log lists these actions with their admin, action and target.

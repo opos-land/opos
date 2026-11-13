@@ -119,6 +119,11 @@ export class TenantFactory {
     `)
   }
 
+  /** A tenant the scenario made through the admin application: it goes with the others. */
+  track(id: string) {
+    this.created.push(id)
+  }
+
   /** Tenants go before their accounts: a tenant's last head cannot leave while it exists. */
   async cleanup() {
     if (this.created.length === 0) return

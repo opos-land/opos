@@ -2,19 +2,21 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, devices } from '@playwright/test'
 import { API_DIR, apiEnv, portOf, stack } from './fixtures/stack'
 
-// E2E through the UI of the panel and the portal against the full stack. The
-// infrastructure comes from `pnpm infra:init`, migrations and the seed run before; the three
+// E2E through the UI of the panel, the portal and the admin application against the full stack.
+// The infrastructure comes from `pnpm infra:init`, migrations and the seed run before; the four
 // applications start here. The API starts fresh on every run, so its in-memory rate-limit
-// counters start from zero; outside CI a running panel and portal are reused.
+// counters start from zero; outside CI a running frontend is reused.
 
 const CI = Boolean(process.env.CI)
 const app = (name: string) => fileURLToPath(new URL(`../apps/${name}/`, import.meta.url))
 
-// The dev servers bind the ports of the addresses the API allows.
+// The dev servers bind the ports of the addresses the API allows, and call the API under test.
 const devServerEnv = {
   ...(process.env as Record<string, string>),
+  VITE_API_URL: stack.api,
   OPOS_PANEL_PORT: portOf(stack.panel),
   OPOS_PORTAL_PORT: portOf(stack.portal),
+  OPOS_ADMIN_PORT: portOf(stack.admin),
 }
 
 export default defineConfig({
@@ -60,6 +62,14 @@ export default defineConfig({
       command: 'pnpm run dev',
       cwd: app('portal'),
       url: stack.portal,
+      env: devServerEnv,
+      reuseExistingServer: !CI,
+      timeout: 120_000,
+    },
+    {
+      command: 'pnpm run dev',
+      cwd: app('admin'),
+      url: stack.admin,
       env: devServerEnv,
       reuseExistingServer: !CI,
       timeout: 120_000,

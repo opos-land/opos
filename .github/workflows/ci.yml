@@ -76,7 +76,7 @@ jobs:
         env:
           VITE_API_URL: https://opos-control.invalid
           SUPABASE_SECRET_KEY: opos-canary-secret-x
-      # The sources and the bundles of the panel and the portal name nothing of Supabase
+      # The sources and the bundles of the three frontends name nothing of Supabase
       - run: node scripts/bff-boundary.mjs --dist
       # The tests run the sources; this starts the bundle that production runs
       - name: start the built api
@@ -95,13 +95,13 @@ jobs:
       - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
       - run: pnpm install --frozen-lockfile
       # The applications' dev addresses
-      - run: echo '127.0.0.1 api.opos.localhost panel.opos.localhost opos.localhost' | sudo tee -a /etc/hosts
+      - run: echo '127.0.0.1 api.opos.localhost panel.opos.localhost admin.opos.localhost opos.localhost' | sudo tee -a /etc/hosts
       # The .env files, the signing key, the CLI's local stack and the roles
       - run: pnpm infra:init
       - run: pnpm db:migrate
       - run: pnpm db:seed
       - run: pnpm --filter @opos/e2e exec playwright install --with-deps chromium
-      # Playwright starts the api, the panel and the portal itself (e2e/playwright.config.ts)
+      # Playwright starts the api and the three frontends itself (e2e/playwright.config.ts)
       - run: pnpm test:e2e
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()

@@ -6,6 +6,7 @@ describe('the stack under test', () => {
     expect(new URL(stack.panel).hostname).toBe('panel.opos.localhost')
     expect(new URL(stack.api).hostname).toBe('api.opos.localhost')
     expect(new URL(stack.portal).hostname).toBe('opos.localhost')
+    expect(new URL(stack.admin).hostname).toBe('admin.opos.localhost')
   })
 
   it('finds Supabase Auth under the gateway and holds the secret key', () => {

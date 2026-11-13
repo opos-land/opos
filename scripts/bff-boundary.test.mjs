@@ -76,7 +76,20 @@ describe('findBoundaryBreaches', () => {
     assert.deepEqual(breaches(), [])
   })
 
-  const built = { 'apps/panel/dist/a.js': CONTROL, 'apps/portal/dist/a.js': CONTROL }
+  const built = {
+    'apps/panel/dist/a.js': CONTROL,
+    'apps/portal/dist/a.js': CONTROL,
+    'apps/admin/dist/a.js': CONTROL,
+  }
+
+  it('asks every application for a dist of its own, the admin application included', () => {
+    assert.deepEqual(breaches({ dist: built }), [])
+    const { 'apps/admin/dist/a.js': _, ...withoutAdmin } = built
+    const found = breaches({ dist: withoutAdmin })
+
+    assert.equal(found.length, 1)
+    assert.match(found[0], /^apps\/admin: no dist/)
+  })
 
   it('fails a dist without the control value, which proves nothing', () => {
     const found = breaches({ dist: { ...built, 'apps/portal/dist/a.js': 'x' } })
@@ -92,6 +105,7 @@ describe('findBoundaryBreaches', () => {
         'apps/panel/dist/a.js': CONTROL,
         'apps/panel/dist/b.js': 'x',
         'apps/portal/dist/a.js': 'x',
+        'apps/admin/dist/a.js': CONTROL,
       },
     })
 
@@ -99,8 +113,10 @@ describe('findBoundaryBreaches', () => {
     assert.match(found[0], /^apps\/portal: control .* not found/)
   })
 
-  it('fails an application that was not built, whatever the other holds', () => {
-    const found = breaches({ dist: { 'apps/panel/dist/a.js': CONTROL } })
+  it('fails an application that was not built, whatever the others hold', () => {
+    const found = breaches({
+      dist: { 'apps/panel/dist/a.js': CONTROL, 'apps/admin/dist/a.js': CONTROL },
+    })
 
     assert.equal(found.length, 1)
     assert.match(found[0], /^apps\/portal: no dist/)
@@ -109,9 +125,10 @@ describe('findBoundaryBreaches', () => {
   it('fails an empty dist, which proves nothing either', () => {
     const found = breaches({ dist: {} })
 
-    assert.equal(found.length, 2)
+    assert.equal(found.length, 3)
     assert.match(found.join('\n'), /apps\/panel: no dist/)
     assert.match(found.join('\n'), /apps\/portal: no dist/)
+    assert.match(found.join('\n'), /apps\/admin: no dist/)
   })
 
   it('fails a secret canary in dist', () => {
@@ -228,10 +245,11 @@ describe('main', () => {
     assert.equal(run(['../outside.ts'], dir), 0)
   })
 
-  it('reads the built bundles of both applications with --dist', () => {
+  it('reads the built bundles of every application with --dist', () => {
     const { dir, write } = repo({ 'apps/panel/src/a.ts': 'export {}' })
     write('apps/panel/dist/assets/index.js', `fetch("${CONTROL}")`)
     write('apps/portal/dist/assets/index.js', `fetch("${CONTROL}")`)
+    write('apps/admin/dist/assets/index.js', `fetch("${CONTROL}")`)
 
     assert.equal(run(['--dist'], dir), 0)
 
@@ -250,6 +268,7 @@ describe('main', () => {
   it('fails --dist when one application was not built', () => {
     const { dir, write } = repo({ 'apps/panel/src/a.ts': 'export {}' })
     write('apps/panel/dist/assets/index.js', `fetch("${CONTROL}")`)
+    write('apps/admin/dist/assets/index.js', `fetch("${CONTROL}")`)
 
     assert.equal(run(['--dist'], dir), 1)
     assert.match(errors.join('\n'), /^apps\/portal: no dist/)

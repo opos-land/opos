@@ -13,9 +13,9 @@ Write responses in the language the user writes in.
 ## Repository
 
 OPOS — a multitenant platform for running fantasy conventions, free for conventions. `apps/api`, the
-core of `apps/panel`, the account screens of `apps/portal` and the shared packages they need exist;
-deployment and the modules waiting for their domain owner are still to be built. Everything in this
-repository is written in English.
+core of `apps/panel`, the account screens of `apps/portal`, the sign-in and the conventions list of
+`apps/admin`, and the shared packages they need exist; deployment and the modules waiting for their
+domain owner are still to be built. Everything in this repository is written in English.
 
 | File | Holds |
 |---|---|
@@ -190,11 +190,12 @@ agent files cite exist and that the area names here equal those of the script.
 `packages/db` or `apps/api`, and the `i18n-reviewer` agent when it touches user-facing text, a `.po`
 catalog or `packages/i18n`. Both only report; fix what they find first.
 
-**The panel and the portal never talk to Supabase.** The API is their only backend: no
-`@supabase/*` package, no Supabase address or key, no `VITE_*` variable naming Supabase. The `react`
-ESLint preset and [scripts/bff-boundary.mjs](scripts/bff-boundary.mjs) refuse a breach in a hook, in
-lefthook `pre-commit` and in CI ([boundary](docs/ARCHITECTURE.md#applications-and-packages)). A
-breach is fixed in the application, never allowed by an exception.
+**The panel, the portal and the admin application never talk to Supabase.** The API is their only
+backend: no `@supabase/*` package, no Supabase address or key, no `VITE_*` variable naming Supabase.
+The `react` ESLint preset and [scripts/bff-boundary.mjs](scripts/bff-boundary.mjs) refuse a breach
+in a hook, in lefthook `pre-commit` and in CI
+([boundary](docs/ARCHITECTURE.md#applications-and-packages)). A breach is fixed in the application,
+never allowed by an exception.
 
 **Every page names itself in the browser tab** through `usePageTitle` of `shared/lib/page-title.ts`,
 called before the page's first `return`; `src/app/pages.test.ts` of each application fails on a page
@@ -221,10 +222,11 @@ script loaded in `load` through `loadScript`, its purpose in a Lingui macro with
 translation, its cookies named; the banner, the privacy settings and the withdrawal then cover it
 with no change, and the banner shows only while the list holds an entry. Never a tag manager, which
 loads tools out of the list's sight. The first tracker is a product decision: ask before adding it,
-and change `docs/PRODUCT.md` 10 and the privacy page with it, in a decision record. **The panel
-holds no tracker.** `src/app/third-party.test.ts` of each application refuses a script or an iframe
-created outside the consent feature and anything loaded from another origin by `index.html` or a
-stylesheet ([0026](docs/adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
+and change `docs/PRODUCT.md` 10 and the privacy page with it, in a decision record. **The panel and
+the admin application hold no tracker.** `src/app/third-party.test.ts` of each application refuses a
+script or an iframe created outside the consent feature and anything loaded from another origin by
+`index.html` or a stylesheet
+([0026](docs/adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`, no
 remote database URL, project reference or access token in a `.env` or `mise.local.toml`; they change
@@ -236,7 +238,7 @@ them to the repository. Where no design exists yet, use shadcn/ui's defaults unc
 
 **Screens are built from shadcn/ui** in each application's `src/shared/ui`
 ([frontends](docs/ARCHITECTURE.md#frontends)). A component comes from the CLI the application pins,
-`pnpm --dir apps/panel exec shadcn add <name>` or the same for `apps/portal`, never
+`pnpm --dir apps/panel exec shadcn add <name>` or the same for `apps/portal` and `apps/admin`, never
 `npx shadcn@latest`, and stays as the CLI writes it but for formatting, lint fixes and its own texts
 moved into Lingui macros; the look changes through the tokens of `src/styles.css`. The `shadcn`
 skill ([.claude/skills/shadcn/SKILL.md](.claude/skills/shadcn/SKILL.md)) runs that CLI, and no MCP

@@ -1,0 +1,20 @@
+import { safeRedirect } from './redirect'
+
+/** The code screen of two-factor authentication. */
+export const MFA_PATH = '/auth/mfa'
+
+/** The code screen with the path to return to once the code is right. */
+export const mfaPath = (returnTo: string) =>
+  returnTo === '/' ? MFA_PATH : `${MFA_PATH}?redirect=${encodeURIComponent(returnTo)}`
+
+/**
+ * Where the code screen returns to when an answer of `location` wants the code: the `?redirect=`
+ * target of a sign-in, the page itself otherwise. Only a path inside the admin application is a
+ * target.
+ */
+export function mfaReturnFor({ pathname, search }: { pathname: string; search: string }): string {
+  if (pathname === '/login') {
+    return safeRedirect(new URLSearchParams(search).get('redirect'))
+  }
+  return safeRedirect(pathname + search)
+}

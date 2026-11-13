@@ -15,7 +15,12 @@ const skillDir = '.claude/skills/shadcn'
 const skill = read(`${skillDir}/SKILL.md`)
 
 /** A command that runs the CLI an application pins. */
-const pinned = /^pnpm --dir apps\/(panel|portal) exec shadcn( |$)/
+const pinned = /^pnpm --dir apps\/(panel|portal|admin) exec shadcn( |$)/
+
+test('the skill runs the CLI of each frontend', () => {
+  const apps = new Set([...skill.matchAll(/--dir apps\/(\w+)/g)].map(([, app]) => app))
+  assert.deepEqual([...apps].sort(), ['admin', 'panel', 'portal'])
+})
 
 test('the skill may run only the CLI an application pins', () => {
   const [, frontmatter = ''] = skill.match(/^---\n([\s\S]*?)\n---\n/) ?? []

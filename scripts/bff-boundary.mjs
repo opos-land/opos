@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// The BFF boundary (docs/ARCHITECTURE.md): the panel and the portal talk to the API only, so in
-// apps/panel and apps/portal, and in their production bundles, nothing names Supabase.
+// The BFF boundary (docs/ARCHITECTURE.md): the panel, the portal and the admin application talk to
+// the API only, so in apps/panel, apps/portal and apps/admin, and in their production bundles,
+// nothing names Supabase.
 //
-//   (no argument)   every file of the two applications that git lists, the templates included
+//   (no argument)   every file of the applications that git lists, the templates included
 //   <file>...       only those of the given files that lie in the two applications (lefthook)
 //   --dist          also the bundles in dist/ of both applications, built with
 //                   VITE_API_URL=https://opos-control.invalid and SUPABASE_SECRET_KEY=opos-canary-secret-x
@@ -21,7 +22,7 @@ export const CONTROL = 'opos-control.invalid'
 /** A secret of the build environment, which no bundle may hold. */
 export const CANARY = 'opos-canary-secret-x'
 
-const APPS = ['apps/panel', 'apps/portal']
+const APPS = ['apps/panel', 'apps/portal', 'apps/admin']
 const BINARY = /\.(png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|eot|pdf)$/i
 
 const RULES = [
@@ -145,7 +146,7 @@ export function main(args, { cwd, stdin }) {
     const found = check(root, cwd, files, args.includes('--dist'))
     if (found.length === 0) return 0
     for (const breach of found) console.error(breach)
-    console.error('The panel and the portal talk to the API only (docs/ARCHITECTURE.md).')
+    console.error('The frontends talk to the API only (docs/ARCHITECTURE.md).')
     return hook ? 2 : 1
   } catch (error) {
     console.error(`bff-boundary could not check this change, so it refuses it: ${error.message}`)

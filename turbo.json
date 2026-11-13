@@ -25,7 +25,9 @@
         "OPOS_PANEL_HOST",
         "OPOS_PANEL_PORT",
         "OPOS_PORTAL_HOST",
-        "OPOS_PORTAL_PORT"
+        "OPOS_PORTAL_PORT",
+        "OPOS_ADMIN_HOST",
+        "OPOS_ADMIN_PORT"
       ]
     },
     "typecheck": {

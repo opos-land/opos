@@ -11,6 +11,7 @@ here in [AGENTS.md](../AGENTS.md).
 graph LR
     portal["apps/portal"] -->|cookie| api["apps/api"]
     panel["apps/panel"] -->|cookie| api
+    admin["apps/admin"] -->|cookie| api
     api -->|secret key| auth["Supabase Auth"]
     api --> pg[("Postgres")]
     auth --> pg
@@ -21,6 +22,7 @@ graph LR
 | `apps/api` | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key |
 | `apps/panel` | the organizers' SPA, desktop-first; later also the scanner under `/scanner` |
 | `apps/portal` | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule |
+| `apps/admin` | the admins' SPA: sign-in by password and code, the conventions ([0029](adr/0029-ship-four-web-applications.md)) |
 | `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape |
 | `packages/db` | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away |
 | `packages/i18n` | locales, detection, formatters and the shared catalog |
@@ -28,16 +30,17 @@ graph LR
 
 - The packages have no build step; only the translation catalogs compile.
 - **The BFF boundary**
-  ([0004](adr/0004-make-the-api-the-only-backend-with-the-session-in-cookies.md)). The panel and
-  the portal talk to the API alone: no `@supabase/*` package, Supabase address or key, or `VITE_*`
-  variable naming Supabase in their sources or bundles. The `react` ESLint preset refuses the
-  import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest (a hook, `pre-commit`, and CI
-  over the built bundles), and every e2e scenario a request that leaves the API and the page's own
-  origin.
-- **The admin** works through the admin routes of the API, which the admin application calls
-  ([0029](adr/0029-ship-four-web-applications.md)); `apps/admin` itself is not built yet. Only
-  granting the admin role and taking it away are scripts, run on the server as `postgres`
-  (`pnpm db:admin:grant`, `pnpm db:admin:revoke`): no route and no screen does either.
+  ([0004](adr/0004-make-the-api-the-only-backend-with-the-session-in-cookies.md)). The panel, the
+  portal and the admin application talk to the API alone: no `@supabase/*` package, Supabase
+  address or key, or `VITE_*` variable naming Supabase in their sources or bundles. The `react`
+  ESLint preset refuses the import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest (a
+  hook, `pre-commit`, and CI over the built bundles), and every e2e scenario a request that leaves
+  the API and the page's own origin.
+- **The admin** works in the admin application, through the admin routes of the API
+  ([0029](adr/0029-ship-four-web-applications.md)); its screens beyond the list of conventions
+  are not built yet. Only granting the admin role and taking it away are scripts, run on the
+  server as `postgres` (`pnpm db:admin:grant`, `pnpm db:admin:revoke`): no route and no screen
+  does either.
 
 Deployment is decided but not built
 ([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),
@@ -272,7 +275,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - The theme of a signed-in account is its own from `GET /me`, or the system's when it has none; the
   browser keeps only the one a visitor with no account signed in chose, and never an account's
   ([0025](adr/0025-keep-the-theme-on-the-account-and-a-visitors-in-the-browser.md)).
-- The API stays the authority: the panel only hides and disables what a member cannot do.
+- The API stays the authority: the panel only hides and disables what a member cannot do, and the
+  admin application shows an account the admin routes refuse one screen that says why.
+- The admin application signs in by email, password and the code alone, and calls nothing the API
+  refuses its origin. A read that finds the admin's sign-in older than 30 minutes leads back to
+  sign-in, and the screen opens again afterwards.
 - A write tells its outcome in a notification: a success, a warning for a refusal the member can act
   on, an error for a failure of the service or the network, the last two kept until closed. The
   query client of each application notifies every mutation; beside a form stays only the
@@ -287,7 +294,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   stylesheet or font from another origin, its cookies), is an entry of the consent feature's
   `TRACKERS`, started by that feature alone after the visitor allowed its category. Only it creates
   a script or an iframe; no `index.html` or stylesheet loads anything from another origin, and the
-  panel holds no tracker; `src/app/third-party.test.ts` of each application enforces it
+  panel and the admin application hold no tracker; `src/app/third-party.test.ts` of each
+  application enforces it
   ([0026](adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 ## Localization

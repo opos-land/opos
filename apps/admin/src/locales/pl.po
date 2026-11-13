@@ -1,0 +1,205 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-11-13 01:19+0100\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: pl\n"
+
+#. The state of a convention that is not suspended
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Active"
+msgstr "Aktywny"
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Address"
+msgstr "Adres"
+
+#: src/features/access/components/admin-frame.tsx
+msgid "Administration"
+msgstr "Administracja"
+
+#: src/shared/ui/breadcrumb.tsx
+#~ msgid "breadcrumb"
+#~ msgstr ""
+
+#: src/shared/ui/irreversible-action.tsx
+msgid "Cancel"
+msgstr "Anuluj"
+
+#: src/shared/ui/toast.tsx
+msgid "Close"
+msgstr "Zamknij"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Code"
+msgstr "Kod"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Continue"
+msgstr "Dalej"
+
+#: src/features/access/components/admin-frame.tsx
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Conventions"
+msgstr "Konwenty"
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Created"
+msgstr "Utworzono"
+
+#: src/features/theme/components/theme-toggle.tsx
+msgid "Dark theme"
+msgstr "Ciemny motyw"
+
+#: src/shared/ui/sidebar.tsx
+#~ msgid "Displays the mobile sidebar."
+#~ msgstr ""
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Email"
+msgstr "E-mail"
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Enter a valid email address."
+msgstr "Podaj prawidłowy adres e-mail."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the code from your authenticator app to finish signing in."
+msgstr "Wpisz kod z aplikacji uwierzytelniającej, aby dokończyć logowanie."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the six digits from your authenticator app."
+msgstr "Wpisz sześć cyfr z aplikacji uwierzytelniającej."
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Enter your password."
+msgstr "Podaj hasło."
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Every convention on the platform, by name."
+msgstr "Wszystkie konwenty na platformie, według nazwy."
+
+#: src/shared/ui/messages.tsx
+msgid "Loading…"
+msgstr "Wczytywanie…"
+
+#: src/shared/ui/breadcrumb.tsx
+#~ msgid "More"
+#~ msgstr ""
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Name"
+msgstr "Nazwa"
+
+#: src/features/access/components/admin-gate.tsx
+msgid "No access"
+msgstr "Brak dostępu"
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "No convention has been created yet."
+msgstr "Nie utworzono jeszcze żadnego konwentu."
+
+#: src/shared/ui/messages.tsx
+#~ msgid "No permissions"
+#~ msgstr ""
+
+#: src/shared/ui/toast.tsx
+msgid "Notifications"
+msgstr "Powiadomienia"
+
+#: src/features/auth/pages/login-page.tsx
+msgid "Only administrators of OPOS sign in here, with a password and the code of two-factor authentication."
+msgstr "Tutaj logują się tylko administratorzy OPOS, hasłem i kodem uwierzytelniania dwuskładnikowego."
+
+#: src/features/access/components/admin-gate.tsx
+msgid "Only administrators of OPOS use this application. The role is granted on the server, to an account with two-factor authentication on."
+msgstr "Z tej aplikacji korzystają tylko administratorzy OPOS. Rolę nadaje się na serwerze, kontu z włączonym uwierzytelnianiem dwuskładnikowym."
+
+#: src/features/access/components/admin-frame.tsx
+#: src/features/auth/components/auth-layout.tsx
+#: src/shared/lib/page-title.ts
+msgid "OPOS administration"
+msgstr "Administracja OPOS"
+
+#: src/shared/ui/messages.tsx
+msgid "Page not found"
+msgstr "Nie znaleziono strony"
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Password"
+msgstr "Hasło"
+
+#: src/shared/ui/sidebar.tsx
+#~ msgid "Sidebar"
+#~ msgstr ""
+
+#: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/login-page.tsx
+msgid "Sign in"
+msgstr "Zaloguj się"
+
+#: src/features/auth/pages/login-page.tsx
+msgid "Sign in to OPOS administration"
+msgstr "Zaloguj się do administracji OPOS"
+
+#: src/features/access/components/admin-frame.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Sign out"
+msgstr "Wyloguj się"
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Status"
+msgstr "Stan"
+
+#. The state of a convention the admin suspended
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Suspended"
+msgstr "Zawieszony"
+
+#: src/features/access/components/admin-gate.tsx
+msgid "The administrator role has to be granted again"
+msgstr "Rolę administratora trzeba nadać ponownie"
+
+#: src/shared/lib/notify.ts
+msgid "The changes are saved."
+msgstr "Zmiany zostały zapisane."
+
+#: src/features/theme/components/theme-toggle.tsx
+msgid "The interface theme is saved."
+msgstr "Motyw interfejsu został zapisany."
+
+#: src/features/access/components/admin-gate.tsx
+msgid "This account is not an administrator"
+msgstr "To konto nie jest administratorem"
+
+#. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
+#: src/shared/ui/irreversible-action.tsx
+msgid "This action cannot be undone."
+msgstr "Tej operacji nie można cofnąć."
+
+#: src/shared/ui/sidebar.tsx
+#~ msgid "Toggle Sidebar"
+#~ msgstr ""
+
+#: src/features/access/components/admin-gate.tsx
+#: src/shared/ui/messages.tsx
+msgid "Try again"
+msgstr "Spróbuj ponownie"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Two-factor authentication"
+msgstr "Uwierzytelnianie dwuskładnikowe"
+
+#: src/features/access/components/admin-gate.tsx
+msgid "Two-factor authentication is off"
+msgstr "Uwierzytelnianie dwuskładnikowe jest wyłączone"
+
+#: src/shared/ui/messages.tsx
+msgid "We could not find what you are looking for."
+msgstr "Nie znaleźliśmy tego, czego szukasz."
+
+#: src/shared/ui/messages.tsx
+#~ msgid "You do not have permission to see this page. If you need access, ask a head organizer of the convention."
+#~ msgstr ""

@@ -14,7 +14,7 @@ import { parseEnv } from 'node:util'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 // Each directory holds a .env.example and gets a .env.
-const ENV_DIRS = ['supabase', 'apps/api', 'packages/db', 'apps/panel', 'apps/portal']
+const ENV_DIRS = ['supabase', 'apps/api', 'packages/db', 'apps/panel', 'apps/portal', 'apps/admin']
 
 const ADDRESS_KEYS = ['API_URL', 'PANEL_URL', 'PORTAL_URL', 'ADMIN_URL', 'VITE_API_URL']
 

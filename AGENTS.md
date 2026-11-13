@@ -100,8 +100,9 @@ header up to 72 characters; an optional body says why.
 | `ci` | GitHub Actions workflows |
 | `revert` | reverting a commit |
 
-Scopes: `api`, `panel`, `portal`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (Traefik, compose,
-`infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs` and this list.
+Scopes: `api`, `panel`, `portal`, `admin`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (Traefik,
+compose, `infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs` and this
+list.
 
 - A Drizzle migration goes in the same commit as the schema change that produced it.
 - `.po` catalogs with the `pl` translations go in the same commit as the code introducing the
@@ -154,7 +155,7 @@ once — break the code on purpose once to see the test catch it.
 |---|---|---|
 | `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client,roles,migration-url}.ts`, `packages/db/src/scripts/roles.ts` | `packages/db/test/*.test.ts` |
 | `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
-| `api`, `panel`, `portal` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
+| `api`, `panel`, `portal`, `admin` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
 | `db`, `contract`, `i18n`, `eslint-config` | the rest of `packages/<name>/` | a `*.test.*` anywhere in the same package |
 | `scripts`, `claude` | `scripts/`, `.claude/` | a `*.test.*` in the same directory tree, run by `pnpm test:scripts` |
 | `unlisted` | code anywhere else | none: a new directory of code gets its area here and in the script first |

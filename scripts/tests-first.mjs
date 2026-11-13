@@ -82,6 +82,7 @@ const areas = [
   packageArea('api', 'apps/api'),
   packageArea('panel', 'apps/panel'),
   packageArea('portal', 'apps/portal'),
+  packageArea('admin', 'apps/admin'),
   packageArea('db', 'packages/db'),
   packageArea('contract', 'packages/contract'),
   packageArea('i18n', 'packages/i18n'),

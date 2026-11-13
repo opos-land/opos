@@ -16,11 +16,16 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 // Each directory holds a .env.example and gets a .env.
 const ENV_DIRS = ['supabase', 'apps/api', 'packages/db', 'apps/panel', 'apps/portal']
 
-const ADDRESS_KEYS = ['API_URL', 'PANEL_URL', 'PORTAL_URL', 'VITE_API_URL']
+const ADDRESS_KEYS = ['API_URL', 'PANEL_URL', 'PORTAL_URL', 'ADMIN_URL', 'VITE_API_URL']
 
 // The database URLs of each .env; a value already set is never overwritten, so an old one stays.
 const DATABASE_KEYS = {
-  'apps/api': ['DATABASE_URL', 'DATABASE_GLOBAL_URL', 'DATABASE_MIGRATION_URL'],
+  'apps/api': [
+    'DATABASE_URL',
+    'DATABASE_GLOBAL_URL',
+    'DATABASE_ADMIN_URL',
+    'DATABASE_MIGRATION_URL',
+  ],
   'packages/db': ['DATABASE_MIGRATION_URL'],
 }
 
@@ -215,7 +220,12 @@ export async function initInfra({
     hex,
     passwordIn('DATABASE_GLOBAL_URL'),
   )
-  const adminPassword = pick(['packages/db'], 'OPOS_ADMIN_PASSWORD', hex)
+  const adminPassword = pick(
+    ['packages/db'],
+    'OPOS_ADMIN_PASSWORD',
+    hex,
+    passwordIn('DATABASE_ADMIN_URL'),
+  )
   const dbPort = env.SUPABASE_DB_PORT ?? '54322'
   const databaseUrl = (role, password) =>
     `postgres://${role}:${password}@127.0.0.1:${dbPort}/postgres`
@@ -225,6 +235,7 @@ export async function initInfra({
     INVITE_SECRET: pick(['apps/api'], 'INVITE_SECRET', hex),
     DATABASE_URL: databaseUrl('opos_app', appPassword),
     DATABASE_GLOBAL_URL: databaseUrl('opos_app_global', appGlobalPassword),
+    DATABASE_ADMIN_URL: databaseUrl('opos_admin', adminPassword),
   })
   fill('packages/db', {
     OPOS_APP_PASSWORD: appPassword,

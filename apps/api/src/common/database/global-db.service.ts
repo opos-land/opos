@@ -13,6 +13,9 @@ import { alias } from 'drizzle-orm/pg-core'
 import { type TenantInContext, TenantContextService } from '../als/tenant-context.service'
 import { GLOBAL_DB } from './tokens'
 
+/** Whether the tenant of the row is suspended. */
+const suspended = () => sql<boolean>`${tenants.suspendedAt} is not null`
+
 /**
  * The only code on the opos_app_global role, which bypasses RLS. Every method is one of the
  * documented cross-tenant queries; a new one is documented first.
@@ -24,8 +27,13 @@ export class GlobalDbService {
     private readonly context: TenantContextService,
   ) {}
 
-  /** Tenant lookup by slug; only the public columns. */
-  async tenantBySlug(slug: string): Promise<TenantInContext | undefined> {
+  /**
+   * Tenant lookup by slug: only the public columns, and whether the tenant is suspended, which
+   * the caller answers in its own way, a public route as for an unknown address.
+   */
+  async tenantBySlug(
+    slug: string,
+  ): Promise<{ tenant: TenantInContext; suspended: boolean } | undefined> {
     const [row] = await this.db
       .select({
         id: tenants.id,
@@ -33,15 +41,19 @@ export class GlobalDbService {
         name: tenants.name,
         defaultLocale: tenants.defaultLocale,
         timezone: tenants.timezone,
+        suspended: suspended(),
       })
       .from(tenants)
       .where(eq(tenants.slug, slug))
-    return row
+    if (!row) return undefined
+    const { suspended: isSuspended, ...tenant } = row
+    return { tenant, suspended: isSuspended }
   }
 
   /**
-   * `GET /me/schedule`: the signed-in account's liked items in every tenant, only while their
-   * edition is published. The id comes from the request store, never from a caller.
+   * `GET /me/schedule`: the signed-in account's liked items in every tenant that is not suspended,
+   * only while their edition is published. The id comes from the request store, never from a
+   * caller.
    */
   async ownSchedule() {
     const rows = await this.db
@@ -61,6 +73,7 @@ export class GlobalDbService {
         and(
           eq(programItemLikes.accountId, this.context.account().id),
           eq(editions.isPublished, true),
+          isNull(tenants.suspendedAt),
         ),
       )
       .orderBy(asc(programItems.startsAt), asc(programItems.title))
@@ -73,14 +86,20 @@ export class GlobalDbService {
 
   /**
    * `GET /me/memberships`: the signed-in account's own, non-expired memberships in every tenant.
-   * The id comes from the request store, never from a caller.
+   * A suspended tenant says so and lists no edition. The id comes from the request store, never
+   * from a caller.
    */
   async ownMemberships() {
     const accountId = this.context.account().id
     const memberships = await this.db
       .select({
         id: tenantMemberships.id,
-        tenant: { id: tenants.id, slug: tenants.slug, name: tenants.name },
+        tenant: {
+          id: tenants.id,
+          slug: tenants.slug,
+          name: tenants.name,
+          suspended: suspended(),
+        },
         role: tenantMemberships.role,
         settingsAccess: tenantMemberships.settingsAccess,
         brandingAccess: tenantMemberships.brandingAccess,
@@ -120,9 +139,11 @@ export class GlobalDbService {
     return memberships.map(({ id, expiresAt, ...membership }) => ({
       ...membership,
       expiresAt: expiresAt?.toISOString() ?? null,
-      editions: editionRows
-        .filter((row) => row.tenantMembershipId === id)
-        .map(({ tenantMembershipId: _, ...edition }) => edition),
+      editions: membership.tenant.suspended
+        ? []
+        : editionRows
+            .filter((row) => row.tenantMembershipId === id)
+            .map(({ tenantMembershipId: _, ...edition }) => edition),
     }))
   }
 

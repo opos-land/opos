@@ -8,7 +8,7 @@ import { setMemberships } from '../model/permissions'
 import { TenantPickerPage } from './tenant-picker-page'
 
 const membership = (slug: string, name: string, fields: Partial<Membership> = {}): Membership => ({
-  tenant: { id: `tenant-${slug}`, slug, name },
+  tenant: { id: `tenant-${slug}`, slug, name, suspended: false },
   role: 'org',
   settingsAccess: 'none',
   brandingAccess: 'none',

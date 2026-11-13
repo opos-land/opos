@@ -47,7 +47,7 @@ suspension and their deletion.
 
 | # | Rule |
 |---|---|
-| C1 | The admin resets the two-factor authentication of the account with a given confirmed email address: its factors and unused recovery codes go, and the account gets the email that says so. |
+| C1 | The admin resets the two-factor authentication of the account with a given confirmed email address: its factors and unused recovery codes go, and the account gets the email that says so. The reset ends none of the account's sessions. |
 | C2 | An unknown or unconfirmed address, and an account without two-factor authentication, are refused and change nothing. |
 | C3 | The two-factor authentication of an admin is never reset in the admin application. An admin who lost both device and codes has the role taken away by the script, is reset as any account is, and is granted the role anew. |
 
@@ -113,14 +113,14 @@ Every admin route starts from `adminRoute` and lives under `/admin`.
 | Route | Needs | Refuses with |
 |---|---|---|
 | `GET /admin/tenants` | admin | |
-| `GET /admin/tenants/{tenantId}` | admin | `tenant.not-found` |
+| `GET /admin/tenants/{tenantId}` | admin | `request.not-found` |
 | `POST /admin/tenants` | admin | `tenant.slug-taken`, `tenant.slug-reserved`, `tenant.slug-retired`, `account.not-found`, `account.unconfirmed` |
-| `PUT /admin/tenants/{tenantId}/slug` | admin | `tenant.not-found`, `tenant.slug-taken`, `tenant.slug-reserved`, `tenant.slug-retired` |
-| `POST /admin/tenants/{tenantId}/suspend` | admin | `tenant.not-found` |
-| `POST /admin/tenants/{tenantId}/restore` | admin | `tenant.not-found` |
-| `DELETE /admin/tenants/{tenantId}` | admin, fresh sign-in | `tenant.not-found`, `tenant.not-suspended` |
+| `PUT /admin/tenants/{tenantId}/slug` | admin | `request.not-found`, `tenant.slug-taken`, `tenant.slug-reserved`, `tenant.slug-retired` |
+| `POST /admin/tenants/{tenantId}/suspend` | admin | `request.not-found` |
+| `POST /admin/tenants/{tenantId}/restore` | admin | `request.not-found` |
+| `DELETE /admin/tenants/{tenantId}` | admin, fresh sign-in | `request.not-found`, `tenant.not-suspended` |
 | `POST /admin/accounts/reset-2fa` | admin, fresh sign-in | `account.not-found`, `account.unconfirmed`, `mfa.not-enabled`, `account.is-admin` |
-| `GET /admin/actions` | admin | |
+| `GET /admin/actions` | admin; a page of at most 100 entries, older than a given one | |
 
 An account that is no admin gets `403` `permission.denied`; an admin with two-factor authentication
 off `403` `admin.mfa-not-enabled`; an admin whose factor is newer than the grant `403`

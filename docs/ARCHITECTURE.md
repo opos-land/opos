@@ -22,7 +22,7 @@ graph LR
 | `apps/panel` | the organizers' SPA, desktop-first; later also the scanner under `/scanner` |
 | `apps/portal` | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule |
 | `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape |
-| `packages/db` | schema, migrations, database roles, seed, verification, the admin's scripts |
+| `packages/db` | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away |
 | `packages/i18n` | locales, detection, formatters and the shared catalog |
 | Supabase | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md)) |
 
@@ -34,11 +34,10 @@ graph LR
   import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest (a hook, `pre-commit`, and CI
   over the built bundles), and every e2e scenario a request that leaves the API and the page's own
   origin.
-- **The admin** works through scripts run on the server as `postgres`: creating a tenant, changing
-  its slug, resetting two-factor authentication, and granting the admin role or taking it away. The
-  admin application, `apps/admin`, is decided but not built
-  ([0029](adr/0029-ship-four-web-applications.md)); until it is, there is no admin endpoint or
-  screen.
+- **The admin** works through the admin routes of the API, which the admin application calls
+  ([0029](adr/0029-ship-four-web-applications.md)); `apps/admin` itself is not built yet. Only
+  granting the admin role and taking it away are scripts, run on the server as `postgres`
+  (`pnpm db:admin:grant`, `pnpm db:admin:revoke`): no route and no screen does either.
 
 Deployment is decided but not built
 ([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),
@@ -58,7 +57,7 @@ and an index starting with `tenant_id`.
 | `postgres` | owns the OPOS tables; `BYPASSRLS`, not a superuser | migrations, `db:*` scripts, the seed, the backup; never the running API |
 | `opos_app` | `select`; `insert`, `delete` and per-column `update` only where the API writes; bypasses nothing, owns nothing, member of no role | the API |
 | `opos_app_global` | `BYPASSRLS`; `select` on the columns the cross-tenant queries read, nothing else | `GlobalDbService` alone |
-| `opos_admin` | `BYPASSRLS`; only what the admin routes read and write, its reads by column | the admin routes' own service, not built yet ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
+| `opos_admin` | `BYPASSRLS`; only what the admin routes read and write, its reads by column | `AdminDbService` alone ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
 | `anon`, `authenticated`, `service_role` | nothing in `public` | nobody |
 
 `pnpm db:roles` ([roles.ts](../packages/db/src/roles.ts)) sets the runtime roles up with their
@@ -73,11 +72,16 @@ and after every restore.
   [setTenantContext](../packages/db/src/rls.ts) sets `set_config('app.tenant_id', $1, true)` and
   refuses any other role, and repositories take it from `TenantContextService.tx()`, which throws
   outside one. Without the tenant header, `withTenant` opens it from a cross-tenant lookup or a
-  verified token. The queries that decide access filter on the tenant themselves too.
+  verified token. The queries that decide access filter on the tenant themselves too. No tenant
+  transaction goes on for a suspended tenant: the check sits where the transaction opens, so it
+  holds for every way in (`403` `tenant.suspended`;
+  [0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
 - **Global tables.** `accounts` and `account_recovery_codes` have no RLS: column privileges limit
   them, and the API reaches there only the account a verified token, a fresh session or a signed
   hook names. Another account is read only in a tenant transaction, through a tenant table or by a
-  confirmed email behind a write permission and a rate limit of the tenant.
+  confirmed email behind a write permission and a rate limit of the tenant; or behind
+  `@RequireAdmin`, as a tenant's head, as an account an entry of the log names, or by its email
+  address for a new tenant's first head and for a reset of two-factor authentication.
   The admin's tables are global too, and `opos_app` and `opos_app_global` hold nothing on them:
   `admins` is written by `postgres` alone, each grant bound to the one verified factor its account
   holds; `admin_actions` only grows, each entry dated by the database, a grant and a withdrawal
@@ -89,24 +93,31 @@ and after every restore.
 
 | Query | Bound |
 |---|---|
-| a tenant by slug | its public columns |
-| `GET /me/memberships` | the session's account; expired memberships left out |
-| `GET /me/schedule` | the session's own likes; published editions only |
+| a tenant by slug | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address |
+| `GET /me/memberships` | the session's account; expired memberships left out, and the editions of a suspended tenant |
+| `GET /me/schedule` | the session's own likes; published editions only, of tenants not suspended |
 | `DELETE /me` | the session's account; answers only whether it is a tenant's last head |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token) or the API's own job; it joins this table and puts its
 columns into `globalReads` of [verify.ts](../packages/db/src/verify.ts).
 
+**The admin routes** read and write across tenants on `opos_admin`, only in
+[AdminDbService](../apps/api/src/modules/admin/admin-db.service.ts) and only behind
+`@RequireAdmin`: their bound is the admin role of the session's account. They never open a tenant
+transaction, read nothing of a tenant's team but its heads and nothing of its editions or
+programme, and write each change with its entry of the log in one transaction; what the role may
+reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of verify.ts.
+
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
-account or another row. `tenants` rows are inserted, deleted, suspended and given a new slug only
-by `opos_admin` and the admin's scripts; `opos_app` updates `name`, `default_locale` and `timezone`
-alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and `auth.mfa_factors` are
-listed in verify.ts. A `security definer` function pins `search_path = ''` and no runtime role may
-execute it; constraints have explicit names, since errors map to codes by them. `pnpm db:verify`
-checks the policies, grants, roles, functions and triggers, each check with a case in
-[verify.test.ts](../packages/db/test/verify.test.ts);
+account or another row. `tenants` rows are inserted, deleted, suspended and given a new slug only by
+`opos_admin`, behind the admin routes, and by the seed; `opos_app` updates `name`, `default_locale`
+and `timezone` alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and
+`auth.mfa_factors` are listed in verify.ts. A `security definer` function pins `search_path = ''`
+and no runtime role may execute it; constraints have explicit names, since errors map to codes by
+them. `pnpm db:verify` checks the policies, grants, roles, functions and triggers, each check with a
+case in [verify.test.ts](../packages/db/test/verify.test.ts);
 [check-migrations.mjs](../scripts/check-migrations.mjs) refuses a change to a merged migration.
 
 ## Invariants
@@ -147,6 +158,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - A tenant route takes exactly one of `@RequireTenant`, `@RequireEdition` or, as the exception,
   `@InTenant`: no membership, so the handler's filters are its only guard, and no write lock, so it
   lowers nobody's access. Each applies `JwtAuthGuard`.
+- An admin route takes `@RequireAdmin` and nothing else: `JwtAuthGuard`, then the admin
+  application's `Origin` (`403` `request.origin-denied`), the role (`403` `permission.denied`),
+  two-factor authentication on (`403` `admin.mfa-not-enabled`) with the factor of the grant (`403`
+  `admin.grant-outdated`), and a recent sign-in. No route grants the role or takes it away
+  ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)).
 - A route at `write` checks, waits in its tenant's queue in the API process, takes the tenant's
   advisory lock and checks again (`503` `request.busy` past the limit;
   [0008](adr/0008-serialize-the-writes-of-a-tenant.md)). Every route that lowers a member's access
@@ -170,14 +186,24 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   answer `503`, never `401`: an outage signs nobody out.
 - A request that changes state with a session cookie needs the `Origin` of an application (`403`
   `request.origin-denied`) and a JSON body (`415`): with `SameSite=Strict`, the CSRF protection.
-  CORS names the two applications, never `*`.
+  CORS names the applications, never `*`.
+- **The admin application** has an origin and a cookie pair of its own, its refresh cookie kept for
+  30 minutes. Its origin reaches only the admin routes, sign-in, refresh, sign-out, the code of
+  two-factor authentication and the account's own name, language and theme; anything else answers
+  `403` `request.origin-denied`, so a flaw in it cannot change an admin's credentials
+  ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)). An API
+  process without the admin application's address and the connection of `opos_admin` serves none.
 - **The password comes after the confirmation**: a sign-up takes none, and the button of a link
   that confirms the address, never its opening, replaces any password set before. **An email address
   leads to an account only once confirmed**, in every lookup by email; sign-up, resending and
   password reset answer alike for any address.
 - `DELETE /me`, `PUT /auth/password`, `POST /auth/mfa/enroll` and `DELETE /auth/mfa` need a
   sign-in younger than 5 minutes (`session.reauthentication-required`); a recovery code needs none,
-  it is the proof. A new password and a removed factor end the account's other sessions.
+  it is the proof. A new password and a factor the account removes itself end the account's other
+  sessions; a reset of two-factor authentication by an admin ends none, since Supabase Auth's
+  admin API ends a session only with that session's own token. Every admin route needs a sign-in
+  younger than 30 minutes, and deleting a tenant and resetting an account's two-factor
+  authentication one younger than 5.
 - **Two-factor authentication.** With a verified factor, a session below `aal2` reaches only the
   code routes, refresh and sign-out; every other route answers `401` `session.mfa-required` before
   any permission check, by invariant 12, so an older token loses access at once.
@@ -187,9 +213,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 ## API conventions
 
-- The contract is the single source of the API: a route starts from `publicRoute`, `accountRoute` or
-  `tenantRoute` of [common.ts](../packages/contract/src/common.ts)
-  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)).
+- The contract is the single source of the API: a route starts from `publicRoute`, `accountRoute`,
+  `tenantRoute` or `adminRoute` of [common.ts](../packages/contract/src/common.ts)
+  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)). An admin route lives under `/admin/`,
+  and nothing else does.
 - An error is `{ code, params?, message }`, its code in
   [errors.ts](../packages/contract/src/errors.ts). The UI shows the code through the catalog, never
   the English `message`.
@@ -210,7 +237,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 |---|---|---|
 | `400` | validation; `params.field` names the field | `request.invalid` |
 | `401` | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own | `session.invalid` |
-| `403` | insufficient permission; anti-escalation and `Origin` have their own | `permission.denied` |
+| `403` | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own | `permission.denied` |
 | `404` | absent or of another tenant | `request.not-found` |
 | `409` | an invariant or unique constraint, by constraint name | always specific |
 | `410` | an invitation expired or revoked | `invitation.expired`, `invitation.revoked` |
@@ -332,7 +359,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 Where a test sits is in [AGENTS.md](../AGENTS.md#tests-first), and why it comes first in
 [0018](adr/0018-start-every-change-of-code-with-its-test.md). Integration tests run on the local
 stack and mock neither the database nor Supabase Auth. They cover the permission matrix (every
-contract route against every actor, an unlisted route failing the suite); RLS on every covered
+contract route against every actor, an unlisted route failing the suite; every admin route against
+every way of not being an admin); RLS on every covered
 table, the covered tables equal to the catalog's, and each `db:verify` rule broken once; the
 invariants under concurrency; anti-escalation and every write route judging its actor again under
 the lock; sessions (refused tokens, cookies, `Origin`, the password after confirmation, `aal2` on

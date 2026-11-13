@@ -6,10 +6,13 @@ import {
   permissionLevel,
   setTenantContext,
   tenantRole,
+  tenants,
   type Transaction,
 } from '@opos/db'
+import { eq } from 'drizzle-orm'
 import { mailFailure } from '../../modules/mail/mail-failure'
 import { APP_DB } from '../database/tokens'
+import { tenantSuspended } from '../errors/api-error'
 
 export type Level = (typeof permissionLevel.enumValues)[number]
 
@@ -36,6 +39,8 @@ export interface RequestStore {
   signedInAt?: number
   /** The sign-in methods the access token names. */
   signInMethods?: SignInMethod[]
+  /** Whether the access token is at `aal2`: its session gave the code of a second factor. */
+  aal2?: boolean
   tenant?: TenantInContext
   membership?: TenantMembership | null
   tx?: Transaction
@@ -82,11 +87,22 @@ export class TenantContextService {
     return store
   }
 
-  setAccount(account: Account, signedInAt?: number, signInMethods: SignInMethod[] = []) {
+  setAccount(
+    account: Account,
+    signedInAt?: number,
+    signInMethods: SignInMethod[] = [],
+    aal2 = false,
+  ) {
     const store = TenantContextService.store()
     store.account = account
     store.signedInAt = signedInAt
     store.signInMethods = signInMethods
+    store.aal2 = aal2
+  }
+
+  /** Whether the session of the verified account gave the code of a second factor. */
+  sessionAtAal2(): boolean {
+    return TenantContextService.store().aal2 === true
   }
 
   /** The sign-in methods of the verified account; only behind JwtAuthGuard. */
@@ -163,6 +179,7 @@ export class TenantContextService {
           this.db.transaction(async (tx) => {
             store.tx = tx
             await setTenantContext(tx, tenantId)
+            await refuseSuspended(tx, tenantId)
             const value = await fn()
             if (!commit(value)) throw new Rollback(value)
             return value
@@ -188,6 +205,20 @@ export class TenantContextService {
     await sendDeferred(store)
     return result
   }
+}
+
+/**
+ * A suspended tenant is off for everyone but the admin
+ * (docs/adr/0031-suspend-a-tenant-before-deleting-it.md): no tenant transaction goes on, wherever
+ * its tenant came from, the request's header, a token or an address. The check sits here, where
+ * every such transaction opens, so a route built later keeps the rule by working in one.
+ */
+async function refuseSuspended(tx: Transaction, tenantId: string) {
+  const [tenant] = await tx
+    .select({ suspendedAt: tenants.suspendedAt })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+  if (tenant?.suspendedAt) throw tenantSuspended()
 }
 
 /**

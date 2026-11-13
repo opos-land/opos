@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+/** A variable a template leaves empty counts as unset. */
+const optionalUrl = z.preprocess((value) => (value === '' ? undefined : value), z.url().optional())
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -8,6 +11,9 @@ const envSchema = z
     PORT: z.coerce.number().int().positive().default(3001),
     DATABASE_URL: z.url(),
     DATABASE_GLOBAL_URL: z.url(),
+    // The connection of opos_admin, which the admin routes alone use. Unset, with ADMIN_URL, where
+    // this process serves no admin application: it then holds no admin route and no such role.
+    DATABASE_ADMIN_URL: optionalUrl,
     // The project's gateway, with Supabase Auth at /auth/v1.
     SUPABASE_URL: z.url(),
     // The project's secret key, sent as apikey with every Supabase Auth call.
@@ -20,6 +26,8 @@ const envSchema = z
     API_URL: z.url(),
     PANEL_URL: z.url(),
     PORTAL_URL: z.url(),
+    // The admin application's address; set together with DATABASE_ADMIN_URL.
+    ADMIN_URL: optionalUrl,
     SMTP_HOST: z.string().min(1),
     SMTP_PORT: z.coerce.number().int().positive(),
     // Both empty in dev: Mailpit takes mail without authentication.
@@ -34,6 +42,23 @@ const envSchema = z
     message: 'RATE_LIMIT_DEFAULT is allowed only when OPOS_ENV is local',
     path: ['RATE_LIMIT_DEFAULT'],
   })
+  .refine((env) => env.DATABASE_ADMIN_URL === undefined || env.ADMIN_URL !== undefined, {
+    message: 'ADMIN_URL is required with DATABASE_ADMIN_URL',
+    path: ['ADMIN_URL'],
+  })
+  .refine((env) => env.ADMIN_URL === undefined || env.DATABASE_ADMIN_URL !== undefined, {
+    message: 'DATABASE_ADMIN_URL is required with ADMIN_URL',
+    path: ['DATABASE_ADMIN_URL'],
+  })
+  // An application is told from another by its origin alone.
+  .refine(
+    (env) =>
+      env.ADMIN_URL === undefined ||
+      ![env.PANEL_URL, env.PORTAL_URL].some(
+        (url) => new URL(url).origin === new URL(env.ADMIN_URL!).origin,
+      ),
+    { message: 'ADMIN_URL must differ from PANEL_URL and PORTAL_URL', path: ['ADMIN_URL'] },
+  )
   .refine((env) => env.INVITE_SECRET !== env.SUPABASE_SECRET_KEY, {
     message: 'INVITE_SECRET must differ from SUPABASE_SECRET_KEY',
     path: ['INVITE_SECRET'],

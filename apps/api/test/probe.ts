@@ -172,8 +172,8 @@ class ProbeController {
   @UseGuards(JwtAuthGuard)
   withTenant() {
     return implement(probeContract.withTenant).handler(async ({ input }) => {
-      const tenant = await this.global.tenantBySlug(input.params.slug)
-      return this.context.withTenant(tenant!.id, () => this.editions())
+      const found = await this.global.tenantBySlug(input.params.slug)
+      return this.context.withTenant(found!.tenant.id, () => this.editions())
     })
   }
 }

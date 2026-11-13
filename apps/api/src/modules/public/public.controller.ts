@@ -3,7 +3,7 @@ import { contract, editionSlug } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { GlobalDbService } from '../../common/database/global-db.service'
-import { notFound } from '../../common/errors/api-error'
+import { notFound, suspendedAsNotFound } from '../../common/errors/api-error'
 import { PublicRepository } from './public.repository'
 
 // Without sign-in and without X-Tenant-Slug: the address names the tenant, and each request opens
@@ -16,16 +16,21 @@ export class PublicController {
     private readonly repository: PublicRepository,
   ) {}
 
-  /** An address outside the slugs' alphabet names nothing, and must not reach a query. */
+  /**
+   * An address outside the slugs' alphabet names nothing, and must not reach a query. A suspended
+   * convention is not found, as an unknown address is.
+   */
   private async tenant(slug: string) {
     if (!editionSlug.safeParse(slug).success) throw notFound('convention')
-    const tenant = await this.global.tenantBySlug(slug)
-    if (!tenant) throw notFound('convention')
-    return tenant
+    const found = await this.global.tenantBySlug(slug)
+    if (!found || found.suspended) throw notFound('convention')
+    return found.tenant
   }
 
   private async inConvention<T>(slug: string, read: () => Promise<T>) {
-    return this.context.withTenant((await this.tenant(slug)).id, read)
+    return this.context
+      .withTenant((await this.tenant(slug)).id, read)
+      .catch(suspendedAsNotFound('convention'))
   }
 
   @Implement(contract.public.tenant)

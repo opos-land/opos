@@ -34,7 +34,7 @@ vi.mock('../api/tenants', () => ({
 const tenant = { id: 'tenant-a', slug: 'convention-a', name: 'Convention A' } as Tenant
 
 const membership = (slug: string, name: string, fields: Partial<Membership> = {}): Membership => ({
-  tenant: { id: `tenant-${slug}`, slug, name },
+  tenant: { id: `tenant-${slug}`, slug, name, suspended: false },
   role: 'org',
   settingsAccess: 'none',
   brandingAccess: 'none',

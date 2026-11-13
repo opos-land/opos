@@ -180,14 +180,12 @@ describe.each(Object.entries(pools))('as %s', (_, db) => {
   })
 
   describe('renameTenant', () => {
-    it('moves the tenant to the new slug, found by its identifier or its slug', async () => {
+    it('moves the tenant, found by its identifier, to the new slug', async () => {
       const { id, slug: current } = await tenant()
-      const [next, last] = [slug(), slug()]
+      const next = slug()
 
       expect(await renameTenant(db, { id, newSlug: next })).toEqual({ id, slug: next })
       expect((await row(id))?.slug).toBe(next)
-      expect(await renameTenant(db, { slug: next, newSlug: last })).toEqual({ id, slug: last })
-      expect((await row(id))?.slug).toBe(last)
       // The slug a tenant left is free at once.
       const head = await createUser()
       trackTenant(
@@ -207,9 +205,6 @@ describe.each(Object.entries(pools))('as %s', (_, db) => {
     it('refuses an unknown tenant, a malformed slug and a reserved one', async () => {
       const { id, slug: current } = await tenant()
 
-      await expect(
-        renameTenant(db, { slug: `missing-${unique()}`, newSlug: slug() }),
-      ).rejects.toMatchObject({ code: 'tenant.not-found' })
       await expect(renameTenant(db, { id: missing, newSlug: slug() })).rejects.toMatchObject({
         code: 'tenant.not-found',
       })

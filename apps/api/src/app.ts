@@ -1,7 +1,12 @@
 import { type NestApplicationOptions } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { setupDocs } from './common/docs/setup-docs'
-import { applicationFromOrigin, requireOriginForSession } from './common/http/application'
+import {
+  applicationFromOrigin,
+  applicationOrigins,
+  requireOriginForSession,
+  restrictAdminOrigin,
+} from './common/http/application'
 import { requireJsonBody } from './common/json-body'
 import { type Env } from './config/env'
 
@@ -21,17 +26,18 @@ export async function configureApp(app: NestExpressApplication, env: Env) {
   })
   app.use(requireJsonBody)
   app.use(requireOriginForSession(env))
-  // The credentials header goes out for the two origins only: `cors` sets it for any request when
-  // `credentials` is fixed, so the options are chosen per request.
+  app.use(restrictAdminOrigin(env))
+  // The credentials header goes out for the applications' origins only: `cors` sets it for any
+  // request when `credentials` is fixed, so the options are chosen per request.
   app.enableCors((req, callback) => {
     const allowed =
       applicationFromOrigin((req as { headers: { origin?: unknown } }).headers.origin, env) !== null
     callback(null, {
-      origin: allowed ? [new URL(env.PANEL_URL).origin, new URL(env.PORTAL_URL).origin] : false,
+      origin: allowed ? applicationOrigins(env) : false,
       allowedHeaders: ['Authorization', 'Content-Type', 'X-Tenant-Slug', 'Accept-Language'],
-      // Not CORS-safelisted: without this the panel and portal cannot read it on a 429.
+      // Not CORS-safelisted: without this an application cannot read it on a 429.
       exposedHeaders: ['Retry-After'],
-      // The session travels in the API's cookies, for these two origins only.
+      // The session travels in the API's cookies, for these origins only.
       credentials: allowed,
     })
   })

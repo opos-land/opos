@@ -17,6 +17,7 @@ const TEMPLATES = {
     'INVITE_SECRET=',
     'DATABASE_URL=',
     'DATABASE_GLOBAL_URL=',
+    'DATABASE_ADMIN_URL=',
     'DATABASE_MIGRATION_URL=',
     'SUPABASE_URL=',
     'SUPABASE_SECRET_KEY=',
@@ -241,6 +242,10 @@ test('initInfra generates distinct secrets and builds the database URLs from the
   assert.equal(
     ctx.value('apps/api/.env', 'DATABASE_GLOBAL_URL'),
     `postgres://opos_app_global:${global}@127.0.0.1:54322/postgres`,
+  )
+  assert.equal(
+    ctx.value('apps/api/.env', 'DATABASE_ADMIN_URL'),
+    `postgres://opos_admin:${admin}@127.0.0.1:54322/postgres`,
   )
 })
 
@@ -629,6 +634,21 @@ test('a rerun keeps the password of opos_admin that packages/db/.env holds', asy
   await run.run()
 
   assert.equal(run.value('packages/db/.env', 'OPOS_ADMIN_PASSWORD'), 'kept')
+  assert.equal(
+    run.value('apps/api/.env', 'DATABASE_ADMIN_URL'),
+    'postgres://opos_admin:kept@127.0.0.1:54322/postgres',
+  )
+})
+
+test('a rerun after removing packages/db/.env gives opos_admin the password apps/api/.env holds', async () => {
+  const first = setup()
+  await first.run()
+  const adminPassword = first.value('packages/db/.env', 'OPOS_ADMIN_PASSWORD')
+
+  const second = setup({ files: { 'apps/api/.env': first.text('apps/api/.env') } })
+  await second.run()
+
+  assert.equal(second.value('packages/db/.env', 'OPOS_ADMIN_PASSWORD'), adminPassword)
 })
 
 test('the password of packages/db/.env wins over the one in the URLs of apps/api/.env', async () => {

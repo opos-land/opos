@@ -19,6 +19,8 @@ export const ROUTE_RATE_LIMITS = {
   speakers: { limit: 100, ttl: 3_600_000 },
   /** `POST /auth/mfa/verify`, `/recover` and `/enable`: one counter, per account. */
   mfa: { limit: 10, ttl: 900_000 },
+  /** Every admin route that changes anything: one counter, per admin. */
+  adminWrites: { limit: 60, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS

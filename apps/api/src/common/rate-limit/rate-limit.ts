@@ -4,7 +4,7 @@ import {
   ThrottlerModule,
   type ThrottlerModuleOptions,
 } from '@nestjs/throttler'
-import { type Env } from '../../config/env'
+import { type ApplicationUrls } from '../http/application'
 import { type AccessTokenVerifier } from '../guards/access-token'
 import { credentialOf, verifyOnce } from '../guards/request-credential'
 
@@ -26,10 +26,7 @@ export const DEFAULT_RATE_LIMIT: RateLimit = { limit: 300, ttl: 60_000 }
  * so a forged claim never spends another account's requests.
  */
 export const rateLimitTracker =
-  (
-    verifier: AccessTokenVerifier,
-    env: Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>,
-  ): ThrottlerGetTrackerFunction =>
+  (verifier: AccessTokenVerifier, env: ApplicationUrls): ThrottlerGetTrackerFunction =>
   async (req) => {
     const token = credentialOf(req as Parameters<typeof credentialOf>[0], env)
     const check = token ? await verifyOnce(req as object, verifier, token) : undefined
@@ -44,7 +41,7 @@ export const rateLimitTracker =
 export function rateLimitModule(
   verifier: AccessTokenVerifier,
   rateLimit: RateLimit,
-  env: Pick<Env, 'PORTAL_URL' | 'PANEL_URL'>,
+  env: ApplicationUrls,
 ) {
   const options: ThrottlerModuleOptions = {
     throttlers: [{ name: 'default', ...rateLimit }],

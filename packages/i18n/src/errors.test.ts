@@ -13,6 +13,42 @@ describe('errorMessage', () => {
     )
   })
 
+  it('says that a convention is suspended, with the glossary rendering', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('tenant.suspended')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('tenant.suspended'))).toBe(
+      'Ten konwent jest zawieszony. Skontaktuj się z administratorami OPOS, aby dowiedzieć się więcej.',
+    )
+  })
+
+  it.each([
+    [
+      'tenant.slug-retired',
+      'Ten adres należał do usuniętego konwentu i nie można go użyć ponownie.',
+    ],
+    ['tenant.not-suspended', 'Usunąć można tylko zawieszony konwent. Najpierw go zawieś.'],
+    [
+      'account.is-admin',
+      'To konto należy do administratora. Najpierw trzeba mu odebrać rolę administratora.',
+    ],
+    [
+      'admin.mfa-not-enabled',
+      'Administrator musi mieć włączone uwierzytelnianie dwuskładnikowe. Włącz je w portalu, a potem poproś o ponowne nadanie roli.',
+    ],
+    [
+      'admin.grant-outdated',
+      'Uwierzytelnianie dwuskładnikowe tego konta zmieniło się od nadania roli administratora. Poproś o ponowne nadanie roli.',
+    ],
+  ])('renders %s of the admin application in Polish', async (code, rendering) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage(code)).not.toBe(unknownError)
+    expect(i18n._(errorMessage(code))).toBe(rendering)
+  })
+
   it('tells an outage of Supabase Auth apart from a generic failure', async () => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

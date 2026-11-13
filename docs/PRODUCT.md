@@ -80,6 +80,7 @@ a ticket; what the scene calls accreditation is the ticket.
 | **booth** | an exhibitor's stand at an edition, or online as a virtual booth |
 | **locale** | a language in BCP 47 form (`pl`, `en`) |
 | **two-factor authentication** | a second sign-in step an account turns on for itself; 2FA, `mfa` in code |
+| **suspended** | of a convention: taken off the platform by the admin until restored |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.
@@ -90,6 +91,11 @@ different convention.
 
 **A tenant is the convention brand**, not a single edition: its team, branding, configuration and
 address carry over between editions, and an attendee keeps their history with it.
+
+**A suspended convention is off for everyone but the admin**: its page is not found, its programme
+items leave every personal schedule, and its organizers see only that it is suspended. Restored, it
+is as it was. Only a suspended convention can be deleted, at once and for good, with everything it
+owns; the accounts stay ([0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
 
 **OPOS does not touch the conventions' money.** Ticket payments go straight to a payment provider
 account the convention owns, and OPOS charges no fees.
@@ -245,11 +251,14 @@ role over first.
 A password is set only after the email address is confirmed. A link from an email acts only when
 the button on its page is pressed. An email address leads to an account only once confirmed.
 
-**Two-factor authentication is each account's own choice**, required by no role. Once on, it guards
-every sign-in, password reset and account deletion. Ten one-time recovery codes, shown once and
-stored hashed, replace a lost device and turn it off; turning it off signs out the other sessions,
-removes the unused codes and sends an email, and the hash of a used code stays until the account is
-deleted. A person who has lost both device and codes asks the admin.
+**Two-factor authentication is each account's own choice**, required of one role alone: an admin,
+whose role holds only with the second factor it was granted with
+([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)). Once on,
+it guards every sign-in, password reset and account deletion. Ten one-time recovery codes, shown
+once and stored hashed, replace a lost device and turn it off; turning it off signs out the other
+sessions, removes the unused codes and sends an email, and the hash of a used code stays until the
+account is deleted. A person who has lost both device and codes asks the admin, who resets it; an
+admin who lost both has the role taken away first.
 
 Supabase hosts the database and sign-in in the EU on our behalf. Production data never leaves
 production: Dev holds demo data and the team's own accounts. Backups are encrypted; our own copies

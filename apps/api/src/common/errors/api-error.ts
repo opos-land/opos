@@ -54,7 +54,23 @@ export const unavailable = (reason?: string) =>
 export const forbidden = (message = 'Insufficient permissions') =>
   new ApiError(403, 'permission.denied', message)
 
+/** The tenant is suspended: off for everyone but the admin. */
+export const tenantSuspended = () =>
+  new ApiError(403, 'tenant.suspended', 'The convention is suspended')
+
 export const notFound = (what: string) => new ApiError(404, 'request.not-found', `Unknown ${what}`)
+
+/**
+ * For a public route, which answers a suspended convention as an unknown address: the refusal of
+ * a tenant suspended after its address was looked up becomes that `404` too. Anything else is
+ * thrown on as it is.
+ */
+export const suspendedAsNotFound =
+  (what: string) =>
+  (error: unknown): never => {
+    if (error instanceof ApiError && error.code === 'tenant.suspended') throw notFound(what)
+    throw error
+  }
 
 /** The request did not come from the panel or the portal. */
 export const originDenied = () =>

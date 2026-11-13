@@ -21,6 +21,8 @@ export const timestamp = z.iso
 export interface ContractMeta {
   /** A tenant route: X-Tenant-Slug names the tenant it runs in. */
   tenant?: boolean
+  /** A route of the admin application, for an account holding the admin role. */
+  admin?: boolean
 }
 
 type Operation = Exclude<NonNullable<Route['spec']>, (...args: never[]) => unknown>
@@ -72,4 +74,14 @@ export const tenantRoute = oc.$meta<ContractMeta>({ tenant: true }).$route({
   inputStructure: 'detailed',
   spec: (operation) =>
     withErrors({ ...operation, parameters: [...(operation.parameters ?? []), tenantHeader] }),
+})
+
+/**
+ * A route of the admin application: its session cookie, an account holding the admin role with
+ * the second factor of its grant, and a recent sign-in. Its path starts with `/admin/`.
+ */
+export const adminRoute = oc.$meta<ContractMeta>({ admin: true }).$route({
+  inputStructure: 'detailed',
+  // The admin application's own cookie, not the portal's or the panel's the document defaults to.
+  spec: (operation) => withErrors({ ...operation, security: [{ adminSession: [] }] }),
 })

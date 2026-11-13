@@ -35,5 +35,9 @@ export const appDb = (url: string, options: ConnectionOptions = {}) =>
 export const globalDb = (url: string, options: ConnectionOptions = {}) =>
   connect(url, 'opos-app-global', options)
 
+/** The pool of opos_admin, which the admin routes alone use. */
+export const adminDb = (url: string, options: ConnectionOptions = {}) =>
+  connect(url, 'opos-admin', options)
+
 export const migrationDb = (url: string, options: ConnectionOptions = {}) =>
   connect(url, 'opos-migration', { max: 1, ...options })

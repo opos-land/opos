@@ -160,7 +160,9 @@ convention sends up to 20 an hour.
 | `admin.opos.land` | the admin application | yes |
 
 **Only the admin sets a convention's address and custom domain.** Changing the address breaks every
-old link, and no address is a word the platform uses itself, such as `panel` or `api`.
+old link, and no address is a word the platform uses itself, such as `panel` or `api`. The address
+of a deleted convention is never given to another
+([0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
 
 ---
 

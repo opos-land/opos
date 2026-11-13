@@ -105,6 +105,16 @@ description = "Remove the two-factor factors and recovery codes of an account an
 run = "pnpm db:account:reset-2fa"
 raw = true
 
+["db:admin:grant"]
+description = "Grant the admin role to a confirmed account with a password and two-factor authentication on: --email <email>"
+run = "pnpm db:admin:grant"
+raw = true
+
+["db:admin:revoke"]
+description = "Take the admin role away from an account: --email <email>"
+run = "pnpm db:admin:revoke"
+raw = true
+
 [format]
 description = "Format every file with Prettier"
 run = "pnpm format"

@@ -1,11 +1,18 @@
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { afterAll, describe, expect, it } from 'vitest'
-import { appDb, globalDb, migrationDb } from '../src/client'
+import { adminDb, appDb, globalDb, migrationDb } from '../src/client'
 import { migrationUrl } from '../src/migration-url'
 import { setTenantContext } from '../src/rls'
 import * as schema from '../src/schema'
-import { appGlobalPassword, appPassword, createTenant, supabaseAdmin, url } from './db'
+import {
+  adminPassword,
+  appGlobalPassword,
+  appPassword,
+  createTenant,
+  supabaseAdmin,
+  url,
+} from './db'
 
 // setTenantContext opens tenant isolation only on a connection RLS holds to: a pool
 // pointed at a role that bypasses RLS fails every tenant transaction instead of reading them all.
@@ -15,6 +22,7 @@ class Rollback extends Error {}
 const pools = {
   opos_app: appDb(url('opos_app', appPassword), { max: 1 }),
   opos_app_global: globalDb(url('opos_app_global', appGlobalPassword), { max: 1 }),
+  opos_admin: adminDb(url('opos_admin', adminPassword), { max: 1 }),
   postgres: migrationDb(migrationUrl()),
 }
 
@@ -30,7 +38,7 @@ describe('setTenantContext', () => {
     ).resolves.not.toThrow()
   })
 
-  it.each(['opos_app_global', 'postgres'] as const)(
+  it.each(['opos_app_global', 'opos_admin', 'postgres'] as const)(
     'refuses a tenant context on a connection as %s',
     async (role) => {
       const tenant = await createTenant()

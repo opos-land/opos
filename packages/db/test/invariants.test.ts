@@ -345,3 +345,196 @@ describe('programme items', () => {
     expect(row!.moved).toBe(true)
   })
 })
+
+// The address of a deleted tenant is never a tenant's again (docs/adr/0031): the triggers of
+// `tenants` hold it for every role, the owner included.
+describe('the slug of a deleted tenant', () => {
+  const withHead = async (slug: string, sql: postgres.Sql | postgres.TransactionSql = migrator) => {
+    const head = await createUser()
+    const run = async (tx: postgres.TransactionSql) => {
+      const [tenant] = await tx<{ id: string }[]>`
+        insert into tenants (slug, name) values (${slug}, 'Heir') returning id
+      `
+      await tx`
+        insert into tenant_memberships (account_id, tenant_id, role)
+        values (${head.id}, ${tenant!.id}, 'head')
+      `
+      return tenant!.id
+    }
+    return 'begin' in sql ? sql.begin(run) : run(sql)
+  }
+  const retired = (slug: string) =>
+    migrator`select 1 from retired_tenant_slugs where slug = ${slug}`
+
+  it('is retired with the tenant, whoever deletes it', async () => {
+    const tenant = await createTenant()
+    expect(await retired(tenant.slug)).toHaveLength(0)
+
+    await migrator`delete from tenants where id = ${tenant.id}`
+
+    expect(await retired(tenant.slug)).toHaveLength(1)
+  })
+
+  it('is refused to a new tenant', async () => {
+    const tenant = await createTenant()
+    await migrator`delete from tenants where id = ${tenant.id}`
+
+    await expect(withHead(tenant.slug)).rejects.toMatchObject({
+      constraint_name: 'tenants_slug_not_retired',
+    })
+    expect(await migrator`select 1 from tenants where slug = ${tenant.slug}`).toHaveLength(0)
+  })
+
+  it('is refused to a tenant changing its slug', async () => {
+    const [kept, gone] = await Promise.all([createTenant(), createTenant()])
+    await migrator`delete from tenants where id = ${gone.id}`
+
+    await expect(
+      migrator`update tenants set slug = ${gone.slug} where id = ${kept.id}`,
+    ).rejects.toMatchObject({ constraint_name: 'tenants_slug_not_retired' })
+  })
+
+  it('stays free when the tenant left it by a change before the deletion', async () => {
+    const tenant = await createTenant()
+    const next = `tenant-${unique()}`
+    await migrator`update tenants set slug = ${next} where id = ${tenant.id}`
+    await migrator`delete from tenants where id = ${tenant.id}`
+
+    expect(await retired(next)).toHaveLength(1)
+    expect(await retired(tenant.slug)).toHaveLength(0)
+    const heir = await withHead(tenant.slug)
+    await migrator`delete from tenants where id = ${heir}`
+  })
+
+  // The insert waits on the unique index for the deletion to commit, and the trigger runs after
+  // it, so it reads the slug that deletion retired.
+  it('is refused to a tenant created while the deletion is still open', async () => {
+    const tenant = await createTenant()
+    const other = postgres(migrationUrl(), { max: 1, onnotice: () => {} })
+    let release!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    let deleted!: () => void
+    const deleting = new Promise<void>((resolve) => (deleted = resolve))
+    try {
+      const deletion = other.begin(async (sql) => {
+        await sql`delete from tenants where id = ${tenant.id}`
+        deleted()
+        await held
+      })
+      await deleting
+      let settled = false
+      const creation = withHead(tenant.slug)
+        .catch((error: unknown) => error)
+        .finally(() => (settled = true))
+      // Long enough for the insert to reach the unique index, where it waits.
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      expect(settled).toBe(false)
+      release()
+      await deletion
+
+      expect(await creation).toMatchObject({ constraint_name: 'tenants_slug_not_retired' })
+      expect(await migrator`select 1 from tenants where slug = ${tenant.slug}`).toHaveLength(0)
+    } finally {
+      release()
+      await other.end()
+    }
+  })
+
+  it('is refused to a tenant changing its slug while the deletion is still open', async () => {
+    const [kept, gone] = await Promise.all([createTenant(), createTenant()])
+    const other = postgres(migrationUrl(), { max: 1, onnotice: () => {} })
+    let release!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    let deleted!: () => void
+    const deleting = new Promise<void>((resolve) => (deleted = resolve))
+    try {
+      const deletion = other.begin(async (sql) => {
+        await sql`delete from tenants where id = ${gone.id}`
+        deleted()
+        await held
+      })
+      await deleting
+      let settled = false
+      const rename = migrator`update tenants set slug = ${gone.slug} where id = ${kept.id}`
+        .catch((error: unknown) => error)
+        .finally(() => (settled = true))
+      // Long enough for the update to reach the unique index, where it waits.
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      expect(settled).toBe(false)
+      release()
+      await deletion
+
+      expect(await rename).toMatchObject({ constraint_name: 'tenants_slug_not_retired' })
+      expect(await migrator`select slug from tenants where id = ${kept.id}`).toEqual([
+        { slug: kept.slug },
+      ])
+    } finally {
+      release()
+      await other.end()
+    }
+  })
+
+  // Above READ COMMITTED a transaction reads the snapshot of its start, so the trigger could not
+  // see a slug retired since, and the unique index no longer holds the deleted row: such a
+  // transaction takes no slug at all.
+  it('is refused to a transaction that could not see it retired', async () => {
+    const tenant = await createTenant()
+    const head = await createUser()
+    const other = postgres(migrationUrl(), { max: 1, onnotice: () => {} })
+    try {
+      const creation = other
+        .begin('isolation level repeatable read', async (sql) => {
+          await sql`select 1`
+          // The deletion commits after this transaction took its snapshot.
+          await migrator`delete from tenants where id = ${tenant.id}`
+          const [heir] = await sql<{ id: string }[]>`
+            insert into tenants (slug, name) values (${tenant.slug}, 'Heir') returning id
+          `
+          await sql`
+            insert into tenant_memberships (account_id, tenant_id, role)
+            values (${head.id}, ${heir!.id}, 'head')
+          `
+        })
+        .catch((error: unknown) => error)
+
+      expect(await creation).toMatchObject({ constraint_name: 'tenants_slug_at_read_committed' })
+      expect(await migrator`select 1 from tenants where slug = ${tenant.slug}`).toHaveLength(0)
+    } finally {
+      await other.end()
+    }
+  })
+
+  it.each(['repeatable read', 'serializable'])(
+    'lets no transaction at %s take or change a slug',
+    async (level) => {
+      const tenant = await createTenant()
+      const other = postgres(migrationUrl(), { max: 1, onnotice: () => {} })
+      try {
+        for (const statement of [
+          `insert into tenants (slug, name) values ('tenant-${unique()}', 'New')`,
+          `update tenants set slug = 'tenant-${unique()}' where id = '${tenant.id}'`,
+        ]) {
+          await expect(
+            other.begin(`isolation level ${level}`, (sql) => sql.unsafe(statement)),
+            statement,
+          ).rejects.toMatchObject({ constraint_name: 'tenants_slug_at_read_committed' })
+        }
+        // Another column is no slug: such a transaction still changes it.
+        await other.begin(`isolation level ${level}`, (sql) =>
+          sql.unsafe(`update tenants set name = 'Renamed' where id = '${tenant.id}'`),
+        )
+      } finally {
+        await other.end()
+      }
+    },
+  )
+
+  it('keeps a slug retired once, however often it is asked', async () => {
+    const tenant = await createTenant()
+    await migrator`delete from tenants where id = ${tenant.id}`
+
+    await expect(
+      migrator`insert into retired_tenant_slugs (slug) values (${tenant.slug})`,
+    ).rejects.toThrow(/retired_tenant_slugs_pkey/)
+  })
+})

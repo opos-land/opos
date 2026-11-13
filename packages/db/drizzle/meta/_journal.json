@@ -204,6 +204,34 @@
       "when": 1794357554237,
       "tag": "0028_accounts_theme_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794523030799,
+      "tag": "0029_tenant_suspension",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794523052220,
+      "tag": "0030_tenant_suspension_privileges",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794523341972,
+      "tag": "0031_admins",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794523365006,
+      "tag": "0032_admins_privileges",
+      "breakpoints": true
     }
   ]
 }

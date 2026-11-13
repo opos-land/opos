@@ -18,6 +18,7 @@ export const globalReads = [
   'tenants.name',
   'tenants.default_locale',
   'tenants.timezone',
+  'tenants.suspended_at',
   'tenant_memberships.id',
   'tenant_memberships.tenant_id',
   'tenant_memberships.account_id',
@@ -46,8 +47,68 @@ export const globalReads = [
   'program_item_likes.program_item_id',
 ]
 
+/**
+ * What opos_admin holds, and nothing else: it bypasses RLS, so its privileges are its only limit.
+ * The columns it reads, the tables it inserts into and deletes from, the columns it inserts where
+ * the database gives the others, and the columns it updates; an admin route that needs more adds
+ * it here in the PR of its migration.
+ */
+export const adminReads = [
+  'tenants.id',
+  'tenants.slug',
+  'tenants.name',
+  'tenants.default_locale',
+  'tenants.timezone',
+  'tenants.suspended_at',
+  'tenants.created_at',
+  'tenant_memberships.id',
+  'tenant_memberships.tenant_id',
+  'tenant_memberships.account_id',
+  'tenant_memberships.role',
+  'accounts.id',
+  'accounts.email',
+  'accounts.first_name',
+  'accounts.last_name',
+  'accounts.email_confirmed_at',
+  'accounts.locale',
+  'accounts.mfa_enabled_at',
+  'account_recovery_codes.account_id',
+  'account_recovery_codes.used_at',
+  'admins.account_id',
+  'admins.granted_at',
+  'admins.mfa_enabled_at',
+  'admin_actions.id',
+  'admin_actions.action',
+  'admin_actions.admin_account_id',
+  'admin_actions.subject_tenant_id',
+  'admin_actions.tenant_slug',
+  'admin_actions.subject_account_id',
+  'admin_actions.created_at',
+]
+export const adminWrites = [
+  'tenants INSERT',
+  'tenants DELETE',
+  'tenant_memberships INSERT',
+  'account_recovery_codes DELETE',
+]
+/** An entry of the log takes its identifier and its time from the database, never from the role. */
+export const adminInserts = [
+  'admin_actions.action',
+  'admin_actions.admin_account_id',
+  'admin_actions.subject_tenant_id',
+  'admin_actions.tenant_slug',
+  'admin_actions.subject_account_id',
+]
+export const adminUpdates = ['tenants.slug', 'tenants.suspended_at']
+
+/**
+ * The tables of the admin application. opos_app and opos_app_global hold nothing on them, a read
+ * included; opos_admin holds what its lists name.
+ */
+const adminTables = ['admins', 'admin_actions', 'retired_tenant_slugs']
+
 /** The public tables outside tenant isolation. */
-const globalTables = ['accounts', 'account_recovery_codes']
+const globalTables = ['accounts', 'account_recovery_codes', ...adminTables]
 
 /**
  * The triggers OPOS attaches to the tables of the auth schema: table, then trigger,
@@ -221,6 +282,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   // Runtime privileges. has_table_privilege counts table-level grants only, so the
   // column-level updates opos_app holds pass. opos_app inserts and deletes only where the API
   // creates and removes rows: a write the API starts doing joins this list with its migration.
+  // opos_admin reads by column alone, so a table-level read of its own is a violation.
   const appWrites = [
     ['account_recovery_codes', 'INSERT'],
     ['account_recovery_codes', 'DELETE'],
@@ -242,15 +304,21 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     select r.role, c.relname as table, p.privilege
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    cross join (values ('opos_app'), ('opos_app_global'), ('anon'), ('authenticated'), ('service_role')) r(role)
-    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) p(privilege)
+    cross join (values ('opos_app'), ('opos_app_global'), ('opos_admin'), ('anon'), ('authenticated'), ('service_role')) r(role)
+    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER'), ('MAINTAIN')) p(privilege)
     where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege(r.role, c.oid, p.privilege)
       and (
         r.role = 'opos_app_global'
-        or (r.role = 'opos_app' and p.privilege in ('UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'))
+        or (r.role = 'opos_app'
+          and p.privilege in ('UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'))
         or (r.role = 'opos_app' and p.privilege in ('INSERT', 'DELETE')
           and not (c.relname || ' ' || p.privilege) = any(${appWrites}))
+        or (r.role = 'opos_app' and c.relname = any(${adminTables}))
+        or (r.role = 'opos_admin'
+          and p.privilege in ('SELECT', 'UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'))
+        or (r.role = 'opos_admin' and p.privilege in ('INSERT', 'DELETE')
+          and not (c.relname || ' ' || p.privilege) = any(${adminWrites}))
         or r.role in ('anon', 'authenticated', 'service_role')
       )
     order by 1, 2, 3
@@ -270,7 +338,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
     join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
-    cross join (values ('opos_app'), ('opos_app_global'), ('anon'), ('authenticated'), ('service_role')) r(role)
+    cross join (values ('opos_app'), ('opos_app_global'), ('opos_admin'), ('anon'), ('authenticated'), ('service_role')) r(role)
     cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('REFERENCES')) p(privilege)
     where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
       and has_column_privilege(r.role, c.oid, a.attnum, p.privilege)
@@ -283,6 +351,15 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
           and not (c.relname || ' INSERT') = any(${appWrites}))
         or (r.role = 'opos_app' and p.privilege = 'UPDATE'
           and not (c.relname || '.' || a.attname) = any(${appUpdates}))
+        or (r.role = 'opos_app' and c.relname = any(${adminTables}))
+        or (r.role = 'opos_admin' and p.privilege = 'REFERENCES')
+        or (r.role = 'opos_admin' and p.privilege = 'SELECT'
+          and not (c.relname || '.' || a.attname) = any(${adminReads}))
+        or (r.role = 'opos_admin' and p.privilege = 'INSERT'
+          and not (c.relname || ' INSERT') = any(${adminWrites})
+          and not (c.relname || '.' || a.attname) = any(${adminInserts}))
+        or (r.role = 'opos_admin' and p.privilege = 'UPDATE'
+          and not (c.relname || '.' || a.attname) = any(${adminUpdates}))
         or r.role in ('anon', 'authenticated', 'service_role')
       )
     order by 1, 2, 4, 3
@@ -298,7 +375,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     select r.role, c.relname as sequence, p.privilege
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    cross join (values ('opos_app'), ('opos_app_global'), ('anon'), ('authenticated'), ('service_role')) r(role)
+    cross join (values ('opos_app'), ('opos_app_global'), ('opos_admin'), ('anon'), ('authenticated'), ('service_role')) r(role)
     cross join (values ('USAGE'), ('SELECT'), ('UPDATE')) p(privilege)
     where n.nspname = 'public' and c.relkind = 'S'
       and has_sequence_privilege(r.role, c.oid, p.privilege)
@@ -315,7 +392,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   const memberships = await sql<{ member: string; role: string }[]>`
     select pg_get_userbyid(a.member) as member, pg_get_userbyid(a.roleid) as role
     from pg_auth_members a
-    where pg_get_userbyid(a.member) in ('opos_app', 'opos_app_global')
+    where pg_get_userbyid(a.member) in ('opos_app', 'opos_app_global', 'opos_admin')
     order by 1, 2
   `
   if (memberships.length > 0) {
@@ -324,15 +401,31 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     )
   }
 
+  // The other way round: a member of a runtime role may take it, with what it holds, BYPASSRLS on
+  // two of them. The role that created one holds a membership that lets it do neither, only
+  // manage the role, which is how Postgres leaves it.
+  const actors = await sql<{ member: string; role: string }[]>`
+    select pg_get_userbyid(a.member) as member, pg_get_userbyid(a.roleid) as role
+    from pg_auth_members a
+    where pg_get_userbyid(a.roleid) in ('opos_app', 'opos_app_global', 'opos_admin')
+      and (a.inherit_option or a.set_option)
+    order by 1, 2
+  `
+  if (actors.length > 0) {
+    problems.push(
+      `Roles that may act as a runtime role: ${actors.map((r) => `${r.member} as ${r.role}`).join(', ')}`,
+    )
+  }
+
   // opos_app is the role RLS holds to: it bypasses nothing and owns nothing, since an owner may
-  // switch RLS off. opos_app_global reads across tenants on purpose and owns nothing either.
+  // switch RLS off. opos_app_global and opos_admin bypass it on purpose and own nothing either.
   const appRole = await sql<{ bypasses: boolean }[]>`
     select rolsuper or rolbypassrls as bypasses from pg_roles where rolname = 'opos_app'
   `
   if (appRole[0]?.bypasses !== false) {
     problems.push('opos_app must not bypass RLS: it must exist without SUPERUSER and BYPASSRLS')
   }
-  // Neither runtime role manages roles or databases, replicates or is a superuser.
+  // No runtime role manages roles or databases, replicates or is a superuser.
   const attributes = await sql<{ role: string; held: string[] }[]>`
     select r.rolname as role, array_remove(array[
       case when r.rolsuper then 'SUPERUSER' end,
@@ -341,7 +434,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
       case when r.rolreplication then 'REPLICATION' end
     ], null) as held
     from pg_roles r
-    where r.rolname in ('opos_app', 'opos_app_global')
+    where r.rolname in ('opos_app', 'opos_app_global', 'opos_admin')
       and (r.rolsuper or r.rolcreaterole or r.rolcreatedb or r.rolreplication)
     order by 1
   `
@@ -353,7 +446,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   // The limits live in the role's settings, so they reach a session from its first query.
   const limits = await sql<{ role: string; config: string[] | null }[]>`
     select rolname as role, rolconfig as config from pg_roles
-    where rolname in ('opos_app', 'opos_app_global') order by 1
+    where rolname in ('opos_app', 'opos_app_global', 'opos_admin') order by 1
   `
   for (const { role, config } of limits) {
     for (const [setting, value] of Object.entries(RUNTIME_TIMEOUTS)) {
@@ -367,7 +460,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     from pg_db_role_setting s
     join pg_roles r on r.oid = s.setrole
     join pg_database d on d.oid = s.setdatabase
-    where r.rolname in ('opos_app', 'opos_app_global') and s.setdatabase <> 0
+    where r.rolname in ('opos_app', 'opos_app_global', 'opos_admin') and s.setdatabase <> 0
     order by 1, 2
   `
   for (const { role, database, config } of overrides) {
@@ -383,7 +476,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public'
-      and pg_get_userbyid(c.relowner) in ('opos_app', 'opos_app_global')
+      and pg_get_userbyid(c.relowner) in ('opos_app', 'opos_app_global', 'opos_admin')
     order by 1
   `
   if (owned.length > 0) {
@@ -404,7 +497,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
         as pinned,
       array(
         select r.role
-        from (values ('opos_app', true), ('opos_app_global', true), ('anon', false), ('authenticated', false), ('service_role', false)) r(role, definer_only)
+        from (values ('opos_app', true), ('opos_app_global', true), ('opos_admin', true), ('anon', false), ('authenticated', false), ('service_role', false)) r(role, definer_only)
         where (p.prosecdef or not r.definer_only)
           and has_function_privilege(r.role, p.oid, 'EXECUTE')
       ) as callers
@@ -430,7 +523,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   // without creating in it.
   const schemaGrants = await sql<{ role: string; privilege: string }[]>`
     select r.role, p.privilege
-    from (values ('anon', true), ('authenticated', true), ('service_role', true), ('opos_app', false), ('opos_app_global', false)) r(role, api)
+    from (values ('anon', true), ('authenticated', true), ('service_role', true), ('opos_app', false), ('opos_app_global', false), ('opos_admin', false)) r(role, api)
     cross join (values ('USAGE'), ('CREATE')) p(privilege)
     where (r.api or p.privilege = 'CREATE')
       and has_schema_privilege(r.role, 'public', p.privilege)
@@ -446,7 +539,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
   // PUBLIC, as Supabase leaves it; without usage on the schema no role reaches it, so only a direct
   // grant counts.
   const authGrants = await sql<{ grant: string }[]>`
-    with runtime(role) as (values ('opos_app'), ('opos_app_global'))
+    with runtime(role) as (values ('opos_app'), ('opos_app_global'), ('opos_admin'))
     select r.role || ' ' || p.privilege || ' on schema auth' as grant
     from runtime r cross join (values ('USAGE'), ('CREATE')) p(privilege)
     where has_schema_privilege(r.role, 'auth', p.privilege)
@@ -454,7 +547,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     select r.role || ' ' || p.privilege || ' on auth.' || c.relname
     from pg_class c
     cross join runtime r
-    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) p(privilege)
+    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER'), ('MAINTAIN')) p(privilege)
     where c.relnamespace = 'auth'::regnamespace and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege(r.role, c.oid, p.privilege)
     union all
@@ -478,7 +571,7 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     from pg_proc f
     cross join lateral aclexplode(f.proacl) g
     where f.pronamespace = 'auth'::regnamespace
-      and pg_get_userbyid(g.grantee) in ('opos_app', 'opos_app_global')
+      and pg_get_userbyid(g.grantee) in ('opos_app', 'opos_app_global', 'opos_admin')
     order by 1
   `
   if (authGrants.length > 0) {

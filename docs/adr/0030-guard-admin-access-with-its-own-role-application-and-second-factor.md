@@ -1,6 +1,6 @@
 # 0030. Guard admin access with a role of its own, its own application and session, and a required second factor
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-12
 
 ## Context
@@ -23,9 +23,9 @@ authentication to each account's choice
   server as `postgres`. No route and no screen makes an admin, and no database role of the running
   API can write the role.
 - **Two-factor authentication is required of an admin, and the role holds only with the second
-  factor it was granted with.** The grant needs a confirmed account with two-factor authentication
-  on. An account that turned it on again or replaced it after the grant is no admin until it is
-  granted the role anew.
+  factor it was granted with.** The grant needs a confirmed account with a password and two-factor
+  authentication on. An account that turned it on again or replaced it after the grant is no admin
+  until it is granted the role anew.
 - **An admin route answers only the admin application.** The request carries the admin
   application's `Origin`, so only that application's cookie pair is read: the same account's session
   in the panel or the portal has no admin power. The session is at `aal2`.
@@ -33,18 +33,21 @@ authentication to each account's choice
   routes, sign-in, refresh, sign-out, the code of two-factor authentication, and the account's own
   name, language and theme. Sign-up, Google sign-in, a password reset, a recovery code and every
   change of the account's credentials are refused from it.
-- **Deleting a tenant and resetting two-factor authentication need a sign-in younger than 5
-  minutes**, as the account's own irreversible actions do.
+- **An admin route needs a sign-in younger than 30 minutes**, and deleting a tenant and resetting
+  two-factor authentication one younger than 5 minutes, as the account's own irreversible actions
+  do.
 - **The admin routes work on a database role of their own**, `opos_admin`, held by one service of
   the API on its own connection. It bypasses RLS, since no tenant context lists the tenants, and
   holds only the privileges the admin routes use. `opos_app` gains nothing, and `opos_app_global`
   only reads whether a tenant is suspended. An API process without that connection serves no admin
   route.
-- **The API never resets the two-factor authentication of an admin**: that stays a script.
+- **The API never resets the two-factor authentication of an admin.** An admin who lost both device
+  and codes has the role taken away by the script, is then reset as any account is, and is granted
+  the role anew.
 - **Every action of an admin leaves an entry in a log** the application can only add to: who, what,
-  on which tenant or account, and when, as identifiers, with no email address. The entry commits
-  with the action; the reset of two-factor authentication, which acts in Supabase Auth, commits its
-  entry first.
+  on which tenant or account, and when, as identifiers, with no email address. The two scripts leave
+  theirs too, with no admin named. The entry commits with the action; the reset of two-factor
+  authentication, which acts in Supabase Auth, commits its entry first.
 
 ## Alternatives
 
@@ -74,8 +77,9 @@ authentication to each account's choice
 - Not built yet.
 - PRODUCT.md 10 changes with the code: two-factor authentication is required of one role, the
   admin.
-- An admin signs in with a password, so an account that signs in with Google alone cannot use the
-  admin application.
+- An admin signs in with a password, so an account that signs in with Google alone cannot be an
+  admin: the grant refuses it.
+- An admin at work signs in again every 30 minutes.
 - An admin who replaces their phone, uses a recovery code or has their two-factor authentication
   reset asks a person with access to the server for a new grant.
 - The rules of tenant isolation change with the code: a third runtime role, tables beside
@@ -83,7 +87,7 @@ authentication to each account's choice
   written by `opos_admin` as well as by the scripts.
 - Every admin route is tested against each actor: no session, the origin of another application, an
   account that is no admin, an admin whose second factor is off or newer than the grant, a session
-  below `aal2`, and a stale sign-in where a fresh one is needed.
+  below `aal2`, a sign-in older than 30 minutes, and a stale sign-in where a fresh one is needed.
 - A flaw in the admin application acts as the signed-in admin while its page is open, but can
   neither change that account's credentials nor grant the role.
 - A taken-over API process holds the privileges of `opos_admin` beside the secret key it already

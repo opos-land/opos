@@ -15,7 +15,19 @@ const RUNTIME_ROLES = [
     attributes: 'login bypassrls nocreaterole nocreatedb noreplication',
     password: 'appGlobal',
   },
+  {
+    name: 'opos_admin',
+    attributes: 'login bypassrls nocreaterole nocreatedb noreplication',
+    password: 'admin',
+  },
 ] as const
+
+/** The password of each runtime role. */
+export interface RolePasswords {
+  app: string
+  appGlobal: string
+  admin: string
+}
 
 /**
  * The runtime roles and their defaults, as `postgres` may set them on a local stack and on a hosted
@@ -25,7 +37,7 @@ const RUNTIME_ROLES = [
  */
 export async function applyRoles(
   sql: postgres.TransactionSql,
-  passwords: { app: string; appGlobal: string },
+  passwords: RolePasswords,
 ): Promise<void> {
   for (const { name, attributes, password } of RUNTIME_ROLES) {
     const [existing] = await sql`select 1 from pg_roles where rolname = ${name}`
@@ -44,7 +56,7 @@ export async function applyRoles(
   }
 
   await sql.unsafe(`
-    grant usage on schema public to opos_app, opos_app_global;
+    grant usage on schema public to ${RUNTIME_ROLES.map((role) => role.name).join(', ')};
     revoke all on schema public from public, ${API_ROLES};
     alter default privileges for role postgres in schema public
       revoke all on tables from ${API_ROLES};

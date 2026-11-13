@@ -19,3 +19,12 @@ Each module's domain owner sets its rules ([PRODUCT.md 7](docs/PRODUCT.md#7-modu
 
 Open: whether the domain owner of tickets also owns attendee registrations, as far as a paid
 ticket makes them ([brief 0001](docs/briefs/0001-convention-shop.md), D15).
+
+## Admins
+
+The admins run the platform and set the rules of its administration
+([spec](docs/specs/platform-administration.md)).
+
+| Role | Held by |
+|---|---|
+| admin | not named |

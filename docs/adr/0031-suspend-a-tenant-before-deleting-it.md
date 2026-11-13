@@ -1,6 +1,6 @@
 # 0031. Suspend a tenant before deleting it, and delete it at once and for good
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-12
 
 ## Context
@@ -24,6 +24,8 @@ its attendees' data until the matter is settled.
 - **A suspension is always reversible.** An admin restores the tenant, and everything is as it was.
 - **Only a suspended tenant can be deleted.** The deletion is immediate and permanent, and takes
   everything the tenant owns: its team, editions, programme and likes. The accounts stay.
+- **The address of a deleted tenant is never given to another tenant**, so an old link never opens
+  another convention.
 - **The deletion asks, in its modal, for the tenant's address typed in.** This is the exception to
   [0023](0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md), which turned typing down
   as more than the risk asked for: no other action takes away as much. Suspending and restoring ask
@@ -40,6 +42,8 @@ its attendees' data until the matter is settled.
 - **A soft deletion with a time to restore.** It needs a background job the API does not have, and
   a state, deleted but present, that every query has to leave out. The suspension is that time, for
   as long as the admin keeps it.
+- **The address of a deleted tenant free at once.** A link to the deleted convention, printed or
+  shared, would open whatever convention took the address next.
 - **A suspension that leaves the organizers reading.** It would not stop a head's account in the
   wrong hands from reading the attendees' data.
 - **A suspension that only stops writes.** The convention would stay public while the reason for
@@ -64,4 +68,5 @@ its attendees' data until the matter is settled.
   ([PRODUCT.md 10](../PRODUCT.md#10-personal-data-and-privacy)); until then a deletion takes
   everything.
 - A deleted tenant stays in the backups for as long as they are kept.
-- Whether the address of a deleted tenant is free at once is open in the spec.
+- An address a tenant left by a change is free at once: only the one it holds when it is deleted is
+  held back.

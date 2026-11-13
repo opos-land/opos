@@ -1,9 +1,9 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
-import { appDb, globalDb, migrationDb, RUNTIME_TIMEOUTS } from '../src/client'
+import { adminDb, appDb, globalDb, migrationDb, RUNTIME_TIMEOUTS } from '../src/client'
 import { migrationUrl } from '../src/migration-url'
 import { setTenantContext } from '../src/rls'
-import { appGlobalPassword, appPassword, createTenant, url } from './db'
+import { adminPassword, appGlobalPassword, appPassword, createTenant, url } from './db'
 
 // A runtime session takes its limits from its role, which db:roles writes from RUNTIME_TIMEOUTS,
 // and sends only application_name; the migration pool sends no limit of its own.
@@ -11,6 +11,7 @@ import { appGlobalPassword, appPassword, createTenant, url } from './db'
 const pools = {
   opos_app: appDb(url('opos_app', appPassword), { max: 1 }),
   opos_app_global: globalDb(url('opos_app_global', appGlobalPassword), { max: 1 }),
+  opos_admin: adminDb(url('opos_admin', adminPassword), { max: 1 }),
   postgres: migrationDb(migrationUrl()),
 }
 
@@ -38,7 +39,7 @@ const sourceOf = async (role: keyof typeof pools, setting: string) => {
 }
 
 describe('connection settings', () => {
-  it.each(['opos_app', 'opos_app_global'] as const)(
+  it.each(['opos_app', 'opos_app_global', 'opos_admin'] as const)(
     'bounds every session as %s from its role',
     async (role) => {
       expect(await settingsOf(role)).toEqual(RUNTIME_TIMEOUTS)
@@ -49,6 +50,7 @@ describe('connection settings', () => {
   it.each([
     ['opos_app', 'opos-app'],
     ['opos_app_global', 'opos-app-global'],
+    ['opos_admin', 'opos-admin'],
   ] as const)('sends application_name as %s', async (role, name) => {
     const [row] = await pools[role].execute<{ name: string }>(
       sql`select current_setting('application_name') as name`,

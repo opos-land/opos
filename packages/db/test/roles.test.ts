@@ -10,9 +10,9 @@ import { migrator, supabaseAdmin } from './db'
 
 class Rollback extends Error {}
 
-const passwords = { app: 'a1'.repeat(32), appGlobal: 'b2'.repeat(32) }
+const passwords = { app: 'a1'.repeat(32), appGlobal: 'b2'.repeat(32), admin: 'e5'.repeat(32) }
 const apiRoles = ['anon', 'authenticated', 'service_role']
-const runtimeRoles = ['opos_app', 'opos_app_global']
+const runtimeRoles = ['opos_admin', 'opos_app', 'opos_app_global']
 
 async function rolledBack(
   run: (tx: postgres.TransactionSql) => Promise<unknown>,
@@ -122,13 +122,15 @@ function scramMatches(stored: string, password: string) {
 }
 
 describe('applyRoles', () => {
-  it('creates opos_app without BYPASSRLS and opos_app_global with it', async () => {
+  it('creates opos_app without BYPASSRLS, and opos_app_global and opos_admin with it', async () => {
     await rolledBack(async (tx) => {
       await tx.unsafe(`
         drop owned by opos_app;
         drop owned by opos_app_global;
+        drop owned by opos_admin;
         drop role opos_app;
         drop role opos_app_global;
+        drop role opos_admin;
         set local role postgres;
       `)
 
@@ -140,6 +142,7 @@ describe('applyRoles', () => {
           where rolname = any(${runtimeRoles}) order by 1
         `,
       ).toEqual([
+        { rolname: 'opos_admin', rolcanlogin: true, rolsuper: false, rolbypassrls: true },
         { rolname: 'opos_app', rolcanlogin: true, rolsuper: false, rolbypassrls: false },
         { rolname: 'opos_app_global', rolcanlogin: true, rolsuper: false, rolbypassrls: true },
       ])
@@ -151,6 +154,7 @@ describe('applyRoles', () => {
       await tx.unsafe(`
         alter role opos_app bypassrls nologin createrole;
         alter role opos_app_global nobypassrls createdb replication;
+        alter role opos_admin nobypassrls nologin createrole;
         set local role postgres;
       `)
 
@@ -162,6 +166,14 @@ describe('applyRoles', () => {
           from pg_roles where rolname = any(${runtimeRoles}) order by 1
         `,
       ).toEqual([
+        {
+          rolname: 'opos_admin',
+          rolcanlogin: true,
+          rolbypassrls: true,
+          rolcreaterole: false,
+          rolcreatedb: false,
+          rolreplication: false,
+        },
         {
           rolname: 'opos_app',
           rolcanlogin: true,
@@ -184,7 +196,7 @@ describe('applyRoles', () => {
 
   it('is idempotent: running twice changes nothing and updates the passwords', async () => {
     await rolledBack(async (tx) => {
-      const other = { app: 'c3'.repeat(32), appGlobal: 'd4'.repeat(32) }
+      const other = { app: 'c3'.repeat(32), appGlobal: 'd4'.repeat(32), admin: 'f6'.repeat(32) }
       await tx.unsafe('set local role postgres')
       await applyRoles(tx, passwords)
       const once = await catalog(tx)
@@ -193,6 +205,7 @@ describe('applyRoles', () => {
       expect(scramMatches(await storedPassword(tx, 'opos_app_global'), passwords.appGlobal)).toBe(
         true,
       )
+      expect(scramMatches(await storedPassword(tx, 'opos_admin'), passwords.admin)).toBe(true)
 
       await tx.unsafe('set local role postgres')
       await applyRoles(tx, other)
@@ -200,6 +213,7 @@ describe('applyRoles', () => {
       await tx.unsafe('reset role')
       expect(scramMatches(await storedPassword(tx, 'opos_app'), other.app)).toBe(true)
       expect(scramMatches(await storedPassword(tx, 'opos_app_global'), other.appGlobal)).toBe(true)
+      expect(scramMatches(await storedPassword(tx, 'opos_admin'), other.admin)).toBe(true)
     }, supabaseAdmin)
   })
 
@@ -253,7 +267,7 @@ describe('applyRoles', () => {
 
   it('takes a password that needs quoting as it is', async () => {
     await rolledBack(async (tx) => {
-      const quoted = { app: `it's "odd"\\`, appGlobal: passwords.appGlobal }
+      const quoted = { ...passwords, app: `it's "odd"\\` }
       await tx.unsafe('set local role postgres')
       await applyRoles(tx, quoted)
       await tx.unsafe('reset role')

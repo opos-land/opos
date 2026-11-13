@@ -84,13 +84,13 @@ test.describe('signing in to the admin application', () => {
     await signInToAdmin(page, account)
 
     await expect(
-      page.getByRole('heading', { name: 'This account is not an administrator' }),
+      page.getByRole('heading', { name: 'This account does not hold the administrator role' }),
     ).toBeVisible()
     await expect(page.getByRole('table')).toHaveCount(0)
     await expect(page.getByRole('link', { name: 'Log', exact: true })).toHaveCount(0)
     await page.goto(adminUrl('/log'))
     await expect(
-      page.getByRole('heading', { name: 'This account is not an administrator' }),
+      page.getByRole('heading', { name: 'This account does not hold the administrator role' }),
     ).toBeVisible()
 
     await page.getByRole('button', { name: 'Sign out', exact: true }).click()

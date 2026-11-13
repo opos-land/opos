@@ -57,7 +57,11 @@ describe('AdminGate', () => {
   })
 
   it.each([
-    ['permission.denied', 'This account is not an administrator', /Only administrators of OPOS/],
+    [
+      'permission.denied',
+      'This account does not hold the administrator role',
+      /Only OPOS administrators use this application/,
+    ],
     [
       'admin.mfa-not-enabled',
       'Two-factor authentication is off',

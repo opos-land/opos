@@ -20,16 +20,24 @@ import {
 } from '../../../shared/ui'
 import { logOptions } from '../api/log'
 
+/** The log is the platform's record and names no tenant's time zone: the browser's. */
 const browserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
 
-/** What each entry records, in words. */
+/**
+ * What each entry records, in words: what was done, in the past tense. The reset's English reads
+ * like the button that does it, so it carries a context and is a message of its own.
+ */
 const ACTIONS: Record<AdminAction['action'], MessageDescriptor> = {
   'tenant.create': msg`Created the convention`,
   'tenant.rename': msg`Changed the address of the convention`,
   'tenant.suspend': msg`Suspended the convention`,
   'tenant.restore': msg`Restored the convention`,
   'tenant.delete': msg`Deleted the convention`,
-  'account.reset-2fa': msg`Reset two-factor authentication`,
+  'account.reset-2fa': msg({
+    message: 'Reset two-factor authentication',
+    context: 'log entry',
+    comment: 'Past tense: what an admin did, in the log of actions',
+  }),
   'admin.grant': msg`Granted the administrator role`,
   'admin.revoke': msg`Took the administrator role away`,
 }

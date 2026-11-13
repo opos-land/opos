@@ -18,11 +18,9 @@ import {
 } from '../../../shared/ui'
 import { conventionsOptions } from '../api/conventions'
 
-/** The time zone of the browser: a convention's creation is the platform's event, not its own. */
-const browserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
-
 /**
- * `/`: every convention, with its address, whether it is suspended and when it was created.
+ * `/`: every convention, with its address, whether it is suspended and when it was created, in
+ * its own time zone as every date of a tenant reads (docs/ARCHITECTURE.md, Localization).
  * AdminGate has the answer before this renders.
  */
 export function ConventionsPage() {
@@ -94,7 +92,7 @@ export function ConventionsPage() {
                   {formatDateTime(
                     new Date(convention.createdAt),
                     activeLocale(),
-                    browserTimeZone(),
+                    convention.timezone,
                   )}
                 </TableCell>
               </TableRow>

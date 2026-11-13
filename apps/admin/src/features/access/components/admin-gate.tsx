@@ -23,7 +23,7 @@ function NoAccessView({ code }: { code: Refusal }) {
     <section className="flex max-w-xl flex-col gap-2 p-8">
       <h1 className="text-xl font-semibold">
         {code === 'permission.denied' ? (
-          <Trans>This account is not an administrator</Trans>
+          <Trans>This account does not hold the administrator role</Trans>
         ) : code === 'admin.mfa-not-enabled' ? (
           <Trans>Two-factor authentication is off</Trans>
         ) : (
@@ -33,8 +33,8 @@ function NoAccessView({ code }: { code: Refusal }) {
       <p className="text-muted-foreground text-sm">
         {code === 'permission.denied' ? (
           <Trans>
-            Only administrators of OPOS use this application. The role is granted on the server, to
-            an account with two-factor authentication on.
+            Only OPOS administrators use this application. The role is granted on the server, to an
+            account with two-factor authentication on.
           </Trans>
         ) : (
           i18n._(errorMessage(code))

@@ -7,6 +7,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { messages as polish } from '../../../locales/pl.mjs'
 import { LogPage } from './log-page'
 
 const load = vi.fn<(before: string | undefined) => Promise<AdminAction[]>>()
@@ -117,6 +118,45 @@ describe('LogPage', () => {
     const [row] = await vi.waitFor(() => rows())
     expect(within(row!).getAllByText('an account deleted since')).toHaveLength(2)
     expect(within(row!).getByText('Reset two-factor authentication')).toBeTruthy()
+  })
+
+  // The button of the reset says what to do, and the log what was done: in Polish the two differ,
+  // so they are two messages though the English reads the same.
+  it('says in Polish what was done, in the past tense, for every action', async () => {
+    i18n.loadAndActivate({ locale: 'pl', messages: polish })
+    try {
+      load.mockResolvedValue(
+        (
+          [
+            'tenant.create',
+            'tenant.rename',
+            'tenant.suspend',
+            'tenant.restore',
+            'tenant.delete',
+            'account.reset-2fa',
+            'admin.grant',
+            'admin.revoke',
+          ] as const
+        ).map((action, index) => entry({ id: `e-${index}`, action })),
+      )
+      renderPage()
+
+      const told = (await vi.waitFor(() => rows())).map(
+        (row) => within(row).getAllByRole('cell')[2]!.textContent,
+      )
+      expect(told).toEqual([
+        'Utworzono konwent',
+        'Zmieniono adres konwentu',
+        'Zawieszono konwent',
+        'Przywrócono konwent',
+        'Usunięto konwent',
+        'Zresetowano uwierzytelnianie dwuskładnikowe',
+        'Nadano rolę administratora',
+        'Odebrano rolę administratora',
+      ])
+    } finally {
+      i18n.loadAndActivate({ locale: 'en', messages: {} })
+    }
   })
 
   it('reads on, a page at a time, while there are older entries', async () => {

@@ -52,10 +52,6 @@ msgstr "An account with a confirmed email address. Nothing is sent to it."
 msgid "Back to the conventions"
 msgstr "Back to the conventions"
 
-#: src/shared/ui/breadcrumb.tsx
-#~ msgid "breadcrumb"
-#~ msgstr "breadcrumb"
-
 #: src/features/conventions/components/delete-convention.tsx
 #: src/shared/ui/irreversible-action.tsx
 msgid "Cancel"
@@ -142,10 +138,6 @@ msgstr "Deleted the convention"
 msgid "Deletion"
 msgstr "Deletion"
 
-#: src/shared/ui/sidebar.tsx
-#~ msgid "Displays the mobile sidebar."
-#~ msgstr "Displays the mobile sidebar."
-
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Email"
 msgstr "Email"
@@ -212,10 +204,6 @@ msgstr "Loading…"
 msgid "Log"
 msgstr "Log"
 
-#: src/shared/ui/breadcrumb.tsx
-#~ msgid "More"
-#~ msgstr "More"
-
 #: src/features/conventions/pages/conventions-page.tsx
 #: src/features/conventions/pages/new-convention-page.tsx
 msgid "Name"
@@ -238,10 +226,6 @@ msgstr "No convention has been created yet."
 msgid "No email goes to them when the convention is suspended, restored or deleted: tell them yourself."
 msgstr "No email goes to them when the convention is suspended, restored or deleted: tell them yourself."
 
-#: src/shared/ui/messages.tsx
-#~ msgid "No permissions"
-#~ msgstr "No permissions"
-
 #: src/features/log/pages/log-page.tsx
 msgid "Nothing has been recorded yet."
 msgstr "Nothing has been recorded yet."
@@ -259,12 +243,12 @@ msgid "Only a suspended convention can be deleted. The deletion is immediate and
 msgstr "Only a suspended convention can be deleted. The deletion is immediate and permanent."
 
 #: src/features/auth/pages/login-page.tsx
-msgid "Only administrators of OPOS sign in here, with a password and the code of two-factor authentication."
-msgstr "Only administrators of OPOS sign in here, with a password and the code of two-factor authentication."
+msgid "Only OPOS administrators sign in here, with a password and the code of two-factor authentication."
+msgstr "Only OPOS administrators sign in here, with a password and the code of two-factor authentication."
 
 #: src/features/access/components/admin-gate.tsx
-msgid "Only administrators of OPOS use this application. The role is granted on the server, to an account with two-factor authentication on."
-msgstr "Only administrators of OPOS use this application. The role is granted on the server, to an account with two-factor authentication on."
+msgid "Only OPOS administrators use this application. The role is granted on the server, to an account with two-factor authentication on."
+msgstr "Only OPOS administrators use this application. The role is granted on the server, to an account with two-factor authentication on."
 
 #: src/features/access/components/admin-frame.tsx
 #: src/features/auth/components/auth-layout.tsx
@@ -285,7 +269,12 @@ msgid "Reset"
 msgstr "Reset"
 
 #: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "Reset two-factor authentication"
+msgstr "Reset two-factor authentication"
+
+#. Past tense: what an admin did, in the log of actions
 #: src/features/log/pages/log-page.tsx
+msgctxt "log entry"
 msgid "Reset two-factor authentication"
 msgstr "Reset two-factor authentication"
 
@@ -304,10 +293,6 @@ msgstr "Restored the convention"
 #: src/features/log/pages/log-page.tsx
 msgid "Show older entries"
 msgstr "Show older entries"
-
-#: src/shared/ui/sidebar.tsx
-#~ msgid "Sidebar"
-#~ msgstr "Sidebar"
 
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/login-page.tsx
@@ -399,8 +384,8 @@ msgid "The reset removes the account’s authenticator and its unused recovery c
 msgstr "The reset removes the account’s authenticator and its unused recovery codes, and the account gets an email that says so. An administrator’s account is never reset here: its role is taken away first, on the server."
 
 #: src/features/access/components/admin-gate.tsx
-msgid "This account is not an administrator"
-msgstr "This account is not an administrator"
+msgid "This account does not hold the administrator role"
+msgstr "This account does not hold the administrator role"
 
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
@@ -412,10 +397,6 @@ msgstr "This action cannot be undone."
 #: src/features/conventions/pages/new-convention-page.tsx
 msgid "Time zone"
 msgstr "Time zone"
-
-#: src/shared/ui/sidebar.tsx
-#~ msgid "Toggle Sidebar"
-#~ msgstr "Toggle Sidebar"
 
 #: src/features/log/pages/log-page.tsx
 msgid "Took the administrator role away"
@@ -471,10 +452,6 @@ msgstr "When"
 #: src/features/log/pages/log-page.tsx
 msgid "Who"
 msgstr "Who"
-
-#: src/shared/ui/messages.tsx
-#~ msgid "You do not have permission to see this page. If you need access, ask a head organizer of the convention."
-#~ msgstr "You do not have permission to see this page. If you need access, ask a head organizer of the convention."
 
 #: src/shared/lib/notify.ts
 msgid "Your sign-in is too old for this action. Sign in again with your password and the code, then repeat it."

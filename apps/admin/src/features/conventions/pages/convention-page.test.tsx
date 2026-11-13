@@ -135,12 +135,15 @@ describe('ConventionPage', () => {
   })
 
   it('shows a suspended convention as such, restores it at one press and offers its deletion', async () => {
-    load.mockResolvedValue(convention({ suspendedAt: '2026-04-01T08:00:00.000Z' }))
+    load.mockResolvedValue(
+      convention({ timezone: 'America/Los_Angeles', suspendedAt: '2026-04-01T03:30:00.000Z' }),
+    )
     restore.mockResolvedValue(convention())
     const user = renderPage()
 
     expect(await screen.findByText('Suspended')).toBeTruthy()
-    expect(screen.getByText(/Suspended since .*2026/)).toBeTruthy()
+    // In the convention's own time zone, where it is still the day before.
+    expect(screen.getByText(/Suspended since Mar 31, 2026, 8:30 PM\./)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Delete the convention' })).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Restore the convention' }))
 

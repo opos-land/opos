@@ -9,7 +9,7 @@ msgstr ""
 
 #: src/features/conventions/pages/new-convention-page.tsx
 msgid "A convention starts with its first head organizer, who builds its team."
-msgstr "Konwent zaczyna od pierwszego głównego organizatora, który buduje jego zespół."
+msgstr "Konwent zaczyna się od pierwszego głównego organizatora, który buduje jego zespół."
 
 #: src/features/log/pages/log-page.tsx
 msgid "a script on the server"
@@ -17,7 +17,7 @@ msgstr "skrypt na serwerze"
 
 #: src/features/conventions/components/convention-suspension.tsx
 msgid "A suspended convention is off for everyone but the administrators: its page is not found, and its organizers see only that it is suspended. Nothing is removed, no email is sent, and you can restore it here."
-msgstr "Zawieszony konwent jest wyłączony dla wszystkich poza administratorami: jego strona nie zostaje znaleziona, a organizatorzy widzą tylko, że jest zawieszony. Nic nie jest usuwane, nie wychodzi żaden e-mail, a konwent możesz przywrócić tutaj."
+msgstr "Zawieszony konwent jest wyłączony dla wszystkich poza administratorami: jego strona wyświetla się jako nieznaleziona, a organizatorzy widzą tylko, że jest zawieszony. Nic nie jest usuwane, nie wychodzi żaden e-mail, a konwent możesz przywrócić tutaj."
 
 #: src/features/accounts/pages/two-factor-reset-page.tsx
 msgid "Account"
@@ -52,10 +52,6 @@ msgstr "Konto z potwierdzonym adresem e-mail. Nic nie jest na nie wysyłane."
 msgid "Back to the conventions"
 msgstr "Wróć do konwentów"
 
-#: src/shared/ui/breadcrumb.tsx
-#~ msgid "breadcrumb"
-#~ msgstr ""
-
 #: src/features/conventions/components/delete-convention.tsx
 #: src/shared/ui/irreversible-action.tsx
 msgid "Cancel"
@@ -71,7 +67,7 @@ msgstr "Zmieniono adres konwentu"
 
 #: src/features/conventions/components/convention-address.tsx
 msgid "Changing the address breaks every old link to the convention. The address it leaves is free for another convention at once."
-msgstr "Zmiana adresu psuje każdy stary link do konwentu. Zwolniony adres od razu może zająć inny konwent."
+msgstr "Zmiana adresu psuje każdy stary link do konwentu. Zwolniony adres od razu może zostać zajęty przez inny konwent."
 
 #: src/features/conventions/pages/new-convention-page.tsx
 msgid "Choose a time zone from the list."
@@ -142,10 +138,6 @@ msgstr "Usunięto konwent"
 msgid "Deletion"
 msgstr "Usunięcie"
 
-#: src/shared/ui/sidebar.tsx
-#~ msgid "Displays the mobile sidebar."
-#~ msgstr ""
-
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Email"
 msgstr "E-mail"
@@ -212,10 +204,6 @@ msgstr "Wczytywanie…"
 msgid "Log"
 msgstr "Dziennik"
 
-#: src/shared/ui/breadcrumb.tsx
-#~ msgid "More"
-#~ msgstr ""
-
 #: src/features/conventions/pages/conventions-page.tsx
 #: src/features/conventions/pages/new-convention-page.tsx
 msgid "Name"
@@ -238,10 +226,6 @@ msgstr "Nie utworzono jeszcze żadnego konwentu."
 msgid "No email goes to them when the convention is suspended, restored or deleted: tell them yourself."
 msgstr "Przy zawieszeniu, przywróceniu ani usunięciu konwentu nie dostają żadnego e-maila: poinformuj ich samodzielnie."
 
-#: src/shared/ui/messages.tsx
-#~ msgid "No permissions"
-#~ msgstr ""
-
 #: src/features/log/pages/log-page.tsx
 msgid "Nothing has been recorded yet."
 msgstr "Niczego jeszcze nie zapisano."
@@ -252,18 +236,18 @@ msgstr "Powiadomienia"
 
 #: src/features/log/pages/log-page.tsx
 msgid "On what"
-msgstr "Na czym"
+msgstr "Czego dotyczy"
 
 #: src/features/conventions/pages/convention-page.tsx
 msgid "Only a suspended convention can be deleted. The deletion is immediate and permanent."
 msgstr "Usunąć można tylko zawieszony konwent. Usunięcie jest natychmiastowe i trwałe."
 
 #: src/features/auth/pages/login-page.tsx
-msgid "Only administrators of OPOS sign in here, with a password and the code of two-factor authentication."
+msgid "Only OPOS administrators sign in here, with a password and the code of two-factor authentication."
 msgstr "Tutaj logują się tylko administratorzy OPOS, hasłem i kodem uwierzytelniania dwuskładnikowego."
 
 #: src/features/access/components/admin-gate.tsx
-msgid "Only administrators of OPOS use this application. The role is granted on the server, to an account with two-factor authentication on."
+msgid "Only OPOS administrators use this application. The role is granted on the server, to an account with two-factor authentication on."
 msgstr "Z tej aplikacji korzystają tylko administratorzy OPOS. Rolę nadaje się na serwerze, kontu z włączonym uwierzytelnianiem dwuskładnikowym."
 
 #: src/features/access/components/admin-frame.tsx
@@ -285,9 +269,14 @@ msgid "Reset"
 msgstr "Resetuj"
 
 #: src/features/accounts/pages/two-factor-reset-page.tsx
-#: src/features/log/pages/log-page.tsx
 msgid "Reset two-factor authentication"
 msgstr "Resetuj uwierzytelnianie dwuskładnikowe"
+
+#. Past tense: what an admin did, in the log of actions
+#: src/features/log/pages/log-page.tsx
+msgctxt "log entry"
+msgid "Reset two-factor authentication"
+msgstr "Zresetowano uwierzytelnianie dwuskładnikowe"
 
 #: src/features/accounts/pages/two-factor-reset-page.tsx
 msgid "Reset two-factor authentication of {address}?"
@@ -304,10 +293,6 @@ msgstr "Przywrócono konwent"
 #: src/features/log/pages/log-page.tsx
 msgid "Show older entries"
 msgstr "Pokaż starsze wpisy"
-
-#: src/shared/ui/sidebar.tsx
-#~ msgid "Sidebar"
-#~ msgstr ""
 
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/login-page.tsx
@@ -340,7 +325,7 @@ msgstr "Zawieszony"
 
 #: src/features/conventions/components/convention-suspension.tsx
 msgid "Suspended since {since}. Its page is not found, and its organizers see only that it is suspended. Restoring it brings everything back as it was."
-msgstr "Zawieszony od {since}. Jego strona nie zostaje znaleziona, a organizatorzy widzą tylko, że jest zawieszony. Przywrócenie przywraca wszystko tak, jak było."
+msgstr "Zawieszony od {since}. Jego strona wyświetla się jako nieznaleziona, a organizatorzy widzą tylko, że jest zawieszony. Po przywróceniu wszystko wraca do stanu sprzed zawieszenia."
 
 #: src/features/log/pages/log-page.tsx
 msgid "Suspended the convention"
@@ -399,8 +384,8 @@ msgid "The reset removes the account’s authenticator and its unused recovery c
 msgstr "Reset usuwa aplikację uwierzytelniającą konta i jego niewykorzystane kody odzyskiwania, a konto dostaje e-mail z tą informacją. Konta administratora nigdy się tu nie resetuje: najpierw odbiera się mu rolę, na serwerze."
 
 #: src/features/access/components/admin-gate.tsx
-msgid "This account is not an administrator"
-msgstr "To konto nie jest administratorem"
+msgid "This account does not hold the administrator role"
+msgstr "To konto nie ma roli administratora"
 
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
@@ -412,10 +397,6 @@ msgstr "Tej operacji nie można cofnąć."
 #: src/features/conventions/pages/new-convention-page.tsx
 msgid "Time zone"
 msgstr "Strefa czasowa"
-
-#: src/shared/ui/sidebar.tsx
-#~ msgid "Toggle Sidebar"
-#~ msgstr ""
 
 #: src/features/log/pages/log-page.tsx
 msgid "Took the administrator role away"
@@ -454,7 +435,7 @@ msgstr "Aby potwierdzić, wpisz adres konwentu: {address}"
 #: src/features/conventions/components/convention-address.tsx
 #: src/features/conventions/pages/new-convention-page.tsx
 msgid "Use 3 to 40 lowercase letters, digits and hyphens."
-msgstr "Użyj od 3 do 40 małych liter, cyfr i łączników."
+msgstr "Użyj od 3 do 40 małych liter, cyfr i myślników."
 
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
@@ -472,10 +453,6 @@ msgstr "Kiedy"
 msgid "Who"
 msgstr "Kto"
 
-#: src/shared/ui/messages.tsx
-#~ msgid "You do not have permission to see this page. If you need access, ask a head organizer of the convention."
-#~ msgstr ""
-
 #: src/shared/lib/notify.ts
 msgid "Your sign-in is too old for this action. Sign in again with your password and the code, then repeat it."
-msgstr "Twoje logowanie jest zbyt stare na tę operację. Zaloguj się ponownie hasłem i kodem, a potem ją powtórz."
+msgstr "Od twojego logowania minęło zbyt dużo czasu, aby wykonać tę operację. Zaloguj się ponownie hasłem i kodem, a potem ją powtórz."

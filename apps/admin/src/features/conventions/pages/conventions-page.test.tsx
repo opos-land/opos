@@ -64,12 +64,17 @@ describe('ConventionsPage', () => {
     expect(within(second!).getByText('Suspended')).toBeTruthy()
   })
 
-  it('says when each was created, as a date the reader can read', () => {
-    renderPage([convention({})])
+  // A tenant's dates read in the tenant's time zone, never the browser's
+  // (docs/ARCHITECTURE.md, Localization): half past three in the morning, UTC, is still the day
+  // before in Los Angeles.
+  it('says when each was created, in the time zone of the convention', () => {
+    renderPage([
+      convention({ timezone: 'America/Los_Angeles', createdAt: '2026-03-01T03:30:00.000Z' }),
+    ])
 
     const [, row] = screen.getAllByRole('row')
-    expect(within(row!).getByText(/2026/)).toBeTruthy()
-    expect(within(row!).queryByText('2026-03-01T10:00:00.000Z')).toBeNull()
+    expect(within(row!).getByText('Feb 28, 2026, 7:30 PM')).toBeTruthy()
+    expect(within(row!).queryByText('2026-03-01T03:30:00.000Z')).toBeNull()
   })
 
   it('leads to each convention and to a new one', () => {

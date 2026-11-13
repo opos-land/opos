@@ -50,6 +50,7 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('Email')).toBeTruthy()
     expect(screen.getByLabelText('Password')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy()
+    expect(screen.getByText(/^Only OPOS administrators sign in here/)).toBeTruthy()
   })
 
   // The API serves the admin application's origin none of these: an admin's account is made, and

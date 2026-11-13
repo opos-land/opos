@@ -7,8 +7,6 @@ import { activeLocale } from '../../../shared/lib/i18n'
 import { Button } from '../../../shared/ui'
 import { adminKey, restoreConventionOptions, suspendConventionOptions } from '../api/conventions'
 
-const browserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
-
 /**
  * Suspending a convention and restoring it. Either is reversed by the other on this same screen,
  * so neither asks first (docs/ARCHITECTURE.md, Frontends); the text says what a suspension turns
@@ -30,10 +28,11 @@ export function ConventionSuspension({ convention }: { convention: AdminTenant }
   const params = { tenantId: convention.id }
 
   if (convention.suspendedAt) {
+    // A tenant's date, in the tenant's time zone (docs/ARCHITECTURE.md, Localization).
     const since = formatDateTime(
       new Date(convention.suspendedAt),
       activeLocale(),
-      browserTimeZone(),
+      convention.timezone,
     )
     return (
       <div className="flex flex-col items-start gap-4">

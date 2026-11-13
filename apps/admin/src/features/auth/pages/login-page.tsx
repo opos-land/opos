@@ -27,7 +27,7 @@ export function LoginPage() {
     <AuthLayout title={<Trans>Sign in to OPOS administration</Trans>}>
       <SignInForm onSignedIn={() => void navigate(returnTo, { replace: true })} />
       <p className="text-muted-foreground text-sm">
-        {t`Only administrators of OPOS sign in here, with a password and the code of two-factor authentication.`}
+        {t`Only OPOS administrators sign in here, with a password and the code of two-factor authentication.`}
       </p>
     </AuthLayout>
   )

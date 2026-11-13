@@ -22,7 +22,7 @@ skill is the procedure that applies them.
 
 A record marked `reconstructed, to confirm` whose real reasons the user gives is corrected, and the
 line dropped. An accepted record and an implemented spec are otherwise never edited, but to fix a
-broken link.
+broken link or space a table.
 
 ## 2. Write the rule, not the detail
 

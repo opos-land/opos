@@ -106,12 +106,12 @@ run = "pnpm db:totp"
 raw = true
 
 [format]
-description = "Format every file with Prettier"
+description = "Format every file with Prettier and space the tables of the Markdown files"
 run = "pnpm format"
 raw = true
 
 ["format:check"]
-description = "Check that every file is formatted with Prettier"
+description = "Check that every file is formatted with Prettier and every Markdown table is spaced"
 run = "pnpm format:check"
 raw = true
 

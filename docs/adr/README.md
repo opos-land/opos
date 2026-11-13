@@ -28,7 +28,7 @@ links it.
   `Accepted`. A decision accepted but not built is `Accepted` and says so in its consequences.
 - An accepted record is not rewritten. A changed decision gets a new record, and the old one changes
   only its status, to `Superseded by [NNNN](NNNN-<slug>.md)`; a decision dropped with no successor
-  becomes `Deprecated`. Fixing a broken link is allowed.
+  becomes `Deprecated`. Fixing a broken link or spacing a table is allowed.
 - A record whose reasons were not written down when the decision was made carries
   `- Rationale: reconstructed, to confirm`: its context and alternatives were inferred later from the
   code, the documents and the pull requests. Confirming or correcting them, and dropping the line, is

@@ -27,9 +27,10 @@ The PR that completes the feature:
    a record, and links it from the spec;
 3. sets the status to `Implemented`.
 
-An implemented spec is not edited again, but to fix a broken link. It holds what was decided at its
-date: where it disagrees with the code or the documents, they hold, and the disagreement needs no
-report. A later change of the feature gets a new spec when it meets the bar above.
+An implemented spec is not edited again, but to fix a broken link or space a table. It holds what
+was decided at its date: where it disagrees with the code or the documents, they hold, and the
+disagreement needs no report. A later change of the feature gets a new spec when it meets the bar
+above.
 
 ## Rules
 

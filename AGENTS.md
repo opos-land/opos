@@ -77,7 +77,12 @@ say so and ask for the owner's rules first; they land in the module's spec befor
   translation catalog and the renderings a brief quotes. No emoji.
 - The documents and the specs state the target state only: no change history, no alternatives, no
   "why" chapters; those belong in a decision record. A short operational instruction is fine.
-- Tables where the content has structure; anchors updated together with headings.
+- Tables where the content has structure, spaced into aligned columns: every cell padded to its
+  column's width, the dashes of the delimiter row filling it, the text of a cell unchanged.
+  `pnpm format` spaces them, and [scripts/markdown-tables.mjs](scripts/markdown-tables.mjs) refuses
+  an unspaced one in lefthook `pre-commit` and in CI
+  ([0032](docs/adr/0032-space-markdown-tables-into-aligned-columns.md)).
+- Anchors updated together with headings.
 - Terminology strictly from the glossary: tenant, edition, programme item, speaker, like, review,
   ticket type, order, ticket, scanner, attendee, admin, org, head, user, core, module, booth.
 

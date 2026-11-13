@@ -29,6 +29,7 @@
     "db:verify": "turbo run db:verify",
     "db:admin:grant": "turbo run db:admin:grant --",
     "db:admin:revoke": "turbo run db:admin:revoke --",
+    "db:totp": "turbo run db:totp --",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:init": "node scripts/infra-init.mjs",

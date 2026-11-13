@@ -21,7 +21,8 @@
     "db:verify": "tsx --env-file-if-exists=.env src/scripts/verify.ts",
     "db:seed": "tsx --env-file-if-exists=.env src/seed.ts",
     "db:admin:grant": "tsx --env-file-if-exists=.env src/scripts/grant-admin.ts",
-    "db:admin:revoke": "tsx --env-file-if-exists=.env src/scripts/revoke-admin.ts"
+    "db:admin:revoke": "tsx --env-file-if-exists=.env src/scripts/revoke-admin.ts",
+    "db:totp": "tsx --env-file-if-exists=.env src/scripts/totp.ts"
   },
   "dependencies": {
     "@opos/i18n": "workspace:*",

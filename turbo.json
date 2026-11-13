@@ -128,6 +128,10 @@
       "cache": false,
       "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
     },
+    "db:totp": {
+      "cache": false,
+      "passThroughEnv": ["DATABASE_MIGRATION_URL", "OPOS_ENV"]
+    },
     "db:studio": {
       "cache": false,
       "persistent": true,

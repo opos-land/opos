@@ -6,12 +6,12 @@
 # This file sits outside mise.toml, which turbo hashes: a description changes no cache.
 
 [dev]
-description = "Run the API, the panel and the portal in watch mode"
+description = "Run the API, the panel, the portal and the admin application in watch mode"
 run = "pnpm dev"
 raw = true
 
 [build]
-description = "Build the API, the panel and the portal for production"
+description = "Build the API, the panel, the portal and the admin application for production"
 run = "pnpm build"
 raw = true
 
@@ -98,6 +98,11 @@ raw = true
 ["db:admin:revoke"]
 description = "Take the admin role away from an account: --email <email>"
 run = "pnpm db:admin:revoke"
+raw = true
+
+["db:totp"]
+description = "Print the current two-factor code of an account, where OPOS_ENV is local alone: --email <email>"
+run = "pnpm db:totp"
 raw = true
 
 [format]

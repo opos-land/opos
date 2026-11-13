@@ -1,0 +1,98 @@
+import { accountClient } from './api'
+import { isMfaRequired, isSessionInvalid } from './errors'
+import {
+  announceAccountChange,
+  clearSession,
+  mfaRequired,
+  onSessionEnded,
+  type SessionState,
+  sessionChannel,
+  signedIn,
+  signedOut,
+  useSession,
+} from './session-store'
+
+export { announceAccountChange, signedIn, signedOut, useSession }
+export type { SessionState }
+
+/** The number of the latest `load`, which only its own answer may settle. */
+let newestLoad = 0
+
+/**
+ * Asks who is signed in and shows the answer. A session waiting for its code ends `mfa-required`.
+ * `announce` tells the other tabs which account was found, or to drop theirs when the cookies
+ * now wait for a code (a Google return is a page load); a tab following an
+ * announcement does not. A `401` that stands is a session that
+ * is over only when a request of this tab ended it; one the refresh could not settle is
+ * `unavailable`. The answer to a load a newer one overtook counts for nothing, and neither does an
+ * account that arrives after the session was settled meanwhile: it may be the one just signed out.
+ */
+async function load(announce: boolean) {
+  const generation = ++newestLoad
+  let ended = false
+  const stop = onSessionEnded(() => (ended = true))
+  useSession.setState({ status: 'loading' })
+  try {
+    const shown = useSession.getState().account?.id
+    const account = await accountClient.me.get()
+    if (generation !== newestLoad || useSession.getState().status !== 'loading') return
+    useSession.setState({ status: 'ready', account })
+    if (announce && account.id !== shown) announceAccountChange(account.id)
+  } catch (error) {
+    if (generation !== newestLoad) return
+    if (isMfaRequired(error)) mfaRequired(announce)
+    else if (isSessionInvalid(error) && ended) clearSession()
+    else useSession.setState({ status: 'unavailable' })
+  } finally {
+    stop()
+  }
+}
+
+/**
+ * Application start: `GET /me`, with the API link's one refresh on a `401`. It ends
+ * `ready`, with the account or without one, or `unavailable` when the answer could not be had; a
+ * failed refresh does not sign anyone out. Calling it again retries. An account it finds is
+ * announced to the other tabs; finding none is not.
+ */
+export function startSession() {
+  followOtherTabs()
+  return load(true)
+}
+
+let following = false
+
+/** Follows the account changes the other tabs announce. */
+function followOtherTabs() {
+  const channel = sessionChannel()
+  if (following || !channel) return
+  following = true
+  channel.addEventListener('message', (event: MessageEvent<unknown>) => {
+    void applyAnnouncement(event.data)
+  })
+}
+
+async function applyAnnouncement(message: unknown) {
+  if (typeof message !== 'object' || message === null || !('accountId' in message)) return
+  const { accountId } = message
+  if (accountId === null) {
+    // A tab on the code screen never held the account; its cookies are still pending, not gone.
+    if (useSession.getState().status !== 'mfa-required') clearSession()
+    return
+  }
+  if (typeof accountId !== 'string' || accountId === useSession.getState().account?.id) return
+  // The old account's data goes at once, not when the new account's answer arrives.
+  useSession.setState({ status: 'loading', account: null })
+  await load(false)
+}
+
+/**
+ * The admin's sign-in is older than the admin routes take: this tab shows no account, and the
+ * page that needs one leads to sign-in and opens again afterwards. The session itself is ended
+ * too, so the cookies of a sign-in the API no longer takes do not linger; a failure of that
+ * request changes nothing here.
+ */
+export function signInAgain() {
+  if (useSession.getState().account === null) return
+  signedOut()
+  void accountClient.auth.signOut().catch(() => undefined)
+}

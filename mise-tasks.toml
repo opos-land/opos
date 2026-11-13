@@ -46,7 +46,7 @@ run = "pnpm i18n:extract"
 raw = true
 
 ["i18n:compile"]
-description = "Compile the .po catalogs of the panel, the portal and packages/i18n"
+description = "Compile the .po catalogs of the panel, the portal, the admin application and packages/i18n"
 run = "pnpm i18n:compile"
 raw = true
 

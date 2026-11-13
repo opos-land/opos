@@ -36,6 +36,7 @@ const TEMPLATES = {
   ].join('\n'),
   'apps/panel/.env.example': 'VITE_API_URL=http://api.opos.localhost:3001\n',
   'apps/portal/.env.example': 'VITE_API_URL=http://api.opos.localhost:3001\n',
+  'apps/admin/.env.example': 'VITE_API_URL=http://api.opos.localhost:3001\n',
 }
 
 // What `supabase status -o env` prints: a warning line, then KEY="value" lines.
@@ -199,6 +200,7 @@ test('initInfra writes every .env from its template with OPOS_ENV local', async 
   assert.equal(ctx.value('apps/api/.env', 'PANEL_URL'), 'http://panel.opos.localhost:5173')
   assert.equal(ctx.text('apps/panel/.env'), TEMPLATES['apps/panel/.env.example'])
   assert.equal(ctx.text('apps/portal/.env'), TEMPLATES['apps/portal/.env.example'])
+  assert.equal(ctx.text('apps/admin/.env'), TEMPLATES['apps/admin/.env.example'])
   assert.equal(ctx.value('supabase/.env', 'SITE_URL'), 'http://opos.localhost:5174')
 })
 

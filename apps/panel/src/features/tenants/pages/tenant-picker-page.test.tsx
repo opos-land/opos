@@ -77,6 +77,32 @@ describe('TenantPickerPage', () => {
     expect(document.title).toBe('Your conventions · OPOS panel')
   })
 
+  // The admin took the convention off the platform: the member sees that where their conventions
+  // are listed, and nothing of it opens but that message.
+  it('marks a suspended convention and offers no settings of it', () => {
+    setMemberships([
+      membership('convention-a', 'Convention A', { role: 'head' }),
+      membership('convention-b', 'Convention B', {
+        role: 'head',
+        tenant: { id: 'tenant-b', slug: 'convention-b', name: 'Convention B', suspended: true },
+      }),
+    ])
+    view()
+
+    const b = card('Convention B')
+    expect(within(b).getByText('Suspended')).toBeDefined()
+    expect(within(b).queryByRole('link', { name: 'Convention settings' })).toBeNull()
+    expect(
+      within(b)
+        .getByRole('link', { name: /Convention B/ })
+        .getAttribute('href'),
+    ).toBe('/convention-b')
+    expect(within(card('Convention A')).queryByText('Suspended')).toBeNull()
+    expect(
+      within(card('Convention A')).getByRole('link', { name: 'Convention settings' }),
+    ).toBeDefined()
+  })
+
   it('says so when the account is in no team', () => {
     setMemberships([])
     view()

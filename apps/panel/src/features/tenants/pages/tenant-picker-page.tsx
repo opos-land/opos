@@ -1,13 +1,14 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link, Navigate } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
-import { buttonVariants, Card, CardContent, PageHeader } from '../../../shared/ui'
+import { Badge, buttonVariants, Card, CardContent, PageHeader } from '../../../shared/ui'
 import { tenantAccess, usePermissionStore } from '../model/permissions'
 
 /**
  * The convention picker at `/`: a card per convention opens its edition, and a member
  * who may open the convention settings finds them on the card too. A single membership goes
- * straight into its convention, whatever the role.
+ * straight into its convention, whatever the role. A convention the admin suspended says so on
+ * its card and offers no settings: nothing of it opens but that message.
  */
 export function TenantPickerPage() {
   const { t } = useLingui()
@@ -36,7 +37,14 @@ export function TenantPickerPage() {
                       {m.role === 'head' ? <Trans>Head organizer</Trans> : <Trans>Organizer</Trans>}
                     </span>
                   </Link>
-                  {tenantAccess(m).seesConventionSettings && (
+                  {m.tenant.suspended && (
+                    <Badge variant="destructive">
+                      <Trans comment="The state of a convention the admin suspended">
+                        Suspended
+                      </Trans>
+                    </Badge>
+                  )}
+                  {!m.tenant.suspended && tenantAccess(m).seesConventionSettings && (
                     <Link
                       to={`/${m.tenant.slug}/settings`}
                       className={buttonVariants({ variant: 'outline', size: 'sm' })}

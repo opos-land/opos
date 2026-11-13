@@ -1,10 +1,11 @@
-import { type Database, migrationDb } from '@opos/db'
+import { type Database, grantAdmin, migrationDb } from '@opos/db'
 import { expect, test as base } from '@playwright/test'
 import { type Account, createAuthUser, deleteAuthUser, freshEmail } from './auth-admin'
 import { type PageRequest, requestsOutside } from './boundary'
 import { deleteMail } from './mailpit'
 import { stack } from './stack'
 import { accountIds, TenantFactory } from './tenants'
+import { turnOnTwoFactor } from './two-factor'
 
 /** Accounts made for one scenario and the addresses it used, all removed after it. */
 export interface Accounts {
@@ -14,8 +15,22 @@ export interface Accounts {
   freshEmail(prefix?: string): string
 }
 
+/** An account with two-factor authentication on; `secret` computes the codes of its authenticator. */
+export type AccountWithTwoFactor = Account & { secret: string }
+
+/** Accounts for the admin application, removed after the scenario with the others. */
+export interface Admins {
+  /** An account holding the admin role, granted as `pnpm db:admin:grant` grants it. */
+  create(options?: Parameters<typeof createAuthUser>[0]): Promise<AccountWithTwoFactor>
+  /** An account with two-factor authentication on and no admin role. */
+  withTwoFactor(): Promise<AccountWithTwoFactor>
+  /** Grants the role to an account, anew after its second factor changed. */
+  grant(email: string): Promise<void>
+}
+
 interface ScenarioFixtures {
   accounts: Accounts
+  admins: Admins
   tenants: TenantFactory
   /** Fails the scenario whose pages request anything outside the applications and the API. */
   boundary: void
@@ -28,9 +43,9 @@ interface WorkerFixtures {
 // Scenarios share no data: each one makes its own accounts and tenants, and
 // leaves nothing behind in the database or in Mailpit.
 export const test = base.extend<ScenarioFixtures, WorkerFixtures>({
-  // The BFF boundary: the browser talks to the panel, the portal and the API alone.
-  // A request to Supabase or to anything else, from any page of the scenario, fails it; so does a
-  // panel page requesting the portal, or the other way round, unless it is a navigation.
+  // The BFF boundary: the browser talks to the panel, the portal, the admin application and the
+  // API alone. A request to Supabase or to anything else, from any page of the scenario, fails
+  // it; so does a page of one application requesting another, unless it is a navigation.
   boundary: [
     async ({ context }, use) => {
       const requests: PageRequest[] = []
@@ -53,7 +68,7 @@ export const test = base.extend<ScenarioFixtures, WorkerFixtures>({
       expect(
         requestsOutside(requests, {
           api: new URL(stack.api).origin,
-          applications: [stack.panel, stack.portal].map((url) => new URL(url).origin),
+          applications: [stack.panel, stack.portal, stack.admin].map((url) => new URL(url).origin),
         }),
         'requests outside the origin of their page and the API',
       ).toEqual([])
@@ -91,6 +106,26 @@ export const test = base.extend<ScenarioFixtures, WorkerFixtures>({
     const all = new Set([...ids, ...(await accountIds(db, emails))])
     await Promise.all([...all].map(deleteAuthUser))
     await Promise.all(emails.map(deleteMail))
+  },
+
+  // Through `accounts`, so the admins go with the scenario's other accounts; the role goes with
+  // its account.
+  admins: async ({ db, accounts }, use) => {
+    const withTwoFactor = async (options: Parameters<typeof createAuthUser>[0] = {}) => {
+      const account = await accounts.create(options)
+      return { ...account, secret: await turnOnTwoFactor(account) }
+    }
+    await use({
+      async create(options) {
+        const account = await withTwoFactor(options)
+        await grantAdmin(db, account.email)
+        return account
+      },
+      withTwoFactor: () => withTwoFactor(),
+      async grant(email) {
+        await grantAdmin(db, email)
+      },
+    })
   },
 
   // Depends on accounts, so its tenants are removed before the accounts heading them.

@@ -2,18 +2,18 @@
 name: shadcn
 description: Manages shadcn components and projects — adding, searching, fixing, debugging, styling, and composing UI, including chat interfaces. Provides project context, component docs, and usage examples. Applies when working with shadcn/ui, component registries, presets, --preset codes, or any project with a components.json file. Also triggers for "shadcn init", "create an app with --preset", "switch to --preset", and for building a design system or applying a DESIGN.md or brand spec to shadcn/ui.
 user-invocable: false
-allowed-tools: Bash(pnpm --dir apps/panel exec shadcn *), Bash(pnpm --dir apps/portal exec shadcn *)
+allowed-tools: Bash(pnpm --dir apps/panel exec shadcn *), Bash(pnpm --dir apps/portal exec shadcn *), Bash(pnpm --dir apps/admin exec shadcn *)
 ---
 
 # shadcn/ui
 
 A framework for building ui, components and design systems. Components are added as source code to the user's project via the CLI.
 
-> **IMPORTANT (this repository):** Run the CLI the application pins: `pnpm --dir apps/panel exec shadcn <command>` or `pnpm --dir apps/portal exec shadcn <command>`. Never `npx shadcn@latest` or `pnpm dlx`: they skip the 7-day `minimumReleaseAge` of `pnpm-workspace.yaml`. Each application has its own `components.json` with the same style, base and icons, and its components in `src/shared/ui`. Examples below use `npx shadcn@latest`; substitute the command above.
+> **IMPORTANT (this repository):** Run the CLI the application pins: `pnpm --dir apps/panel exec shadcn <command>`, `pnpm --dir apps/portal exec shadcn <command>` or `pnpm --dir apps/admin exec shadcn <command>`. Never `npx shadcn@latest` or `pnpm dlx`: they skip the 7-day `minimumReleaseAge` of `pnpm-workspace.yaml`. Each application has its own `components.json` with the same style, base and icons, and its components in `src/shared/ui`. Examples below use `npx shadcn@latest`; substitute the command above.
 
 ## Current Project Context
 
-The panel, then the portal:
+The panel, then the portal, then the admin application:
 
 ```json
 !`pnpm --dir apps/panel exec shadcn info --json`
@@ -21,6 +21,10 @@ The panel, then the portal:
 
 ```json
 !`pnpm --dir apps/portal exec shadcn info --json`
+```
+
+```json
+!`pnpm --dir apps/admin exec shadcn info --json`
 ```
 
 The JSON above contains the project config and installed components. Use `npx shadcn@latest docs <component>` to get documentation and example URLs for any component.

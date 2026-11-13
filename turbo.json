@@ -25,7 +25,9 @@
         "OPOS_PANEL_HOST",
         "OPOS_PANEL_PORT",
         "OPOS_PORTAL_HOST",
-        "OPOS_PORTAL_PORT"
+        "OPOS_PORTAL_PORT",
+        "OPOS_ADMIN_HOST",
+        "OPOS_ADMIN_PORT"
       ]
     },
     "typecheck": {
@@ -57,7 +59,11 @@
       ]
     },
     "test:e2e": {
-      "dependsOn": ["@opos/panel#i18n:compile", "@opos/portal#i18n:compile"],
+      "dependsOn": [
+        "@opos/panel#i18n:compile",
+        "@opos/portal#i18n:compile",
+        "@opos/admin#i18n:compile"
+      ],
       "cache": false,
       "passThroughEnv": [
         "CI",
@@ -66,6 +72,8 @@
         "OPOS_PANEL_PORT",
         "OPOS_PORTAL_HOST",
         "OPOS_PORTAL_PORT",
+        "OPOS_ADMIN_HOST",
+        "OPOS_ADMIN_PORT",
         "PLAYWRIGHT_BROWSERS_PATH"
       ]
     },

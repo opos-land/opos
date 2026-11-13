@@ -1,7 +1,9 @@
+import { totp } from '@opos/db/totp'
 import { expect, type Page } from '@playwright/test'
 import { stack } from './stack'
 
-// Signing in through the UI, the way a person does, to the panel or the portal.
+// Signing in through the UI, the way a person does, to the panel, the portal or the admin
+// application.
 
 /** The demo accounts of the seed; a scenario only reads them and never signs them out. */
 export const seeded = {
@@ -22,6 +24,29 @@ async function signIn(page: Page, url: string, email: string, password: string) 
 
 export const panelUrl = (path = '/') => new URL(path, stack.panel).toString()
 export const portalUrl = (path = '/') => new URL(path, stack.portal).toString()
+export const adminUrl = (path = '/') => new URL(path, stack.admin).toString()
+
+/** The code an authenticator app shows now for `secret`. */
+export const codeFor = (secret: string) => totp(secret, Date.now())
+
+/**
+ * Signs in to the admin application: email and password on `/login`, then the code on its own
+ * screen. It waits only for the code screen to be left: what follows is the scenario's to say.
+ */
+export async function signInToAdmin(
+  page: Page,
+  account: { email: string; password: string; secret: string },
+  path = '/login',
+) {
+  await page.goto(adminUrl(path))
+  await page.getByLabel('Email', { exact: true }).fill(account.email)
+  await page.getByLabel('Password', { exact: true }).fill(account.password)
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Two-factor authentication' })).toBeVisible()
+  await page.getByLabel('Code', { exact: true }).fill(codeFor(account.secret))
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await expect(page).not.toHaveURL(/\/(login|auth\/mfa)/)
+}
 
 /** Signs in on the panel's `/login` and waits until it leaves the page. */
 export const signInToPanel = (page: Page, email: string, password: string) =>

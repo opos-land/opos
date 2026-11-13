@@ -13,9 +13,9 @@ Write responses in the language the user writes in.
 ## Repository
 
 OPOS — a multitenant platform for running fantasy conventions, free for conventions. `apps/api`, the
-core of `apps/panel`, the account screens of `apps/portal` and the shared packages they need exist;
-deployment and the modules waiting for their domain owner are still to be built. Everything in this
-repository is written in English.
+core of `apps/panel`, the account screens of `apps/portal`, `apps/admin`, and the shared packages
+they need exist; deployment and the modules waiting for their domain owner are still to be built.
+Everything in this repository is written in English.
 
 | File | Holds |
 |---|---|
@@ -100,8 +100,9 @@ header up to 72 characters; an optional body says why.
 | `ci` | GitHub Actions workflows |
 | `revert` | reverting a commit |
 
-Scopes: `api`, `panel`, `portal`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (Traefik, compose,
-`infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs` and this list.
+Scopes: `api`, `panel`, `portal`, `admin`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (Traefik,
+compose, `infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs` and this
+list.
 
 - A Drizzle migration goes in the same commit as the schema change that produced it.
 - `.po` catalogs with the `pl` translations go in the same commit as the code introducing the
@@ -154,7 +155,7 @@ once — break the code on purpose once to see the test catch it.
 |---|---|---|
 | `rls` | `packages/db/drizzle/*.sql`, `packages/db/src/schema/`, `packages/db/src/{rls,verify,tenants,client,roles,migration-url}.ts`, `packages/db/src/scripts/roles.ts` | `packages/db/test/*.test.ts` |
 | `rbac` | `apps/api/src/common/{permissions,als,guards,database,decorators}/`, `apps/api/src/modules/` but `mail/` and `health/`, `apps/api/src/app.module.ts`, `packages/contract/src/*.ts` but `errors.ts` and `index.ts` | `apps/api/test/*.test.ts`, `apps/api/src/**/*.test.ts` |
-| `api`, `panel`, `portal` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
+| `api`, `panel`, `portal`, `admin` | the rest of `apps/<name>/` | a `*.test.*` anywhere in the same application |
 | `db`, `contract`, `i18n`, `eslint-config` | the rest of `packages/<name>/` | a `*.test.*` anywhere in the same package |
 | `scripts`, `claude` | `scripts/`, `.claude/` | a `*.test.*` in the same directory tree, run by `pnpm test:scripts` |
 | `unlisted` | code anywhere else | none: a new directory of code gets its area here and in the script first |
@@ -189,11 +190,12 @@ agent files cite exist and that the area names here equal those of the script.
 `packages/db` or `apps/api`, and the `i18n-reviewer` agent when it touches user-facing text, a `.po`
 catalog or `packages/i18n`. Both only report; fix what they find first.
 
-**The panel and the portal never talk to Supabase.** The API is their only backend: no
-`@supabase/*` package, no Supabase address or key, no `VITE_*` variable naming Supabase. The `react`
-ESLint preset and [scripts/bff-boundary.mjs](scripts/bff-boundary.mjs) refuse a breach in a hook, in
-lefthook `pre-commit` and in CI ([boundary](docs/ARCHITECTURE.md#applications-and-packages)). A
-breach is fixed in the application, never allowed by an exception.
+**The panel, the portal and the admin application never talk to Supabase.** The API is their only
+backend: no `@supabase/*` package, no Supabase address or key, no `VITE_*` variable naming Supabase.
+The `react` ESLint preset and [scripts/bff-boundary.mjs](scripts/bff-boundary.mjs) refuse a breach
+in a hook, in lefthook `pre-commit` and in CI
+([boundary](docs/ARCHITECTURE.md#applications-and-packages)). A breach is fixed in the application,
+never allowed by an exception.
 
 **Every page names itself in the browser tab** through `usePageTitle` of `shared/lib/page-title.ts`,
 called before the page's first `return`; `src/app/pages.test.ts` of each application fails on a page
@@ -220,10 +222,11 @@ script loaded in `load` through `loadScript`, its purpose in a Lingui macro with
 translation, its cookies named; the banner, the privacy settings and the withdrawal then cover it
 with no change, and the banner shows only while the list holds an entry. Never a tag manager, which
 loads tools out of the list's sight. The first tracker is a product decision: ask before adding it,
-and change `docs/PRODUCT.md` 10 and the privacy page with it, in a decision record. **The panel
-holds no tracker.** `src/app/third-party.test.ts` of each application refuses a script or an iframe
-created outside the consent feature and anything loaded from another origin by `index.html` or a
-stylesheet ([0026](docs/adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
+and change `docs/PRODUCT.md` 10 and the privacy page with it, in a decision record. **The panel and
+the admin application hold no tracker.** `src/app/third-party.test.ts` of each application refuses a
+script or an iframe created outside the consent feature and anything loaded from another origin by
+`index.html` or a stylesheet
+([0026](docs/adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`, no
 remote database URL, project reference or access token in a `.env` or `mise.local.toml`; they change
@@ -235,7 +238,7 @@ them to the repository. Where no design exists yet, use shadcn/ui's defaults unc
 
 **Screens are built from shadcn/ui** in each application's `src/shared/ui`
 ([frontends](docs/ARCHITECTURE.md#frontends)). A component comes from the CLI the application pins,
-`pnpm --dir apps/panel exec shadcn add <name>` or the same for `apps/portal`, never
+`pnpm --dir apps/panel exec shadcn add <name>` or the same for `apps/portal` and `apps/admin`, never
 `npx shadcn@latest`, and stays as the CLI writes it but for formatting, lint fixes and its own texts
 moved into Lingui macros; the look changes through the tokens of `src/styles.css`. The `shadcn`
 skill ([.claude/skills/shadcn/SKILL.md](.claude/skills/shadcn/SKILL.md)) runs that CLI, and no MCP

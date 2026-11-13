@@ -15,6 +15,11 @@ msgstr "{count, plural, one {Permissions in the edition} other {Permissions in t
 msgid "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
 msgstr "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
 
+#. A convention in a list of conventions, with the note that the admin suspended it
+#: src/features/tenants/components/area-switcher.tsx
+msgid "{name} (suspended)"
+msgstr "{name} (suspended)"
+
 #: src/features/team/components/remove-member.tsx
 msgid "{name} loses access to the convention at once. Coming back takes a new invitation."
 msgstr "{name} loses access to the convention at once. Coming back takes a new invitation."
@@ -193,6 +198,10 @@ msgstr "Confirm your address"
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Confirmation link"
 msgstr "Confirmation link"
+
+#: src/shared/ui/messages.tsx
+msgid "Contact the OPOS administrators to learn more."
+msgstr "Contact the OPOS administrators to learn more."
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/login-page.tsx
@@ -807,6 +816,11 @@ msgstr "Starts"
 msgid "Status"
 msgstr "Status"
 
+#. The state of a convention the admin suspended
+#: src/features/tenants/pages/tenant-picker-page.tsx
+msgid "Suspended"
+msgstr "Suspended"
+
 #: src/features/team/pages/member-page.tsx
 #: src/features/team/pages/team-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
@@ -936,6 +950,10 @@ msgstr "There are no programme items yet."
 #: src/shared/ui/irreversible-action.tsx
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
+
+#: src/shared/ui/messages.tsx
+msgid "This convention is suspended"
+msgstr "This convention is suspended"
 
 #: src/features/editions/pages/edition-dashboard-page.tsx
 msgid "This edition is not the convention's active one."

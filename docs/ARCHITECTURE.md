@@ -11,6 +11,7 @@ here in [AGENTS.md](../AGENTS.md).
 graph LR
     portal["apps/portal"] -->|cookie| api["apps/api"]
     panel["apps/panel"] -->|cookie| api
+    admin["apps/admin"] -->|cookie| api
     api -->|secret key| auth["Supabase Auth"]
     api --> pg[("Postgres")]
     auth --> pg
@@ -21,6 +22,7 @@ graph LR
 | `apps/api` | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key |
 | `apps/panel` | the organizers' SPA, desktop-first; later also the scanner under `/scanner` |
 | `apps/portal` | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule |
+| `apps/admin` | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md)) |
 | `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape |
 | `packages/db` | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away |
 | `packages/i18n` | locales, detection, formatters and the shared catalog |
@@ -28,16 +30,16 @@ graph LR
 
 - The packages have no build step; only the translation catalogs compile.
 - **The BFF boundary**
-  ([0004](adr/0004-make-the-api-the-only-backend-with-the-session-in-cookies.md)). The panel and
-  the portal talk to the API alone: no `@supabase/*` package, Supabase address or key, or `VITE_*`
-  variable naming Supabase in their sources or bundles. The `react` ESLint preset refuses the
-  import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest (a hook, `pre-commit`, and CI
-  over the built bundles), and every e2e scenario a request that leaves the API and the page's own
-  origin.
-- **The admin** works through the admin routes of the API, which the admin application calls
-  ([0029](adr/0029-ship-four-web-applications.md)); `apps/admin` itself is not built yet. Only
-  granting the admin role and taking it away are scripts, run on the server as `postgres`
-  (`pnpm db:admin:grant`, `pnpm db:admin:revoke`): no route and no screen does either.
+  ([0004](adr/0004-make-the-api-the-only-backend-with-the-session-in-cookies.md)). The panel, the
+  portal and the admin application talk to the API alone: no `@supabase/*` package, Supabase
+  address or key, or `VITE_*` variable naming Supabase in their sources or bundles. The `react`
+  ESLint preset refuses the import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest (a
+  hook, `pre-commit`, and CI over the built bundles), and every e2e scenario a request that leaves
+  the API and the page's own origin.
+- **The admin** works in the admin application, through the admin routes of the API
+  ([0029](adr/0029-ship-four-web-applications.md)). Only granting the admin role and taking it
+  away are scripts, run on the server as `postgres` (`pnpm db:admin:grant`,
+  `pnpm db:admin:revoke`): no route and no screen does either.
 
 Deployment is decided but not built
 ([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),
@@ -272,13 +274,23 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - The theme of a signed-in account is its own from `GET /me`, or the system's when it has none; the
   browser keeps only the one a visitor with no account signed in chose, and never an account's
   ([0025](adr/0025-keep-the-theme-on-the-account-and-a-visitors-in-the-browser.md)).
-- The API stays the authority: the panel only hides and disables what a member cannot do.
+- The API stays the authority: the panel only hides and disables what a member cannot do, and the
+  admin application shows an account the admin routes refuse one screen that says why.
+- The admin application signs in by email, password and the code alone, and calls nothing the API
+  refuses its origin. A call that finds the admin's sign-in too old, 30 minutes, or 5 for the two
+  actions that cannot be undone, leads back to sign-in, and the screen opens again afterwards. The
+  deletion of a convention is the one modal that asks for more than a press: the convention's
+  address typed in ([0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
 - A write tells its outcome in a notification: a success, a warning for a refusal the member can act
   on, an error for a failure of the service or the network, the last two kept until closed. The
   query client of each application notifies every mutation; beside a form stays only the
   validation of its fields. A plain `403` in the panel ends on the "no permissions" screen, and the
   sign-in flows show their outcome as their next screen
   ([0022](adr/0022-tell-the-outcome-of-every-write-in-a-notification.md)).
+- The panel shows a suspended convention as suspended where it lists the member's conventions, and
+  inside it only the message that it is suspended, asking the API nothing; a `403`
+  `tenant.suspended` under an open page has the memberships read again, so the page gives way to
+  that message.
 - An action no screen can undo, such as a deletion, a removal from the team or turning two-factor
   authentication off, asks first in a modal that names what goes, says what goes with it and that
   it cannot be undone; only the modal's own button acts. A change the same screen reverses asks
@@ -287,7 +299,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   stylesheet or font from another origin, its cookies), is an entry of the consent feature's
   `TRACKERS`, started by that feature alone after the visitor allowed its category. Only it creates
   a script or an iframe; no `index.html` or stylesheet loads anything from another origin, and the
-  panel holds no tracker; `src/app/third-party.test.ts` of each application enforces it
+  panel and the admin application hold no tracker; `src/app/third-party.test.ts` of each
+  application enforces it
   ([0026](adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 ## Localization
@@ -365,7 +378,7 @@ table, the covered tables equal to the catalog's, and each `db:verify` rule brok
 invariants under concurrency; anti-escalation and every write route judging its actor again under
 the lock; sessions (refused tokens, cookies, `Origin`, the password after confirmation, `aal2` on
 every route); the public routes, rate limits, CORS and catalogs. In e2e the main flows run through
-both frontends, the portal's on a mobile viewport, each scenario checking the BFF boundary.
+the three frontends, the portal's on a mobile viewport, each scenario checking the BFF boundary.
 
 The seed follows the schema and is idempotent: [seed.test.ts](../packages/db/test/seed.test.ts)
 fails when a second run changes a row count. Tests share no data: an e2e scenario makes its own
@@ -432,7 +445,7 @@ the code ([AGENTS.md](../AGENTS.md#tests-first)); **Enforced by** is what refuse
 | 7 | Module in `apps/api/src/modules/<name>`, registered in `apps/api/src/app.module.ts`: an `@Implement` method per route with `@RequireTenant`, `@RequireEdition` or `@InTenant`, which bring `JwtAuthGuard` (`401` `session.invalid`, `session.mfa-required`) and at `write` the queue and lock; an account route `@UseGuards(JwtAuthGuard)`; a repository on `TenantContextService.tx()`, rows found inside the path's parent | `apps/api/test/<module>.test.ts`, with another tenant's and edition's identifiers | `tenant-routes.test.ts`, `route-requirements.test.ts`, `apps/api/test/mfa-guard.test.ts`; `apps/api/test/tenant-filters.test.ts` for a repository that decides access; a forgotten parent: `tenant-isolation-reviewer` |
 | 8 | Rows in `packages/db/src/seed.ts`, then `pnpm db:seed` twice | any test of `packages/db` | `packages/db/test/seed.test.ts`; a missing seed: nothing |
 | 9 | Feature in `apps/panel/src/features` or `apps/portal/src/features` with `api/`, `pages/`, `index.ts`, routed in `apps/panel/src/app/router.tsx` or `apps/portal/src/app/router.tsx`; a panel page uses `useCurrentTenant()` and `NoPermissionView`; every page `usePageTitle`; a page needing a session inside `RequireSession`, which answers `mfa-required` and `unavailable`; a new top-level panel path joins `RESERVED_TENANT_SLUGS` of `packages/db/src/schema/tenants.ts`, a migration | `apps/panel/src/features/program/pages/program-page.test.tsx` shows the shape | ESLint; `src/app/pages.test.ts`; `scripts/bff-boundary.mjs`; `RequireSession` and reserved paths: nothing |
-| 10 | Strings in Lingui macros, `pnpm i18n:extract`, `pl` in `apps/panel/src/locales/pl.po` or `apps/portal/src/locales/pl.po`; a new term first in `packages/i18n/src/glossary.ts` | a `packages/i18n` test for the glossary; none for a catalog | `pnpm i18n:check`; a bare literal: `i18n-reviewer` |
+| 10 | Strings in Lingui macros, `pnpm i18n:extract`, `pl` in the application's `src/locales/pl.po` (`apps/panel`, `apps/portal`, `apps/admin`); a new term first in `packages/i18n/src/glossary.ts` | a `packages/i18n` test for the glossary; none for a catalog | `pnpm i18n:check`; a bare literal: `i18n-reviewer` |
 | 11 | A scenario in `e2e/specs` for a new flow, on its own rows through `e2e/fixtures/index.ts` | the scenario | the `e2e` job; none written: nothing |
 | 12 | The documents, through `docs-sync`, where a rule changed; a record in `docs/adr` for each decision the feature made; the spec marked `Implemented` | none | `.claude/skills/docs-sync/scripts/check-doc-links.mjs`; `.claude/agent-docs.test.mjs` for the shape of records and specs; the truth of the text: nothing |
 | 13 | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:scripts`, `pnpm db:verify`, `pnpm i18n:check`, `pnpm format:check`; for the UI `pnpm test:e2e` and a click-through, the portal on a phone viewport; `tenant-isolation-reviewer` and `i18n-reviewer` where they apply | none | the `check` and `e2e` jobs; the agents and the click-through: nothing |

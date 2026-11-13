@@ -161,6 +161,8 @@ describe('areaOf', () => {
       ['apps/panel/src/app/router.tsx', 'panel'],
       ['apps/panel/env.config.ts', 'panel'],
       ['apps/portal/src/features/auth/api/auth.ts', 'portal'],
+      ['apps/admin/src/app/router.tsx', 'admin'],
+      ['apps/admin/env.config.ts', 'admin'],
       ['packages/db/src/seed.ts', 'db'],
       ['packages/contract/src/errors.ts', 'contract'],
       ['packages/i18n/src/glossary.ts', 'i18n'],
@@ -264,6 +266,15 @@ describe('missingTests', () => {
     ])
     assert.deepEqual(
       missingTests(['apps/panel/src/app/router.tsx', 'apps/panel/src/app/x.test.tsx']),
+      [],
+    )
+    // The admin application is an area of its own: a test of the panel does not cover it.
+    assert.deepEqual(
+      missingTests(['apps/admin/src/app/router.tsx', 'apps/panel/src/app/x.test.tsx']),
+      [{ area: 'admin', files: ['apps/admin/src/app/router.tsx'] }],
+    )
+    assert.deepEqual(
+      missingTests(['apps/admin/src/app/router.tsx', 'apps/admin/src/app/pages.test.ts']),
       [],
     )
   })

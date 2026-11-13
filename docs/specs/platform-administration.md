@@ -1,6 +1,6 @@
 # Platform administration
 
-- Status: Accepted
+- Status: Implemented
 - Domain owner: admin
 - Decisions: [0029](../adr/0029-ship-four-web-applications.md),
   [0030](../adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md),
@@ -100,7 +100,7 @@ holds anything on `retired_tenant_slugs`.
 | `createTenant`, `renameTenant` | as today, also in the caller's transaction; `renameTenant` finds the tenant by its identifier |
 | `suspendTenant`, `restoreTenant` | set and clear `suspended_at`; say whether anything changed |
 | `deleteTenant` | deletes in one statement that matches only a suspended tenant, so a tenant restored meanwhile is refused |
-| `grantAdmin`, `revokeAdmin` | write `admins` and the log entry; behind the scripts `db:admin:grant` and `db:admin:revoke` alone. The grant refuses an account without a confirmed address, a password or two-factor authentication |
+| `grantAdmin`, `revokeAdmin` | write `admins` and the log entry; behind the scripts `db:admin:grant` and `db:admin:revoke` alone. The grant refuses an account without a confirmed address, a password or two-factor authentication, and one with more than one verified factor |
 | `recordAdminAction` | adds a log entry in the caller's transaction |
 
 The scripts `db:tenant:create`, `db:tenant:rename` and `db:account:reset-2fa` go with the routes
@@ -235,8 +235,10 @@ e2e, each scenario making its own tenants and accounts and checking the BFF boun
 7. Suspended: the page is not found in the portal, and the head sees the message where the
    conventions are listed, inside the convention and on the next action of an open page.
 8. Restored: the page and the panel work again, with the data as it was.
-9. The deletion is offered only while suspended, asks for the password and the code after a stale
-   sign-in and for the address typed in; then the convention is gone and its head still signs in.
+9. The deletion is offered only while suspended and asks for the address typed in; then the
+   convention is gone and its head still signs in. A stale sign-in cannot be made in a scenario:
+   the API's tests refuse one on the two routes, and the admin application's own tests lead such
+   a refusal back to sign-in.
 10. Two-factor reset: that account next signs in to the portal without a code; an unknown address
     is refused.
 11. The log lists these actions with their admin, action and target.

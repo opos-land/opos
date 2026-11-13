@@ -37,6 +37,7 @@ export const stack = {
   api: required('API_URL'),
   panel: required('PANEL_URL'),
   portal: required('PORTAL_URL'),
+  admin: required('ADMIN_URL'),
   auth: `${required('SUPABASE_URL').replace(/\/+$/, '')}/auth/v1`,
   mailpit: `http://localhost:${process.env.SUPABASE_LOCAL_SMTP_PORT ?? '54324'}`,
   databaseUrl: migrationUrl(apiEnv),

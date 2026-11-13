@@ -1,0 +1,458 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-11-13 01:19+0100\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "A convention starts with its first head organizer, who builds its team."
+msgstr "A convention starts with its first head organizer, who builds its team."
+
+#: src/features/log/pages/log-page.tsx
+msgid "a script on the server"
+msgstr "a script on the server"
+
+#: src/features/conventions/components/convention-suspension.tsx
+msgid "A suspended convention is off for everyone but the administrators: its page is not found, and its organizers see only that it is suspended. Nothing is removed, no email is sent, and you can restore it here."
+msgstr "A suspended convention is off for everyone but the administrators: its page is not found, and its organizers see only that it is suspended. Nothing is removed, no email is sent, and you can restore it here."
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "Account"
+msgstr "Account"
+
+#. The state of a convention that is not suspended
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Active"
+msgstr "Active"
+
+#: src/features/conventions/components/convention-address.tsx
+#: src/features/conventions/pages/convention-page.tsx
+#: src/features/conventions/pages/conventions-page.tsx
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Address"
+msgstr "Address"
+
+#: src/features/access/components/admin-frame.tsx
+msgid "Administration"
+msgstr "Administration"
+
+#: src/features/log/pages/log-page.tsx
+msgid "an account deleted since"
+msgstr "an account deleted since"
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "An account with a confirmed email address. Nothing is sent to it."
+msgstr "An account with a confirmed email address. Nothing is sent to it."
+
+#: src/features/conventions/pages/convention-page.tsx
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Back to the conventions"
+msgstr "Back to the conventions"
+
+#: src/features/conventions/components/delete-convention.tsx
+#: src/shared/ui/irreversible-action.tsx
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/features/conventions/components/convention-address.tsx
+msgid "Change the address"
+msgstr "Change the address"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Changed the address of the convention"
+msgstr "Changed the address of the convention"
+
+#: src/features/conventions/components/convention-address.tsx
+msgid "Changing the address breaks every old link to the convention. The address it leaves is free for another convention at once."
+msgstr "Changing the address breaks every old link to the convention. The address it leaves is free for another convention at once."
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Choose a time zone from the list."
+msgstr "Choose a time zone from the list."
+
+#: src/shared/ui/toast.tsx
+msgid "Close"
+msgstr "Close"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Code"
+msgstr "Code"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Continue"
+msgstr "Continue"
+
+#: src/features/conventions/pages/convention-page.tsx
+msgid "Convention"
+msgstr "Convention"
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Convention data"
+msgstr "Convention data"
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Convention language"
+msgstr "Convention language"
+
+#: src/features/access/components/admin-frame.tsx
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Conventions"
+msgstr "Conventions"
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Create the convention"
+msgstr "Create the convention"
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Created"
+msgstr "Created"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Created the convention"
+msgstr "Created the convention"
+
+#: src/features/theme/components/theme-toggle.tsx
+msgid "Dark theme"
+msgstr "Dark theme"
+
+#: src/features/conventions/components/delete-convention.tsx
+msgid "Delete for good"
+msgstr "Delete for good"
+
+#: src/features/conventions/components/delete-convention.tsx
+msgid "Delete the convention"
+msgstr "Delete the convention"
+
+#: src/features/conventions/components/delete-convention.tsx
+msgid "Delete the convention {name}?"
+msgstr "Delete the convention {name}?"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Deleted the convention"
+msgstr "Deleted the convention"
+
+#: src/features/conventions/pages/convention-page.tsx
+msgid "Deletion"
+msgstr "Deletion"
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Email"
+msgstr "Email"
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "Email address of the account"
+msgstr "Email address of the account"
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Email address of the first head organizer"
+msgstr "Email address of the first head organizer"
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Enter a name of up to 200 characters."
+msgstr "Enter a name of up to 200 characters."
+
+#: src/features/auth/components/sign-in-form.tsx
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Enter a valid email address."
+msgstr "Enter a valid email address."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the code from your authenticator app to finish signing in."
+msgstr "Enter the code from your authenticator app to finish signing in."
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Enter the six digits from your authenticator app."
+msgstr "Enter the six digits from your authenticator app."
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Enter your password."
+msgstr "Enter your password."
+
+#: src/features/log/pages/log-page.tsx
+msgid "Every action of an administrator, newest first. Nothing here can be changed or removed."
+msgstr "Every action of an administrator, newest first. Nothing here can be changed or removed."
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Every convention on the platform, by name."
+msgstr "Every convention on the platform, by name."
+
+#: src/features/conventions/components/delete-convention.tsx
+msgid "Everything the convention owns goes with it: its team, editions, programme and likes. The accounts of its organizers and attendees stay. Its address is never given to another convention."
+msgstr "Everything the convention owns goes with it: its team, editions, programme and likes. The accounts of its organizers and attendees stay. Its address is never given to another convention."
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "For a person who lost both their device and their recovery codes."
+msgstr "For a person who lost both their device and their recovery codes."
+
+#: src/features/log/pages/log-page.tsx
+msgid "Granted the administrator role"
+msgstr "Granted the administrator role"
+
+#: src/features/conventions/pages/convention-page.tsx
+msgid "Head organizers"
+msgstr "Head organizers"
+
+#: src/shared/ui/messages.tsx
+msgid "Loading…"
+msgstr "Loading…"
+
+#: src/features/access/components/admin-frame.tsx
+#: src/features/log/pages/log-page.tsx
+msgid "Log"
+msgstr "Log"
+
+#: src/features/conventions/pages/conventions-page.tsx
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Name"
+msgstr "Name"
+
+#: src/features/conventions/pages/conventions-page.tsx
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "New convention"
+msgstr "New convention"
+
+#: src/features/access/components/admin-gate.tsx
+msgid "No access"
+msgstr "No access"
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "No convention has been created yet."
+msgstr "No convention has been created yet."
+
+#: src/features/conventions/pages/convention-page.tsx
+msgid "No email goes to them when the convention is suspended, restored or deleted: tell them yourself."
+msgstr "No email goes to them when the convention is suspended, restored or deleted: tell them yourself."
+
+#: src/features/log/pages/log-page.tsx
+msgid "Nothing has been recorded yet."
+msgstr "Nothing has been recorded yet."
+
+#: src/shared/ui/toast.tsx
+msgid "Notifications"
+msgstr "Notifications"
+
+#: src/features/log/pages/log-page.tsx
+msgid "On what"
+msgstr "On what"
+
+#: src/features/conventions/pages/convention-page.tsx
+msgid "Only a suspended convention can be deleted. The deletion is immediate and permanent."
+msgstr "Only a suspended convention can be deleted. The deletion is immediate and permanent."
+
+#: src/features/auth/pages/login-page.tsx
+msgid "Only OPOS administrators sign in here, with a password and the code of two-factor authentication."
+msgstr "Only OPOS administrators sign in here, with a password and the code of two-factor authentication."
+
+#: src/features/access/components/admin-gate.tsx
+msgid "Only OPOS administrators use this application. The role is granted on the server, to an account with two-factor authentication on."
+msgstr "Only OPOS administrators use this application. The role is granted on the server, to an account with two-factor authentication on."
+
+#: src/features/access/components/admin-frame.tsx
+#: src/features/auth/components/auth-layout.tsx
+#: src/shared/lib/page-title.ts
+msgid "OPOS administration"
+msgstr "OPOS administration"
+
+#: src/shared/ui/messages.tsx
+msgid "Page not found"
+msgstr "Page not found"
+
+#: src/features/auth/components/sign-in-form.tsx
+msgid "Password"
+msgstr "Password"
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "Reset"
+msgstr "Reset"
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "Reset two-factor authentication"
+msgstr "Reset two-factor authentication"
+
+#. Past tense: what an admin did, in the log of actions
+#: src/features/log/pages/log-page.tsx
+msgctxt "log entry"
+msgid "Reset two-factor authentication"
+msgstr "Reset two-factor authentication"
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "Reset two-factor authentication of {address}?"
+msgstr "Reset two-factor authentication of {address}?"
+
+#: src/features/conventions/components/convention-suspension.tsx
+msgid "Restore the convention"
+msgstr "Restore the convention"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Restored the convention"
+msgstr "Restored the convention"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Show older entries"
+msgstr "Show older entries"
+
+#: src/features/auth/components/sign-in-form.tsx
+#: src/features/auth/pages/login-page.tsx
+msgid "Sign in"
+msgstr "Sign in"
+
+#: src/features/auth/pages/login-page.tsx
+msgid "Sign in to OPOS administration"
+msgstr "Sign in to OPOS administration"
+
+#: src/features/access/components/admin-frame.tsx
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Sign out"
+msgstr "Sign out"
+
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Status"
+msgstr "Status"
+
+#: src/features/conventions/components/convention-suspension.tsx
+msgid "Suspend the convention"
+msgstr "Suspend the convention"
+
+#. The state of a convention the admin suspended
+#. The state of a convention the admin suspended
+#: src/features/conventions/pages/convention-page.tsx
+#: src/features/conventions/pages/conventions-page.tsx
+msgid "Suspended"
+msgstr "Suspended"
+
+#: src/features/conventions/components/convention-suspension.tsx
+msgid "Suspended since {since}. Its page is not found, and its organizers see only that it is suspended. Restoring it brings everything back as it was."
+msgstr "Suspended since {since}. Its page is not found, and its organizers see only that it is suspended. Restoring it brings everything back as it was."
+
+#: src/features/log/pages/log-page.tsx
+msgid "Suspended the convention"
+msgstr "Suspended the convention"
+
+#: src/features/conventions/pages/convention-page.tsx
+msgid "Suspension"
+msgstr "Suspension"
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "The account signs in with its password alone until it turns two-factor authentication on again."
+msgstr "The account signs in with its password alone until it turns two-factor authentication on again."
+
+#: src/features/conventions/components/convention-address.tsx
+msgid "The address is changed."
+msgstr "The address is changed."
+
+#: src/features/access/components/admin-gate.tsx
+msgid "The administrator role has to be granted again"
+msgstr "The administrator role has to be granted again"
+
+#: src/shared/lib/notify.ts
+msgid "The changes are saved."
+msgstr "The changes are saved."
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "The confirmed address the person signs in with."
+msgstr "The confirmed address the person signs in with."
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "The convention {name} is created."
+msgstr "The convention {name} is created."
+
+#: src/features/conventions/components/delete-convention.tsx
+msgid "The convention {name} is deleted."
+msgstr "The convention {name} is deleted."
+
+#: src/features/conventions/components/convention-suspension.tsx
+msgid "The convention is restored."
+msgstr "The convention is restored."
+
+#: src/features/conventions/components/convention-suspension.tsx
+msgid "The convention is suspended."
+msgstr "The convention is suspended."
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "The convention's page opens at this address. Changing it later breaks every old link."
+msgstr "The convention's page opens at this address. Changing it later breaks every old link."
+
+#: src/features/theme/components/theme-toggle.tsx
+msgid "The interface theme is saved."
+msgstr "The interface theme is saved."
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "The reset removes the account’s authenticator and its unused recovery codes, and the account gets an email that says so. An administrator’s account is never reset here: its role is taken away first, on the server."
+msgstr "The reset removes the account’s authenticator and its unused recovery codes, and the account gets an email that says so. An administrator’s account is never reset here: its role is taken away first, on the server."
+
+#: src/features/access/components/admin-gate.tsx
+msgid "This account does not hold the administrator role"
+msgstr "This account does not hold the administrator role"
+
+#. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
+#. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
+#: src/features/conventions/components/delete-convention.tsx
+#: src/shared/ui/irreversible-action.tsx
+msgid "This action cannot be undone."
+msgstr "This action cannot be undone."
+
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Time zone"
+msgstr "Time zone"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Took the administrator role away"
+msgstr "Took the administrator role away"
+
+#: src/features/access/components/admin-gate.tsx
+#: src/shared/ui/messages.tsx
+msgid "Try again"
+msgstr "Try again"
+
+#: src/features/auth/pages/mfa-page.tsx
+msgid "Two-factor authentication"
+msgstr "Two-factor authentication"
+
+#: src/features/access/components/admin-gate.tsx
+msgid "Two-factor authentication is off"
+msgstr "Two-factor authentication is off"
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "Two-factor authentication of the account is reset, and the account got an email that says so."
+msgstr "Two-factor authentication of the account is reset, and the account got an email that says so."
+
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "Two-factor authentication of the account is reset, but the email could not be sent. Tell the person yourself."
+msgstr "Two-factor authentication of the account is reset, but the email could not be sent. Tell the person yourself."
+
+#: src/features/access/components/admin-frame.tsx
+#: src/features/accounts/pages/two-factor-reset-page.tsx
+msgid "Two-factor reset"
+msgstr "Two-factor reset"
+
+#: src/features/conventions/components/delete-convention.tsx
+msgid "Type the address of the convention to confirm: {address}"
+msgstr "Type the address of the convention to confirm: {address}"
+
+#: src/features/conventions/components/convention-address.tsx
+#: src/features/conventions/pages/new-convention-page.tsx
+msgid "Use 3 to 40 lowercase letters, digits and hyphens."
+msgstr "Use 3 to 40 lowercase letters, digits and hyphens."
+
+#: src/shared/ui/messages.tsx
+msgid "We could not find what you are looking for."
+msgstr "We could not find what you are looking for."
+
+#: src/features/log/pages/log-page.tsx
+msgid "What"
+msgstr "What"
+
+#: src/features/log/pages/log-page.tsx
+msgid "When"
+msgstr "When"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Who"
+msgstr "Who"
+
+#: src/shared/lib/notify.ts
+msgid "Your sign-in is too old for this action. Sign in again with your password and the code, then repeat it."
+msgstr "Your sign-in is too old for this action. Sign in again with your password and the code, then repeat it."

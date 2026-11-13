@@ -50,6 +50,15 @@ export async function deleteAuthUser(id: string) {
   await admin(`/admin/users/${id}`, { method: 'DELETE' }, [404])
 }
 
+/** Removes every factor of the account, as turning two-factor authentication off does. */
+export async function removeFactors(id: string) {
+  const response = await admin(`/admin/users/${id}`)
+  const { factors = [] } = (await response.json()) as { factors?: { id: string }[] }
+  for (const factor of factors) {
+    await admin(`/admin/users/${id}/factors/${factor.id}`, { method: 'DELETE' })
+  }
+}
+
 /** Supabase Auth's password grant, the way a browser signs in, without one. */
 export async function passwordGrant(email: string, password: string) {
   const response = await fetch(`${stack.auth}/token?grant_type=password`, {

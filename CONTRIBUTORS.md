@@ -16,3 +16,6 @@ Each module's domain owner sets its rules ([PRODUCT.md 7](docs/PRODUCT.md#7-modu
 | reviews | not named |
 | attendee registrations | not named |
 | profile | not named |
+
+Open: whether the domain owner of tickets also owns attendee registrations, as far as a paid
+ticket makes them ([brief 0001](docs/briefs/0001-convention-shop.md), D15).

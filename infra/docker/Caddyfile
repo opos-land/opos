@@ -1,13 +1,27 @@
-# Serves one built application, the panel or the portal, behind the server's proxy, which ends TLS.
+# Serves one built application, the panel, the portal or the admin application, behind the
+# server's proxy, which ends TLS. web.sh starts it and sets BASIC_AUTH to on or off.
 {
 	admin off
 	auto_https off
 	persist_config off
 }
 
+# Every path but the health check behind basic auth, as on Dev
+(auth-on) {
+	@guarded not path /healthz
+	basic_auth @guarded {
+		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+	}
+}
+
+(auth-off) {
+}
+
 :8080 {
 	root * /srv
 	encode zstd gzip
+
+	import auth-{$BASIC_AUTH}
 
 	header {
 		# Scripts only from the application itself, calls only to it and to the API it was built for.
@@ -17,6 +31,11 @@
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 		-Server
+	}
+
+	# The container's health check, open with basic auth on
+	handle /healthz {
+		respond "ok" 200
 	}
 
 	# A built file has its hash in its name: it never changes, and a missing one is a 404

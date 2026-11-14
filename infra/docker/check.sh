@@ -11,15 +11,16 @@ cd "$(dirname "$0")/../.."
 # An address no deployment has: a bundle that names it was built here, from this tree
 api_url=https://opos-control.invalid
 name=opos-images-check-portal
+guarded=opos-images-check-guarded
 
 build() {
   docker build --quiet -f infra/docker/Dockerfile "$@" . >/dev/null
 }
 
-echo "Building the api, the tools, the panel and the portal"
+echo "Building the api, the tools, the panel, the portal and the admin application"
 build --target api -t opos-api:check
 build --target tools -t opos-tools:check
-for app in panel portal; do
+for app in panel portal admin; do
   build --target web --build-arg APP="$app" --build-arg VITE_API_URL="$api_url" -t "opos-$app:check"
 done
 
@@ -34,10 +35,14 @@ fi
 
 echo "Asking the portal for a route"
 docker run --rm -d --name "$name" -p 127.0.0.1:39080:8080 opos-portal:check >/dev/null
-trap 'docker stop "$name" >/dev/null' EXIT
-for _ in $(seq 30); do
-  curl -fsS -o /dev/null http://127.0.0.1:39080/ 2>/dev/null && break
-  sleep 1
+docker run --rm -d --name "$guarded" -p 127.0.0.1:39081:8080 \
+  -e BASIC_AUTH_PASSWORD=opos-check-password opos-admin:check >/dev/null
+trap 'docker stop "$name" "$guarded" >/dev/null' EXIT
+for port in 39080 39081; do
+  for _ in $(seq 30); do
+    curl -fsS -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null && break
+    sleep 1
+  done
 done
 
 # A route of the application, not a file: the fallback to index.html and the headers at once
@@ -60,4 +65,29 @@ if [ "$status" != 404 ]; then
   exit 1
 fi
 
-echo "The images build, the api resolves its imports and the portal serves its routes"
+# With a password, as on Dev, every path but the health check asks for it, and the hash Caddy
+# checks against was made from it
+answer() {
+  curl -s -o /dev/null -w '%{http_code}' "$@"
+}
+for check in \
+  "401 http://127.0.0.1:39081/" \
+  "401 http://127.0.0.1:39081/assets/missing.js" \
+  "200 http://127.0.0.1:39081/healthz" \
+  "401 -u opos:wrong http://127.0.0.1:39081/" \
+  "200 -u opos:opos-check-password http://127.0.0.1:39081/"; do
+  expected=${check%% *}
+  # shellcheck disable=SC2086
+  actual=$(answer ${check#* })
+  if [ "$actual" != "$expected" ]; then
+    echo "The guarded admin application answered $actual, not $expected: ${check#* }" >&2
+    exit 1
+  fi
+done
+# Caddy's own environment, not the container's, which an exec inherits
+if docker exec "$guarded" sh -c "tr '\\0' '\\n' </proc/1/environ | grep -q '^BASIC_AUTH_PASSWORD='"; then
+  echo "The password stayed in Caddy's environment" >&2
+  exit 1
+fi
+
+echo "The images build, the api resolves its imports and the frontends serve their routes, behind basic auth when asked"

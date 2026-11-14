@@ -10,7 +10,7 @@
 #     --build-arg APP=panel --build-arg VITE_API_URL=https://api.example.org .
 #
 # Each image holds one part of the workspace, cut out by `turbo prune`, and runs as a user without
-# privileges.
+# privileges. compose.yaml beside this file puts them together into one deployment.
 
 # node 24.15.0, the version of mise.toml and of engines
 ARG NODE_IMAGE=node:24.15.0-bookworm-slim@sha256:4e6b70dd6cbfc88c8157ba19aa3d9f9cce6ba4703576d55459e45efcbc9c5f5d
@@ -51,8 +51,14 @@ COPY --from=prune-api /repo/out/json/ ./
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts --prod --filter @opos/api
 
+# The CA of Supabase's Postgres, which every connection of a deployment verifies the server against
+# (docs/adr/0013-connect-to-postgres-directly-with-verified-tls.md). Public; supabase-ca.crt is
+# the certificate of the dashboard's Database settings, SSL configuration, "Supabase Root 2021 CA",
+# SHA-256 80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA
 FROM ${NODE_IMAGE} AS api
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    NODE_EXTRA_CA_CERTS=/etc/ssl/supabase/ca.crt
+COPY infra/docker/supabase-ca.crt /etc/ssl/supabase/ca.crt
 WORKDIR /repo/apps/api
 COPY --from=deps-api /repo/node_modules /repo/node_modules
 COPY --from=deps-api /repo/apps/api/node_modules ./node_modules
@@ -72,6 +78,8 @@ RUN pnpm turbo prune @opos/db --docker
 # The scripts run from their sources, so the image keeps the development dependencies. It is the
 # one container that holds the postgres URL.
 FROM base AS tools
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/supabase/ca.crt
+COPY infra/docker/supabase-ca.crt /etc/ssl/supabase/ca.crt
 COPY --from=prune-db /repo/out/json/ ./
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts
@@ -84,7 +92,7 @@ HEALTHCHECK --interval=5s --timeout=3s --start-period=120s --retries=3 \
   CMD ["test", "-f", "/tmp/ready"]
 CMD ["tools"]
 
-# --- the panel and the portal ----------------------------------------------------------------
+# --- the panel, the portal and the admin application -----------------------------------------
 
 FROM source AS prune-web
 ARG APP
@@ -106,8 +114,11 @@ ARG VITE_API_URL
 # The one origin the pages may call, for the Content-Security-Policy of the Caddyfile
 ENV API_ORIGIN=${VITE_API_URL}
 COPY infra/docker/Caddyfile /etc/caddy/Caddyfile
+COPY --chmod=0755 infra/docker/web.sh /usr/local/bin/web
 COPY --from=build-web /repo/apps/${APP}/dist /srv
 USER nobody
 EXPOSE 8080
+# The one path basic auth leaves open
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
-  CMD ["wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+  CMD ["wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+CMD ["web"]

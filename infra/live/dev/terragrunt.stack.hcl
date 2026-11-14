@@ -91,6 +91,7 @@ unit "deployment" {
   source = "../../units/deployment"
   path   = "deployment"
 
+  # deploy:apply --ref runs another branch or tag than env.yaml's, until an apply without it
   values = {
     zone           = local.env.dns.zone
     name           = local.deployment.name
@@ -99,7 +100,7 @@ unit "deployment" {
     ipv4           = local.env.coolify.ipv4
     ipv6           = try(local.env.coolify.ipv6, null)
     repository     = local.deployment.repository
-    branch         = local.deployment.branch
+    branch         = get_env("DEPLOY_REF", local.deployment.branch)
     compose_loaded = local.deployment.compose_loaded
     supabase_ref   = local.supabase.ref
     mail_from      = local.mail.from

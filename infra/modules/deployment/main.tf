@@ -123,14 +123,14 @@ resource "coolify_environment_variable" "this" {
   is_preview = false
 }
 
-# Deploys the head of the branch when the deployment is new and whenever its configuration or a
-# value changes; a new commit alone is CI's to release
+# Deploys the head of the branch when the deployment is new and whenever its configuration, a value
+# or the branch changes; a new commit alone is CI's to release
 resource "coolify_deployment" "this" {
   application_uuid    = coolify_application.this.uuid
   wait_for_completion = true
 
   triggers = {
-    configuration = sha256(jsonencode([local.environment, coolify_application.this.docker_compose_domains]))
+    configuration = sha256(jsonencode([local.environment, coolify_application.this.docker_compose_domains, var.branch]))
   }
 
   timeouts = {

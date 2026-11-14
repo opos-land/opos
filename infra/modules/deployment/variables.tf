@@ -50,7 +50,7 @@ variable "repository" {
 }
 
 variable "branch" {
-  description = "The branch whose head every deployment runs"
+  description = "The branch or tag whose head every deployment runs"
   type        = string
 }
 

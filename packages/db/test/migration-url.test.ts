@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as root from '../src/index'
-import { migrationUrl, reachableUrl } from '../src/migration-url'
+import { migrationUrl, reachableUrl, verifiedTls } from '../src/migration-url'
 
 // Every db:* script connects through this variable, with no default: a missing one and a remote
 // host without the OPOS_ENV of its environment both stop the script.
@@ -87,7 +87,10 @@ describe('migrationUrl', () => {
   })
 
   it.each(['dev', 'production'])('accepts a remote host with OPOS_ENV %s', (OPOS_ENV) => {
-    expect(migrationUrl({ DATABASE_MIGRATION_URL: remote, OPOS_ENV })).toBe(remote)
+    const verified = `${remote}?sslmode=verify-full`
+    const env = { DATABASE_MIGRATION_URL: verified, OPOS_ENV, NODE_EXTRA_CA_CERTS: '/ca.crt' }
+
+    expect(migrationUrl(env)).toBe(verified)
   })
 
   it.each(['127.0.0.1', 'localhost', '[::1]'])('accepts %s without OPOS_ENV', (host) => {
@@ -158,9 +161,10 @@ describe('migrationUrl', () => {
   })
 
   it('takes a host list on OPOS_ENV dev, where a remote host is allowed', () => {
-    const url = 'postgres://u:p@db.remote.example,x:5432/postgres'
+    const url = 'postgres://u:p@db.remote.example,x:5432/postgres?sslmode=verify-full'
+    const env = { DATABASE_MIGRATION_URL: url, OPOS_ENV: 'dev', NODE_EXTRA_CA_CERTS: '/ca.crt' }
 
-    expect(migrationUrl({ DATABASE_MIGRATION_URL: url, OPOS_ENV: 'dev' })).toBe(url)
+    expect(migrationUrl(env)).toBe(url)
   })
 
   it.each(['postgres://u:p@/postgres', 'postgres://u:p@%zz/postgres'])(
@@ -208,5 +212,105 @@ describe('reachableUrl', () => {
     expect(reachableUrl('SUPABASE_URL', 'http://127.0.0.1:54321', { OPOS_ENV: 'local' })).toBe(
       'http://127.0.0.1:54321',
     )
+  })
+})
+
+// A deployed environment reaches its project over the direct connection, with TLS verified against
+// the project's CA, which the images add to Node's trust through NODE_EXTRA_CA_CERTS
+// (docs/adr/0013-connect-to-postgres-directly-with-verified-tls.md).
+describe('verifiedTls', () => {
+  const direct = 'postgres://opos_app:s3cret@db.abcdefghijklmnopqrst.supabase.co:5432/postgres'
+  const verified = `${direct}?sslmode=verify-full`
+  const ca = { NODE_EXTRA_CA_CERTS: '/etc/ssl/supabase/ca.crt' }
+
+  const refusal = (url: string, env: NodeJS.ProcessEnv) => {
+    try {
+      verifiedTls('DATABASE_URL', url, env)
+    } catch (error) {
+      return (error as Error).message
+    }
+    return ''
+  }
+
+  it.each(['dev', 'production'])('accepts the direct connection verified on %s', (OPOS_ENV) => {
+    expect(verifiedTls('DATABASE_URL', verified, { OPOS_ENV, ...ca })).toBe(verified)
+  })
+
+  it.each([
+    'postgres://postgres:postgres@127.0.0.1:54322/postgres',
+    'postgres://postgres:postgres@localhost:54322/postgres',
+    'postgres://postgres:postgres@[::1]:54322/postgres',
+  ])('leaves %s alone on a deployed environment, which never leaves the machine', (url) => {
+    expect(verifiedTls('DATABASE_URL', url, { OPOS_ENV: 'dev' })).toBe(url)
+  })
+
+  it('verifies a host list that reaches beyond the machine', () => {
+    const list =
+      'postgres://opos_app:s3cret@localhost,db.abcdefghijklmnopqrst.supabase.co:5432/postgres'
+
+    expect(refusal(list, { OPOS_ENV: 'dev', ...ca })).toBe(
+      'DATABASE_URL must ask for sslmode=verify-full on OPOS_ENV dev',
+    )
+  })
+
+  it.each([undefined, 'local'])('leaves a URL alone on OPOS_ENV %s', (OPOS_ENV) => {
+    const local = 'postgres://postgres:postgres@127.0.0.1:54322/postgres'
+
+    expect(verifiedTls('DATABASE_URL', local, { OPOS_ENV })).toBe(local)
+  })
+
+  it.each([
+    direct,
+    `${direct}?sslmode=require`,
+    `${direct}?sslmode=prefer`,
+    `${direct}?sslmode=disable`,
+    `${direct}?ssl=verify-full`,
+  ])('refuses %s, which does not verify the certificate, naming the variable alone', (url) => {
+    const message = refusal(url, { OPOS_ENV: 'dev', ...ca })
+
+    expect(message).toBe('DATABASE_URL must ask for sslmode=verify-full on OPOS_ENV dev')
+    expect(message).not.toContain('s3cret')
+  })
+
+  it.each([
+    'postgres://opos_app.abcdefghijklmnopqrst:s3cret@aws-0-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=verify-full',
+    'postgres://opos_app:s3cret@db.abcdefghijklmnopqrst.supabase.co:6543/postgres?sslmode=verify-full',
+    'postgres://opos_app:s3cret@aws-0-eu-central-1.pooler.supabase.com,db.abcdefghijklmnopqrst.supabase.co:5432/postgres?sslmode=verify-full',
+  ])('refuses the pooler %s, in a host list too', (url) => {
+    const message = refusal(url, { OPOS_ENV: 'production', ...ca })
+
+    expect(message).toBe(
+      'DATABASE_URL names a connection pooler; OPOS_ENV production connects directly',
+    )
+    expect(message).not.toContain('s3cret')
+  })
+
+  it('refuses a host list that names a port for each host, which is no URL', () => {
+    const list =
+      'postgres://opos_app:s3cret@db.abcdefghijklmnopqrst.supabase.co:6543,db.abcdefghijklmnopqrst.supabase.co:5432/postgres?sslmode=verify-full'
+
+    expect(refusal(list, { OPOS_ENV: 'dev', ...ca })).toBe('DATABASE_URL is not a URL')
+  })
+
+  it.each([{}, { NODE_EXTRA_CA_CERTS: '' }])(
+    'refuses a deployed environment whose CA is not trusted: %o',
+    (env) => {
+      expect(refusal(verified, { OPOS_ENV: 'dev', ...env })).toBe(
+        "NODE_EXTRA_CA_CERTS must name the project's CA certificate on OPOS_ENV dev",
+      )
+    },
+  )
+
+  it('is applied to the URL of every db:* script', () => {
+    expect(() => migrationUrl({ DATABASE_MIGRATION_URL: direct, OPOS_ENV: 'dev', ...ca })).toThrow(
+      'DATABASE_MIGRATION_URL must ask for sslmode=verify-full on OPOS_ENV dev',
+    )
+    expect(migrationUrl({ DATABASE_MIGRATION_URL: verified, OPOS_ENV: 'dev', ...ca })).toBe(
+      verified,
+    )
+  })
+
+  it('is exported from the package root, for the API', () => {
+    expect(root.verifiedTls).toBe(verifiedTls)
   })
 })

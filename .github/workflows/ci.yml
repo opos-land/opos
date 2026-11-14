@@ -149,6 +149,61 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - run: infra/docker/check.sh
 
+  # Dev runs the head of develop once its checks passed: Coolify builds it on the server, runs the
+  # database steps and starts it, and this job asks for that and follows it to its end. It never
+  # names a commit, and releases only while its commit is still the head; a newer push releases
+  # itself (docs/adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md).
+  # The environment dev admits develop alone; OpenTofu writes its token and variables.
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: [check, e2e, images, secrets]
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+      url: ${{ vars.DEPLOYMENT_URL }}
+    timeout-minutes: 40
+    steps:
+      - name: release the head of develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_APPLICATION: ${{ vars.COOLIFY_APPLICATION }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          head=$(gh api "repos/$REPOSITORY/git/ref/heads/develop" --jq .object.sha)
+          if [ "$head" != "$COMMIT" ]; then
+            echo "::notice::develop has moved on to $head, whose run releases it"
+            exit 0
+          fi
+
+          coolify() {
+            curl -fsS --retry 3 -H "Authorization: Bearer $COOLIFY_TOKEN" -H 'Accept: application/json' "$@"
+          }
+
+          # A deployment still queued for an older commit gives way to this one
+          deployment=$(coolify -X POST \
+            "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_APPLICATION&cancel_previous=queued" |
+            jq -r '.deployments[0].deployment_uuid // empty')
+          if [ -z "$deployment" ]; then
+            echo "::error::Coolify started no deployment"
+            exit 1
+          fi
+          echo "Coolify deployment $deployment"
+
+          while :; do
+            status=$(coolify "$COOLIFY_URL/api/v1/deployments/$deployment" | jq -r .status)
+            case "$status" in
+              finished) echo "Released $COMMIT"; exit 0 ;;
+              failed | cancelled-by-user)
+                echo "::error::The deployment ended $status; its log is in Coolify"
+                exit 1
+                ;;
+            esac
+            sleep 15
+          done
+
   # Secrets in the tree and in the whole history, and dependencies with a known high advisory.
   secrets:
     runs-on: ubuntu-latest

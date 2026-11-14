@@ -9,12 +9,12 @@ variable "region" {
 }
 
 variable "zone" {
-  description = "The domain the project holds, whose zone the hosts belong to"
+  description = "The domain the project holds: the portal's host, with the other services' hosts under it"
   type        = string
 }
 
 variable "name" {
-  description = "The deployment's name: its environment in the Coolify project and its place in the zone"
+  description = "The name of the deployment's environment in the Coolify project"
   type        = string
 
   validation {

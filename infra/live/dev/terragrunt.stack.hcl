@@ -10,7 +10,7 @@ locals {
   deployment = local.env.deployment
 
   # The addresses of the deployment's services (docs/adr/0034-address-dev-under-dev-opos-land-in-a-dns-zone-of-its-own.md)
-  site = "${local.deployment.name}.${local.env.dns.zone}"
+  site = local.env.dns.zone
 }
 
 unit "secrets" {

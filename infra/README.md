@@ -147,12 +147,12 @@ The `deployment` unit runs [docker/compose.yaml](docker/compose.yaml) as one app
 Coolify, built on the server from the head of `develop`
 ([0033](../docs/adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)).
 
-| Service | Address                               |
-| ------- | ------------------------------------- |
-| portal  | `https://develop.dev.opos.land`       |
-| panel   | `https://panel.develop.dev.opos.land` |
-| api     | `https://api.develop.dev.opos.land`   |
-| admin   | `https://admin.develop.dev.opos.land` |
+| Service | Address                       |
+| ------- | ----------------------------- |
+| portal  | `https://dev.opos.land`       |
+| panel   | `https://panel.dev.opos.land` |
+| api     | `https://api.dev.opos.land`   |
+| admin   | `https://admin.dev.opos.land` |
 
 - **Basic auth.** Every service but the API asks for the user `opos` and the value of the secret
   `basic-auth-password`:
@@ -171,7 +171,7 @@ Coolify, built on the server from the head of `develop`
 | Check, after the first deployment               | Expect                                                |
 | ----------------------------------------------- | ----------------------------------------------------- |
 | the tools container's log                       | the roles, the migrations and the verification passed |
-| `https://api.develop.dev.opos.land/health`      | `200`, without basic auth                             |
+| `https://api.dev.opos.land/health`              | `200`, without basic auth                             |
 | the portal, the panel and the admin application | basic auth, then the application                      |
 | a sign-up on the portal                         | the confirmation mail, from `no-reply@dev.opos.land`  |
 | the `release` job of a push to `develop`        | "Released", and the commit running in Coolify         |

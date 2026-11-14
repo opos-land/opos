@@ -47,7 +47,7 @@ mise run deploy:secret-set dev supabase-access-token
 ## Google
 
 Make Dev's Google OAuth client with the redirect address
-`https://api.develop.dev.opos.land/auth/google/callback` and enter it:
+`https://api.dev.opos.land/auth/google/callback` and enter it:
 
 ```sh
 mise run deploy:secret-set dev google-client-id

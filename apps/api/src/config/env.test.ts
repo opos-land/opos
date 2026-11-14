@@ -142,7 +142,7 @@ describe('loadEnv', () => {
       DATABASE_URL: `postgres://opos_app:a@${host}`,
       DATABASE_GLOBAL_URL: `postgres://opos_app_global:b@${host}`,
       DATABASE_ADMIN_URL: `postgres://opos_admin:c@${host}`,
-      ADMIN_URL: 'https://admin.develop.dev.opos.land',
+      ADMIN_URL: 'https://admin.dev.opos.land',
     }
 
     it.each(['dev', 'production'])('takes OPOS_ENV %s with verified connections', (OPOS_ENV) => {

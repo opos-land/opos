@@ -326,13 +326,13 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 ## Environments
 
-|             | Local                   | Dev                                              | Production                         |
-| ----------- | ----------------------- | ------------------------------------------------ | ---------------------------------- |
-| `OPOS_ENV`  | `local`                 | `dev`                                            | `production`                       |
-| Supabase    | the CLI's local stack   | a Free project of its own                        | the Pro project, `eu-central-1`    |
-| Addresses   | `*.opos.localhost`      | `<name>.dev.opos.land`, in a DNS zone of its own | `opos.land`                        |
-| Hosting     | the developer's machine | a shared Coolify server                          | not decided                        |
-| Deployed by | the developer           | a push to `develop`                              | a push to `main`, after a reviewer |
+|             | Local                   | Dev                                       | Production                         |
+| ----------- | ----------------------- | ----------------------------------------- | ---------------------------------- |
+| `OPOS_ENV`  | `local`                 | `dev`                                     | `production`                       |
+| Supabase    | the CLI's local stack   | a Free project of its own                 | the Pro project, `eu-central-1`    |
+| Addresses   | `*.opos.localhost`      | `dev.opos.land`, in a DNS zone of its own | `opos.land`                        |
+| Hosting     | the developer's machine | a shared Coolify server                   | not decided                        |
+| Deployed by | the developer           | a push to `develop`                       | a push to `main`, after a reviewer |
 
 - `OPOS_ENV` is the one switch between environments; a fake payment provider serves `local` and
   `dev`. Mailpit takes the mail of `local`; a deployed environment sends through Scaleway's

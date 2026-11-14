@@ -19,9 +19,10 @@ only on its highest plan, and its API tokens reach a whole zone, never a part of
   holds `dev.opos.land` itself as an external domain and serves its zone. `NS` records in the
   `opos.land` zone delegate `dev`, and a `TXT` record there proves the domain to Scaleway; they are
   set once, by hand, and nothing automated holds a credential for the `opos.land` zone.
-- Every Dev deployment has a name and lives at `<name>.dev.opos.land`: the portal there, the panel
-  at `panel.<name>.dev.opos.land`, the API at `api.<name>.dev.opos.land`. What Dev runs once, such
-  as the build cache, has a host directly under `dev.opos.land`.
+- Dev's deployment lives at `dev.opos.land` itself: the portal there, the panel at
+  `panel.dev.opos.land`, the API at `api.dev.opos.land`, the admin application at
+  `admin.dev.opos.land`. What Dev runs beside it, such as the build cache, has a host of its own
+  directly under `dev.opos.land`.
 - The records are address records pointing at the server, described with the rest of the
   infrastructure
   ([0035](0035-describe-the-infrastructure-in-opentofu-units-run-by-terragrunt.md)).

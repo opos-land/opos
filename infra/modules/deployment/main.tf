@@ -1,13 +1,13 @@
-# One deployment of the environment: the compose file of infra/docker built by Coolify from the
-# head of a branch, with its variables and a host per service. OpenTofu owns the configuration and
+# The deployment of the environment: the compose file of infra/docker built by Coolify from the
+# head of a branch, with its variables and a host per service in the environment's zone. OpenTofu owns the configuration and
 # never which commit runs; CI releases (docs/adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md).
 
 locals {
   hosts = {
-    portal = "${var.name}.${var.zone}"
-    panel  = "panel.${var.name}.${var.zone}"
-    api    = "api.${var.name}.${var.zone}"
-    admin  = "admin.${var.name}.${var.zone}"
+    portal = var.zone
+    panel  = "panel.${var.zone}"
+    api    = "api.${var.zone}"
+    admin  = "admin.${var.zone}"
   }
 
   # Where each service listens, for Coolify's proxy
@@ -28,7 +28,7 @@ resource "coolify_environment" "this" {
 
 resource "coolify_application" "this" {
   name             = "opos"
-  description      = "The ${var.name} deployment of OPOS; managed by OpenTofu"
+  description      = "The deployment of OPOS at ${var.zone}; managed by OpenTofu"
   project_uuid     = var.coolify_project_uuid
   environment_uuid = coolify_environment.this.uuid
   server_uuid      = var.server_uuid
@@ -151,8 +151,9 @@ resource "scaleway_domain_record" "this" {
 
   project_id = var.project_id
   dns_zone   = data.scaleway_domain_zone.this.id
-  name       = trimsuffix(each.value.host, ".${var.zone}")
-  type       = each.value.type
-  data       = each.value.data
-  ttl        = 300
+  # The portal's record sits at the zone's apex, whose name is empty
+  name = each.value.host == var.zone ? "" : trimsuffix(each.value.host, ".${var.zone}")
+  type = each.value.type
+  data = each.value.data
+  ttl  = 300
 }

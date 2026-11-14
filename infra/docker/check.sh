@@ -84,8 +84,14 @@ for check in \
     exit 1
   fi
 done
-# Caddy's own environment, not the container's, which an exec inherits
-if docker exec "$guarded" sh -c "tr '\\0' '\\n' </proc/1/environ | grep -q '^BASIC_AUTH_PASSWORD='"; then
+# Caddy's own environment, not the container's, which an exec inherits. Caddy holds a capability,
+# which leaves its environment to a privileged root alone; the hash proves the read saw it.
+if ! environ=$(docker exec --privileged -u 0 "$guarded" sh -c "tr '\\0' '\\n' </proc/1/environ") ||
+  ! grep -q '^BASIC_AUTH_HASH=' <<<"$environ"; then
+  echo "Caddy's environment could not be read" >&2
+  exit 1
+fi
+if grep -q '^BASIC_AUTH_PASSWORD=' <<<"$environ"; then
   echo "The password stayed in Caddy's environment" >&2
   exit 1
 fi

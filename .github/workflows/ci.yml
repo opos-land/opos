@@ -140,6 +140,15 @@ jobs:
             e2e/playwright-report/
           retention-days: 7
 
+  # The images of a deployment, built as the server builds them, and what a build alone does not
+  # show: the API finds its imports, the frontends serve their routes and ask for basic auth when
+  # given a password (infra/docker/check.sh). The deployed images are built on the server.
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - run: infra/docker/check.sh
+
   # Secrets in the tree and in the whole history, and dependencies with a known high advisory.
   secrets:
     runs-on: ubuntu-latest

@@ -33,8 +33,11 @@ pre-commit:
 # The API tests need the local stack: pnpm infra:init once in a new checkout, then pnpm infra:up
 pre-push:
   jobs:
+    # Four tasks of four test workers by default, 16 in all: vitest otherwise starts one per core
+    # but one in every package at once, more than a machine holds beside the stack. The
+    # environment's VITEST_MAX_WORKERS and TURBO_CONCURRENCY override them.
     - name: typecheck and test
-      run: pnpm turbo run typecheck test --filter=...[origin/develop]
+      run: VITEST_MAX_WORKERS="${VITEST_MAX_WORKERS:-4}" pnpm turbo run typecheck test --filter=...[origin/develop] --concurrency="${TURBO_CONCURRENCY:-4}"
     # A merged migration stays as it is, and a new one is newer than all of them
     - name: migration journal
       run: node scripts/check-migrations.mjs --merge-base origin/develop

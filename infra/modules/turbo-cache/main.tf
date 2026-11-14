@@ -40,18 +40,16 @@ data "scaleway_secret_version" "token_ro" {
   revision    = "latest_enabled"
 }
 
-resource "coolify_environment_variable" "token_rw" {
-  service_uuid = coolify_service.this.uuid
-  key          = "TURBO_TOKEN_RW"
-  value        = base64decode(data.scaleway_secret_version.token_rw.data)
-  is_literal   = true
-}
-
-resource "coolify_environment_variable" "token_ro" {
-  service_uuid = coolify_service.this.uuid
-  key          = "TURBO_TOKEN_RO"
-  value        = base64decode(data.scaleway_secret_version.token_ro.data)
-  is_literal   = true
+# Coolify makes each variable the compose file names, empty, as it reads the file: the values are
+# written over them, which only the bulk call does. The values are lowercase letters and digits, which
+# Coolify reads as they stand.
+resource "coolify_envs_bulk" "tokens" {
+  resource_type = "service"
+  resource_uuid = coolify_service.this.uuid
+  variables = {
+    TURBO_TOKEN_RW = base64decode(data.scaleway_secret_version.token_rw.data)
+    TURBO_TOKEN_RO = base64decode(data.scaleway_secret_version.token_ro.data)
+  }
 }
 
 # Starts the service the first time and again whenever its compose file or a token changes
@@ -66,10 +64,7 @@ resource "coolify_resource_action" "restart" {
     token_ro = data.scaleway_secret_version.token_ro.created_at
   }
 
-  depends_on = [
-    coolify_environment_variable.token_rw,
-    coolify_environment_variable.token_ro,
-  ]
+  depends_on = [coolify_envs_bulk.tokens]
 }
 
 # The zone of the domain the project holds: read first, so that a record never lands in a zone the

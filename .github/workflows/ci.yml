@@ -182,6 +182,14 @@ jobs:
             curl -fsS --retry 3 -H "Authorization: Bearer $COOLIFY_TOKEN" -H 'Accept: application/json' "$@"
           }
 
+          # An operator runs another branch or tag on Dev (deploy:apply --ref): develop waits until
+          # an apply without it
+          branch=$(coolify "$COOLIFY_URL/api/v1/applications/$COOLIFY_APPLICATION" | jq -r .git_branch)
+          if [ "$branch" != develop ]; then
+            echo "::notice::Dev runs $branch, set by an operator; develop is released by the next apply without --ref"
+            exit 0
+          fi
+
           # A deployment still queued for an older commit gives way to this one
           deployment=$(coolify -X POST \
             "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_APPLICATION&cancel_previous=queued" |

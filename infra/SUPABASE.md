@@ -46,13 +46,31 @@ mise run deploy:secret-set dev supabase-access-token
 
 ## Google
 
-Make Dev's Google OAuth client with the redirect address
-`https://api.dev.opos.land/auth/google/callback` and enter it:
+Google sign-in uses the team's Google Cloud project, which every environment shares. It is set up
+by hand: Google has no API that makes an OAuth client for signing in with Google, so no unit
+manages it.
 
-```sh
-mise run deploy:secret-set dev google-client-id
-mise run deploy:secret-set dev google-client-secret
-```
+1. Once for every environment, in Google Auth Platform:
+   - Branding: the app name `OPOS`, a support address and the authorized domain `opos.land`.
+   - Audience: External, as anyone with a Google account signs in. While the app is in testing,
+     only its listed test users can; publish it before production offers Google sign-in.
+   - Data access: no scope beyond `openid`, `email` and `profile`, which need no verification.
+
+2. Clients: make Dev's own client, of the type Web application, named `opos-dev`, with one
+   authorized redirect URI, the callback of Dev's Supabase project:
+   `https://<supabase.ref>.supabase.co/auth/v1/callback`. Google returns the visitor to Supabase
+   Auth, which sends them on to the API's `/auth/google/callback`. The client needs no JavaScript
+   origin. Copy its secret as it is made: Google shows it only then.
+
+3. Enter the client:
+
+   ```sh
+   mise run deploy:secret-set dev google-client-id
+   mise run deploy:secret-set dev google-client-secret
+   ```
+
+To replace the secret, add a new one to the client, enter it, apply the `supabase` unit, and only
+then disable the old one.
 
 ## Changes
 

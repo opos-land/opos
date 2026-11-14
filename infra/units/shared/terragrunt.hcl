@@ -1,5 +1,5 @@
 # What an environment needs from its Scaleway organisation, applied by an administrator of the
-# organisation. Values: project.
+# organisation. Values: project, smtp_secret, smtp_key_version.
 
 include "root" {
   path = find_in_parent_folders("root.hcl")
@@ -12,5 +12,7 @@ terraform {
 }
 
 inputs = {
-  project = values.project
+  project          = values.project
+  smtp_secret      = values.smtp_secret
+  smtp_key_version = values.smtp_key_version
 }

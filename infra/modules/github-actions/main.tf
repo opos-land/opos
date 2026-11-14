@@ -25,7 +25,7 @@ locals {
 
   environment_variables = merge([
     for environment, settings in var.environments : {
-      for name, value in settings.variables : "${environment}/${name}" => {
+      for name, value in merge(settings.variables, lookup(var.environment_variables, environment, {})) : "${environment}/${name}" => {
         environment = environment
         name        = name
         value       = value

@@ -1,6 +1,6 @@
 # The Turborepo remote cache of CI on the Coolify server, with its two hosts. Values: zone,
-# environment, server_uuid, ipv4, ipv6 (optional), image, host_rw, host_ro, token_rw_secret,
-# token_ro_secret. The project's id in Coolify, coolify_project_uuid, comes from the stack.
+# project_uuid, environment, server_uuid, ipv4, ipv6 (optional), image, host_rw, host_ro,
+# token_rw_secret, token_ro_secret.
 
 include "root" {
   path = find_in_parent_folders("root.hcl")
@@ -17,14 +17,15 @@ terraform {
 }
 
 inputs = {
-  zone            = values.zone
-  environment     = values.environment
-  server_uuid     = values.server_uuid
-  ipv4            = values.ipv4
-  ipv6            = try(values.ipv6, null)
-  image           = values.image
-  host_rw         = values.host_rw
-  host_ro         = values.host_ro
-  token_rw_secret = values.token_rw_secret
-  token_ro_secret = values.token_ro_secret
+  zone                 = values.zone
+  coolify_project_uuid = values.project_uuid
+  environment          = values.environment
+  server_uuid          = values.server_uuid
+  ipv4                 = values.ipv4
+  ipv6                 = try(values.ipv6, null)
+  image                = values.image
+  host_rw              = values.host_rw
+  host_ro              = values.host_ro
+  token_rw_secret      = values.token_rw_secret
+  token_ro_secret      = values.token_ro_secret
 }

@@ -22,8 +22,9 @@ root on the server.
 
 - CI releases. On a push to `develop`, once the checks passed, a job asks Coolify to deploy the
   deployment's application and follows the deployment to its end.
-- The job holds one Coolify token that can only deploy and read, scoped to that application and
-  with an expiry, in a GitHub environment that admits `develop` alone. OpenTofu puts it there.
+- The job holds one Coolify token that can only deploy and read, in Dev's project alone and with an
+  expiry, in a GitHub environment that admits `develop` alone. A person issues it and enters it into
+  Secret Manager like any value a third party issues; OpenTofu copies it there.
 - A release never names a commit: Coolify deploys the head of the branch the application follows.
   A run releases only while its commit is still that head; a newer push releases itself. A rollback
   is a revert on `develop`.
@@ -39,11 +40,15 @@ root on the server.
 - **A token that pins the commit.** The release would deploy exactly the commit checked, but pinning
   needs a token that can change the compose file: as good as root on the server, kept in GitHub.
 - **An operator releases by hand.** Nothing stored in GitHub, but Dev lags behind `develop`.
+- **A token scoped to the application.** Narrower, but a new token whenever the application is made
+  again; Dev's project holds nothing else the token could deploy but the build cache.
 
 ## Consequences
 
-- A leaked release token can only deploy again what `develop` holds.
+- A leaked release token can only deploy again what Dev's project holds, at the heads of the branches
+  its resources follow, and change none of them.
 - Between a push and its release, a later push may already run on Dev; each release still waits
   for its own checks.
 - Production's releases are decided with its hosting.
-- Not built yet: the job and the stack it releases.
+- The Supabase settings are infrastructure too: an operator applies them, with a token that reaches
+  every project of the Supabase organisation and never enters GitHub.

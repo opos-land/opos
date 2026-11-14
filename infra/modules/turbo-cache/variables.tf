@@ -14,7 +14,7 @@ variable "zone" {
 }
 
 variable "coolify_project_uuid" {
-  description = "The project in Coolify"
+  description = "The project in Coolify that holds the environment, made by the server's owner"
   type        = string
 }
 

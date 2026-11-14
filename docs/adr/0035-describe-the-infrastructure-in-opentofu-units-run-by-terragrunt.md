@@ -6,9 +6,9 @@
 ## Context
 
 A deployment of Dev ([0033](0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md))
-needs DNS records, secrets, what CI reads, a Coolify project, the build cache and the application
-stack. Set up by hand in three consoles, none of it can be reviewed, repeated for a second
-deployment or rebuilt after a loss. The documents said Dev and production change only through the
+needs DNS records, secrets, what CI reads, environments in a Coolify project, the build cache and
+the application stack. Set up by hand in three consoles, none of it can be reviewed, repeated for a
+second deployment or rebuilt after a loss. The documents said Dev and production change only through the
 deploy workflow; no workflow exists, and a first deployment has to be run and watched by a person.
 
 ## Decision
@@ -17,7 +17,7 @@ deploy workflow; no workflow exists, and a first deployment has to be run and wa
   `infra/units`, one per module. An environment is one directory under `infra/live`: its
   `env.yaml` holds its plain settings and the names of its secrets, the only place it is
   configured, and its `terragrunt.stack.hcl` makes the units it runs once from the catalog with
-  those settings. A deployment of the environment is a stack inside it.
+  those settings. A deployment of the environment is a unit of that stack, named in `env.yaml`.
 - mise pins OpenTofu and Terragrunt; every provider is pinned to an exact version, with the lock
   file of each module committed. A version younger than 7 days is not taken, as with the dependencies
   ([0015](0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).
@@ -58,7 +58,6 @@ deploy workflow; no workflow exists, and a first deployment has to be run and wa
 
 ## Consequences
 
-- Not built yet: the units and the commands.
 - An environment's units are generated on every run and never committed; a unit's state is keyed
   by its place in the environment.
 - The project, the bucket and the passphrase are made once, by an administrator of the
@@ -66,6 +65,10 @@ deploy workflow; no workflow exists, and a first deployment has to be run and wa
   the environment's domain, for which no resource exists. The rest is a unit, the operators' group
   and its rights too: a unit only an administrator of the organisation applies, left out of a run
   unless it is named. Who is in the group stays out of the repository.
+- The environment's project in Coolify is made by the owner of the shared server, and its Supabase
+  project by hand, before the first apply: no unit makes, changes or deletes either, only what is
+  inside them, and their ids are settings of `env.yaml`
+  ([0033](0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)).
 - Losing the passphrase loses every state. It is protected against deletion, and only an
   administrator changes it, by a new revision with the old one as a fallback.
 - The Coolify provider is a community provider below 1.0 with one maintainer: it is pinned, and

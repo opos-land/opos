@@ -41,10 +41,11 @@ graph LR
   away are scripts, run on the server as `postgres` (`pnpm db:admin:grant`,
   `pnpm db:admin:revoke`): no route and no screen does either.
 
-Deployment is decided but not built: Dev
-([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)), the
-database connection ([0013](adr/0013-connect-to-postgres-directly-with-verified-tls.md)) and the
-backups ([0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
+Dev's deployment is described in [infra](../infra/README.md) but not running yet
+([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)); a
+deployed environment reaches its database directly, with TLS verified against Supabase's CA
+([0039](adr/0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md)). The backups are
+decided but not built ([0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
 [waiting for their domain owner](#modules-waiting-for-their-domain-owner) have only their rules.
 
 ## Tenant isolation
@@ -330,13 +331,16 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 | `OPOS_ENV`  | `local`                 | `dev`                                            | `production`                       |
 | Supabase    | the CLI's local stack   | a Free project of its own                        | the Pro project, `eu-central-1`    |
 | Addresses   | `*.opos.localhost`      | `<name>.dev.opos.land`, in a DNS zone of its own | `opos.land`                        |
-| Hosting     | the developer's machine | the team's Coolify server                        | not decided                        |
+| Hosting     | the developer's machine | a shared Coolify server                          | not decided                        |
 | Deployed by | the developer           | a push to `develop`                              | a push to `main`, after a reviewer |
 
-- `OPOS_ENV` is the one switch between environments; Mailpit and a fake payment provider serve
-  `local` and `dev`.
-- Dev and production are not deployed yet. Dev runs on the team's Coolify server, and production
-  never shares a server with it
+- `OPOS_ENV` is the one switch between environments; a fake payment provider serves `local` and
+  `dev`. Mailpit takes the mail of `local`; a deployed environment sends through Scaleway's
+  Transactional Email, from its own domain
+  ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
+- Dev and production are not deployed yet. Dev runs in a project of its own on a shared Coolify
+  server, made by the server's owner; the deployment makes only environments inside it. Production
+  never shares a server with Dev
   ([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)).
 - Dev's addresses sit in a zone delegated from `opos.land`: no credential that changes Dev's
   records reaches production's
@@ -359,7 +363,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
 - The seed refuses production, and production data never leaves it
   ([PRODUCT.md](PRODUCT.md#10-personal-data-and-privacy)).
-- Supabase Auth settings live in [config.toml](../supabase/config.toml), never in a dashboard alone.
+- Supabase Auth settings live in [config.toml](../supabase/config.toml) for the local stack and in
+  [infra/modules/supabase](../infra/modules/supabase) for a deployed project, never in a dashboard
+  alone; [supabase-auth.test.mjs](../scripts/supabase-auth.test.mjs) keeps the two equal. A deployed
+  project is made by hand; OpenTofu changes only what is inside it.
 
 ## Tooling and versions
 

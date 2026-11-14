@@ -23,6 +23,17 @@ variable "environments" {
   default = {}
 }
 
+variable "environment_variables" {
+  description = "Further plain variables of the environments above, by environment, such as the outputs of other units"
+  type        = map(map(string))
+  default     = {}
+
+  validation {
+    condition     = alltrue([for environment in keys(var.environment_variables) : contains(keys(var.environments), environment)])
+    error_message = "Further variables go only to an environment of environments."
+  }
+}
+
 variable "secrets" {
   description = "The secrets of the repository, readable by every run of it but a fork's, by the name of the secret holding each value"
   type        = map(string)

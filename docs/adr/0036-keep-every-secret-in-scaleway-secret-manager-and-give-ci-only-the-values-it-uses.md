@@ -39,6 +39,9 @@ workflow to sign in without a stored key.
 - The tokens OpenTofu's providers sign in with are read for the length of a run and never reach the
   state. The values the containers and CI need pass through the encrypted state into Coolify and
   GitHub.
+- A deployed environment sends its transactional mail through Scaleway's Transactional Email in its
+  own project, from its domain. The API signs in to the relay with the key of an application that
+  may only send mail there; the unit that makes the key writes it straight into Secret Manager.
 
 ## Alternatives
 
@@ -63,5 +66,7 @@ workflow to sign in without a stored key.
   every key.
 - GitHub holds copies of what CI uses, and only an apply changes them.
 - The values of the containers also exist in Coolify's own database on the server.
-- Without Scaleway, nothing deploys; CI keeps working with what GitHub holds.
-- Not built yet.
+- Without Scaleway, nothing deploys and no mail leaves a deployed environment; CI keeps working with
+  what GitHub holds.
+- Making a key needs rights in the organisation, so the SMTP key belongs to the unit only an
+  administrator applies.

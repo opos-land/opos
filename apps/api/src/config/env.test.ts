@@ -67,8 +67,8 @@ describe('loadEnv', () => {
     expect(() => loadEnv({ ...valid, OPOS_ENV: 'staging' })).toThrow(/OPOS_ENV/)
   })
 
-  it.each(['local', 'dev', 'production'])('takes OPOS_ENV %s', (OPOS_ENV) => {
-    expect(loadEnv({ ...valid, OPOS_ENV })).toMatchObject({ OPOS_ENV })
+  it('takes OPOS_ENV local', () => {
+    expect(loadEnv(valid)).toMatchObject({ OPOS_ENV: 'local' })
   })
 
   it('refuses an INVITE_SECRET equal to the secret key, naming no value', () => {
@@ -129,6 +129,69 @@ describe('loadEnv', () => {
 
     expect(env).not.toHaveProperty('AUTH_URL')
     expect(env).not.toHaveProperty('JWT_SECRET')
+  })
+  // A deployed environment reaches its project directly, with TLS verified against the CA the
+  // image trusts (docs/adr/0013-connect-to-postgres-directly-with-verified-tls.md).
+  describe('on a deployed environment', () => {
+    const host = 'db.abcdefghijklmnopqrst.supabase.co:5432/postgres?sslmode=verify-full'
+    const deployed = {
+      ...valid,
+      OPOS_ENV: 'dev',
+      NODE_ENV: 'production',
+      NODE_EXTRA_CA_CERTS: '/etc/ssl/supabase/ca.crt',
+      DATABASE_URL: `postgres://opos_app:a@${host}`,
+      DATABASE_GLOBAL_URL: `postgres://opos_app_global:b@${host}`,
+      DATABASE_ADMIN_URL: `postgres://opos_admin:c@${host}`,
+      ADMIN_URL: 'https://admin.develop.dev.opos.land',
+    }
+
+    it.each(['dev', 'production'])('takes OPOS_ENV %s with verified connections', (OPOS_ENV) => {
+      expect(loadEnv({ ...deployed, OPOS_ENV })).toMatchObject({
+        OPOS_ENV,
+        DATABASE_ADMIN_URL: deployed.DATABASE_ADMIN_URL,
+      })
+    })
+
+    it.each(['DATABASE_URL', 'DATABASE_GLOBAL_URL', 'DATABASE_ADMIN_URL'])(
+      'refuses %s without verification, naming it and no part of it',
+      (key) => {
+        const unverified = deployed[key as keyof typeof deployed].replace('verify-full', 'require')
+
+        expect(() => loadEnv({ ...deployed, [key]: unverified })).toThrow(
+          `${key}: ${key} must ask for sslmode=verify-full on OPOS_ENV dev`,
+        )
+      },
+    )
+
+    it.each([
+      ['DATABASE_URL', 'postgres'],
+      ['DATABASE_URL', 'opos_admin'],
+      ['DATABASE_GLOBAL_URL', 'opos_app'],
+      ['DATABASE_ADMIN_URL', 'postgres'],
+    ])('refuses %s naming the role %s instead of its own', (key, role) => {
+      const url = deployed[key as keyof typeof deployed].replace(
+        /^postgres:\/\/\w+:/,
+        `postgres://${role}:`,
+      )
+
+      expect(() => loadEnv({ ...deployed, [key]: url })).toThrow(
+        `${key}: ${key} must name the role`,
+      )
+    })
+
+    it('refuses a pooler', () => {
+      const pooler = deployed.DATABASE_URL.replace(':5432/', ':6543/')
+
+      expect(() => loadEnv({ ...deployed, DATABASE_URL: pooler })).toThrow(
+        'DATABASE_URL names a connection pooler',
+      )
+    })
+
+    it('refuses to start without the CA', () => {
+      expect(() => loadEnv({ ...deployed, NODE_EXTRA_CA_CERTS: undefined })).toThrow(
+        /NODE_EXTRA_CA_CERTS must name the project's CA certificate/,
+      )
+    })
   })
 })
 

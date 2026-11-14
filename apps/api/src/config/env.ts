@@ -1,7 +1,15 @@
+import { verifiedTls } from '@opos/db'
 import { z } from 'zod'
 
 /** A variable a template leaves empty counts as unset. */
 const optionalUrl = z.preprocess((value) => (value === '' ? undefined : value), z.url().optional())
+
+/** The runtime role each pool connects as (packages/db/src/roles.ts), never postgres. */
+const POOL_ROLES = {
+  DATABASE_URL: 'opos_app',
+  DATABASE_GLOBAL_URL: 'opos_app_global',
+  DATABASE_ADMIN_URL: 'opos_admin',
+} as const
 
 const envSchema = z
   .object({
@@ -14,6 +22,9 @@ const envSchema = z
     // The connection of opos_admin, which the admin routes alone use. Unset, with ADMIN_URL, where
     // this process serves no admin application: it then holds no admin route and no such role.
     DATABASE_ADMIN_URL: optionalUrl,
+    // The project's CA certificate, which the image adds to Node's trust; required on Dev and
+    // production, where every connection verifies the server against it.
+    NODE_EXTRA_CA_CERTS: z.string().optional(),
     // The project's gateway, with Supabase Auth at /auth/v1.
     SUPABASE_URL: z.url(),
     // The project's secret key, sent as apikey with every Supabase Auth call.
@@ -62,6 +73,39 @@ const envSchema = z
   .refine((env) => env.INVITE_SECRET !== env.SUPABASE_SECRET_KEY, {
     message: 'INVITE_SECRET must differ from SUPABASE_SECRET_KEY',
     path: ['INVITE_SECRET'],
+  })
+  // On Dev and production, every pool reaches the project directly with verified TLS
+  // (docs/adr/0013-connect-to-postgres-directly-with-verified-tls.md).
+  .superRefine((env, context) => {
+    const urls = {
+      DATABASE_URL: env.DATABASE_URL,
+      DATABASE_GLOBAL_URL: env.DATABASE_GLOBAL_URL,
+      DATABASE_ADMIN_URL: env.DATABASE_ADMIN_URL,
+    }
+    for (const [key, url] of Object.entries(urls)) {
+      if (url === undefined) continue
+      // On a deployed environment a pool holds its own role alone: postgres would bypass RLS
+      const role = POOL_ROLES[key as keyof typeof POOL_ROLES]
+      if (env.OPOS_ENV !== 'local' && decodeURIComponent(new URL(url).username) !== role) {
+        context.addIssue({
+          code: 'custom',
+          message: `${key} must name the role ${role}`,
+          path: [key],
+        })
+        return
+      }
+      try {
+        verifiedTls(key, url, {
+          OPOS_ENV: env.OPOS_ENV,
+          NODE_EXTRA_CA_CERTS: env.NODE_EXTRA_CA_CERTS,
+        })
+      } catch (error) {
+        const message = (error as Error).message
+        const path = message.startsWith('NODE_EXTRA_CA_CERTS') ? 'NODE_EXTRA_CA_CERTS' : key
+        context.addIssue({ code: 'custom', message, path: [path] })
+        return
+      }
+    }
   })
 
 export type Env = z.infer<typeof envSchema>

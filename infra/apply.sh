@@ -8,12 +8,16 @@
 #   infra/apply.sh plan        <environment> [unit]   plan and keep the plans
 #   infra/apply.sh apply       <environment> [unit]   plan, ask, apply the plans
 #   infra/apply.sh apply-saved <environment> [unit]   ask, apply the plans kept by plan
+#   infra/apply.sh apply-direct <environment> [unit]  ask, apply in order with no plan shown
+#
+# apply-direct shows no plan: each unit plans at its apply, after the units it reads, with their
+# real outputs. It is the way through a first setup, where an exact plan of a later unit fails.
 #
 # Without a unit, every unit but shared, which only an administrator applies and only by its name.
 set -euo pipefail
 
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
-  echo "usage: infra/apply.sh plan|apply|apply-saved <environment> [unit]" >&2
+  echo "usage: infra/apply.sh plan|apply|apply-saved|apply-direct <environment> [unit]" >&2
   exit 2
 fi
 mode=$1
@@ -54,8 +58,21 @@ case "$mode" in
       exit 1
     fi
     ;;
+  apply-direct)
+    read -r -p "Apply $environment${unit:+ ($unit)} with no plan shown first? [y/N] " answer </dev/tty
+    case "$answer" in
+      y | Y | yes) ;;
+      *)
+        echo "Nothing applied."
+        exit 1
+        ;;
+    esac
+    # The answer above is the only one: Terragrunt approves each unit and asks nothing more
+    TG_NON_INTERACTIVE=true terragrunt stack run --working-dir "$live" --filter "${unit:-!shared}" -- apply
+    exit 0
+    ;;
   *)
-    echo "usage: infra/apply.sh plan|apply|apply-saved <environment> [unit]" >&2
+    echo "usage: infra/apply.sh plan|apply|apply-saved|apply-direct <environment> [unit]" >&2
     exit 2
     ;;
 esac

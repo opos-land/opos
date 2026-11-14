@@ -183,16 +183,18 @@ exec infra/run.sh "$usage_environment" terragrunt stack run --working-dir "infra
 raw = true
 
 ["deploy:apply"]
-description = "Plan an environment, ask once, then apply exactly those plans; --saved applies the plans of deploy:plan --save; run by an operator, never by an agent: <environment> [unit]"
+description = "Plan an environment, ask once, then apply exactly those plans; --saved applies the plans of deploy:plan --save, --no-plan applies in order without showing a plan; run by an operator, never by an agent: <environment> [unit]"
 usage = '''
 arg "<environment>" help="A directory of infra/live"
 arg "[unit]" help="One unit of the environment; every unit but shared when left out"
 flag "--saved" help="Apply the plans deploy:plan --save kept instead of planning again"
+flag "--no-plan" help="Ask once and apply unit by unit with no plan shown, as a first setup needs"
 '''
 env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true" }
 run = '''
 mode=apply
 if [ "${usage_saved:-false}" = true ]; then mode=apply-saved; fi
+if [ "${usage_no_plan:-false}" = true ]; then mode=apply-direct; fi
 exec infra/run.sh "$usage_environment" infra/apply.sh "$mode" "$usage_environment" ${usage_unit:-}
 '''
 raw = true

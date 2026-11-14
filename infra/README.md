@@ -23,24 +23,24 @@ The deployed environments, described in OpenTofu units that Terragrunt runs. The
 mise installs every tool they need. Read the plan before every apply. An agent never runs a
 command that changes anything: bootstrap, grant, revoke, apply, secret-set or destroy.
 
-| Command                                                 | Does                                                                                                             |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **On your machine, without signing in**                 |                                                                                                                  |
-| `mise run deploy:check`                                 | checks the format and validates every unit                                                                       |
-| `mise run deploy:images`                                | builds the images as the server does and tries the API and the frontends; CI's `images` job runs it on every run |
-| `mise run deploy:lock`                                  | rewrites the modules' provider lock files after a provider's version changed                                     |
-| **Signed in**                                           |                                                                                                                  |
-| `mise run deploy:login <environment>`                   | signs you in to Scaleway and GitHub, unless you are; the key lasts 12 hours                                      |
-| `mise run deploy:plan <environment> [unit]`             | shows what an apply would change; `--save` plans as an apply does and keeps the plans                            |
-| `mise run deploy:apply <environment> [unit]`            | plans, asks once and applies those plans; `--saved` applies the plans `deploy:plan --save` kept                  |
-| `mise run deploy:output <environment> [unit]`           | prints the units' outputs                                                                                        |
-| `mise run deploy:secret-set <environment> <name>`       | reads a secret's value without echo and stores it                                                                |
-| `mise run deploy:destroy <environment> <unit>`          | destroys one unit, after showing its plan and asking                                                             |
-| **As an administrator of the Scaleway organisation**    |                                                                                                                  |
-| `mise run deploy:bootstrap <environment>`               | makes the state's bucket and passphrase and registers the domain                                                 |
-| `mise run deploy:apply <environment> shared`            | makes the group of the people who run the commands, with its rights                                              |
-| `mise run deploy:grant <environment> <email>...`        | puts people into that group                                                                                      |
-| `mise run deploy:grant:revoke <environment> <email>...` | takes people out of it                                                                                           |
+| Command                                                 | Does                                                                                                                                                  |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **On your machine, without signing in**                 |                                                                                                                                                       |
+| `mise run deploy:check`                                 | checks the format and validates every unit                                                                                                            |
+| `mise run deploy:images`                                | builds the images as the server does and tries the API and the frontends; CI's `images` job runs it on every run                                      |
+| `mise run deploy:lock`                                  | rewrites the modules' provider lock files after a provider's version changed                                                                          |
+| **Signed in**                                           |                                                                                                                                                       |
+| `mise run deploy:login <environment>`                   | signs you in to Scaleway and GitHub, unless you are; the key lasts 12 hours                                                                           |
+| `mise run deploy:plan <environment> [unit]`             | shows what an apply would change; `--save` plans as an apply does and keeps the plans                                                                 |
+| `mise run deploy:apply <environment> [unit]`            | plans, asks once and applies those plans; `--saved` applies the plans `deploy:plan --save` kept; `--no-plan` asks once and applies with no plan shown |
+| `mise run deploy:output <environment> [unit]`           | prints the units' outputs                                                                                                                             |
+| `mise run deploy:secret-set <environment> <name>`       | reads a secret's value without echo and stores it                                                                                                     |
+| `mise run deploy:destroy <environment> <unit>`          | destroys one unit, after showing its plan and asking                                                                                                  |
+| **As an administrator of the Scaleway organisation**    |                                                                                                                                                       |
+| `mise run deploy:bootstrap <environment>`               | makes the state's bucket and passphrase and registers the domain                                                                                      |
+| `mise run deploy:apply <environment> shared`            | makes the group of the people who run the commands, with its rights                                                                                   |
+| `mise run deploy:grant <environment> <email>...`        | puts people into that group                                                                                                                           |
+| `mise run deploy:grant:revoke <environment> <email>...` | takes people out of it                                                                                                                                |
 
 Without a unit, plan and apply run every unit but `shared`, which needs the organisation's
 administrator rights.
@@ -112,15 +112,11 @@ The steps for Dev; another environment follows them with its own names.
    `mail` unit waits until Scaleway has validated the domain's records, up to an hour.
 
    An apply plans the units, asks once and applies exactly those plans. A plan for an apply takes
-   no mocked outputs, so a unit plans only once the units it reads are applied: the first time,
-   apply them by name in this order, each with its own answer.
+   no mocked outputs, so a unit plans only once the units it reads are applied. The first time,
+   apply with no plan shown: one answer, then each unit plans and applies after the units it reads.
 
    ```sh
-   mise run deploy:apply dev cache
-   mise run deploy:apply dev mail
-   mise run deploy:apply dev supabase
-   mise run deploy:apply dev deployment
-   mise run deploy:apply dev
+   mise run deploy:apply dev --no-plan
    ```
 
    The `deployment` unit stops if an administrator has not applied `shared` since step 4, which

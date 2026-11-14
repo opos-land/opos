@@ -3,12 +3,26 @@
 # there: the MX record is Scaleway's blackhole. The key the API signs in with is made in the shared
 # unit, which may make keys.
 
+# A project makes no domain before it subscribes to an offer. Essential has no monthly fee and is
+# billed by the email sent. The provider subscribes only through an action, which OpenTofu does not
+# run, so scw does it under the operator's profile (infra/run.sh). The API cancels no subscription:
+# destroying this changes nothing at Scaleway.
+resource "terraform_data" "offer" {
+  input = { project_id = var.project_id, region = var.region, offer = "essential" }
+
+  provisioner "local-exec" {
+    command = "scw tem offer-subscriptions update project-id=${self.input.project_id} region=${self.input.region} name=${self.input.offer} >/dev/null"
+  }
+}
+
 # Creating the domain accepts Scaleway's terms of service for Transactional Email
 resource "scaleway_tem_domain" "this" {
   project_id = var.project_id
   region     = var.region
   name       = var.zone
   accept_tos = true
+
+  depends_on = [terraform_data.offer]
 }
 
 data "scaleway_domain_zone" "this" {

@@ -27,6 +27,18 @@ mise run deploy:secret-set dev coolify-api-token
 mise run deploy:secret-set dev coolify-release-token
 ```
 
+Coolify creates a resource on the server it runs on only for an admin of the server's team, with a
+token that reaches every project there. So the owner of the server runs each apply that creates a
+service, the first of `cache` and `deployment` and any that replaces one, with such a token of their
+own, passed for that command alone and kept nowhere else:
+
+```sh
+COOLIFY_TOKEN=<the owner's token> mise run deploy:apply dev --no-plan
+```
+
+While `COOLIFY_TOKEN` is set, the units use it instead of `coolify-api-token`. Every other run, by
+any operator, uses `coolify-api-token`: changing, deploying and deleting what exists needs no more.
+
 ## The addresses
 
 Write the dashboard's address, the server's id (Servers, then the server's page), its public

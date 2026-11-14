@@ -114,9 +114,11 @@ The steps for Dev; another environment follows them with its own names.
    An apply plans the units, asks once and applies exactly those plans. A plan for an apply takes
    no mocked outputs, so a unit plans only once the units it reads are applied. The first time,
    apply with no plan shown: one answer, then each unit plans and applies after the units it reads.
+   The owner of the Coolify server runs it, with their own token
+   ([COOLIFY.md](COOLIFY.md#the-tokens)): Coolify lets nobody else create its services.
 
    ```sh
-   mise run deploy:apply dev --no-plan
+   COOLIFY_TOKEN=<the owner's token> mise run deploy:apply dev --no-plan
    ```
 
    The `deployment` unit stops if an administrator has not applied `shared` since step 4, which

@@ -1,7 +1,7 @@
 # One deployment of the environment on the Coolify server, with its hosts. Values: zone, name,
 # project_uuid, server_uuid, ipv4, ipv6 (optional), repository, branch, compose_loaded,
 # supabase_ref, mail_from, secrets. The relay, smtp_host, smtp_port and smtp_user, comes from the
-# stack's mail unit.
+# stack's mail unit, and produced, the markers of the secrets other units write, from theirs.
 
 include "root" {
   path = find_in_parent_folders("root.hcl")

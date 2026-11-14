@@ -103,3 +103,9 @@ variable "secrets" {
     basic_auth_password      = string
   })
 }
+
+variable "produced" {
+  description = "A marker per value another unit writes into its secret, which changes with the value; never the value"
+  type        = map(string)
+  default     = {}
+}

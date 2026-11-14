@@ -7,3 +7,8 @@ output "smtp_secret" {
   description = "The name of the secret that holds the API's SMTP password"
   value       = scaleway_secret.smtp.name
 }
+
+output "smtp_key" {
+  description = "The SMTP key's access key, which changes with the key: a marker for the units that read the password, never the password"
+  value       = scaleway_iam_api_key.smtp.access_key
+}

@@ -53,6 +53,13 @@ resource "coolify_application" "this" {
   instant_deploy         = false
 }
 
+# The markers of the values other units write. A new, changed or mocked marker has a change
+# planned here, which puts off reading the secrets until the apply, once those units have written
+# them; otherwise the secrets are read during the plan.
+resource "terraform_data" "produced" {
+  input = var.produced
+}
+
 # The values pass through this unit's encrypted state on their way to Coolify
 data "scaleway_secret_version" "this" {
   for_each = var.secrets
@@ -61,6 +68,8 @@ data "scaleway_secret_version" "this" {
   region      = var.region
   secret_name = each.value
   revision    = "latest_enabled"
+
+  depends_on = [terraform_data.produced]
 }
 
 locals {

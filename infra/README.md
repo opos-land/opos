@@ -116,6 +116,10 @@ The steps for Dev; another environment follows them with its own names.
    mise run deploy:apply dev
    ```
 
+   Until `shared` and `supabase` have written `smtp-password` and `supabase-secret-key`, the plan
+   mocks them and shows the deployment's values as known after apply; the apply reads them once
+   `supabase` is applied, and stops if an administrator has not applied `shared` since step 4.
+
    The `deployment` unit deploys once and waits for it: Coolify reads the compose file, the tools
    run the database steps, the API starts. Coolify takes the hosts of the services only after that
    first deployment, so set `deployment.compose_loaded` in `live/dev/env.yaml` to `true` and apply

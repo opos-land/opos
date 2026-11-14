@@ -120,9 +120,27 @@ unit "deployment" {
   }
 
   autoinclude {
-    # The values are read from the secrets, the secret key once the supabase unit wrote it
     dependencies {
-      paths = [unit.secrets.path, unit.supabase.path]
+      paths = [unit.secrets.path]
+    }
+
+    # The units that write smtp-password and the secret key, and a marker of each value. Mocked
+    # while they have written nothing, so that a plan of the whole stack runs before them; the
+    # deployment then reads those secrets at the apply, which runs after theirs.
+    dependency "shared" {
+      config_path = unit.shared.path
+
+      mock_outputs                            = { smtp_key = "mock" }
+      mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
+      mock_outputs_merge_strategy_with_state  = "shallow"
+    }
+
+    dependency "supabase" {
+      config_path = unit.supabase.path
+
+      mock_outputs                            = { secret_key_version = "mock" }
+      mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
+      mock_outputs_merge_strategy_with_state  = "shallow"
     }
 
     dependency "mail" {
@@ -140,6 +158,10 @@ unit "deployment" {
       smtp_host = dependency.mail.outputs.smtp_host
       smtp_port = dependency.mail.outputs.smtp_port
       smtp_user = dependency.mail.outputs.smtp_user
+      produced = {
+        smtp_password       = dependency.shared.outputs.smtp_key
+        supabase_secret_key = dependency.supabase.outputs.secret_key_version
+      }
     }
   }
 }

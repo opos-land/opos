@@ -32,10 +32,10 @@ command that changes anything: bootstrap, grant, revoke, apply, secret-set or de
 | **Signed in**                                           |                                                                                                                  |
 | `mise run deploy:login <environment>`                   | signs you in to Scaleway and GitHub, unless you are; the key lasts 12 hours                                      |
 | `mise run deploy:plan <environment> [unit]`             | shows what an apply would change                                                                                 |
-| `mise run deploy:apply <environment> [unit]`            | applies, after asking                                                                                            |
+| `mise run deploy:apply <environment> [unit]`            | applies unit by unit, each after showing its plan and asking                                                     |
 | `mise run deploy:output <environment> [unit]`           | prints the units' outputs                                                                                        |
 | `mise run deploy:secret-set <environment> <name>`       | reads a secret's value without echo and stores it                                                                |
-| `mise run deploy:destroy <environment> <unit>`          | destroys one unit, after asking                                                                                  |
+| `mise run deploy:destroy <environment> <unit>`          | destroys one unit, after showing its plan and asking                                                             |
 | **As an administrator of the Scaleway organisation**    |                                                                                                                  |
 | `mise run deploy:bootstrap <environment>`               | makes the state's bucket and passphrase and registers the domain                                                 |
 | `mise run deploy:apply <environment> shared`            | makes the group of the people who run the commands, with its rights                                              |

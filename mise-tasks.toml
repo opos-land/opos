@@ -177,22 +177,23 @@ run = 'infra/run.sh "$usage_environment" terragrunt stack run --working-dir "inf
 raw = true
 
 ["deploy:apply"]
-description = "Apply an environment, after asking; run by an operator, never by an agent: <environment> [unit]"
+description = "Apply an environment unit by unit, each after showing its plan and asking; run by an operator, never by an agent: <environment> [unit]"
 usage = '''
 arg "<environment>" help="A directory of infra/live"
 arg "[unit]" help="One unit of the environment; every unit but shared when left out"
 '''
-env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true" }
+# OpenTofu asks before each unit's apply, one unit at a time, instead of Terragrunt approving them all
+env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true", TG_NO_AUTO_APPROVE = "true", TG_PARALLELISM = "1" }
 run = 'infra/run.sh "$usage_environment" terragrunt stack run --working-dir "infra/live/$usage_environment" --filter "${usage_unit:-!shared}" -- apply'
 raw = true
 
 ["deploy:destroy"]
-description = "Destroy one unit of an environment, after asking; run by an operator, never by an agent: <environment> <unit>"
+description = "Destroy one unit of an environment, after showing its plan and asking; run by an operator, never by an agent: <environment> <unit>"
 usage = '''
 arg "<environment>" help="A directory of infra/live"
 arg "<unit>" help="The unit to destroy"
 '''
-env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true" }
+env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true", TG_NO_AUTO_APPROVE = "true", TG_PARALLELISM = "1" }
 run = 'infra/run.sh "$usage_environment" terragrunt stack run --working-dir "infra/live/$usage_environment" --filter "$usage_unit" -- destroy'
 raw = true
 

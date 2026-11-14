@@ -8,7 +8,7 @@ resource "coolify_environment" "this" {
 
 resource "coolify_service" "this" {
   name             = "turbo-cache"
-  description      = "Turborepo remote cache for CI; managed by OpenTofu"
+  description      = "Turborepo remote cache for CI, managed by OpenTofu"
   project_uuid     = var.coolify_project_uuid
   environment_uuid = coolify_environment.this.uuid
   server_uuid      = var.server_uuid

@@ -28,7 +28,7 @@ resource "coolify_environment" "this" {
 
 resource "coolify_application" "this" {
   name             = "opos"
-  description      = "The deployment of OPOS at ${var.zone}; managed by OpenTofu"
+  description      = "The deployment of OPOS at ${var.zone}, managed by OpenTofu"
   project_uuid     = var.coolify_project_uuid
   environment_uuid = coolify_environment.this.uuid
   server_uuid      = var.server_uuid

@@ -31,8 +31,8 @@ command that changes anything: bootstrap, grant, revoke, apply, secret-set or de
 | `mise run deploy:lock`                                  | rewrites the modules' provider lock files after a provider's version changed                                     |
 | **Signed in**                                           |                                                                                                                  |
 | `mise run deploy:login <environment>`                   | signs you in to Scaleway and GitHub, unless you are; the key lasts 12 hours                                      |
-| `mise run deploy:plan <environment> [unit]`             | shows what an apply would change                                                                                 |
-| `mise run deploy:apply <environment> [unit]`            | applies unit by unit, each after showing its plan and asking                                                     |
+| `mise run deploy:plan <environment> [unit]`             | shows what an apply would change; `--save` plans as an apply does and keeps the plans                            |
+| `mise run deploy:apply <environment> [unit]`            | plans, asks once and applies those plans; `--saved` applies the plans `deploy:plan --save` kept                  |
 | `mise run deploy:output <environment> [unit]`           | prints the units' outputs                                                                                        |
 | `mise run deploy:secret-set <environment> <name>`       | reads a secret's value without echo and stores it                                                                |
 | `mise run deploy:destroy <environment> <unit>`          | destroys one unit, after showing its plan and asking                                                             |
@@ -111,14 +111,21 @@ The steps for Dev; another environment follows them with its own names.
 8. Apply the rest. The `github` unit needs your GitHub account to administer the repository. The
    `mail` unit waits until Scaleway has validated the domain's records, up to an hour.
 
+   An apply plans the units, asks once and applies exactly those plans. A plan for an apply takes
+   no mocked outputs, so a unit plans only once the units it reads are applied: the first time,
+   apply them by name in this order, each with its own answer.
+
    ```sh
-   mise run deploy:plan dev
+   mise run deploy:apply dev cache
+   mise run deploy:apply dev mail
+   mise run deploy:apply dev supabase
+   mise run deploy:apply dev deployment
    mise run deploy:apply dev
    ```
 
-   Until `shared` and `supabase` have written `smtp-password` and `supabase-secret-key`, the plan
-   mocks them and shows the deployment's values as known after apply; the apply reads them once
-   `supabase` is applied, and stops if an administrator has not applied `shared` since step 4.
+   The `deployment` unit stops if an administrator has not applied `shared` since step 4, which
+   writes `smtp-password`. From then on one `mise run deploy:apply dev` applies every unit.
+   `deploy:plan` alone mocks what is not applied yet, to preview the whole stack.
 
    The `deployment` unit deploys once and waits for it: Coolify reads the compose file, the tools
    run the database steps, the API starts. Coolify takes the hosts of the services only after that

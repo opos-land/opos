@@ -25,6 +25,7 @@ e2e/test-results/
 .terraform/
 .terragrunt-cache/
 .terragrunt-stack/
+.terragrunt-plans/
 *.tfstate
 *.tfstate.*
 *.tfplan

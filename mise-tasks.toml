@@ -167,24 +167,34 @@ run = "infra/grant.sh --revoke"
 raw = true
 
 ["deploy:plan"]
-description = "Show what applying an environment would change: <environment> [unit]"
+description = "Show what applying an environment would change; --save plans as an apply does and keeps the plans for deploy:apply --saved: <environment> [unit]"
 usage = '''
 arg "<environment>" help="A directory of infra/live"
 arg "[unit]" help="One unit of the environment; every unit but shared when left out"
+flag "--save" help="Plan without mocked dependency outputs and keep the plans"
 '''
 env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true" }
-run = 'infra/run.sh "$usage_environment" terragrunt stack run --working-dir "infra/live/$usage_environment" --filter "${usage_unit:-!shared}" -- plan'
+run = '''
+if [ "${usage_save:-false}" = true ]; then
+  exec infra/run.sh "$usage_environment" infra/apply.sh plan "$usage_environment" ${usage_unit:-}
+fi
+exec infra/run.sh "$usage_environment" terragrunt stack run --working-dir "infra/live/$usage_environment" --filter "${usage_unit:-!shared}" -- plan
+'''
 raw = true
 
 ["deploy:apply"]
-description = "Apply an environment unit by unit, each after showing its plan and asking; run by an operator, never by an agent: <environment> [unit]"
+description = "Plan an environment, ask once, then apply exactly those plans; --saved applies the plans of deploy:plan --save; run by an operator, never by an agent: <environment> [unit]"
 usage = '''
 arg "<environment>" help="A directory of infra/live"
 arg "[unit]" help="One unit of the environment; every unit but shared when left out"
+flag "--saved" help="Apply the plans deploy:plan --save kept instead of planning again"
 '''
-# OpenTofu asks before each unit's apply, one unit at a time, instead of Terragrunt approving them all
-env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true", TG_NO_AUTO_APPROVE = "true", TG_PARALLELISM = "1" }
-run = 'infra/run.sh "$usage_environment" terragrunt stack run --working-dir "infra/live/$usage_environment" --filter "${usage_unit:-!shared}" -- apply'
+env = { TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE = "true" }
+run = '''
+mode=apply
+if [ "${usage_saved:-false}" = true ]; then mode=apply-saved; fi
+exec infra/run.sh "$usage_environment" infra/apply.sh "$mode" "$usage_environment" ${usage_unit:-}
+'''
 raw = true
 
 ["deploy:destroy"]

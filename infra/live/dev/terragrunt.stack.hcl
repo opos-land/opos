@@ -131,7 +131,7 @@ unit "deployment" {
       config_path = unit.shared.path
 
       mock_outputs                            = { smtp_key = "mock" }
-      mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
+      mock_outputs_allowed_terraform_commands = get_env("DEPLOY_EXACT_PLAN", "") == "true" ? ["init", "validate"] : ["init", "validate", "plan"]
       mock_outputs_merge_strategy_with_state  = "shallow"
     }
 
@@ -139,7 +139,7 @@ unit "deployment" {
       config_path = unit.supabase.path
 
       mock_outputs                            = { secret_key_version = "mock" }
-      mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
+      mock_outputs_allowed_terraform_commands = get_env("DEPLOY_EXACT_PLAN", "") == "true" ? ["init", "validate"] : ["init", "validate", "plan"]
       mock_outputs_merge_strategy_with_state  = "shallow"
     }
 
@@ -151,7 +151,7 @@ unit "deployment" {
         smtp_port = 465
         smtp_user = "mock-user"
       }
-      mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
+      mock_outputs_allowed_terraform_commands = get_env("DEPLOY_EXACT_PLAN", "") == "true" ? ["init", "validate"] : ["init", "validate", "plan"]
     }
 
     inputs = {
@@ -214,7 +214,7 @@ unit "github" {
         application_uuid = "mock-application"
         urls             = { portal = "https://mock.invalid" }
       }
-      mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
+      mock_outputs_allowed_terraform_commands = get_env("DEPLOY_EXACT_PLAN", "") == "true" ? ["init", "validate"] : ["init", "validate", "plan"]
     }
 
     inputs = {

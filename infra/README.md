@@ -21,7 +21,8 @@ The deployed environments, described in OpenTofu units that Terragrunt runs. The
 ## Commands
 
 mise installs every tool they need. Read the plan before every apply. An agent never runs a
-command that changes anything: bootstrap, grant, revoke, apply, secret-set or destroy.
+command that changes anything, bootstrap, grant, revoke, apply, secret-set or destroy, nor
+secret-get, which prints a secret.
 
 | Command                                                 | Does                                                                                                                                                                                                                                                                      |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -35,6 +36,7 @@ command that changes anything: bootstrap, grant, revoke, apply, secret-set or de
 | `mise run deploy:apply <environment> [unit]`            | plans, asks once and applies those plans; `--saved` applies the plans `deploy:plan --save` kept; `--no-plan` asks once and applies with no plan shown; `--ref <ref>` deploys that branch or tag instead of env.yaml's, and CI releases nothing, until an apply without it |
 | `mise run deploy:output <environment> [unit]`           | prints the units' outputs                                                                                                                                                                                                                                                 |
 | `mise run deploy:secret-set <environment> <name>`       | reads a secret's value without echo and stores it                                                                                                                                                                                                                         |
+| `mise run deploy:secret-get <environment> <name>`       | prints a secret's current value, and only it, for a password manager or the clipboard                                                                                                                                                                                     |
 | `mise run deploy:destroy <environment> <unit>`          | destroys one unit, after showing its plan and asking                                                                                                                                                                                                                      |
 | **As an administrator of the Scaleway organisation**    |                                                                                                                                                                                                                                                                           |
 | `mise run deploy:bootstrap <environment>`               | makes the state's bucket and passphrase and registers the domain                                                                                                                                                                                                          |
@@ -170,9 +172,7 @@ Coolify, built on the server from the head of `develop`
   (`deployment.catch_mail` in `env.yaml`), whose inbox is at its address. The `mail` unit still
   keeps the domain's records for a deployment that sends.
 - **Basic auth.** Every service but the API asks for the user `opos` and the value of the secret
-  `basic-auth-password`:
-  `scw secret version access-by-path secret-path=/ secret-name=basic-auth-password revision=latest_enabled`,
-  under `infra/run.sh dev`. Rotate it by raising its number in `env.yaml` and applying.
+  `basic-auth-password`: `mise run deploy:secret-get dev basic-auth-password`. Rotate it by raising its number in `env.yaml` and applying.
 - **A release.** Once the checks of a push to `develop` passed, the `release` job of CI asks Coolify
   to deploy and follows it
   ([0038](../docs/adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md)).

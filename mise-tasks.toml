@@ -231,6 +231,15 @@ arg "<name>" help="A name under secrets.entered of the environment's env.yaml"
 run = 'infra/run.sh "$usage_environment" infra/secret-set.sh "$usage_name"'
 raw = true
 
+["deploy:secret-get"]
+description = "Print the current value of one of an environment's secrets; run by an operator, never by an agent: <environment> <name>"
+usage = '''
+arg "<environment>" help="A directory of infra/live"
+arg "<name>" help="A secret of the environment's project, such as basic-auth-password"
+'''
+run = 'infra/run.sh "$usage_environment" infra/secret-get.sh "$usage_name"'
+raw = true
+
 ["deploy:lock"]
 description = "Write the provider lock file of every module, for Linux and macOS, after a provider's version changed"
 run = 'for module in infra/modules/*/; do tofu -chdir="$module" providers lock -platform=linux_amd64 -platform=linux_arm64 -platform=darwin_arm64 || exit 1; done'

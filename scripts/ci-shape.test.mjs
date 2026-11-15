@@ -218,7 +218,7 @@ test('a push runs the tests uncached', () => {
 test('a pull request runs the tests on what it affects, and a push uncached, in each turbo step', () => {
   const steps = job('check')
   for (const tasks of ['typecheck lint', 'test']) {
-    const start = steps.indexOf(`- run: pnpm turbo run ${tasks} $TURBO_ARGS`)
+    const start = steps.indexOf(`- run: pnpm turbo run ${tasks} \${TURBO_ARGS:+"$TURBO_ARGS"}`)
     assert.notEqual(start, -1, tasks)
     const step = steps.slice(start, steps.indexOf('\n      - ', start + 1))
     assert.match(
@@ -263,8 +263,8 @@ test('OpenTofu writes both environments of check, and only develop and main ente
 
 test('every step that runs turbo tasks gets the remote cache of its environment, and never an empty cache mode', () => {
   for (const first of [
-    '- run: pnpm turbo run typecheck lint $TURBO_ARGS',
-    '- run: pnpm turbo run test $TURBO_ARGS',
+    '- run: pnpm turbo run typecheck lint ${TURBO_ARGS:+"$TURBO_ARGS"}',
+    '- run: pnpm turbo run test ${TURBO_ARGS:+"$TURBO_ARGS"}',
     '- run: pnpm build',
   ]) {
     const text = step('check', first)

@@ -15,7 +15,7 @@ concurrency:
 
 # mise installs every tool of mise.toml but these: no job runs a deploy command
 env:
-  MISE_DISABLE_TOOLS: aqua:opentofu/opentofu,aqua:gruntwork-io/terragrunt,aqua:scaleway/scaleway-cli,aqua:cli/cli
+  MISE_DISABLE_TOOLS: aqua:opentofu/opentofu,aqua:gruntwork-io/terragrunt,aqua:scaleway/scaleway-cli,aqua:cli/cli,aqua:rhysd/actionlint,aqua:koalaman/shellcheck
 
 jobs:
   check:

@@ -4,7 +4,8 @@ min_version = "2026.10.0"
 node = "24.15.0"
 # The version fixes the images of the local Supabase stack
 "aqua:supabase/cli" = "2.122.0"
-# The deploy commands run these; CI installs none of them (MISE_DISABLE_TOOLS in ci.yml)
+# The deploy commands and the linters below run these; CI installs none of them (MISE_DISABLE_TOOLS
+# in ci.yml)
 "aqua:opentofu/opentofu" = "1.13.9"
 "aqua:gruntwork-io/terragrunt" = "1.2.1"
 "aqua:scaleway/scaleway-cli" = "2.65.2"

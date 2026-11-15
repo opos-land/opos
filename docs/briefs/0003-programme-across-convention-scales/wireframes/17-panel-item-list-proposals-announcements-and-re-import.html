@@ -1,0 +1,1400 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>17. Panel: item list, proposals, announcements and re-import</title>
+    <link rel="stylesheet" href="wireframes.css" />
+  </head>
+  <body>
+    <header class="page">
+      <h1>17. Panel: item list, proposals, announcements and re-import</h1>
+      <p>
+        OPOS programme module: wireframes for discussion, sample data only. All people shown are
+        invented.
+      </p>
+    </header>
+    <nav class="pages">
+      <a href="index.html">Index</a
+      ><a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+        >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+      ><a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a
+      ><a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+        >3. Portal: my schedule, proposing an item, speaker screen</a
+      ><a href="04-at-the-room-door-volunteer-and-scanner.html"
+        >4. At the room door: volunteer and scanner</a
+      ><a href="05-panel-programme-settings-of-an-edition.html"
+        >5. Panel: programme settings of an edition</a
+      ><a href="06-panel-programme-dictionaries-and-the-item-form.html"
+        >6. Panel: programme dictionaries and the item form</a
+      ><a href="07-panel-building-the-programme.html">7. Panel: building the programme</a
+      ><a href="08-panel-changes-during-the-convention-and-entitlements.html"
+        >8. Panel: changes during the convention and entitlements</a
+      ><a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+        >9. Worldcon: stress test of the model (not for delivery)</a
+      ><a href="10-portal-programme-people-and-guests.html"
+        >10. Portal: programme people and guests</a
+      ><a href="11-portal-changes-now-and-next-rooms-reminders.html"
+        >11. Portal: changes, now and next, rooms, reminders</a
+      ><a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+        >12. Portal: the speaker from acceptance to the day of the item</a
+      ><a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+        >13. Panel: programme team, people, panels and the programme release</a
+      ><a href="14-panel-the-programme-during-the-convention.html"
+        >14. Panel: the programme during the convention</a
+      ><a href="15-panel-head-dictionaries-team-and-programme-status.html"
+        >15. Panel: head, dictionaries, team and programme status</a
+      ><a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+        >16. Portal: sign-ups, lottery, declines and empty states</a
+      ><a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+        >17. Panel: item list, proposals, announcements and re-import</a
+      >
+    </nav>
+    <main class="boards">
+      <figure class="board" id="ab-medium-announce">
+        <figcaption class="t" style="width: 840px">
+          Fantasmagoria: write an announcement <code>ab-medium-announce</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 720px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+            data-rough-ready="true"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Fantasmagoria</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                    <div>
+                      <small>Programme · Announcements</small>
+                      <h1>New announcement</h1>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button>Save draft</button
+                    ><button class="primary">Schedule announcement</button>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+                      gap: 16px;
+                    "
+                  >
+                    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+                      <label>Title<input value="Iga Wrzos signs her books at 12:00" /></label>
+                      <label
+                        >Text<input
+                          value="After her talk, Iga Wrzos signs books at the publisher's booth in Strefa Wystawców · MOK, 12:00–12:45."
+                      /></label>
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                        <strong>Audience</strong>
+                        <label style="display: flex; align-items: center; gap: 8px"
+                          ><input type="radio" /> Everyone
+                          <small class="wf-muted">portal only</small></label
+                        >
+                        <label style="display: flex; align-items: center; gap: 8px"
+                          ><input type="radio" checked="" /> People who liked an item</label
+                        >
+                        <div
+                          style="display: flex; align-items: center; gap: 8px; padding-left: 24px"
+                        >
+                          <input
+                            value="How to write so they publish you? ▾"
+                            style="flex: 1; min-width: 0"
+                          /><small>58 people</small>
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 8px"
+                          ><input type="radio" /> The cast of chosen items</label
+                        >
+                        <label style="display: flex; align-items: center; gap: 8px"
+                          ><input type="checkbox" checked="" /> Also by email
+                          <small>to 58</small></label
+                        >
+                        <small class="wf-muted"
+                          >People who turned off email for likes see it in the portal only.</small
+                        >
+                      </div>
+                      <label style="display: flex; align-items: center; gap: 8px"
+                        ><input type="checkbox" /> Pin to the top of announcements</label
+                      >
+                      <div
+                        style="display: flex; align-items: center; gap: 12px; white-space: nowrap"
+                      >
+                        <label style="display: flex; align-items: center; gap: 6px"
+                          ><input type="radio" /> Publish now</label
+                        ><label style="display: flex; align-items: center; gap: 6px"
+                          ><input type="radio" checked="" /> At</label
+                        ><input value="Sat 18 Jul · 11:50" style="width: 160px" />
+                      </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+                      <small><strong>In the portal</strong></small>
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                        <div style="display: flex; align-items: center; gap: 8px">
+                          <small>Sat 11:50</small>
+                          <div style="flex: 1"></div>
+                          <span class="wf-pill">You liked this item</span>
+                        </div>
+                        <strong>Iga Wrzos signs her books at 12:00</strong
+                        ><small
+                          >After her talk, Iga Wrzos signs books at the publisher's booth in Strefa
+                          Wystawców · MOK, 12:00–12:45.</small
+                        ><a href="#">How to write so they publish you?</a>
+                      </div>
+                      <small class="wf-muted">Announcements today: 2 published, 1 scheduled</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>The org picks the audience</strong>An announcement reaches everyone in the portal,
+          the people who liked an item, or the cast of chosen items; email goes to the last two
+          only. People who turned off email for likes still see it in the portal. A scheduled
+          announcement publishes by itself at its time (Q17).
+        </div>
+      </figure>
+      <figure class="board" id="ab-medium-reimport">
+        <figcaption class="t" style="width: 840px">
+          Fantasmagoria: import again <code>ab-medium-reimport</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 860px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+            data-rough-ready="true"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Fantasmagoria</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                    <div>
+                      <small>Programme · Import</small>
+                      <h1>Import again</h1>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button>Cancel</button><button class="primary">Apply import</button>
+                  </div>
+                  <small
+                    >Program_2026_v6.xlsx · sheet Program · 165 rows · matched to 163 items by title
+                    and start time</small
+                  >
+                  <div style="display: flex; gap: 6px; white-space: nowrap">
+                    <span class="wf-pill">Unchanged 152</span
+                    ><span class="wf-pill accent">Changed 8</span
+                    ><span class="wf-pill accent">Check 1</span><span class="wf-pill">New 4</span
+                    ><span class="wf-pill">Missing 2</span>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      border-color: var(--wf-warn);
+                    "
+                  >
+                    <div style="flex: 1; min-width: 0">
+                      <strong style="color: var(--wf-warn)">Same item?</strong>
+                      <small>Title matches, start time differs</small><br /><strong
+                        >Fantasy charades</strong
+                      ><br /><small
+                        >Sheet: Fri 20:30–21:20 · OPOS: Fri 20:00–20:50 · Sala Widowiskowa · MOK ·
+                        has likes</small
+                      >
+                    </div>
+                    <button>Two items</button><button class="primary">Same item, new time</button>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                  >
+                    <div style="padding: 8px 12px; border-bottom: 1.4px solid var(--wf-line)">
+                      <strong>Changed · 8</strong>
+                      <small class="wf-muted"
+                        >published items: logged and told to likes and cast</small
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        gap: 10px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <span style="flex: 1; min-width: 0"
+                        >Set books missing from the canon: fantasy at school</span
+                      ><small>room: Sala Prelekcyjna · MOK → Sala Warsztatowa · II LO</small>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        gap: 10px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <span style="flex: 1; min-width: 0"
+                        >Urban fantasy and mythologies: why such a good match?</span
+                      ><small>end: 18:45 → 18:50</small>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        gap: 10px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <span style="flex: 1; min-width: 0">A fantasy cover from sketch to print</span
+                      ><small>description changed</small>
+                    </div>
+                    <div style="padding: 8px 12px"><a href="#">5 more changes</a></div>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                      gap: 10px;
+                    "
+                  >
+                    <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                      <strong>New · 4</strong><small class="wf-muted">become drafts</small
+                      ><small
+                        >Fanzine workshop: a zine in 90 minutes · Sun 12:00 · Sala Warsztatowa · II
+                        LO</small
+                      ><small>Anime openings karaoke · Sat 21:30 · Sala Karaoke · II LO</small
+                      ><a href="#">2 more</a>
+                    </div>
+                    <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                      <strong>Missing from the sheet · 2</strong
+                      ><small class="wf-muted">never deleted by an import</small>
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <small style="flex: 1; min-width: 0"
+                          >Board game rules in five minutes · Sat 16:00 · published · ♡ 7</small
+                        ><input value="Keep ▾" style="width: 90px" />
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <small style="flex: 1; min-width: 0"
+                          >Retro console tournament · Sun 10:00 · draft</small
+                        ><input value="Keep ▾" style="width: 90px" />
+                      </div>
+                    </div>
+                  </div>
+                  <small class="wf-muted"
+                    >Likes, sign-ups and cast stay on every matched item. Applying logs 9 changes to
+                    published items.</small
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Re-import keeps the item</strong>Rows match items by item code, else by title and
+          start time; a title match at another time asks before it is treated as the same item, so
+          its likes stay. New rows become drafts and missing rows are never deleted. Apply import
+          asks in a modal that names the changes and how many people will be told (Q7).
+        </div>
+      </figure>
+      <figure class="board" id="ab-medium-import-errors">
+        <figcaption class="t" style="width: 840px">
+          Fantasmagoria: import errors <code>ab-medium-import-errors</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 760px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+            data-rough-ready="true"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Fantasmagoria</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                    <div>
+                      <small>Programme · Import</small>
+                      <h1>Import from a sheet</h1>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button>Import 161, skip 3</button
+                    ><button class="primary">Import 164 as drafts</button>
+                  </div>
+                  <small
+                    >Program_2026.xlsx · sheet Program · 164 rows · 161 read · 3 need you</small
+                  >
+                  <div
+                    class="wf-card"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      border-color: var(--wf-warn);
+                    "
+                  >
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <small style="color: var(--wf-warn)"
+                        ><strong>Row 37 · Unknown room</strong></small
+                      >
+                      <div style="flex: 1"></div>
+                      <a href="#">Skip row</a>
+                    </div>
+                    <strong
+                      >A report from Reitaisai Festival and pro tips for Japanese
+                      conventions</strong
+                    ><small>Room in the sheet: „Sala Touhou”</small>
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <input value="Touhou Room · II LO ▾" style="width: 240px" /><button
+                        class="primary"
+                      >
+                        Use this room</button
+                      ><button>Add „Sala Touhou” as a room</button>
+                    </div>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      border-color: var(--wf-warn);
+                    "
+                  >
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <small style="color: var(--wf-warn)"
+                        ><strong>Row 52 · Unreadable time</strong></small
+                      >
+                      <div style="flex: 1"></div>
+                      <a href="#">Skip row</a>
+                    </div>
+                    <strong>Fantasy charades</strong><small>Time in the sheet: „Fri 20.xx”</small>
+                    <div style="display: flex; align-items: center; gap: 8px; white-space: nowrap">
+                      <label>Day<input value="Fri ▾" style="width: 80px" /></label
+                      ><label>Start<input value="20:00" style="width: 80px" /></label
+                      ><label>End<input value="20:50" style="width: 80px" /></label>
+                      <div style="flex: 1"></div>
+                      <button class="primary">Save</button>
+                    </div>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      border-color: var(--wf-warn);
+                    "
+                  >
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <small style="color: var(--wf-warn)"
+                        ><strong>Row 118 · Person without an email</strong></small
+                      >
+                      <div style="flex: 1"></div>
+                      <a href="#">Skip row</a>
+                    </div>
+                    <strong>Isms and phobias: prejudice and hate in RPG and pop culture</strong
+                    ><small>Host: Bartek „Grimm” Osika · no email in the sheet</small>
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <svg
+                        class="wf-icon"
+                        data-icon="mail"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        role="img"
+                        aria-label="Email"
+                      >
+                        <path
+                          d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z"
+                        ></path>
+                        <path d="M3 7l9 6l9 -6"></path></svg
+                      ><input value="email address" style="width: 240px" /><button class="primary">
+                        Save</button
+                      ><button>Import without an address</button>
+                    </div>
+                    <small class="wf-muted"
+                      >Without an address he cannot claim his entry; only the team sees it.</small
+                    >
+                  </div>
+                  <div class="wf-card" style="display: flex; align-items: center; gap: 10px">
+                    <svg
+                      class="wf-icon"
+                      data-icon="check"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      role="img"
+                      aria-label="Read"
+                    >
+                      <path d="M5 12l5 5l10 -10"></path></svg
+                    ><small style="flex: 1"
+                      >161 rows read: 25 rooms and zones in 2 buildings, 12 formats, „Pochodnia
+                      fandomu” as a group host</small
+                    ><a href="#">Show rows</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Each bad row: fix or skip</strong>The import reads every row it can and lists the
+          rest one by one: an unknown room, an unreadable time, a person without an email. Nothing
+          is guessed silently, and a skipped row can come in with the next import. Imported rows are
+          drafts, never public items.
+        </div>
+      </figure>
+      <figure class="board" id="ab-medium-reviews">
+        <figcaption class="t" style="width: 840px">
+          Fantasmagoria: reviews of an item <code>ab-medium-reviews</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 720px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+            data-rough-ready="true"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Fantasmagoria</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div>
+                    <small>Programme · How to write so they publish you?</small>
+                    <h1>Reviews</h1>
+                    <small>Saturday 11:00–11:50 · Sala Widowiskowa · MOK · Iga Wrzos</small>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+                      gap: 16px;
+                    "
+                  >
+                    <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+                      <div
+                        style="display: flex; align-items: center; gap: 8px; white-space: nowrap"
+                      >
+                        <strong>4.6 of 5</strong><small>8 shown · 1 hidden</small>
+                        <div style="flex: 1"></div>
+                        <span class="wf-pill">Newest ▾</span>
+                      </div>
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                        <div style="display: flex; align-items: center; gap: 8px">
+                          <small>★★★★★ · Sat 12:05</small>
+                          <div style="flex: 1"></div>
+                          <a href="#">Hide</a>
+                        </div>
+                        <small
+                          >Concrete advice on a first submission. I finally know what a synopsis is
+                          for.</small
+                        >
+                      </div>
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                        <div style="display: flex; align-items: center; gap: 8px">
+                          <small>★★★★☆ · Sat 12:31</small>
+                          <div style="flex: 1"></div>
+                          <a href="#">Hide</a>
+                        </div>
+                        <small>Great talk, too little time for questions.</small>
+                      </div>
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                        <div style="display: flex; align-items: center; gap: 8px">
+                          <small>★★★★★ · Sat 14:10 · no text</small>
+                          <div style="flex: 1"></div>
+                          <a href="#">Hide</a>
+                        </div>
+                      </div>
+                      <div
+                        class="wf-card"
+                        style="
+                          display: flex;
+                          flex-direction: column;
+                          gap: 4px;
+                          border-color: var(--wf-warn);
+                        "
+                      >
+                        <div style="display: flex; align-items: center; gap: 8px">
+                          <small style="color: var(--wf-warn)">Hidden by an org · Sat 13:20</small>
+                          <div style="flex: 1"></div>
+                          <a href="#">Show again</a>
+                        </div>
+                        <small class="wf-muted"
+                          >★☆☆☆☆ · Sat 13:02 · a remark about the speaker, not the item</small
+                        >
+                      </div>
+                      <a href="#">5 more reviews</a>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+                      <small><strong>What Iga Wrzos sees</strong></small>
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                        <strong>How to write so they publish you?</strong
+                        ><small>4.6 of 5 · 8 reviews</small
+                        ><small
+                          >„Concrete advice on a first submission. I finally know what a synopsis is
+                          for.”</small
+                        ><small>„Great talk, too little time for questions.”</small
+                        ><small class="wf-muted">No names. Hidden reviews do not show.</small>
+                      </div>
+                      <small class="wf-muted"
+                        >Reviews: on for this edition · Edition settings</small
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Reviews wait for their owner</strong>One variant only: a rating from 1 to 5 with
+          optional text, the speaker reading texts without names, an org hiding a review. Every rule
+          here waits for the domain owner of reviews (brief 0002), and whether reviews can be turned
+          off per edition is Q12.
+        </div>
+      </figure>
+      <figure class="board" id="ab-dni-items">
+        <figcaption class="t" style="width: 840px">
+          Dni Fantastyki: programme items <code>ab-dni-items</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 1200px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+            data-rough-ready="true"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                    <div>
+                      <h1>Programme items</h1>
+                      <small>Dni Fantastyki 2026 · 368 items</small>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button>Import</button
+                    ><button class="primary">
+                      <svg
+                        class="wf-icon"
+                        data-icon="plus"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        role="img"
+                        aria-label="Add"
+                      >
+                        <path d="M12 5l0 14"></path>
+                        <path d="M5 12l14 0"></path>
+                      </svg>
+                      New item
+                    </button>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 6px;
+                      white-space: nowrap;
+                      overflow: hidden;
+                      align-items: center;
+                    "
+                  >
+                    <span class="wf-pill accent">Block: Literature ▾</span
+                    ><span class="wf-pill">Room ▾</span><span class="wf-pill">Day ▾</span
+                    ><span class="wf-pill">State ▾</span
+                    ><label style="display: flex; align-items: center; gap: 6px"
+                      ><input type="checkbox" /> Unconfirmed cast · 2</label
+                    >
+                  </div>
+                  <div style="display: flex; gap: 6px; white-space: nowrap">
+                    <span class="wf-pill accent">All 52</span
+                    ><span class="wf-pill">Published 49</span><span class="wf-pill">Hidden 1</span
+                    ><span class="wf-pill">Cancelled 1</span><span class="wf-pill">Draft 1</span>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px 8px;
+                      white-space: normal;
+                      border-color: var(--wf-accent);
+                      flex-wrap: wrap;
+                    "
+                  >
+                    <strong style="flex-shrink: 0">2 selected</strong>
+                    <div style="flex: 1"></div>
+                    <button>Publish</button><button>Hide</button><button>Change block ▾</button
+                    ><button>Door cards</button><button>Cancel items…</button>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                  >
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          24px minmax(0, 2.4fr) 100px minmax(0, 1.3fr)
+                          60px 130px;
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        white-space: nowrap;
+                      "
+                    >
+                      <small></small><small><strong>Item</strong></small
+                      ><small><strong>When</strong></small
+                      ><small><strong>Room</strong></small
+                      ><small><strong>Cast</strong></small
+                      ><small><strong>State</strong></small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Elves in Polish fantasy</span
+                      ><small>Sat 11:00</small><small>Sala Rycerska · 2nd floor</small
+                      ><small>1/1</small><small>Published</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Destiny in fantasy sagas</span
+                      ><small>Sat 12:00</small><small>Sala Rycerska · 2nd floor</small
+                      ><small>1/1</small><small>Published</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Fantasy publishers: what next</span
+                      ><small>Sat 13:00</small><small>Sala Rycerska · 2nd floor</small
+                      ><small>3/3</small><small>Published</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Tolkien and mythology</span
+                      ><small>Sat 14:00</small><small>Sala Kominkowa · 1st floor</small
+                      ><small>1/1</small><small>Published</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Dragons for children: where they came from in fairy tales</span
+                      ><small>Sat 15:00</small><small>Namiot 2 · moat</small><small>1/1</small
+                      ><small>Published</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Author meeting with the guest of honour</span
+                      ><small>Sat 16:00</small><small>Sala Rycerska · 2nd floor</small
+                      ><small>3/3</small><small>Published</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" checked="" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Klub Fantastyki reads: stories of the year</span
+                      ><small>Sun 11:00</small><small>Sala Kominkowa · 1st floor</small
+                      ><small style="color: var(--wf-warn)">0/1</small
+                      ><span class="wf-pill accent">Hidden · 14 Aug</span>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Signing session: Elena Varga</span
+                      ><small>Sun 12:00</small><small>Namiot 2 · moat</small><small>1/1</small
+                      ><small>Published</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Writing a short story in an hour</span
+                      ><small>Sun 13:00</small><small>Sala Kominkowa · 1st floor</small
+                      ><small>1/1</small><span class="wf-pill accent">Cancelled · 12 Aug</span>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          24px minmax(0, 2.4fr) 100px minmax(0, 1.3fr)
+                          60px 130px;
+                        gap: 8px;
+                        padding: 8px 12px;
+                        align-items: center;
+                        white-space: nowrap;
+                      "
+                    >
+                      <input type="checkbox" checked="" /><span
+                        style="overflow: hidden; text-overflow: ellipsis"
+                        >Literature quiz: guess the book</span
+                      ><small>Sun 14:00</small><small class="wf-muted">no room</small
+                      ><small style="color: var(--wf-warn)">0/1</small
+                      ><span class="wf-pill accent">Draft</span>
+                    </div>
+                  </div>
+                  <small class="wf-muted">Showing 10 of 52 · sorted by day and time</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>One list, four states</strong>Draft, published, hidden and cancelled are the
+          states of an item, and a cancelled item stays listed with its time of change. Bulk actions
+          act on the selection; Cancel items asks in a modal that names the likes and cast to be
+          told. Hiding a published item with likes counts as a cancellation for them.
+        </div>
+      </figure>
+      <figure class="board" id="ab-dni-proposal-detail">
+        <figcaption class="t" style="width: 840px">
+          Dni Fantastyki: one proposal <code>ab-dni-proposal-detail</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 820px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+            data-rough-ready="true"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div>
+                    <small>Proposals · Pop culture · 27</small>
+                    <h2>Call for papers behind the scenes: how the programme team picks talks</h2>
+                    <div style="display: flex; gap: 6px; white-space: nowrap; align-items: center">
+                      <span class="wf-pill">Panel discussion</span
+                      ><span class="wf-pill">50 min</span
+                      ><small>Michał Rydz with Hanna Wilga and Igor Kos · submitted 14 June</small>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+                      gap: 14px;
+                    "
+                  >
+                    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                        <strong>In the programme</strong
+                        ><small
+                          >Three block coordinators open the call for papers: what we read first,
+                          why good topics lose, how to write a proposal that gets in.</small
+                        ><strong>For the programme team</strong
+                        ><small>The cast is block coordinators. Projector, 3 microphones.</small>
+                      </div>
+                      <div
+                        class="wf-card"
+                        style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            padding: 8px 12px;
+                            border-bottom: 1.4px solid var(--wf-line);
+                          "
+                        >
+                          <strong>Proposal selection</strong>
+                          <div style="flex: 1"></div>
+                          <small><strong>4.0 of 5</strong> · 3 assessors · team only</small>
+                        </div>
+                        <div
+                          style="
+                            display: flex;
+                            gap: 10px;
+                            padding: 8px 12px;
+                            border-bottom: 1.4px solid var(--wf-line);
+                          "
+                        >
+                          <small style="width: 110px">Ola Szpak · 5</small
+                          ><small style="flex: 1"
+                            >Useful for first-time speakers. Fits Saturday afternoon.</small
+                          >
+                        </div>
+                        <div
+                          style="
+                            display: flex;
+                            gap: 10px;
+                            padding: 8px 12px;
+                            border-bottom: 1.4px solid var(--wf-line);
+                          "
+                        >
+                          <small style="width: 110px">Nina Jawor · 4</small
+                          ><small style="flex: 1"
+                            >Good, but only coordinators on stage. Ask for one outside voice.</small
+                          >
+                        </div>
+                        <div
+                          style="
+                            display: flex;
+                            gap: 10px;
+                            padding: 8px 12px;
+                            border-bottom: 1.4px solid var(--wf-line);
+                          "
+                        >
+                          <small style="width: 110px">Piotr Leszczyna · 3</small
+                          ><small style="flex: 1"
+                            >Talked about at many conventions; keep it practical.</small
+                          >
+                        </div>
+                        <div style="padding: 8px 12px">
+                          <small class="wf-muted"
+                            >Igor Kos does not assess this proposal: he is in its cast.</small
+                          >
+                        </div>
+                      </div>
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                        <strong>Michał Rydz's other proposals · 1</strong>
+                        <div
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 4px 8px;
+                            flex-wrap: wrap;
+                            white-space: normal;
+                          "
+                        >
+                          <a href="#">Tolkien and mythology</a
+                          ><small style="flex-shrink: 0">Literature</small>
+                          <div style="flex: 1"></div>
+                          <span class="wf-pill">Accept · in the outbox</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                        <strong>Decision</strong>
+                        <label style="display: flex; align-items: center; gap: 8px"
+                          ><input type="radio" checked="" /> Accept</label
+                        >
+                        <label style="display: flex; align-items: center; gap: 8px"
+                          ><input type="radio" /> Reserve list</label
+                        >
+                        <label style="display: flex; align-items: center; gap: 8px"
+                          ><input type="radio" /> Decline</label
+                        >
+                        <label
+                          >Note to the proposer (optional)<input
+                            value="We would like one panelist from outside the team."
+                        /></label>
+                        <small class="wf-muted"
+                          >Waits in the outbox until the block's decisions are sent.</small
+                        >
+                        <button class="primary">Save decision</button>
+                      </div>
+                      <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                        <strong>History</strong><small>14 Jun · submitted by Michał Rydz</small
+                        ><small>15 Jun · Hanna Wilga accepted the invitation</small
+                        ><small>16 Jun · Igor Kos accepted the invitation</small
+                        ><small>30 Jun · call closed</small><small>7 Jul · 3 of 3 assessments</small
+                        ><small>8 Jul · decision: accept, in the outbox</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Assessments stay with the team</strong>Scores and comments are seen by the
+          programme team only; the proposer sees the status and the decision. A cast member does not
+          assess their own proposal. The decision waits in the outbox and leaves with the block’s
+          decisions after a preview (Q25 for how long assessments are kept).
+        </div>
+      </figure>
+      <figure class="board" id="ab-dni-first-run">
+        <figcaption class="t" style="width: 840px">
+          Dni Fantastyki: new edition, nothing yet <code>ab-dni-first-run</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 760px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+            data-rough-ready="true"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span class="wf-pill accent">Dashboard</span><span>Programme</span
+                  ><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">head</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div>
+                    <h1>Dni Fantastyki 2026</h1>
+                    <small>New edition · no items yet</small>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                    <strong>Copy from an earlier edition</strong
+                    ><small
+                      >There is no earlier edition of Dni Fantastyki in OPOS. Next year you can copy
+                      rooms, dictionaries and switches from this one.</small
+                    >
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 10px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <strong>Set up the programme</strong>
+                      <div style="flex: 1"></div>
+                      <small>0 of 6 · every step can wait</small>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        padding: 10px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <small style="width: 18px">1</small>
+                      <div style="flex: 1; min-width: 0">
+                        <strong>Rooms and spaces</strong><br /><small
+                          >None yet. Rooms give the grid its columns and show floors and step-free
+                          entry.</small
+                        >
+                      </div>
+                      <button>Import from a sheet</button
+                      ><button class="primary">Add a room</button>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        padding: 10px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <small style="width: 18px">2</small>
+                      <div style="flex: 1; min-width: 0">
+                        <strong>Blocks</strong><br /><small
+                          >Optional. Without blocks the field stays hidden everywhere.</small
+                        >
+                      </div>
+                      <button>Add blocks</button>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        padding: 10px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <small style="width: 18px">3</small>
+                      <div style="flex: 1; min-width: 0">
+                        <strong>Formats, age ratings, languages</strong><br /><small
+                          >Optional. Each field shows once its list has entries.</small
+                        >
+                      </div>
+                      <button>Open dictionaries</button>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        padding: 10px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <small style="width: 18px">4</small>
+                      <div style="flex: 1; min-width: 0">
+                        <strong>Call for proposals</strong><br /><small
+                          >Off. Set the dates to turn it on.</small
+                        >
+                      </div>
+                      <div style="display: flex; gap: 6px">
+                        <input value="Opens" style="width: 90px" /><input
+                          value="Closes"
+                          style="width: 90px"
+                        /><input value="Decisions by" style="width: 110px" />
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        padding: 10px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <small style="width: 18px">5</small>
+                      <div style="flex: 1; min-width: 0">
+                        <strong>Programme team</strong><br /><small>Only you so far.</small>
+                      </div>
+                      <button>Invite orgs</button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px">
+                      <small style="width: 18px">6</small>
+                      <div style="flex: 1; min-width: 0">
+                        <strong>When the programme comes out</strong><br /><small
+                          >The portal shows this date until the first publication.</small
+                        >
+                      </div>
+                      <input value="Date" style="width: 110px" />
+                    </div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small class="wf-muted">Nothing here is needed to add the first item.</small>
+                    <div style="flex: 1"></div>
+                    <button>
+                      <svg
+                        class="wf-icon"
+                        data-icon="plus"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        role="img"
+                        aria-label="Add"
+                      >
+                        <path d="M12 5l0 14"></path>
+                        <path d="M5 12l14 0"></path>
+                      </svg>
+                      New item
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>A first edition copies nothing</strong>A convention’s first edition in OPOS starts
+          from an empty checklist where every step can wait; the item form shows title, description,
+          day, times and cast until a dictionary has entries. From the second edition the copy card
+          offers the previous one, as in ab-small-copy. Who may turn the call for proposals on is
+          Q10.
+        </div>
+      </figure>
+    </main>
+  </body>
+</html>

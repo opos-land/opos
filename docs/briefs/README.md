@@ -22,7 +22,8 @@ through the browser, research or notes that state business needs before they bec
 
 ## Index
 
-| Brief                                  | Holds                                                                                                                                                             |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [0001](0001-convention-shop.md)        | the convention shop, from an outside review of a running system reworked against the product's decisions: the working copy toward the specs of the tickets module |
-| [0002](0002-convention-shop-review.md) | a review of 0001: gaps in payments read against the Przelewy24 documentation, consumer law and the practice of online shops, for the domain owner to decide       |
+| Brief                                              | Holds                                                                                                                                                                                                                                          |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0001](0001-convention-shop.md)                    | the convention shop, from an outside review of a running system reworked against the product's decisions: the working copy toward the specs of the tickets module                                                                              |
+| [0002](0002-convention-shop-review.md)             | a review of 0001: gaps in payments read against the Przelewy24 documentation, consumer law and the practice of online shops, for the domain owner to decide                                                                                    |
+| [0003](0003-programme-across-convention-scales.md) | the programme module across convention scales: one module configured per convention for Nordcon, Fantasmagoria, Dni Fantastyki and Pyrkon, with the research, synthetic personas and 87 wireframes behind it, worked toward the programme spec |

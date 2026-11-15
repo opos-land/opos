@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OPOS programme wireframes</title>
+    <style>
+      .plan-html-frame {
+        --wf-font: var(--wf-font-clean);
+      }
+      .plan-html-frame .wf-pill,
+      .plan-html-frame .wf-chip {
+        flex-shrink: 0;
+      }
+      body {
+        margin: 0;
+        background: #f4f4f2;
+        color: #1a1a1a;
+        font:
+          14px/1.5 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+      header.page {
+        padding: 24px 32px 8px;
+      }
+      header.page h1 {
+        margin: 0 0 4px;
+        font-size: 22px;
+      }
+      header.page p {
+        margin: 4px 0;
+        color: #555;
+        max-width: 900px;
+      }
+      nav.pages {
+        padding: 0 32px 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        font-size: 13px;
+      }
+      nav.pages a {
+        color: #333;
+      }
+      main.boards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 32px;
+        padding: 16px 32px 48px;
+        align-items: flex-start;
+      }
+      figure.board {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      figure.board > figcaption.t {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      figure.board > figcaption.t code {
+        font-weight: 400;
+        color: #777;
+        font-size: 12px;
+      }
+      .screen {
+        background: #fff;
+        border: 1px solid #d6d6d2;
+        border-radius: 14px;
+        overflow: hidden;
+        position: relative;
+      }
+      .screen.mobile {
+        border-radius: 22px;
+      }
+      .note {
+        background: #fffbe6;
+        border: 1px solid #ece3b5;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+      .note strong {
+        display: block;
+      }
+      ul.index li {
+        margin: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page">
+      <h1>OPOS programme module: wireframes</h1>
+      <p>
+        Screens of the programme module for four conventions (Nordcon, Fantasmagoria, Dni
+        Fantastyki, Pyrkon) and a Worldcon stress test. Wireframes for discussion, not designs:
+        sample data only, convention settings are assumptions, and all people shown are invented.
+        See the brief beside this folder for the model, the feature matrix and the open questions.
+      </p>
+    </header>
+    <main style="padding: 0 32px 48px">
+      <ul class="index">
+        <li>
+          <a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+            >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+          >
+          (4 screens)
+        </li>
+        <li>
+          <a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a>
+          (4 screens)
+        </li>
+        <li>
+          <a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+            >3. Portal: my schedule, proposing an item, speaker screen</a
+          >
+          (4 screens)
+        </li>
+        <li>
+          <a href="04-at-the-room-door-volunteer-and-scanner.html"
+            >4. At the room door: volunteer and scanner</a
+          >
+          (3 screens)
+        </li>
+        <li>
+          <a href="05-panel-programme-settings-of-an-edition.html"
+            >5. Panel: programme settings of an edition</a
+          >
+          (4 screens)
+        </li>
+        <li>
+          <a href="06-panel-programme-dictionaries-and-the-item-form.html"
+            >6. Panel: programme dictionaries and the item form</a
+          >
+          (4 screens)
+        </li>
+        <li>
+          <a href="07-panel-building-the-programme.html">7. Panel: building the programme</a> (4
+          screens)
+        </li>
+        <li>
+          <a href="08-panel-changes-during-the-convention-and-entitlements.html"
+            >8. Panel: changes during the convention and entitlements</a
+          >
+          (3 screens)
+        </li>
+        <li>
+          <a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+            >9. Worldcon: stress test of the model (not for delivery)</a
+          >
+          (4 screens)
+        </li>
+        <li>
+          <a href="10-portal-programme-people-and-guests.html"
+            >10. Portal: programme people and guests</a
+          >
+          (4 screens)
+        </li>
+        <li>
+          <a href="11-portal-changes-now-and-next-rooms-reminders.html"
+            >11. Portal: changes, now and next, rooms, reminders</a
+          >
+          (8 screens)
+        </li>
+        <li>
+          <a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+            >12. Portal: the speaker from acceptance to the day of the item</a
+          >
+          (8 screens)
+        </li>
+        <li>
+          <a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+            >13. Panel: programme team, people, panels and the programme release</a
+          >
+          (8 screens)
+        </li>
+        <li>
+          <a href="14-panel-the-programme-during-the-convention.html"
+            >14. Panel: the programme during the convention</a
+          >
+          (4 screens)
+        </li>
+        <li>
+          <a href="15-panel-head-dictionaries-team-and-programme-status.html"
+            >15. Panel: head, dictionaries, team and programme status</a
+          >
+          (5 screens)
+        </li>
+        <li>
+          <a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+            >16. Portal: sign-ups, lottery, declines and empty states</a
+          >
+          (9 screens)
+        </li>
+        <li>
+          <a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+            >17. Panel: item list, proposals, announcements and re-import</a
+          >
+          (7 screens)
+        </li>
+      </ul>
+      <p style="color: #555; max-width: 900px">
+        Open the pages in a browser from a checkout; GitHub shows HTML as source. Wireframe styles
+        come from the Agent-Native Plans renderer and the icons from Tabler Icons, both under the
+        MIT License.
+      </p>
+    </main>
+  </body>
+</html>

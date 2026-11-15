@@ -10,14 +10,7 @@ locals {
     admin  = "admin.${var.zone}"
   }
 
-  # Where each service listens, for Coolify's proxy
-  ports = {
-    portal = 8080
-    panel  = 8080
-    api    = 3001
-    admin  = 8080
-  }
-
+  # The address of each service
   url = { for service, host in local.hosts : service => "https://${host}" }
 }
 
@@ -41,9 +34,11 @@ resource "coolify_application" "this" {
   ports_exposes           = "3001"
 
   # Coolify reads the compose file from the repository during a deployment, and refuses the hosts of
-  # its services before; a new deployment is applied once without them
+  # its services before; a new deployment is applied once without them. No host names a port: the
+  # proxy routes to the one a service exposes in the compose file, and Coolify hands back no port
+  # it was given, which the provider then takes for a change
   docker_compose_domains = var.compose_loaded ? jsonencode([
-    for service, host in local.hosts : { name = service, domain = "https://${host}:${local.ports[service]}" }
+    for service, host in local.hosts : { name = service, domain = "https://${host}" }
   ]) : null
 
   autogenerate_domain    = false

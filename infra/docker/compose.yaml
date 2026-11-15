@@ -1,8 +1,8 @@
 # One deployment: Coolify builds every image on the server from the repository at the head of the
 # branch it follows, runs the database steps, then starts the API
 # (docs/adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md).
-# Each service but the tools has a host of its own, which Coolify's proxy routes to the port named
-# with the host in the deployment's unit (infra/modules/deployment). The variables are the
+# Each service but the tools has a host of its own, which Coolify's proxy routes to the one port the
+# service exposes; the deployment's unit (infra/modules/deployment) names the hosts alone. The variables are the
 # application's in Coolify, set by that unit; none is written here. Paths are relative to the
 # repository root, which Coolify passes as the project directory:
 #
@@ -31,6 +31,8 @@ services:
       dockerfile: infra/docker/Dockerfile
       target: api
     restart: unless-stopped
+    expose:
+      - '3001'
     depends_on:
       tools:
         condition: service_healthy
@@ -66,6 +68,8 @@ services:
         APP: panel
         VITE_API_URL: ${API_URL:?}
     restart: unless-stopped
+    expose:
+      - '8080'
     environment:
       BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
       BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
@@ -79,6 +83,8 @@ services:
         APP: portal
         VITE_API_URL: ${API_URL:?}
     restart: unless-stopped
+    expose:
+      - '8080'
     environment:
       BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
       BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
@@ -92,6 +98,8 @@ services:
         APP: admin
         VITE_API_URL: ${API_URL:?}
     restart: unless-stopped
+    expose:
+      - '8080'
     environment:
       BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
       BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}

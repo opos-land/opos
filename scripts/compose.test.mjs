@@ -37,6 +37,39 @@ export function environments(text) {
   return services
 }
 
+/** The ports each service lists under `expose`, read by indentation from the compose file. */
+export function exposed(text) {
+  const services = {}
+  let service = null
+  let inExpose = false
+  for (const line of text.split('\n')) {
+    if (/^\S/.test(line)) {
+      service = null
+      continue
+    }
+    const serviceName = /^ {2}([\w-]+):\s*$/.exec(line)
+    if (serviceName) {
+      service = serviceName[1]
+      services[service] = []
+      inExpose = false
+      continue
+    }
+    if (service === null) continue
+    if (/^ {4}expose:\s*$/.test(line)) {
+      inExpose = true
+      continue
+    }
+    if (/^ {4}\S/.test(line)) inExpose = false
+    const port = /^ {6}- '?(\d+)'?\s*$/.exec(line)
+    if (inExpose && port) services[service].push(port[1])
+  }
+  return services
+}
+
+// Coolify's proxy routes a host to the one port its service exposes: the domains of the deployment
+// name none (infra/modules/deployment)
+const PORTS = { api: ['3001'], panel: ['8080'], portal: ['8080'], admin: ['8080'], tools: [] }
+
 const MIGRATION_ONLY = /^(DATABASE_MIGRATION_URL|OPOS_\w+_PASSWORD)$/
 
 describe('the compose file of a deployment', () => {
@@ -65,5 +98,14 @@ describe('the compose file of a deployment', () => {
       '      DATABASE_URL: ${DATABASE_URL:?}\n      DATABASE_MIGRATION_URL: ${DATABASE_MIGRATION_URL:?}',
     )
     assert.ok(environments(leaked).api.includes('DATABASE_MIGRATION_URL'))
+  })
+
+  it('exposes the one port each routed service listens on, and none of the tools', () => {
+    assert.deepEqual(exposed(compose), PORTS)
+  })
+
+  it('catches a routed service that exposes no port', () => {
+    const unexposed = compose.replace(/^ {4}expose:\n {6}- '3001'\n/m, '')
+    assert.deepEqual(exposed(unexposed).api, [])
   })
 })

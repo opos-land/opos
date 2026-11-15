@@ -67,7 +67,7 @@ jobs:
       # The second run fails where a constraint refuses a row; packages/db/test/seed.test.ts holds
       # the row counts across two runs
       - run: pnpm db:seed && pnpm db:seed
-      - run: pnpm turbo run typecheck lint $TURBO_ARGS
+      - run: pnpm turbo run typecheck lint ${TURBO_ARGS:+"$TURBO_ARGS"}
         env:
           # A pull request runs what it affects, a push runs everything and runs it uncached
           TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
@@ -83,7 +83,7 @@ jobs:
           TURBO_CACHE: ${{ github.event_name == 'push' && 'local:rw,remote:rw' || 'local:rw,remote:r' }}
       # In a step of their own: this runner also hosts the stack, and the type checker and the linter
       # would take the time the tests' deadlines count on
-      - run: pnpm turbo run test $TURBO_ARGS
+      - run: pnpm turbo run test ${TURBO_ARGS:+"$TURBO_ARGS"}
         env:
           TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
           TURBO_FORCE: ${{ github.event_name == 'push' }}

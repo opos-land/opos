@@ -7,17 +7,20 @@ import { describe, it } from 'node:test'
 
 const compose = readFileSync(new URL('../infra/docker/compose.yaml', import.meta.url), 'utf8')
 
-/** The variables of each service's `environment`, read by indentation from the compose file. */
+/** The variables of each service's `environment`, read by indentation from `services`. */
 export function environments(text) {
   const services = {}
+  let inServices = false
   let service = null
   let inEnvironment = false
   for (const line of text.split('\n')) {
     if (/^\S/.test(line)) {
+      inServices = /^services:\s*$/.test(line)
       service = null
       inEnvironment = false
       continue
     }
+    if (!inServices) continue
     const serviceName = /^ {2}([\w-]+):\s*$/.exec(line)
     if (serviceName) {
       service = serviceName[1]
@@ -37,16 +40,19 @@ export function environments(text) {
   return services
 }
 
-/** The ports each service lists under `expose`, read by indentation from the compose file. */
+/** The ports each service lists under `expose`, read by indentation from `services`. */
 export function exposed(text) {
   const services = {}
+  let inServices = false
   let service = null
   let inExpose = false
   for (const line of text.split('\n')) {
     if (/^\S/.test(line)) {
+      inServices = /^services:\s*$/.test(line)
       service = null
       continue
     }
+    if (!inServices) continue
     const serviceName = /^ {2}([\w-]+):\s*$/.exec(line)
     if (serviceName) {
       service = serviceName[1]
@@ -67,8 +73,15 @@ export function exposed(text) {
 }
 
 // Coolify's proxy routes a host to the one port its service exposes: the domains of the deployment
-// name none (infra/modules/deployment)
-const PORTS = { api: ['3001'], panel: ['8080'], portal: ['8080'], admin: ['8080'], tools: [] }
+// name none (infra/modules/deployment). Mail's own port, 1025, stays inside the deployment's network.
+const PORTS = {
+  api: ['3001'],
+  panel: ['8080'],
+  portal: ['8080'],
+  admin: ['8080'],
+  mail: ['8025'],
+  tools: [],
+}
 
 const MIGRATION_ONLY = /^(DATABASE_MIGRATION_URL|OPOS_\w+_PASSWORD)$/
 
@@ -76,7 +89,14 @@ describe('the compose file of a deployment', () => {
   const services = environments(compose)
 
   it('reads every service with its variables', () => {
-    assert.deepEqual(Object.keys(services).sort(), ['admin', 'api', 'panel', 'portal', 'tools'])
+    assert.deepEqual(Object.keys(services).sort(), [
+      'admin',
+      'api',
+      'mail',
+      'panel',
+      'portal',
+      'tools',
+    ])
     assert.ok(services.api.includes('DATABASE_URL'))
   })
 

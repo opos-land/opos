@@ -93,17 +93,18 @@ unit "deployment" {
 
   # deploy:apply --ref runs another branch or tag than env.yaml's, until an apply without it
   values = {
-    zone           = local.env.dns.zone
-    name           = local.deployment.name
-    project_uuid   = local.env.coolify.project_uuid
-    server_uuid    = local.env.coolify.server_uuid
-    ipv4           = local.env.coolify.ipv4
-    ipv6           = try(local.env.coolify.ipv6, null)
-    repository     = local.deployment.repository
-    branch         = get_env("DEPLOY_REF", local.deployment.branch)
-    compose_loaded = local.deployment.compose_loaded
-    supabase_ref   = local.supabase.ref
-    mail_from      = local.mail.from
+    zone            = local.env.dns.zone
+    name            = local.deployment.name
+    project_uuid    = local.env.coolify.project_uuid
+    server_uuid     = local.env.coolify.server_uuid
+    ipv4            = local.env.coolify.ipv4
+    ipv6            = try(local.env.coolify.ipv6, null)
+    repository      = local.deployment.repository
+    branch          = get_env("DEPLOY_REF", local.deployment.branch)
+    loaded_services = local.deployment.loaded_services
+    catch_mail      = local.deployment.catch_mail
+    supabase_ref    = local.supabase.ref
+    mail_from       = local.mail.from
 
     # The secret holding each value; the supabase unit makes the secret key's, the shared unit
     # smtp-password

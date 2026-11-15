@@ -54,8 +54,13 @@ variable "branch" {
   type        = string
 }
 
-variable "compose_loaded" {
-  description = "Whether a deployment has already read the compose file: Coolify takes the hosts of its services only then"
+variable "loaded_services" {
+  description = "The services a deployment has already read from the compose file: Coolify takes a service's host only then"
+  type        = list(string)
+}
+
+variable "catch_mail" {
+  description = "Whether the API's mail goes to the deployment's own catcher, behind basic auth at mail.<zone>, instead of the mail unit's relay"
   type        = bool
 }
 

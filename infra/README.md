@@ -126,9 +126,11 @@ The steps for Dev; another environment follows them with its own names.
    `deploy:plan` alone mocks what is not applied yet, to preview the whole stack.
 
    The `deployment` unit deploys once and waits for it: Coolify reads the compose file, the tools
-   run the database steps, the API starts. Coolify takes the hosts of the services only after that
-   first deployment, so set `deployment.compose_loaded` in `live/dev/env.yaml` to `true` and apply
-   again. The hosts' certificates follow on their own once their records resolve.
+   run the database steps, the API starts. Coolify takes the host of a service only once a
+   deployment has read it, so list the services in `deployment.loaded_services` of
+   `live/dev/env.yaml` and apply again; a service added to the compose file later is listed after
+   the deployment that brings it. The hosts' certificates follow on their own once their records
+   resolve.
 
 9. Check the remote cache and the deployment, below.
 
@@ -162,7 +164,11 @@ Coolify, built on the server from the head of `develop`
 | panel   | `https://panel.dev.opos.land` |
 | api     | `https://api.dev.opos.land`   |
 | admin   | `https://admin.dev.opos.land` |
+| mail    | `https://mail.dev.opos.land`  |
 
+- **Mail.** Dev's mail never leaves the server: the API sends it to Mailpit, the `mail` service
+  (`deployment.catch_mail` in `env.yaml`), whose inbox is at its address. The `mail` unit still
+  keeps the domain's records for a deployment that sends.
 - **Basic auth.** Every service but the API asks for the user `opos` and the value of the secret
   `basic-auth-password`:
   `scw secret version access-by-path secret-path=/ secret-name=basic-auth-password revision=latest_enabled`,
@@ -182,7 +188,7 @@ Coolify, built on the server from the head of `develop`
 | the tools container's log                       | the roles, the migrations and the verification passed |
 | `https://api.dev.opos.land/health`              | `200`, without basic auth                             |
 | the portal, the panel and the admin application | basic auth, then the application                      |
-| a sign-up on the portal                         | the confirmation mail, from `no-reply@dev.opos.land`  |
+| a sign-up on the portal                         | the confirmation mail in `https://mail.dev.opos.land` |
 | the `release` job of a push to `develop`        | "Released", and the commit running in Coolify         |
 
 The API reaches the project over its direct connection, which on a Free project is IPv6 alone

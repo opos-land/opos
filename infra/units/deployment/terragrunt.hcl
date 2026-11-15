@@ -1,5 +1,5 @@
 # One deployment of the environment on the Coolify server, with its hosts. Values: zone, name,
-# project_uuid, server_uuid, ipv4, ipv6 (optional), repository, branch, compose_loaded,
+# project_uuid, server_uuid, ipv4, ipv6 (optional), repository, branch, loaded_services, catch_mail,
 # supabase_ref, mail_from, secrets. The relay, smtp_host, smtp_port and smtp_user, comes from the
 # stack's mail unit, and produced, the markers of the secrets other units write, from theirs.
 
@@ -26,7 +26,8 @@ inputs = {
   ipv6                 = try(values.ipv6, null)
   repository           = values.repository
   branch               = values.branch
-  compose_loaded       = values.compose_loaded
+  loaded_services      = values.loaded_services
+  catch_mail           = values.catch_mail
   supabase_ref         = values.supabase_ref
   secrets              = values.secrets
   mail_from            = values.mail_from

@@ -53,8 +53,9 @@ services:
       ADMIN_URL: ${ADMIN_URL:?}
       SMTP_HOST: ${SMTP_HOST:?}
       SMTP_PORT: ${SMTP_PORT:?}
-      SMTP_USER: ${SMTP_USER:?}
-      SMTP_PASS: ${SMTP_PASS:?}
+      # Empty for a deployment that catches its mail, whose catcher asks for no credentials
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:?}
 
   # The frontends, each built for the API's address; behind basic auth when BASIC_AUTH_PASSWORD
@@ -103,3 +104,26 @@ services:
     environment:
       BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
       BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
+
+  # Catches the mail of a deployment whose API sends to it (catch_mail of infra/modules/deployment):
+  # nothing leaves the server, and its inbox page asks for the frontends' basic auth. The API sends
+  # to port 1025 inside the deployment's network; only the page is routed.
+  mail:
+    image: axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
+    restart: unless-stopped
+    expose:
+      - '8025'
+    environment:
+      MP_UI_AUTH: ${BASIC_AUTH_USER:-opos}:${BASIC_AUTH_PASSWORD:?}
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_AGE: 7d
+    volumes:
+      - mail:/data
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8025/livez']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mail:

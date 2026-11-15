@@ -3,12 +3,18 @@
 # never which commit runs; CI releases (docs/adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md).
 
 locals {
-  hosts = {
-    portal = var.zone
-    panel  = "panel.${var.zone}"
-    api    = "api.${var.zone}"
-    admin  = "admin.${var.zone}"
-  }
+  hosts = merge(
+    {
+      portal = var.zone
+      panel  = "panel.${var.zone}"
+      api    = "api.${var.zone}"
+      admin  = "admin.${var.zone}"
+    },
+    # The inbox page of the mail it catches
+    var.catch_mail ? { mail = "mail.${var.zone}" } : {},
+  )
+  # The hosts Coolify takes now
+  routed = { for service, host in local.hosts : service => host if contains(var.loaded_services, service) }
 
   # The address of each service
   url = { for service, host in local.hosts : service => "https://${host}" }
@@ -33,15 +39,15 @@ resource "coolify_application" "this" {
   docker_compose_location = "/infra/docker/compose.yaml"
   ports_exposes           = "3001"
 
-  # Coolify reads the compose file from the repository during a deployment, and refuses the hosts of
-  # its services before; a new deployment is applied once without them. No host names a port: the
-  # proxy routes to the one a service exposes in the compose file, and Coolify hands back no port
-  # it was given, which the provider then takes for a change. Written as Coolify hands it back, name
-  # before domain and the services in order: jsonencode sorts the keys, and the provider plans that
-  # difference as a change it then sends no field for, which Coolify refuses
-  docker_compose_domains = var.compose_loaded ? format("[%s]", join(",", [
-    for service, host in local.hosts : format("{\"name\":%q,\"domain\":%q}", service, "https://${host}")
-  ])) : null
+  # Coolify reads the compose file from the repository during a deployment and drops the host of a
+  # service it has not read yet: only the services of loaded_services get theirs. No host names a
+  # port: the proxy routes to the one a service exposes in the compose file, and Coolify hands back
+  # no port it was given, which the provider then takes for a change. Written as Coolify hands it
+  # back, name before domain and the services in order: jsonencode sorts the keys, and the provider
+  # plans that difference as a change it then sends no field for, which Coolify refuses
+  docker_compose_domains = length(local.routed) == 0 ? null : format("[%s]", join(",", [
+    for service, host in local.routed : format("{\"name\":%q,\"domain\":%q}", service, "https://${host}")
+  ]))
 
   autogenerate_domain    = false
   is_force_https_enabled = true
@@ -74,7 +80,19 @@ locals {
 
   database = "db.${var.supabase_ref}.supabase.co:5432/postgres?sslmode=verify-full"
 
-  environment = {
+  # The API sends to the catcher of the compose file, which takes no credentials, or through the
+  # mail unit's relay
+  smtp = {
+    catcher = { SMTP_HOST = "mail", SMTP_PORT = "1025" }
+    relay = {
+      SMTP_HOST = var.smtp_host
+      SMTP_PORT = tostring(var.smtp_port)
+      SMTP_USER = var.smtp_user
+      SMTP_PASS = local.secret.smtp_password
+    }
+  }[var.catch_mail ? "catcher" : "relay"]
+
+  environment = merge(local.smtp, {
     OPOS_ENV = "dev"
 
     DATABASE_MIGRATION_URL   = "postgres://postgres:${urlencode(local.secret.supabase_db_password)}@${local.database}"
@@ -96,14 +114,10 @@ locals {
     PORTAL_URL = local.url.portal
     ADMIN_URL  = local.url.admin
 
-    SMTP_HOST = var.smtp_host
-    SMTP_PORT = tostring(var.smtp_port)
-    SMTP_USER = var.smtp_user
-    SMTP_PASS = local.secret.smtp_password
     MAIL_FROM = var.mail_from
 
     BASIC_AUTH_PASSWORD = local.secret.basic_auth_password
-  }
+  })
 }
 
 resource "coolify_environment_variable" "this" {

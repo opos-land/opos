@@ -335,8 +335,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 | Deployed by | the developer           | a push to `develop`                       | a push to `main`, after a reviewer |
 
 - `OPOS_ENV` is the one switch between environments; a fake payment provider serves `local` and
-  `dev`. Mailpit takes the mail of `local`; a deployed environment sends through Scaleway's
-  Transactional Email, from its own domain
+  `dev`. Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
+  through Scaleway's Transactional Email, from its own domain
   ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
 - Dev and production are not deployed yet. Dev runs in a project of its own on a shared Coolify
   server, made by the server's owner; the deployment makes only environments inside it. Production

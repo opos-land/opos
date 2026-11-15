@@ -50,19 +50,36 @@
         >17. Panel: item list, proposals, announcements and re-import</a
       >
     </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
     <main class="boards">
       <figure class="board" id="ab-dni-speaker-profile">
         <figcaption class="t" style="width: 300px">
           Dni Fantastyki: my speaker profile <code>ab-dni-speaker-profile</code>
         </figcaption>
-        <div class="screen mobile" style="width: 300px; height: 830px">
+        <div class="screen mobile" style="width: 300px; height: 800px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -77,6 +94,8 @@
               >
                 <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                   <svg
+                    role="img"
+                    aria-label="Back"
                     class="wf-icon"
                     data-icon="arrowLeft"
                     xmlns="http://www.w3.org/2000/svg"
@@ -88,15 +107,15 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Back"
                   >
                     <path d="M5 12l14 0"></path>
                     <path d="M5 12l6 6"></path>
                     <path d="M5 12l6 -6"></path></svg
-                  ><small>Dni Fantastyki 2026</small>
+                  ><small>Dni Fantastyki</small>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -108,62 +127,26 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
                   </svg>
                 </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">My items</span><span class="wf-pill">Availability</span
+                  ><span class="wf-pill accent">Profile</span>
+                </div>
                 <h2>My speaker profile</h2>
                 <label style="display: flex; align-items: center; gap: 8px; white-space: nowrap"
                   ><input type="checkbox" /> Preview: how attendees see you</label
                 >
-                <div style="display: flex; gap: 12px; align-items: center">
-                  <div
-                    style="
-                      width: 88px;
-                      height: 88px;
-                      flex: none;
-                      border: 1.4px dashed var(--wf-line);
-                      border-radius: var(--wf-radius);
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                    "
-                  >
-                    <svg
-                      class="wf-icon"
-                      data-icon="user"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="1em"
-                      height="1em"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      role="img"
-                      aria-label="Photo"
-                    >
-                      <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
-                      <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
-                    </svg>
-                  </div>
-                  <div
-                    style="display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1"
-                  >
-                    <small>We crop the photo to a square</small><button>Change photo</button>
-                  </div>
-                </div>
                 <label>Display name<input value="Michał Rydz" /></label>
                 <small class="wf-muted">Anything: a name, pseudonym, group or title</small>
                 <div style="display: flex; flex-direction: column; gap: 4px">
                   <small>Bio</small>
                   <div class="wf-box">
                     <small
-                      >Speaker and fantasy fan since 2009. At Dni Fantastyki he talks about
+                      >Speaker and fantasy fan since 2009. At Dni Fantastyki they talk about
                       mythology in Tolkien and about how the call for proposals works from the
                       inside. By day an editor and the author of a blog about fandom.</small
                     >
@@ -196,6 +179,8 @@
                       >
                       <div style="flex: 1"></div>
                       <svg
+                        role="img"
+                        aria-label="Remove"
                         class="wf-icon"
                         data-icon="x"
                         xmlns="http://www.w3.org/2000/svg"
@@ -207,8 +192,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Remove"
                       >
                         <path d="M18 6l-12 12"></path>
                         <path d="M6 6l12 12"></path>
@@ -229,6 +212,8 @@
                       >
                       <div style="flex: 1"></div>
                       <svg
+                        role="img"
+                        aria-label="Remove"
                         class="wf-icon"
                         data-icon="x"
                         xmlns="http://www.w3.org/2000/svg"
@@ -240,8 +225,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Remove"
                       >
                         <path d="M18 6l-12 12"></path>
                         <path d="M6 6l12 12"></path>
@@ -250,6 +233,8 @@
                   </div>
                   <a href="#"
                     ><svg
+                      role="img"
+                      aria-label="Add"
                       class="wf-icon"
                       data-icon="plus"
                       xmlns="http://www.w3.org/2000/svg"
@@ -261,8 +246,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="Add"
                     >
                       <path d="M12 5l0 14"></path>
                       <path d="M5 12l14 0"></path>
@@ -277,29 +260,45 @@
                 </div>
                 <div style="flex: 1"></div>
                 <button class="primary">Save profile</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div class="note" style="width: 300px; box-sizing: border-box">
-          <strong>Any display name, bio up to 100 words</strong>A display name takes a pseudonym, a
-          group or a title, as at Fantasmagoria and Nordcon. A bio stops at 100 words, while a guest
-          of honour’s has no limit, and there is no like on a person. Conventions: Fantasmagoria,
-          Dni Fantastyki, Pyrkon, and Nordcon once a person claims an entry.
+          <strong>Any display name, bio up to 100 words</strong>One profile serves every edition,
+          with no photo until file uploads exist. A display name takes a pseudonym, a group or a
+          title, as at Fantasmagoria and Nordcon. A bio stops at 100 words, while a guest of
+          honour’s has no limit, and there is no like on a person; conventions: Fantasmagoria, Dni
+          Fantastyki, Pyrkon, and Nordcon once a person claims an entry.
         </div>
       </figure>
       <figure class="board" id="ab-dni-confirm">
         <figcaption class="t" style="width: 300px">
           Dni Fantastyki: confirm your items <code>ab-dni-confirm</code>
         </figcaption>
-        <div class="screen mobile" style="width: 300px; height: 950px">
+        <div class="screen mobile" style="width: 300px; height: 1010px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -314,6 +313,8 @@
               >
                 <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                   <svg
+                    role="img"
+                    aria-label="Back"
                     class="wf-icon"
                     data-icon="arrowLeft"
                     xmlns="http://www.w3.org/2000/svg"
@@ -325,8 +326,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Back"
                   >
                     <path d="M5 12l14 0"></path>
                     <path d="M5 12l6 6"></path>
@@ -334,6 +333,8 @@
                   ><small>Dni Fantastyki 2026</small>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -345,12 +346,14 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
                   </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill accent">My items</span
+                  ><span class="wf-pill">Availability</span><span class="wf-pill">Profile</span>
                 </div>
                 <h2>Confirm your items</h2>
                 <small>Preliminary programme · answer by 25 July</small>
@@ -365,6 +368,8 @@
                     <div style="flex: 1"></div>
                     <span class="wf-pill accent"
                       ><svg
+                        role="img"
+                        aria-label="Confirmed"
                         class="wf-icon"
                         data-icon="check"
                         xmlns="http://www.w3.org/2000/svg"
@@ -376,8 +381,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Confirmed"
                       >
                         <path d="M5 12l5 5l10 -10"></path>
                       </svg>
@@ -436,6 +439,7 @@
                     ><button>
                       I can't
                       <svg
+                        aria-hidden="true"
                         class="wf-icon"
                         data-icon="chevronRight"
                         xmlns="http://www.w3.org/2000/svg"
@@ -447,7 +451,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                       >
                         <path d="M9 6l6 6l-6 6"></path>
                       </svg>
@@ -462,6 +465,21 @@
                 <small class="wf-muted"
                   >Times and rooms may change until the programme is published on 6 August.</small
                 >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
               </div>
             </div>
           </div>
@@ -478,14 +496,13 @@
         <figcaption class="t" style="width: 300px">
           Pyrkon: my speaker schedule <code>ab-pyrkon-speaker-schedule</code>
         </figcaption>
-        <div class="screen mobile" style="width: 300px; height: 1040px">
+        <div class="screen mobile" style="width: 300px; height: 1080px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -502,6 +519,8 @@
                   <strong>opos.land</strong>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -513,8 +532,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -528,6 +545,8 @@
                   <div style="flex: 1"></div>
                   <button>
                     <svg
+                      role="img"
+                      aria-label="Calendar"
                       class="wf-icon"
                       data-icon="calendar"
                       xmlns="http://www.w3.org/2000/svg"
@@ -539,8 +558,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="Calendar"
                     >
                       <path
                         d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"
@@ -582,11 +599,9 @@
                     style="
                       display: flex;
                       align-items: center;
-                      gap: 4px 8px;
+                      gap: 8px;
                       padding-top: 6px;
                       border-top: 1.4px solid var(--wf-line);
-                      flex-wrap: wrap;
-                      white-space: normal;
                     "
                   >
                     <small>Recorded and streamed · your consent: given</small>
@@ -602,11 +617,13 @@
                       border-top: 1.4px solid var(--wf-line);
                     "
                   >
-                    <small>In the room: projector, HDMI, 2 microphones</small
+                    <small>In the room: projector, HDMI, 4 microphones</small
                     ><small>Zone coordinator: Ewa Kruk</small>
                   </div>
                   <button>
                     <svg
+                      role="img"
+                      aria-label="Write"
                       class="wf-icon"
                       data-icon="send"
                       xmlns="http://www.w3.org/2000/svg"
@@ -618,8 +635,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="Write"
                     >
                       <path d="M10 14l11 -11"></path>
                       <path
@@ -654,6 +669,22 @@
                   ><small class="wf-muted">Hybrid panel · with Irena Dąb (remote)</small>
                 </div>
                 <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
               </div>
             </div>
           </div>
@@ -669,14 +700,13 @@
         <figcaption class="t" style="width: 300px">
           Pyrkon: invitation to an item <code>ab-pyrkon-invite</code>
         </figcaption>
-        <div class="screen mobile" style="width: 300px; height: 900px">
+        <div class="screen mobile" style="width: 300px; height: 1020px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -691,6 +721,8 @@
               >
                 <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                   <svg
+                    role="img"
+                    aria-label="Back"
                     class="wf-icon"
                     data-icon="arrowLeft"
                     xmlns="http://www.w3.org/2000/svg"
@@ -702,8 +734,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Back"
                   >
                     <path d="M5 12l14 0"></path>
                     <path d="M5 12l6 6"></path>
@@ -711,6 +741,8 @@
                   ><small>Pyrkon 2027</small>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -722,8 +754,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -760,9 +790,10 @@
                 <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
                   <strong>Recorded and streamed</strong
                   ><label style="display: flex; align-items: center; gap: 8px"
-                    ><input type="checkbox" checked="" /> I agree to be recorded and photographed on
-                    this item</label
-                  >
+                    ><input type="checkbox" /> I agree to be recorded on this item</label
+                  ><label style="display: flex; align-items: center; gap: 8px"
+                    ><input type="checkbox" /> I agree to be photographed on this item</label
+                  ><small class="wf-muted">You can accept without either.</small>
                 </div>
                 <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
                   <strong>Once you accept</strong
@@ -786,6 +817,22 @@
                 <small class="wf-muted"
                   >Approved by Ewa Kruk, coordinator of Literature Zone.</small
                 >
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
               </div>
             </div>
           </div>
@@ -793,9 +840,9 @@
         <div class="note" style="width: 300px; box-sizing: border-box">
           <strong>Cast with a role by invitation</strong>An invitation is a cast entry in the state
           invited, not speaker recruitment; the item shows only the confirmed cast until it is
-          accepted (Q24). Pyrkon allows at most 4 hosts, recording consent is given per cast entry,
-          and the discount split is only read from Tickets. Conventions: Fantasmagoria, Dni
-          Fantastyki, Pyrkon.
+          accepted (Q24). Pyrkon allows at most 4 hosts, recording and photo consent are two
+          unticked boxes per cast entry that accepting does not need, and the discount split is only
+          read from Tickets. Conventions: Fantasmagoria, Dni Fantastyki, Pyrkon.
         </div>
       </figure>
       <figure class="board" id="ab-dni-availability">
@@ -809,7 +856,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -824,6 +870,8 @@
               >
                 <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                   <svg
+                    role="img"
+                    aria-label="Back"
                     class="wf-icon"
                     data-icon="arrowLeft"
                     xmlns="http://www.w3.org/2000/svg"
@@ -835,8 +883,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Back"
                   >
                     <path d="M5 12l14 0"></path>
                     <path d="M5 12l6 6"></path>
@@ -844,6 +890,8 @@
                   ><small>Dni Fantastyki 2026</small>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -855,12 +903,15 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
                   </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">My items</span
+                  ><span class="wf-pill accent">Availability</span
+                  ><span class="wf-pill">Profile</span>
                 </div>
                 <h2>My availability</h2>
                 <small>We schedule your items within these hours</small>
@@ -874,7 +925,7 @@
                     "
                   >
                     <label style="display: flex; align-items: center; gap: 8px; white-space: nowrap"
-                      ><input type="checkbox" checked="" /> Fri 21 Aug</label
+                      ><input type="checkbox" checked /> Fri 21 Aug</label
                     ><input value="16:00–22:00" />
                   </div>
                   <div
@@ -886,7 +937,7 @@
                     "
                   >
                     <label style="display: flex; align-items: center; gap: 8px; white-space: nowrap"
-                      ><input type="checkbox" checked="" /> Sat 22 Aug</label
+                      ><input type="checkbox" checked /> Sat 22 Aug</label
                     ><input value="10:00–20:00" />
                   </div>
                   <div
@@ -898,11 +949,13 @@
                     "
                   >
                     <label style="display: flex; align-items: center; gap: 8px; white-space: nowrap"
-                      ><input type="checkbox" checked="" /> Sun 23 Aug</label
+                      ><input type="checkbox" checked /> Sun 23 Aug</label
                     ><input value="10:00–15:00" />
                   </div>
                   <a href="#"
                     ><svg
+                      role="img"
+                      aria-label="Add"
                       class="wf-icon"
                       data-icon="plus"
                       xmlns="http://www.w3.org/2000/svg"
@@ -914,8 +967,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="Add"
                     >
                       <path d="M12 5l0 14"></path>
                       <path d="M5 12l14 0"></path>
@@ -931,15 +982,16 @@
                 </div>
                 <label>Most items a day<input value="2" /></label>
                 <label style="display: flex; align-items: center; gap: 8px"
-                  ><input type="checkbox" checked="" /> I can host items back to back</label
+                  ><input type="checkbox" checked /> I can host items back to back</label
                 >
                 <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
                   <label style="display: flex; align-items: center; gap: 8px"
-                    ><input type="checkbox" checked="" /> Check the panel with me before
-                    casting</label
-                  ><small>I prefer not to share a panel with a listed person.</small>
+                    ><input type="checkbox" checked /> Check the panel with me before casting</label
+                  ><small>The team sees only that you asked to be consulted.</small>
                   <div style="display: flex; align-items: center; gap: 6px">
                     <svg
+                      role="img"
+                      aria-label="Private"
                       class="wf-icon"
                       data-icon="lock"
                       xmlns="http://www.w3.org/2000/svg"
@@ -951,8 +1003,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="Private"
                     >
                       <path
                         d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z"
@@ -965,6 +1015,22 @@
                 <div style="flex: 1"></div>
                 <small class="wf-muted">Last saved 20 July</small>
                 <button class="primary">Save availability</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
               </div>
             </div>
           </div>
@@ -972,14 +1038,14 @@
         <div class="note" style="width: 300px; box-sizing: border-box">
           <strong>Availability and the flag are private</strong>Daily hours, arrival, departure,
           back-to-back items and a daily maximum, which the team schedules against. The old ‘not
-          with’ note is now a flag, prefers not to share a panel with a listed person, with no free
-          text about anyone, seen by the programme team only (Q25). Conventions: Fantasmagoria, Dni
-          Fantastyki, Pyrkon.
+          with’ note is now only a private flag, Check the panel with me before casting: the team
+          sees that the person asked to be consulted, never a name or a list (Q25). Conventions:
+          Fantasmagoria, Dni Fantastyki, Pyrkon.
         </div>
       </figure>
       <figure class="board" id="ab-pyrkon-perks">
         <figcaption class="t" style="width: 300px">
-          Pyrkon: what I am entitled to <code>ab-pyrkon-perks</code>
+          Pyrkon: my speaker discount and badge <code>ab-pyrkon-perks</code>
         </figcaption>
         <div class="screen mobile" style="width: 300px; height: 800px">
           <div
@@ -988,7 +1054,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -1005,6 +1070,8 @@
                   <strong>opos.land</strong>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -1016,15 +1083,13 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
                   </svg>
                 </div>
                 <div>
-                  <h2>What I am entitled to</h2>
+                  <h2>My discount and badge</h2>
                   <small>Pyrkon 2027 · Jan Bór · from accepted items</small>
                 </div>
                 <div
@@ -1154,10 +1219,26 @@
                   <div style="display: flex; align-items: center; gap: 8px">
                     <span class="wf-pill">Set in Tickets</span>
                     <div style="flex: 1"></div>
-                    <a href="#">Change in Tickets</a>
+                    <small class="wf-muted">ask the programme team to change it</small>
                   </div>
                 </div>
                 <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
               </div>
             </div>
           </div>
@@ -1180,7 +1261,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -1197,6 +1277,8 @@
                   <strong>opos.land</strong>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -1208,8 +1290,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -1221,48 +1301,15 @@
                   <small>Dni Fantastyki 2026 · Zamek w Leśnicy · 21–23 August</small>
                 </div>
                 <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
-                  <div style="display: flex; gap: 12px; align-items: center">
-                    <div
-                      style="
-                        width: 64px;
-                        height: 64px;
-                        flex: none;
-                        border: 1.4px dashed var(--wf-line);
-                        border-radius: var(--wf-radius);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                      "
+                  <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+                    <strong>Elena Varga</strong
+                    ><span class="wf-pill accent" style="align-self: flex-start"
+                      >Guest of honour</span
                     >
-                      <svg
-                        class="wf-icon"
-                        data-icon="user"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1em"
-                        height="1em"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        role="img"
-                        aria-label="Photo"
-                      >
-                        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
-                        <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
-                      </svg>
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
-                      <strong>Elena Varga</strong
-                      ><span class="wf-pill accent" style="align-self: flex-start"
-                        >Guest of honour</span
-                      >
-                    </div>
                   </div>
                   <small
                     >An author of fantasy novels written in English, translated into 14 languages.
-                    Her first time at Dni Fantastyki.</small
+                    First time at Dni Fantastyki.</small
                   >
                   <small class="wf-muted"
                     >Prepared by the programme team · the public sees only your name for now</small
@@ -1274,7 +1321,7 @@
                     <small><strong>Author meeting with the guest of honour</strong></small
                     ><small>Saturday 22 Aug · 16:00–16:50 · Sala Rycerska</small
                     ><small class="wf-muted"
-                      >Q&amp;A in English · interpreter Zofia Mróz · moderator Ola Szpak</small
+                      >Q&amp;A in English · interpreter Zofia Mróz · moderator Nina Jawor</small
                     >
                   </div>
                   <div
@@ -1299,15 +1346,32 @@
                   programme team keeps it.</small
                 >
                 <a href="#">This isn't me</a>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div class="note" style="width: 300px; box-sizing: border-box">
           <strong>An entry to claim</strong>The team entered the guest without an account, and until
-          she claims the entry the public sees only her display name on items. The link is secret,
-          single use and tied to her address, and the email differs for a person who already has an
-          account, as in pretalx (Q5). Conventions: Nordcon, Fantasmagoria, Dni Fantastyki, Pyrkon.
+          the guest claims the entry the public sees only their display name on items. The link is
+          secret, single use and tied to their address, and the email differs for a person who
+          already has an account, as in pretalx (Q5). Conventions: Nordcon, Fantasmagoria, Dni
+          Fantastyki, Pyrkon.
         </div>
       </figure>
       <figure class="board" id="ab-pyrkon-dayof">
@@ -1321,7 +1385,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -1338,6 +1401,8 @@
                   <strong>opos.land</strong>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -1349,8 +1414,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -1393,6 +1456,8 @@
                     <small>Marta Wilk · moderator</small>
                     <div style="flex: 1"></div>
                     <svg
+                      role="img"
+                      aria-label="Here"
                       class="wf-icon"
                       data-icon="check"
                       xmlns="http://www.w3.org/2000/svg"
@@ -1404,8 +1469,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="Here"
                     >
                       <path d="M5 12l5 5l10 -10"></path></svg
                     ><small>here</small>
@@ -1429,6 +1492,21 @@
                   >Next today: 16:00 How to publish your first fantasy book · Sala Literacka
                   2</small
                 >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
               </div>
             </div>
           </div>

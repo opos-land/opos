@@ -50,19 +50,36 @@
         >17. Panel: item list, proposals, announcements and re-import</a
       >
     </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
     <main class="boards">
       <figure class="board" id="ab-small-form">
         <figcaption class="t" style="width: 840px">
           Nordcon: item form <code>ab-small-form</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 500px">
+        <div class="screen desktop" style="width: 840px; height: 570px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -79,7 +96,7 @@
                   <strong>Nordcon</strong><small>Edition 2026 ▾</small>
                   <hr />
                   <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  ><span>Tickets</span><span>Access</span><span>Edition settings</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">head</small>
                 </div>
@@ -93,6 +110,20 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <span class="wf-pill accent">Items</span><small>Grid</small><small>People</small
+                    ><small>Changes</small><small>Messages</small><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center">
                     <h1>New programme item</h1>
                     <div style="flex: 1"></div>
@@ -115,6 +146,16 @@
                       ><label>End<input value="Thu 12:50" /></label
                       ><label>Room<input value="K8 „Falcon Crest Gazette” ▾" /></label>
                     </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(3, minmax(0, 1fr));
+                        gap: 8px;
+                      "
+                    >
+                      <label>Track<input value="Talks ▾" /></label
+                      ><label>Content warnings<input value="none ▾" /></label>
+                    </div>
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
                     <strong>Cast</strong>
@@ -126,7 +167,7 @@
                   </div>
                   <div style="display: flex; gap: 8px">
                     <div style="flex: 1"></div>
-                    <button>Hide item</button><button class="primary">Add item</button>
+                    <button>Cancel</button><button class="primary">Add item</button>
                   </div>
                 </div>
               </div>
@@ -134,9 +175,10 @@
           </div>
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
-          <strong>Five fields and a host</strong>Title, description, time, room and cast. Nordcon
-          has no formats or blocks, so the form hides them and the format stays in the text, as in
-          its booklet. A new item stays not yet published until the programme is first published.
+          <strong>Fields from filled dictionaries</strong>Title, description, time, room, track,
+          warnings and cast; with no formats the format stays in the text, as in the booklet. The
+          warnings field shows on a talk because field visibility is edition-wide (Q8), the cost the
+          brief names. A new item stays not yet published until the programme is first published.
         </div>
       </figure>
       <figure class="board" id="ab-dni-rooms">
@@ -150,7 +192,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -166,8 +207,7 @@
                 >
                   <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span>Programme</span><span>Access</span
-                  ><span class="wf-pill accent">Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">org · programme: write</small>
                 </div>
@@ -181,8 +221,26 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><small>People</small><small>Changes</small><small>Messages</small
+                    ><small>Settings</small><small>Dictionaries</small
+                    ><span class="wf-pill accent">Rooms</span><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center; gap: 8px">
-                    <h1>Rooms</h1>
+                    <div>
+                      <small>Programme · Rooms</small>
+                      <h1>Rooms</h1>
+                    </div>
                     <div style="flex: 1"></div>
                     <button>Add location</button><button class="primary">Add room</button>
                   </div>
@@ -227,22 +285,21 @@
         <div class="note" style="width: 840px; box-sizing: border-box">
           <strong>Rooms with location and floor</strong>Location, floor, capacity and step-free
           access: no lift in the castle, ramps into the basement, step-free tents and park. Scena
-          amfiteatr is a second location in the free zone. Capacity is information until sign-ups
-          are on.
+          amfiteatr is a second location in the free zone. Capacity is shown with the default entry,
+          free and first come, and feeds likely full and Room full.
         </div>
       </figure>
       <figure class="board" id="ab-dni-form">
         <figcaption class="t" style="width: 840px">
           Dni Fantastyki: item form <code>ab-dni-form</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 760px">
+        <div class="screen desktop" style="width: 840px; height: 790px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -258,8 +315,7 @@
                 >
                   <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">org · programme: write</small>
                 </div>
@@ -273,6 +329,21 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <span class="wf-pill accent">Items</span><small>Grid</small
+                    ><small>Proposals</small><small>People</small><small>Changes</small
+                    ><small>Messages</small><small>Settings</small><small>Dictionaries</small
+                    ><small>Rooms</small><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center; gap: 8px">
                     <h1>Programme item</h1>
                     <div style="flex: 1"></div>
@@ -295,13 +366,15 @@
                       ><label>Item length<input value="50 min" /></label
                       ><label>Slot<input value="50 min (single)" /></label
                       ><label>Room<input value="Sala Rycerska · 2nd floor (80)" /></label
-                      ><label>Age rating<input value="16+ ▾" /></label>
+                      ><label>Age rating<input value="16+ ▾" /></label
+                      ><label>Item code<input value="given at publication" /></label
+                      ><label>Entry<input value="Free entry, first come ▾" /></label>
                     </div>
                     <div style="display: flex; align-items: center; gap: 16px; white-space: nowrap">
                       <label style="display: flex; gap: 8px"
                         ><input type="checkbox" /> Guest of honour</label
                       ><label style="display: flex; gap: 8px"
-                        ><input type="checkbox" checked="" /> Featured</label
+                        ><input type="checkbox" checked /> Featured</label
                       >
                     </div>
                   </div>
@@ -331,7 +404,7 @@
                   >
                   <div style="display: flex; gap: 8px">
                     <div style="flex: 1"></div>
-                    <button>Hide item</button><button class="primary">Save</button>
+                    <button>Delete draft…</button><button class="primary">Save</button>
                   </div>
                 </div>
               </div>
@@ -349,14 +422,13 @@
         <figcaption class="t" style="width: 840px">
           Pyrkon: item form, all sections <code>ab-pyrkon-form</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 1010px">
+        <div class="screen desktop" style="width: 840px; height: 1080px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -372,10 +444,9 @@
                 >
                   <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
-                  <small class="wf-muted">org · programme: write</small>
+                  <small class="wf-muted">org · programme: write · Literature Zone</small>
                 </div>
                 <div
                   style="
@@ -387,6 +458,21 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <span class="wf-pill accent">Items</span><small>Grid</small
+                    ><small>Proposals</small><small>People</small><small>Conflicts</small
+                    ><small>Changes</small><small>Messages</small><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center; gap: 8px">
                     <h1>Programme item</h1>
                     <span class="wf-pill">LIT-114</span>
@@ -398,6 +484,7 @@
                       >Title<input
                         value="The future of fantasy: artificial intelligence and literature"
                     /></label>
+                    <small>Code · LIT-114 · set by the team, frozen at publication</small>
                     <div
                       style="
                         display: grid;
@@ -411,8 +498,7 @@
                       ><label>Zone<input value="Literature Zone" /></label
                       ><label>Format<input value="Panel discussion" /></label
                       ><label>Language<input value="Polish" /></label
-                      ><label>Age rating<input value="no rating" /></label
-                      ><label>Level<input value="for everyone" /></label>
+                      ><label>Age rating<input value="no rating" /></label>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap">
                       <small>Accessibility:</small><span class="wf-pill accent">PJM</span
@@ -421,7 +507,7 @@
                       <label style="display: flex; gap: 6px"
                         ><input type="checkbox" /> Guest of honour</label
                       ><label style="display: flex; gap: 6px"
-                        ><input type="checkbox" checked="" /> Featured</label
+                        ><input type="checkbox" checked /> Featured</label
                       >
                     </div>
                   </div>
@@ -443,7 +529,7 @@
                       ><small>confirmed</small><small>recording yes · photo yes</small>
                       <span>Lena Cis</span><span class="wf-pill">Panelist</span
                       ><small>invited 30 Apr</small
-                      ><small class="wf-muted">asked when she accepts</small> <span>Irmina Wąs</span
+                      ><small class="wf-muted">asked on acceptance</small> <span>Irmina Wąs</span
                       ><span class="wf-pill">PJM interpreter</span><small>confirmed</small
                       ><small>recording yes · photo yes</small>
                     </div>
@@ -481,9 +567,9 @@
                     <div style="display: flex; align-items: center; gap: 16px; white-space: nowrap">
                       <strong>Recording and links</strong
                       ><label style="display: flex; gap: 6px"
-                        ><input type="checkbox" checked="" /> Recorded</label
+                        ><input type="checkbox" checked /> Recorded</label
                       ><label style="display: flex; gap: 6px"
-                        ><input type="checkbox" checked="" /> Streamed</label
+                        ><input type="checkbox" checked /> Streamed</label
                       >
                     </div>
                     <div
@@ -524,7 +610,7 @@
                   </div>
                   <div style="display: flex; gap: 8px">
                     <div style="flex: 1"></div>
-                    <button>Cancel item</button><button class="primary">Save</button>
+                    <button>Delete draft…</button><button class="primary">Save</button>
                   </div>
                 </div>
               </div>
@@ -532,10 +618,10 @@
           </div>
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
-          <strong>Fields appear with data</strong>Sections show because the edition uses them; with
-          edition scope every zone coordinator sees them all (Q8). Each cast entry carries recording
-          and photo consent, and LIT-114 is an item code frozen at publication. Cancel item asks in
-          a modal.
+          <strong>Fields appear with data</strong>Ewa Kruk edits an item of their own zone; sections
+          show because the edition uses them, and with edition scope every zone coordinator sees
+          them all (Q8). Each cast entry carries recording and photo consent, and LIT-114 is frozen
+          at publication. A draft is deleted, asking in a modal; only a published item is cancelled.
         </div>
       </figure>
     </main>

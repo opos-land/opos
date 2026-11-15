@@ -50,19 +50,36 @@
         >17. Panel: item list, proposals, announcements and re-import</a
       >
     </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
     <main class="boards">
       <figure class="board" id="ab-small-settings">
         <figcaption class="t" style="width: 840px">
-          Nordcon: everything off <code>ab-small-settings</code>
+          Nordcon: no switches, three tracks <code>ab-small-settings</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 520px">
+        <div class="screen desktop" style="width: 840px; height: 770px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -78,8 +95,8 @@
                 >
                   <strong>Nordcon</strong><small>Edition 2026 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span>Programme</span><span>Access</span
-                  ><span class="wf-pill accent">Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Tickets</span><span>Access</span><span>Edition settings</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">head</small>
                 </div>
@@ -93,20 +110,28 @@
                     min-width: 0;
                   "
                 >
-                  <div>
-                    <h1>Edition settings</h1>
-                    <small>Nordcon 2026 · Jastrzębia Góra</small>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>People</small
+                    ><small>Changes</small><small>Messages</small
+                    ><span class="wf-pill accent">Settings</span><small>Dictionaries</small
+                    ><small>Rooms</small><small>Publication</small>
                   </div>
-                  <div style="display: flex; gap: 8px">
-                    <span class="wf-pill">General</span><span class="wf-pill accent">Programme</span
-                    ><span class="wf-pill">Publication</span>
+                  <div>
+                    <small>Programme · Settings</small>
+                    <h1>Programme settings</h1>
+                    <small>Nordcon 2026 · Jastrzębia Góra</small>
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 10px">
                     <strong>Programme features</strong>
-                    <small class="wf-muted"
-                      >Nothing to turn on. An item has a title, description, time, room and
-                      cast.</small
-                    >
                     <div
                       style="
                         display: flex;
@@ -116,6 +141,7 @@
                       "
                     >
                       <svg
+                        aria-hidden="true"
                         class="wf-icon"
                         data-icon="chevronRight"
                         xmlns="http://www.w3.org/2000/svg"
@@ -127,7 +153,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                       >
                         <path d="M9 6l6 6l-6 6"></path></svg
                       ><span>Not used (4)</span
@@ -135,6 +160,25 @@
                         >Sign-ups · Call for proposals · Speaker recruitment · Reviews</small
                       >
                     </div>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: 140px minmax(0, 1fr);
+                      gap: 6px 10px;
+                    "
+                  >
+                    <strong style="grid-column: 1 / -1">Parameters</strong
+                    ><small class="wf-muted">Entry by default</small><small>open, no limits</small
+                    ><small class="wf-muted">Confirmation</small
+                    ><small>not used: the preliminary programme goes by email outside OPOS</small
+                    ><small class="wf-muted">Cast per item</small><small>not set (up to 10)</small
+                    ><small class="wf-muted">Item codes</small><small>none</small
+                    ><small class="wf-muted">Attendee reports</small><small>off</small
+                    ><small class="wf-muted">Publication</small
+                    ><small>one release, before print</small><small class="wf-muted">Export</small
+                    ><small>booklet data for typesetting</small>
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
                     <strong>Programme dictionaries</strong>
@@ -146,7 +190,10 @@
                       "
                     >
                       <div class="wf-box">Rooms · 7 in buildings A and B</div>
+                      <div class="wf-box">Tracks · 3: Talks, Games, Films · a filter</div>
+                      <div class="wf-box">Content warnings · 3</div>
                       <div class="wf-box">Language · Polish</div>
+                      <div class="wf-box">Lengths · 50 min, on the hour</div>
                     </div>
                     <div
                       style="
@@ -157,6 +204,7 @@
                       "
                     >
                       <svg
+                        aria-hidden="true"
                         class="wf-icon"
                         data-icon="chevronRight"
                         xmlns="http://www.w3.org/2000/svg"
@@ -168,19 +216,17 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                       >
                         <path d="M9 6l6 6l-6 6"></path></svg
                       ><span>Not used (5)</span
                       ><small class="wf-muted"
-                        >Blocks · Formats · Age ratings · Content warnings · Accessibility
-                        features</small
+                        >Theme line · Formats · Age ratings · Accessibility · Entry labels</small
                       >
                     </div>
                   </div>
                   <small class="wf-muted"
-                    >Rooms, programme people and printout templates copied from Nordcon 2025 on 1
-                    September.</small
+                    >Rooms, dictionaries, switches and printout templates copied from Nordcon 2025
+                    on 1 September.</small
                   >
                 </div>
               </div>
@@ -188,24 +234,25 @@
           </div>
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
-          <strong>A small convention sets nothing</strong>Four switches per edition, all off by
-          default; unused features and empty dictionaries fold under Not used. There are no small or
-          large modes: the preset is a copy of the previous edition. Who may turn a switch on is
-          Q10.
+          <strong>A small convention turns nothing on</strong>Programme settings sit in the
+          Programme area and open with the programme permission; Edition settings and Access stay
+          with the settings permission, so only the head sees them here. No switch is on; three
+          tracks as a filter and three warning tags are data from Nordcon’s booklet, and empty
+          dictionaries fold under Not used. The copy of 2025 brought rooms, dictionaries, switches
+          and templates, never people.
         </div>
       </figure>
       <figure class="board" id="ab-medium-settings">
         <figcaption class="t" style="width: 840px">
           Fantasmagoria: sign-ups and call for proposals <code>ab-medium-settings</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 680px">
+        <div class="screen desktop" style="width: 840px; height: 1000px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -221,8 +268,8 @@
                 >
                   <strong>Fantasmagoria</strong><small>Edition 2026 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span>Programme</span><span>Access</span
-                  ><span class="wf-pill accent">Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Tickets</span><span>Access</span><span>Edition settings</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">head</small>
                 </div>
@@ -236,18 +283,30 @@
                     min-width: 0;
                   "
                 >
-                  <div>
-                    <h1>Edition settings</h1>
-                    <small>Fantasmagoria 2026 · Gniezno · MOK and II LO</small>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><small>People</small><small>Changes</small><small>Messages</small
+                    ><span class="wf-pill accent">Settings</span><small>Dictionaries</small
+                    ><small>Rooms</small><small>Publication</small>
                   </div>
-                  <div style="display: flex; gap: 8px">
-                    <span class="wf-pill">General</span><span class="wf-pill accent">Programme</span
-                    ><span class="wf-pill">Publication</span>
+                  <div>
+                    <small>Programme · Settings</small>
+                    <h1>Programme settings</h1>
+                    <small>Fantasmagoria 2026 · Gniezno · MOK and II LO</small>
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 10px">
                     <strong>Programme features</strong>
                     <label style="display: flex; gap: 8px"
-                      ><input type="checkbox" checked="" /> Sign-ups for items</label
+                      ><input type="checkbox" checked /> Sign-ups for items</label
                     >
                     <div
                       style="
@@ -261,27 +320,21 @@
                       ><label>Opens<input value="at publication" /></label
                       ><label>Closes<input value="at the item's start" /></label>
                     </div>
-                    <div
-                      style="
-                        display: flex;
-                        align-items: center;
-                        gap: 4px 6px;
-                        padding-left: 24px;
-                        white-space: normal;
-                        flex-wrap: wrap;
-                      "
+                    <small style="padding-left: 24px"
+                      >Who · any signed-in account · Limit per person · none · All seats by sign-up,
+                      no forfeit · Waiting list · on, 1 hour to take a seat · Cancel · until the
+                      start</small
                     >
-                      <small style="flex-shrink: 0">Formats with sign-ups:</small
-                      ><span class="wf-pill accent">Workshop</span
-                      ><span class="wf-pill accent">RPG session</span
-                      ><small class="wf-muted">others: free entry · waiting list always on</small>
-                    </div>
                     <label style="display: flex; gap: 8px"
-                      ><input type="checkbox" checked="" /> Call for proposals
+                      ><input type="checkbox" checked /> Call for proposals
                       <small>1 March – 31 May · decisions by 20 June</small></label
                     >
+                    <small style="padding-left: 24px"
+                      >One call, no blocks · co-hosts up to 4 · no idea without a host · decision by
+                      the team, no scores · reserve list not used</small
+                    >
                     <label style="display: flex; gap: 8px"
-                      ><input type="checkbox" checked="" /> Reviews of items
+                      ><input type="checkbox" checked /> Reviews of items
                       <small class="wf-muted">rules to be agreed</small></label
                     >
                     <div
@@ -293,6 +346,7 @@
                       "
                     >
                       <svg
+                        aria-hidden="true"
                         class="wf-icon"
                         data-icon="chevronRight"
                         xmlns="http://www.w3.org/2000/svg"
@@ -304,11 +358,29 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                       >
                         <path d="M9 6l6 6l-6 6"></path></svg
                       ><span>Not used (1)</span><small class="wf-muted">Speaker recruitment</small>
                     </div>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: 140px minmax(0, 1fr);
+                      gap: 6px 10px;
+                    "
+                  >
+                    <strong style="grid-column: 1 / -1">Parameters</strong
+                    ><small class="wf-muted">Entry by default</small
+                    ><small>free entry; sign-ups set on 23 items</small
+                    ><small class="wf-muted">Confirmation</small><small>per item, no deadline</small
+                    ><small class="wf-muted">Cast per item</small><small>up to 6</small
+                    ><small class="wf-muted">Item codes</small><small>none</small
+                    ><small class="wf-muted">Attendee reports</small><small>off</small
+                    ><small class="wf-muted">Publication</small
+                    ><small>numbered releases with the PDF</small
+                    ><small class="wf-muted">Export</small><small>PDF sheet, CSV, .ics</small>
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
                     <strong>Programme dictionaries</strong>
@@ -323,6 +395,8 @@
                       <div class="wf-box">Formats · 12</div>
                       <div class="wf-box">Age ratings · 16+, 18+</div>
                       <div class="wf-box">Language · Polish</div>
+                      <div class="wf-box">Accessibility · step-free (rooms)</div>
+                      <div class="wf-box">Lengths · 50 min, on the hour or half hour</div>
                     </div>
                     <div
                       style="
@@ -333,6 +407,7 @@
                       "
                     >
                       <svg
+                        aria-hidden="true"
                         class="wf-icon"
                         data-icon="chevronRight"
                         xmlns="http://www.w3.org/2000/svg"
@@ -344,12 +419,11 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                       >
                         <path d="M9 6l6 6l-6 6"></path></svg
-                      ><span>Not used (3)</span
+                      ><span>Not used (4)</span
                       ><small class="wf-muted"
-                        >Blocks · Content warnings · Accessibility features</small
+                        >Blocks · Theme line · Content warnings · Entry labels</small
                       >
                     </div>
                   </div>
@@ -359,23 +433,23 @@
           </div>
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
-          <strong>Parameters under the switch</strong>Sign-ups cover workshops and RPG sessions
-          only, with the edition defaults; Sala Masterclass is a room, not a format. An item may
-          override the setting, one level only. Reviews follow the domain owner’s rules (Q12).
+          <strong>Parameters under the switch</strong>The four screens list switches, then the same
+          seven parameters and the same dictionaries in one order. Who may sign up is set here, not
+          on the ticket screen: any signed-in account, with sign-ups set on 23 items and no rule per
+          format. Reviews follow the domain owner’s rules (Q12).
         </div>
       </figure>
       <figure class="board" id="ab-dni-settings">
         <figcaption class="t" style="width: 840px">
           Dni Fantastyki: call for proposals, no sign-ups <code>ab-dni-settings</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 760px">
+        <div class="screen desktop" style="width: 840px; height: 1030px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -391,8 +465,7 @@
                 >
                   <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span>Programme</span><span>Access</span
-                  ><span class="wf-pill accent">Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">org · programme: write</small>
                 </div>
@@ -406,24 +479,39 @@
                     min-width: 0;
                   "
                 >
-                  <div>
-                    <h1>Edition settings</h1>
-                    <small>Dni Fantastyki 2026 · „Szlakiem Przeznaczenia”</small>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><small>People</small><small>Changes</small><small>Messages</small
+                    ><span class="wf-pill accent">Settings</span><small>Dictionaries</small
+                    ><small>Rooms</small><small>Publication</small>
                   </div>
-                  <div style="display: flex; gap: 8px">
-                    <span class="wf-pill">General</span><span class="wf-pill accent">Programme</span
-                    ><span class="wf-pill">Publication</span>
+                  <div>
+                    <small>Programme · Settings</small>
+                    <h1>Programme settings</h1>
+                    <small>Dni Fantastyki 2026 · „Szlakiem Przeznaczenia”</small>
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 10px">
                     <strong>Programme features</strong>
                     <label style="display: flex; gap: 8px"
-                      ><input type="checkbox" checked="" /> Call for proposals
-                      <small
-                        >7 May – 30 June · decisions by 15 July · programme out 6 August</small
-                      ></label
+                      ><input type="checkbox" checked /> Call for proposals
+                      <small>7 May – 30 June · decisions by 15 July</small></label
+                    >
+                    <small style="padding-left: 24px"
+                      >One call, the proposer picks a block · co-hosts up to 2 · no idea without a
+                      host · 3 assessors score, the block coordinator decides · reserve list
+                      unranked</small
                     >
                     <label style="display: flex; gap: 8px"
-                      ><input type="checkbox" checked="" /> Speaker recruitment
+                      ><input type="checkbox" checked /> Speaker recruitment
                       <small>guest panels only: volunteer for a free seat</small></label
                     >
                     <div
@@ -435,6 +523,7 @@
                       "
                     >
                       <svg
+                        aria-hidden="true"
                         class="wf-icon"
                         data-icon="chevronRight"
                         xmlns="http://www.w3.org/2000/svg"
@@ -446,14 +535,32 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                       >
                         <path d="M9 6l6 6l-6 6"></path></svg
-                      ><span>Not used (2)</span
-                      ><small class="wf-muted"
-                        >Sign-ups (entry: first come, first served) · Reviews</small
-                      >
+                      ><span>Not used (2)</span><small class="wf-muted">Sign-ups · Reviews</small>
                     </div>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: 140px minmax(0, 1fr);
+                      gap: 6px 10px;
+                    "
+                  >
+                    <strong style="grid-column: 1 / -1">Parameters</strong
+                    ><small class="wf-muted">Entry by default</small
+                    ><small>free, first come, capacity shown; open in the park free zone</small
+                    ><small class="wf-muted">Confirmation</small
+                    ><small>per item by 25 July, changeable until publication</small
+                    ><small class="wf-muted">Cast per item</small
+                    ><small>not set (up to 10); a guest panel sets its seats</small
+                    ><small class="wf-muted">Item codes</small
+                    ><small>generated at first publication</small
+                    ><small class="wf-muted">Attendee reports</small><small>off</small
+                    ><small class="wf-muted">Publication</small
+                    ><small>no named releases · programme out 6 August</small
+                    ><small class="wf-muted">Export</small><small>Konwencik</small>
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
                     <strong>Programme dictionaries</strong>
@@ -465,19 +572,23 @@
                       "
                     >
                       <div class="wf-box">
-                        Rooms · 21 in the castle + 17 in the free zone + Namiot ciszy
+                        Rooms · 21 in the castle + 17 in the park free zone + Namiot ciszy · 2
+                        locations
                       </div>
-                      <div class="wf-box">Locations · castle, park</div>
-                      <div class="wf-box">Blocks · 7</div>
+                      <div class="wf-box">Blocks · 7 · a filter</div>
                       <div class="wf-box">Theme line · „Szlakiem Przeznaczenia”</div>
                       <div class="wf-box">Formats · 15</div>
                       <div class="wf-box">
                         Age ratings · B.O. (all ages), 7+, 12+, 13+, 15+, 16+, 18+ · no rating
                       </div>
-                      <div class="wf-box">Slot · 50 min, double 110</div>
-                      <div class="wf-box">Languages · Polish, English, language-independent</div>
+                      <div class="wf-box">
+                        Languages · Polish, English, language-independent · interpreted items
+                      </div>
                       <div class="wf-box">Accessibility · step-free (rooms), Namiot ciszy</div>
-                      <div class="wf-box">Export · Konwencik</div>
+                      <div class="wf-box">
+                        Entry labels · 2: free, first come · paid partner workshop
+                      </div>
+                      <div class="wf-box">Lengths · slot 50 min, double 110</div>
                     </div>
                     <div
                       style="
@@ -488,6 +599,7 @@
                       "
                     >
                       <svg
+                        aria-hidden="true"
                         class="wf-icon"
                         data-icon="chevronRight"
                         xmlns="http://www.w3.org/2000/svg"
@@ -499,7 +611,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                       >
                         <path d="M9 6l6 6l-6 6"></path></svg
                       ><span>Not used (1)</span><small class="wf-muted">Content warnings</small>
@@ -511,24 +622,24 @@
           </div>
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
-          <strong>Large, yet without sign-ups</strong>368 items and 142 people, but entry is first
-          come, first served, and speaker recruitment covers guest panels only (Q9). The complexity
-          sits in the dictionaries: two locations, seven blocks, a theme line, B.O. (all ages) apart
-          from no rating, a 50-minute slot.
+          <strong>Large, yet without sign-ups</strong>The programme lead, an org with programme
+          write, opens this screen; its menu has no Access or Edition settings. Rung 1 is the
+          default: free entry, first come, capacity shown; speaker recruitment covers guest panels
+          only (Q9). Blocks are a filter, and publishing the edition in Edition settings comes
+          before the programme’s first publication.
         </div>
       </figure>
       <figure class="board" id="ab-pyrkon-settings">
         <figcaption class="t" style="width: 840px">
           Pyrkon: sign-ups with tokens and call for proposals <code>ab-pyrkon-settings</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 750px">
+        <div class="screen desktop" style="width: 840px; height: 1190px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -544,10 +655,9 @@
                 >
                   <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span>Programme</span><span>Access</span
-                  ><span class="wf-pill accent">Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
-                  <small class="wf-muted">org · programme: write</small>
+                  <small class="wf-muted">org · programme: write · all zones</small>
                 </div>
                 <div
                   style="
@@ -559,18 +669,30 @@
                     min-width: 0;
                   "
                 >
-                  <div>
-                    <h1>Edition settings</h1>
-                    <small>Pyrkon 2027 · MTP Poznań</small>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><small>People</small><small>Conflicts</small><small>Changes</small
+                    ><small>Messages</small><span class="wf-pill accent">Settings</span
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
                   </div>
-                  <div style="display: flex; gap: 8px">
-                    <span class="wf-pill">General</span><span class="wf-pill accent">Programme</span
-                    ><span class="wf-pill">Publication</span>
+                  <div>
+                    <small>Programme · Settings</small>
+                    <h1>Programme settings</h1>
+                    <small>Pyrkon 2027 · MTP Poznań</small>
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 10px">
                     <strong>Programme features</strong>
                     <label style="display: flex; gap: 8px"
-                      ><input type="checkbox" checked="" /> Sign-ups for items</label
+                      ><input type="checkbox" checked /> Sign-ups for items</label
                     >
                     <div
                       style="
@@ -580,20 +702,24 @@
                         padding-left: 24px;
                       "
                     >
-                      <label>Allocation<input value="first come, first served" /></label
+                      <label>Allocation<input value="first come; lottery on chosen items" /></label
                       ><label>Closes<input value="the day before, 23:59" /></label
                       ><label>For reservations<input value="50%" /></label
-                      ><label>Forfeit<input value="10 min before" /></label>
+                      ><label>Forfeit<input value="10 min before (20 at Sala Ziemi)" /></label>
                     </div>
                     <small style="padding-left: 24px"
-                      >Tokens per person and opening dates: set in Tickets</small
+                      >Who · token holders · Limit per person · tokens from an entitlement, set in
+                      Tickets · Opens · with the ticket's date · Waiting list · off, on after a
+                      lottery · Cancel · until the forfeit, the token returns</small
                     >
                     <label style="display: flex; gap: 8px"
-                      ><input type="checkbox" checked="" /> Call for proposals
+                      ><input type="checkbox" checked /> Call for proposals
                       <small>17 December – 10 April · closed · decisions by 7 May</small></label
                     >
                     <small style="padding-left: 24px"
-                      >Science Zone: commissioned programme only</small
+                      >A call per zone, Science Zone closed: commissioned programme only · co-hosts
+                      up to 3 · an idea without a host allowed · decision by the zone, no scores ·
+                      reserve list ranked</small
                     >
                     <div
                       style="
@@ -604,6 +730,7 @@
                       "
                     >
                       <svg
+                        aria-hidden="true"
                         class="wf-icon"
                         data-icon="chevronRight"
                         xmlns="http://www.w3.org/2000/svg"
@@ -615,12 +742,38 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                       >
                         <path d="M9 6l6 6l-6 6"></path></svg
                       ><span>Not used (2)</span
                       ><small class="wf-muted">Speaker recruitment · Reviews</small>
                     </div>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: 140px minmax(0, 1fr);
+                      gap: 6px 10px;
+                    "
+                  >
+                    <strong style="grid-column: 1 / -1">Parameters</strong
+                    ><small class="wf-muted">Entry by default</small
+                    ><small
+                      >half by token reservation, half from the queue; whole by tokens or a free
+                      queue on chosen items</small
+                    ><small class="wf-muted">Confirmation</small
+                    ><small>per item at invitation; readiness 60 min before</small
+                    ><small class="wf-muted">Cast per item</small><small>up to 4, 2 suggested</small
+                    ><small class="wf-muted">Item codes</small
+                    ><small>set by the team, zone prefix</small
+                    ><small class="wf-muted">Attendee reports</small><small>on</small
+                    ><small class="wf-muted">Publication</small
+                    ><small>a release each morning at 07:00</small
+                    ><small class="wf-muted">Export</small
+                    ><small
+                      >CSV with stable ids and the changes since the day release, for the Pyrkon
+                      app</small
+                    >
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
                     <strong>Programme dictionaries</strong>
@@ -632,16 +785,15 @@
                       "
                     >
                       <div class="wf-box">Rooms · 64</div>
-                      <div class="wf-box">Zones · 22</div>
+                      <div class="wf-box">Zones · 22 · a write boundary, set in Access</div>
                       <div class="wf-box">Formats · 14</div>
-                      <div class="wf-box">Programme hour · 45 + 5 + 10</div>
-                      <div class="wf-box">Cast · up to 4, 2 suggested</div>
+                      <div class="wf-box">Age ratings · no rating, 18+</div>
                       <div class="wf-box">Languages · PL, EN, language-independent</div>
                       <div class="wf-box">
                         Accessibility · PJM, audio description, low stimulation
                       </div>
-                      <div class="wf-box">Age ratings · no rating, 18+</div>
                       <div class="wf-box">Entry labels · 5</div>
+                      <div class="wf-box">Lengths · programme hour 45 + 5 + 10</div>
                     </div>
                     <div
                       style="
@@ -652,6 +804,7 @@
                       "
                     >
                       <svg
+                        aria-hidden="true"
                         class="wf-icon"
                         data-icon="chevronRight"
                         xmlns="http://www.w3.org/2000/svg"
@@ -663,21 +816,27 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        aria-hidden="true"
                       >
                         <path d="M9 6l6 6l-6 6"></path></svg
-                      ><span>Not used (1)</span><small class="wf-muted">Content warnings</small>
+                      ><span>Not used (2)</span
+                      ><small class="wf-muted">Theme line · Content warnings</small>
                     </div>
                   </div>
+                  <small class="wf-muted"
+                    >Settings, dictionaries, rooms and publication cover the whole edition: an org
+                    limited to zones reads them only.</small
+                  >
                 </div>
               </div>
             </div>
           </div>
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
-          <strong>Sign-ups and the call on</strong>Speaker recruitment is off, and so are reviews:
-          Pyrkon collects none. The Science Zone takes commissioned programme only. Tokens are not a
-          programme setting: they come from entitlements, set in Tickets (Q20).
+          <strong>Sign-ups and the call on</strong>Agata Rdest holds programme write for all zones,
+          which anything edition-wide needs; a zone-limited org sees this screen read-only. Zones
+          are a write boundary set in Access by the head or an org with settings write (Q11). Tokens
+          come from entitlements, set in Tickets (Q20), and a release each morning at 07:00 feeds
+          door cards and the app.
         </div>
       </figure>
     </main>

@@ -50,19 +50,36 @@
         >17. Panel: item list, proposals, announcements and re-import</a
       >
     </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
     <main class="boards">
       <figure class="board" id="ab-dni-people-admin">
         <figcaption class="t" style="width: 840px">
           Dni Fantastyki: programme people <code>ab-dni-people-admin</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 1590px">
+        <div class="screen desktop" style="width: 840px; height: 1170px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%; box-sizing: border-box">
@@ -78,8 +95,7 @@
                 >
                   <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">org · programme: write</small>
                 </div>
@@ -93,6 +109,21 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><span class="wf-pill accent">People</span><small>Changes</small
+                    ><small>Messages</small><small>Settings</small><small>Dictionaries</small
+                    ><small>Rooms</small><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                     <div>
                       <h1>Programme people</h1>
@@ -102,6 +133,8 @@
                     <button>Merge duplicates (1)</button
                     ><button class="primary">
                       <svg
+                        role="img"
+                        aria-label="Add"
                         class="wf-icon"
                         data-icon="plus"
                         xmlns="http://www.w3.org/2000/svg"
@@ -113,8 +146,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Add"
                       >
                         <path d="M12 5l0 14"></path>
                         <path d="M5 12l14 0"></path>
@@ -122,24 +153,20 @@
                       Add person without an account
                     </button>
                   </div>
-                  <div
-                    style="
-                      display: flex;
-                      gap: 6px;
-                      white-space: nowrap;
-                      overflow: hidden;
-                      align-items: center;
-                    "
-                  >
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
                     <span class="wf-pill accent">All 142</span
                     ><span class="wf-pill">Speakers 121</span
                     ><span class="wf-pill">Guests of honour 4</span
                     ><span class="wf-pill">Groups 17</span><span class="wf-pill">No account 38</span
                     ><span class="wf-pill">Unconfirmed 11</span
-                    ><span class="wf-pill">Declined 1</span><span class="wf-pill">Block ▾</span>
+                    ><span class="wf-pill">Declined 1</span
+                    ><span class="wf-pill">Not cast in 2026</span
+                    ><span class="wf-pill">Block ▾</span>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px">
                     <svg
+                      role="img"
+                      aria-label="Search"
                       class="wf-icon"
                       data-icon="search"
                       xmlns="http://www.w3.org/2000/svg"
@@ -151,8 +178,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="Search"
                     >
                       <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"></path>
                       <path d="M21 21l-6 -6"></path></svg
@@ -181,7 +206,7 @@
                     class="wf-card"
                     style="
                       display: grid;
-                      grid-template-columns: repeat(2, minmax(0px, 1fr));
+                      grid-template-columns: minmax(0, 2fr) 84px 44px 76px minmax(0, 1.5fr) 120px;
                       gap: 9px 8px;
                       align-items: center;
                       white-space: nowrap;
@@ -196,12 +221,12 @@
                     <hr style="grid-column: 1 / -1; margin: 0" />
                     <span>Elena Varga</span><small>account</small><small>2</small><small>2/2</small
                     ><small>Literature</small><span class="wf-pill accent">Guest of honour</span>
-                    <span>Ola Szpak</span><small>account</small><small>3</small
-                    ><small style="color: var(--wf-warn)">2/3</small
-                    ><small>Pop culture, Literature</small><small></small> <span>Kuba Lis</span
-                    ><small>account</small><small>1</small><small>1/1</small
-                    ><small>Pop culture</small><small></small> <span>Ewa Kruk</span
-                    ><small>account</small><small>1</small
+                    <span>Ola Szpak</span><small>account</small><small>2</small
+                    ><small style="color: var(--wf-warn)">1/2</small
+                    ><small style="white-space: normal">Pop culture, Literature</small
+                    ><small></small> <span>Kuba Lis</span><small>account</small><small>1</small
+                    ><small>1/1</small><small>Pop culture</small><small></small>
+                    <span>Ewa Kruk</span><small>account</small><small>1</small
                     ><small style="color: var(--wf-warn)">0/1</small><small>Pop culture</small
                     ><small>invited</small>
                     <span>Tomek Brzoza <small class="wf-muted">· remote</small></span
@@ -217,7 +242,8 @@
                     ><small>Literature</small
                     ><small style="color: var(--wf-warn)">possible duplicate</small>
                     <span>Michał Rydz</span><small>account</small><small>2</small><small>2/2</small
-                    ><small>Pop culture, Literature</small><small></small>
+                    ><small style="white-space: normal">Pop culture, Literature</small
+                    ><small></small>
                     <span>Klub Fantastyki <small class="wf-muted">· group</small></span
                     ><small>3 members</small><small>3</small
                     ><small style="color: var(--wf-warn)">2/3</small><small>Literature</small
@@ -261,6 +287,8 @@
                       <h2>Merge Magdalena Sowa into Magda Sowa?</h2>
                       <div style="flex: 1"></div>
                       <svg
+                        role="img"
+                        aria-label="Close"
                         class="wf-icon"
                         data-icon="x"
                         xmlns="http://www.w3.org/2000/svg"
@@ -272,21 +300,27 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Close"
                       >
                         <path d="M18 6l-12 12"></path>
                         <path d="M6 6l12 12"></path>
                       </svg>
                     </div>
                     <small
-                      >Her cast entry on “Fantasy publishers: what next” moves to Magda Sowa, who
-                      then has 3 items.</small
+                      >Magdalena Sowa’s cast entry on “Fantasy publishers: what next” moves to Magda
+                      Sowa, who then has 3 items.</small
                     >
                     <small
                       >The entry Magdalena Sowa goes; you pick which profile fields to keep.</small
                     >
-                    <small><strong>You can undo the merge within this edition.</strong></small>
+                    <small
+                      >The entry belongs to Dni Fantastyki, so the merge shows in every
+                      edition.</small
+                    >
+                    <small
+                      ><strong
+                        >Undo merge stays on Magda Sowa’s entry for this edition.</strong
+                      ></small
+                    >
                     <div style="display: flex; gap: 8px">
                       <div style="flex: 1"></div>
                       <button>Cancel</button><button class="primary">Merge</button>
@@ -299,24 +333,24 @@
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
           <strong>One entry per programme person</strong>Must for all four conventions; patterns
-          from Grenadine, pretalx and Konwencik. A programme person lives at the convention with or
+          from Grenadine, pretalx and Konwencik; a programme person lives at the convention with or
           without an account, a group is a person whose members are accounts, and a cast entry is
-          invited, confirmed or declined (Q5). Merge asks in a modal that names the cast entries and
-          confirmations that move, and it can be undone within the edition.
+          invited, confirmed or declined (Q5). Merge asks in a modal that names the cast entries
+          that move and warns that the entry spans editions; Not cast in 2026 shows the convention’s
+          people without an item this year. Which permission edits a convention-level entry is Q29.
         </div>
       </figure>
       <figure class="board" id="ab-medium-release">
         <figcaption class="t" style="width: 840px">
           Fantasmagoria: programme release <code>ab-medium-release</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 880px">
+        <div class="screen desktop" style="width: 840px; height: 930px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%; box-sizing: border-box">
@@ -332,8 +366,7 @@
                 >
                   <strong>Fantasmagoria</strong><small>Edition 2026 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">org · programme: write</small>
                 </div>
@@ -347,8 +380,24 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><small>People</small><small>Changes</small><small>Messages</small
+                    ><small>Settings</small><small>Dictionaries</small><small>Rooms</small
+                    ><span class="wf-pill accent">Publication</span>
+                  </div>
                   <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                     <div>
+                      <small>Programme · Publication</small>
                       <h1>Programme releases</h1>
                       <small>Fantasmagoria 2026 · 164 items · MOK and II LO · Saturday 08:35</small>
                     </div>
@@ -412,7 +461,7 @@
                         <div style="display: flex; align-items: center; gap: 8px">
                           <span style="flex: 1"
                             >1 conflict: Dr Natalia Bór, Sunday 10:00 “On the borders of fantasy”,
-                            outside her availability (Sunday from 11:00)</span
+                            outside their availability (Sunday from 11:00)</span
                           ><a href="#">Show</a>
                         </div>
                         <small class="wf-muted"
@@ -560,14 +609,13 @@
         <figcaption class="t" style="width: 840px">
           Pyrkon: conflicts across the edition <code>ab-pyrkon-conflicts</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 800px">
+        <div class="screen desktop" style="width: 840px; height: 950px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%; box-sizing: border-box">
@@ -583,10 +631,9 @@
                 >
                   <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
-                  <small class="wf-muted">org · programme: write</small>
+                  <small class="wf-muted">org · programme: write · 2 zones</small>
                 </div>
                 <div
                   style="
@@ -598,12 +645,27 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><small>People</small><span class="wf-pill accent">Conflicts</span
+                    ><small>Changes</small><small>Messages</small><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                     <div>
                       <h1>Conflicts</h1>
                       <small
-                        >2 214 items · 17 conflicts · they warn, never block saving or
-                        publishing</small
+                        >Thursday 6 May · 2,214 items · 17 conflicts · they warn, never block saving
+                        or publishing</small
                       >
                     </div>
                     <div style="flex: 1"></div>
@@ -644,14 +706,17 @@
                         <small style="color: var(--wf-warn)"
                           ><strong>Person in two places</strong> · Saturday 14:00</small
                         ><br /><strong>Marta Wilk</strong><br /><small
-                          >“The future of fantasy: artificial intelligence and literature” ·
-                          Literature Zone · Sala Literacka 1 · pawilon 7</small
+                          >LIT-114 The future of fantasy: artificial intelligence and literature ·
+                          Literature Zone</small
                         ><br /><small
-                          >“The Witcher on screen: three adaptations” · Film and Series Zone · Aula
-                          Wielka</small
+                          >FIL-023 The Witcher on screen: three adaptations · Film and Series
+                          Zone</small
                         >
                       </div>
-                      <a href="#">Show in grid</a><button>Keep as is</button>
+                      <a href="#">Show in grid</a
+                      ><small class="wf-muted" style="white-space: nowrap"
+                        >keep: needs both zones</small
+                      >
                     </div>
                     <div
                       style="
@@ -665,7 +730,7 @@
                       <div style="flex: 1; min-width: 0">
                         <small style="color: var(--wf-warn)"
                           ><strong>Outside speaker availability</strong> · Saturday 10:00</small
-                        ><br /><strong>Signing session: Lena Cis</strong><br /><small
+                        ><br /><strong>LIT-140 Signing session: Lena Cis</strong><br /><small
                           >Literature Zone · Autografy 3 · Lena Cis is available from Saturday
                           12:00</small
                         >
@@ -684,11 +749,15 @@
                       <div style="flex: 1; min-width: 0">
                         <small style="color: var(--wf-warn)"
                           ><strong>Outside room availability</strong> · Sunday 17:00</small
-                        ><br /><strong>There is room for everyone in space</strong><br /><small
+                        ><br /><a href="#"
+                          ><strong>NAU-007 There is room for everyone in space</strong></a
+                        ><br /><small
                           >Science Zone · Aula Wielka unavailable on Sunday 16:00–20:00</small
                         >
                       </div>
-                      <a href="#">Show in grid</a><button>Keep as is</button>
+                      <small class="wf-muted" style="white-space: nowrap"
+                        >read only · Science Zone</small
+                      >
                     </div>
                     <div
                       style="
@@ -704,20 +773,24 @@
                           ><strong>Related items at once</strong> · Saturday 14:00 · tag: artificial
                           intelligence</small
                         ><br /><strong
-                          >The future of fantasy: artificial intelligence and literature</strong
+                          >LIT-114 The future of fantasy: artificial intelligence and
+                          literature</strong
                         ><br /><small
-                          >Literature Zone · at the same time “Will AI write the next Lem?” ·
+                          >Literature Zone · at the same time NAU-012 Will AI write the next Lem? ·
                           Science Zone</small
                         >
                       </div>
-                      <a href="#">Show in grid</a><button>Keep as is</button>
+                      <a href="#">Show in grid</a
+                      ><small class="wf-muted" style="white-space: nowrap"
+                        >keep: needs both zones</small
+                      >
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px">
                       <div style="flex: 1; min-width: 0">
                         <small style="color: var(--wf-warn)"
                           ><strong>Over the daily limit</strong> · Saturday</small
                         ><br /><strong>Jan Bór</strong><br /><small
-                          >4 items on Saturday, he gave at most 3 · Literature Zone</small
+                          >4 items on Saturday, Jan gave at most 3 · Literature Zone</small
                         >
                       </div>
                       <a href="#">Show items</a><button>Keep as is</button>
@@ -725,6 +798,8 @@
                   </div>
                   <div class="wf-box" style="display: flex; align-items: center; gap: 8px">
                     <svg
+                      role="img"
+                      aria-label="No conflict"
                       class="wf-icon"
                       data-icon="check"
                       xmlns="http://www.w3.org/2000/svg"
@@ -736,8 +811,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="No conflict"
                     >
                       <path d="M5 12l5 5l10 -10"></path></svg
                     ><small style="flex: 1"
@@ -745,9 +818,14 @@
                       the whole edition.</small
                     >
                   </div>
+                  <small class="wf-muted"
+                    >You change and keep conflicts of your zones. A conflict across two zones is
+                    kept by someone who holds both, or by Agata Rdest; each side may still change
+                    its own item.</small
+                  >
                   <div style="display: flex; align-items: center; gap: 8px">
                     <small class="wf-muted"
-                      >Showing 5 of 17 · “Keep as is” hides a conflict until the item changes
+                      >Showing 5 of 17 · Keep as is hides a conflict until the item changes
                       again</small
                     >
                     <div style="flex: 1"></div>
@@ -762,8 +840,9 @@
           <strong>Five conflict rules</strong>Must for Fantasmagoria, Dni Fantastyki and Pyrkon;
           rules from pretalx, related topics from Arisia, full checking from Zambia and Grenadine.
           Two items in one room is a rule of its own, because Pyrkon shares rooms between zones; on
-          6 May it finds none. ‘My zones’ is the person&#x27;s zones and ‘Whole edition’ catches
-          conflicts between zones (Q11).
+          6 May it finds none. Marta Wilk holds two zones: a row of a zone Marta does not hold says
+          read only instead of Keep as is, and a conflict across two zones is kept only by someone
+          who holds both or all zones, an assumption for Q11.
         </div>
       </figure>
       <figure class="board" id="ab-small-completeness">
@@ -777,7 +856,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%; box-sizing: border-box">
@@ -794,7 +872,7 @@
                   <strong>Nordcon</strong><small>Edition 2026 ▾</small>
                   <hr />
                   <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  ><span>Tickets</span><span>Access</span><span>Edition settings</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">head</small>
                 </div>
@@ -808,6 +886,21 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>People</small
+                    ><small>Changes</small><small>Messages</small><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small
+                    ><span class="wf-pill accent">Publication</span>
+                  </div>
                   <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                     <div>
                       <h1>Completeness check</h1>
@@ -835,8 +928,8 @@
                   >
                     <small style="color: var(--wf-warn)">No room</small
                     ><span style="overflow: hidden; text-overflow: ellipsis"
-                      >The Northman (2022): mythological inspirations, screening and
-                      discussion</span
+                      >The Northman (2022): mythological inspirations, screening and discussion ·
+                      draft</span
                     ><a href="#">Fix</a> <small style="color: var(--wf-warn)">No description</small
                     ><span style="overflow: hidden; text-overflow: ellipsis"
                       >Bismarck: Winston Churchill's Moby Dick</span
@@ -846,10 +939,10 @@
                     ><span style="overflow: hidden; text-overflow: ellipsis">Costume contest</span
                     ><a href="#">Fix</a> <small style="color: var(--wf-warn)">No time</small
                     ><span style="overflow: hidden; text-overflow: ellipsis"
-                      >How to organise your first convention and stay sane · K6</span
+                      >How to organise your first convention and stay sane · K6 · draft</span
                     ><a href="#">Fix</a> <small style="color: var(--wf-warn)">No time</small
                     ><span style="overflow: hidden; text-overflow: ellipsis"
-                      >ScriptJam: scriptwriting 1.01 · K6</span
+                      >ScriptJam: scriptwriting 1.01 · K6 · draft</span
                     ><a href="#">Fix</a> <small>Hidden</small
                     ><span style="overflow: hidden; text-overflow: ellipsis"
                       >Lifting the curse from the Polish Witcher series · hidden since 2
@@ -876,9 +969,11 @@
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
           <strong>Check before print</strong>Must for all four conventions; the pattern is
-          Konwencik&#x27;s data check. Nordcon has no blocks or formats, so it never sees those
-          checks, and the 400-copy booklet is where gaps cost most. ‘Same person’ asks in a modal
-          before merging, and OPOS exports the booklet data rather than composing the booklet (Q26).
+          Konwencik&#x27;s data check. Nordcon has no formats and may leave items outside its
+          tracks, so it never sees those checks, and the 400-copy booklet is where gaps cost most.
+          No room and No time list only drafts added after the 19 October publication, since a
+          published item always has both; ‘Same person’ asks in a modal before merging, and OPOS
+          exports the booklet data rather than composing the booklet (Q26).
         </div>
       </figure>
       <figure class="board" id="ab-dni-panel-casting">
@@ -892,7 +987,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%; box-sizing: border-box">
@@ -908,8 +1002,7 @@
                 >
                   <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">org · programme: write</small>
                 </div>
@@ -923,6 +1016,21 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <span class="wf-pill accent">Items</span><small>Grid</small
+                    ><small>Proposals</small><small>People</small><small>Changes</small
+                    ><small>Messages</small><small>Settings</small><small>Dictionaries</small
+                    ><small>Rooms</small><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                     <div>
                       <h1>AI in organising conventions</h1>
@@ -937,7 +1045,7 @@
                   <div style="display: flex; gap: 12px; align-items: center; white-space: nowrap">
                     <label>Seats in the cast<input value="5" style="width: 60px" /></label
                     ><label style="display: flex; align-items: center; gap: 8px"
-                      ><input type="checkbox" checked="" /> Remote participation allowed</label
+                      ><input type="checkbox" checked /> Remote participation allowed</label
                     >
                   </div>
                   <div
@@ -1019,16 +1127,15 @@
                       ><small class="wf-muted">open candidacy for guest panels</small>
                     </div>
                     <label style="display: flex; align-items: center; gap: 8px"
-                      ><input type="checkbox" checked="" /><span style="flex: 1; min-width: 0"
-                        >Agata Rój · “I have planned a small convention's volunteer rota for 4
-                        years”</span
+                      ><input type="checkbox" checked /><span style="flex: 1; min-width: 0"
+                        >Agata Rój · “For 4 years I have built the volunteer rota of a small
+                        convention.”</span
                       ><span class="wf-pill">panelist or moderator</span></label
                     >
                     <label style="display: flex; align-items: center; gap: 8px"
                       ><input type="checkbox" /><span style="flex: 1; min-width: 0"
                         >Szymon Klon · “I am writing a bot for programme proposals”</span
-                      ><span class="wf-pill">panelist</span
-                      ><small style="color: var(--wf-warn)">matches a private flag</small></label
+                      ><span class="wf-pill">panelist</span></label
                     >
                     <label style="display: flex; align-items: center; gap: 8px"
                       ><input type="checkbox" /><span style="flex: 1; min-width: 0"
@@ -1040,6 +1147,8 @@
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
                     <div style="display: flex; align-items: center; gap: 8px">
                       <svg
+                        role="img"
+                        aria-label="Private"
                         class="wf-icon"
                         data-icon="lock"
                         xmlns="http://www.w3.org/2000/svg"
@@ -1051,8 +1160,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Private"
                       >
                         <path
                           d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z"
@@ -1062,10 +1169,11 @@
                       ><strong>Private flag</strong
                       ><small class="wf-muted">seen by the programme team only</small>
                     </div>
-                    <small
-                      >Ewa Kruk prefers not to share a panel with a listed person. Szymon Klon is on
-                      her list.</small
-                    >
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <small style="flex: 1"
+                        >Ewa Kruk asked to be consulted before the panel is cast.</small
+                      ><button>Message</button>
+                    </div>
                   </div>
                   <div style="flex: 1"></div>
                   <div style="display: flex; align-items: center; gap: 8px">
@@ -1076,6 +1184,8 @@
                     <div style="flex: 1"></div>
                     <button class="primary">
                       <svg
+                        role="img"
+                        aria-label="Send"
                         class="wf-icon"
                         data-icon="send"
                         xmlns="http://www.w3.org/2000/svg"
@@ -1087,8 +1197,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Send"
                       >
                         <path d="M10 14l11 -11"></path>
                         <path
@@ -1107,9 +1215,9 @@
           <strong>The team composes a panel</strong>Should for Fantasmagoria, Dni Fantastyki and
           Pyrkon; volunteering with a role from WisCon and Zambia, a 5-seat limit as at Arisia. The
           candidates come from open candidacy for guest panels, the only thing DF&#x27;s speaker
-          recruitment switch covers; the cast itself sits behind no switch (Q9). A ‘not with’ wish
-          is a private flag against a listed person, seen by the programme team only and never free
-          text about anyone (Q25).
+          recruitment switch covers; the cast itself sits behind no switch (Q9). The only trace of a
+          ‘not with’ wish is a private flag: Ewa Kruk asked to be consulted before the panel is
+          cast, with Message and no names, seen by the programme team only (Q25).
         </div>
       </figure>
       <figure class="board" id="ab-pyrkon-decisions">
@@ -1123,7 +1231,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%; box-sizing: border-box">
@@ -1139,10 +1246,9 @@
                 >
                   <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
-                  <small class="wf-muted">org · programme: write</small>
+                  <small class="wf-muted">org · programme: write · 2 zones</small>
                 </div>
                 <div
                   style="
@@ -1154,6 +1260,22 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small
+                    ><span class="wf-pill accent">Proposals</span><small>People</small
+                    ><small>Conflicts</small><small>Changes</small><small>Messages</small
+                    ><small>Settings</small><small>Dictionaries</small><small>Rooms</small
+                    ><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                     <div>
                       <h1>Decision messages</h1>
@@ -1252,6 +1374,8 @@
                     <button>Send a test to me</button
                     ><button class="primary">
                       <svg
+                        role="img"
+                        aria-label="Send"
                         class="wf-icon"
                         data-icon="send"
                         xmlns="http://www.w3.org/2000/svg"
@@ -1263,8 +1387,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Send"
                       >
                         <path d="M10 14l11 -11"></path>
                         <path
@@ -1289,6 +1411,8 @@
                       <h2>Send 55 decision messages?</h2>
                       <div style="flex: 1"></div>
                       <svg
+                        role="img"
+                        aria-label="Close"
                         class="wf-icon"
                         data-icon="x"
                         xmlns="http://www.w3.org/2000/svg"
@@ -1300,8 +1424,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Close"
                       >
                         <path d="M18 6l-12 12"></path>
                         <path d="M6 6l12 12"></path>
@@ -1336,14 +1458,13 @@
         <figcaption class="t" style="width: 840px">
           Pyrkon: reserve list and replacement <code>ab-pyrkon-reserve</code>
         </figcaption>
-        <div class="screen desktop" style="width: 840px; height: 940px">
+        <div class="screen desktop" style="width: 840px; height: 990px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%; box-sizing: border-box">
@@ -1359,10 +1480,9 @@
                 >
                   <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
-                  <small class="wf-muted">org · programme: write</small>
+                  <small class="wf-muted">org · programme: write · Literature Zone</small>
                 </div>
                 <div
                   style="
@@ -1374,6 +1494,22 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small
+                    ><span class="wf-pill accent">Proposals</span><small>People</small
+                    ><small>Conflicts</small><small>Changes</small><small>Messages</small
+                    ><small>Settings</small><small>Dictionaries</small><small>Rooms</small
+                    ><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                     <div>
                       <h1>Replacement in a slot</h1>
@@ -1418,13 +1554,13 @@
                         padding: 10px 12px;
                         border-bottom: 1.4px solid var(--wf-line);
                       "
-                      ><input type="radio" name="r" checked="" />
+                      ><input type="radio" name="r" checked />
                       <div style="flex: 1; min-width: 0">
                         <strong>Baba Yaga made new: Slavic retellings</strong><br /><small
                           >Ida Modrzew · talk 45 min · available all Saturday</small
                         >
                       </div>
-                      <small>fits</small></label
+                      <small>Reserve 1 · fits</small></label
                     >
                     <label
                       style="
@@ -1440,7 +1576,7 @@
                           >Leon Wichura + 1 · talk 45 min · co-host from 16:00</small
                         >
                       </div>
-                      <small>fits</small></label
+                      <small>Reserve 2 · fits</small></label
                     >
                     <label
                       style="
@@ -1456,7 +1592,9 @@
                           >Ewa Sowa · panel 90 min</small
                         >
                       </div>
-                      <small style="color: var(--wf-warn)">longer than the slot</small></label
+                      <small style="color: var(--wf-warn)"
+                        >Reserve 3 · longer than the slot</small
+                      ></label
                     >
                     <label
                       style="
@@ -1472,16 +1610,18 @@
                           >Róża Bąk · talk 45 min</small
                         >
                       </div>
-                      <small>fits</small></label
+                      <small>Reserve 4 · fits</small></label
                     >
                     <div style="padding: 8px 12px">
-                      <small class="wf-muted">and 1 more entry</small>
+                      <small class="wf-muted">and Reserve 5</small>
                     </div>
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
                     <strong>Who gets a message</strong>
                     <div style="display: flex; gap: 8px">
                       <svg
+                        role="img"
+                        aria-label="Email"
                         class="wf-icon"
                         data-icon="mail"
                         xmlns="http://www.w3.org/2000/svg"
@@ -1493,8 +1633,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Email"
                       >
                         <path
                           d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z"
@@ -1504,31 +1642,11 @@
                         >Ida Modrzew: a request to confirm the item by Friday 12:00</small
                       >
                     </div>
-                    <div style="display: flex; gap: 8px">
-                      <svg
-                        class="wf-icon"
-                        data-icon="mail"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1em"
-                        height="1em"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        role="img"
-                        aria-label="Email"
-                      >
-                        <path
-                          d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z"
-                        ></path>
-                        <path d="M3 7l9 6l9 -6"></path></svg
-                      ><small style="flex: 1"
-                        >187 people who liked “Polish fantasy abroad”: it stays cancelled, and a
-                        different item, “Baba Yaga made new”, now runs in its slot</small
-                      >
-                    </div>
+                    <small class="wf-muted"
+                      >Nobody else is emailed: the 187 people who liked “Polish fantasy abroad” were
+                      told of its cancellation, and “Baba Yaga made new” shows in the slot in the
+                      portal.</small
+                    >
                     <small class="wf-muted"
                       >Speaker discount: set in Tickets, from this item's hours and cast.</small
                     >
@@ -1536,8 +1654,7 @@
                   <div style="flex: 1"></div>
                   <div style="display: flex; align-items: center; gap: 8px">
                     <div style="flex: 1"></div>
-                    <button>Cancel</button
-                    ><button class="primary">Insert into the slot and notify…</button>
+                    <button>Cancel</button><button class="primary">Insert into the slot…</button>
                   </div>
                   <div
                     class="wf-card"
@@ -1554,6 +1671,8 @@
                       <h2>Insert “Baba Yaga made new” into the slot?</h2>
                       <div style="flex: 1"></div>
                       <svg
+                        role="img"
+                        aria-label="Close"
                         class="wf-icon"
                         data-icon="x"
                         xmlns="http://www.w3.org/2000/svg"
@@ -1565,8 +1684,6 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        role="img"
-                        aria-label="Close"
                       >
                         <path d="M18 6l-12 12"></path>
                         <path d="M6 6l12 12"></path>
@@ -1577,15 +1694,10 @@
                       abroad” stays cancelled.</small
                     >
                     <small>Ida Modrzew is asked to confirm by Friday 12:00.</small>
-                    <small
-                      ><strong
-                        >187 people who liked the cancelled item get an email now. It cannot be
-                        taken back.</strong
-                      ></small
-                    >
+                    <small><strong>The request to Ida Modrzew cannot be taken back.</strong></small>
                     <div style="display: flex; gap: 8px">
                       <div style="flex: 1"></div>
-                      <button>Cancel</button><button class="primary">Insert and notify</button>
+                      <button>Cancel</button><button class="primary">Insert and send</button>
                     </div>
                   </div>
                 </div>
@@ -1594,11 +1706,11 @@
           </div>
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
-          <strong>A reserve item fills the slot</strong>Should for Dni Fantastyki and Pyrkon. The
-          replacement is a new item in the cancelled slot, and ‘Insert and notify’ asks in a modal
-          first; only the 187 people who liked the cancelled item hear of it, told plainly that a
-          different item took its place. The speaker discount is set in Tickets, and a reserve-list
-          host earns it the same way (Q22).
+          <strong>A reserve item fills the slot</strong>Should for Dni Fantastyki and Pyrkon: the
+          ranked reserve list offers Reserve 1 first; the replacement is a new item in the cancelled
+          slot, and inserting asks in a modal because the request to its host goes at once. No
+          second email reaches those who liked the cancelled item. The speaker discount is set in
+          Tickets, and a reserve-list host earns it the same way (Q22).
         </div>
       </figure>
       <figure class="board" id="ab-medium-message">
@@ -1612,7 +1724,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%; box-sizing: border-box">
@@ -1628,8 +1739,7 @@
                 >
                   <strong>Fantasmagoria</strong><small>Edition 2026 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">org · programme: write</small>
                 </div>
@@ -1643,6 +1753,21 @@
                     min-width: 0;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><small>People</small><small>Changes</small
+                    ><span class="wf-pill accent">Messages</span><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
+                  </div>
                   <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                     <h1>Message to speakers</h1>
                     <div style="flex: 1"></div>
@@ -1708,6 +1833,8 @@
                         <button>Send a test to me</button
                         ><button class="primary">
                           <svg
+                            role="img"
+                            aria-label="Send"
                             class="wf-icon"
                             data-icon="send"
                             xmlns="http://www.w3.org/2000/svg"
@@ -1719,8 +1846,6 @@
                             stroke-width="2"
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            role="img"
-                            aria-label="Send"
                           >
                             <path d="M10 14l11 -11"></path>
                             <path

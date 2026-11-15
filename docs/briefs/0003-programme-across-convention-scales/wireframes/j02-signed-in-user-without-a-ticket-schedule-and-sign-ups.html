@@ -1,0 +1,3031 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>J02. Signed-in user without a ticket: schedule and sign-ups</title>
+    <link rel="stylesheet" href="wireframes.css" />
+  </head>
+  <body>
+    <header class="page">
+      <h1>J02. Signed-in user without a ticket: schedule and sign-ups</h1>
+      <p>
+        A role journey: each row is one person on one convention, left to right in time. An arrow is
+        an action that screen offers or an event that reaches the person; refusals sit under the
+        step where the role tries. The same step on another convention stands in the same column,
+        without an arrow. All people shown are invented.
+      </p>
+    </header>
+    <nav class="pages">
+      <a href="index.html">Index</a
+      ><a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+        >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+      ><a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a
+      ><a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+        >3. Portal: my schedule, proposing an item, speaker screen</a
+      ><a href="04-at-the-room-door-volunteer-and-scanner.html"
+        >4. At the room door: volunteer and scanner</a
+      ><a href="05-panel-programme-settings-of-an-edition.html"
+        >5. Panel: programme settings of an edition</a
+      ><a href="06-panel-programme-dictionaries-and-the-item-form.html"
+        >6. Panel: programme dictionaries and the item form</a
+      ><a href="07-panel-building-the-programme.html">7. Panel: building the programme</a
+      ><a href="08-panel-changes-during-the-convention-and-entitlements.html"
+        >8. Panel: changes during the convention and entitlements</a
+      ><a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+        >9. Worldcon: stress test of the model (not for delivery)</a
+      ><a href="10-portal-programme-people-and-guests.html"
+        >10. Portal: programme people and guests</a
+      ><a href="11-portal-changes-now-and-next-rooms-reminders.html"
+        >11. Portal: changes, now and next, rooms, reminders</a
+      ><a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+        >12. Portal: the speaker from acceptance to the day of the item</a
+      ><a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+        >13. Panel: programme team, people, panels and the programme release</a
+      ><a href="14-panel-the-programme-during-the-convention.html"
+        >14. Panel: the programme during the convention</a
+      ><a href="15-panel-head-dictionaries-team-and-programme-status.html"
+        >15. Panel: head, dictionaries, team and programme status</a
+      ><a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+        >16. Portal: sign-ups, lottery, declines and empty states</a
+      ><a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+        >17. Panel: item list, proposals, announcements and re-import</a
+      >
+    </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
+    <h2 class="sec">J02. Signed-in user without a ticket: schedule and sign-ups</h2>
+    <main
+      class="boards flow"
+      data-edges='[{"from": "j02-n-item", "to": "j02-n-item-liked", "label": "Tap Add to my schedule"}, {"from": "j02-n-item-liked", "to": "j02-n-plan", "label": "Tap My schedule"}, {"from": "j02-f-list", "to": "j02-f-item", "label": "Tap the cover workshop"}, {"from": "j02-f-item", "to": "j02-f-item-in", "label": "Tap Sign up"}, {"from": "j02-f-item-in", "to": "j02-f-plan", "label": "Sat 11:40: tap My schedule"}, {"from": "j02-f-plan", "to": "j02-f-review", "label": "Tap Review on the talk"}, {"from": "j02-f-review", "to": "j02-f-signups", "label": "Email 13:05: seat for you"}, {"from": "j02-f-signups", "to": "j02-f-signups-in", "label": "Tap Take the seat"}, {"from": "j02-f-signups-in", "to": "ab-role-cancel-signup", "label": "14:20: Cancel the workshop"}, {"from": "ab-role-cancel-signup", "to": "j02-f-signups-out", "label": "Tap Cancel sign-up"}, {"from": "j02-f-signups-out", "to": "ab-role-signups-closed", "label": "15:05: Open the item"}, {"from": "ab-role-signups-closed", "to": "j02-f-door", "label": "16:52: My schedule, one-shot"}, {"from": "j02-d-plan", "to": "j02-d-item", "label": "Tap the author meeting"}, {"from": "j02-d-item", "to": "j02-d-now", "label": "Sat 15:52: tap Now"}, {"from": "j02-p-list", "to": "ab-role-no-tokens", "label": "Tap The future of fantasy"}, {"from": "ab-role-no-tokens", "to": "j02-p-item-liked", "label": "Tap Add to my schedule"}, {"from": "j02-p-item-liked", "to": "j02-p-reminders", "label": "Tap Reminders and emails"}]'
+    >
+      <figure class="board" id="j02-n-item" style="grid-column: 2; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Nordcon: open item <code>j02-n-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 640px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Talks</span>
+                </div>
+                <h2>Bismarck: Winston Churchill's Moby Dick</h2>
+                <small>Saturday 13:00–13:50 · K8 „Falcon Crest Gazette”</small
+                ><small>Host: <a href="#" style="text-decoration: underline">Witold Sęk</a></small>
+                <p>
+                  How the hunt for the battleship Bismarck in May 1941 became a chase Churchill
+                  followed hour by hour.
+                </p>
+                <div><button>♡ Add to my schedule · 14</button></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Igor likes an item</strong>Igor Sitko, signed in with no ticket in OPOS, opens the
+          Bismarck talk on Saturday 5 December at 12:30. Nordcon has no sign-ups, reviews or
+          attendee reports, so a like is all an account adds here. This journey has a lane for each
+          of the four conventions.
+        </div>
+      </figure>
+      <figure class="board" id="j02-n-item-liked" style="grid-column: 3; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Nordcon: item liked <code>j02-n-item-liked</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 660px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Talks</span>
+                </div>
+                <h2>Bismarck: Winston Churchill's Moby Dick</h2>
+                <small>Saturday 13:00–13:50 · K8 „Falcon Crest Gazette”</small
+                ><small>Host: <a href="#" style="text-decoration: underline">Witold Sęk</a></small>
+                <p>
+                  How the hunt for the battleship Bismarck in May 1941 became a chase Churchill
+                  followed hour by hour.
+                </p>
+                <div><button class="primary">♡ Liked · 15</button></div>
+                <small class="wf-muted"
+                  >In your schedule. A cancellation, a new time, room or cast is emailed to
+                  you.</small
+                >
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The like shows at once</strong>The tap saves the like and counts it; nobody sees
+          who liked. Igor is emailed if the item is cancelled, moved or recast, and may turn those
+          emails off for likes (Q18).
+        </div>
+      </figure>
+      <figure class="board" id="j02-n-plan" style="grid-column: 4; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Nordcon: my schedule of likes <code>j02-n-plan</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 900px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My schedule</h2>
+                  <small>Nordcon 2026 · 3 liked</small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; align-items: center">
+                  <span class="wf-pill">Thu</span><span class="wf-pill">Fri</span
+                  ><span class="wf-pill accent">Sat · 3</span><span class="wf-pill">Sun</span
+                  ><small style="margin-left: auto; color: var(--wf-warn)">1 overlap</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>13:00–13:50 · K8</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ Liked</small>
+                  </div>
+                  <strong>Bismarck: Winston Churchill's Moby Dick</strong>
+                </div>
+                <small style="color: var(--wf-warn)">14:00 · two items at the same time</small>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>14:00–14:50 · K6</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ Liked</small>
+                  </div>
+                  <strong>Lifting the curse from the Polish Witcher series</strong>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>14:00–16:30 · K8</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ Liked</small>
+                  </div>
+                  <strong
+                    >The Northman (2022): mythological inspirations, screening and
+                    discussion</strong
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Share and take it with you</strong>
+                  <div style="display: flex; gap: 8px">
+                    <button>Copy private link</button><button>QR code</button>
+                  </div>
+                  <small class="wf-muted">Anyone with the link sees what you liked.</small
+                  ><a href="#">Reset the link · the old one stops working</a
+                  ><button>Subscribe in a calendar</button
+                  ><small class="wf-muted"
+                    >Your calendar picks up a new time or room by itself.</small
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A schedule of likes</strong>Igor’s schedule holds their three Saturday likes and
+          warns, without blocking, that two run at 14:00. They share it by private link, QR code or
+          a subscribed calendar; after an item starts no Review appears, since Nordcon keeps reviews
+          off (Q12).
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-list" style="grid-column: 1; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: programme <code>j02-f-list</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 880px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Fantasmagoria 2026</h2>
+                  <small>Gniezno · MOK and II LO · 3 days</small>
+                </div>
+                <input value="Search the programme" />
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Building ▾</span><span class="wf-pill">Room ▾</span
+                  ><span class="wf-pill">Format ▾</span><span class="wf-pill">Age ▾</span
+                  ><span class="wf-pill">Sign-ups</span><span class="wf-pill">Step-free</span>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Fri</span><span class="wf-pill accent">Sat</span
+                  ><span class="wf-pill">Sun</span
+                  ><small class="wf-muted" style="margin-left: auto">164 items</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Talk</span>
+                  </div>
+                  <small>11:00–11:50 · Sala Widowiskowa · MOK</small
+                  ><strong>How to write so they publish you?</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Iga Wrzos · free entry</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 58</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Talk</span>
+                  </div>
+                  <small>13:00–13:50 · Touhou Room · II LO</small
+                  ><strong
+                    >A report from Reitaisai Festival and pro tips for Japanese conventions</strong
+                  >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Kitsune98 · free entry</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 36</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Workshop</span>
+                  </div>
+                  <small>15:00–16:50 · Sala Masterclass · II LO</small
+                  ><strong>A fantasy cover from sketch to print</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Sign-ups · 3 of 12 free</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 41</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">RPG session</span><span class="wf-pill">16+</span>
+                  </div>
+                  <small>17:00–18:50 · Sala RPG 2 · II LO</small
+                  ><strong>An RPG one-shot for beginners</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Sign-ups · full, waiting list</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 12</small>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Nela, signed in, no ticket</strong>Nela Kruszyna has an OPOS account and no ticket
+          in OPOS; they buy a day ticket at the box office. On Thursday 16 July at 20:00 they filter
+          like anyone, and the free places on each sign-up tile tell them where to hurry.
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-item" style="grid-column: 2; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: workshop with sign-ups <code>j02-f-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 820px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Workshop</span>
+                </div>
+                <h2>A fantasy cover from sketch to print</h2>
+                <small>Saturday 15:00–16:50 · Sala Masterclass · II LO</small
+                ><small>Room access · II LO, 1st floor, stairs only</small
+                ><small
+                  >Host: <a href="#" style="text-decoration: underline">Wiktoria Głóg</a></small
+                >
+                <p>
+                  From a composition thumbnail to a print-ready file. We work on your own sketches;
+                  tablets and paper are provided.
+                </p>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Sign-ups · first come, first served</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free: 3 of 12</small>
+                    <div style="flex: 1"></div>
+                    <small>Open until the start</small>
+                  </div>
+                  <small>Any signed-in account can sign up.</small
+                  ><button class="primary">Sign up</button
+                  ><small class="wf-muted"
+                    >When the places run out, you join the waiting list. A freed seat is held for
+                    you for 1 hour, or until the start if that comes first. You can cancel until the
+                    start.</small
+                  >
+                </div>
+                <div><button>♡ Add to my schedule · 41</button></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Sign up without a ticket</strong>Any signed-in account signs up, first come, from
+          publication until the start; once the 12 places are gone Sign up joins the waiting list. A
+          condition on a ticket would be an entitlement set in Tickets, which Fantasmagoria does not
+          use (Q20).
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-item-in" style="grid-column: 3; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: signed up for the workshop <code>j02-f-item-in</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 700px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Workshop</span>
+                </div>
+                <h2>A fantasy cover from sketch to print</h2>
+                <small>Saturday 15:00–16:50 · Sala Masterclass · II LO</small
+                ><small>Room access · II LO, 1st floor, stairs only</small
+                ><small
+                  >Host: <a href="#" style="text-decoration: underline">Wiktoria Głóg</a></small
+                >
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <span class="wf-pill accent">Signed up</span><small>place 10 of 12</small>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free: 2 of 12</small>
+                    <div style="flex: 1"></div>
+                    <small>Open until the start</small>
+                  </div>
+                  <small
+                    >You can cancel until the start; your seat then goes to the first person
+                    waiting.</small
+                  ><a href="#">Cancel sign-up</a>
+                </div>
+                <div><button>♡ Add to my schedule · 41</button></div>
+                <small class="wf-muted">In your schedule as a sign-up.</small>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The seat is Nela’s</strong>At 20:01 the page shows the sign-up at once, with their
+          place and what is left, and the workshop joins their schedule without a like. Cancel
+          sign-up stays here and in My sign-ups until the 15:00 start.
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-plan" style="grid-column: 4; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: my schedule with sign-ups <code>j02-f-plan</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 1000px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>My schedule · Fantasmagoria</h2>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Friday</span><span class="wf-pill accent">Saturday</span
+                  ><span class="wf-pill">Sunday</span>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>11:00 · Sala Widowiskowa · MOK</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Running</span>
+                  </div>
+                  <strong>How to write so they publish you?</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>♡ Liked</small>
+                    <div style="flex: 1"></div>
+                    <a href="#">Review</a>
+                  </div>
+                </div>
+                <small style="color: var(--wf-warn)">Two liked items overlap at 13:00.</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>13:00 · Sala Warsztatowa · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong
+                    >The creator's mind: how the brain builds possible and impossible worlds</strong
+                  ><small style="color: var(--wf-warn)"
+                    >New room · Sat 08:10 · was Sala Prelekcyjna · MOK</small
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>13:00 · Touhou Room · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong
+                    >A report from Reitaisai Festival and pro tips for Japanese conventions</strong
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>15:00 · Sala Masterclass · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Signed up</span>
+                  </div>
+                  <strong>A fantasy cover from sketch to print</strong><a href="#">My sign-ups</a>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>17:00 · Sala RPG 2 · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Waiting · 1st</span>
+                  </div>
+                  <strong>An RPG one-shot for beginners</strong
+                  ><small>A freed seat is offered to you first, by email.</small>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Likes and sign-ups together</strong>On Saturday at 11:40 Nela’s schedule holds
+          their likes, the workshop sign-up and the one-shot whose waiting list they joined on
+          Friday, first in line. Two liked items at 13:00 warn without blocking, and a started item
+          offers Review, since Fantasmagoria has reviews on (Q12).
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-review" style="grid-column: 5; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: review of an item <code>j02-f-review</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 720px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill accent">Running</span
+                  ><small>Saturday 11:00–11:50 · Sala Widowiskowa · MOK</small>
+                </div>
+                <h2>How to write so they publish you?</h2>
+                <small>Host: Iga Wrzos</small>
+                <hr />
+                <strong>Your review</strong><small>Rating</small>
+                <div style="display: flex; gap: 8px">
+                  <button>1</button><button>2</button><button>3</button
+                  ><button class="primary">4</button><button>5</button>
+                </div>
+                <small>Comment (optional)</small>
+                <div
+                  style="
+                    border: 1.4px solid var(--wf-line);
+                    border-radius: var(--wf-radius);
+                    padding: 10px;
+                    min-height: 88px;
+                    box-sizing: border-box;
+                  "
+                >
+                  <small
+                    >Lots of practical detail about working with an editor. Not enough time for
+                    questions.</small
+                  >
+                </div>
+                <small class="wf-muted"
+                  >Iga Wrzos, the speaker, reads the reviews of this item.</small
+                ><button class="primary">Send review</button>
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Nothing else in your schedule has started yet.</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Review once it has started</strong>From the item’s start Nela rates 1 to 5 and may
+          comment, with no ticket asked; Iga Wrzos reads the reviews of their own item. The scale,
+          anonymity and window wait for the domain owner (Q12).
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-signups" style="grid-column: 6; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: my sign-ups <code>j02-f-signups</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 860px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My sign-ups</h2>
+                  <small class="wf-muted">Fantasmagoria 2026 · Saturday</small>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>17:00–18:50 · Sala RPG 2 · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Seat for you</span>
+                  </div>
+                  <strong>An RPG one-shot for beginners</strong>
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">RPG session</span><span class="wf-pill">16+</span>
+                  </div>
+                  <small
+                    >You moved up from the waiting list at 13:05. We also sent you an email.</small
+                  ><small style="color: var(--wf-warn)"
+                    >Take the seat by 14:05, or it passes to the next person waiting.</small
+                  >
+                  <div style="display: flex; gap: 8px">
+                    <button class="primary">Take the seat</button><button>Give it up</button>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>15:00–16:50 · Sala Masterclass · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Signed up</span>
+                  </div>
+                  <strong>A fantasy cover from sketch to print</strong>
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Workshop</span>
+                  </div>
+                  <small>12 places · full</small
+                  ><small
+                    >You can cancel up to the start. Your seat then goes to the first person
+                    waiting.</small
+                  >
+                  <div><button>Cancel sign-up</button></div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <strong>Can't come after all?</strong
+                  ><small
+                    >Cancel, even on the day. A seat you leave unused stays empty while others wait
+                    at the door.</small
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted"
+                  >Sign-ups need only a signed-in account. Sign-ups are set on 23 items.</small
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>One hour to take the seat</strong>Moved up from the waiting list at 13:05, Nela
+          takes the seat or gives it up by 14:05, and an email says the same; the hold ends at the
+          item’s start if that comes sooner. The list moving up by itself is an assumption of Q14.
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-signups-in" style="grid-column: 7; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: seat taken <code>j02-f-signups-in</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 780px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My sign-ups</h2>
+                  <small class="wf-muted">Fantasmagoria 2026 · Saturday</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>17:00–18:50 · Sala RPG 2 · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Signed up</span>
+                  </div>
+                  <strong>An RPG one-shot for beginners</strong>
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">RPG session</span><span class="wf-pill">16+</span>
+                  </div>
+                  <small>5 places · full. You can cancel up to the 17:00 start.</small>
+                  <div><button>Cancel sign-up</button></div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>15:00–16:50 · Sala Masterclass · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Signed up</span>
+                  </div>
+                  <strong>A fantasy cover from sketch to print</strong>
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Workshop</span>
+                  </div>
+                  <small
+                    >12 places · full. You can cancel up to the start; your seat then goes to the
+                    first person waiting.</small
+                  >
+                  <div><button>Cancel sign-up</button></div>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted"
+                  >Sign-ups need only a signed-in account. Each item sets its own sign-ups.</small
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Two seats, both cancellable</strong>At 13:06 taking the seat turns the offer into
+          a sign-up at once. Each card keeps Cancel sign-up until its item starts, and a cancelled
+          seat goes to the first person waiting.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-cancel-signup" style="grid-column: 8; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: cancel a sign-up <code>ab-role-cancel-signup</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 800px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; flex-direction: column; gap: 10px; opacity: 0.35">
+                  <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                    <strong>opos.land</strong>
+                    <div style="flex: 1"></div>
+                    <svg
+                      role="img"
+                      aria-label="Account"
+                      class="wf-icon"
+                      data-icon="user"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                      <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                    </svg>
+                  </div>
+                  <h2>My sign-ups</h2>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <small>15:00–16:50 · Sala Masterclass · II LO</small>
+                      <div style="flex: 1"></div>
+                      <span class="wf-pill">Signed up</span>
+                    </div>
+                    <strong>A fantasy cover from sketch to print</strong>
+                  </div>
+                </div>
+                <div
+                  class="wf-card"
+                  style="display: flex; flex-direction: column; gap: 10px; padding: 16px"
+                >
+                  <h3>Cancel your sign-up?</h3>
+                  <small
+                    ><strong>A fantasy cover from sketch to print</strong> · Saturday 15:00–16:50 ·
+                    Sala Masterclass · II LO</small
+                  ><small
+                    >Your seat goes now to the first of 4 people on the waiting list, who has until
+                    the 15:00 start to take it. Signing up again puts you at the end of the waiting
+                    list.</small
+                  >
+                  <div style="display: flex; gap: 8px; justify-content: flex-end">
+                    <button>Keep my seat</button
+                    ><button style="color: var(--wf-warn); border-color: var(--wf-warn)">
+                      Cancel sign-up
+                    </button>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px; opacity: 0.35">
+                  <small>12 places · 12 signed up · 4 waiting</small>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <small>17:00–18:50 · Sala RPG 2 · II LO</small>
+                      <div style="flex: 1"></div>
+                      <span class="wf-pill accent">Signed up</span>
+                    </div>
+                    <strong>An RPG one-shot for beginners</strong>
+                    <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                      <span class="wf-pill">RPG session</span><span class="wf-pill">16+</span>
+                    </div>
+                    <small>5 places · full. You can cancel up to the 17:00 start.</small>
+                    <div><button>Cancel sign-up</button></div>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The seat passes on at once</strong>No screen gives the seat back, so the modal
+          names what goes and where (ADR 0023). The workshop has 12 places and 4 waiting; the first,
+          Ada Jarząb, gets until the 15:00 start, since the hour would run past it (Q14).
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-signups-out" style="grid-column: 9; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: after cancelling <code>j02-f-signups-out</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 740px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My sign-ups</h2>
+                  <small class="wf-muted">Fantasmagoria 2026 · Saturday</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>17:00–18:50 · Sala RPG 2 · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Signed up</span>
+                  </div>
+                  <strong>An RPG one-shot for beginners</strong>
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">RPG session</span><span class="wf-pill">16+</span>
+                  </div>
+                  <small>5 places · full. You can cancel up to the 17:00 start.</small>
+                  <div><button>Cancel sign-up</button></div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>15:00–16:50 · Sala Masterclass · II LO</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Cancelled · 14:20</span>
+                  </div>
+                  <strong class="wf-muted">A fantasy cover from sketch to print</strong
+                  ><small>You cancelled. Your seat went to the first person waiting.</small
+                  ><small class="wf-muted"
+                    >Signing up again puts you at the end of the waiting list.</small
+                  ><a href="#">Open the item</a>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted"
+                  >Sign-ups need only a signed-in account. Each item sets its own sign-ups.</small
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The cancellation shows</strong>At 14:21 the workshop stays on their list as
+          cancelled by them, with its time, and its seat has gone to the first person waiting.
+          Signing up again stays possible until 15:00, at the end of the waiting list.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-signups-closed" style="grid-column: 9; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: sign-ups closed at the start <code>ab-role-signups-closed</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 760px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My sign-ups</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Workshop</span>
+                </div>
+                <h2>A fantasy cover from sketch to print</h2>
+                <small>Saturday 15:00–16:50 · Sala Masterclass · II LO · Host: Wiktoria Głóg</small
+                ><small>Room access · II LO, 1st floor, stairs only</small>
+                <p>
+                  From a composition thumbnail to a print-ready file. We work on your own sketches;
+                  tablets and paper are provided.
+                </p>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Sign-ups · closed at the start, 15:00</strong
+                  ><small>12 places · 12 signed up · 3 waiting</small
+                  ><button disabled style="opacity: 0.5">Sign up</button
+                  ><small class="wf-muted">Sign-ups for this item closed when it started.</small>
+                </div>
+                <div><button>♡ Add to my schedule · 41</button></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A closed window says why</strong>At 15:05 Nela changes their mind, but the button
+          stays in place, disabled, with the rule that closed it. Fantasmagoria closes sign-ups at
+          the start; Pyrkon closes reservations the day before at 23:59; Nordcon and Dni Fantastyki
+          have no sign-up section.
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-door" style="grid-column: 10; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: sign-up at the room <code>j02-f-door</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 700px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    align-items: center;
+                    padding: 20px;
+                  "
+                >
+                  <svg
+                    role="img"
+                    aria-label="Signed up"
+                    class="wf-icon"
+                    data-icon="check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l5 5l10 -10"></path></svg
+                  ><strong>Signed up</strong><small>Show this screen at the door.</small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">RPG session</span><span class="wf-pill">16+</span>
+                </div>
+                <h2>An RPG one-shot for beginners</h2>
+                <small>Saturday 17:00–18:50 · Sala RPG 2 · II LO</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>5 places · 5 signed up</small>
+                    <div style="flex: 1"></div>
+                    <small>3 waiting</small>
+                  </div>
+                  <small
+                    >Can't come? Cancel, and the first person on the waiting list gets your
+                    place.</small
+                  ><button>Cancel sign-up</button>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted"
+                  >Loaded at 16:52. Without signal this page shows the state from that time.</small
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Show the phone, not a list</strong>At the door of Sala RPG 2 at 16:52 Nela shows
+          their own sign-up state; nobody at the door holds a list of names (Q15). The page says
+          when it loaded, since the school may have no signal (Q27).
+        </div>
+      </figure>
+      <figure class="board" id="j02-d-plan" style="grid-column: 4; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: my schedule without sign-ups <code>j02-d-plan</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 960px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My schedule</h2>
+                  <small>Dni Fantastyki 2026 · 7 liked</small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; align-items: center">
+                  <span class="wf-pill">Fri · 1</span><span class="wf-pill accent">Sat · 4</span
+                  ><span class="wf-pill">Sun · 2</span
+                  ><small style="margin-left: auto; color: var(--wf-warn)">1 overlap</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>12:00–12:50 · Sala Rycerska · 2nd fl.</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ Liked</small>
+                  </div>
+                  <strong>Destiny in fantasy sagas</strong>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>14:00–14:50 · Sala Rycerska · 2nd fl.</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ Liked</small>
+                  </div>
+                  <strong>AI in organising conventions</strong>
+                </div>
+                <small style="color: var(--wf-warn)"
+                  >16:00–16:50 · two items at the same time</small
+                >
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00–16:50 · Sala Rycerska · 2nd fl.</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ Liked</small>
+                  </div>
+                  <strong>Author meeting with the guest of honour</strong>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00–16:50 · Sala Kominkowa · 1st fl.</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ Liked</small>
+                  </div>
+                  <strong
+                    >Call for papers behind the scenes: how the programme team picks talks</strong
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Share and take it with you</strong>
+                  <div style="display: flex; gap: 8px">
+                    <button>Copy private link</button><button>QR code</button>
+                  </div>
+                  <small class="wf-muted">Anyone with the link sees what you liked.</small
+                  ><a href="#">Reset the link · the old one stops working</a
+                  ><button>Subscribe in a calendar</button
+                  ><small class="wf-muted"
+                    >Your calendar picks up a new time or room by itself.</small
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Wanda’s schedule of likes</strong>Wanda Cyran, signed in with no ticket in OPOS,
+          keeps seven likes at Dni Fantastyki on Friday 21 August at 20:00 and is warned that two
+          run at 16:00. Wanda shares the schedule by private link or QR code, resets the link and
+          subscribes a calendar; there is no sign-up to hold.
+        </div>
+      </figure>
+      <figure class="board" id="j02-d-item" style="grid-column: 5; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: the item will likely be full <code>j02-d-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 640px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Literature</span><span class="wf-pill">Author meeting</span
+                  ><span class="wf-pill">EN · with interpretation</span>
+                </div>
+                <h2>Author meeting with the guest of honour</h2>
+                <small
+                  >Saturday 16:00–16:50 ·
+                  <a href="#" style="text-decoration: underline">Sala Rycerska</a> · 2nd
+                  floor</small
+                ><small>Elena Varga · moderator Nina Jawor · interpreter Zofia Mróz</small>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <strong style="color: var(--wf-warn)">Likely full</strong
+                  ><small>296 likes, about 80 seats. Entry is free, first come, first served.</small
+                  ><small>Come early: Sala Rycerska is up stairs only.</small>
+                </div>
+                <div><button class="primary">♡ Liked · 296</button></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Like, but no entry control</strong>At 20:01 Wanda sees their like and the warning:
+          entry is free and first come, so there is nothing to sign up for or reserve. Likely full
+          compares the likes with the room’s 80 seats; it never books a seat.
+        </div>
+      </figure>
+      <figure class="board" id="j02-d-now" style="grid-column: 6; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: room full in now and next <code>j02-d-now</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 900px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Now and next</h2>
+                  <small>Saturday 15:52 · running now or starting by 16:52</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill accent">All levels</span
+                    ><span class="wf-pill">Step-free</span>
+                  </div>
+                  <small class="wf-muted" style="margin-left: auto">16 items</small>
+                </div>
+                <small class="wf-muted">2nd floor · stairs only</small>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <span class="wf-pill accent">Room full</span
+                    ><small
+                      ><a href="#" style="text-decoration: underline">Sala Rycerska</a> ·
+                      16:00</small
+                    >
+                    <div style="flex: 1"></div>
+                    <small>♡ Liked</small>
+                  </div>
+                  <strong>Author meeting with the guest of honour</strong
+                  ><small
+                    >Full since 15:48. Elena Varga signs books on Sunday 12:00, Namiot 2 ·
+                    moat.</small
+                  >
+                </div>
+                <small class="wf-muted">1st floor · stairs only</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <span class="wf-pill">In 8 min · 16:00</span
+                    ><small
+                      ><a href="#" style="text-decoration: underline">Sala Kominkowa</a></small
+                    >
+                    <div style="flex: 1"></div>
+                    <small>♡ Liked</small>
+                  </div>
+                  <strong
+                    >Call for papers behind the scenes: how the programme team picks talks</strong
+                  ><small>Pop culture · Panel discussion · free entry</small>
+                </div>
+                <small class="wf-muted">Moat · step-free</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <span class="wf-pill">In 8 min · 16:00</span
+                    ><small><a href="#" style="text-decoration: underline">Namiot 2</a></small>
+                    <div style="flex: 1"></div>
+                  </div>
+                  <strong>Fantasy short films</strong
+                  ><small>Film and series · Screening · until 17:50</small>
+                </div>
+                <small class="wf-muted">and 13 more in other rooms ↓</small>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small><strong>Now</strong></small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Room full, then no review</strong>At 15:52 Now shows the author meeting as Room
+          full since 15:48, set by an org, so Wanda heads for the call for papers panel they also
+          liked. After an item starts no Review appears, since Dni Fantastyki keeps reviews off
+          (Q12).
+        </div>
+      </figure>
+      <figure class="board" id="j02-p-list" style="grid-column: 1; grid-row: 5">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: programme <code>j02-p-list</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 1020px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Pyrkon 2027</h2>
+                  <small>MTP Poznań · 18–20 June</small>
+                </div>
+                <input value="Search the programme" />
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Zone ▾</span><span class="wf-pill">Format ▾</span
+                  ><span class="wf-pill">Entry ▾</span><span class="wf-pill">Language ▾</span
+                  ><span class="wf-pill">PJM</span><span class="wf-pill">More ▾</span>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Fri</span><span class="wf-pill accent">Sat</span
+                  ><span class="wf-pill">Sun</span
+                  ><small class="wf-muted" style="margin-left: auto">2,214 items</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Literature Zone</span
+                    ><span class="wf-pill">Panel discussion</span><span class="wf-pill">PJM</span>
+                  </div>
+                  <small>14:00–14:45 · Sala Literacka 1 · pawilon 7 · LIT-114</small
+                  ><strong>The future of fantasy: artificial intelligence and literature</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>½ by token · rest from the queue</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 341</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Gród Inicjatyw Fanowskich</span
+                    ><span class="wf-pill">Talk</span><span class="wf-pill">PJM</span>
+                  </div>
+                  <small>14:00–14:45 · Sala GIF 2 · pawilon 5 · GIF-031</small
+                  ><strong
+                    >An accessible convention: PJM, low stimulation and the ramp that isn't
+                    there</strong
+                  >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free entry</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 64</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Science Zone</span
+                    ><span class="wf-pill">Panel discussion</span>
+                  </div>
+                  <small>15:00–15:45 · Aula Wielka · NAU-007</small
+                  ><strong>There is room for everyone in space</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free entry · queue</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 187</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Literature Zone</span
+                    ><span class="wf-pill">Panel discussion</span><span class="wf-pill">EN</span>
+                  </div>
+                  <small>16:00–16:45 · Sala Literacka 1 · pawilon 7 · LIT-121</small
+                  ><strong>Revisiting the classics: is old fantasy still relevant?</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>½ by token · rest from the queue</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 212</small>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Tymek has an account, no ticket</strong>Tymek Sowiński is signed in on Tuesday 15
+          June at 19:00 but holds no Pyrkon 2027 ticket, so their account has no tokens. The list
+          reads the same as for anyone, and each tile says whether an item takes tokens.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-no-tokens" style="grid-column: 2; grid-row: 6">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: no tokens without a ticket <code>ab-role-no-tokens</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 860px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Literature Zone</span
+                  ><span class="wf-pill">Panel discussion</span><span class="wf-pill">PL</span
+                  ><span class="wf-pill">PJM</span>
+                </div>
+                <h2>The future of fantasy: artificial intelligence and literature</h2>
+                <small>Saturday 14:00–14:45 · Sala Literacka 1 · pawilon 7 · ground floor</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Entry</strong
+                  ><small
+                    >Half the seats by token reservation, the rest from the queue outside the
+                    room.</small
+                  ><small>Free reservations: 7 of 30 · for the queue 30</small
+                  ><button disabled style="opacity: 0.5">Reserve a seat · 1 token</button>
+                  <div
+                    class="wf-box"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                      border-color: var(--wf-warn);
+                    "
+                  >
+                    <small
+                      >You have no tokens. Tokens come with a Pyrkon 2027 ticket: Special package 6,
+                      Early Bird 4, or the number in your eBilet import.</small
+                    ><small class="wf-muted">Set in Tickets</small>
+                  </div>
+                  <a href="#">Tickets on eBilet</a
+                  ><small class="wf-muted"
+                    >Without a reservation you come in from the queue: 30 seats.</small
+                  >
+                </div>
+                <div><button>♡ Add to my schedule · 341</button></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A refusal with its reason</strong>At Pyrkon signing in is not enough: a
+          reservation spends a token, and tokens come from an entitlement set in Tickets, by ticket
+          type or the eBilet import (Q20). The button stays disabled with the reason, so Tymek never
+          meets an error; at Fantasmagoria the same account signs up at once.
+        </div>
+      </figure>
+      <figure class="board" id="j02-p-item-liked" style="grid-column: 3; grid-row: 5">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: item liked without tokens <code>j02-p-item-liked</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 880px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Literature Zone</span
+                  ><span class="wf-pill">Panel discussion</span><span class="wf-pill">PL</span
+                  ><span class="wf-pill">PJM</span>
+                </div>
+                <h2>The future of fantasy: artificial intelligence and literature</h2>
+                <small>Saturday 14:00–14:45 · Sala Literacka 1 · pawilon 7 · ground floor</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Entry</strong
+                  ><small
+                    >Half the seats by token reservation, the rest from the queue outside the
+                    room.</small
+                  ><small>Free reservations: 7 of 30 · for the queue 30</small
+                  ><button disabled style="opacity: 0.5">Reserve a seat · 1 token</button>
+                  <div
+                    class="wf-box"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                      border-color: var(--wf-warn);
+                    "
+                  >
+                    <small
+                      >You have no tokens. Tokens come with a Pyrkon 2027 ticket: Special package 6,
+                      Early Bird 4, or the number in your eBilet import.</small
+                    ><small class="wf-muted">Set in Tickets</small>
+                  </div>
+                  <a href="#">Tickets on eBilet</a
+                  ><small class="wf-muted"
+                    >Without a reservation you come in from the queue: 30 seats.</small
+                  >
+                </div>
+                <div><button class="primary">♡ Liked · 342</button></div>
+                <small class="wf-muted"
+                  >In your schedule.
+                  <a href="#" style="text-decoration: underline">Reminders and emails</a></small
+                >
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A like still works</strong>At 19:02 Tymek likes the panel instead, and it joins
+          their schedule while the reservation stays out of reach. A ticket bought later brings its
+          tokens, set in Tickets (Q20).
+        </div>
+      </figure>
+      <figure class="board" id="j02-p-reminders" style="grid-column: 4; grid-row: 5">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: reminders and notifications <code>j02-p-reminders</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 760px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Reminders and notifications</h2>
+                  <small>Pyrkon 2027 · 1 item in your schedule</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Remind me before an item</strong>
+                  <div style="display: flex; gap: 6px; white-space: nowrap">
+                    <span class="wf-pill">Off</span><span class="wf-pill">10 min</span
+                    ><span class="wf-pill accent">30 min</span><span class="wf-pill">1 h</span>
+                  </div>
+                  <div style="display: flex; gap: 6px; white-space: nowrap">
+                    <span class="wf-pill accent">Email</span
+                    ><span class="wf-pill">Calendar alarm</span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Changes to items in my schedule</strong
+                  ><small
+                    >Cancelled · new time · new room · cast changed · accessibility changed</small
+                  ><label style="display: flex; align-items: center; gap: 8px"
+                    ><input type="checkbox" checked /> Email me about changes to liked items</label
+                  ><small class="wf-muted"
+                    >Reservations are always emailed, even with this off; you have none.</small
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <svg
+                      role="img"
+                      aria-label="Calendar"
+                      class="wf-icon"
+                      data-icon="calendar"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"
+                      ></path>
+                      <path d="M16 3v4"></path>
+                      <path d="M8 3v4"></path>
+                      <path d="M4 11h16"></path></svg
+                    ><strong>Calendar</strong>
+                  </div>
+                  <small>A subscribed calendar picks up a new time or room by itself.</small
+                  ><button>Subscribe in a calendar</button>
+                </div>
+                <div style="flex: 1"></div>
+                <button class="primary">Save settings</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Reminders by email and calendar</strong>At 19:03 Tymek picks a reminder time,
+          email or a calendar alarm, and may turn off change emails for liked items; there is no
+          push channel (Q17). With no reservation the forfeit reminder does not appear, and the same
+          screen serves every convention.
+        </div>
+      </figure>
+    </main>
+    <h2 class="sec">J02 (continued): Fantasmagoria, a place for a child without an account</h2>
+    <main
+      class="boards flow"
+      data-edges='[{"from": "j02-f-child-item", "to": "j02-f-child-sheet", "label": "Tap Sign up"}, {"from": "j02-f-child-sheet", "to": "j02-f-child-item", "label": "Tap Not now"}]'
+    >
+      <figure class="board" id="j02-f-child-item" style="grid-column: 1; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: workshop with sign-ups <code>j02-f-child-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 670px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Workshop</span>
+                </div>
+                <h2>A fantasy cover from sketch to print</h2>
+                <small>Saturday 15:00–16:50 · Sala Masterclass · II LO</small
+                ><small>Room access · II LO, 1st floor, stairs only</small
+                ><small
+                  >Host: <a href="#" style="text-decoration: underline">Wiktoria Głóg</a></small
+                >
+                <p>
+                  From a composition thumbnail to a print-ready file. We work on your own sketches;
+                  tablets and paper are provided.
+                </p>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Sign-ups · first come, first served</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free: 3 of 12</small>
+                    <div style="flex: 1"></div>
+                    <small>Open until the start</small>
+                  </div>
+                  <small>Any signed-in account can sign up.</small
+                  ><button class="primary">Sign up</button
+                  ><small class="wf-muted"
+                    >When the places run out, you join the waiting list; a freed seat waits 1 hour
+                    for you. You can cancel until the start.</small
+                  >
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button>♡ Add to my schedule · 41</button>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A place for Ida’s child</strong>Lane of Ida Zięba (invented), signed in, on
+          Thursday 16 July at 20:00, for their child of 10 with a free child ticket and no account.
+          Same as for any signed-in account: Sign up holds a place for their own account.
+        </div>
+      </figure>
+      <figure class="board" id="j02-f-child-sheet" style="grid-column: 1; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: a place for someone without an account <code>j02-f-child-sheet</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 630px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; flex-direction: column; gap: 10px; opacity: 0.35">
+                  <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                    <svg
+                      role="img"
+                      aria-label="Back"
+                      class="wf-icon"
+                      data-icon="arrowLeft"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M5 12l14 0"></path>
+                      <path d="M5 12l6 6"></path>
+                      <path d="M5 12l6 -6"></path></svg
+                    ><small>Programme</small>
+                    <div style="flex: 1"></div>
+                    <svg
+                      role="img"
+                      aria-label="Account"
+                      class="wf-icon"
+                      data-icon="user"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                      <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                    </svg>
+                  </div>
+                  <div style="display: flex; gap: 6px; white-space: nowrap">
+                    <span class="wf-pill">Workshop</span>
+                  </div>
+                  <h2>A fantasy cover from sketch to print</h2>
+                  <small>Saturday 15:00–16:50 · Sala Masterclass · II LO</small
+                  ><small>Room access · II LO, 1st floor, stairs only</small
+                  ><small
+                    >Host: <a href="#" style="text-decoration: underline">Wiktoria Głóg</a></small
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  class="wf-card"
+                  style="display: flex; flex-direction: column; gap: 10px; padding: 16px"
+                >
+                  <div
+                    style="
+                      width: 40px;
+                      height: 4px;
+                      border-radius: 999px;
+                      background: var(--wf-line);
+                      align-self: center;
+                    "
+                  ></div>
+                  <h3>Sign up for this workshop?</h3>
+                  <small
+                    >One place, for the account that signs up: <strong>Ida Zięba</strong>.</small
+                  >
+                  <div
+                    class="wf-box"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                      border-color: var(--wf-warn);
+                    "
+                  >
+                    <small
+                      >A place belongs to one account. Someone without an OPOS account, such as a
+                      child, cannot be given a place from yours.</small
+                    >
+                  </div>
+                  <small>Free: 3 of 12 · Saturday 15:00 · Sala Masterclass</small
+                  ><button class="primary">Sign up myself</button
+                  ><a href="#" style="align-self: center">Not now</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>No place for another person</strong>A place belongs to one account, so Ida cannot
+          sign up their child from their own; Not now returns to the item. Whether a child without
+          an account may hold a place through an adult is not one of Q1–Q36 yet and is assumed
+          refused here.
+        </div>
+      </figure>
+    </main>
+    <script>
+      ;(function () {
+        var NS = 'http://www.w3.org/2000/svg'
+        function drawAll() {
+          document.querySelectorAll('main.boards.flow').forEach(function (main, mi) {
+            var edges = JSON.parse(main.getAttribute('data-edges') || '[]')
+            function box(el) {
+              var r = el.getBoundingClientRect(),
+                m = main.getBoundingClientRect()
+              return {
+                l: r.left - m.left,
+                t: r.top - m.top,
+                r: r.right - m.left,
+                b: r.bottom - m.top,
+              }
+            }
+            var old = main.querySelector('svg.edges')
+            if (old) old.remove()
+            var svg = document.createElementNS(NS, 'svg')
+            svg.setAttribute('class', 'edges')
+            svg.setAttribute('width', main.scrollWidth)
+            svg.setAttribute('height', main.scrollHeight)
+            var mid = 'ah' + mi
+            svg.innerHTML =
+              '<defs><marker id="' +
+              mid +
+              '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b5b57"/></marker></defs>'
+            main.appendChild(svg)
+            var seen = {}
+            edges.forEach(function (e) {
+              var fa = document.getElementById(e.from),
+                fb = document.getElementById(e.to)
+              if (!fa || !fb) return
+              var a = box(fa.querySelector('.screen')),
+                b = box(fb.querySelector('.screen'))
+              var A = box(fa),
+                B = box(fb)
+              var key = [e.from, e.to].sort().join('|'),
+                k = (seen[key] = (seen[key] || 0) + 1) - 1
+              var off = k * 26,
+                x1,
+                y1,
+                x2,
+                y2,
+                d
+              if (b.l >= a.r - 1 || a.l >= b.r - 1) {
+                var right = b.l >= a.r - 1
+                var top = Math.max(a.t, b.t),
+                  bot = Math.min(a.b, b.b)
+                x1 = right ? a.r : a.l
+                x2 = right ? b.l : b.r
+                if (bot > top) {
+                  y1 = y2 = Math.min(top + 140, (top + bot) / 2) + off
+                } else {
+                  y1 = Math.min(a.t + 140, (a.t + a.b) / 2) + off
+                  y2 = Math.min(b.t + 140, (b.t + b.b) / 2) + off
+                }
+                var mx = (x1 + x2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  mx +
+                  ',' +
+                  y1 +
+                  ' ' +
+                  mx +
+                  ',' +
+                  y2 +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              } else {
+                var down = B.t >= A.b - 1
+                x1 = (a.l + a.r) / 2 + off
+                x2 = (b.l + b.r) / 2 + off
+                y1 = down ? A.b : A.t
+                y2 = down ? B.t : B.b
+                var my = (y1 + y2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  x1 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              }
+              var p = document.createElementNS(NS, 'path')
+              p.setAttribute('d', d)
+              p.setAttribute('marker-end', 'url(#' + mid + ')')
+              svg.appendChild(p)
+              if (e.label) {
+                var t = document.createElementNS(NS, 'text')
+                t.textContent = e.label
+                svg.appendChild(t)
+                var w = t.getComputedTextLength(),
+                  cx = (x1 + x2) / 2,
+                  cy = (y1 + y2) / 2 + k * 24
+                t.setAttribute('x', cx - w / 2)
+                t.setAttribute('y', cy + 4)
+                var r = document.createElementNS(NS, 'rect')
+                r.setAttribute('x', cx - w / 2 - 6)
+                r.setAttribute('y', cy - 10)
+                r.setAttribute('width', w + 12)
+                r.setAttribute('height', 20)
+                r.setAttribute('rx', 10)
+                svg.insertBefore(r, t)
+              }
+            })
+          })
+        }
+        window.addEventListener('load', drawAll)
+        window.addEventListener('resize', drawAll)
+      })()
+    </script>
+  </body>
+</html>

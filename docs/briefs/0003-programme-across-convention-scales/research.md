@@ -296,8 +296,8 @@ had used since 2019.
 
 ### Programme dictionaries
 
-The head keeps them per edition. Nothing shows until it is defined, and a filter appears once the
-data has two values.
+An org with programme write keeps them per edition, in the Programme area. Nothing shows until it
+is defined, and a filter appears once the data has two values.
 
 | Dictionary                                                                                   | Example                                                         |
 | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
@@ -319,12 +319,12 @@ many conventions: an icon and a filter should mean the same everywhere and need 
 
 All on the edition, all off by default.
 
-| Switch                  | Turns on                                                                                                              | Off, a small convention sees              |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| **Sign-ups**            | binding capacity on an item, signing up and off, a waiting list, the list for orgs                                    | capacity as information; no button        |
-| **Call for proposals**  | the form, window, statuses, reserve list, decisions; an idea without a host                                           | orgs add items, as today                  |
-| **Speaker recruitment** | a person's application with availability, invitations with a role, confirmation, the working-draft state for the cast | orgs assign speakers by account, as today |
-| **Reviews**             | reviews under the domain owner's rules                                                                                | no reviews                                |
+| Switch                  | Turns on                                                                                                                                                                             | Off, a small convention sees       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| **Sign-ups**            | binding capacity on an item, signing up and off, a waiting list where the edition keeps one, the list for orgs                                                                       | capacity as information; no button |
+| **Call for proposals**  | the form, window, statuses, a reserve list where the edition keeps one (unranked or ranked), decisions; an idea without a host                                                       | orgs add items, as today           |
+| **Speaker recruitment** | open candidacy only: a person volunteers for an item the team composes, with a role and availability; the cast, invitations, confirmation and availability stay available without it | the team casts people itself       |
+| **Reviews**             | reviews under the domain owner's rules                                                                                                                                               | no reviews                         |
 
 Not configured: conflicts warn and never block; standard lengths only suggest; cancelled, moved and
 cast changed are always available; sign-ups are named; a lottery result is stored once;
@@ -392,16 +392,23 @@ domain owner of tickets.
 
 **The Nordcon and Fantasmagoria settings are assumptions, not confirmed with their organisers.**
 Neither was asked how it would use OPOS, and neither publishes how it takes proposals. The DF and
-Pyrkon columns follow published practice where marked and are assumptions elsewhere.
+Pyrkon columns follow published practice where marked and are assumptions elsewhere. The brief's
+settings coverage ([4.12](../0003-programme-across-convention-scales.md#412-settings-coverage))
+holds every dimension for the four conventions.
 
-| Setting             | Nordcon *(assumption)*         | Fantasmagoria *(assumption)*                                                                 | Dni Fantastyki                         | Pyrkon                                                 |
-| ------------------- | ------------------------------ | -------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------ |
-| Sign-ups            | off                            | on, workshops and RPG only, first come (Sala Masterclass is a room with talks, not a format) | off (published)                        | on, first come (published: eBilet tokens)              |
-| Call for proposals  | off: the head types or imports | on                                                                                           | on (published)                         | on per zone, science zone closed (published)           |
-| Speaker recruitment | off                            | off                                                                                          | panels around guests *(assumption)*    | off *(assumption)*                                     |
-| Reviews             | off                            | on                                                                                           | off *(assumption)*                     | none collected (published)                             |
-| Dictionaries        | rooms only                     | rooms carrying the block                                                                     | blocks, theme line, formats, age scale | zones, formats, languages, accessibility, entry labels |
-| Tickets in OPOS     | none, free entry               | sold in OPOS                                                                                 | no (published: biletyna.pl)            | no (published: eBilet)                                 |
+| Setting             | Nordcon *(assumption)*                                                              | Fantasmagoria *(assumption)*                                                                                                                                              | Dni Fantastyki                                                                                          | Pyrkon                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Sign-ups            | off                                                                                 | on, set item by item on 23 items (14 workshops, 9 RPG sessions), first come; the edition's default stays free entry (Sala Masterclass is a room with talks, not a format) | off (published)                                                                                         | on, first come (published: eBilet tokens); a lottery on chosen guest meetings *(assumption)* |
+| Waiting list        | —                                                                                   | on, one hour to take a freed seat                                                                                                                                         | —                                                                                                       | off for reservations: the queue at the door takes free seats *(assumption)*                  |
+| Default entry       | free, no limits                                                                     | free, no limits                                                                                                                                                           | free, first come, capacity shown *(assumption)*                                                         | half the seats by tokens, the rest from the queue (published)                                |
+| Call for proposals  | off: the head types or imports                                                      | on, one call decided by the team without scores; no reserve list                                                                                                          | on (published); three assessors, the block coordinator decides, an unranked reserve list *(assumption)* | on per zone, science zone closed (published); a ranked reserve list                          |
+| Speaker recruitment | off                                                                                 | off                                                                                                                                                                       | panels around guests *(assumption)*                                                                     | off *(assumption)*                                                                           |
+| Reviews             | off                                                                                 | on                                                                                                                                                                        | off *(assumption)*                                                                                      | none collected (published)                                                                   |
+| Dictionaries        | rooms, three tracks (Talks, Games, Films), three content warnings from the RPG tags | rooms carrying the block, with their step-free status                                                                                                                     | blocks, theme line, formats, age scale, two entry labels *(assumption)*                                 | zones, formats, languages, accessibility, entry labels                                       |
+| Blocks              | tracks as a filter                                                                  | none                                                                                                                                                                      | blocks as a filter                                                                                      | zones as a boundary of write permission *(assumption)*                                       |
+| Item codes          | none                                                                                | none                                                                                                                                                                      | generated at first publication *(assumption)*                                                           | set by the team with a zone prefix *(assumption)*                                            |
+| Releases            | one, for the booklet                                                                | numbered, one per PDF                                                                                                                                                     | none                                                                                                    | one each convention morning, by a clock at 07:00 *(assumption)*                              |
+| Tickets in OPOS     | none, free entry                                                                    | sold in OPOS                                                                                                                                                              | no (published: biletyna.pl)                                                                             | no (published: eBilet)                                                                       |
 
 ## 5. What Worldcon stresses
 

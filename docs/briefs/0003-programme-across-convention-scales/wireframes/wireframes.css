@@ -1602,3 +1602,41 @@ figure.board > figcaption.t code {
 ul.index li {
   margin: 6px 0;
 }
+h2.sec {
+  margin: 24px 32px 0;
+  font-size: 17px;
+}
+nav.pages span {
+  color: #777;
+}
+main.boards.flow {
+  display: grid;
+  grid-auto-columns: max-content;
+  gap: 150px 300px;
+  position: relative;
+  align-items: start;
+  justify-content: start;
+}
+svg.edges {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+svg.edges path {
+  fill: none;
+  stroke: #5b5b57;
+  stroke-width: 1.6;
+}
+svg.edges text {
+  font:
+    600 12px ui-sans-serif,
+    system-ui,
+    sans-serif;
+  fill: #2a2a28;
+}
+svg.edges rect {
+  fill: #f4f4f2;
+  stroke: #c9c9c4;
+}

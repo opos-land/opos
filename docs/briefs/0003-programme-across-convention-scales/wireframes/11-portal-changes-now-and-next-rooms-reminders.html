@@ -50,19 +50,36 @@
         >17. Panel: item list, proposals, announcements and re-import</a
       >
     </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
     <main class="boards">
       <figure class="board" id="ab-medium-changes">
         <figcaption class="t" style="width: 300px">
           Fantasmagoria: programme changes <code>ab-medium-changes</code>
         </figcaption>
-        <div class="screen mobile" style="width: 300px; height: 990px">
+        <div class="screen mobile" style="width: 300px; height: 1030px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -79,6 +96,8 @@
                   <strong>opos.land</strong>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -90,8 +109,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -122,16 +139,8 @@
                     border-color: var(--wf-warn);
                   "
                 >
-                  <div
-                    style="
-                      display: flex;
-                      align-items: center;
-                      gap: 4px 6px;
-                      white-space: normal;
-                      flex-wrap: wrap;
-                    "
-                  >
-                    <strong style="flex-shrink: 0">New room</strong><small>· Sat 08:10</small>
+                  <div style="display: flex; align-items: center; gap: 4px 6px; flex-wrap: wrap">
+                    <strong>New room</strong><small>· Sat 08:10</small>
                     <div style="flex: 1"></div>
                     <span class="wf-pill accent">In my schedule</span>
                   </div>
@@ -143,7 +152,7 @@
                   ><small>→ Sala Warsztatowa · II LO</small>
                 </div>
                 <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
-                  <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap">
+                  <div style="display: flex; align-items: center; gap: 4px 6px; flex-wrap: wrap">
                     <strong>New time</strong><small>· Fri 22:15</small>
                   </div>
                   <strong>History likes to repeat itself: politics in Star Wars</strong
@@ -153,7 +162,7 @@
                   >
                 </div>
                 <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
-                  <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap">
+                  <div style="display: flex; align-items: center; gap: 4px 6px; flex-wrap: wrap">
                     <strong>Cast changed</strong><small>· Fri 20:05</small>
                   </div>
                   <strong>On the borders of fantasy</strong
@@ -169,16 +178,8 @@
                     border-color: var(--wf-warn);
                   "
                 >
-                  <div
-                    style="
-                      display: flex;
-                      align-items: center;
-                      gap: 4px 6px;
-                      white-space: normal;
-                      flex-wrap: wrap;
-                    "
-                  >
-                    <strong style="flex-shrink: 0">New time</strong><small>· Fri 19:40</small>
+                  <div style="display: flex; align-items: center; gap: 4px 6px; flex-wrap: wrap">
+                    <strong>New time</strong><small>· Fri 19:40</small>
                     <div style="flex: 1"></div>
                     <span class="wf-pill accent">In my schedule</span>
                   </div>
@@ -191,6 +192,21 @@
                 </div>
                 <div style="flex: 1"></div>
                 <a href="#">Earlier changes: release 6 → 7</a>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small><strong>Changes</strong></small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
               </div>
             </div>
           </div>
@@ -213,7 +229,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -228,6 +243,8 @@
               >
                 <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                   <svg
+                    role="img"
+                    aria-label="Back"
                     class="wf-icon"
                     data-icon="arrowLeft"
                     xmlns="http://www.w3.org/2000/svg"
@@ -239,8 +256,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Back"
                   >
                     <path d="M5 12l14 0"></path>
                     <path d="M5 12l6 6"></path>
@@ -248,6 +263,8 @@
                   ><small>Programme</small>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -259,8 +276,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -289,7 +304,7 @@
                 </div>
                 <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
                   <span class="wf-pill">Literature Zone</span
-                  ><span class="wf-pill">Panel discussion</span><span class="wf-pill">ENG</span>
+                  ><span class="wf-pill">Panel discussion</span><span class="wf-pill">EN</span>
                 </div>
                 <h2>Revisiting the classics: is old fantasy still relevant?</h2>
                 <small>Moderator: Lena Cis</small>
@@ -301,15 +316,32 @@
                     <span class="wf-pill accent">Reserved</span>
                   </div>
                   <small>Your reservation moved with the item to the new time and room.</small
-                  ><small>Tokens unchanged: you have 2 of 4 left</small
+                  ><small>Tokens unchanged: you have 1 of 4 left</small
                   ><small
                     >Your seat is held until 16:50. After that it is forfeited and goes to the
                     queue.</small
                   ><button>Release the reservation · the token returns</button>
                 </div>
-                <small>Free reservations: 96 of 200 · 200 for the queue</small>
+                <small>Free reservations: 172 of 200 · 200 for the queue</small>
                 <div style="display: flex; gap: 8px"><button>♡ Liked · 212</button></div>
+                <a href="#">Report a problem with this item</a>
                 <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
               </div>
             </div>
           </div>
@@ -318,7 +350,8 @@
           <strong>Public status with the time</strong>The item page shows the old and the new place
           with the time of the change; people with a like, a reservation or a cast entry were
           emailed at 18:20. The reservation follows the item, its forfeit counts from the new start,
-          and these Pyrkon screens show the full-replacement scenario of Q23. Conventions: Nordcon,
+          and these Pyrkon screens show the full-replacement scenario of Q23. Attendee reports are
+          on at Pyrkon, so Report a problem goes to the item’s zone team; conventions: Nordcon,
           Fantasmagoria, Dni Fantastyki, Pyrkon.
         </div>
       </figure>
@@ -333,7 +366,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -350,6 +382,8 @@
                   <strong>opos.land</strong>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -361,8 +395,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -427,7 +459,22 @@
                 </div>
                 <small class="wf-muted">and 13 more in other rooms ↓</small>
                 <div style="flex: 1"></div>
-                <a href="#">The whole Saturday programme</a>
+
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small><strong>Now</strong></small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
               </div>
             </div>
           </div>
@@ -443,14 +490,13 @@
         <figcaption class="t" style="width: 300px">
           Nordcon: announcements <code>ab-small-announcements</code>
         </figcaption>
-        <div class="screen mobile" style="width: 300px; height: 770px">
+        <div class="screen mobile" style="width: 300px; height: 820px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -467,6 +513,8 @@
                   <strong>opos.land</strong>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -478,8 +526,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -505,8 +551,8 @@
                   </div>
                   <strong>Ticket desk and wristbands</strong
                   ><small
-                    >The ticket desk is in building A, open 9:00–20:00. Rooms admit only with a
-                    wristband.</small
+                    >The ticket desk is in building A, open 9:00–20:00. Wristbands for the weekend
+                    are issued there.</small
                   >
                 </div>
                 <small class="wf-muted">Saturday</small>
@@ -527,6 +573,21 @@
                 </div>
                 <div style="flex: 1"></div>
                 <small class="wf-muted">The same notes hang on the board in Kawiarenka.</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
               </div>
             </div>
           </div>
@@ -543,14 +604,13 @@
         <figcaption class="t" style="width: 300px">
           Dni Fantastyki: room page <code>ab-dni-room</code>
         </figcaption>
-        <div class="screen mobile" style="width: 300px; height: 900px">
+        <div class="screen mobile" style="width: 300px; height: 960px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -565,6 +625,8 @@
               >
                 <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                   <svg
+                    role="img"
+                    aria-label="Back"
                     class="wf-icon"
                     data-icon="arrowLeft"
                     xmlns="http://www.w3.org/2000/svg"
@@ -576,8 +638,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Back"
                   >
                     <path d="M5 12l14 0"></path>
                     <path d="M5 12l6 6"></path>
@@ -585,6 +645,8 @@
                   ><small>Programme</small>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -596,8 +658,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -613,20 +673,10 @@
                   ><small>Nearest step-free: Namiot 2, moat, 60 people</small
                   ><small>Quiet space: Namiot ciszy, moat</small>
                 </div>
-                <div
-                  style="
-                    display: flex;
-                    gap: 4px 6px;
-                    white-space: normal;
-                    align-items: center;
-                    flex-wrap: wrap;
-                  "
-                >
+                <div style="display: flex; gap: 4px 6px; flex-wrap: wrap; align-items: center">
                   <span class="wf-pill">Fri</span><span class="wf-pill accent">Sat · today</span
                   ><span class="wf-pill">Sun</span
-                  ><small class="wf-muted" style="margin-left: auto; flex-shrink: 0"
-                    >5 items · 1 moved</small
-                  >
+                  ><small class="wf-muted" style="margin-left: auto">5 items · 1 moved</small>
                 </div>
                 <div
                   class="wf-card"
@@ -698,7 +748,7 @@
                       <small>16:00–16:50</small><span class="wf-pill">Guest of honour</span>
                     </div>
                     <strong>Author meeting with the guest of honour</strong
-                    ><small>Literature · [ENG] with interpretation</small>
+                    ><small>Literature · EN · with interpretation · Likely full</small>
                   </div>
                   <div style="display: flex; flex-direction: column; gap: 2px; padding: 9px 12px">
                     <small>18:00–19:50</small
@@ -707,6 +757,22 @@
                   </div>
                 </div>
                 <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
               </div>
             </div>
           </div>
@@ -730,7 +796,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -745,6 +810,8 @@
               >
                 <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                   <svg
+                    role="img"
+                    aria-label="Back"
                     class="wf-icon"
                     data-icon="arrowLeft"
                     xmlns="http://www.w3.org/2000/svg"
@@ -756,8 +823,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Back"
                   >
                     <path d="M5 12l14 0"></path>
                     <path d="M5 12l6 6"></path>
@@ -765,6 +830,8 @@
                   ><small>My schedule</small>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -776,8 +843,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -798,7 +863,7 @@
                     ><span class="wf-pill">Calendar alarm</span>
                   </div>
                   <label style="display: flex; align-items: center; gap: 8px"
-                    ><input type="checkbox" checked="" /> Also remind me before a reservation is
+                    ><input type="checkbox" checked /> Also remind me before a reservation is
                     forfeited</label
                   >
                 </div>
@@ -807,15 +872,17 @@
                   ><small
                     >Cancelled · new time · new room · cast changed · accessibility changed</small
                   ><label style="display: flex; align-items: center; gap: 8px"
-                    ><input type="checkbox" checked="" /> Email me about changes to liked
-                    items</label
+                    ><input type="checkbox" checked /> Email me about changes to liked items</label
                   ><small class="wf-muted"
-                    >Items you reserved are always emailed, even with this off.</small
+                    >Items you reserved or entered a lottery for are always emailed, even with this
+                    off.</small
                   >
                 </div>
                 <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
                   <div style="display: flex; align-items: center; gap: 8px">
                     <svg
+                      role="img"
+                      aria-label="Calendar"
                       class="wf-icon"
                       data-icon="calendar"
                       xmlns="http://www.w3.org/2000/svg"
@@ -827,8 +894,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="Calendar"
                     >
                       <path
                         d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"
@@ -844,6 +909,8 @@
                 <div class="wf-box" style="display: flex; flex-direction: column; gap: 4px">
                   <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap">
                     <svg
+                      role="img"
+                      aria-label="Email"
                       class="wf-icon"
                       data-icon="mail"
                       xmlns="http://www.w3.org/2000/svg"
@@ -855,8 +922,6 @@
                       stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      role="img"
-                      aria-label="Email"
                     >
                       <path
                         d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z"
@@ -873,6 +938,22 @@
                 </div>
                 <div style="flex: 1"></div>
                 <button class="primary">Save settings</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
               </div>
             </div>
           </div>
@@ -889,14 +970,13 @@
         <figcaption class="t" style="width: 300px">
           Dni Fantastyki: my schedule without sign-ups <code>ab-dni-plan</code>
         </figcaption>
-        <div class="screen mobile" style="width: 300px; height: 920px">
+        <div class="screen mobile" style="width: 300px; height: 950px">
           <div
             class="plan-html-frame"
             data-theme="light"
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -913,6 +993,8 @@
                   <strong>opos.land</strong>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -924,8 +1006,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -1006,6 +1086,22 @@
                     >Your calendar picks up a new time or room by itself.</small
                   >
                 </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
               </div>
             </div>
           </div>
@@ -1028,7 +1124,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div
@@ -1043,6 +1138,8 @@
               >
                 <div style="display: flex; align-items: center; width: 100%; gap: 8px">
                   <svg
+                    role="img"
+                    aria-label="Back"
                     class="wf-icon"
                     data-icon="arrowLeft"
                     xmlns="http://www.w3.org/2000/svg"
@@ -1054,8 +1151,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Back"
                   >
                     <path d="M5 12l14 0"></path>
                     <path d="M5 12l6 6"></path>
@@ -1063,6 +1158,8 @@
                   ><small>Programme item</small>
                   <div style="flex: 1"></div>
                   <svg
+                    role="img"
+                    aria-label="Account"
                     class="wf-icon"
                     data-icon="user"
                     xmlns="http://www.w3.org/2000/svg"
@@ -1074,8 +1171,6 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    role="img"
-                    aria-label="Account"
                   >
                     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
                     <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
@@ -1159,6 +1254,22 @@
                     </div>
                     <a href="#">Review</a>
                   </div>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
                 </div>
               </div>
             </div>

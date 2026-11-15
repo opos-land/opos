@@ -50,6 +50,24 @@
         >17. Panel: item list, proposals, announcements and re-import</a
       >
     </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
     <main class="boards">
       <figure class="board" id="ab-pyrkon-cancel">
         <figcaption class="t" style="width: 840px">
@@ -62,7 +80,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -78,10 +95,9 @@
                 >
                   <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
                   <hr />
-                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
-                  ><span>Access</span><span>Edition settings</span>
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
                   <div style="flex: 1"></div>
-                  <small class="wf-muted">org · programme: write</small>
+                  <small class="wf-muted">org · programme: write · Literature Zone</small>
                 </div>
                 <div
                   style="
@@ -95,6 +111,21 @@
                     justify-content: center;
                   "
                 >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <span class="wf-pill accent">Items</span><small>Grid</small
+                    ><small>Proposals</small><small>People</small><small>Conflicts</small
+                    ><small>Changes</small><small>Messages</small><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
+                  </div>
                   <div
                     class="wf-card"
                     style="
@@ -121,8 +152,8 @@
                       <li>A cancelled item earns no speaker discount (set in Tickets)</li>
                     </ul>
                     <small
-                      >This cannot be undone. Publishing the item again does not bring back
-                      reservations or tokens.</small
+                      >This cannot be undone: a cancelled item cannot be published again, and its
+                      reservations do not come back.</small
                     >
                     <label
                       >Reason for attendees (optional)<input value="The co-host is ill"
@@ -146,7 +177,7 @@
       </figure>
       <figure class="board" id="ab-medium-entitlements">
         <figcaption class="t" style="width: 840px">
-          Fantasmagoria: tickets give sign-ups <code>ab-medium-entitlements</code>
+          Fantasmagoria: ticket types and sign-ups <code>ab-medium-entitlements</code>
         </figcaption>
         <div class="screen desktop" style="width: 840px; height: 620px">
           <div
@@ -155,7 +186,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -172,7 +202,8 @@
                   <strong>Fantasmagoria</strong><small>Edition 2026 ▾</small>
                   <hr />
                   <span>Dashboard</span><span>Programme</span
-                  ><span class="wf-pill accent">Access</span><span>Edition settings</span>
+                  ><span class="wf-pill accent">Tickets</span><span>Access</span
+                  ><span>Edition settings</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">head</small>
                 </div>
@@ -197,8 +228,8 @@
                     <small><strong>Type</strong></small
                     ><small><strong>Price</strong></small
                     ><small><strong>Sold</strong></small
-                    ><small><strong>Sign-ups for workshops and RPG sessions</strong></small>
-                    <span>3-day pass</span><small>PLN 70</small><small>1,120</small
+                    ><small><strong>Sign-up condition, later</strong></small> <span>3-day pass</span
+                    ><small>PLN 70</small><small>1,120</small
                     ><small class="wf-muted">no limit · later</small> <span>Day ticket</span
                     ><small>PLN 40</small><small>486</small
                     ><small class="wf-muted">on its own day only · later</small>
@@ -207,20 +238,17 @@
                   </div>
                   <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
                     <div style="display: flex; align-items: center; gap: 8px">
-                      <strong>Who can sign up</strong><span class="wf-pill">Programme</span>
+                      <strong>Who can sign up</strong>
+                      <div style="flex: 1"></div>
+                      <a href="#">Programme · Settings</a>
                     </div>
-                    <label style="display: flex; gap: 8px"
-                      ><input type="radio" checked="" /> Any signed-in account
-                      <small>first version</small></label
-                    >
-                    <label style="display: flex; align-items: center; gap: 8px" class="wf-muted"
-                      ><input type="radio" disabled="" /> Only holders of a ticket for this edition,
-                      per the column above
-                      <small>later, once Tickets gives entitlements</small></label
+                    <small
+                      >Any signed-in account: set in the programme settings, read here. Sign-ups are
+                      set on each item; 23 items use them.</small
                     >
                     <small class="wf-muted"
-                      >Sign-ups cover the formats Workshop and RPG session, set in Edition
-                      settings.</small
+                      >A ticket condition, per the column above, comes once Tickets gives
+                      entitlements.</small
                     >
                   </div>
                 </div>
@@ -229,8 +257,9 @@
           </div>
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
-          <strong>Sign-ups first, ticket rule later</strong>In the first version any signed-in
-          account signs up, so sign-ups wait for no entitlement. The ticket rule, a day ticket on
+          <strong>Sign-ups first, ticket rule later</strong>A Tickets screen with its own menu item,
+          not Access. Who may sign up is set in the programme settings and only read here: any
+          signed-in account, so sign-ups wait for no entitlement. The ticket rule, a day ticket on
           its own day only, is a later option from attendee registrations (Q20, Q21); as drawn it
           would leave children out.
         </div>
@@ -246,7 +275,6 @@
             data-style="clean"
             data-frame="show"
             data-render-mode="wireframe"
-            data-rough-ready="true"
           >
             <div class="plan-html-frame-content">
               <div style="display: flex; height: 100%">
@@ -263,7 +291,8 @@
                   <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
                   <hr />
                   <span>Dashboard</span><span>Programme</span
-                  ><span class="wf-pill accent">Access</span><span>Edition settings</span>
+                  ><span class="wf-pill accent">Tickets</span><span>Access</span
+                  ><span>Edition settings</span>
                   <div style="flex: 1"></div>
                   <small class="wf-muted">head</small>
                 </div>
@@ -298,16 +327,13 @@
                     ><small>3 days</small><small>4 tokens · from 19 May</small>
                     <span>List import: eBilet, 58,112 people</span><small>per the file</small
                     ><small>per the „tokens” column</small>
-                    <span>Programme: cast of accepted items</span><small>3 days</small
-                    ><small>2 tokens</small>
                     <span>Codes: media, gżdacze (volunteers), PJM interpreters</span
                     ><small>3 days</small><small>2 tokens</small>
                   </div>
                   <div class="wf-card" style="display: flex; align-items: center; gap: 8px">
                     <small style="flex: 1"
-                      >Speaker discount and badges: from the hours and cast of accepted items, set
-                      in Tickets</small
-                    ><a href="#">Open in Tickets</a>
+                      >Speaker discount and badges: from the hours and cast of accepted items</small
+                    ><a href="#">Speaker rule</a>
                   </div>
                 </div>
               </div>
@@ -315,10 +341,10 @@
           </div>
         </div>
         <div class="note" style="width: 840px; box-sizing: border-box">
-          <strong>A proposal for the module border</strong>Entitlements live with attendee
-          registrations, which have no domain owner yet (Q1, Q20). A speaker discount and a badge
-          are not entitlements: the programme hands Tickets the hours and cast of accepted items.
-          For discussion, not for building.
+          <strong>A proposal for the module border</strong>Shown under its own Tickets menu item,
+          not Access; entitlements live with attendee registrations, which have no domain owner yet
+          (Q1, Q20). A speaker discount and a badge are not entitlements: the programme hands
+          Tickets the hours and cast of accepted items. For discussion, not for building.
         </div>
       </figure>
     </main>

@@ -134,7 +134,7 @@ function gitleaksAllowlists() {
 
 test('a history allowlist needs both a listed commit and a listed path', () => {
   const histories = gitleaksAllowlists().filter(({ text }) => text.includes('commits = ['))
-  assert.equal(histories.length, 2)
+  assert.equal(histories.length, 3)
   for (const { text } of histories) assert.match(text, /condition = "AND"/)
   const gitleaks = read('../.gitleaks.toml')
   for (const short of [
@@ -146,6 +146,7 @@ test('a history allowlist needs both a listed commit and a listed path', () => {
     '3321ce2',
     '670cf95',
     '293b97a',
+    '053eb82',
   ]) {
     assert.match(gitleaks, new RegExp(`"${short}[0-9a-f]{33}"`))
   }
@@ -154,6 +155,11 @@ test('a history allowlist needs both a listed commit and a listed path', () => {
 test('the commit that once held the demo secret is allowed for the seed alone', () => {
   const seed = gitleaksAllowlists().find(({ text }) => text.includes('293b97a'))
   assert.deepEqual(seed.paths, ['packages/db/src/seed.ts'])
+})
+
+test('the commit that wrote out the names of the secrets is allowed for the stack alone', () => {
+  const names = gitleaksAllowlists().find(({ text }) => text.includes('053eb82'))
+  assert.deepEqual(names.paths, ['infra/live/dev/terragrunt.stack.hcl'])
 })
 
 test('only the test fixtures are allowed by path alone, wherever a squash merge puts them', () => {
@@ -169,6 +175,7 @@ test('no allowlist covers a path beyond the files the hits are in', () => {
   const allowed = new Set([
     'apps/api/.env.example',
     'docs/PLAN.md',
+    'infra/live/dev/terragrunt.stack.hcl',
     'packages/db/src/seed.ts',
     'packages/db/src/totp.test.ts',
     'scripts/bff-boundary.test.mjs',

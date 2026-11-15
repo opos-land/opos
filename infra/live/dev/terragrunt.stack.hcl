@@ -106,19 +106,26 @@ unit "deployment" {
     supabase_ref    = local.supabase.ref
     mail_from       = local.mail.from
 
-    # The secret holding each value; the supabase unit makes the secret key's, the shared unit
-    # smtp-password
-    secrets = {
-      supabase_db_password     = "supabase-db-password"
-      supabase_secret_key      = local.supabase.secret_key_secret
-      opos_app_password        = "opos-app-password"
-      opos_app_global_password = "opos-app-global-password"
-      opos_admin_password      = "opos-admin-password"
-      send_email_hook_secret   = "send-email-hook-secret"
-      invite_secret            = "invite-secret"
-      smtp_password            = local.mail.smtp_secret
-      basic_auth_password      = "basic-auth-password"
-    }
+    # The secret holding each value, named after its key but for the two other units make: the
+    # supabase unit the secret key's, the shared unit smtp-password. Derived rather than written
+    # out, which a scanner would take for passwords
+    secrets = merge(
+      {
+        for key in [
+          "supabase_db_password",
+          "opos_app_password",
+          "opos_app_global_password",
+          "opos_admin_password",
+          "send_email_hook_secret",
+          "invite_secret",
+          "basic_auth_password",
+        ] : key => replace(key, "_", "-")
+      },
+      {
+        supabase_secret_key = local.supabase.secret_key_secret
+        smtp_password       = local.mail.smtp_secret
+      },
+    )
   }
 
   autoinclude {

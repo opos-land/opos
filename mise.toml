@@ -9,6 +9,9 @@ node = "24.15.0"
 "aqua:gruntwork-io/terragrunt" = "1.2.1"
 "aqua:scaleway/scaleway-cli" = "2.65.2"
 "aqua:cli/cli" = "2.103.3"
+# Lint the GitHub Actions workflows, actionlint, and the shell in them and in scripts, shellcheck
+"aqua:rhysd/actionlint" = "1.7.12"
+"aqua:koalaman/shellcheck" = "0.11.0"
 
 [settings]
 # pnpm is pinned by packageManager in package.json; corepack provides it

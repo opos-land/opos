@@ -36,10 +36,12 @@ resource "coolify_application" "this" {
   # Coolify reads the compose file from the repository during a deployment, and refuses the hosts of
   # its services before; a new deployment is applied once without them. No host names a port: the
   # proxy routes to the one a service exposes in the compose file, and Coolify hands back no port
-  # it was given, which the provider then takes for a change
-  docker_compose_domains = var.compose_loaded ? jsonencode([
-    for service, host in local.hosts : { name = service, domain = "https://${host}" }
-  ]) : null
+  # it was given, which the provider then takes for a change. Written as Coolify hands it back, name
+  # before domain and the services in order: jsonencode sorts the keys, and the provider plans that
+  # difference as a change it then sends no field for, which Coolify refuses
+  docker_compose_domains = var.compose_loaded ? format("[%s]", join(",", [
+    for service, host in local.hosts : format("{\"name\":%q,\"domain\":%q}", service, "https://${host}")
+  ])) : null
 
   autogenerate_domain    = false
   is_force_https_enabled = true

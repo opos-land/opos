@@ -32,7 +32,7 @@ team is small and the MVP has to reach a convention's first edition.
   suspends, restores and deletes a tenant
   ([0031](0031-suspend-a-tenant-before-deleting-it.md)), resets an account's two-factor
   authentication and reads the log of the admins' actions
-  ([spec](../specs/platform-administration.md)).
+  ([spec](../specs/0001-platform-administration.md)).
 - **The admin's scripts go, but for two**: granting the admin role and taking it away stay scripts
   run on the server
   ([0030](0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)). The admin

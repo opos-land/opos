@@ -46,8 +46,8 @@ import {
   tenantWithHead,
 } from './tenants'
 
-// The admin routes (docs/specs/platform-administration.md): each against every actor, then what
-// each changes, what it refuses and the entry it leaves in the log.
+// The admin routes (docs/specs/0001-platform-administration.md): each against every actor, then
+// what each changes, what it refuses and the entry it leaves in the log.
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete'
 

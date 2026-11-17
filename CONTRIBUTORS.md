@@ -23,7 +23,7 @@ ticket makes them ([brief 0001](docs/briefs/0001-convention-shop.md), D15).
 ## Admins
 
 The admins run the platform and set the rules of its administration
-([spec](docs/specs/platform-administration.md)).
+([spec](docs/specs/0001-platform-administration.md)).
 
 | Role  | Held by   |
 | ----- | --------- |

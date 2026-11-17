@@ -2,8 +2,8 @@ import { isTimeZone, SUPPORTED_LOCALES } from '@opos/i18n'
 import { z } from 'zod'
 import { adminRoute, timestamp } from './common'
 
-// The routes of the admin application (docs/specs/platform-administration.md). Each needs the
-// session of that application, an account holding the admin role with the second factor of its
+// The routes of the admin application (docs/specs/0001-platform-administration.md). Each needs
+// the session of that application, an account holding the admin role with the second factor of its
 // grant, and a sign-in younger than 30 minutes; the two that cannot be undone need one younger
 // than 5 minutes.
 

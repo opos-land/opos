@@ -228,7 +228,8 @@ and is taken again when the provider repeats its notification.
 
 ### Jobs
 
-The API gains its first two jobs, each safe with several API processes: a row is claimed under a
+The API gains two jobs beside the sweep of [file storage](0012-file-storage.md), each safe with
+several API processes: a row is claimed under a
 lock that others skip.
 
 | Job    | Does                                                                                                         |
@@ -400,4 +401,4 @@ the accessibility of every page it opens:
   [0010](../adr/0010-send-ticket-payments-to-the-conventions-own-account.md); WCAG 2.1 AA (D9);
   the bot check outside the consent banner (D12), the team's record amending
   [0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md); the retention of
-  orders (D13) and the data of D7, with PRODUCT.md 10; the API's first jobs.
+  orders (D13) and the data of D7, with PRODUCT.md 10.

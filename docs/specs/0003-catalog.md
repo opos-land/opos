@@ -13,7 +13,8 @@ its variants and stock, and the edition's age bands and custom fields. An org se
 the panel, with no developer's help. It serves the second half of step 4 of the MVP flow
 ([PRODUCT.md 2](../PRODUCT.md#2-mvp-goal-and-end-to-end-flow)), putting tickets on sale. The shop
 that shows the catalog to buyers is [checkout and orders](0004-checkout-and-orders.md). It builds
-on the file storage, which is built before it.
+on [file storage](0012-file-storage.md) and [image variants](0013-image-variants.md), which are
+built before it.
 
 ## Business rules
 
@@ -52,7 +53,7 @@ domain owner to confirm. Every price is a gross amount in the convention's curre
 | M5  | An edition may set a pre-order deadline. Until it, a variant's stock may be marked unlimited. After it, a variant sells only from a number an org entered: one still marked unlimited sells nothing.  | BR-08, B2.3                                    |
 | M6  | An edition turns merch-only orders on or off. A merch-only order is offered every merchandise item of the edition that is not hidden.                                                                 | BR-06, F1.1; the second sentence is new        |
 | M7  | Merchandise is picked up at the edition. The catalog has no field for shipping, and no text of the shop promises it.                                                                                  | BR-09                                          |
-| M8  | Pictures and size charts are uploaded files: JPEG, PNG or WebP images, each up to 5 MB, up to ten pictures an item. No other type is taken, an SVG among them.                                        | D16 of the brief; the types and limits are new |
+| M8  | Pictures and size charts are uploaded files: JPEG, PNG or WebP images, up to ten pictures an item. No other type is taken, an SVG among them.                                                         | D16 of the brief; the types and limits are new |
 | M9  | A picture or a size chart is public once its item is shown in the shop, and readable by the edition's orgs alone before that.                                                                         | new                                            |
 
 ### Age bands and custom fields
@@ -109,38 +110,49 @@ and 20 custom fields: the shop's offer is one answer, sent to anyone who asks.
 
 ### Files
 
-A picture and a size chart are files of the file storage: an org uploads one through the API,
-which checks that its content is the image its type says and keeps it in the convention's part of
-the bucket. A file's name in the bucket is the storage's own, never one a person typed. No browser
-reaches the bucket: the API serves a file from its own origin, with the stored type and the header
-that keeps a browser from guessing another, so the portal loads nothing from another origin
+This spec declares two kinds of file to [file storage](0012-file-storage.md), both an edition's
+and both JPEG, PNG or WebP images: a merchandise picture, which
+`merchandise_item_pictures.file_id` points at, and a size chart, which
+`merchandise_option_values.size_chart_file_id` points at. Both declare two
+[variants](0013-image-variants.md): `small`, fitted inside 600 pixels and made with the upload,
+and `large`, fitted inside 2000. The shop's listing and the cart show the small one, an item's
+page and a size chart the large one.
+
+The routes that add a picture and a size chart take the file and need tickets write access. The
+public route below serves the variants of a shown item's files to everyone (M9), from the API's
+own origin, so the portal loads nothing from another origin
 ([0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 ### Routes
 
 Tenant routes, each under `/editions/{editionId}`:
 
-| Route                                                                                                | Needs         | Refuses with                                                                     |
-| ---------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------- |
-| `GET /ticket-types`, `GET /add-ons`, `GET /merchandise-items`, `GET /custom-fields`                  | tickets>=read |                                                                                  |
-| `POST /ticket-types`                                                                                 | tickets=write | `catalog.limit-reached`, `ticket-type.tiers-overlap`                             |
-| `PATCH /ticket-types/{ticketTypeId}`                                                                 | tickets=write | `ticket-type.tiers-overlap`, `catalog.below-held`                                |
-| `DELETE /ticket-types/{ticketTypeId}`                                                                | tickets=write | `catalog.in-use`                                                                 |
-| `POST /add-ons`, `PATCH /add-ons/{addOnId}`, `DELETE /add-ons/{addOnId}`                             | tickets=write | `catalog.limit-reached`, `catalog.below-held`, `catalog.in-use`                  |
-| `POST /merchandise-items`, `PATCH /merchandise-items/{itemId}`, `DELETE /merchandise-items/{itemId}` | tickets=write | `catalog.limit-reached`, `catalog.in-use`, `file.type-refused`, `file.too-large` |
-| `PUT /merchandise-items/{itemId}/variants`                                                           | tickets=write | `catalog.limit-reached`, `catalog.in-use` for a variant an order holds           |
-| `PUT /merchandise-items/{itemId}/variants/{variantId}/stock`                                         | tickets=write | `catalog.below-held`                                                             |
-| `POST /custom-fields`, `PATCH /custom-fields/{fieldId}`, `DELETE /custom-fields/{fieldId}`           | tickets=write | `catalog.limit-reached`, `catalog.in-use`                                        |
+| Route                                                                                                | Needs                       | Refuses with                                                                                                |
+| ---------------------------------------------------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `GET /ticket-types`, `GET /add-ons`, `GET /merchandise-items`, `GET /custom-fields`                  | tickets>=read               |                                                                                                             |
+| `POST /ticket-types`                                                                                 | tickets=write               | `catalog.limit-reached`, `ticket-type.tiers-overlap`                                                        |
+| `PATCH /ticket-types/{ticketTypeId}`                                                                 | tickets=write               | `ticket-type.tiers-overlap`, `catalog.below-held`                                                           |
+| `DELETE /ticket-types/{ticketTypeId}`                                                                | tickets=write               | `catalog.in-use`                                                                                            |
+| `POST /add-ons`, `PATCH /add-ons/{addOnId}`, `DELETE /add-ons/{addOnId}`                             | tickets=write               | `catalog.limit-reached`, `catalog.below-held`, `catalog.in-use`                                             |
+| `POST /merchandise-items`, `PATCH /merchandise-items/{itemId}`, `DELETE /merchandise-items/{itemId}` | tickets=write               | `catalog.limit-reached`, `catalog.in-use`                                                                   |
+| `PUT /merchandise-items/{itemId}/variants`                                                           | tickets=write               | `catalog.limit-reached`, `catalog.in-use` for a variant an order holds                                      |
+| `PUT /merchandise-items/{itemId}/variants/{variantId}/stock`                                         | tickets=write               | `catalog.below-held`                                                                                        |
+| `POST /merchandise-items/{itemId}/pictures`                                                          | tickets=write; takes a file | `catalog.limit-reached`, `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable` |
+| `DELETE /merchandise-items/{itemId}/pictures/{pictureId}`                                            | tickets=write               |                                                                                                             |
+| `PUT /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                                 | tickets=write; takes a file | `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable`                          |
+| `DELETE /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                              | tickets=write               |                                                                                                             |
+| `POST /custom-fields`, `PATCH /custom-fields/{fieldId}`, `DELETE /custom-fields/{fieldId}`           | tickets=write               | `catalog.limit-reached`, `catalog.in-use`                                                                   |
 
 A ticket type's tiers, supporter prices, perks, add-ons and merchandise items travel with it as
-whole lists, as an item's axes and pictures do with the item. The edition settings of this spec
-are changed through `PATCH /editions/{editionId}/shop`.
+whole lists, as an item's axes and the order of its pictures do with the item. A picture and a
+size chart are added and removed one at a time, each with its file. The edition settings of this
+spec are changed through `PATCH /editions/{editionId}/shop`.
 
 One public route, without sign-in:
 
-| Route                                                   | Answers                                                                                                     |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `GET /public/tenants/{slug}/merchandise-files/{fileId}` | a picture or a size chart of an item that is not hidden, of a published edition; anything else as not found |
+| Route                                                             | Answers                                                                                                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `GET /public/tenants/{slug}/merchandise-files/{fileId}/{variant}` | a variant of a picture or a size chart of an item that is not hidden, of a published edition; anything else as not found |
 
 ### Screens
 
@@ -205,8 +217,8 @@ Integration, in `apps/api/test`:
   meanwhile.
 - The pre-order deadline: an unlimited variant before and after it.
 - Files: an SVG, a file over the limit and a content that is not what its type says are refused;
-  the public route serves a shown item's file with its stored type, and answers a hidden item's,
-  an unpublished edition's and another tenant's as not found.
+  a removed picture's file is gone; the public route serves a shown item's file with its stored
+  type, and answers a hidden item's, an unpublished edition's and another tenant's as not found.
 - The limits of an edition, each reached once.
 
 e2e:
@@ -217,7 +229,7 @@ e2e:
 
 ## Out of scope
 
-- The file storage itself: its bucket, its upload and its backup.
+- Keeping a file, its upload and its bucket: [file storage](0012-file-storage.md).
 - Selling the catalog and holding stock: [checkout and orders](0004-checkout-and-orders.md).
 - Discount codes: [discount codes](0008-discount-codes.md).
 - A capacity shared across ticket types, such as the venue's limit.
@@ -228,5 +240,6 @@ e2e:
 ## Open questions
 
 - **Records before acceptance:** merchandise and file uploads in the MVP (D2 and D16 of the brief,
-  with PRODUCT.md 11); the file storage, with its own spec and record; the age band, the guardian
-  consent and custom field answers as the convention's data (D7, with PRODUCT.md 10).
+  with PRODUCT.md 11), the uploads decided in
+  [0034](../adr/0034-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md); the age band, the
+  guardian consent and custom field answers as the convention's data (D7, with PRODUCT.md 10).

@@ -291,6 +291,35 @@ describe('verifyDatabase', () => {
       expect(problems.join('\n')).toMatch(/opos_app DELETE on tenants/)
     })
 
+    it.each(['uploaded_files', 'account_files'])(
+      'reports opos_app updating %s, whose files never change',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant update (name) on public.${table} to opos_app`),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`opos_app UPDATE \\(name\\) on ${table}`))
+      },
+    )
+
+    it.each(['uploaded_files', 'account_files'])(
+      'reports opos_app_global reading a file name of %s, which the sweep never reads',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (name) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(name\\) on ${table}`),
+        )
+      },
+    )
+
+    it('reports RLS on account_files, a global table', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`alter table public.account_files enable row level security`),
+      )
+      expect(problems.join('\n')).toMatch(/Global tables with RLS on: account_files/)
+    })
+
     it('reports a table-level update granted to opos_app', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`grant update on public.editions to opos_app`),

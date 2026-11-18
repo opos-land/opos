@@ -232,6 +232,20 @@
       "when": 1794523365006,
       "tag": "0032_admins_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795045032132,
+      "tag": "0033_file_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795045032926,
+      "tag": "0034_file_storage_privileges",
+      "breakpoints": true
     }
   ]
 }

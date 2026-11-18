@@ -45,6 +45,14 @@ export const globalReads = [
   'program_items.ends_at',
   'program_item_likes.account_id',
   'program_item_likes.program_item_id',
+  'uploaded_files.id',
+  'uploaded_files.tenant_id',
+  'uploaded_files.kind',
+  'uploaded_files.created_at',
+  'account_files.id',
+  'account_files.account_id',
+  'account_files.kind',
+  'account_files.created_at',
 ]
 
 /**
@@ -108,7 +116,7 @@ export const adminUpdates = ['tenants.slug', 'tenants.suspended_at']
 const adminTables = ['admins', 'admin_actions', 'retired_tenant_slugs']
 
 /** The public tables outside tenant isolation. */
-const globalTables = ['accounts', 'account_recovery_codes', ...adminTables]
+const globalTables = ['accounts', 'account_recovery_codes', 'account_files', ...adminTables]
 
 /**
  * The triggers OPOS attaches to the tables of the auth schema: table, then trigger,
@@ -299,6 +307,10 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     ['program_item_speakers', 'DELETE'],
     ['program_item_likes', 'INSERT'],
     ['program_item_likes', 'DELETE'],
+    ['uploaded_files', 'INSERT'],
+    ['uploaded_files', 'DELETE'],
+    ['account_files', 'INSERT'],
+    ['account_files', 'DELETE'],
   ].map((pair) => pair.join(' '))
   const overGranted = await sql<{ role: string; table: string; privilege: string }[]>`
     select r.role, c.relname as table, p.privilege

@@ -24,6 +24,7 @@ const covered = [
   ['program_items', 'tenant_id'],
   ['program_item_speakers', 'tenant_id'],
   ['program_item_likes', 'tenant_id'],
+  ['uploaded_files', 'tenant_id'],
 ] as const
 
 class Rollback extends Error {}
@@ -33,7 +34,7 @@ let b: Awaited<ReturnType<typeof createTenant>>
 
 /**
  * A tenant with a row in every covered table: its head membership, an edition, its access, an
- * accepted invitation, and a programme item with a speaker and a like.
+ * accepted invitation, a programme item with a speaker and a like, and an uploaded file.
  */
 async function populated() {
   const tenant = await createTenant()
@@ -53,6 +54,10 @@ async function populated() {
   await migrator`
     insert into program_item_likes (tenant_id, program_item_id, account_id)
     values (${tenant.id}, ${item}, ${tenant.headId})
+  `
+  await migrator`
+    insert into uploaded_files (tenant_id, edition_id, kind, content_type, size, sha256, name)
+    values (${tenant.id}, ${edition}, 'test', 'application/pdf', 1, ${'0'.repeat(64)}, 'a.pdf')
   `
   return tenant
 }
@@ -263,6 +268,8 @@ describe('tenant isolation', () => {
        values ('${a.id}', '${item!.id}', '${outsider.id}')`,
       `insert into program_item_likes (tenant_id, program_item_id, account_id)
        values ('${a.id}', '${item!.id}', '${outsider.id}')`,
+      `insert into uploaded_files (tenant_id, kind, content_type, size, sha256, name)
+       values ('${a.id}', 'test', 'image/png', 1, repeat('0', 64), 'a.png')`,
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /row-level security/,

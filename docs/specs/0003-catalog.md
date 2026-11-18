@@ -13,7 +13,8 @@ its variants and stock, and the edition's age bands and custom fields. An org se
 the panel, with no developer's help. It serves the second half of step 4 of the MVP flow
 ([PRODUCT.md 2](../PRODUCT.md#2-mvp-goal-and-end-to-end-flow)), putting tickets on sale. The shop
 that shows the catalog to buyers is [checkout and orders](0004-checkout-and-orders.md). It builds
-on [file storage](0012-file-storage.md), which is built before it.
+on [file storage](0012-file-storage.md) and [image variants](0013-image-variants.md), which are
+built before it.
 
 ## Business rules
 
@@ -109,12 +110,17 @@ and 20 custom fields: the shop's offer is one answer, sent to anyone who asks.
 
 ### Files
 
-This spec declares two kinds of file to [file storage](0012-file-storage.md): a merchandise
-picture and a size chart, each a JPEG, PNG or WebP image that belongs to an edition, with no limit
-on its size below the storage's own. The routes that add them take the file and need tickets write
-access. The public route below
-serves the files of a shown item to everyone (M9), from the API's own origin, so the portal loads
-nothing from another origin
+This spec declares two kinds of file to [file storage](0012-file-storage.md), both an edition's
+and both JPEG, PNG or WebP images: a merchandise picture, which
+`merchandise_item_pictures.file_id` points at, and a size chart, which
+`merchandise_option_values.size_chart_file_id` points at. Both declare two
+[variants](0013-image-variants.md): `small`, fitted inside 600 pixels and made with the upload,
+and `large`, fitted inside 2000. The shop's listing and the cart show the small one, an item's
+page and a size chart the large one.
+
+The routes that add a picture and a size chart take the file and need tickets write access. The
+public route below serves the variants of a shown item's files to everyone (M9), from the API's
+own origin, so the portal loads nothing from another origin
 ([0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 ### Routes
@@ -144,9 +150,9 @@ spec are changed through `PATCH /editions/{editionId}/shop`.
 
 One public route, without sign-in:
 
-| Route                                                   | Answers                                                                                                     |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `GET /public/tenants/{slug}/merchandise-files/{fileId}` | a picture or a size chart of an item that is not hidden, of a published edition; anything else as not found |
+| Route                                                             | Answers                                                                                                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `GET /public/tenants/{slug}/merchandise-files/{fileId}/{variant}` | a variant of a picture or a size chart of an item that is not hidden, of a published edition; anything else as not found |
 
 ### Screens
 

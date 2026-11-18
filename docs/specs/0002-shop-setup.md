@@ -84,9 +84,9 @@ domain owner to confirm.
 
 ### Files
 
-This spec declares one kind of file to [file storage](0012-file-storage.md): a legal document, a
-PDF that belongs to an edition, with no limit on its size below the storage's own. The route that
-publishes a version takes the file and needs tickets write access. The public route below serves
+This spec declares one kind of file to [file storage](0012-file-storage.md): a legal document. It
+is an edition's, a PDF, and `edition_document_versions.file_id` points at it. The route that
+publishes a version takes the file and needs tickets write access; the public route below serves
 a published version to everyone, as a download.
 
 ### Provider port

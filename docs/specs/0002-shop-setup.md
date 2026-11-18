@@ -15,8 +15,8 @@ and the switch that opens its shop. It serves the first half of step 4 of the MV
 payment provider account; putting tickets on sale needs the [catalog](0003-catalog.md) too.
 
 It is the first spec of the tickets module, so it carries the module's domain owner into the
-documents and starts the module's glossary. It builds on the file storage, which is built before
-it.
+documents and starts the module's glossary. It builds on [file storage](0012-file-storage.md),
+which is built before it.
 
 ## Business rules
 
@@ -46,16 +46,16 @@ domain owner to confirm.
 
 ### Documents and consents
 
-| #   | Rule                                                                                                                                                                                                         | Brief                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
-| D1  | An edition holds its legal documents. Each has a kind (shop terms, privacy policy, edition rules or other), a title and one or more versions.                                                                | BR-01, BR-13                           |
-| D2  | A version is an uploaded file, a PDF of up to 5 MB, published once and never changed: a changed document is a new version. The shop links the newest version; an order keeps the version its buyer accepted. | NF-07; the file and its limits are new |
-| D3  | A published version stays readable by its link for as long as its convention is on the platform, also once its document is hidden: a buyer reads what they accepted.                                         | new; follows NF-07                     |
-| D4  | An edition holds its consents. Each has the sentence the buyer accepts, the document it links, whether it is required or optional, and its place in the list.                                                | BR-13, F5.2                            |
-| D5  | The shop treats documents and consents as given: their kind and wording are the convention's. OPOS ships no text of its own and marks no consent as required by itself.                                      | BR-13                                  |
-| D6  | A consent an order has accepted, and a document with such a consent, is never deleted: it is hidden from the shop and stays on its orders.                                                                   | NF-07                                  |
-| D7  | An org with tickets write access to the edition sets its documents and consents.                                                                                                                             | B1.4                                   |
-| D8  | An edition may give the address of its FAQ, linked from the shop's footer.                                                                                                                                   | F1.1; where it is set is new           |
+| #   | Rule                                                                                                                                                                                           | Brief                        |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| D1  | An edition holds its legal documents. Each has a kind (shop terms, privacy policy, edition rules or other), a title and one or more versions.                                                  | BR-01, BR-13                 |
+| D2  | A version is an uploaded file, a PDF, published once and never changed: a changed document is a new version. The shop links the newest version; an order keeps the version its buyer accepted. | NF-07; the file is new       |
+| D3  | A published version stays readable by its link for as long as its convention is on the platform, also once its document is hidden: a buyer reads what they accepted.                           | new; follows NF-07           |
+| D4  | An edition holds its consents. Each has the sentence the buyer accepts, the document it links, whether it is required or optional, and its place in the list.                                  | BR-13, F5.2                  |
+| D5  | The shop treats documents and consents as given: their kind and wording are the convention's. OPOS ships no text of its own and marks no consent as required by itself.                        | BR-13                        |
+| D6  | A consent an order has accepted, and a document with such a consent, is never deleted: it is hidden from the shop and stays on its orders.                                                     | NF-07                        |
+| D7  | An org with tickets write access to the edition sets its documents and consents.                                                                                                               | B1.4                         |
+| D8  | An edition may give the address of its FAQ, linked from the shop's footer.                                                                                                                     | F1.1; where it is set is new |
 
 ### Opening the shop
 
@@ -84,10 +84,10 @@ domain owner to confirm.
 
 ### Files
 
-A document's version is a file of the file storage: an org uploads it through the API, which
-checks that its content is the PDF its type says and keeps it in the convention's part of the
-bucket. No browser reaches the bucket: the API serves a version from its own origin, with the
-stored type, as a download and never as a page of the API's origin.
+This spec declares one kind of file to [file storage](0012-file-storage.md): a legal document, a
+PDF that belongs to an edition, with no limit on its size below the storage's own. The route that
+publishes a version takes the file and needs tickets write access. The public route below serves
+a published version to everyone, as a download.
 
 ### Provider port
 
@@ -110,26 +110,26 @@ The call to the provider runs outside the request's transaction.
 
 Tenant routes:
 
-| Route                                                        | Needs         | Refuses with                                                                      |
-| ------------------------------------------------------------ | ------------- | --------------------------------------------------------------------------------- |
-| `GET /shop/seller`                                           | shop>=read    |                                                                                   |
-| `PUT /shop/seller`                                           | shop=write    | `shop.open` when the change makes the details incomplete                          |
-| `GET /shop/provider-account`                                 | shop>=read    |                                                                                   |
-| `PUT /shop/provider-account`                                 | shop=write    | `provider.credentials-refused`, `provider.unavailable`, `shop.payments-under-way` |
-| `DELETE /shop/provider-account`                              | shop=write    | `shop.open`                                                                       |
-| `GET /editions/{editionId}/shop`                             | tickets>=read |                                                                                   |
-| `PATCH /editions/{editionId}/shop`                           | tickets=write |                                                                                   |
-| `POST /editions/{editionId}/shop/open`                       | tickets=write | `shop.not-ready`, its `params` naming the missing conditions                      |
-| `POST /editions/{editionId}/shop/close`                      | tickets=write |                                                                                   |
-| `GET /editions/{editionId}/documents`                        | tickets>=read |                                                                                   |
-| `POST /editions/{editionId}/documents`                       | tickets=write |                                                                                   |
-| `PATCH /editions/{editionId}/documents/{documentId}`         | tickets=write | `shop.open` when it hides a required document                                     |
-| `POST /editions/{editionId}/documents/{documentId}/versions` | tickets=write | `file.type-refused`, `file.too-large`                                             |
-| `DELETE /editions/{editionId}/documents/{documentId}`        | tickets=write | `document.in-use`                                                                 |
-| `GET /editions/{editionId}/consents`                         | tickets>=read |                                                                                   |
-| `POST /editions/{editionId}/consents`                        | tickets=write |                                                                                   |
-| `PATCH /editions/{editionId}/consents/{consentId}`           | tickets=write |                                                                                   |
-| `DELETE /editions/{editionId}/consents/{consentId}`          | tickets=write | `consent.in-use`                                                                  |
+| Route                                                        | Needs         | Refuses with                                                                       |
+| ------------------------------------------------------------ | ------------- | ---------------------------------------------------------------------------------- |
+| `GET /shop/seller`                                           | shop>=read    |                                                                                    |
+| `PUT /shop/seller`                                           | shop=write    | `shop.open` when the change makes the details incomplete                           |
+| `GET /shop/provider-account`                                 | shop>=read    |                                                                                    |
+| `PUT /shop/provider-account`                                 | shop=write    | `provider.credentials-refused`, `provider.unavailable`, `shop.payments-under-way`  |
+| `DELETE /shop/provider-account`                              | shop=write    | `shop.open`                                                                        |
+| `GET /editions/{editionId}/shop`                             | tickets>=read |                                                                                    |
+| `PATCH /editions/{editionId}/shop`                           | tickets=write |                                                                                    |
+| `POST /editions/{editionId}/shop/open`                       | tickets=write | `shop.not-ready`, its `params` naming the missing conditions                       |
+| `POST /editions/{editionId}/shop/close`                      | tickets=write |                                                                                    |
+| `GET /editions/{editionId}/documents`                        | tickets>=read |                                                                                    |
+| `POST /editions/{editionId}/documents`                       | tickets=write |                                                                                    |
+| `PATCH /editions/{editionId}/documents/{documentId}`         | tickets=write | `shop.open` when it hides a required document                                      |
+| `POST /editions/{editionId}/documents/{documentId}/versions` | tickets=write | `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable` |
+| `DELETE /editions/{editionId}/documents/{documentId}`        | tickets=write | `document.in-use`                                                                  |
+| `GET /editions/{editionId}/consents`                         | tickets>=read |                                                                                    |
+| `POST /editions/{editionId}/consents`                        | tickets=write |                                                                                    |
+| `PATCH /editions/{editionId}/consents/{consentId}`           | tickets=write |                                                                                    |
+| `DELETE /editions/{editionId}/consents/{consentId}`          | tickets=write | `consent.in-use`                                                                   |
 
 `GET /shop/provider-account` answers the provider, `ready_at` and the conditions missing, never the
 credentials. `GET /editions/{editionId}/shop` answers whether the shop is open and each condition
@@ -201,8 +201,8 @@ Integration, in `apps/api/test`:
 - While a shop is open: disconnecting, making the seller's details incomplete and hiding a
   required document are refused; with the shop closed they pass.
 - A version: a file that is not a PDF, one over the limit and one whose content is not what its
-  type says are refused; a published one cannot be changed; the public route serves it as a
-  download, also once its document is hidden, and serves another tenant's as not found.
+  type says are refused; a published one cannot be changed; the public route serves it to anyone
+  as a download, also once its document is hidden, and serves another tenant's as not found.
 - A consent or a document an order accepted cannot be deleted, and can be hidden.
 
 e2e, each scenario making its own tenant and accounts and checking the BFF boundary:
@@ -217,7 +217,7 @@ e2e, each scenario making its own tenant and accounts and checking the BFF bound
 
 ## Out of scope
 
-- The file storage itself: its bucket, its upload and its backup.
+- Keeping a file, its upload and its bucket: [file storage](0012-file-storage.md).
 - How a provider processes a payment: [checkout and orders](0004-checkout-and-orders.md) and
   [Przelewy24](0005-przelewy24.md).
 - What the shop sells: [catalog](0003-catalog.md).
@@ -230,5 +230,5 @@ e2e, each scenario making its own tenant and accounts and checking the BFF bound
 
 - **Records before acceptance:** the documents saying convention and organizer (D10 of the brief),
   which changes the terms this spec is written in; the module having its domain owner (D1), carried
-  here; Przelewy24 as the MVP's provider (D3), with [Przelewy24](0005-przelewy24.md); the file
-  storage, with its own spec and record.
+  here; Przelewy24 as the MVP's provider (D3), with [Przelewy24](0005-przelewy24.md); files in an
+  S3 bucket ([0034](../adr/0034-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)).

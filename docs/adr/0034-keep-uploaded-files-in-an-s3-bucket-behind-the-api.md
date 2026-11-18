@@ -5,18 +5,19 @@
 
 ## Context
 
-The tickets module needs files an org uploads: the PDF of a legal document, whose exact version an
-order keeps, and the pictures and size charts of merchandise
-([shop setup](../specs/0002-shop-setup.md), [catalog](../specs/0003-catalog.md)). PRODUCT.md 11
-left file uploads beyond the MVP, and OPOS has nowhere to keep a file: hosted Supabase serves
-Postgres and sign-in alone, its Storage off
+Features need files people upload. The first are the tickets module's: the PDF of a legal
+document, whose exact version an order keeps, and the pictures and size charts of merchandise
+([shop setup](../specs/0002-shop-setup.md), [catalog](../specs/0003-catalog.md)). Others follow:
+an account's picture, an edition's photographs, a picture in a comment. PRODUCT.md 11 left file
+uploads beyond the MVP, and OPOS has nowhere to keep a file: hosted Supabase serves Postgres and
+sign-in alone, its Storage off
 ([0003](0003-use-hosted-supabase-for-postgres-and-auth-only.md)).
 
 The frontends talk to the API alone, and the portal loads nothing from another origin
 ([0004](0004-make-the-api-the-only-backend-with-the-session-in-cookies.md),
 [0026](0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)). A write with a session
-cookie has a JSON body. Outbound I/O never runs inside a transaction. The API's session cookies
-live on the API's own host.
+cookie has a JSON body. Outbound I/O never runs inside a transaction. A tenant route carries one
+fixed requirement. The API's session cookies live on the API's own host.
 
 ## Decision
 
@@ -25,19 +26,22 @@ live on the API's own host.
 - No browser reaches the bucket. The API takes every upload and serves every file from its own
   origin; only the API holds the bucket's key, which opens that bucket and nothing else.
 - The storage is a service of the core with no route of its own. A feature declares the kinds of
-  file it takes, and its own routes take and serve them, under the feature's permission.
+  file it takes, and its own routes take and serve them, under the feature's requirement.
+- A file has one owner: an account, a convention or an edition. A row stands for each file, in a
+  tenant table under RLS for a convention's or an edition's and in a global table for an
+  account's, and an object's key starts with the kind and the identifier of its owner.
 - An upload is a JSON body carrying the file, up to 15 MB a file, on a route with a body limit of
   its own. The bytes are stored outside every transaction.
 - The API keeps only inert types, each checked against its content, and serves them under headers
   that let a browser neither run nor guess at them.
-- A row in a tenant table under RLS stands for each file, and an object's key starts with its
-  tenant's identifier.
-- The bucket keeps earlier versions of an object for three months, as long as a backup is kept.
+- A file goes with what it was kept for, and a daily sweep removes what belongs to nothing. The
+  bucket keeps earlier versions of an object for three months, as long as a backup is kept.
 - The local stack and CI run Versity Gateway, an S3-compatible server over a directory, so the
   tests speak the same protocol as production.
 
-The rules are in [the spec of file storage](../specs/0012-file-storage.md) until the feature is
-built.
+What is kept of an image is decided in
+[0035](0035-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md). The rules are
+in [the spec of file storage](../specs/0012-file-storage.md) until the feature is built.
 
 ## Alternatives
 
@@ -56,6 +60,8 @@ built.
   instead, limited to inert types and guarded by headers.
 - **One upload route for every feature.** A single place to send a file, but a tenant route
   carries one fixed requirement, and the permission to send a file depends on what it is for.
+- **One table for every owner.** One place for every file, but an account belongs to no tenant,
+  and a row without a tenant has no place in a table under tenant isolation.
 - **A form upload in parts.** The browser's own way, but a form's body is the one a foreign page
   can send without asking, which the JSON rule exists to refuse.
 - **MinIO for the local stack.** Its community edition is retired and its images withdrawn.
@@ -66,18 +72,21 @@ built.
 
 ## Consequences
 
-- A second place holds a convention's data beside the database: the bucket joins the data
-  PRODUCT.md 10 describes and the backups of
-  [0014](0014-back-up-production-beyond-supabase.md), which copy it off the vendor once the
-  deployment builds them.
+- A second place holds data beside the database: the bucket joins what PRODUCT.md 10 describes
+  and the backups of [0014](0014-back-up-production-beyond-supabase.md), which copy it off the
+  vendor once the deployment builds them.
 - The API depends on the AWS SDK for S3 and on the bucket being reachable for uploads and reads;
   nothing else of the API waits for it.
 - A file costs a third more in transit as a JSON body, and the API holds it whole in memory while
   it reads and checks it: 15 MB is the limit until uploads in parts are worth their cost.
-- Every picture a buyer sees is read through the API. A file never changes, so it is cached for
+- Every picture a person sees is read through the API. A file never changes, so it is cached for
   good; a CDN in front of the API is the next step if that load is felt.
 - The portal's content security policy names the API's origin for images.
-- The sweep that removes objects left without a row is the API's first job.
+- The sweep is the API's first job.
+- A feature that starts to take files adds a kind and a column of its own; the storage does not
+  change with it.
+- The owners are a list of the storage. A further one, such as the platform itself, is a table of
+  its files and a name for its keys; no kept file moves, and no feature changes.
 - The local gateway keeps an object's metadata in extended attributes of its file system, or in a
   directory beside the data where there are none. Its makers test it against the AWS SDK for Go;
   the adapter's own tests are the proof that the SDK for JavaScript and the gateway agree.

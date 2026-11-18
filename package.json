@@ -10,7 +10,7 @@
   },
   "scripts": {
     "prepare": "lefthook install",
-    "dev": "turbo run dev",
+    "local": "turbo run local",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",

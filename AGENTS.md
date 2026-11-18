@@ -105,9 +105,9 @@ header up to 72 characters; an optional body says why.
 | `ci`       | GitHub Actions workflows                   |
 | `revert`   | reverting a commit                         |
 
-Scopes: `api`, `panel`, `portal`, `admin`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (Traefik,
-compose, `infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs` and this
-list.
+Scopes: `api`, `panel`, `portal`, `admin`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (the
+deployment, compose, `infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs`
+and this list.
 
 - A Drizzle migration goes in the same commit as the schema change that produced it.
 - `.po` catalogs with the `pl` translations go in the same commit as the code introducing the
@@ -185,7 +185,8 @@ and in the script together.
 **Gates.** [.claude/hooks/migration-reminder.mjs](.claude/hooks/migration-reminder.mjs) hands the
 rules of a migration as context after it is edited. The permissions in
 [.claude/settings.json](.claude/settings.json) deny reading the real `.env` files and the Supabase
-signing keys (the `.env.example` templates stay readable) and ask the user before an edit of the
+signing keys (the `.env.example` templates stay readable) and running `deploy:secret-get`, which
+prints a secret, and ask the user before an edit of the
 settings, `.claude/agents`, `.claude/hooks`, `scripts/tests-first.mjs`, `scripts/check-migrations.mjs`,
 `scripts/bff-boundary.mjs`, `lefthook.yml`, `.github/workflows` or `.github/rulesets`.
 [.claude/agent-docs.test.mjs](.claude/agent-docs.test.mjs) checks that the paths this file and the
@@ -234,8 +235,13 @@ script or an iframe created outside the consent feature and anything loaded from
 ([0026](docs/adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`, no
-remote database URL, project reference or access token in a `.env` or `mise.local.toml`; they change
-only through the deploy workflow ([environments](docs/ARCHITECTURE.md#environments)).
+remote database URL, project reference or access token in a `.env` or `mise.local.toml`. Their
+infrastructure changes only through the `deploy:*` commands, which an operator runs under their own
+identity, and a release only through CI. An agent never runs a deploy command that applies, destroys
+or sets a secret
+([environments](docs/ARCHITECTURE.md#environments)). The infrastructure code and its runbook are in
+[infra](infra/README.md); after a change there, `mise run deploy:check`, and `mise run
+deploy:images` when it touches the images.
 
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
 them to the repository. Where no design exists yet, use shadcn/ui's defaults unchanged and real copy

@@ -13,6 +13,50 @@ function requireReachable(name: string, hosts: string[], env: NodeJS.ProcessEnv)
   )
 }
 
+/** Supabase's poolers: Supavisor's hosts, and the transaction port of a project's own host. */
+const POOLER_HOST = /\.pooler\.supabase\.com$/i
+const POOLER_PORT = '6543'
+
+/**
+ * On a deployed environment, a database URL reaches the project over its direct connection, with
+ * TLS verified against the project's CA, which the images hand Node through NODE_EXTRA_CA_CERTS
+ * (docs/adr/0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md). Elsewhere, and
+ * on the loopback interface, the URL passes untouched. A refusal names the variable, never a part
+ * of the URL.
+ */
+export function verifiedTls(
+  name: string,
+  url: string,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const environment = env.OPOS_ENV ?? ''
+  if (!REMOTE_ENVS.includes(environment)) return url
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw new Error(`${name} is not a URL`)
+  }
+  // A connection that never leaves the machine has nothing to verify, as the local stack's when a
+  // test runs a script as dev
+  if (databaseHosts(url).every((host) => LOOPBACK_HOSTS.includes(host))) return url
+  if (parsed.searchParams.get('sslmode') !== 'verify-full') {
+    throw new Error(`${name} must ask for sslmode=verify-full on OPOS_ENV ${environment}`)
+  }
+  // Every host and port of a host list, as postgres.js reads them; a client opens nothing until
+  // its first query
+  const { host, port } = postgres(url).options
+  if (host.some((name) => POOLER_HOST.test(name)) || port.some((p) => String(p) === POOLER_PORT)) {
+    throw new Error(`${name} names a connection pooler; OPOS_ENV ${environment} connects directly`)
+  }
+  if (!env.NODE_EXTRA_CA_CERTS) {
+    throw new Error(
+      `NODE_EXTRA_CA_CERTS must name the project's CA certificate on OPOS_ENV ${environment}`,
+    )
+  }
+  return url
+}
+
 /** The URL of a service a db:* script reaches with `fetch`, so `new URL` reads its host as `fetch` does. */
 export function reachableUrl(
   name: string,
@@ -42,7 +86,7 @@ function databaseHosts(url: string): string[] {
 /**
  * The URL of the postgres role, through which every db:* script connects. It has no
  * default, and a host off the loopback interface needs the OPOS_ENV of its environment, so a
- * script never reaches a hosted project by accident.
+ * script never reaches a hosted project by accident; there it connects as `verifiedTls` asks.
  */
 export function migrationUrl(env: NodeJS.ProcessEnv = process.env): string {
   const url = env.DATABASE_MIGRATION_URL?.trim()
@@ -62,5 +106,5 @@ export function migrationUrl(env: NodeJS.ProcessEnv = process.env): string {
     throw new Error('DATABASE_MIGRATION_URL is not a URL')
   }
   requireReachable('DATABASE_MIGRATION_URL', hosts, env)
-  return url
+  return verifiedTls('DATABASE_MIGRATION_URL', url, env)
 }

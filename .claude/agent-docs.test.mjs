@@ -225,13 +225,16 @@ test('the area names of AGENTS.md equal those of tests-first.mjs', () => {
   assert.deepEqual([...fromDocument].sort(), [...fromScript].sort())
 })
 
-test('settings deny the real .env files and leave templates readable', () => {
+test('settings deny the real .env files and printing a secret, and leave templates readable', () => {
   const { deny } = JSON.parse(read('.claude/settings.json')).permissions
   assert.deepEqual(deny, [
     'Read(./apps/*/.env)',
     'Read(./packages/*/.env)',
     'Read(./supabase/.env)',
     'Read(./supabase/signing_keys.json)',
+    'Bash(mise run deploy:secret-get:*)',
+    'Bash(pnpm deploy:secret-get:*)',
+    'Bash(infra/run.sh * infra/secret-get.sh:*)',
   ])
   assert.ok(
     deny.every((rule) => !rule.includes('.env.')),

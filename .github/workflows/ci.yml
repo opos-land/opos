@@ -13,9 +13,20 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# mise installs every tool of mise.toml but these: no job runs a deploy command
+env:
+  MISE_DISABLE_TOOLS: aqua:opentofu/opentofu,aqua:gruntwork-io/terragrunt,aqua:scaleway/scaleway-cli,aqua:cli/cli,aqua:rhysd/actionlint,aqua:koalaman/shellcheck
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    # The remote cache of turbo comes from an environment OpenTofu writes. Only a push to develop or
+    # main can enter cache-write, by the environment's own branch policy; any other run of this
+    # repository gets cache-read, and a fork or Dependabot no secret, so turbo then works with the
+    # local cache alone. Neither is a deployment.
+    environment:
+      name: ${{ github.event_name == 'push' && 'cache-write' || 'cache-read' }}
+      deployment: false
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -56,26 +67,43 @@ jobs:
       # The second run fails where a constraint refuses a row; packages/db/test/seed.test.ts holds
       # the row counts across two runs
       - run: pnpm db:seed && pnpm db:seed
-      - run: pnpm turbo run typecheck lint $TURBO_ARGS
+      - run: pnpm turbo run typecheck lint ${TURBO_ARGS:+"$TURBO_ARGS"}
         env:
           # A pull request runs what it affects, a push runs everything and runs it uncached
           TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
           TURBO_FORCE: ${{ github.event_name == 'push' }}
           # --affected diffs against the PR base branch, not always main
           TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          # The remote cache: without a token turbo leaves it out; an empty mode would turn every
+          # cache off, the local one too
+          TURBO_API: ${{ vars.TURBO_API }}
+          TURBO_TEAM: opos
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
+          TURBO_CACHE: ${{ github.event_name == 'push' && 'local:rw,remote:rw' || 'local:rw,remote:r' }}
       # In a step of their own: this runner also hosts the stack, and the type checker and the linter
       # would take the time the tests' deadlines count on
-      - run: pnpm turbo run test $TURBO_ARGS
+      - run: pnpm turbo run test ${TURBO_ARGS:+"$TURBO_ARGS"}
         env:
           TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
           TURBO_FORCE: ${{ github.event_name == 'push' }}
           TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          TURBO_API: ${{ vars.TURBO_API }}
+          TURBO_TEAM: opos
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
+          TURBO_CACHE: ${{ github.event_name == 'push' && 'local:rw,remote:rw' || 'local:rw,remote:r' }}
       # The control address and the canary make the bundle scan below prove something: a bundle
       # without the address was not built from this tree, and one with the secret leaks it
       - run: pnpm build
         env:
           VITE_API_URL: https://opos-control.invalid
           SUPABASE_SECRET_KEY: opos-canary-secret-x
+          TURBO_API: ${{ vars.TURBO_API }}
+          TURBO_TEAM: opos
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
+          TURBO_CACHE: ${{ github.event_name == 'push' && 'local:rw,remote:rw' || 'local:rw,remote:r' }}
       # The sources and the bundles of the three frontends name nothing of Supabase
       - run: node scripts/bff-boundary.mjs --dist
       # The tests run the sources; this starts the bundle that production runs
@@ -111,6 +139,78 @@ jobs:
             e2e/test-results/
             e2e/playwright-report/
           retention-days: 7
+
+  # The images of a deployment, built as the server builds them, and what a build alone does not
+  # show: the API finds its imports, the frontends serve their routes and ask for basic auth when
+  # given a password (infra/docker/check.sh). The deployed images are built on the server.
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - run: infra/docker/check.sh
+
+  # Dev runs the head of develop once its checks passed: Coolify builds it on the server, runs the
+  # database steps and starts it, and this job asks for that and follows it to its end. It never
+  # names a commit, and releases only while its commit is still the head; a newer push releases
+  # itself (docs/adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md).
+  # The environment dev admits develop alone; OpenTofu writes its token and variables.
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: [check, e2e, images, secrets]
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+      url: ${{ vars.DEPLOYMENT_URL }}
+    timeout-minutes: 40
+    steps:
+      - name: release the head of develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_APPLICATION: ${{ vars.COOLIFY_APPLICATION }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          head=$(gh api "repos/$REPOSITORY/git/ref/heads/develop" --jq .object.sha)
+          if [ "$head" != "$COMMIT" ]; then
+            echo "::notice::develop has moved on to $head, whose run releases it"
+            exit 0
+          fi
+
+          coolify() {
+            curl -fsS --retry 3 -H "Authorization: Bearer $COOLIFY_TOKEN" -H 'Accept: application/json' "$@"
+          }
+
+          # An operator runs another branch or tag on Dev (deploy:apply --ref): develop waits until
+          # an apply without it
+          branch=$(coolify "$COOLIFY_URL/api/v1/applications/$COOLIFY_APPLICATION" | jq -r .git_branch)
+          if [ "$branch" != develop ]; then
+            echo "::notice::Dev runs $branch, set by an operator; develop is released by the next apply without --ref"
+            exit 0
+          fi
+
+          # A deployment still queued for an older commit gives way to this one
+          deployment=$(coolify -X POST \
+            "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_APPLICATION&cancel_previous=queued" |
+            jq -r '.deployments[0].deployment_uuid // empty')
+          if [ -z "$deployment" ]; then
+            echo "::error::Coolify started no deployment"
+            exit 1
+          fi
+          echo "Coolify deployment $deployment"
+
+          while :; do
+            status=$(coolify "$COOLIFY_URL/api/v1/deployments/$deployment" | jq -r .status)
+            case "$status" in
+              finished) echo "Released $COMMIT"; exit 0 ;;
+              failed | cancelled-by-user)
+                echo "::error::The deployment ended $status; its log is in Coolify"
+                exit 1
+                ;;
+            esac
+            sleep 15
+          done
 
   # Secrets in the tree and in the whole history, and dependencies with a known high advisory.
   secrets:

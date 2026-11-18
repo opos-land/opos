@@ -7,6 +7,10 @@
     "scripts/infra-init.mjs",
     "mise.toml"
   ],
+  "globalPassThroughEnv": ["VITEST_MAX_WORKERS"],
+  "remoteCache": {
+    "signature": true
+  },
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]
@@ -17,7 +21,7 @@
       "env": ["VITE_API_URL", "SUPABASE_SECRET_KEY"],
       "outputs": ["dist/**"]
     },
-    "dev": {
+    "local": {
       "dependsOn": ["i18n:compile"],
       "cache": false,
       "persistent": true,

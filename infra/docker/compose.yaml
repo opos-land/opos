@@ -1,0 +1,129 @@
+# One deployment: Coolify builds every image on the server from the repository at the head of the
+# branch it follows, runs the database steps, then starts the API
+# (docs/adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md).
+# Each service but the tools has a host of its own, which Coolify's proxy routes to the one port the
+# service exposes; the deployment's unit (infra/modules/deployment) names the hosts alone. The variables are the
+# application's in Coolify, set by that unit; none is written here. Paths are relative to the
+# repository root, which Coolify passes as the project directory:
+#
+#   docker compose --project-directory . -f infra/docker/compose.yaml config
+
+services:
+  # The roles, the migrations and the verification, then healthy; the API waits for it. It stays
+  # up as the place where the admin's scripts run, and is the one container with the postgres URL.
+  # Never restarted: a failed step fails the deployment instead of running again.
+  tools:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: tools
+    restart: 'no'
+    environment:
+      OPOS_ENV: ${OPOS_ENV:?}
+      DATABASE_MIGRATION_URL: ${DATABASE_MIGRATION_URL:?}
+      OPOS_APP_PASSWORD: ${OPOS_APP_PASSWORD:?}
+      OPOS_APP_GLOBAL_PASSWORD: ${OPOS_APP_GLOBAL_PASSWORD:?}
+      OPOS_ADMIN_PASSWORD: ${OPOS_ADMIN_PASSWORD:?}
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: api
+    restart: unless-stopped
+    expose:
+      - '3001'
+    depends_on:
+      tools:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      OPOS_ENV: ${OPOS_ENV:?}
+      PORT: '3001'
+      DATABASE_URL: ${DATABASE_URL:?}
+      DATABASE_GLOBAL_URL: ${DATABASE_GLOBAL_URL:?}
+      DATABASE_ADMIN_URL: ${DATABASE_ADMIN_URL:?}
+      SUPABASE_URL: ${SUPABASE_URL:?}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:?}
+      SEND_EMAIL_HOOK_SECRET: ${SEND_EMAIL_HOOK_SECRET:?}
+      INVITE_SECRET: ${INVITE_SECRET:?}
+      API_URL: ${API_URL:?}
+      PANEL_URL: ${PANEL_URL:?}
+      PORTAL_URL: ${PORTAL_URL:?}
+      ADMIN_URL: ${ADMIN_URL:?}
+      SMTP_HOST: ${SMTP_HOST:?}
+      SMTP_PORT: ${SMTP_PORT:?}
+      # Empty for a deployment that catches its mail, whose catcher asks for no credentials
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:?}
+
+  # The frontends, each built for the API's address; behind basic auth when BASIC_AUTH_PASSWORD
+  # is set
+  panel:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: web
+      args:
+        APP: panel
+        VITE_API_URL: ${API_URL:?}
+    restart: unless-stopped
+    expose:
+      - '8080'
+    environment:
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
+
+  portal:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: web
+      args:
+        APP: portal
+        VITE_API_URL: ${API_URL:?}
+    restart: unless-stopped
+    expose:
+      - '8080'
+    environment:
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
+
+  admin:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: web
+      args:
+        APP: admin
+        VITE_API_URL: ${API_URL:?}
+    restart: unless-stopped
+    expose:
+      - '8080'
+    environment:
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
+
+  # Catches the mail of a deployment whose API sends to it (catch_mail of infra/modules/deployment):
+  # nothing leaves the server, and its inbox page asks for the frontends' basic auth. The API sends
+  # to port 1025 inside the deployment's network; only the page is routed.
+  mail:
+    image: axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
+    restart: unless-stopped
+    expose:
+      - '8025'
+    environment:
+      MP_UI_AUTH: ${BASIC_AUTH_USER:-opos}:${BASIC_AUTH_PASSWORD:?}
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_AGE: 7d
+    volumes:
+      - mail:/data
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8025/livez']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mail:

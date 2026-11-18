@@ -41,10 +41,11 @@ graph LR
   away are scripts, run on the server as `postgres` (`pnpm db:admin:grant`,
   `pnpm db:admin:revoke`): no route and no screen does either.
 
-Deployment is decided but not built
-([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),
-[0013](adr/0013-connect-to-postgres-directly-with-verified-tls.md),
-[0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
+Dev's deployment is described in [infra](../infra/README.md) but not running yet
+([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)); a
+deployed environment reaches its database directly, with TLS verified against Supabase's CA
+([0039](adr/0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md)). The backups are
+decided but not built ([0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
 [waiting for their domain owner](#modules-waiting-for-their-domain-owner) have only their rules.
 
 ## Tenant isolation
@@ -211,7 +212,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   any permission check, by invariant 12, so an older token loses access at once.
 - A redirect, Google sign-in's included, leads only to a path of the application that started it.
 - The cookies are safe only while no subdomain serves content a tenant controls: the feature that
-  first does moves them to `__Host-` names.
+  first does moves them to `__Host-` names. Dev's hosts sit under `opos.land` too, so they move
+  before production is deployed
+  ([0034](adr/0034-address-dev-under-dev-opos-land-in-a-dns-zone-of-its-own.md)).
 
 ## API conventions
 
@@ -323,35 +326,63 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 ## Environments
 
-|             | Local                 | Dev                                          | Production                         |
-| ----------- | --------------------- | -------------------------------------------- | ---------------------------------- |
-| `OPOS_ENV`  | `local`               | `dev`                                        | `production`                       |
-| Supabase    | the CLI's local stack | a Free project of its own                    | the Pro project, `eu-central-1`    |
-| Addresses   | `*.opos.localhost`    | a domain of its own, never under `opos.land` | `opos.land`                        |
-| Deployed by | the developer         | a push to `develop`                          | a push to `main`, after a reviewer |
+|             | Local                   | Dev                                       | Production                         |
+| ----------- | ----------------------- | ----------------------------------------- | ---------------------------------- |
+| `OPOS_ENV`  | `local`                 | `dev`                                     | `production`                       |
+| Supabase    | the CLI's local stack   | a Free project of its own                 | the Pro project, `eu-central-1`    |
+| Addresses   | `*.opos.localhost`      | `dev.opos.land`, in a DNS zone of its own | `opos.land`                        |
+| Hosting     | the developer's machine | a shared Coolify server                   | not decided                        |
+| Deployed by | the developer           | a push to `develop`                       | a push to `main`, after a reviewer |
 
-- `OPOS_ENV` is the one switch between environments; Mailpit and a fake payment provider serve
-  `local` and `dev`.
-- Dev and production are not deployed yet; their hosting is decided in
-  [0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md).
+- `OPOS_ENV` is the one switch between environments; a fake payment provider serves `local` and
+  `dev`. Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
+  through Scaleway's Transactional Email, from its own domain
+  ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
+- Dev and production are not deployed yet. Dev runs in a project of its own on a shared Coolify
+  server, made by the server's owner; the deployment makes only environments inside it. Production
+  never shares a server with Dev
+  ([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)).
+- Dev's addresses sit in a zone delegated from `opos.land`: no credential that changes Dev's
+  records reaches production's
+  ([0034](adr/0034-address-dev-under-dev-opos-land-in-a-dns-zone-of-its-own.md)).
 - A working checkout never points at Dev or production: no `supabase link`, remote URL, project
   reference or token in a `.env` or `mise.local.toml`. The `db:*` scripts, the seed and the schema
   tests refuse a remote host unless `OPOS_ENV` names its environment
   ([migration-url.ts](../packages/db/src/migration-url.ts)).
-- Secrets belong to one environment each and are never committed.
+- The infrastructure of Dev and production changes only through the `deploy:*` commands, which
+  apply the OpenTofu units from an operator's machine, under their own identity; no workflow runs
+  them, and an agent never runs one that applies, destroys or sets a secret
+  ([0035](adr/0035-describe-the-infrastructure-in-opentofu-units-run-by-terragrunt.md)).
+- A release comes from CI: once the checks of a push to `develop` passed, Dev deploys the head of
+  `develop`, through a token that can deploy and never choose a commit
+  ([0038](adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md)).
+- Secrets belong to one environment each and are never committed. A deployed environment keeps each
+  in the Secret Manager of its own Scaleway project. An operator signs in with a key of their own
+  that expires the same day; CI never reaches Scaleway, and OpenTofu copies what it uses into
+  GitHub, a value only some branches may use into an environment that admits those branches alone
+  ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
 - The seed refuses production, and production data never leaves it
   ([PRODUCT.md](PRODUCT.md#10-personal-data-and-privacy)).
-- Supabase Auth settings live in [config.toml](../supabase/config.toml), never in a dashboard alone.
+- Supabase Auth settings live in [config.toml](../supabase/config.toml) for the local stack and in
+  [infra/modules/supabase](../infra/modules/supabase) for a deployed project, never in a dashboard
+  alone; [supabase-auth.test.mjs](../scripts/supabase-auth.test.mjs) keeps the two equal. A deployed
+  project is made by hand; OpenTofu changes only what is inside it.
 
 ## Tooling and versions
 
-- [mise.toml](../mise.toml) pins Node and the Supabase CLI, `packageManager` pnpm; `engines` repeats
-  both, and a mismatch aborts the install.
+- [mise.toml](../mise.toml) pins Node, the Supabase CLI and the tools of the deploy commands:
+  OpenTofu, Terragrunt and the CLIs of Scaleway and GitHub. `packageManager` pins pnpm, `engines`
+  repeats Node and pnpm, and a mismatch aborts the install.
 - A root script is the command, and it runs as `pnpm <name>` without mise. A mise task of the same
   name in [mise-tasks.toml](../mise-tasks.toml) runs it and says what it does, so `mise tasks` lists
   the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,
   which turbo hashes, and [mise-tasks.test.mjs](../scripts/mise-tasks.test.mjs) keeps both lists
-  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)).
+  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). The
+  `deploy:*` commands alone are mise tasks with no root script: their tools come from mise.
+- The infrastructure lives in [infra](../infra/README.md): an environment is one directory with
+  one `env.yaml`, its plain settings and the names of its secrets, and nothing else configures it.
+  Every provider is pinned to an exact version with its lock file committed, at least 7 days old
+  like a dependency; `mise run deploy:check` validates every unit without a sign-in.
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
   `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
   ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).
@@ -359,7 +390,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `pnpm --dir apps/<app> exec shadcn`, never `npx shadcn@latest` or `pnpm dlx`, which pass
   `minimumReleaseAge` by; the CLI's MCP server is not used
   ([0021](adr/0021-run-the-shadcn-skill-through-the-pinned-cli.md)).
-- turbo ([turbo.json](../turbo.json)) declares only what a rule needs: catalogs compile before `dev`,
+- turbo ([turbo.json](../turbo.json)) declares only what a rule needs: catalogs compile before `local`,
   `build` and `test`; side effects such as `db:*` are never cached; runtime variables stay out of
   the hash; the schema and API suites never share the stack at once.
 - No `.env` at the root: each application, `packages/db` and `supabase/` keep their own beside a
@@ -396,7 +427,15 @@ whole history, `pnpm audit` on high advisories).
   [0017](adr/0017-integrate-on-develop-and-release-through-main.md)).
 - A workflow reads the repository only, pins every action by a full commit hash, and passes
   `${{ github.* }}` to a `run` step only through `env`
-  ([ci-shape.test.mjs](../scripts/ci-shape.test.mjs)).
+  ([ci-shape.test.mjs](../scripts/ci-shape.test.mjs)). No workflow signs in to a cloud: the
+  secrets it reads are those OpenTofu writes into GitHub
+  ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
+- turbo's remote cache is written only by a run on a push to `develop` or `main`; any other run of
+  the repository reads it, and a run without its secrets, such as a fork's, works without it.
+  GitHub admits only those two branches to the environment that holds the writing token, the
+  artifacts are signed with a key the cache server never holds, and no failure of the cache fails
+  a job
+  ([0037](adr/0037-share-a-turborepo-remote-cache-that-only-develop-and-main-write.md)).
 
 ## Modules waiting for their domain owner
 

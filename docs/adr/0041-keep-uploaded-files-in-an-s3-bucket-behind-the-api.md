@@ -1,4 +1,4 @@
-# 0034. Keep uploaded files in an S3 bucket behind the API
+# 0041. Keep uploaded files in an S3 bucket behind the API
 
 - Status: Proposed
 - Date: 2026-11-18
@@ -40,7 +40,7 @@ fixed requirement. The API's session cookies live on the API's own host.
   tests speak the same protocol as production.
 
 What is kept of an image is decided in
-[0035](0035-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md). The rules are
+[0042](0042-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md). The rules are
 in [the spec of file storage](../specs/0012-file-storage.md) until the feature is built.
 
 ## Alternatives

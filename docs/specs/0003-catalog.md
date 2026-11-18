@@ -241,5 +241,5 @@ e2e:
 
 - **Records before acceptance:** merchandise and file uploads in the MVP (D2 and D16 of the brief,
   with PRODUCT.md 11), the uploads decided in
-  [0034](../adr/0034-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md); the age band, the
+  [0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md); the age band, the
   guardian consent and custom field answers as the convention's data (D7, with PRODUCT.md 10).

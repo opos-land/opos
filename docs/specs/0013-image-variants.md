@@ -3,7 +3,7 @@
 - Status: Draft
 - Domain owner: the team: image variants are part of the core
 - Decisions:
-  [0035](../adr/0035-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md)
+  [0042](../adr/0042-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md)
 
 ## Goal
 

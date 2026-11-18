@@ -36,7 +36,7 @@ above.
 
 - One feature per spec, in `NNNN-<feature>.md`, kebab case, numbered in the order the specs arrive;
   a number never changes
-  ([0033](../adr/0033-number-the-specs-in-the-order-they-arrive.md)). English and the glossary
+  ([0040](../adr/0040-number-the-specs-in-the-order-they-arrive.md)). English and the glossary
   terms; roles, never personal names.
 - Details the documents keep out — tables, columns, routes, screens — belong in a spec: the code
   takes them over once built.

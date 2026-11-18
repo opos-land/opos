@@ -2,7 +2,7 @@
 
 - Status: Draft
 - Domain owner: the team: the file storage is part of the core
-- Decisions: [0034](../adr/0034-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)
+- Decisions: [0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)
 
 ## Goal
 

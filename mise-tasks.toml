@@ -117,22 +117,22 @@ run = "pnpm format:check"
 raw = true
 
 ["infra:init"]
-description = "Set up the local stack once per checkout: .env files, secrets, signing key, Supabase, database roles"
+description = "Set up the local stack once per checkout: .env files, secrets, signing key, Supabase, the bucket and the image server, database roles"
 run = "pnpm infra:init"
 raw = true
 
 ["infra:up"]
-description = "Start the local Supabase stack"
+description = "Start the local Supabase stack, the bucket and the image server"
 run = "pnpm infra:up"
 raw = true
 
 ["infra:down"]
-description = "Stop the local Supabase stack, keeping its data"
+description = "Stop the local Supabase stack, the bucket and the image server, keeping their data"
 run = "pnpm infra:down"
 raw = true
 
 ["infra:reset"]
-description = "Wipe the local Supabase stack's data, start it again and set the database roles"
+description = "Wipe the data of the local Supabase stack and the bucket, start them again and set the database roles"
 run = "pnpm infra:reset"
 raw = true
 

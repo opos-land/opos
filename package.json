@@ -33,9 +33,9 @@
     "format": "prettier --write . && node scripts/markdown-tables.mjs --write",
     "format:check": "prettier --check . && node scripts/markdown-tables.mjs",
     "infra:init": "node scripts/infra-init.mjs",
-    "infra:up": "supabase start",
-    "infra:down": "supabase stop",
-    "infra:reset": "supabase stop --no-backup && supabase start && pnpm db:roles"
+    "infra:up": "supabase start && docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml up -d --wait",
+    "infra:down": "docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml down && supabase stop",
+    "infra:reset": "supabase stop --no-backup && docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml down --volumes && supabase start && docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml up -d --wait && pnpm db:roles"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

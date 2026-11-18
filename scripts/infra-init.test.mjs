@@ -22,6 +22,15 @@ const TEMPLATES = {
     'SUPABASE_URL=',
     'SUPABASE_SECRET_KEY=',
     'PANEL_URL=http://panel.opos.localhost:5173',
+    'S3_ENDPOINT=',
+    'S3_REGION=local',
+    'S3_BUCKET=opos',
+    'S3_ACCESS_KEY_ID=',
+    'S3_SECRET_ACCESS_KEY=',
+    'IMGPROXY_URL=',
+    'IMGPROXY_KEY=',
+    'IMGPROXY_SALT=',
+    'IMGPROXY_BUCKET_ENDPOINT=http://s3:7070',
     '',
   ].join('\n'),
   'packages/db/.env.example': [
@@ -50,6 +59,8 @@ const STATUS = [
 ].join('\n')
 
 const SIGNING_KEYS = 'supabase/signing_keys.json'
+const STORAGE_UP =
+  'docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml up -d --wait'
 const GEN_KEY = 'supabase gen signing-key --algorithm ES256 --append'
 const KEY = '[{"kid":"local","alg":"ES256"}]\n'
 
@@ -283,12 +294,18 @@ test('initInfra never overwrites a value already set', async () => {
   assert.equal(ctx.value('apps/api/.env', 'EXTRA'), '1')
 })
 
-test('initInfra runs in order: env files, secrets, signing key, start, status, roles', async () => {
+test('initInfra runs in order: env files, secrets, signing key, start, status, storage, roles', async () => {
   const ctx = setup()
   await ctx.run()
   assert.deepEqual(
     ctx.events.filter((event) => event.startsWith('exec ')),
-    [`exec ${GEN_KEY}`, 'exec supabase start', 'exec supabase status -o env', 'exec pnpm db:roles'],
+    [
+      `exec ${GEN_KEY}`,
+      'exec supabase start',
+      'exec supabase status -o env',
+      `exec ${STORAGE_UP}`,
+      'exec pnpm db:roles',
+    ],
   )
   const gen = ctx.snapshots[GEN_KEY].files
   assert.match(gen.get(at('supabase/.env')), /SEND_EMAIL_HOOK_SECRET=v1,whsec_/)
@@ -310,6 +327,65 @@ test('initInfra runs in order: env files, secrets, signing key, start, status, r
   assert.match(roles.get(at('packages/db/.env')), /DATABASE_MIGRATION_URL=postgresql:/)
   assert.match(roles.get(at('packages/db/.env')), /OPOS_APP_PASSWORD=[0-9a-f]{64}/)
   assert.equal(ctx.events.at(-1), 'exec pnpm db:roles')
+})
+
+test('initInfra generates the keys of the bucket and the image server, distinct from each other', async () => {
+  const ctx = setup()
+  await ctx.run()
+  const value = (key) => ctx.value('apps/api/.env', key)
+  assert.match(value('S3_ACCESS_KEY_ID'), /^[0-9a-f]{20}$/)
+  for (const key of ['S3_SECRET_ACCESS_KEY', 'IMGPROXY_KEY', 'IMGPROXY_SALT']) {
+    assert.match(value(key), /^[0-9a-f]{64}$/, key)
+  }
+  const secrets = ['S3_SECRET_ACCESS_KEY', 'IMGPROXY_KEY', 'IMGPROXY_SALT', 'INVITE_SECRET']
+  assert.equal(new Set(secrets.map(value)).size, secrets.length)
+  assert.equal(value('S3_BUCKET'), 'opos')
+  assert.equal(value('IMGPROXY_BUCKET_ENDPOINT'), 'http://s3:7070')
+})
+
+test('initInfra keeps the keys of the bucket and the image server already set', async () => {
+  const ctx = setup({
+    files: {
+      'apps/api/.env':
+        'S3_ACCESS_KEY_ID=mine\nS3_SECRET_ACCESS_KEY=mine\nIMGPROXY_KEY=ab\nIMGPROXY_SALT=cd\n',
+    },
+  })
+  await ctx.run()
+  assert.equal(ctx.value('apps/api/.env', 'S3_ACCESS_KEY_ID'), 'mine')
+  assert.equal(ctx.value('apps/api/.env', 'S3_SECRET_ACCESS_KEY'), 'mine')
+  assert.equal(ctx.value('apps/api/.env', 'IMGPROXY_KEY'), 'ab')
+  assert.equal(ctx.value('apps/api/.env', 'IMGPROXY_SALT'), 'cd')
+})
+
+test('initInfra addresses the bucket and the image server on their ports, moved or not', async () => {
+  const ctx = setup()
+  await ctx.run()
+  assert.equal(ctx.value('apps/api/.env', 'S3_ENDPOINT'), 'http://127.0.0.1:54330')
+  assert.equal(ctx.value('apps/api/.env', 'IMGPROXY_URL'), 'http://127.0.0.1:54331')
+
+  const moved = setup({ env: { OPOS_S3_PORT: '24330', OPOS_IMGPROXY_PORT: '24331' } })
+  await moved.run()
+  assert.equal(moved.value('apps/api/.env', 'S3_ENDPOINT'), 'http://127.0.0.1:24330')
+  assert.equal(moved.value('apps/api/.env', 'IMGPROXY_URL'), 'http://127.0.0.1:24331')
+})
+
+test('initInfra starts the bucket and the image server once apps/api/.env holds their keys', async () => {
+  const ctx = setup()
+  await ctx.run()
+  const api = ctx.snapshots[STORAGE_UP].files.get(at('apps/api/.env'))
+  assert.match(api, /^S3_SECRET_ACCESS_KEY=[0-9a-f]{64}$/m)
+  assert.match(api, /^IMGPROXY_SALT=[0-9a-f]{64}$/m)
+})
+
+test('infra:up, infra:down and infra:reset run the containers infra:init starts', () => {
+  const { scripts } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  const compose = STORAGE_UP.replace(/ up -d --wait$/, '')
+  assert.equal(scripts['infra:up'], `supabase start && ${STORAGE_UP}`)
+  assert.equal(scripts['infra:down'], `${compose} down && supabase stop`)
+  assert.equal(
+    scripts['infra:reset'],
+    `supabase stop --no-backup && ${compose} down --volumes && supabase start && ${STORAGE_UP} && pnpm db:roles`,
+  )
 })
 
 test('initInfra creates the signing key file when it is missing', async () => {
@@ -450,6 +526,7 @@ test('initInfra does not rewrite an .env that has nothing to fill', async () => 
   assert.deepEqual(ctx.events, [
     'exec supabase start',
     'exec supabase status -o env',
+    `exec ${STORAGE_UP}`,
     'exec pnpm db:roles',
   ])
 })

@@ -254,6 +254,22 @@ its consents, and opens a shop of its own.
 | Consents             | their wording, and which of them a buyer must accept, are the convention's own: OPOS ships no legal text and requires no consent by itself; a consent links one document for good |
 | Limits               | 30 documents an edition, 50 versions a document, 20 consents an edition; 20 checks of credentials with the provider a convention an hour                                          |
 
+**The catalog.** Each edition sets what it sells and on what terms: ticket types, add-ons,
+merchandise, and what it asks of a ticket holder. Every price is a gross amount in the
+convention's currency.
+
+| Rule             | Value                                                                                                                                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ticket types     | each has a sale window, a capacity or none, the age bands it allows, and price tiers: a price within a date window; the tiers of one ticket type never overlap, and where none covers a moment the ticket type is not on sale |
+| Supporter prices | fixed amounts a buyer may choose instead of the tier's price; only those above the price in force are offered                                                                                                                 |
+| Perks            | shown to the buyer as what a ticket type includes; never sold separately, with no price and no stock                                                                                                                          |
+| Add-ons          | optional extras bought with a ticket, at a price that may be zero: without a limit, limited by a capacity, or headcount only, which records interest and reserves nothing                                                     |
+| Merchandise      | items with option axes and the variants that exist, stock held per variant; picked up at the edition and never shipped; sold with a ticket, and on its own where the edition turns merch-only orders on                       |
+| Pre-order        | until the edition's pre-order deadline a variant may sell without a stock limit; after it, only from a number an org entered                                                                                                  |
+| Pictures         | a picture and a size chart are images, for everyone once their item is not hidden and their edition is published, and for the edition's orgs alone before that                                                                |
+| Ticket holders   | an edition sets the two ages that divide child, teen and adult by age on its first day, may link a guardian consent form, and asks its own custom fields: short texts, never anything sensitive                               |
+| Limits           | 50 ticket types, 50 add-ons, 200 merchandise items, 100 variants and ten pictures an item, 20 custom fields an edition                                                                                                        |
+
 ---
 
 ## 8. Design and public image
@@ -342,7 +358,8 @@ interface language.
 - The list of every convention's published editions on the portal's home page; an edition's page
   with its venue and the convention's logo
 - The programme with speakers on the edition's programme page, likes, personal schedule, reviews
-- Tickets sold to the convention's own account and checked at the venue; attendee registrations
+- Tickets and merchandise sold to the convention's own account and checked at the venue; attendee
+  registrations
 - Account deletion; a privacy policy linked from registration
 - File uploads, as far as a feature's spec asks for them
 - A portal for phone browsers; the designer's interface, with no AI-generated graphics
@@ -352,8 +369,8 @@ interface language.
 
 - Modules: CMS with the website on `<convention>.opos.land` and custom domains, booths, friends
 - Domain ownership verification with self-service
-- Tickets without a purchase, merchandise and passes, refunds from the panel, sales embedded on a
-  convention's website, offline scanning
+- Tickets without a purchase, passes, shipping of merchandise, refunds from the panel, sales
+  embedded on a convention's website, offline scanning
 - Fees for commercial exhibitors; an OPOS shop
 - Push notifications; professional email templates
 - Localized portal paths; content translations with a language switcher on the public website

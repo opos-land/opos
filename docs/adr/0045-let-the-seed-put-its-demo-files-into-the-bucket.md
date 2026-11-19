@@ -27,8 +27,10 @@ anything.
 - For that the seed holds the bucket's address and key, on `local` and `dev`. `pnpm infra:init`
   gives `packages/db` the key it gave the API. Production, which the seed refuses, keeps the key
   with the API alone.
-- A demo file is made by code from text, the same bytes on every run. No file enters the
-  repository.
+- A demo file is made by code, the same bytes on every run: a document from its text, an image
+  as a plain drawing, such as the empty table that stands for a size chart. An image is put as
+  the master the storage makes its sizes from, and the sizes made of a master the seed draws anew
+  go with it. No file enters the repository.
 - An API test reads a seeded file through its public route, so the seed's keys and the storage's
   cannot drift apart unseen.
 

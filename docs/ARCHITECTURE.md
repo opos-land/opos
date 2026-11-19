@@ -176,7 +176,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - Tenant-level permissions (`settings`, `branding`, `shop`) never grant edition-level ones
   (`program`, `websiteContent`, `tickets`).
 - A non-member gets `403` before any edition is looked up. For a member, a row of another tenant or
-  of another parent than the path names, and an identifier that is not a uuid, are `404`.
+  of another parent than the path names, and an identifier that is not a uuid, are `404`; so is a
+  row of another parent that a body names.
 - A tenant route takes exactly one of `@RequireTenant`, `@RequireEdition` or, as the exception,
   `@InTenant`: no membership, so the handler's filters are its only guard, and no write lock, so it
   lowers nobody's access. Each applies `JwtAuthGuard`.
@@ -487,8 +488,8 @@ Reviews and attendee registrations get no code until their domain owner sets the
 module's [spec](specs/README.md)
 ([PRODUCT.md](PRODUCT.md#7-modules), [0019](adr/0019-documents-hold-rules-the-code-holds-the-rest.md));
 the lasting ones land here. The tickets module has its owner's rules and is built one spec at a
-time, the [shop's setup](specs/0002-shop-setup.md) first: what no spec has built yet keeps the
-rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
+time, the [shop's setup](specs/0002-shop-setup.md) and the [catalog](specs/0003-catalog.md) so
+far: what no spec has built yet keeps the rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
 [cross-tenant query](#tenant-isolation), organizer routes behind the module's permission and the
 steps of [adding a feature](#adding-a-feature).
 
@@ -513,6 +514,15 @@ steps of [adding a feature](#adding-a-feature).
   from an open shop is refused under the same lock. A published version of a legal document is a
   file for everyone, served by the version's own identifier and bound to the tenant its address
   names; it is not bound by its edition's publication, since a buyer reads what they accepted.
+- **The catalog.** What an edition sells lies in edition tables behind `tickets`. A list a row
+  carries, such as a ticket type's price tiers or an item's option axes, travels with its row as
+  a whole. A ticket type has one price at a moment or none: an exclusion constraint keeps its
+  tiers apart, and the API refuses them first by a code of its own
+  ([0046](adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md)).
+  A statement by identifier names the parent it acts within, whoever calls it. A picture or a
+  size chart of a merchandise item is a file for everyone once its item is not hidden and its
+  edition is published, served under the convention's address by the identifier its row holds;
+  before that the edition's orgs read it through a route of their own.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than

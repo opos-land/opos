@@ -498,8 +498,8 @@ msgid "This language is not supported."
 msgstr "This language is not supported."
 
 #: src/errors.ts
-msgid "This list is full: it holds at most this many entries: {limit}."
-msgstr "This list is full: it holds at most this many entries: {limit}."
+msgid "This list has reached its limit of entries: {limit}."
+msgstr "This list has reached its limit of entries: {limit}."
 
 #: src/errors.ts
 msgid "This person is already in the team. Change their membership on the team screen."

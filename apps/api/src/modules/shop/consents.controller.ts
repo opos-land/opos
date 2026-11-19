@@ -18,7 +18,7 @@ export class ConsentsController {
     private readonly documents: DocumentsRepository,
   ) {}
 
-  /** A consent links a document of its own edition, or none. */
+  /** A new consent links a document of its own edition, or none, and links it for good. */
   private async checkDocument(editionId: string, documentId: string | null | undefined) {
     if (documentId == null) return
     if (!(await this.documents.holds(editionId, documentId))) throw notFound('document')
@@ -48,7 +48,6 @@ export class ConsentsController {
     return implement(contract.shop.consents.update).handler(async ({ input }) => {
       const { editionId, consentId } = input.params
       const consent = await this.consents.get(editionId, consentId)
-      await this.checkDocument(editionId, input.body.documentId)
       return this.consents.update(editionId, consent.id, input.body)
     })
   }

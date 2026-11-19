@@ -189,7 +189,6 @@ const appUpdates = [
   'edition_shops.faq_url',
   'edition_documents.title',
   'edition_documents.hidden_at',
-  'edition_consents.document_id',
   'edition_consents.text',
   'edition_consents.is_required',
   'edition_consents.position',

@@ -130,12 +130,14 @@ export const createConsentSchema = z.strictObject({
 
 export type CreateConsent = z.infer<typeof createConsentSchema>
 
-/** A place past the end is the last one; the others make room in their order. */
+/**
+ * A place past the end is the last one; the others make room in their order. The document a
+ * consent links is set with it and never changed: a consent that should link another is a new one.
+ */
 export const updateConsentSchema = z
   .strictObject({
     text: sentence,
     isRequired: z.boolean(),
-    documentId: z.uuid().nullable(),
     position: z.number().int().positive(),
     hidden: z.boolean(),
   })
@@ -258,7 +260,7 @@ export const consentRoutes = {
       method: 'PATCH',
       path: '/editions/{editionId}/consents/{consentId}',
       summary:
-        'Change a consent, move it to a place of the list, hide it or show it; needs tickets=write',
+        'Change the sentence of a consent or whether it is required, move it to a place of the list, hide it or show it; the document it links stays; needs tickets=write',
     })
     .input(consent.extend({ body: updateConsentSchema }))
     .output(consentSchema),

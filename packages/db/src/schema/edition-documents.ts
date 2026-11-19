@@ -77,12 +77,13 @@ export const editionDocumentVersions = pgTable(
       columns: [t.documentId, t.tenantId, t.editionId],
       foreignColumns: [editionDocuments.id, editionDocuments.tenantId, editionDocuments.editionId],
     }).onDelete('cascade'),
-    // No cascade: a published version keeps its file for as long as it is there. Deferred to the
-    // end of the transaction in the privileges migration, so that an edition goes with both.
+    // The file is the version's own edition's, never another edition's or the convention's. No
+    // cascade: a published version keeps its file for as long as it is there. Deferred to the end
+    // of the transaction in the privileges migration, so that an edition goes with both.
     foreignKey({
       name: 'edition_document_versions_file_fk',
-      columns: [t.fileId, t.tenantId],
-      foreignColumns: [uploadedFiles.id, uploadedFiles.tenantId],
+      columns: [t.fileId, t.tenantId, t.editionId],
+      foreignColumns: [uploadedFiles.id, uploadedFiles.tenantId, uploadedFiles.editionId],
     }),
     check('edition_document_versions_number', sql`${t.number} >= 1`),
   ],

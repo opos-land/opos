@@ -24,6 +24,10 @@ msgstr "{name} (suspended)"
 msgid "{name} loses access to the convention at once. Coming back takes a new invitation."
 msgstr "{name} loses access to the convention at once. Coming back takes a new invitation."
 
+#: src/features/shop/components/consent-form.tsx
+msgid "A consent links its document for good. To link another one, add a new consent."
+msgstr "A consent links its document for good. To link another one, add a new consent."
+
 #: src/features/team/pages/edition-access-page.tsx
 msgid "A head organizer already has access to every edition."
 msgstr "A head organizer already has access to every edition."
@@ -237,6 +241,10 @@ msgstr "Choose an image of up to 2 MB."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Choose your password"
 msgstr "Choose your password"
+
+#: src/features/shop/components/consent-form.tsx
+msgid "Chosen once: a consent links its document for good."
+msgstr "Chosen once: a consent links its document for good."
 
 #: src/features/editions/components/edition-form.tsx
 msgid "City"

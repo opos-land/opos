@@ -155,6 +155,19 @@ describe('a consent', () => {
     refused(createConsentSchema.safeParse(body))
   })
 
+  // A column that points at another row is set with its row and never changed: a consent that
+  // should link another document is a new consent.
+  it('links its document for good: a change names no document', () => {
+    expect(Object.keys(updateConsentSchema.shape).sort()).toEqual([
+      'hidden',
+      'isRequired',
+      'position',
+      'text',
+    ])
+    refused(updateConsentSchema.safeParse({ documentId: null }))
+    refused(updateConsentSchema.safeParse({ documentId: '0198c1a0-0000-7000-8000-000000000001' }))
+  })
+
   it('moves to a place counted from 1', () => {
     expect(updateConsentSchema.parse({ position: 3 })).toEqual({ position: 3 })
     refused(updateConsentSchema.safeParse({ position: 0 }))

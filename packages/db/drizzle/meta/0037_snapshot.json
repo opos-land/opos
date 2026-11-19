@@ -749,11 +749,13 @@
           "tableTo": "uploaded_files",
           "columnsFrom": [
             "file_id",
-            "tenant_id"
+            "tenant_id",
+            "edition_id"
           ],
           "columnsTo": [
             "id",
-            "tenant_id"
+            "tenant_id",
+            "edition_id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -2227,6 +2229,15 @@
           "columns": [
             "id",
             "tenant_id"
+          ]
+        },
+        "uploaded_files_id_tenant_edition_unique": {
+          "name": "uploaded_files_id_tenant_edition_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "tenant_id",
+            "edition_id"
           ]
         }
       },

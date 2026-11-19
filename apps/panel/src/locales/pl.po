@@ -24,6 +24,10 @@ msgstr "{name} (konwent zawieszony)"
 msgid "{name} loses access to the convention at once. Coming back takes a new invitation."
 msgstr "{name} od razu straci dostęp do konwentu. Powrót do zespołu wymaga nowego zaproszenia."
 
+#: src/features/shop/components/consent-form.tsx
+msgid "A consent links its document for good. To link another one, add a new consent."
+msgstr "Zgoda odsyła do swojego dokumentu na stałe. Aby odesłać do innego, dodaj nową zgodę."
+
 #: src/features/team/pages/edition-access-page.tsx
 msgid "A head organizer already has access to every edition."
 msgstr "Główny organizator ma już dostęp do każdej edycji."
@@ -237,6 +241,10 @@ msgstr "Wybierz obraz o rozmiarze do 2 MB."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Choose your password"
 msgstr "Wybierz hasło"
+
+#: src/features/shop/components/consent-form.tsx
+msgid "Chosen once: a consent links its document for good."
+msgstr "Wybierany raz: zgoda odsyła do swojego dokumentu na stałe."
 
 #: src/features/editions/components/edition-form.tsx
 msgid "City"

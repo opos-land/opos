@@ -21,6 +21,7 @@ export function ConsentForm({
   submitLabel,
   onSubmit,
   onCancel,
+  linksDocument = true,
 }: {
   initial: ConsentFields
   documents: EditionDocument[]
@@ -28,6 +29,8 @@ export function ConsentForm({
   submitLabel: ReactNode
   onSubmit: (fields: ConsentFields) => void
   onCancel?: () => void
+  /** A consent that exists links its document for good: only a new one chooses it. */
+  linksDocument?: boolean
 }) {
   const { t } = useLingui()
   const [text, setText] = useState(initial.text)
@@ -74,22 +77,33 @@ export function ConsentForm({
           </NativeSelect>
         )}
       </FormField>
-      <FormField label={t`Linked document`}>
-        {(control) => (
-          <NativeSelect
-            {...control}
-            value={documentId}
-            onChange={(event) => setDocumentId(event.target.value)}
-          >
-            <NativeSelectOption value="">{t`None`}</NativeSelectOption>
-            {documents.map((document) => (
-              <NativeSelectOption key={document.id} value={document.id}>
-                {document.title}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        )}
-      </FormField>
+      {linksDocument ? (
+        <FormField
+          label={t`Linked document`}
+          hint={t`Chosen once: a consent links its document for good.`}
+        >
+          {(control) => (
+            <NativeSelect
+              {...control}
+              value={documentId}
+              onChange={(event) => setDocumentId(event.target.value)}
+            >
+              <NativeSelectOption value="">{t`None`}</NativeSelectOption>
+              {documents.map((document) => (
+                <NativeSelectOption key={document.id} value={document.id}>
+                  {document.title}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          )}
+        </FormField>
+      ) : (
+        <p className="text-muted-foreground text-sm">
+          <Trans>
+            A consent links its document for good. To link another one, add a new consent.
+          </Trans>
+        </p>
+      )}
       <div className="flex flex-wrap gap-3">
         <Button type="submit" disabled={!sentence || pending}>
           {submitLabel}

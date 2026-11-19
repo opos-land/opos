@@ -631,7 +631,7 @@ describe('the documents of an edition', () => {
     expect((await c.as('delete', `/documents/${document.id}`)).status).toBe(404)
   })
 
-  it('cannot be deleted while a consent links them, and can once it lets go', async () => {
+  it('cannot be deleted while a consent links them, and can once the consent is gone', async () => {
     const c = await convention()
     const document = await addDocument(c.t.id, c.edition)
     const consent = await addConsent(c.t.id, c.edition, { documentId: document.id })
@@ -641,7 +641,8 @@ describe('the documents of an edition', () => {
     expect(refused.body).toMatchObject({ code: 'document.in-use' })
     expect(await list(c)).toHaveLength(1)
 
-    await c.as('patch', `/consents/${consent}`, { documentId: null }).expect(200)
+    // A consent links its document for good: it lets go by being deleted.
+    await c.as('delete', `/consents/${consent}`).expect(204)
     await c.as('delete', `/documents/${document.id}`).expect(204)
   })
 
@@ -778,7 +779,6 @@ describe('the consents of an edition', () => {
     const other = await addEdition(c.t.id)
     const elsewhere = await addDocument(c.t.id, other)
     const foreign = await addDocument(b.id, editionB)
-    const consent = await addConsent(c.t.id, c.edition)
 
     for (const documentId of [elsewhere.id, foreign.id, randomUUID()]) {
       const created = await c.as('post', '/consents', {
@@ -787,23 +787,19 @@ describe('the consents of an edition', () => {
         documentId,
       })
       expect(created.status, documentId).toBe(404)
-      const changed = await c.as('patch', `/consents/${consent}`, { documentId })
-      expect(changed.status, documentId).toBe(404)
     }
 
-    expect(await list(c)).toMatchObject([{ id: consent, documentId: null }])
+    expect(await list(c)).toEqual([])
   })
 
-  it('change their sentence, their document, whether they are required and whether they are hidden', async () => {
+  it('change their sentence, whether they are required and whether they are hidden', async () => {
     const c = await convention()
-    const document = await addDocument(c.t.id, c.edition)
     const consent = await add(c, { text: 'I accept', isRequired: true })
 
     const changed = await c
       .as('patch', `/consents/${consent.id}`, {
         text: 'I accept the rules.',
         isRequired: false,
-        documentId: document.id,
         hidden: true,
       })
       .expect(200)
@@ -812,19 +808,28 @@ describe('the consents of an edition', () => {
       ...consent,
       text: 'I accept the rules.',
       isRequired: false,
-      documentId: document.id,
       hidden: true,
     })
     expect(await list(c)).toEqual([changed.body])
-    const shown = await c.as('patch', `/consents/${consent.id}`, {
-      hidden: false,
-      documentId: null,
-    })
-    expect(shown.body).toMatchObject({
-      hidden: false,
-      documentId: null,
-      text: 'I accept the rules.',
-    })
+    const shown = await c.as('patch', `/consents/${consent.id}`, { hidden: false })
+    expect(shown.body).toMatchObject({ hidden: false, text: 'I accept the rules.' })
+  })
+
+  it('link their document for good: a change aims them at no other, and at none', async () => {
+    const c = await convention()
+    const [terms, privacy] = [
+      await addDocument(c.t.id, c.edition, 'shop-terms'),
+      await addDocument(c.t.id, c.edition, 'privacy-policy'),
+    ]
+    const consent = await add(c, { text: 'I accept', isRequired: true, documentId: terms.id })
+
+    for (const documentId of [privacy.id, null]) {
+      const res = await c.as('patch', `/consents/${consent.id}`, { documentId })
+      expect(res.status).toBe(400)
+      expect(res.body).toMatchObject({ code: 'request.invalid' })
+    }
+
+    expect(await list(c)).toEqual([consent])
   })
 
   it('move to the place given, the others making room in their order', async () => {

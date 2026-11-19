@@ -192,6 +192,31 @@ describe('edition_documents and their versions', () => {
     await expect(
       version(a.tenant.id, a.edition, elsewhere, await pdf(a.tenant.id, a.edition)),
     ).rejects.toThrow(/edition_document_versions_document_fk/)
+    // A version's file is its own edition's: neither a file of another edition of the tenant, nor
+    // one of the convention's own, such as its logo.
+    await expect(
+      version(a.tenant.id, a.edition, mine, await pdf(a.tenant.id, otherEdition)),
+    ).rejects.toThrow(/edition_document_versions_file_fk/)
+    const [logo] = await migrator<{ id: string }[]>`
+      insert into uploaded_files (tenant_id, kind, content_type, size, sha256, name, width, height)
+      values (${a.tenant.id}, 'convention-logo', 'image/png', 10, ${SHA}, 'logo.png', 10, 10)
+      returning id
+    `
+    await expect(version(a.tenant.id, a.edition, mine, logo!.id)).rejects.toThrow(
+      /edition_document_versions_file_fk/,
+    )
+  })
+
+  it('keeps the file a version points at: the application role cannot delete it', async () => {
+    const { tenant, edition } = await tenantWithEdition()
+    const file = await pdf(tenant.id, edition)
+    await version(tenant.id, edition, await document(tenant.id, edition), file)
+
+    await expect(
+      inTenant(tenant.id, (sql) => sql`delete from uploaded_files where id = ${file}`),
+    ).rejects.toThrow(/edition_document_versions_file_fk/)
+    const [kept] = await migrator`select id from uploaded_files where id = ${file}`
+    expect(kept).toBeDefined()
   })
 
   it('takes the versions along with their document, and both with the edition', async () => {
@@ -228,6 +253,32 @@ describe('edition_consents', () => {
     )
     await expect(consent(a.tenant.id, a.edition, elsewhere, 3)).rejects.toThrow(
       /edition_consents_document_fk/,
+    )
+  })
+
+  it('links its document for good: the application role aims it at no other', async () => {
+    const { tenant, edition } = await tenantWithEdition()
+    const terms = await document(tenant.id, edition)
+    const privacy = await document(tenant.id, edition, 'privacy-policy')
+    await consent(tenant.id, edition, terms)
+
+    for (const target of [privacy, null]) {
+      await expect(
+        inTenant(
+          tenant.id,
+          (sql) =>
+            sql`update edition_consents set document_id = ${target} where edition_id = ${edition}`,
+        ),
+      ).rejects.toThrow(/permission denied/)
+    }
+    // Its sentence, its place and whether it is required or hidden still change.
+    await inTenant(
+      tenant.id,
+      (sql) => sql`
+        update edition_consents set text = 'I accept.', is_required = false, position = 2,
+          hidden_at = now()
+        where edition_id = ${edition}
+      `,
     )
   })
 

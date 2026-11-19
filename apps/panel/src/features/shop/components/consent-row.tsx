@@ -79,7 +79,10 @@ export function ConsentRow({
             documents={documents}
             pending={update.isPending}
             submitLabel={<Trans>Save the consent</Trans>}
-            onSubmit={(body) => update.mutate({ params, body })}
+            linksDocument={false}
+            onSubmit={({ text, isRequired }) =>
+              update.mutate({ params, body: { text, isRequired } })
+            }
             onCancel={() => setEditing(false)}
           />
         ) : (

@@ -39,8 +39,9 @@ export function moved(order: readonly string[], id: string, place: number): stri
 /**
  * The consents of the editions of the tenant in context, in their order; RLS keeps every query
  * inside the tenant, and every consent is looked up within the edition of the path, whose
- * permission the request was checked against. The document a consent links is checked by the
- * caller, and the foreign key keeps it inside the consent's own tenant and edition.
+ * permission the request was checked against. The document a consent links is set with its row,
+ * checked by the caller, and never changed: the application role updates no column that points at
+ * another row. The foreign key keeps the document inside the consent's own tenant and edition.
  */
 @Injectable()
 export class ConsentsRepository {

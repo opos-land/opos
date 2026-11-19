@@ -88,11 +88,13 @@ create policy tenant_isolation on edition_document_versions
   with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 --> statement-breakpoint
 
--- A consent: its sentence, its place, whether it is required and hidden, and the document it
--- links, which the foreign key keeps inside the consent's own tenant and edition.
+-- A consent: its sentence, its place and whether it is required and hidden change. The document
+-- it links is set with the row and never changed, as no column pointing at another row is: a
+-- consent that should link another document is a new consent. The foreign key keeps the document
+-- inside the consent's own tenant and edition.
 grant select, insert, delete on edition_consents to opos_app;
 --> statement-breakpoint
-grant update (document_id, text, is_required, position, hidden_at) on edition_consents to opos_app;
+grant update (text, is_required, position, hidden_at) on edition_consents to opos_app;
 --> statement-breakpoint
 alter table edition_consents enable row level security;
 --> statement-breakpoint

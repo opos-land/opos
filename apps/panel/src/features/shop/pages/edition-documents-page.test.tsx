@@ -349,24 +349,30 @@ describe('EditionDocumentsPage', () => {
     })
   })
 
-  it('changes a consent in place: its sentence, whether it is required and its document', async () => {
+  it('changes a consent in place: its sentence and whether it is required, never its document', async () => {
     state.tickets = 'write'
     view()
     await screen.findByText('Consent 1')
     const [first] = consents().getAllByRole('listitem')
 
     fireEvent.click(within(first!).getByRole('button', { name: 'Edit' }))
+    // The document is linked for good: another link is a new consent.
+    expect(within(first!).queryByLabelText('Linked document')).toBeNull()
+    expect(
+      within(first!).getByText(
+        'A consent links its document for good. To link another one, add a new consent.',
+      ),
+    ).toBeDefined()
     fireEvent.change(within(first!).getByLabelText('Sentence the buyer accepts'), {
       target: { value: 'I accept the terms of the shop.' },
     })
     fireEvent.change(within(first!).getByLabelText('Acceptance'), { target: { value: 'optional' } })
-    fireEvent.change(within(first!).getByLabelText('Linked document'), { target: { value: '' } })
     fireEvent.click(within(first!).getByRole('button', { name: 'Save the consent' }))
 
     await vi.waitFor(() => expect(updateConsent).toHaveBeenCalledTimes(1))
     expect(updateConsent.mock.calls[0]?.[0]).toEqual({
       params: { editionId: 'edition-2026', consentId: 'consent-1' },
-      body: { text: 'I accept the terms of the shop.', isRequired: false, documentId: null },
+      body: { text: 'I accept the terms of the shop.', isRequired: false },
     })
   })
 

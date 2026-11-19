@@ -142,6 +142,10 @@ create policy tenant_isolation on merchandise_option_axes
   using (tenant_id = (select current_setting('app.tenant_id')::uuid))
   with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
 --> statement-breakpoint
+create trigger merchandise_option_axes_set_updated_at
+  before update on merchandise_option_axes
+  for each row execute function public.set_updated_at();
+--> statement-breakpoint
 
 grant select, insert, delete on merchandise_option_values to opos_app;
 --> statement-breakpoint
@@ -154,6 +158,10 @@ alter table merchandise_option_values force row level security;
 create policy tenant_isolation on merchandise_option_values
   using (tenant_id = (select current_setting('app.tenant_id')::uuid))
   with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
+--> statement-breakpoint
+create trigger merchandise_option_values_set_updated_at
+  before update on merchandise_option_values
+  for each row execute function public.set_updated_at();
 --> statement-breakpoint
 
 -- A variant: its stock changes and it is hidden and shown. Its values are set with it: a variant
@@ -175,7 +183,9 @@ create trigger merchandise_variants_set_updated_at
   for each row execute function public.set_updated_at();
 --> statement-breakpoint
 
-grant select, insert, delete on merchandise_variant_values to opos_app;
+-- A variant's value is added with its variant and goes with it, or with the value itself, by the
+-- cascade of its keys: no role deletes one alone, so a variant never loses one of its axes.
+grant select, insert on merchandise_variant_values to opos_app;
 --> statement-breakpoint
 alter table merchandise_variant_values enable row level security;
 --> statement-breakpoint
@@ -198,6 +208,10 @@ alter table merchandise_item_pictures force row level security;
 create policy tenant_isolation on merchandise_item_pictures
   using (tenant_id = (select current_setting('app.tenant_id')::uuid))
   with check (tenant_id = (select current_setting('app.tenant_id')::uuid));
+--> statement-breakpoint
+create trigger merchandise_item_pictures_set_updated_at
+  before update on merchandise_item_pictures
+  for each row execute function public.set_updated_at();
 --> statement-breakpoint
 
 -- A size chart is put by adding a row and taken away by deleting it: no role updates one.

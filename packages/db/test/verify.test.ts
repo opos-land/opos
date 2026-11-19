@@ -414,6 +414,15 @@ describe('verifyDatabase', () => {
       expect(problems.join('\n')).toMatch(new RegExp(`opos_app UPDATE \\(${column}\\) on ${table}`))
     })
 
+    // A variant's values go with the variant or with the value, by the cascade of their keys:
+    // the application role deletes none by itself, so a variant never loses one of its axes.
+    it('reports opos_app deleting from merchandise_variant_values', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant delete on public.merchandise_variant_values to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app DELETE on merchandise_variant_values/)
+    })
+
     it.each([
       ['ticket_types', 'name'],
       ['merchandise_items', 'amount_minor'],

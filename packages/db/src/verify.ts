@@ -412,7 +412,6 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     ['merchandise_variants', 'INSERT'],
     ['merchandise_variants', 'DELETE'],
     ['merchandise_variant_values', 'INSERT'],
-    ['merchandise_variant_values', 'DELETE'],
     ['merchandise_item_pictures', 'INSERT'],
     ['merchandise_item_pictures', 'DELETE'],
     ['merchandise_size_charts', 'INSERT'],

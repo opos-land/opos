@@ -44,6 +44,8 @@ CREATE TABLE "merchandise_item_pictures" (
 	"merchandise_item_id" uuid NOT NULL,
 	"file_id" uuid NOT NULL,
 	"position" integer NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "merchandise_item_pictures_file_unique" UNIQUE("file_id"),
 	CONSTRAINT "merchandise_item_pictures_position" CHECK ("merchandise_item_pictures"."position" >= 1)
 );
@@ -76,6 +78,8 @@ CREATE TABLE "merchandise_option_axes" (
 	"merchandise_item_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"position" integer NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "merchandise_option_axes_id_item_unique" UNIQUE("id","tenant_id","edition_id","merchandise_item_id"),
 	CONSTRAINT "merchandise_option_axes_name" CHECK (char_length(btrim("merchandise_option_axes"."name")) between 1 and 50),
 	CONSTRAINT "merchandise_option_axes_position" CHECK ("merchandise_option_axes"."position" >= 1)
@@ -89,6 +93,8 @@ CREATE TABLE "merchandise_option_values" (
 	"axis_id" uuid NOT NULL,
 	"label" text NOT NULL,
 	"position" integer NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "merchandise_option_values_id_tenant_edition_unique" UNIQUE("id","tenant_id","edition_id"),
 	CONSTRAINT "merchandise_option_values_id_item_axis_unique" UNIQUE("id","tenant_id","edition_id","merchandise_item_id","axis_id"),
 	CONSTRAINT "merchandise_option_values_label" CHECK (char_length(btrim("merchandise_option_values"."label")) between 1 and 50),

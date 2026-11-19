@@ -650,6 +650,51 @@ describe("the catalog's settings of edition_shops", () => {
 })
 
 describe('what the application role changes of the catalog', () => {
+  it('takes no value away from a variant: it goes with the variant or with the value', async () => {
+    const at = await place()
+    const shirt = await item(at)
+    const size = await axis(at, shirt)
+    const medium = await value(at, shirt, size)
+    const mediumShirt = await variant(at, shirt)
+    await variantValue(at, shirt, mediumShirt, size, medium)
+
+    await expect(
+      inTenant(at.tenant, (sql) => sql`delete from merchandise_variant_values`),
+    ).rejects.toThrow(/permission denied/)
+
+    await inTenant(
+      at.tenant,
+      (sql) => sql`delete from merchandise_variants where id = ${mediumShirt}`,
+    )
+    expect(
+      await migrator`select 1 from merchandise_variant_values where variant_id = ${mediumShirt}`,
+    ).toHaveLength(0)
+  })
+
+  it.each([
+    ['merchandise_option_axes', "name = 'Fit'"],
+    ['merchandise_option_values', "label = 'Medium'"],
+    ['merchandise_item_pictures', 'position = 2'],
+  ])('records when a row of %s last changed', async (table, change) => {
+    const at = await place()
+    const shirt = await item(at)
+    await value(at, shirt, await axis(at, shirt))
+    await picture(at, shirt, await image(at))
+    await migrator.unsafe(
+      `update ${table} set updated_at = '2020-01-01', created_at = '2020-01-01'
+       where tenant_id = '${at.tenant}'`,
+    )
+
+    await inTenant(at.tenant, (sql) => sql.unsafe(`update ${table} set ${change}`))
+
+    const [row] = await migrator.unsafe<{ created: Date; updated: Date }[]>(
+      `select created_at as created, updated_at as updated from ${table}
+       where tenant_id = '${at.tenant}'`,
+    )
+    expect(row!.created).toEqual(new Date('2020-01-01'))
+    expect(row!.updated.getTime()).toBeGreaterThan(Date.now() - 60_000)
+  })
+
   it('moves no row of the catalog to another parent', async () => {
     const at = await place()
     const [standard, other] = [await ticketType(at), await ticketType(at, { position: 2 })]

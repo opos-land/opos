@@ -63,6 +63,7 @@ export const merchandiseOptionAxes = pgTable(
     merchandiseItemId: uuid().notNull(),
     name: text().notNull(),
     position: integer().notNull(),
+    ...timestamps,
   },
   (t) => [
     // What a value points at: the axis within its item, so that a value names its item too.
@@ -94,6 +95,7 @@ export const merchandiseOptionValues = pgTable(
     axisId: uuid().notNull(),
     label: text().notNull(),
     position: integer().notNull(),
+    ...timestamps,
   },
   (t) => [
     // What a size chart points at.
@@ -207,6 +209,7 @@ export const merchandiseItemPictures = pgTable(
     merchandiseItemId: uuid().notNull(),
     fileId: uuid().notNull(),
     position: integer().notNull(),
+    ...timestamps,
   },
   (t) => [
     unique('merchandise_item_pictures_file_unique').on(t.fileId),

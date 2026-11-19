@@ -2,7 +2,7 @@
 
 - Status: Draft
 - Domain owner: the team: the file storage is part of the core
-- Decisions: [0034](../adr/0034-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)
+- Decisions: [0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)
 
 ## Goal
 
@@ -167,8 +167,8 @@ None of its own: a feature's seed keeps its demo files through the same storage.
   `tenant_id` ([ARCHITECTURE.md, Tenant isolation](../ARCHITECTURE.md#tenant-isolation)).
 - `account_files` is a global table, as `accounts` is: no RLS, limited by privileges, and gone with
   its account. The API writes and removes there only a file of the account its session names, and
-  reads another account's file only where a feature shows that account, as it reads another
-  account at all.
+  the sweep, the API's own job, one nothing points at; it reads another account's file only where
+  a feature shows that account, through a tenant row that points at the file.
 - An object's key starts with its owner, by kind and identifier: the tenant of the transaction
   context, or the account of the session, never a request's input. A file of another tenant is
   not found by its row, before the bucket is asked.
@@ -240,6 +240,12 @@ e2e: none of its own; the scenarios of the features that take files cover it.
 
 - **The provider:** Scaleway Object Storage, in the project and region of each environment, as
   the deployment under way uses Scaleway. To confirm.
+- **The key of a deployed bucket, for the deployment:** Scaleway grants Object Storage to a
+  project as a whole, and a bucket policy only narrows what IAM granted. A key that may use the
+  bucket reaches every bucket of its project, Dev's OpenTofu state among them, unless the bucket
+  lies in a project of its own or every other bucket holds a policy that leaves the key out (W2).
+  Decided with the bucket of each environment, its versions kept three months, imgproxy beside the
+  API and the API's `S3_*` and `IMGPROXY_*` variables, which it needs to start.
 - **The domain owner:** the team, as written, or a named owner of the core.
 - **Proposed values to confirm:** 15 MB a file (K2), 5 GB a convention and 50 MB an account (K7),
   three months recoverable (X3).

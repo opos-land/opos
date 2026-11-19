@@ -1,4 +1,4 @@
-# 0035. Keep a cleaned master of an image and make its variants in imgproxy
+# 0042. Keep a cleaned master of an image and make its variants in imgproxy
 
 - Status: Proposed
 - Date: 2026-11-18
@@ -6,7 +6,7 @@
 ## Context
 
 File storage keeps an uploaded file as it came, up to 15 MB
-([0034](0034-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)). A photograph from a phone
+([0041](0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)). A photograph from a phone
 that large is too heavy to show on a phone, and it carries what the camera wrote into it: where
 and when it was taken, on what device, sometimes turned on its side.
 

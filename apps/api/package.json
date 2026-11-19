@@ -12,6 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1167.0",
+    "@aws-sdk/s3-request-presigner": "^3.1167.0",
     "@lingui/core": "catalog:",
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
@@ -27,6 +29,7 @@
     "@orpc/zod": "catalog:",
     "@supabase/auth-js": "^2.118.0",
     "drizzle-orm": "catalog:",
+    "express": "^5.2.1",
     "jose": "^6.2.12",
     "nodemailer": "^10.1.2",
     "postgres": "catalog:",
@@ -45,6 +48,7 @@
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
     "@orpc/openapi-client": "catalog:",
+    "@types/express": "^5.0.6",
     "@types/node": "catalog:",
     "@types/supertest": "^7.2.1",
     "eslint": "catalog:",

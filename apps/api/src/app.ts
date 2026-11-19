@@ -1,5 +1,6 @@
 import { type NestApplicationOptions } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
+import { contract } from '@opos/contract'
 import { setupDocs } from './common/docs/setup-docs'
 import {
   applicationFromOrigin,
@@ -9,6 +10,7 @@ import {
 } from './common/http/application'
 import { requireJsonBody } from './common/json-body'
 import { type Env } from './config/env'
+import { uploadBodyParser } from './modules/files/upload-body'
 
 /** Options for creating the application, in main.ts and in the tests alike. */
 export const APP_OPTIONS = {
@@ -25,6 +27,8 @@ export async function configureApp(app: NestExpressApplication, env: Env) {
     next()
   })
   app.use(requireJsonBody)
+  // Before Nest's own parser, which leaves a body already parsed alone.
+  app.use(uploadBodyParser(contract))
   app.use(requireOriginForSession(env))
   app.use(restrictAdminOrigin(env))
   // The credentials header goes out for the applications' origins only: `cors` sets it for any

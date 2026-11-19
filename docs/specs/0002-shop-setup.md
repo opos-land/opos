@@ -231,4 +231,4 @@ e2e, each scenario making its own tenant and accounts and checking the BFF bound
 - **Records before acceptance:** the documents saying convention and organizer (D10 of the brief),
   which changes the terms this spec is written in; the module having its domain owner (D1), carried
   here; Przelewy24 as the MVP's provider (D3), with [Przelewy24](0005-przelewy24.md); files in an
-  S3 bucket ([0034](../adr/0034-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)).
+  S3 bucket ([0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)).

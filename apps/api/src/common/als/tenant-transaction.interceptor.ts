@@ -4,7 +4,8 @@ import {
   Injectable,
   type NestInterceptor,
 } from '@nestjs/common'
-import { Reflector } from '@nestjs/core'
+import { ModuleRef, Reflector } from '@nestjs/core'
+import { uploadedFileSchema } from '@opos/contract'
 import { from, lastValueFrom, type Observable } from 'rxjs'
 import { GlobalDbService } from '../database/global-db.service'
 import { TENANT_REQUIREMENT } from '../decorators/require-tenant.decorator'
@@ -18,12 +19,20 @@ import {
 import { AccessRepository } from '../permissions/access.repository'
 import { decideEdition, decideTenant, type Requirement } from '../permissions/permissions'
 import { TenantWriteQueue } from '../permissions/tenant-write-queue'
+import { fileTooLarge, fileTypeRefused } from '../../modules/files/errors'
+import { FilesService } from '../../modules/files/files.service'
+import {
+  SERVES_FILE,
+  TAKES_FILE,
+  type TakesFileOptions,
+} from '../../modules/files/takes-file.decorator'
 import { isUuid } from '../uuid'
 import { TenantContextService } from './tenant-context.service'
 
 interface HttpRequest {
   headers: Record<string, unknown>
   params: Record<string, string | undefined>
+  body?: unknown
 }
 
 /**
@@ -40,6 +49,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     private readonly global: GlobalDbService,
     private readonly access: AccessRepository,
     private readonly queue: TenantWriteQueue,
+    private readonly modules: ModuleRef,
   ) {}
 
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -52,7 +62,9 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     const http = ctx.switchToHttp()
     const request = http.getRequest<HttpRequest>()
     const response = http.getResponse<{ statusCode: number }>()
-    return from(this.handle(requirement, request, response, next))
+    const takesFile = this.reflector.get<TakesFileOptions | undefined>(TAKES_FILE, ctx.getHandler())
+    const servesFile = this.reflector.get<boolean | undefined>(SERVES_FILE, ctx.getHandler())
+    return from(this.handle(requirement, request, response, next, { takesFile, servesFile }))
   }
 
   private async handle(
@@ -60,6 +72,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     request: HttpRequest,
     response: { statusCode: number },
     next: CallHandler,
+    files: { takesFile?: TakesFileOptions; servesFile?: boolean } = {},
   ) {
     const slug = request.headers['x-tenant-slug']
     if (typeof slug !== 'string' || !slug) {
@@ -107,12 +120,48 @@ export class TenantTransactionInterceptor implements NestInterceptor {
         () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,
         ended,
       )
+    if (files.servesFile) {
+      if (write) throw new Error('A route that serves a file is a read')
+      // Checked in a short transaction, then run outside every transaction, so the bucket and
+      // imgproxy are never waited for inside one (modules/files).
+      const membership = await this.context.transaction(tenant.id, async () => {
+        await admit()
+        return this.context.membership()
+      })
+      enter()
+      TenantContextService.store().membership = membership
+      return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
+    }
+    if (files.takesFile && !write) throw new Error('A route that takes a file is a write')
     if (!write) return run()
     // A write is checked once in a short transaction of its own, so a refused one never queues,
     // then waits in its tenant's queue without a connection, then runs and gives its turn back
     // when its transaction ends, before the after-commit queue and the response.
     await this.context.transaction(tenant.id, admit)
+    if (files.takesFile) {
+      // The tenant whose requirement just passed, under whose keys the bytes lie.
+      enter()
+      await this.receive(files.takesFile, request)
+    }
     return this.queue.run(tenant.id, (release) => run(release))
+  }
+
+  /**
+   * The file of a route that takes one, received outside every transaction once the requirement
+   * passed; its transaction keeps it, and the sweep removes the bytes when it does not commit.
+   */
+  private async receive({ kind, field }: TakesFileOptions, request: HttpRequest) {
+    const body = request.body as Record<string, unknown> | undefined
+    const parsed = uploadedFileSchema.safeParse(body?.[field])
+    if (!parsed.success) {
+      // A type the storage keeps for no kind and a file over 15 MB answer as the storage does.
+      const [issue] = parsed.error.issues
+      if (issue?.path[0] === 'type') throw fileTypeRefused()
+      if (issue?.path[0] === 'data' && issue.code === 'too_big') throw fileTooLarge()
+      throw new ApiError(400, 'request.invalid', 'The file is missing or malformed', { field })
+    }
+    const files = this.modules.get(FilesService, { strict: false })
+    TenantContextService.store().received = await files.receive(kind, parsed.data)
   }
 
   private async check(requirement: Requirement, request: HttpRequest) {

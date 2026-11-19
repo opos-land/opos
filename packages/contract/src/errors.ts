@@ -56,6 +56,11 @@ export const errorCodes = [
   'mfa.not-enabled',
   'program.too-many-items',
   'like.edition-ended',
+  'file.type-refused',
+  'file.too-large',
+  'file.limit-reached',
+  'storage.unavailable',
+  'images.unavailable',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

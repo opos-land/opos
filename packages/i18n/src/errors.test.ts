@@ -4,6 +4,26 @@ import { activateLocale } from './catalog'
 import { errorMessage, unknownError } from './errors'
 
 describe('errorMessage', () => {
+  it.each([
+    [
+      'file.type-refused',
+      'Tego pliku nie można tu przyjąć: ten format nie jest dozwolony albo plik jest uszkodzony. Wybierz inny plik.',
+    ],
+    ['file.too-large', 'Ten plik jest za duży. Wybierz mniejszy.'],
+    [
+      'file.limit-reached',
+      'Nie ma już miejsca na kolejne pliki. Usuń te, których nie potrzebujesz.',
+    ],
+    ['storage.unavailable', 'Pliki są chwilowo niedostępne. Spróbuj ponownie za chwilę.'],
+    ['images.unavailable', 'Obrazy są chwilowo niedostępne. Spróbuj ponownie za chwilę.'],
+  ])('says why %s refused a file, in Polish', async (code, rendered) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage(code)).not.toBe(unknownError)
+    expect(i18n._(errorMessage(code))).toBe(rendered)
+  })
+
   it('maps a known code', async () => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

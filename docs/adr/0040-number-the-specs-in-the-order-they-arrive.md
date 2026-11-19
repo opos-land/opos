@@ -1,4 +1,4 @@
-# 0033. Number the specs in the order they arrive
+# 0040. Number the specs in the order they arrive
 
 - Status: Proposed
 - Date: 2026-11-17

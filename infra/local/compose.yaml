@@ -1,0 +1,63 @@
+# The local stack's containers beside Supabase's: the bucket and the image server of
+# docs/specs/0012-file-storage.md and docs/specs/0013-image-variants.md. `pnpm infra:up` starts them
+# with the variables of apps/api/.env, which `pnpm infra:init` fills; `pnpm infra:reset` empties
+# the bucket. Each publishes its port on 127.0.0.1 alone, and only these two talk to each other:
+#
+#   docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml config
+#
+# OPOS_S3_PORT and OPOS_IMGPROXY_PORT move the published ports, with S3_ENDPOINT and IMGPROXY_URL
+# of apps/api/.env moved with them.
+
+services:
+  # Versity Gateway serves the directories of its volume as buckets, the bucket of apps/api/.env
+  # made on start. Its root key is the API's key of the bucket.
+  s3:
+    image: versity/versitygw:v1.11.0@sha256:8319a530d08d537426e2f855bae5280709795dc73a3f0c347973ef915d6343c5
+    entrypoint: ['/bin/sh', '-c', 'mkdir -p "/data/$$S3_BUCKET" && exec versitygw posix /data']
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${OPOS_S3_PORT:-54330}:7070'
+    environment:
+      S3_BUCKET: ${S3_BUCKET:?}
+      ROOT_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?}
+      ROOT_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?}
+      VGW_REGION: ${S3_REGION:?}
+      VGW_HEALTH: /health
+      VGW_QUIET: 'true'
+    volumes:
+      - s3:/data
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:7070/health']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # imgproxy answers only what the API signed, reads only the bucket, through an address the API
+  # signed for one object, and keeps no metadata of a picture.
+  imgproxy:
+    image: ghcr.io/imgproxy/imgproxy:v4.0.23@sha256:1e9718a2c940157b2bc400729497a78bde93738a859d0ffcdde185f019b3991b
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${OPOS_IMGPROXY_PORT:-54331}:8080'
+    environment:
+      IMGPROXY_KEY: ${IMGPROXY_KEY:?}
+      IMGPROXY_SALT: ${IMGPROXY_SALT:?}
+      IMGPROXY_ALLOWED_SOURCES: ${IMGPROXY_BUCKET_ENDPOINT:?}/${S3_BUCKET:?}/
+      IMGPROXY_STRIP_METADATA: 'true'
+      IMGPROXY_KEEP_COPYRIGHT: 'false'
+      IMGPROXY_STRIP_COLOR_PROFILE: 'true'
+      IMGPROXY_AUTO_ROTATE: 'true'
+      IMGPROXY_MAX_SRC_RESOLUTION: '50'
+      IMGPROXY_MAX_ANIMATION_FRAMES: '1'
+      IMGPROXY_MAX_RESULT_DIMENSION: '4096'
+    depends_on:
+      s3:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'imgproxy', 'health']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  s3:

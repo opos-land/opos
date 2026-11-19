@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // `pnpm infra:init`: writes the .env files from their templates, fills the empty
 // secrets, creates the local signing key, starts the Supabase CLI's local stack, writes the keys and
-// addresses it reports and sets the database roles. Safe to run again: a value already set is never
+// addresses it reports, starts the bucket and the image server of infra/local/compose.yaml and sets
+// the database roles. Safe to run again: a value already set is never
 // overwritten. It runs on the local stack only and never links a hosted project.
 
 import { spawn } from 'node:child_process'
@@ -28,6 +29,20 @@ const DATABASE_KEYS = {
   ],
   'packages/db': ['DATABASE_MIGRATION_URL'],
 }
+
+/**
+ * The bucket and the image server beside Supabase's stack, interpolated from apps/api/.env; the
+ * root scripts infra:up, infra:down and infra:reset run the same command.
+ */
+const STORAGE_COMPOSE = [
+  'compose',
+  '-p',
+  'opos-local',
+  '--env-file',
+  'apps/api/.env',
+  '-f',
+  'infra/local/compose.yaml',
+]
 
 const isSet = (value) => (value ?? '').trim() !== ''
 
@@ -227,6 +242,7 @@ export async function initInfra({
     passwordIn('DATABASE_ADMIN_URL'),
   )
   const dbPort = env.SUPABASE_DB_PORT ?? '54322'
+  const local = (port) => `http://127.0.0.1:${port}`
   const databaseUrl = (role, password) =>
     `postgres://${role}:${password}@127.0.0.1:${dbPort}/postgres`
   fill('supabase', { SEND_EMAIL_HOOK_SECRET: hookSecret })
@@ -236,6 +252,13 @@ export async function initInfra({
     DATABASE_URL: databaseUrl('opos_app', appPassword),
     DATABASE_GLOBAL_URL: databaseUrl('opos_app_global', appGlobalPassword),
     DATABASE_ADMIN_URL: databaseUrl('opos_admin', adminPassword),
+    // The bucket's root key, which the gateway takes as its own, and the image server's
+    S3_ENDPOINT: local(env.OPOS_S3_PORT ?? '54330'),
+    S3_ACCESS_KEY_ID: pick(['apps/api'], 'S3_ACCESS_KEY_ID', () => randomBytes(10).toString('hex')),
+    S3_SECRET_ACCESS_KEY: pick(['apps/api'], 'S3_SECRET_ACCESS_KEY', hex),
+    IMGPROXY_URL: local(env.OPOS_IMGPROXY_PORT ?? '54331'),
+    IMGPROXY_KEY: pick(['apps/api'], 'IMGPROXY_KEY', hex),
+    IMGPROXY_SALT: pick(['apps/api'], 'IMGPROXY_SALT', hex),
   })
   fill('packages/db', {
     OPOS_APP_PASSWORD: appPassword,
@@ -280,7 +303,10 @@ export async function initInfra({
     }
   }
 
-  // 5. the database roles, with the passwords and the address written above
+  // 5. the bucket and the image server, with the keys written above
+  await exec('docker', [...STORAGE_COMPOSE, 'up', '-d', '--wait'], { cwd: root, env })
+
+  // 6. the database roles, with the passwords and the address written above
   await exec('pnpm', ['db:roles'], { cwd: root, env, showOutputOnFailure: true })
 }
 

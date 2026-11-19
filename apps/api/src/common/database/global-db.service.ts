@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
+  accountFiles,
   type Database,
   editionMemberships,
   editions,
@@ -7,11 +8,18 @@ import {
   programItems,
   tenantMemberships,
   tenants,
+  uploadedFiles,
 } from '@opos/db'
-import { and, asc, eq, gt, inArray, isNull, ne, notExists, or, sql } from 'drizzle-orm'
-import { alias } from 'drizzle-orm/pg-core'
+import { and, asc, eq, gt, inArray, isNull, lt, ne, notExists, or, sql } from 'drizzle-orm'
+import { type AnyPgColumn, alias } from 'drizzle-orm/pg-core'
 import { type TenantInContext, TenantContextService } from '../als/tenant-context.service'
 import { GLOBAL_DB } from './tokens'
+
+/**
+ * The key of the sweep's advisory lock: below 2^61, apart from the tenants' write locks and the
+ * file limits' locks, and above the int4 range of Supabase Auth's keys.
+ */
+const SWEEP_LOCK_KEY = ((1n << 60n) + 0x5eedn).toString()
 
 /** Whether the tenant of the row is suspended. */
 const suspended = () => sql<boolean>`${tenants.suspendedAt} is not null`
@@ -177,5 +185,89 @@ export class GlobalDbService {
       )
       .limit(1)
     return row !== undefined
+  }
+
+  /**
+   * The sweep, the API's own job: the files of a kind older than `before` that the column its
+   * kind names does not point at. Identifiers alone, with the tenant a convention's file is in.
+   */
+  async unpointedFiles(
+    kind: { name: string; owner: 'account' | 'convention' | 'edition'; pointer: AnyPgColumn },
+    before: Date,
+  ): Promise<{ id: string; tenantId: string | null }[]> {
+    const pointerTable = kind.pointer.table
+    const unpointed = (id: AnyPgColumn) =>
+      notExists(
+        this.db
+          .select({ one: sql`1` })
+          .from(pointerTable)
+          .where(eq(kind.pointer, id)),
+      )
+    if (kind.owner === 'account') {
+      const rows = await this.db
+        .select({ id: accountFiles.id })
+        .from(accountFiles)
+        .where(
+          and(
+            eq(accountFiles.kind, kind.name),
+            lt(accountFiles.createdAt, before),
+            unpointed(accountFiles.id),
+          ),
+        )
+      return rows.map((row) => ({ ...row, tenantId: null }))
+    }
+    return this.db
+      .select({ id: uploadedFiles.id, tenantId: uploadedFiles.tenantId })
+      .from(uploadedFiles)
+      .where(
+        and(
+          eq(uploadedFiles.kind, kind.name),
+          lt(uploadedFiles.createdAt, before),
+          unpointed(uploadedFiles.id),
+        ),
+      )
+  }
+
+  /** The sweep: which of these files have a row, and of what kind. Identifiers alone. */
+  async fileKinds(ids: readonly string[]): Promise<Map<string, string>> {
+    const kinds = new Map<string, string>()
+    // A thousand at a time, within the parameters and the timeout of one statement.
+    for (let at = 0; at < ids.length; at += 1000) {
+      const batch = ids.slice(at, at + 1000)
+      const [tenantFiles, ownFiles] = await Promise.all([
+        this.db
+          .select({ id: uploadedFiles.id, kind: uploadedFiles.kind })
+          .from(uploadedFiles)
+          .where(inArray(uploadedFiles.id, batch)),
+        this.db
+          .select({ id: accountFiles.id, kind: accountFiles.kind })
+          .from(accountFiles)
+          .where(inArray(accountFiles.id, batch)),
+      ])
+      for (const row of [...tenantFiles, ...ownFiles]) kinds.set(row.id, row.kind)
+    }
+    return kinds
+  }
+
+  /**
+   * Runs `fn` while this process holds the sweep's lock, a session-level advisory lock on a
+   * connection of its own, so one of several API processes sweeps at a time; another finds it held
+   * and answers null without waiting.
+   */
+  async whileSweepLocked<T>(fn: () => Promise<T>): Promise<T | null> {
+    const connection = await this.db.$client.reserve()
+    try {
+      const [row] = await connection<{ locked: boolean }[]>`
+        select pg_try_advisory_lock(${SWEEP_LOCK_KEY}::bigint) as locked
+      `
+      if (!row?.locked) return null
+      try {
+        return await fn()
+      } finally {
+        await connection`select pg_advisory_unlock(${SWEEP_LOCK_KEY}::bigint)`
+      }
+    } finally {
+      connection.release()
+    }
   }
 }

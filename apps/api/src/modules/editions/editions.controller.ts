@@ -3,10 +3,14 @@ import { contract } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
 import { EditionsRepository } from './editions.repository'
+import { FilesService } from '../files/files.service'
 
 @Controller()
 export class EditionsController {
-  constructor(private readonly editions: EditionsRepository) {}
+  constructor(
+    private readonly editions: EditionsRepository,
+    private readonly files: FilesService,
+  ) {}
 
   @Implement(contract.editions.list)
   @RequireTenant()
@@ -44,6 +48,7 @@ export class EditionsController {
   remove() {
     return implement(contract.editions.remove).handler(async ({ input }) => {
       const edition = await this.editions.get(input.params.editionId)
+      await this.files.forgetEdition(edition.id)
       await this.editions.removeInactive(edition.id)
     })
   }

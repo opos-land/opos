@@ -5,7 +5,7 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common'
-import { open, sealingKey } from '@opos/db/sealed'
+import { open, orderQrCodeOf, sealingKey } from '@opos/db/sealed'
 import { type Locale } from '@opos/i18n'
 import {
   needsReviewEmail,
@@ -27,7 +27,6 @@ import { PaymentProviders } from '../payments/payment-providers'
 import { hashOf, secretToken } from './codes'
 import { OfferRepository } from './offer.repository'
 import { type ClaimedEmail, OrderEmailsRepository } from './order-emails.repository'
-import { qrCodeOf } from './order-settlement.service'
 
 /** How often the outbox looks for emails that are due. */
 const OUTBOX_EVERY_MS = 15_000
@@ -173,7 +172,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
       case 'order-confirmation': {
         const sealed = await this.emails.qrCode(order.id)
         if (!sealed) throw new Error('A paid order has a QR code')
-        const qrCode = open(this.key, sealed.code, qrCodeOf(order.tenantId, sealed.id))
+        const qrCode = open(this.key, sealed.code, orderQrCodeOf(order.tenantId, sealed.id))
         // A link of its own for each email sent: only its hash is kept.
         const token = secretToken()
         await this.emails.addLink(

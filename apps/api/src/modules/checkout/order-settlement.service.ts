@@ -1,12 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { Inject, Injectable } from '@nestjs/common'
-import { seal, sealingKey } from '@opos/db/sealed'
+import { orderQrCodeOf, seal, sealingKey } from '@opos/db/sealed'
 import { ENV, type Env } from '../../config/env'
 import { hashOf, qrCode } from './codes'
 import { OrdersRepository } from './orders.repository'
-
-/** What a QR code is sealed for: its own row of its own tenant. */
-export const qrCodeOf = (tenantId: string, codeId: string) => `order-qr-code:${tenantId}:${codeId}`
 
 /**
  * What follows from an order being paid (docs/specs/0004-checkout-and-orders.md, Y5, A2, A5): it
@@ -32,7 +29,7 @@ export class OrderSettlement {
     await this.orders.addQrCode(of, {
       id,
       codeHash: hashOf(code),
-      code: seal(this.key, code, qrCodeOf(order.tenantId, id)),
+      code: seal(this.key, code, orderQrCodeOf(order.tenantId, id)),
     })
     // A visitor's order under the confirmed email of an account is that account's from now on;
     // one placed signed in is attached already.

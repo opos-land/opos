@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { open, providerAccountOf, seal, sealingKey } from './sealed'
+import { open, orderQrCodeOf, providerAccountOf, seal, sealingKey } from './sealed'
 
 const key = sealingKey('a secret of at least thirty-two characters')
 const other = sealingKey('another secret of thirty-two characters!')
@@ -71,4 +71,18 @@ describe('seal and open', () => {
       expect(() => open(key, value, mine)).toThrow(/could not be opened/)
     },
   )
+})
+
+describe('what a value is sealed for', () => {
+  // A value moved to another row, or to another tenant's, opens nothing.
+  it('names the tenant and the row of a QR code, apart from a provider account', () => {
+    expect(orderQrCodeOf('t1', 'c1')).toBe('order-qr-code:t1:c1')
+    expect(orderQrCodeOf('t1', 'c1')).not.toBe(orderQrCodeOf('t2', 'c1'))
+    expect(orderQrCodeOf('t1', 'c1')).not.toBe(orderQrCodeOf('t1', 'c2'))
+    expect(orderQrCodeOf('t1', 'fake')).not.toBe(providerAccountOf('t1', 'fake'))
+
+    const sealed = seal(key, 'QRCODE', orderQrCodeOf('t1', 'c1'))
+    expect(open(key, sealed, orderQrCodeOf('t1', 'c1'))).toBe('QRCODE')
+    expect(() => open(key, sealed, orderQrCodeOf('t1', 'c2'))).toThrow()
+  })
 })

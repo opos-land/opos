@@ -18,6 +18,10 @@ export function sealingKey(secret: string): Buffer {
 export const providerAccountOf = (tenantId: string, provider: string) =>
   `payment-provider-account:${tenantId}:${provider}`
 
+/** What the QR code of an order is sealed for: its own row of its own tenant. */
+export const orderQrCodeOf = (tenantId: string, qrCodeId: string) =>
+  `order-qr-code:${tenantId}:${qrCodeId}`
+
 /**
  * Seals a text for what it belongs to: its version, a fresh nonce, the sealed bytes and their
  * tag, as text. `owner` is authenticated with it and stored nowhere.

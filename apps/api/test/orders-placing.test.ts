@@ -1,7 +1,10 @@
+import { createHash } from 'node:crypto'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { MAX_UNPAID_ORDERS, ORDER_NUMBER_ALPHABET, type PlacedOrder } from '@opos/contract'
+import { open, orderQrCodeOf, sealingKey } from '@opos/db/sealed'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { loadEnv } from '../src/config/env'
 import { STAND_IN_TOKEN } from '../src/modules/checkout/bot-check'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session } from './auth'
@@ -197,8 +200,16 @@ describe('a placed order', () => {
     expect(moment(order!.paid_at)).toBeGreaterThan(Date.now() - MINUTE)
     const codes = await storedRows('order_qr_codes', s.t.id)
     expect(codes).toHaveLength(1)
-    // Found by its hash, and kept sealed: the code itself is in neither column.
+    // Found by its hash, and kept sealed: the code itself is in neither column, and opens with
+    // the API's key for its own row alone.
     expect(String(codes[0]!.code)).toMatch(/^v1\./)
+    const code = open(
+      sealingKey(loadEnv().PAYMENT_CREDENTIALS_KEY),
+      String(codes[0]!.code),
+      orderQrCodeOf(s.t.id, String(codes[0]!.id)),
+    )
+    expect(code).toMatch(/^[A-Z2-7]{32}$/)
+    expect(codes[0]!.code_hash).toBe(createHash('sha256').update(code).digest('hex'))
     expect(await storedRows('order_qr_code_orders', s.t.id)).toMatchObject([
       { order_id: order!.id, qr_code_id: codes[0]!.id },
     ])

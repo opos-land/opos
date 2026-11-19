@@ -391,6 +391,47 @@ describe('verifyDatabase', () => {
       },
     )
 
+    // The catalog (docs/specs/0003-catalog.md): each grant it must not hold.
+    it.each([
+      ['the edition of a ticket type', 'edition_id', 'ticket_types'],
+      [
+        'the amount of a price tier, replaced with its list',
+        'amount_minor',
+        'ticket_type_price_tiers',
+      ],
+      ['the add-on a ticket type offers', 'add_on_id', 'ticket_type_add_ons'],
+      ['the item of an axis', 'merchandise_item_id', 'merchandise_option_axes'],
+      ['the axis of a value', 'axis_id', 'merchandise_option_values'],
+      ['the item of a variant', 'merchandise_item_id', 'merchandise_variants'],
+      ['the value of a variant', 'option_value_id', 'merchandise_variant_values'],
+      ['the file of a picture', 'file_id', 'merchandise_item_pictures'],
+      ['the file of a size chart', 'file_id', 'merchandise_size_charts'],
+      ['the edition of a custom field', 'edition_id', 'edition_custom_fields'],
+    ])('reports opos_app updating %s', async (_, column, table) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (${column}) on public.${table} to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(new RegExp(`opos_app UPDATE \\(${column}\\) on ${table}`))
+    })
+
+    it.each([
+      ['ticket_types', 'name'],
+      ['merchandise_items', 'amount_minor'],
+      ['merchandise_item_pictures', 'merchandise_item_id'],
+      ['edition_custom_fields', 'label'],
+      ['edition_shops', 'sales_closed_message'],
+    ])(
+      'reports opos_app_global reading %s.%s, which no cross-tenant query needs',
+      async (table, column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+        )
+      },
+    )
+
     it('reports RLS on account_files, a global table', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`alter table public.account_files enable row level security`),

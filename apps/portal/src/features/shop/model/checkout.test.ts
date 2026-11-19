@@ -1,0 +1,387 @@
+import { type Offer } from '@opos/contract'
+import { beforeEach, describe, expect, it } from 'vitest'
+import {
+  cartOf,
+  clearDraft,
+  clearDrafts,
+  type Draft,
+  emptyDraft,
+  holderIssues,
+  loadDraft,
+  offeredAddOns,
+  offeredItems,
+  orderBody,
+  quoteOf,
+  saveDraft,
+  stepsOf,
+  summaryIssues,
+  withTicketType,
+} from './checkout'
+
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
+const [standard, supporter, workshop, room, pin, shirt, small, medium, sizeS, sizeM] = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+].map(id)
+const [city, fandom, terms, news] = [11, 12, 13, 14].map(id)
+
+const offer = (changes: Partial<Offer> = {}): Offer => ({
+  open: true,
+  onSale: true,
+  salesClosedMessage: null,
+  currency: 'PLN',
+  ageBands: { teenFromAge: 13, adultFromAge: 18 },
+  guardianConsentFormUrl: null,
+  merchPreorderDeadline: null,
+  merchOnly: true,
+  faqUrl: null,
+  seller: null,
+  provider: {
+    name: 'fake',
+    methods: ['blik'],
+    consent: { text: { en: 'Provider terms' }, links: [], selectAllAllowed: false },
+    maxEmailLength: 50,
+  },
+  documents: [],
+  consents: [
+    { id: terms!, text: 'Terms', isRequired: true, documentVersionId: null },
+    { id: news!, text: 'News', isRequired: false, documentVersionId: null },
+  ],
+  customFields: [
+    { id: city!, label: 'City', isRequired: true },
+    { id: fandom!, label: 'Fandom', isRequired: false },
+  ],
+  ticketTypes: [
+    {
+      id: standard!,
+      name: 'Standard',
+      shortDescription: '',
+      longDescription: '',
+      state: 'on-sale',
+      priceMinor: 10000,
+      supporterPrices: [20000],
+      perks: [],
+      ageBands: ['teen', 'adult'],
+      discountsExcluded: false,
+      addOnIds: [workshop!, room!],
+      merchandiseItemIds: [pin!, shirt!],
+    },
+    {
+      id: supporter!,
+      name: 'Supporter',
+      shortDescription: '',
+      longDescription: '',
+      state: 'on-sale',
+      priceMinor: 40000,
+      supporterPrices: [],
+      perks: [],
+      ageBands: ['adult'],
+      discountsExcluded: true,
+      addOnIds: [room!],
+      merchandiseItemIds: [],
+    },
+  ],
+  addOns: [
+    {
+      id: workshop!,
+      name: 'Workshop',
+      description: '',
+      amountMinor: 4000,
+      kind: 'limited',
+      soldOut: false,
+      placesLeft: null,
+    },
+    {
+      id: room!,
+      name: 'Room',
+      description: '',
+      amountMinor: 0,
+      kind: 'headcount',
+      soldOut: false,
+      placesLeft: null,
+    },
+  ],
+  items: [
+    {
+      id: pin!,
+      name: 'Pin',
+      description: '',
+      amountMinor: 1500,
+      perOrderLimit: 10,
+      picturesIllustrative: false,
+      pictures: [],
+      axes: [],
+      variants: [{ id: small!, valueIds: [], maxQuantity: 10 }],
+    },
+    {
+      id: shirt!,
+      name: 'T-shirt',
+      description: '',
+      amountMinor: 8000,
+      perOrderLimit: 5,
+      picturesIllustrative: true,
+      pictures: [],
+      axes: [
+        {
+          id: id(20),
+          name: 'Size',
+          values: [
+            { id: sizeS!, label: 'S', sizeChart: null },
+            { id: sizeM!, label: 'M', sizeChart: null },
+          ],
+        },
+      ],
+      variants: [{ id: medium!, valueIds: [sizeM!], maxQuantity: 5 }],
+    },
+  ],
+  ...changes,
+})
+
+const filled = (changes: Partial<Draft> = {}): Draft => ({
+  ...emptyDraft(standard!),
+  holderName: 'Ada',
+  ageBand: 'adult',
+  email: 'ada@example.test',
+  emailConfirmation: 'ada@example.test',
+  answers: { [city!]: 'Poznań' },
+  asVisitor: true,
+  ...changes,
+})
+
+describe('the steps of a checkout', () => {
+  it('are four for a ticket: ticket holder, add-ons, merch, summary', () => {
+    expect(stepsOf(offer(), emptyDraft(standard!))).toEqual([
+      'holder',
+      'add-ons',
+      'merch',
+      'summary',
+    ])
+  })
+
+  it('are three for an order of merchandise alone, with no add-ons', () => {
+    expect(stepsOf(offer(), emptyDraft(null))).toEqual(['holder', 'merch', 'summary'])
+  })
+
+  // A step with nothing to offer is skipped and hidden.
+  it('leave out a step with nothing to offer', () => {
+    expect(stepsOf(offer(), emptyDraft(supporter!))).toEqual(['holder', 'add-ons', 'summary'])
+    const bare = offer({ addOns: [], items: [] })
+    expect(stepsOf(bare, emptyDraft(standard!))).toEqual(['holder', 'summary'])
+  })
+
+  it('offer a ticket type its own add-ons and items, and a merch-only order every item', () => {
+    expect(offeredAddOns(offer(), emptyDraft(supporter!)).map((addOn) => addOn.name)).toEqual([
+      'Room',
+    ])
+    expect(offeredItems(offer(), emptyDraft(supporter!))).toEqual([])
+    expect(offeredItems(offer(), emptyDraft(null)).map((item) => item.name)).toEqual([
+      'Pin',
+      'T-shirt',
+    ])
+    expect(offeredAddOns(offer(), emptyDraft(null))).toEqual([])
+  })
+})
+
+describe('the running total', () => {
+  it('is priced by the function the API prices an order with', () => {
+    const draft = filled({
+      supporterPriceMinor: 20000,
+      addOnIds: [workshop!],
+      items: [{ variantId: small!, quantity: 2 }],
+    })
+
+    expect(cartOf(draft)).toEqual({
+      ticket: { ticketTypeId: standard, supporterPriceMinor: 20000 },
+      addOnIds: [workshop],
+      items: [{ variantId: small, quantity: 2 }],
+    })
+    expect(quoteOf(offer(), draft)).toMatchObject({ totalMinor: 20000 + 4000 + 3000 })
+  })
+
+  it('is the ticket alone before anything is added, and nothing for an empty merch-only cart', () => {
+    expect(quoteOf(offer(), emptyDraft(standard!))).toMatchObject({ totalMinor: 10000 })
+    expect(quoteOf(offer(), emptyDraft(null))).toEqual({ problem: { kind: 'empty' } })
+  })
+})
+
+describe('the ticket holder step', () => {
+  it('passes a filled form', () => {
+    expect(holderIssues(offer(), filled(), false)).toEqual({})
+  })
+
+  it('asks for the name, the age band, the email twice and each required field', () => {
+    expect(holderIssues(offer(), emptyDraft(standard!), false)).toEqual({
+      holderName: 'required',
+      ageBand: 'required',
+      email: 'required',
+      emailConfirmation: 'required',
+      [`answer:${city}`]: 'required',
+    })
+  })
+
+  it('refuses an email that is none, two that differ, and one the provider cannot take', () => {
+    const issue = (changes: Partial<Draft>) => holderIssues(offer(), filled(changes), false)
+
+    expect(issue({ email: 'ada', emailConfirmation: 'ada' })).toEqual({ email: 'invalid' })
+    expect(issue({ emailConfirmation: 'Ada@Example.test ' })).toEqual({})
+    expect(issue({ emailConfirmation: 'other@example.test' })).toEqual({
+      emailConfirmation: 'mismatch',
+    })
+    const long = `${'a'.repeat(39)}@example.test`
+    expect(issue({ email: long, emailConfirmation: long })).toEqual({ email: 'too-long' })
+  })
+
+  // A signed-in buyer's email is the account's: nothing is typed and nothing is checked of it.
+  it('asks no email of a signed-in buyer', () => {
+    expect(holderIssues(offer(), filled({ email: '', emailConfirmation: '' }), true)).toEqual({})
+  })
+
+  it('refuses an age band the ticket type does not allow', () => {
+    expect(holderIssues(offer(), filled({ ageBand: 'child' }), false)).toEqual({
+      ageBand: 'not-allowed',
+    })
+  })
+
+  // A merch-only order asks for the buyer's name and email: never an age band or a field.
+  it('asks an order of merchandise alone for the name and the email only', () => {
+    expect(holderIssues(offer(), emptyDraft(null), false)).toEqual({
+      holderName: 'required',
+      email: 'required',
+      emailConfirmation: 'required',
+    })
+  })
+})
+
+describe('the summary', () => {
+  it('needs every required consent, the provider’s own while there is something to pay, and a teen’s acknowledgement', () => {
+    expect(summaryIssues(offer(), filled({ ageBand: 'teen' }), 10000)).toEqual({
+      consents: [terms],
+      provider: true,
+      guardian: true,
+    })
+    expect(
+      summaryIssues(
+        offer(),
+        filled({
+          ageBand: 'teen',
+          consentIds: [terms!],
+          providerConsent: true,
+          guardianAcknowledged: true,
+        }),
+        10000,
+      ),
+    ).toEqual({ consents: [], provider: false, guardian: false })
+  })
+
+  it('needs no consent of the provider for an order with nothing to pay', () => {
+    expect(summaryIssues(offer(), filled({ consentIds: [terms!] }), 0)).toEqual({
+      consents: [],
+      provider: false,
+      guardian: false,
+    })
+  })
+})
+
+describe('another ticket type', () => {
+  // Add-ons the new ticket type does not offer are removed, with a notice; the merchandise is
+  // kept or not as the buyer says.
+  it('keeps what the new one offers and names the add-ons it removed', () => {
+    const draft = filled({
+      addOnIds: [workshop!, room!],
+      items: [{ variantId: small!, quantity: 1 }],
+      supporterPriceMinor: 20000,
+      step: 'summary',
+    })
+
+    const kept = withTicketType(offer(), draft, supporter!, true)
+    expect(kept.removedAddOns).toEqual(['Workshop'])
+    expect(kept.draft).toMatchObject({
+      ticketTypeId: supporter,
+      supporterPriceMinor: null,
+      addOnIds: [room],
+      // The supporter ticket type offers no merchandise: what it does not offer goes.
+      items: [],
+      holderName: 'Ada',
+      step: 'holder',
+    })
+
+    const same = withTicketType(offer(), draft, standard!, true)
+    expect(same.removedAddOns).toEqual([])
+    expect(same.draft.items).toEqual([{ variantId: small, quantity: 1 }])
+    expect(withTicketType(offer(), draft, standard!, false).draft.items).toEqual([])
+  })
+})
+
+describe('the order a checkout places', () => {
+  it('is the cart with the ticket holder’s data and the total the buyer saw', () => {
+    const draft = filled({
+      holderName: ' Ada ',
+      answers: { [city!]: ' Poznań ', [fandom!]: '  ' },
+      consentIds: [terms!],
+      providerConsent: true,
+    })
+
+    expect(orderBody(draft, 10000, 'token', false)).toEqual({
+      cart: { ticket: { ticketTypeId: standard }, addOnIds: [], items: [] },
+      holderName: 'Ada',
+      ageBand: 'adult',
+      customFieldAnswers: [{ fieldId: city, answer: 'Poznań' }],
+      consentIds: [terms],
+      providerConsentAccepted: true,
+      guardianConsentAcknowledged: false,
+      expectedTotalMinor: 10000,
+      botCheckToken: 'token',
+      email: 'ada@example.test',
+      emailConfirmation: 'ada@example.test',
+    })
+  })
+
+  it('carries no email for a signed-in buyer, and no age band or answer for merchandise alone', () => {
+    const body = orderBody(
+      { ...filled({ items: [{ variantId: small!, quantity: 1 }] }), ticketTypeId: null },
+      1500,
+      'token',
+      true,
+    )
+
+    expect(body).not.toHaveProperty('email')
+    expect(body).not.toHaveProperty('emailConfirmation')
+    expect(body).toMatchObject({ ageBand: null, customFieldAnswers: [], cart: { ticket: null } })
+  })
+})
+
+describe('an unfinished checkout', () => {
+  beforeEach(() => window.sessionStorage.clear())
+
+  // It lives in the buyer's browser alone, in the tab it was started in.
+  it('is kept in the tab for its edition, and read back as it was', () => {
+    const draft = filled({ step: 'merch', items: [{ variantId: small!, quantity: 2 }] })
+
+    saveDraft('convention-a', '2026', draft)
+
+    expect(loadDraft('convention-a', '2026')).toEqual(draft)
+    expect(loadDraft('convention-a', '2025')).toBeNull()
+    expect(loadDraft('convention-b', '2026')).toBeNull()
+    expect(window.localStorage.length).toBe(0)
+  })
+
+  it('is forgotten once its order is placed, and all of them at a sign-out', () => {
+    saveDraft('convention-a', '2026', filled())
+    saveDraft('convention-b', '2027', filled())
+    window.sessionStorage.setItem('something-else', 'kept')
+
+    clearDraft('convention-a', '2026')
+    expect(loadDraft('convention-a', '2026')).toBeNull()
+    expect(loadDraft('convention-b', '2027')).not.toBeNull()
+
+    clearDrafts()
+    expect(loadDraft('convention-b', '2027')).toBeNull()
+    expect(window.sessionStorage.getItem('something-else')).toBe('kept')
+  })
+
+  it('reads nothing from what is not a checkout', () => {
+    window.sessionStorage.setItem('opos-checkout:convention-a:2026', '{"step":12}')
+    expect(loadDraft('convention-a', '2026')).toBeNull()
+    window.sessionStorage.setItem('opos-checkout:convention-a:2026', 'not json')
+    expect(loadDraft('convention-a', '2026')).toBeNull()
+  })
+})

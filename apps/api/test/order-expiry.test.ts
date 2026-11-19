@@ -45,7 +45,9 @@ afterAll(async () => {
 const MINUTE = 60_000
 const ago = (minutes: number) => new Date(Date.now() - minutes * MINUTE).toISOString()
 const fake = () => app.get<Map<string, FakeProvider>>(PROVIDER_MODULES).get('fake')!
-const expiry = () => app.get(OrderExpiry)
+/** The job for one tenant alone: other tests place orders of their own beside this one. */
+const expire = (s: { t: { id: string } }) =>
+  app.get(OrderExpiry).run(new Date(), { tenantId: s.t.id })
 
 /** A published edition with an open shop, a connected fake account and one ticket type. */
 async function shop(account = 'demo', capacity?: number) {
@@ -98,7 +100,7 @@ describe('the expiry of orders', () => {
     const attemptId = await s.started(late)
     await s.endHold(late)
 
-    await expiry().run()
+    await expire(s)
 
     expect(await s.stored(late)).toMatchObject({ status: 'expired', holds: false, paid_at: null })
     // An attempt nobody paid ended with it.
@@ -108,7 +110,7 @@ describe('the expiry of orders', () => {
     expect(await s.stored(fresh)).toMatchObject({ status: 'awaiting-payment', holds: true })
 
     // Once expired, it is not expired again.
-    await expiry().run()
+    await expire(s)
     expect(await s.emails()).toHaveLength(1)
   })
 
@@ -117,7 +119,7 @@ describe('the expiry of orders', () => {
     const placed = await s.place()
     await s.endHold(placed)
 
-    await expiry().run()
+    await expire(s)
 
     expect(await s.stored(placed)).toMatchObject({ status: 'expired', holds: false })
   })
@@ -128,7 +130,7 @@ describe('the expiry of orders', () => {
     await s.order('next@example.test').expect(409)
     await s.endHold(placed)
 
-    await expiry().run()
+    await expire(s)
 
     await s.order('next@example.test').expect(201)
   })
@@ -142,7 +144,7 @@ describe('the expiry of orders', () => {
     fake().pay(attemptId)
     await s.endHold(placed)
 
-    await expiry().run()
+    await expire(s)
 
     expect(await s.stored(placed)).toMatchObject({ status: 'paid', holds: true })
     expect(await s.attempts()).toMatchObject([{ id: attemptId, status: 'paid' }])
@@ -159,7 +161,7 @@ describe('the expiry of orders', () => {
       .expect(200)
     await s.endHold(placed)
 
-    await expiry().run()
+    await expire(s)
 
     expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
     expect(await s.attempts()).toMatchObject([{ status: 'failed', failure_reason: 'canceled' }])
@@ -172,13 +174,13 @@ describe('the expiry of orders', () => {
     await s.started(placed)
     await s.endHold(placed)
 
-    await expiry().run()
+    await expire(s)
 
     expect(await s.stored(placed)).toMatchObject({ status: 'awaiting-payment', holds: true })
     expect(await s.emails()).toEqual([])
 
     await connectFake(s.t.id, 'demo')
-    await expiry().run()
+    await expire(s)
     expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
   })
 
@@ -188,11 +190,11 @@ describe('the expiry of orders', () => {
     await s.endHold(placed)
 
     await suspend(s.t.id)
-    await expiry().run()
+    await expire(s)
     expect(await s.stored(placed)).toMatchObject({ status: 'awaiting-payment' })
 
     await restore(s.t.id)
-    await expiry().run()
+    await expire(s)
     expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
   })
 
@@ -202,7 +204,7 @@ describe('the expiry of orders', () => {
     const placed = await s.place()
     await s.endHold(placed)
 
-    await Promise.all([expiry().run(), expiry().run(), expiry().run()])
+    await Promise.all([expire(s), expire(s), expire(s)])
 
     expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
     expect(await s.emails()).toEqual([['order-expired', 'buyer@example.test']])
@@ -215,7 +217,7 @@ describe('the expiry of orders', () => {
 
     for (const status of ['paid', 'needs-review', 'canceled', 'declined']) {
       await setColumn('orders', placed.orderId, 'status', status)
-      await expiry().run()
+      await expire(s)
       expect(await s.stored(placed)).toMatchObject({ status, holds: true })
     }
     expect(await s.emails()).toEqual([])

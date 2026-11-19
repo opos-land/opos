@@ -4,6 +4,7 @@ import {
   accountFiles,
   editionMemberships,
   editions,
+  orderEmails,
   orders,
   paymentAttempts,
   programItemLikes,
@@ -47,6 +48,15 @@ const suspended = () => sql<boolean>`${tenants.suspendedAt} is not null`
  * The only code on the opos_app_global role, which bypasses RLS. Every method is one of the
  * documented cross-tenant queries; a new one is documented first.
  */
+/**
+ * What one run of a job of the API takes: at most `limit` rows, and with `tenantId` those of one
+ * tenant alone, as a test of the job runs it beside the tests of other tenants.
+ */
+export interface JobScope {
+  limit?: number
+  tenantId?: string
+}
+
 @Injectable()
 export class GlobalDbService {
   constructor(
@@ -335,7 +345,10 @@ export class GlobalDbService {
    * The expiry job: the orders awaiting payment whose hold ended, the longest ended first, of the
    * tenants that are not suspended. Identifiers alone: each is judged again in its own tenant.
    */
-  ordersPastHold(now: Date, limit = 200): Promise<{ id: string; tenantId: string }[]> {
+  ordersPastHold(
+    now: Date,
+    { limit = 200, tenantId }: JobScope = {},
+  ): Promise<{ id: string; tenantId: string }[]> {
     return this.db
       .select({ id: orders.id, tenantId: orders.tenantId })
       .from(orders)
@@ -345,9 +358,34 @@ export class GlobalDbService {
           eq(orders.status, 'awaiting-payment'),
           lte(orders.holdEndsAt, now),
           isNull(tenants.suspendedAt),
+          tenantId === undefined ? undefined : eq(orders.tenantId, tenantId),
         ),
       )
       .orderBy(asc(orders.holdEndsAt), asc(orders.id))
+      .limit(limit)
+  }
+
+  /**
+   * The outbox of the orders' emails: those not sent yet that are due, the longest due first, of
+   * the tenants that are not suspended. Identifiers alone: each is taken in its own tenant.
+   */
+  emailsDue(
+    now: Date,
+    { limit = 100, tenantId }: JobScope = {},
+  ): Promise<{ id: string; tenantId: string }[]> {
+    return this.db
+      .select({ id: orderEmails.id, tenantId: orderEmails.tenantId })
+      .from(orderEmails)
+      .innerJoin(tenants, eq(tenants.id, orderEmails.tenantId))
+      .where(
+        and(
+          isNull(orderEmails.sentAt),
+          lte(orderEmails.nextAttemptAt, now),
+          isNull(tenants.suspendedAt),
+          tenantId === undefined ? undefined : eq(orderEmails.tenantId, tenantId),
+        ),
+      )
+      .orderBy(asc(orderEmails.nextAttemptAt), asc(orderEmails.id))
       .limit(limit)
   }
 

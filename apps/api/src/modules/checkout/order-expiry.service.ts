@@ -5,7 +5,7 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common'
 import { TenantContextService } from '../../common/als/tenant-context.service'
-import { GlobalDbService } from '../../common/database/global-db.service'
+import { GlobalDbService, type JobScope } from '../../common/database/global-db.service'
 import { CredentialsVault, PaymentProviders } from '../payments/payment-providers'
 import { type Credentials } from '../payments/provider'
 import { OrdersRepository } from './orders.repository'
@@ -60,9 +60,9 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
   }
 
   /** One run over the orders whose hold has ended by `now`. */
-  async run(now = new Date()): Promise<ExpiryResult> {
+  async run(now = new Date(), scope: JobScope = {}): Promise<ExpiryResult> {
     const result: ExpiryResult = { expired: 0, paid: 0, waiting: 0 }
-    for (const { id, tenantId } of await this.global.ordersPastHold(now)) {
+    for (const { id, tenantId } of await this.global.ordersPastHold(now, scope)) {
       try {
         result[await this.one(tenantId, id, now)] += 1
       } catch (error) {

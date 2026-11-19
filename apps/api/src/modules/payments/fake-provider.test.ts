@@ -162,6 +162,15 @@ describe('a payment at the fake provider', () => {
     expect(await provider.state(demo, request('never'))).toEqual({ state: 'not-paid' })
   })
 
+  it('cannot tell the state of an attempt for the account that stands for that', async () => {
+    const { provider } = await started()
+    provider.pay('a1')
+
+    expect(
+      await provider.state({ account: FAKE_ACCOUNT.stateUnavailable }, request()),
+    ).toMatchObject({ state: 'unavailable' })
+  })
+
   it('settles a payment, again and again, and is out of reach for the account that stands for that', async () => {
     const { provider } = await started()
     const payment = { paidAmountMinor: 12300, paidAt: new Date(), providerReference: 'FAKE-1' }

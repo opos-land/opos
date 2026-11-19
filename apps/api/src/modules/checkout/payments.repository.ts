@@ -19,7 +19,7 @@ import {
   tenantMemberships,
   ticketTypes,
 } from '@opos/db'
-import { and, asc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
 import { OfferRepository } from './offer.repository'
@@ -279,6 +279,34 @@ export class PaymentsRepository {
     >,
   ) {
     await this.context.tx().update(orders).set(changes).where(eq(orders.id, orderId))
+  }
+
+  /**
+   * Expires the order when it still awaits payment and its hold has ended: it holds nothing from
+   * now, and an attempt nobody paid ends with it. The row is claimed under a lock another process
+   * skips, so of several that run at once one expires it; answers whether this one did.
+   */
+  async expire(orderId: string, now: Date): Promise<boolean> {
+    const tx = this.context.tx()
+    const [claimed] = await tx
+      .select({ id: orders.id })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.id, orderId),
+          eq(orders.status, 'awaiting-payment'),
+          lte(orders.holdEndsAt, now),
+        ),
+      )
+      .for('update', { skipLocked: true })
+    if (!claimed) return false
+    await tx.update(orders).set({ status: 'expired', holds: false }).where(eq(orders.id, orderId))
+    // A failed attempt keeps its reason; a payment confirmed later for either still counts.
+    await tx
+      .update(paymentAttempts)
+      .set({ status: 'ended' })
+      .where(and(eq(paymentAttempts.orderId, orderId), eq(paymentAttempts.status, 'started')))
+    return true
   }
 
   /**

@@ -4,6 +4,7 @@ import {
   accountFiles,
   editionMemberships,
   editions,
+  orders,
   paymentAttempts,
   programItemLikes,
   programItems,
@@ -328,6 +329,26 @@ export class GlobalDbService {
       .from(paymentAttempts)
       .where(eq(paymentAttempts.id, id))
     return row
+  }
+
+  /**
+   * The expiry job: the orders awaiting payment whose hold ended, the longest ended first, of the
+   * tenants that are not suspended. Identifiers alone: each is judged again in its own tenant.
+   */
+  ordersPastHold(now: Date, limit = 200): Promise<{ id: string; tenantId: string }[]> {
+    return this.db
+      .select({ id: orders.id, tenantId: orders.tenantId })
+      .from(orders)
+      .innerJoin(tenants, eq(tenants.id, orders.tenantId))
+      .where(
+        and(
+          eq(orders.status, 'awaiting-payment'),
+          lte(orders.holdEndsAt, now),
+          isNull(tenants.suspendedAt),
+        ),
+      )
+      .orderBy(asc(orders.holdEndsAt), asc(orders.id))
+      .limit(limit)
   }
 
   /** The sweep: which of these files have a row, and of what kind. Identifiers alone. */

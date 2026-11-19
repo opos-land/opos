@@ -8,6 +8,7 @@ import { BOT_CHECK, botCheckOf } from './bot-check'
 import { BotCheckPreparation } from './bot-check.preparation'
 import { OfferRepository } from './offer.repository'
 import { OfferService } from './offer.service'
+import { OrderExpiry } from './order-expiry.service'
 import { OrderPlacement } from './order-placement.service'
 import { OrderSettlement } from './order-settlement.service'
 import { OrdersController } from './orders.controller'
@@ -31,6 +32,7 @@ import { ShopPublicController } from './shop.controller'
     PaymentsRepository,
     PaymentConfirmations,
     PaymentAttempts,
+    OrderExpiry,
     BotCheckPreparation,
     { provide: BOT_CHECK, inject: [ENV], useFactory: (env: Env) => botCheckOf(env) },
   ],

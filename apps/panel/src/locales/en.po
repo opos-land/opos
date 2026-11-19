@@ -1499,6 +1499,10 @@ msgstr "The shop was not opened. These conditions are not met yet:"
 msgid "The speakers are saved."
 msgstr "The speakers are saved."
 
+#: src/features/shop/model/providers.ts
+msgid "The stored credentials can no longer be read. Give them again."
+msgstr "The stored credentials can no longer be read. Give them again."
+
 #: src/features/account/pages/account-page.tsx
 msgid "The system's theme"
 msgstr "The system's theme"

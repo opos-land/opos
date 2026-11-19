@@ -48,6 +48,7 @@ export function credentialsBody(provider: PaymentProvider, values: Record<string
 const MISSING: Record<string, MessageDescriptor> = {
   'fake.not-ready': msg`The fake provider reports this account as not ready.`,
   'provider.not-loaded': msg`This environment cannot reach the provider of this account.`,
+  'credentials.unreadable': msg`The stored credentials can no longer be read. Give them again.`,
 }
 
 /** What a condition of readiness says, or null for one this panel does not know yet. */

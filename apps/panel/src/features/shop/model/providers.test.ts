@@ -28,6 +28,7 @@ describe('the payment providers the panel knows', () => {
   it('words the conditions it knows, and leaves another to its code', () => {
     expect(missingMessage('fake.not-ready')).not.toBeNull()
     expect(missingMessage('provider.not-loaded')).not.toBeNull()
+    expect(missingMessage('credentials.unreadable')).not.toBeNull()
     expect(missingMessage('przelewy24.something-new')).toBeNull()
   })
 })

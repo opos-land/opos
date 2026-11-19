@@ -405,6 +405,16 @@ export const storedFiles = async (tenantId: string, kind: string) => [
     `)),
 ]
 
+/** The file of a size chart the seed gave a demo convention's item; a test only reads it. */
+export const seededSizeChart = async (slug: string) =>
+  (
+    await db.execute<{ id: string }>(sql`
+      select c.file_id as id from merchandise_size_charts c
+      join tenants t on t.id = c.tenant_id
+      where t.slug = ${slug} order by c.file_id limit 1
+    `)
+  )[0]?.id
+
 /** A version of a legal document the seed published for a demo convention; a test only reads it. */
 export const seededDocumentVersion = async (slug: string) =>
   (

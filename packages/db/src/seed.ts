@@ -3,18 +3,27 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { and, eq, notInArray, sql } from 'drizzle-orm'
 import { grantAdmin } from './admins'
 import { migrationDb } from './client'
+import { demoChart } from './demo-chart'
 import { demoPdf } from './demo-pdf'
 import { migrationUrl, reachableUrl } from './migration-url'
 import {
   accountRecoveryCodes,
   accounts,
+  addOns,
   admins,
   editionConsents,
+  editionCustomFields,
   editionDocuments,
   editionDocumentVersions,
   editionMemberships,
   editions,
   editionShops,
+  merchandiseItems,
+  merchandiseOptionAxes,
+  merchandiseOptionValues,
+  merchandiseSizeCharts,
+  merchandiseVariants,
+  merchandiseVariantValues,
   paymentProviderAccounts,
   programItemLikes,
   programItems,
@@ -23,6 +32,12 @@ import {
   shopSellers,
   tenantMemberships,
   tenants,
+  ticketTypeAddOns,
+  ticketTypeMerchandiseItems,
+  ticketTypePerks,
+  ticketTypePriceTiers,
+  ticketTypes,
+  ticketTypeSupporterPrices,
   uploadedFiles,
 } from './schema'
 import { open, providerAccountOf, seal, sealingKey } from './sealed'
@@ -76,12 +91,72 @@ interface SeedConsent {
   document?: DocumentKind
 }
 
+type AgeBand = 'child' | 'teen' | 'adult'
+
+/** A moment of a demo catalog, in whole days from the run: before it when below zero. */
+type Days = number
+
+interface SeedTicketType {
+  name: string
+  shortDescription: string
+  longDescription: string
+  capacity?: number
+  ageBands: AgeBand[]
+  discountsExcluded?: boolean
+  /** On sale from 90 days before the run until the edition ends, at these prices in turn. */
+  tiers: { amountMinor: number; from: Days; until: Days | 'end' }[]
+  supporterPrices?: number[]
+  perks: string[]
+  /** The add-ons and the items offered with it, by name. */
+  addOns?: string[]
+  items?: string[]
+}
+
+interface SeedAddOn {
+  name: string
+  description: string
+  amountMinor: number
+  kind: (typeof addOns.kind.enumValues)[number]
+  capacity?: number
+  placesLeftThreshold?: number
+}
+
+interface SeedMerchandise {
+  name: string
+  description: string
+  amountMinor: number
+  perOrderLimit: number
+  picturesIllustrative?: boolean
+  /** Left out, the item is sold as its one variant, with this stock; null while unlimited. */
+  stock?: number | null
+  /** Its axes with the labels of their values; `sizeCharts` gives each value a demo chart. */
+  axes?: { name: string; values: string[]; sizeCharts?: boolean }[]
+  /** The variants that exist, each by one label of each axis, with its stock. */
+  variants?: { values: string[]; stock: number | null }[]
+}
+
+/** What a demo edition sells (docs/specs/0003-catalog.md). */
+interface SeedCatalog {
+  ageBands: { teenFromAge: number; adultFromAge: number }
+  guardianConsentFormUrl: string
+  /** How many days before the edition starts its merchandise stops selling without a limit. */
+  preorderEndsDaysBefore: number
+  merchOnly: boolean
+  salesClosedMessage: string
+  customFields: { label: string; isRequired: boolean }[]
+  addOns: SeedAddOn[]
+  items: SeedMerchandise[]
+  ticketTypes: SeedTicketType[]
+}
+
 /** The shop of a demo edition: what opening asks of the edition, and whether it is open. */
 interface SeedEditionShop {
   open: boolean
   faqUrl?: string
   documents: SeedDocument[]
   consents: SeedConsent[]
+  /** Left out, the edition sells nothing. */
+  catalog?: SeedCatalog
 }
 
 interface SeedEdition {
@@ -189,6 +264,91 @@ const demoDocument = (kind: DocumentKind, title: string): SeedDocument => ({
   ],
 })
 
+const SIZES = ['S', 'M', 'L', 'XL']
+
+// What the coming edition of convention A sells. The T-shirt has a variant out of stock
+// (women's XL) and one that does not exist (men's S).
+const DEMO_CATALOG: SeedCatalog = {
+  ageBands: { teenFromAge: 13, adultFromAge: 18 },
+  guardianConsentFormUrl: 'https://convention-a.test/guardian-consent.pdf',
+  preorderEndsDaysBefore: 21,
+  merchOnly: true,
+  salesClosedMessage: 'Sales are closed for now. See you at the convention.',
+  customFields: [
+    { label: 'City you travel from', isRequired: true },
+    { label: 'Favourite fandom', isRequired: false },
+  ],
+  addOns: [
+    {
+      name: 'Miniature painting workshop',
+      description: 'Two hours with a painter, brushes and paints included.',
+      amountMinor: 4000,
+      kind: 'limited',
+      capacity: 40,
+      placesLeftThreshold: 10,
+    },
+    {
+      name: 'Sleeping room',
+      description: 'A place on the floor of the sleeping room. Bring a mat and a sleeping bag.',
+      amountMinor: 0,
+      kind: 'headcount',
+    },
+  ],
+  items: [
+    {
+      name: 'T-shirt',
+      description: 'Cotton T-shirt with the print of this edition.',
+      amountMinor: 8000,
+      perOrderLimit: 5,
+      picturesIllustrative: true,
+      axes: [
+        { name: 'Cut', values: ["Women's", "Men's"], sizeCharts: true },
+        { name: 'Size', values: SIZES },
+      ],
+      variants: [
+        ...SIZES.map((size) => ({ values: ["Women's", size], stock: size === 'XL' ? 0 : null })),
+        ...SIZES.slice(1).map((size) => ({ values: ["Men's", size], stock: null })),
+      ],
+    },
+    {
+      name: 'Enamel pin',
+      description: 'Hard enamel pin, 3 cm.',
+      amountMinor: 1500,
+      perOrderLimit: 10,
+      stock: 200,
+    },
+  ],
+  ticketTypes: [
+    {
+      name: 'Standard',
+      shortDescription: 'All three days of the convention.',
+      longDescription: 'Entry to every programme item, the games room and the exhibitors.',
+      capacity: 800,
+      ageBands: ['child', 'teen', 'adult'],
+      tiers: [
+        { amountMinor: 12000, from: -90, until: 14 },
+        { amountMinor: 15000, from: 14, until: 'end' },
+      ],
+      supporterPrices: [20000, 30000],
+      perks: ['A badge with your name'],
+      addOns: ['Miniature painting workshop', 'Sleeping room'],
+      items: ['T-shirt', 'Enamel pin'],
+    },
+    {
+      name: 'Supporter',
+      shortDescription: 'All three days, and your name among the supporters.',
+      longDescription: 'Everything the standard one gives, with the supporter perks.',
+      capacity: 100,
+      ageBands: ['adult'],
+      discountsExcluded: true,
+      tiers: [{ amountMinor: 40000, from: -90, until: 'end' }],
+      perks: ['A badge with your name', 'A supporter pin', 'Your name in the programme book'],
+      addOns: ['Sleeping room'],
+      items: ['T-shirt', 'Enamel pin'],
+    },
+  ],
+}
+
 const TENANTS: SeedTenant[] = [
   {
     slug: 'convention-a',
@@ -285,6 +445,7 @@ const TENANTS: SeedTenant[] = [
             },
             { text: 'I want to receive news of the convention by email.', isRequired: false },
           ],
+          catalog: DEMO_CATALOG,
         },
       },
     ],
@@ -418,6 +579,8 @@ const bucket = new S3Client({
 
 /** The kind the API's storage keeps a version of a legal document as. */
 const DOCUMENT_FILE_KIND = 'edition-document'
+/** The kind the API declares for the size chart of a value of a merchandise item. */
+const SIZE_CHART_FILE_KIND = 'merchandise-size-chart'
 
 /**
  * Where the API's storage reads an edition's file that is no image: under its tenant and the
@@ -426,10 +589,14 @@ const DOCUMENT_FILE_KIND = 'edition-document'
  */
 const fileObjectKey = (tenantId: string, fileId: string) => `tenants/${tenantId}/${fileId}/file`
 
+/** The object of the master of an edition's image, as the API's storage reads it. */
+const masterObjectKey = (tenantId: string, fileId: string) => `tenants/${tenantId}/${fileId}/master`
+
 /** An object the bucket gets once the rows that point at it are committed. */
 interface PendingObject {
   key: string
   bytes: Buffer
+  type: string
 }
 
 /** A call to Supabase Auth, authorized by the secret key alone, or by a session on top of it. */
@@ -685,9 +852,11 @@ async function seedTenant(spec: SeedTenant) {
     if (spec.shop) await seedShop(tx, tenantId, spec.shop)
     for (const edition of spec.editions) {
       if (!edition.shop) continue
-      objects.push(
-        ...(await seedEditionShop(tx, tenantId, editionIds.get(edition.slug)!, edition.shop)),
-      )
+      const editionId = editionIds.get(edition.slug)!
+      objects.push(...(await seedEditionShop(tx, tenantId, editionId, edition.shop)))
+      if (edition.shop.catalog) {
+        objects.push(...(await seedCatalog(tx, tenantId, editionId, edition, edition.shop.catalog)))
+      }
     }
 
     // A head holds no permission of its own and never expires.
@@ -753,13 +922,13 @@ async function seedTenant(spec: SeedTenant) {
 
   // The rows are committed: the bucket gets the files they point at. A file already there is put
   // again with the same bytes, so a bucket that lost one gets it back.
-  for (const { key, bytes } of objects) {
+  for (const { key, bytes, type } of objects) {
     await bucket.send(
       new PutObjectCommand({
         Bucket: s3.bucket,
         Key: key,
         Body: bytes,
-        ContentType: 'application/pdf',
+        ContentType: type,
       }),
     )
   }
@@ -872,7 +1041,7 @@ async function seedEditionShop(
         .insert(editionDocumentVersions)
         .values({ tenantId, editionId, documentId, number: 1, fileId })
     }
-    objects.push({ key: fileObjectKey(tenantId, fileId), bytes })
+    objects.push({ key: fileObjectKey(tenantId, fileId), bytes, type: 'application/pdf' })
   }
 
   for (const [index, consent] of shop.consents.entries()) {
@@ -908,6 +1077,352 @@ async function seedEditionShop(
       },
     })
   return objects
+}
+
+/** Midnight UTC of the day `days` from the run, so that two runs of a day agree. */
+const dayFromNow = (days: Days) => new Date((Math.floor(Date.now() / DAY) + days) * DAY)
+
+/**
+ * The catalog of a demo edition. A ticket type, an add-on, an item and a custom field are
+ * identified by their name within a seeded edition, an axis by its name within its item, a value
+ * by its label, a variant by its values: their rows stay across runs, so what points at them later
+ * still does. The lists that travel with a ticket type are written anew each run. Answers the size
+ * charts the bucket is to hold.
+ */
+async function seedCatalog(
+  tx: Tx,
+  tenantId: string,
+  editionId: string,
+  edition: Pick<SeedEdition, 'startsAt' | 'endsAt'>,
+  catalog: SeedCatalog,
+): Promise<PendingObject[]> {
+  const objects: PendingObject[] = []
+  const at = { tenantId, editionId }
+
+  await tx
+    .update(editionShops)
+    .set({
+      ...catalog.ageBands,
+      guardianConsentFormUrl: catalog.guardianConsentFormUrl,
+      merchPreorderDeadline: new Date(
+        edition.startsAt.getTime() - catalog.preorderEndsDaysBefore * DAY,
+      ),
+      merchOnlyEnabled: catalog.merchOnly,
+      salesClosedMessage: catalog.salesClosedMessage,
+    })
+    .where(eq(editionShops.editionId, editionId))
+
+  for (const [index, field] of catalog.customFields.entries()) {
+    const values = { isRequired: field.isRequired, position: index + 1, hiddenAt: null }
+    const [existing] = await tx
+      .select({ id: editionCustomFields.id })
+      .from(editionCustomFields)
+      .where(
+        and(
+          eq(editionCustomFields.editionId, editionId),
+          eq(editionCustomFields.label, field.label),
+        ),
+      )
+    if (existing) {
+      await tx
+        .update(editionCustomFields)
+        .set(values)
+        .where(eq(editionCustomFields.id, existing.id))
+    } else {
+      await tx.insert(editionCustomFields).values({ ...at, label: field.label, ...values })
+    }
+  }
+
+  const addOnIds = new Map<string, string>()
+  for (const [index, addOn] of catalog.addOns.entries()) {
+    const values = {
+      description: addOn.description,
+      amountMinor: addOn.amountMinor,
+      kind: addOn.kind,
+      capacity: addOn.capacity ?? null,
+      placesLeftThreshold: addOn.placesLeftThreshold ?? null,
+      position: index + 1,
+      hiddenAt: null,
+    }
+    const [existing] = await tx
+      .select({ id: addOns.id })
+      .from(addOns)
+      .where(and(eq(addOns.editionId, editionId), eq(addOns.name, addOn.name)))
+    const [saved] = existing
+      ? await tx
+          .update(addOns)
+          .set(values)
+          .where(eq(addOns.id, existing.id))
+          .returning({ id: addOns.id })
+      : await tx
+          .insert(addOns)
+          .values({ ...at, name: addOn.name, ...values })
+          .returning({ id: addOns.id })
+    addOnIds.set(addOn.name, saved!.id)
+  }
+
+  const itemIds = new Map<string, string>()
+  for (const [index, item] of catalog.items.entries()) {
+    const values = {
+      description: item.description,
+      amountMinor: item.amountMinor,
+      perOrderLimit: item.perOrderLimit,
+      picturesIllustrative: item.picturesIllustrative ?? false,
+      position: index + 1,
+      hiddenAt: null,
+    }
+    const [existing] = await tx
+      .select({ id: merchandiseItems.id })
+      .from(merchandiseItems)
+      .where(and(eq(merchandiseItems.editionId, editionId), eq(merchandiseItems.name, item.name)))
+    const [saved] = existing
+      ? await tx
+          .update(merchandiseItems)
+          .set(values)
+          .where(eq(merchandiseItems.id, existing.id))
+          .returning({ id: merchandiseItems.id })
+      : await tx
+          .insert(merchandiseItems)
+          .values({ ...at, name: item.name, ...values })
+          .returning({ id: merchandiseItems.id })
+    itemIds.set(item.name, saved!.id)
+    objects.push(...(await seedVariants(tx, { ...at, merchandiseItemId: saved!.id }, item)))
+  }
+
+  for (const [index, type] of catalog.ticketTypes.entries()) {
+    const values = {
+      shortDescription: type.shortDescription,
+      longDescription: type.longDescription,
+      capacity: type.capacity ?? null,
+      saleStartsAt: dayFromNow(-90),
+      saleEndsAt: edition.endsAt,
+      allowsChild: type.ageBands.includes('child'),
+      allowsTeen: type.ageBands.includes('teen'),
+      allowsAdult: type.ageBands.includes('adult'),
+      discountsExcluded: type.discountsExcluded ?? false,
+      shownOutsideSaleWindow: true,
+      position: index + 1,
+      hiddenAt: null,
+    }
+    const [existing] = await tx
+      .select({ id: ticketTypes.id })
+      .from(ticketTypes)
+      .where(and(eq(ticketTypes.editionId, editionId), eq(ticketTypes.name, type.name)))
+    const [saved] = existing
+      ? await tx
+          .update(ticketTypes)
+          .set(values)
+          .where(eq(ticketTypes.id, existing.id))
+          .returning({ id: ticketTypes.id })
+      : await tx
+          .insert(ticketTypes)
+          .values({ ...at, name: type.name, ...values })
+          .returning({ id: ticketTypes.id })
+    const of = { ...at, ticketTypeId: saved!.id }
+
+    await tx.delete(ticketTypePriceTiers).where(eq(ticketTypePriceTiers.ticketTypeId, saved!.id))
+    await tx.insert(ticketTypePriceTiers).values(
+      type.tiers.map((tier) => ({
+        ...of,
+        amountMinor: tier.amountMinor,
+        startsAt: dayFromNow(tier.from),
+        endsAt: tier.until === 'end' ? edition.endsAt : dayFromNow(tier.until),
+      })),
+    )
+    await tx
+      .delete(ticketTypeSupporterPrices)
+      .where(eq(ticketTypeSupporterPrices.ticketTypeId, saved!.id))
+    if (type.supporterPrices?.length) {
+      await tx
+        .insert(ticketTypeSupporterPrices)
+        .values(type.supporterPrices.map((amountMinor) => ({ ...of, amountMinor })))
+    }
+    await tx.delete(ticketTypePerks).where(eq(ticketTypePerks.ticketTypeId, saved!.id))
+    await tx
+      .insert(ticketTypePerks)
+      .values(type.perks.map((name, place) => ({ ...of, name, position: place + 1 })))
+    await tx.delete(ticketTypeAddOns).where(eq(ticketTypeAddOns.ticketTypeId, saved!.id))
+    if (type.addOns?.length) {
+      await tx
+        .insert(ticketTypeAddOns)
+        .values(type.addOns.map((name) => ({ ...of, addOnId: addOnIds.get(name)! })))
+    }
+    await tx
+      .delete(ticketTypeMerchandiseItems)
+      .where(eq(ticketTypeMerchandiseItems.ticketTypeId, saved!.id))
+    if (type.items?.length) {
+      await tx
+        .insert(ticketTypeMerchandiseItems)
+        .values(type.items.map((name) => ({ ...of, merchandiseItemId: itemIds.get(name)! })))
+    }
+  }
+  return objects
+}
+
+/**
+ * The axes, values, size charts and variants of a demo item. A variant is found by its values,
+ * so its row stays across runs; one the list no longer names goes.
+ */
+async function seedVariants(
+  tx: Tx,
+  of: { tenantId: string; editionId: string; merchandiseItemId: string },
+  item: SeedMerchandise,
+): Promise<PendingObject[]> {
+  const objects: PendingObject[] = []
+  const itemId = of.merchandiseItemId
+  /** The value of a label, with its axis: a label is one value of one axis of the item. */
+  const valueOf = new Map<string, { id: string; axisId: string }>()
+
+  for (const [index, axis] of (item.axes ?? []).entries()) {
+    const [existing] = await tx
+      .select({ id: merchandiseOptionAxes.id })
+      .from(merchandiseOptionAxes)
+      .where(
+        and(
+          eq(merchandiseOptionAxes.merchandiseItemId, itemId),
+          eq(merchandiseOptionAxes.name, axis.name),
+        ),
+      )
+    const [saved] = existing
+      ? await tx
+          .update(merchandiseOptionAxes)
+          .set({ position: index + 1 })
+          .where(eq(merchandiseOptionAxes.id, existing.id))
+          .returning({ id: merchandiseOptionAxes.id })
+      : await tx
+          .insert(merchandiseOptionAxes)
+          .values({ ...of, name: axis.name, position: index + 1 })
+          .returning({ id: merchandiseOptionAxes.id })
+    const axisId = saved!.id
+
+    for (const [place, label] of axis.values.entries()) {
+      const [held] = await tx
+        .select({ id: merchandiseOptionValues.id })
+        .from(merchandiseOptionValues)
+        .where(
+          and(eq(merchandiseOptionValues.axisId, axisId), eq(merchandiseOptionValues.label, label)),
+        )
+      const [value] = held
+        ? await tx
+            .update(merchandiseOptionValues)
+            .set({ position: place + 1 })
+            .where(eq(merchandiseOptionValues.id, held.id))
+            .returning({ id: merchandiseOptionValues.id })
+        : await tx
+            .insert(merchandiseOptionValues)
+            .values({ ...of, axisId, label, position: place + 1 })
+            .returning({ id: merchandiseOptionValues.id })
+      valueOf.set(label, { id: value!.id, axisId })
+      if (axis.sizeCharts) {
+        objects.push(await seedSizeChart(tx, of, value!.id, label, place))
+      }
+    }
+  }
+
+  const stored = await tx
+    .select({
+      variantId: merchandiseVariants.id,
+      valueId: merchandiseVariantValues.optionValueId,
+    })
+    .from(merchandiseVariants)
+    .leftJoin(
+      merchandiseVariantValues,
+      eq(merchandiseVariantValues.variantId, merchandiseVariants.id),
+    )
+    .where(eq(merchandiseVariants.merchandiseItemId, itemId))
+  const key = (valueIds: (string | null)[]) => valueIds.filter(Boolean).sort().join(' ')
+  const variantByKey = new Map(
+    [...Map.groupBy(stored, (row) => row.variantId)].map(([variantId, rows]) => [
+      key(rows.map((row) => row.valueId)),
+      variantId,
+    ]),
+  )
+  // An item without axes is sold as its one variant.
+  const wanted = item.variants ?? [{ values: [], stock: item.stock ?? 0 }]
+  const kept = new Set<string>()
+  for (const variant of wanted) {
+    const values = variant.values.map((label) => valueOf.get(label)!)
+    const existing = variantByKey.get(key(values.map((value) => value.id)))
+    if (existing) {
+      await tx
+        .update(merchandiseVariants)
+        .set({ stock: variant.stock, hiddenAt: null })
+        .where(eq(merchandiseVariants.id, existing))
+      kept.add(existing)
+      continue
+    }
+    const [made] = await tx
+      .insert(merchandiseVariants)
+      .values({ ...of, stock: variant.stock })
+      .returning({ id: merchandiseVariants.id })
+    kept.add(made!.id)
+    if (values.length > 0) {
+      await tx.insert(merchandiseVariantValues).values(
+        values.map((value) => ({
+          ...of,
+          variantId: made!.id,
+          axisId: value.axisId,
+          optionValueId: value.id,
+        })),
+      )
+    }
+  }
+  await tx
+    .delete(merchandiseVariants)
+    .where(
+      and(
+        eq(merchandiseVariants.merchandiseItemId, itemId),
+        notInArray(merchandiseVariants.id, [...kept]),
+      ),
+    )
+  return objects
+}
+
+/**
+ * The size chart of a value of a demo item: an empty table drawn by code, kept as the master the
+ * API makes its sizes from. The table has a row more for each value, so each chart is its own
+ * file.
+ */
+async function seedSizeChart(
+  tx: Tx,
+  of: { tenantId: string; editionId: string },
+  valueId: string,
+  label: string,
+  index: number,
+): Promise<PendingObject> {
+  const chart = demoChart(4 + index, 4)
+  const file = {
+    contentType: 'image/png',
+    size: chart.bytes.length,
+    sha256: createHash('sha256').update(chart.bytes).digest('hex'),
+    name: `Size chart - ${label}.png`,
+    width: chart.width,
+    height: chart.height,
+  }
+  const [held] = await tx
+    .select({ fileId: merchandiseSizeCharts.fileId })
+    .from(merchandiseSizeCharts)
+    .where(eq(merchandiseSizeCharts.optionValueId, valueId))
+  let fileId = held?.fileId
+  if (fileId) {
+    // The seed owns its demo files: a chart drawn anew since the last run is the file's new bytes.
+    await tx.update(uploadedFiles).set(file).where(eq(uploadedFiles.id, fileId))
+  } else {
+    const [kept] = await tx
+      .insert(uploadedFiles)
+      .values({
+        tenantId: of.tenantId,
+        editionId: of.editionId,
+        kind: SIZE_CHART_FILE_KIND,
+        ...file,
+      })
+      .returning({ id: uploadedFiles.id })
+    fileId = kept!.id
+    await tx
+      .insert(merchandiseSizeCharts)
+      .values({ tenantId: of.tenantId, editionId: of.editionId, optionValueId: valueId, fileId })
+  }
+  return { key: masterObjectKey(of.tenantId, fileId), bytes: chart.bytes, type: 'image/png' }
 }
 
 try {

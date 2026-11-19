@@ -418,6 +418,144 @@ describe('db:seed shop', () => {
     },
   )
 
+  // The catalog of the edition with an open shop (docs/specs/0003-catalog.md, Seed).
+  it(
+    'gives the coming edition a catalog: ticket types, add-ons, merchandise and custom fields',
+    { timeout: 120_000 },
+    async () => {
+      const run = runSeed('local')
+      expect(run.status, run.stderr).toBe(0)
+      const a = await tenantId('convention-a')
+      const edition = await editionId(a, '2026')
+
+      const types = await migrator`
+        select t.name, t.allows_child, t.allows_teen, t.allows_adult, t.discounts_excluded,
+          (select count(*)::int from ticket_type_price_tiers p where p.ticket_type_id = t.id) as tiers,
+          (select count(*)::int from ticket_type_supporter_prices s where s.ticket_type_id = t.id)
+            as supporter_prices,
+          (select count(*)::int from ticket_type_perks k where k.ticket_type_id = t.id) as perks,
+          (select count(*)::int from ticket_type_add_ons o where o.ticket_type_id = t.id) as add_ons,
+          (select count(*)::int from ticket_type_merchandise_items m where m.ticket_type_id = t.id)
+            as items
+        from ticket_types t where t.edition_id = ${edition} order by t.position
+      `
+      expect([...types]).toEqual([
+        // Two price tiers and supporter prices.
+        expect.objectContaining({
+          name: 'Standard',
+          allows_child: true,
+          discounts_excluded: false,
+          tiers: 2,
+          supporter_prices: 2,
+          add_ons: 2,
+          items: 2,
+        }),
+        // For adults only, and excluded from discounts.
+        expect.objectContaining({
+          name: 'Supporter',
+          allows_child: false,
+          allows_teen: false,
+          allows_adult: true,
+          discounts_excluded: true,
+          tiers: 1,
+        }),
+      ])
+      expect(types.every((type) => (type.perks as number) > 0)).toBe(true)
+
+      const addOns = await migrator`
+        select kind, capacity, places_left_threshold from add_ons
+        where edition_id = ${edition} order by position
+      `
+      expect([...addOns]).toEqual([
+        { kind: 'limited', capacity: 40, places_left_threshold: 10 },
+        { kind: 'headcount', capacity: null, places_left_threshold: null },
+      ])
+
+      // A T-shirt with two cuts and their sizes, a size chart a cut, one variant out of stock and
+      // one that does not exist; and an item without axes, sold as its one variant.
+      const items = await migrator`
+        select i.name,
+          (select count(*)::int from merchandise_option_axes x where x.merchandise_item_id = i.id)
+            as axes,
+          (select count(*)::int from merchandise_option_values v where v.merchandise_item_id = i.id)
+            as values,
+          (select count(*)::int from merchandise_variants v where v.merchandise_item_id = i.id)
+            as variants,
+          (select count(*)::int from merchandise_variants v
+            where v.merchandise_item_id = i.id and v.stock = 0) as sold_out,
+          (select count(*)::int from merchandise_size_charts c
+            join merchandise_option_values v on v.id = c.option_value_id
+            where v.merchandise_item_id = i.id) as size_charts
+        from merchandise_items i where i.edition_id = ${edition} order by i.position
+      `
+      expect([...items]).toEqual([
+        // Two cuts by four sizes are eight combinations, of which seven exist.
+        { name: 'T-shirt', axes: 2, values: 6, variants: 7, sold_out: 1, size_charts: 2 },
+        { name: 'Enamel pin', axes: 0, values: 0, variants: 1, sold_out: 0, size_charts: 0 },
+      ])
+
+      const [shop] = await migrator`
+        select teen_from_age, adult_from_age, guardian_consent_form_url, merch_only_enabled,
+          merch_preorder_deadline > now() as preorder_open, sales_closed_message is not null as message
+        from edition_shops where edition_id = ${edition}
+      `
+      expect(shop).toEqual({
+        teen_from_age: 13,
+        adult_from_age: 18,
+        guardian_consent_form_url: expect.stringMatching(/^https:/) as string,
+        merch_only_enabled: true,
+        preorder_open: true,
+        message: true,
+      })
+      const fields = await migrator`
+        select label, is_required from edition_custom_fields
+        where edition_id = ${edition} order by position
+      `
+      expect(fields).toHaveLength(2)
+      expect(fields.map((field) => field.is_required as boolean)).toEqual([true, false])
+    },
+  )
+
+  it(
+    'keeps each size chart as an image in the bucket, where the API reads its master',
+    { timeout: 120_000 },
+    async () => {
+      const run = runSeed('local')
+      expect(run.status, run.stderr).toBe(0)
+      const a = await tenantId('convention-a')
+      const charts = async () => [
+        ...(await migrator<
+          { id: string; size: number; sha256: string; content_type: string; width: number }[]
+        >`
+          select f.id, f.size, f.sha256, f.content_type, f.width
+          from merchandise_size_charts c join uploaded_files f on f.id = c.file_id
+          where c.tenant_id = ${a} order by f.id
+        `),
+      ]
+      const kept = await charts()
+      expect(kept).toHaveLength(2)
+      // The key the API's storage gives the master of an edition's image.
+      const key = (id: string) => `tenants/${a}/${id}/master`
+
+      for (const file of kept) {
+        const bytes = await object(key(file.id))
+        expect(bytes.subarray(1, 4).toString('latin1')).toBe('PNG')
+        expect(file.content_type).toBe('image/png')
+        expect(bytes.length).toBe(file.size)
+        expect(createHash('sha256').update(bytes).digest('hex')).toBe(file.sha256)
+        expect(file.width).toBeGreaterThan(0)
+      }
+
+      await bucket.send(
+        new DeleteObjectCommand({ Bucket: env('S3_BUCKET'), Key: key(kept[0]!.id) }),
+      )
+      expect(runSeed('local').status).toBe(0)
+
+      expect(await charts()).toEqual(kept)
+      expect((await object(key(kept[0]!.id))).length).toBe(kept[0]!.size)
+    },
+  )
+
   it('sets nothing of a shop for convention B', { timeout: 120_000 }, async () => {
     const run = runSeed('local')
     expect(run.status, run.stderr).toBe(0)
@@ -429,6 +567,10 @@ describe('db:seed shop', () => {
       'edition_shops',
       'edition_documents',
       'edition_consents',
+      'ticket_types',
+      'add_ons',
+      'merchandise_items',
+      'edition_custom_fields',
     ]) {
       const [row] = await migrator<{ count: number }[]>`
         select count(*)::int as count from ${migrator(table)} where tenant_id = ${b}

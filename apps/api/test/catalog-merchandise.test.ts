@@ -24,6 +24,7 @@ import {
   deleteCreatedTenants,
   member,
   type Member,
+  seededSizeChart,
   setPublished,
   storedFiles,
   storedRows,
@@ -843,6 +844,19 @@ describe("a picture as the edition's orgs read it", () => {
         expect(res.status).toBe(200)
         expect(res.headers['content-type']).toBe('image/webp')
         expect(res.headers['x-content-type-options']).toBe('nosniff')
+      }
+    })
+
+    // The seed writes the rows of its demo size charts and puts their masters into the bucket
+    // itself, under the keys the storage reads: this fails when the two stop agreeing.
+    it('is served for a size chart of the seed, made from the master the seed put into the bucket', async () => {
+      const fileId = await seededSizeChart('convention-a')
+      expect(fileId, 'run pnpm db:seed').toBeDefined()
+
+      for (const variant of ['small', 'large']) {
+        const res = await publicly('convention-a', fileId!, variant).expect(200)
+
+        expect(res.headers['content-type']).toBe('image/webp')
       }
     })
 

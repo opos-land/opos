@@ -61,6 +61,10 @@ export const errorCodes = [
   'file.limit-reached',
   'storage.unavailable',
   'images.unavailable',
+  'shop.open',
+  'shop.not-ready',
+  'provider.credentials-refused',
+  'provider.unavailable',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

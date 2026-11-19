@@ -11,6 +11,7 @@ import {
   addEditionAccess,
   addHead,
   addLogo,
+  addProviderAccount,
   addOrg,
   addProgramItem,
   closeTenantDb,
@@ -635,22 +636,43 @@ describe('concurrency', () => {
         body: { file: upload(png(40, 20), 'image/png', 'logo.png') },
       }),
       'branding.removeLogo': () => ({ method: 'delete', path: '/branding/logo' }),
+      'shop.seller.put': () => ({
+        method: 'put',
+        path: '/shop/seller',
+        body: {
+          sellerName: 'Late Ltd',
+          sellerAddress: '1 Main St',
+          sellerRegistrationNumber: '0000000000',
+          contactEmail: 'shop@late.test',
+        },
+      }),
+      'shop.providerAccount.put': () => ({
+        method: 'put',
+        path: '/shop/provider-account',
+        body: { provider: 'fake', credentials: { account: 'late' } },
+      }),
+      'shop.providerAccount.remove': () => ({ method: 'delete', path: '/shop/provider-account' }),
     }
 
     /**
-     * A tenant whose org holds settings=write, branding=write and program=write, another org to
-     * act on, a programme item and a logo.
+     * A tenant whose org holds settings=write, branding=write, shop=write and program=write,
+     * another org to act on, a programme item, a logo and a provider account.
      */
     async function setup(): Promise<Setup> {
       const t = await tenantWithHead()
       const edition = await addEdition(t.id)
       const [actor, other, newcomer] = await Promise.all([member(), member(), member()])
-      const orgId = await addOrg(t.id, actor, { settings: 'write', branding: 'write' })
+      const orgId = await addOrg(t.id, actor, {
+        settings: 'write',
+        branding: 'write',
+        shop: 'write',
+      })
       await addEditionAccess(t.id, orgId, edition, { program: 'write' })
       const otherId = await addOrg(t.id, other)
       await addEditionAccess(t.id, otherId, edition, {})
       const item = await addProgramItem(t.id, edition)
       await addLogo(t.id)
+      await addProviderAccount(t.id)
       return { t, edition, org: actor, orgId, otherId, newcomer, item }
     }
 
@@ -680,14 +702,21 @@ describe('concurrency', () => {
         const s = await setup()
         const expected = await tenantState(s.t.id)
         expected.memberships = expected.memberships.map((row) =>
-          row.id === s.orgId ? { ...row, settings_access: 'none', branding_access: 'none' } : row,
+          row.id === s.orgId
+            ? {
+                ...row,
+                settings_access: 'none',
+                branding_access: 'none',
+                shop_config_access: 'none',
+              }
+            : row,
         )
         expected.editionMemberships = expected.editionMemberships.map((row) =>
           row.tenant_membership_id === s.orgId ? { ...row, program_access: 'none' } : row,
         )
         const demotion = await openTransaction()
         await lockTenantWrites(demotion.sql, s.t)
-        await demotion.sql`update tenant_memberships set settings_access = 'none', branding_access = 'none' where id = ${s.orgId}`
+        await demotion.sql`update tenant_memberships set settings_access = 'none', branding_access = 'none', shop_config_access = 'none' where id = ${s.orgId}`
         await demotion.sql`update edition_memberships set program_access = 'none' where tenant_membership_id = ${s.orgId}`
 
         const pending = send(s, build(s))

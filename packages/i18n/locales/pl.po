@@ -15,6 +15,10 @@ msgstr "Konwent musi mieć co najmniej jednego głównego organizatora. Najpierw
 msgid "A head organizer already has access to every edition."
 msgstr "Główny organizator ma już dostęp do każdej edycji."
 
+#: src/errors.ts
+msgid "A shop of this convention is open. Close it first."
+msgstr "Sklep tego konwentu jest otwarty. Najpierw go zamknij."
+
 #: src/emails.ts
 msgid "Accept the invitation"
 msgstr "Przyjmij zaproszenie"
@@ -306,8 +310,20 @@ msgid "The password is too weak. Use at least 8 characters."
 msgstr "Hasło jest za słabe. Użyj co najmniej 8 znaków."
 
 #: src/errors.ts
+msgid "The payment provider did not answer. Try again in a moment."
+msgstr "Dostawca płatności nie odpowiada. Spróbuj ponownie za chwilę."
+
+#: src/errors.ts
+msgid "The payment provider refused these credentials. Check them and try again."
+msgstr "Dostawca płatności odrzucił te dane dostępowe. Sprawdź je i spróbuj ponownie."
+
+#: src/errors.ts
 msgid "The service is temporarily unavailable. Try again in a moment."
 msgstr "Usługa jest chwilowo niedostępna. Spróbuj ponownie za chwilę."
+
+#: src/errors.ts
+msgid "The shop cannot be opened yet: something it needs is missing."
+msgstr "Sklepu nie można jeszcze otworzyć: brakuje czegoś, czego potrzebuje."
 
 #: src/errors.ts
 msgid "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."

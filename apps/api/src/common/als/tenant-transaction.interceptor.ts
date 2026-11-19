@@ -3,11 +3,13 @@ import {
   type ExecutionContext,
   Injectable,
   type NestInterceptor,
+  type Type,
 } from '@nestjs/common'
 import { ModuleRef, Reflector } from '@nestjs/core'
 import { uploadedFileSchema } from '@opos/contract'
 import { from, lastValueFrom, type Observable } from 'rxjs'
 import { GlobalDbService } from '../database/global-db.service'
+import { PREPARES, type Preparation } from '../decorators/prepares.decorator'
 import { TENANT_REQUIREMENT } from '../decorators/require-tenant.decorator'
 import {
   ApiError,
@@ -64,7 +66,10 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     const response = http.getResponse<{ statusCode: number }>()
     const takesFile = this.reflector.get<TakesFileOptions | undefined>(TAKES_FILE, ctx.getHandler())
     const servesFile = this.reflector.get<boolean | undefined>(SERVES_FILE, ctx.getHandler())
-    return from(this.handle(requirement, request, response, next, { takesFile, servesFile }))
+    const prepares = this.reflector.get<Type<Preparation> | undefined>(PREPARES, ctx.getHandler())
+    return from(
+      this.handle(requirement, request, response, next, { takesFile, servesFile, prepares }),
+    )
   }
 
   private async handle(
@@ -72,7 +77,11 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     request: HttpRequest,
     response: { statusCode: number },
     next: CallHandler,
-    files: { takesFile?: TakesFileOptions; servesFile?: boolean } = {},
+    files: {
+      takesFile?: TakesFileOptions
+      servesFile?: boolean
+      prepares?: Type<Preparation>
+    } = {},
   ) {
     const slug = request.headers['x-tenant-slug']
     if (typeof slug !== 'string' || !slug) {
@@ -133,6 +142,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
     }
     if (files.takesFile && !write) throw new Error('A route that takes a file is a write')
+    if (files.prepares && !write) throw new Error('A route that prepares is a write')
     if (!write) return run()
     // A write is checked once in a short transaction of its own, so a refused one never queues,
     // then waits in its tenant's queue without a connection, then runs and gives its turn back
@@ -142,6 +152,13 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       // The tenant whose requirement just passed, under whose keys the bytes lie.
       enter()
       await this.receive(files.takesFile, request)
+    }
+    if (files.prepares) {
+      // The tenant whose requirement just passed, and no transaction: the outbound call the
+      // route's transaction then acts on, such as a payment provider's check of credentials.
+      enter()
+      const preparation = this.modules.get<Preparation>(files.prepares, { strict: false })
+      TenantContextService.store().prepared = await preparation.prepare(request.body)
     }
     return this.queue.run(tenant.id, (release) => run(release))
   }

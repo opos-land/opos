@@ -110,6 +110,37 @@ export async function addLogo(tenantId: string, width = 400, height = 200) {
   return { fileId: rows[0]!.id, width, height }
 }
 
+/** Opens the shop of an edition, as its settings do. */
+export const openShop = (tenantId: string, editionId: string) =>
+  db.execute(sql`
+    insert into edition_shops (tenant_id, edition_id, opened_at)
+    values (${tenantId}, ${editionId}, now())
+    on conflict (edition_id) do update set opened_at = now()
+  `)
+
+/** Closes the shop of an edition. */
+export const closeShop = (editionId: string) =>
+  db.execute(sql`update edition_shops set opened_at = null where edition_id = ${editionId}`)
+
+/**
+ * A provider account of the tenant as its row alone, with credentials nothing opens: for a test
+ * of what a refused request leaves, or of a disconnection.
+ */
+export const addProviderAccount = (tenantId: string) =>
+  db.execute(sql`
+    insert into payment_provider_accounts (tenant_id, provider, credentials, ready_at)
+    values (${tenantId}, 'fake', 'sealed', now())
+  `)
+
+/** The provider account of the tenant, as stored. */
+export const storedProviderAccount = async (tenantId: string) =>
+  (
+    await db.execute<{ provider: string; credentials: string; readyAt: string | null }>(sql`
+      select provider, credentials, ready_at as "readyAt"
+      from payment_provider_accounts where tenant_id = ${tenantId}
+    `)
+  )[0]
+
 /** The file the tenant's logo points at, as stored. */
 export const logoOf = async (tenantId: string) =>
   (
@@ -322,6 +353,14 @@ export async function tenantState(tenantId: string) {
   const logos = await db.execute(
     sql`select file_id from tenant_logos where tenant_id = ${tenantId}`,
   )
+  const sellers = await db.execute(sql`
+    select seller_name, seller_address, seller_registration_number, contact_email
+    from shop_sellers where tenant_id = ${tenantId}
+  `)
+  const providerAccounts = await db.execute(sql`
+    select provider, credentials, ready_at, created_at
+    from payment_provider_accounts where tenant_id = ${tenantId}
+  `)
   const files = await db.execute(
     sql`select id, kind from uploaded_files where tenant_id = ${tenantId} order by id`,
   )
@@ -345,6 +384,8 @@ export async function tenantState(tenantId: string) {
     tenant,
     logos: [...logos],
     files: [...files],
+    sellers: [...sellers],
+    providerAccounts: [...providerAccounts],
     editions: [...editions],
     memberships: [...memberships],
     editionMemberships: [...editionMemberships],

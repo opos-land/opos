@@ -51,6 +51,10 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'file.limit-reached': msg`There is no room for more files. Remove the ones you no longer need.`,
   'storage.unavailable': msg`Files are temporarily unavailable. Try again in a moment.`,
   'images.unavailable': msg`Images are temporarily unavailable. Try again in a moment.`,
+  'shop.open': msg`A shop of this convention is open. Close it first.`,
+  'shop.not-ready': msg`The shop cannot be opened yet: something it needs is missing.`,
+  'provider.credentials-refused': msg`The payment provider refused these credentials. Check them and try again.`,
+  'provider.unavailable': msg`The payment provider did not answer. Try again in a moment.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 
   'tenant.not-found': msg`We could not find this convention.`,

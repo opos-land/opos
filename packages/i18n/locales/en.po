@@ -15,6 +15,10 @@ msgstr "A convention must keep at least one head organizer. Make someone else a 
 msgid "A head organizer already has access to every edition."
 msgstr "A head organizer already has access to every edition."
 
+#: src/errors.ts
+msgid "A shop of this convention is open. Close it first."
+msgstr "A shop of this convention is open. Close it first."
+
 #: src/emails.ts
 msgid "Accept the invitation"
 msgstr "Accept the invitation"
@@ -306,8 +310,20 @@ msgid "The password is too weak. Use at least 8 characters."
 msgstr "The password is too weak. Use at least 8 characters."
 
 #: src/errors.ts
+msgid "The payment provider did not answer. Try again in a moment."
+msgstr "The payment provider did not answer. Try again in a moment."
+
+#: src/errors.ts
+msgid "The payment provider refused these credentials. Check them and try again."
+msgstr "The payment provider refused these credentials. Check them and try again."
+
+#: src/errors.ts
 msgid "The service is temporarily unavailable. Try again in a moment."
 msgstr "The service is temporarily unavailable. Try again in a moment."
+
+#: src/errors.ts
+msgid "The shop cannot be opened yet: something it needs is missing."
+msgstr "The shop cannot be opened yet: something it needs is missing."
 
 #: src/errors.ts
 msgid "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."

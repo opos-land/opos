@@ -8,6 +8,7 @@ import { invitationsContract } from './invitations'
 import { meContract } from './me'
 import { programContract } from './program'
 import { publicContract } from './public'
+import { shopContract } from './shop'
 import { tenantsContract } from './tenants'
 
 /** The API contract: the API implements it, clients call through it. */
@@ -21,6 +22,7 @@ export const contract = {
   invitations: invitationsContract,
   program: programContract,
   public: publicContract,
+  shop: shopContract,
   engagement: engagementContract,
   admin: adminContract,
 }
@@ -41,4 +43,5 @@ export * from './invitations'
 export * from './me'
 export * from './program'
 export * from './public'
+export * from './shop'
 export * from './tenants'

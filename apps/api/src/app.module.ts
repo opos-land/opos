@@ -37,8 +37,10 @@ import { EngagementModule } from './modules/engagement/engagement.module'
 import { FilesModule } from './modules/files/files.module'
 import { FILE_KINDS, type FileKind } from './modules/files/kinds'
 import { HealthModule } from './modules/health/health.module'
+import { PaymentsModule } from './modules/payments/payments.module'
 import { ProgramModule } from './modules/program/program.module'
 import { PublicModule } from './modules/public/public.module'
+import { ShopModule } from './modules/shop/shop.module'
 import { TenantsModule } from './modules/tenants/tenants.module'
 
 @Module({})
@@ -68,6 +70,7 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
         rateLimitModule(verifier, rateLimit, env),
         DatabaseModule,
         FilesModule.register(fileKinds),
+        PaymentsModule,
         HealthModule,
         MeModule,
         AuthModule,
@@ -77,6 +80,7 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
         ProgramModule,
         PublicModule,
         EngagementModule,
+        ShopModule,
         // Only a process that holds the connection of opos_admin serves the admin routes.
         ...(env.DATABASE_ADMIN_URL ? [AdminModule] : []),
       ],

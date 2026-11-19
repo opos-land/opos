@@ -49,6 +49,8 @@ export interface RequestStore {
   afterCommit?: (() => unknown)[]
   /** The file a route that takes one received before its transaction (modules/files). */
   received?: unknown
+  /** What a route marked @Prepares did before its transaction (decorators/prepares.decorator). */
+  prepared?: unknown
   /** The response oRPC is ready to send, held until the tenant transaction ends. */
   deferredResponse?: { status: number; send: () => unknown }
 }
@@ -143,6 +145,14 @@ export class TenantContextService {
 
   membership(): TenantMembership | null {
     return TenantContextService.store().membership ?? null
+  }
+
+  /** What the preparation of a route marked @Prepares answered, before the route's transaction. */
+  prepared<T>(): T {
+    const store = TenantContextService.store()
+    if (!('prepared' in store))
+      throw new Error('Nothing was prepared: the route is not marked @Prepares')
+    return store.prepared as T
   }
 
   /** Runs `fn` after the open tenant or account transaction commits; dropped when it rolls back. */

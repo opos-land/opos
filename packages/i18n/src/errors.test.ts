@@ -33,6 +33,24 @@ describe('errorMessage', () => {
     )
   })
 
+  // The setup of the shop (docs/specs/0002-shop-setup.md): what an org reads when the shop or its
+  // payment provider refuses.
+  it.each([
+    ['shop.open', 'Sklep tego konwentu jest otwarty. Najpierw go zamknij.'],
+    ['shop.not-ready', 'Sklepu nie można jeszcze otworzyć: brakuje czegoś, czego potrzebuje.'],
+    [
+      'provider.credentials-refused',
+      'Dostawca płatności odrzucił te dane dostępowe. Sprawdź je i spróbuj ponownie.',
+    ],
+    ['provider.unavailable', 'Dostawca płatności nie odpowiada. Spróbuj ponownie za chwilę.'],
+  ] as const)('says %s in Polish', async (code, text) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage(code)).not.toBe(unknownError)
+    expect(i18n._(errorMessage(code))).toBe(text)
+  })
+
   it('says that a convention is suspended, with the glossary rendering', async () => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

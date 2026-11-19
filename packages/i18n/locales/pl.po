@@ -21,7 +21,7 @@ msgstr "Główny organizator ma już dostęp do każdej edycji."
 
 #: src/errors.ts
 msgid "A shop of this convention is open. Close it first."
-msgstr "Sklep tego konwentu jest otwarty. Najpierw go zamknij."
+msgstr "Sklep jednej z edycji tego konwentu jest otwarty. Najpierw go zamknij."
 
 #: src/emails.ts
 msgid "Accept the invitation"

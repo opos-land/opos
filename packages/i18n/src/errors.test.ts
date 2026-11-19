@@ -36,7 +36,7 @@ describe('errorMessage', () => {
   // The setup of the shop (docs/specs/0002-shop-setup.md): what an org reads when the shop or its
   // payment provider refuses.
   it.each([
-    ['shop.open', 'Sklep tego konwentu jest otwarty. Najpierw go zamknij.'],
+    ['shop.open', 'Sklep jednej z edycji tego konwentu jest otwarty. Najpierw go zamknij.'],
     ['shop.not-ready', 'Sklepu nie można jeszcze otworzyć: brakuje czegoś, czego potrzebuje.'],
     [
       'provider.credentials-refused',

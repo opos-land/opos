@@ -246,6 +246,20 @@
       "when": 1795045032926,
       "tag": "0034_file_storage_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795052033081,
+      "tag": "0035_edition_venue_and_tenant_logos",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795052041450,
+      "tag": "0036_edition_venue_and_tenant_logos_privileges",
+      "breakpoints": true
     }
   ]
 }

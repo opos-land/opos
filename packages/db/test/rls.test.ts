@@ -25,6 +25,7 @@ const covered = [
   ['program_item_speakers', 'tenant_id'],
   ['program_item_likes', 'tenant_id'],
   ['uploaded_files', 'tenant_id'],
+  ['tenant_logos', 'tenant_id'],
 ] as const
 
 class Rollback extends Error {}
@@ -34,7 +35,7 @@ let b: Awaited<ReturnType<typeof createTenant>>
 
 /**
  * A tenant with a row in every covered table: its head membership, an edition, its access, an
- * accepted invitation, a programme item with a speaker and a like, and an uploaded file.
+ * accepted invitation, a programme item with a speaker and a like, an uploaded file, and a logo.
  */
 async function populated() {
   const tenant = await createTenant()
@@ -59,6 +60,12 @@ async function populated() {
     insert into uploaded_files (tenant_id, edition_id, kind, content_type, size, sha256, name)
     values (${tenant.id}, ${edition}, 'test', 'application/pdf', 1, ${'0'.repeat(64)}, 'a.pdf')
   `
+  const [logo] = await migrator<{ id: string }[]>`
+    insert into uploaded_files (tenant_id, kind, content_type, size, sha256, name, width, height)
+    values (${tenant.id}, 'convention-logo', 'image/png', 1, ${'0'.repeat(64)}, 'logo.png', 4, 3)
+    returning id
+  `
+  await migrator`insert into tenant_logos (tenant_id, file_id) values (${tenant.id}, ${logo!.id})`
   return tenant
 }
 
@@ -251,6 +258,9 @@ describe('tenant isolation', () => {
     const [item] = await migrator<{ id: string }[]>`
       select id from program_items where tenant_id = ${a.id}
     `
+    const [file] = await migrator<{ id: string }[]>`
+      select id from uploaded_files where tenant_id = ${a.id} and kind = 'test'
+    `
     // An account without a membership in a: only WITH CHECK can refuse it.
     const outsider = await createUser()
 
@@ -270,6 +280,7 @@ describe('tenant isolation', () => {
        values ('${a.id}', '${item!.id}', '${outsider.id}')`,
       `insert into uploaded_files (tenant_id, kind, content_type, size, sha256, name)
        values ('${a.id}', 'test', 'image/png', 1, repeat('0', 64), 'a.png')`,
+      `insert into tenant_logos (tenant_id, file_id) values ('${a.id}', '${file!.id}')`,
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /row-level security/,
@@ -455,6 +466,37 @@ describe('runtime privileges', () => {
       `
       await sql`delete from program_item_likes where program_item_id = ${item!.id}`
       await sql`delete from program_items where id = ${item!.id}`
+    })
+  })
+
+  it('lets opos_app replace and remove a logo, and change none', async () => {
+    await inTenant(b.id, async (sql) => {
+      const [gone] = await sql<{ fileId: string }[]>`
+        delete from tenant_logos returning file_id as "fileId"
+      `
+      await sql`insert into tenant_logos (tenant_id, file_id) values (${b.id}, ${gone!.fileId})`
+    })
+    for (const statement of [
+      'update tenant_logos set file_id = file_id',
+      'update tenant_logos set tenant_id = tenant_id',
+    ]) {
+      await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
+        /permission denied/,
+      )
+    }
+  })
+
+  it('lets opos_app set and clear the venue of an edition', async () => {
+    const edition = await createEdition(b.id)
+    await inTenant(b.id, async (sql) => {
+      await sql`
+        update editions set venue_name = 'Hall', venue_address = '1 Main St', venue_city = 'Poznań'
+        where id = ${edition}
+      `
+      await sql`
+        update editions set venue_name = null, venue_address = null, venue_city = null
+        where id = ${edition}
+      `
     })
   })
 

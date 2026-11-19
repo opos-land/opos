@@ -313,6 +313,30 @@ describe('verifyDatabase', () => {
       },
     )
 
+    it('reports opos_app updating tenant_logos, whose row is replaced and never changed', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant update (file_id) on public.tenant_logos to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app UPDATE \(file_id\) on tenant_logos/)
+    })
+
+    it.each([
+      ['editions', 'venue_name'],
+      ['editions', 'venue_address'],
+      ['tenant_logos', 'created_at'],
+      ['uploaded_files', 'sha256'],
+    ])(
+      'reports opos_app_global reading %s.%s, which the list of editions never shows',
+      async (table, column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+        )
+      },
+    )
+
     it('reports RLS on account_files, a global table', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`alter table public.account_files enable row level security`),
@@ -345,7 +369,7 @@ describe('verifyDatabase', () => {
     })
 
     it.each([
-      ['editions', 'ends_at'],
+      ['editions', 'is_active'],
       ['tenants', 'created_at'],
       ['accepted_invitations', 'jti'],
     ])(

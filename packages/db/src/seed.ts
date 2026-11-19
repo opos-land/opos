@@ -57,6 +57,10 @@ interface SeedEdition {
   endsAt: Date
   isActive: boolean
   isPublished: boolean
+  /** Where the edition takes place, as its page and the list of editions show it. */
+  venueName: string
+  venueAddress: string
+  venueCity: string
   program: SeedItem[]
 }
 
@@ -142,6 +146,9 @@ const TENANTS: SeedTenant[] = [
         endsAt: new Date('2025-06-15T18:00:00Z'),
         isActive: false,
         isPublished: true,
+        venueName: 'Old Brewery Hall',
+        venueAddress: 'ul. Przykładowa 12',
+        venueCity: 'Poznań',
         program: [
           { title: 'Opening ceremony' },
           {
@@ -167,6 +174,9 @@ const TENANTS: SeedTenant[] = [
         ...upcoming(2),
         isActive: true,
         isPublished: true,
+        venueName: 'Exhibition Grounds, Hall 3',
+        venueAddress: 'ul. Przykładowa 40',
+        venueCity: 'Poznań',
         program: [
           { title: 'Opening ceremony' },
           {
@@ -218,6 +228,9 @@ const TENANTS: SeedTenant[] = [
         ...upcoming(1),
         isActive: true,
         isPublished: true,
+        venueName: 'Riverside Community Centre',
+        venueAddress: 'Vzorová 7',
+        venueCity: 'Praha',
         program: [
           { title: 'Welcome talk' },
           { title: 'An introduction to live role-play' },
@@ -242,6 +255,9 @@ const TENANTS: SeedTenant[] = [
         ...upcoming(1),
         isActive: true,
         isPublished: true,
+        venueName: 'Student Union',
+        venueAddress: 'ul. Przykładowa 3',
+        venueCity: 'Wrocław',
         program: [
           { title: 'Welcome talk' },
           { title: 'Heraldry for invented kingdoms', likedBy: ['attendee@example.com'] },
@@ -486,6 +502,9 @@ async function seedTenant(spec: SeedTenant) {
             endsAt: edition.endsAt,
             isActive: edition.isActive,
             isPublished: edition.isPublished,
+            venueName: edition.venueName,
+            venueAddress: edition.venueAddress,
+            venueCity: edition.venueCity,
           },
         })
         .returning({ id: editions.id })

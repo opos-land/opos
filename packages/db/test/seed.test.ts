@@ -1,6 +1,11 @@
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { DeleteObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3'
 import { describe, expect, it } from 'vitest'
 import { open, providerAccountOf, sealingKey } from '../src/sealed'
 import { migrator } from './db'
@@ -555,6 +560,40 @@ describe('db:seed shop', () => {
       expect((await object(key(kept[0]!.id))).length).toBe(kept[0]!.size)
     },
   )
+
+  // The API keeps the sizes it made of a master and reads them before it makes them again: a
+  // master the seed draws anew must not leave the sizes of the old one behind.
+  it('takes away the sizes made of a size chart it draws anew', { timeout: 120_000 }, async () => {
+    expect(runSeed('local').status).toBe(0)
+    const a = await tenantId('convention-a')
+    const [chart] = await migrator<{ id: string; sha256: string }[]>`
+        select f.id, f.sha256 from merchandise_size_charts c
+        join uploaded_files f on f.id = c.file_id where c.tenant_id = ${a} order by f.id limit 1
+      `
+    const small = `tenants/${a}/${chart!.id}/small`
+    await bucket.send(
+      new PutObjectCommand({
+        Bucket: env('S3_BUCKET'),
+        Key: small,
+        Body: Buffer.from('made of another master'),
+        ContentType: 'image/webp',
+      }),
+    )
+
+    // The same master: its sizes stay.
+    expect(runSeed('local').status).toBe(0)
+    expect((await object(small)).toString()).toBe('made of another master')
+
+    // The row tells of other bytes than the seed draws now: the master is put anew.
+    await migrator`update uploaded_files set sha256 = ${'0'.repeat(64)} where id = ${chart!.id}`
+    expect(runSeed('local').status).toBe(0)
+
+    await expect(object(small)).rejects.toThrow()
+    const [again] = await migrator<{ sha256: string }[]>`
+        select sha256 from uploaded_files where id = ${chart!.id}
+      `
+    expect(again!.sha256).toBe(chart!.sha256)
+  })
 
   it('sets nothing of a shop for convention B', { timeout: 120_000 }, async () => {
     const run = runSeed('local')

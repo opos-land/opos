@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { DeleteObjectsCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { and, eq, notInArray, sql } from 'drizzle-orm'
 import { grantAdmin } from './admins'
 import { migrationDb } from './client'
@@ -581,6 +581,8 @@ const bucket = new S3Client({
 const DOCUMENT_FILE_KIND = 'edition-document'
 /** The kind the API declares for the size chart of a value of a merchandise item. */
 const SIZE_CHART_FILE_KIND = 'merchandise-size-chart'
+/** The sizes the API makes of a size chart's master, each an object beside it. */
+const CHART_SIZES = ['small', 'large']
 
 /**
  * Where the API's storage reads an edition's file that is no image: under its tenant and the
@@ -597,6 +599,8 @@ interface PendingObject {
   key: string
   bytes: Buffer
   type: string
+  /** Objects made of what this one replaces, which go once it is put. */
+  stale?: string[]
 }
 
 /** A call to Supabase Auth, authorized by the secret key alone, or by a session on top of it. */
@@ -922,7 +926,7 @@ async function seedTenant(spec: SeedTenant) {
 
   // The rows are committed: the bucket gets the files they point at. A file already there is put
   // again with the same bytes, so a bucket that lost one gets it back.
-  for (const { key, bytes, type } of objects) {
+  for (const { key, bytes, type, stale = [] } of objects) {
     await bucket.send(
       new PutObjectCommand({
         Bucket: s3.bucket,
@@ -931,6 +935,14 @@ async function seedTenant(spec: SeedTenant) {
         ContentType: type,
       }),
     )
+    if (stale.length > 0) {
+      await bucket.send(
+        new DeleteObjectsCommand({
+          Bucket: s3.bucket,
+          Delete: { Objects: stale.map((Key) => ({ Key })) },
+        }),
+      )
+    }
   }
 
   // A demo tenant is suspended or not as the list says, whatever an admin did to it since.
@@ -1400,10 +1412,13 @@ async function seedSizeChart(
     height: chart.height,
   }
   const [held] = await tx
-    .select({ fileId: merchandiseSizeCharts.fileId })
+    .select({ fileId: merchandiseSizeCharts.fileId, sha256: uploadedFiles.sha256 })
     .from(merchandiseSizeCharts)
+    .innerJoin(uploadedFiles, eq(uploadedFiles.id, merchandiseSizeCharts.fileId))
     .where(eq(merchandiseSizeCharts.optionValueId, valueId))
   let fileId = held?.fileId
+  // The API keeps the sizes it made of a master: those of a master drawn anew go with it.
+  const redrawn = held !== undefined && held.sha256 !== file.sha256
   if (fileId) {
     // The seed owns its demo files: a chart drawn anew since the last run is the file's new bytes.
     await tx.update(uploadedFiles).set(file).where(eq(uploadedFiles.id, fileId))
@@ -1422,7 +1437,13 @@ async function seedSizeChart(
       .insert(merchandiseSizeCharts)
       .values({ tenantId: of.tenantId, editionId: of.editionId, optionValueId: valueId, fileId })
   }
-  return { key: masterObjectKey(of.tenantId, fileId), bytes: chart.bytes, type: 'image/png' }
+  const key = masterObjectKey(of.tenantId, fileId)
+  return {
+    key,
+    bytes: chart.bytes,
+    type: 'image/png',
+    stale: redrawn ? CHART_SIZES.map((size) => key.replace(/master$/, size)) : [],
+  }
 }
 
 try {

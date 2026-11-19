@@ -120,7 +120,7 @@ export function AddOnForm({
             )}
           </FormField>
           <FormField
-            label={t`Show the places left below`}
+            label={t`Show the places left when fewer than`}
             hint={t`The shop shows how many places are left only once fewer than this many remain. Leave it empty to never show them.`}
             error={wrong('threshold') && t`Enter a whole number from 1, or leave it empty.`}
           >

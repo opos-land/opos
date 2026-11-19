@@ -1,5 +1,5 @@
 import { msg } from '@lingui/core/macro'
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { type AddOn } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
@@ -24,6 +24,7 @@ export function AddOnRow({
   last: boolean
   canWrite: boolean
 }) {
+  const { i18n } = useLingui()
   const { api } = useCurrentTenant()
   const money = useMoney()
   const queryClient = useQueryClient()
@@ -31,7 +32,7 @@ export function AddOnRow({
   const [editing, setEditing] = useState(false)
   const params = { editionId: addOn.editionId, addOnId: addOn.id }
   const name = addOn.name
-  const capacity = addOn.capacity ?? 0
+  const capacity = i18n.number(addOn.capacity ?? 0)
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: catalogKey(api) })
   const update = useMutation({

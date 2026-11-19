@@ -34,7 +34,7 @@ msgstr "{name}: ukryty"
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "{name}: stock"
-msgstr "{name}: stan"
+msgstr "{name}: stan magazynowy"
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "{name}: unlimited"
@@ -42,7 +42,7 @@ msgstr "{name}: bez limitu"
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "A combination that is not ticked does not exist and cannot be bought. A variant at zero stock shows as unavailable. An unlimited variant sells only until the pre-order deadline of the edition."
-msgstr "Kombinacja, która nie jest zaznaczona, nie istnieje i nie można jej kupić. Wariant ze stanem zero jest widoczny jako niedostępny. Wariant bez limitu sprzedaje się tylko do terminu przedsprzedaży edycji."
+msgstr "Kombinacja, która nie jest zaznaczona, nie istnieje i nie można jej kupić. Wariant ze stanem magazynowym zero jest widoczny jako niedostępny. Wariant „bez limitu” sprzedaje się tylko do terminu przedsprzedaży edycji."
 
 #: src/features/shop/components/consent-form.tsx
 msgid "A consent links its document for good. To link another one, add a new consent."
@@ -50,11 +50,11 @@ msgstr "Zgoda odsyła do swojego dokumentu na stałe. Aby odesłać do innego, d
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "A custom field must not ask about health, beliefs, an identity document number or anything else a convention does not need to let a person in."
-msgstr "Pole dodatkowe nie może pytać o zdrowie, przekonania, numer dokumentu tożsamości ani o nic innego, czego konwent nie potrzebuje, żeby wpuścić osobę na miejsce."
+msgstr "Pole dodatkowe nie może pytać o zdrowie, przekonania, numer dokumentu tożsamości ani o nic innego, czego konwent nie potrzebuje, żeby wpuścić daną osobę."
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "A form for a teen’s guardian to print and sign, linked from the checkout. Leave it empty for none."
-msgstr "Formularz, który opiekun nastolatka drukuje i podpisuje; link do niego pokazuje się przy składaniu zamówienia. Zostaw puste, jeśli go nie ma."
+msgstr "Formularz, który opiekun nastolatka drukuje i podpisuje; link do niego pokazuje się przy składaniu zamówienia. Zostaw pole puste, jeśli go nie ma."
 
 #: src/features/team/pages/edition-access-page.tsx
 msgid "A head organizer already has access to every edition."
@@ -74,7 +74,7 @@ msgstr "Obraz JPEG, PNG lub WebP o rozmiarze do 2 MB."
 
 #: src/features/catalog/components/image-picker.tsx
 msgid "A JPEG, PNG or WebP image of up to 5 MB."
-msgstr "Obraz JPEG, PNG albo WebP, do 5 MB."
+msgstr "Obraz JPEG, PNG lub WebP o rozmiarze do 5 MB."
 
 #: src/features/editions/pages/new-edition-page.tsx
 msgid "A new edition starts inactive and unpublished."
@@ -198,10 +198,14 @@ msgstr "Dodaj pole dodatkowe"
 msgid "Add the document"
 msgstr "Dodaj dokument"
 
-#: src/features/catalog/pages/merchandise-item-page.tsx
 #: src/features/program/pages/program-page.tsx
 msgid "Add the item"
 msgstr "Dodaj punkt programu"
+
+#: src/features/catalog/pages/merchandise-item-page.tsx
+msgctxt "a merchandise item"
+msgid "Add the item"
+msgstr "Dodaj gadżet"
 
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "Add the picture"
@@ -218,7 +222,7 @@ msgstr "Dodatki"
 
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "Add-ons in their order"
-msgstr "Dodatki w ich kolejności"
+msgstr "Dodatki w kolejności wyświetlania"
 
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "Add-ons of the edition"
@@ -379,7 +383,7 @@ msgstr "Nie możesz się zalogować?"
 #: src/features/catalog/components/ticket-type-form.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
 msgid "Capacity"
-msgstr "Limit sztuk"
+msgstr "Limit akredytacji"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Child"
@@ -525,7 +529,7 @@ msgstr "Pola dodatkowe"
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "Custom fields in their order"
-msgstr "Pola dodatkowe w ich kolejności"
+msgstr "Pola dodatkowe w kolejności wyświetlania"
 
 #: src/features/account/pages/account-page.tsx
 msgid "Dark"
@@ -585,6 +589,7 @@ msgid "Delete the edition {editionName}?"
 msgstr "Usunąć edycję {editionName}?"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
+msgctxt "a merchandise item"
 msgid "Delete the item"
 msgstr "Usuń gadżet"
 
@@ -618,7 +623,7 @@ msgstr "Usunięcia punktu programu nie można cofnąć."
 
 #: src/features/catalog/pages/ticket-type-page.tsx
 msgid "Deleting a ticket type cannot be undone. To take it out of the shop for a while, hide it in the list of ticket types instead."
-msgstr "Usunięcia rodzaju akredytacji nie da się cofnąć. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go na liście rodzajów akredytacji."
+msgstr "Usunięcia rodzaju akredytacji nie można cofnąć. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go na liście rodzajów akredytacji."
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
@@ -626,7 +631,7 @@ msgstr "Usunięcia edycji nie można cofnąć. Aktywnej edycji nie można usuną
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 msgid "Deleting an item cannot be undone. To take it out of the shop for a while, hide it in the list of merchandise instead."
-msgstr "Usunięcia gadżetu nie da się cofnąć. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go na liście gadżetów."
+msgstr "Usunięcia gadżetu nie można cofnąć. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go na liście gadżetów."
 
 #: src/features/catalog/components/add-on-form.tsx
 #: src/features/catalog/components/item-form.tsx
@@ -720,7 +725,7 @@ msgstr "Podaj nazwę miasta o długości do 100 znaków."
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Enter a date and a time, or leave it empty."
-msgstr "Wpisz datę i godzinę albo zostaw puste."
+msgstr "Podaj datę i godzinę albo zostaw pole puste."
 
 #: src/features/team/components/invite-form.tsx
 msgid "Enter a date and time in the future."
@@ -736,7 +741,7 @@ msgstr "Podaj nazwę o długości do 200 znaków."
 #: src/features/catalog/components/item-form.tsx
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Enter a name."
-msgstr "Wpisz nazwę."
+msgstr "Podaj nazwę."
 
 #: src/features/shop/components/seller-section.tsx
 msgid "Enter a number of up to 50 characters."
@@ -760,19 +765,19 @@ msgstr "Podaj prawidłowy adres e-mail."
 
 #: src/features/catalog/components/item-form.tsx
 msgid "Enter a whole number from 1 to 100."
-msgstr "Wpisz liczbę całkowitą od 1 do 100."
+msgstr "Podaj liczbę całkowitą od 1 do 100."
 
 #: src/features/catalog/components/add-on-form.tsx
 msgid "Enter a whole number from 1, or leave it empty."
-msgstr "Wpisz liczbę całkowitą od 1 albo zostaw puste."
+msgstr "Podaj liczbę całkowitą od 1 albo zostaw pole puste."
 
 #: src/features/catalog/components/add-on-form.tsx
 msgid "Enter a whole number of places."
-msgstr "Wpisz liczbę miejsc jako liczbę całkowitą."
+msgstr "Podaj liczbę miejsc jako liczbę całkowitą."
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Enter a whole number, or leave it empty."
-msgstr "Wpisz liczbę całkowitą albo zostaw puste."
+msgstr "Podaj liczbę całkowitą albo zostaw pole puste."
 
 #: src/features/editions/components/edition-form.tsx
 msgid "Enter an address of up to 300 characters."
@@ -790,7 +795,7 @@ msgstr "Podaj adres zaczynający się od https:// lub http://."
 #: src/features/catalog/components/add-on-form.tsx
 #: src/features/catalog/components/item-form.tsx
 msgid "Enter an amount, such as 40 or 40.50."
-msgstr "Wpisz kwotę, na przykład 40 albo 40,50."
+msgstr "Podaj kwotę, na przykład 40 albo 40,50."
 
 #: src/features/shop/components/seller-section.tsx
 msgid "Enter an email address, or leave the field empty."
@@ -798,11 +803,11 @@ msgstr "Podaj adres e-mail albo zostaw pole puste."
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "Enter both ages as whole numbers, the second higher than the first, or leave both empty."
-msgstr "Wpisz oba progi wieku jako liczby całkowite, drugi wyższy od pierwszego, albo zostaw oba pola puste."
+msgstr "Podaj obie granice wieku jako liczby całkowite, drugą wyższą od pierwszej, albo zostaw oba pola puste."
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Enter each supporter price as an amount above zero, each once."
-msgstr "Wpisz każdą cenę wspierającą jako kwotę większą od zera, każdą tylko raz."
+msgstr "Podaj każdą cenę wspierającą jako kwotę większą od zera, każdą tylko raz."
 
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
@@ -837,11 +842,11 @@ msgstr "Podaj datę i godzinę rozpoczęcia."
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "Enter the stock of every variant that exists as a whole number from 0, or mark it unlimited."
-msgstr "Wpisz stan każdego istniejącego wariantu jako liczbę całkowitą od 0 albo oznacz go jako bez limitu."
+msgstr "Podaj stan magazynowy każdego istniejącego wariantu jako liczbę całkowitą od 0 albo oznacz go jako „bez limitu”."
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Enter when the sale starts and when it ends, the end later."
-msgstr "Wpisz początek i koniec sprzedaży; koniec musi być później niż początek."
+msgstr "Podaj początek i koniec sprzedaży; koniec musi być późniejszy niż początek."
 
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Enter your password."
@@ -854,7 +859,7 @@ msgstr "Wyłączony z rabatów"
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Existing: {variants}, out of stock: {soldOut}"
-msgstr "Istniejące: {variants}, wyprzedane: {soldOut}"
+msgstr "Istniejące: {variants}, ze stanem zero: {soldOut}"
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "Exists"
@@ -989,7 +994,7 @@ msgstr "Ile sztuk tego gadżetu można wziąć w jednym zamówieniu, łącznie w
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "How many of this ticket type may be sold. Leave it empty for no limit."
-msgstr "Ile akredytacji tego rodzaju można sprzedać. Zostaw puste, jeśli nie ma limitu."
+msgstr "Ile akredytacji tego rodzaju można sprzedać. Zostaw pole puste, jeśli nie ma limitu."
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "How merchandise sells"
@@ -1048,6 +1053,7 @@ msgid "Invite to the team"
 msgstr "Zaproś do zespołu"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
+msgctxt "a merchandise item"
 msgid "Item data"
 msgstr "Dane gadżetu"
 
@@ -1060,9 +1066,14 @@ msgid "Its credentials are removed, and no shop of the convention can open until
 msgstr "Jego dane dostępowe zostaną usunięte, a żaden sklep konwentu nie otworzy się, dopóki konto nie zostanie podłączone ponownie."
 
 #: src/features/catalog/components/pictures-editor.tsx
-#: src/features/catalog/components/size-charts-editor.tsx
+msgctxt "a picture"
 msgid "Its file is deleted with it."
 msgstr "Jego plik zostanie usunięty razem z nim."
+
+#: src/features/catalog/components/size-charts-editor.tsx
+msgctxt "a size chart"
+msgid "Its file is deleted with it."
+msgstr "Jej plik zostanie usunięty razem z nią."
 
 #: src/features/program/pages/program-item-page.tsx
 msgid "Its likes and its list of speakers go with it."
@@ -1070,7 +1081,7 @@ msgstr "Razem z nim znikną jego polubienia i lista prelegentów."
 
 #: src/features/catalog/pages/ticket-type-page.tsx
 msgid "Its price tiers, supporter prices and perks go with it."
-msgstr "Razem z nim znikają jego progi cenowe, ceny wspierające i bonusy."
+msgstr "Razem z nim znikną jego progi cenowe, ceny wspierające i bonusy."
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Its programme items, with their likes and lists of speakers, and the team’s access to the edition go with it."
@@ -1078,7 +1089,7 @@ msgstr "Razem z nią znikną jej punkty programu z polubieniami i listami preleg
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 msgid "Its variants with their stock, its pictures and its size charts go with it."
-msgstr "Razem z nim znikają jego warianty ze stanami, zdjęcia i tabele rozmiarów."
+msgstr "Razem z nim znikną jego warianty ze stanami magazynowymi, zdjęcia i tabele rozmiarów."
 
 #: src/features/shop/components/document-card.tsx
 msgid "Its versions and their files go with it, and their links stop working."
@@ -1103,10 +1114,6 @@ msgstr "Limit"
 #: src/features/catalog/components/add-on-row.tsx
 msgid "Limited places: {capacity}"
 msgstr "Limit miejsc: {capacity}"
-
-#: src/features/catalog/components/add-on-row.tsx
-#~ msgid "Limited: {capacity} places"
-#~ msgstr ""
 
 #: src/features/catalog/components/add-on-form.tsx
 msgid "Limited: a set number of places"
@@ -1153,11 +1160,11 @@ msgstr "Członkostwo"
 #: src/features/catalog/pages/merchandise-page.tsx
 #: src/features/editions/components/edition-layout.tsx
 msgid "Merchandise"
-msgstr "Merch"
+msgstr "Gadżety"
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Merchandise is picked up at the edition: the shop promises no shipping. A ticket type offers the items you choose for it."
-msgstr "Gadżety odbiera się na edycji: sklep nie obiecuje wysyłki. Rodzaj akredytacji oferuje te gadżety, które dla niego wybierzesz."
+msgstr "Gadżety odbiera się podczas edycji: sklep nie obiecuje wysyłki. Rodzaj akredytacji oferuje te gadżety, które dla niego wybierzesz."
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Merchandise offered with it"
@@ -1242,6 +1249,7 @@ msgstr "Nowa edycja"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
+msgctxt "a merchandise item"
 msgid "New item"
 msgstr "Nowy gadżet"
 
@@ -1259,7 +1267,7 @@ msgstr "Nowy punkt programu"
 
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "New size chart of {label}"
-msgstr "Nowa tabela rozmiarów: {label}"
+msgstr "Nowa tabela rozmiarów – {label}"
 
 #: src/features/catalog/pages/ticket-type-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
@@ -1350,7 +1358,7 @@ msgstr "Włączone: sklep przyjmuje też zamówienie bez akredytacji"
 
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Once an axis is added or removed, every variant of the item goes with its stock. A removed value takes the variants that held it, and its size chart."
-msgstr "Po dodaniu albo usunięciu osi znikają wszystkie warianty gadżetu razem ze stanami. Usunięta wartość zabiera warianty, które ją miały, i swoją tabelę rozmiarów."
+msgstr "Po dodaniu albo usunięciu osi znikną wszystkie warianty gadżetu razem ze stanami magazynowymi. Usunięta wartość zabiera warianty, które ją miały, i swoją tabelę rozmiarów."
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Open the invitation link from your email to join a convention's team."
@@ -1402,7 +1410,7 @@ msgstr "Opcjonalna: kupujący może złożyć zamówienie bez akceptowania zgody
 
 #: src/features/catalog/components/custom-field-form.tsx
 msgid "Optional: the buyer can order without answering"
-msgstr "Opcjonalna: kupujący może zamówić bez odpowiedzi"
+msgstr "Opcjonalna: kupujący może złożyć zamówienie bez odpowiedzi"
 
 #: src/features/auth/pages/login-page.tsx
 msgid "or"
@@ -1473,7 +1481,7 @@ msgstr "Zdjęcia"
 
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "Pictures in their order"
-msgstr "Zdjęcia w ich kolejności"
+msgstr "Zdjęcia w kolejności wyświetlania"
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Pre-order deadline"
@@ -1652,7 +1660,7 @@ msgstr "Usuń tabelę rozmiarów"
 
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "Remove the size chart of {label}?"
-msgstr "Usunąć tabelę rozmiarów: {label}?"
+msgstr "Usunąć tabelę rozmiarów wartości „{label}”?"
 
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Remove value {order} of axis {number}"
@@ -1684,7 +1692,7 @@ msgstr "Zmienić logo konwentu {name}?"
 
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "Replace the size chart"
-msgstr "Zastąp tabelę rozmiarów"
+msgstr "Zmień tabelę rozmiarów"
 
 #: src/features/shop/components/consent-row.tsx
 msgctxt "a consent"
@@ -1702,7 +1710,7 @@ msgstr "Wymagana: kupujący musi zaakceptować zgodę, żeby złożyć zamówien
 
 #: src/features/catalog/components/custom-field-form.tsx
 msgid "Required: the buyer must answer to order"
-msgstr "Wymagana: kupujący musi odpowiedzieć, żeby zamówić"
+msgstr "Wymagana: kupujący musi odpowiedzieć, żeby złożyć zamówienie"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -1773,6 +1781,7 @@ msgid "Save the details"
 msgstr "Zapisz dane"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
+msgctxt "a merchandise item"
 msgid "Save the item"
 msgstr "Zapisz gadżet"
 
@@ -1798,7 +1807,7 @@ msgstr "Zapisz tytuł"
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "Save the variants and their stock"
-msgstr "Zapisz warianty i ich stany"
+msgstr "Zapisz warianty i ich stany magazynowe"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
@@ -1872,8 +1881,8 @@ msgid "Show in the shop"
 msgstr "Pokaż w sklepie"
 
 #: src/features/catalog/components/add-on-form.tsx
-msgid "Show the places left below"
-msgstr "Pokazuj liczbę wolnych miejsc poniżej"
+msgid "Show the places left when fewer than"
+msgstr "Pokazuj liczbę wolnych miejsc, gdy zostanie mniej niż"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Shown as not yet on sale or as closed, and not selectable"
@@ -1893,7 +1902,7 @@ msgstr "Wyświetlany w sklepie obok nazwy, do 300 znaków."
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Shown in place of products while the shop is closed or nothing is on sale, up to 1000 characters. Leave it empty for the shop’s own short notice."
-msgstr "Wyświetlany zamiast produktów, gdy sklep jest zamknięty albo nic nie jest w sprzedaży; do 1000 znaków. Zostaw puste, a sklep pokaże własną krótką informację."
+msgstr "Wyświetlany zamiast produktów, gdy sklep jest zamknięty albo nic nie jest w sprzedaży; do 1000 znaków. Zostaw pole puste, a sklep pokaże własną krótką informację."
 
 #: src/features/catalog/components/add-on-form.tsx
 msgid "Shown to the buyer, up to 1000 characters."
@@ -1931,7 +1940,7 @@ msgstr "Logowanie nie będzie już wymagało kodu, a kody z aplikacji uwierzytel
 
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "Size chart of {label}"
-msgstr "Tabela rozmiarów: {label}"
+msgstr "Tabela rozmiarów – {label}"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 msgid "Size charts"
@@ -1963,7 +1972,7 @@ msgstr "Stan"
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "Stock"
-msgstr "Stan"
+msgstr "Stan magazynowy"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Supporter price {number} ({currency})"
@@ -2211,6 +2220,7 @@ msgstr "Gadżet ma już tyle zdjęć, ile może mieć: dziesięć."
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
+msgctxt "a merchandise item"
 msgid "The item is saved."
 msgstr "Gadżet został zapisany."
 
@@ -2364,7 +2374,7 @@ msgstr "Sklep informuje obok zdjęć, że gadżet może wyglądać inaczej."
 
 #: src/features/catalog/components/add-on-form.tsx
 msgid "The shop shows how many places are left only once fewer than this many remain. Leave it empty to never show them."
-msgstr "Sklep pokazuje liczbę wolnych miejsc dopiero wtedy, gdy zostanie ich mniej niż tyle. Zostaw puste, żeby nigdy jej nie pokazywać."
+msgstr "Sklep pokazuje liczbę wolnych miejsc dopiero wtedy, gdy zostanie ich mniej niż wpisana tu liczba. Zostaw pole puste, żeby nigdy jej nie pokazywać."
 
 #: src/features/shop/components/consent-row.tsx
 msgid "The shop stops asking for it: “{text}”."
@@ -2425,7 +2435,7 @@ msgstr "Rodzaj akredytacji został zapisany."
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "The variants and their stock are saved."
-msgstr "Warianty i ich stany zostały zapisane."
+msgstr "Warianty i ich stany magazynowe zostały zapisane."
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "The way merchandise sells is saved."
@@ -2589,8 +2599,8 @@ msgid "Until"
 msgstr "Do"
 
 #: src/features/catalog/pages/merchandise-page.tsx
-msgid "Until this moment a variant marked unlimited sells without a stock limit; after it, a variant sells only from a number you entered. In the convention's time zone, {zone}. Leave it empty for no pre-order."
-msgstr "Do tej chwili wariant oznaczony jako bez limitu sprzedaje się bez ograniczenia stanu; później wariant sprzedaje się tylko z liczby, którą wpiszesz. W strefie czasowej konwentu, {zone}. Zostaw puste, jeśli nie ma przedsprzedaży."
+msgid "Until this moment a variant marked unlimited sells without a stock limit; after it, only a variant with a stock number sells, until that stock runs out. In the convention’s time zone, {zone}. Leave it empty for no pre-order."
+msgstr "Do tej chwili wariant oznaczony jako „bez limitu” sprzedaje się bez ograniczenia stanu magazynowego; później sprzedają się tylko warianty z wpisanym stanem, do jego wyczerpania. W strefie czasowej konwentu, {zone}. Zostaw pole puste, jeśli nie ma przedsprzedaży."
 
 #: src/features/branding/pages/branding-page.tsx
 msgid "Upload the logo"
@@ -2634,7 +2644,7 @@ msgstr "Warianty"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 msgid "Variants and stock"
-msgstr "Warianty i stany"
+msgstr "Warianty i stany magazynowe"
 
 #: src/features/editions/components/edition-form.tsx
 msgid "Venue"
@@ -2686,7 +2696,7 @@ msgstr "Czego wymaga otwarcie sklepu"
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "What the checkout asks a ticket holder beyond the name, the email and the age band, in the order below. The answers stay with the order, in your convention."
-msgstr "O co posiadacza akredytacji pyta się przy składaniu zamówienia poza imieniem, adresem e-mail i przedziałem wiekowym, w poniższej kolejności. Odpowiedzi zostają przy zamówieniu, w twoim konwencie."
+msgstr "O co posiadacza akredytacji pyta się przy składaniu zamówienia poza imieniem lub pseudonimem, adresem e-mail i przedziałem wiekowym, w poniższej kolejności. Odpowiedzi zostają przy zamówieniu, w twoim konwencie."
 
 #: src/features/catalog/components/custom-field-form.tsx
 msgid "What the checkout asks the ticket holder, such as “City you travel from”. The answer is a text of up to 200 characters."

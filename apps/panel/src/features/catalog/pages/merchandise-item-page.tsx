@@ -51,7 +51,12 @@ export function MerchandiseItemPage() {
   const items = useQuery({ ...merchandiseOptions(api, edition?.id ?? ''), enabled: canRead })
   const isNew = itemId === undefined
   const item = items.data?.find((entry) => entry.id === itemId)
-  usePageTitle(isNew ? t`New item` : (item?.name ?? t`Merchandise`), edition?.name ?? tenant.name)
+  usePageTitle(
+    isNew
+      ? t({ context: 'a merchandise item', message: 'New item' })
+      : (item?.name ?? t`Merchandise`),
+    edition?.name ?? tenant.name,
+  )
   const base = `/${tenant.slug}/editions/${editionSlug ?? ''}/merchandise`
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: catalogKey(api) })
@@ -71,7 +76,7 @@ export function MerchandiseItemPage() {
   })
   const update = useMutation({
     ...updateItemOptions(api),
-    meta: { success: msg`The item is saved.` },
+    meta: { success: msg({ context: 'a merchandise item', message: 'The item is saved.' }) },
     onSuccess: refresh,
   })
   const remove = useMutation({
@@ -100,13 +105,16 @@ export function MerchandiseItemPage() {
   if (!item) {
     return (
       <>
-        <PageHeader title={<Trans>New item</Trans>} description={edition.name} />
+        <PageHeader
+          title={<Trans context="a merchandise item">New item</Trans>}
+          description={edition.name}
+        />
         {back}
-        <Section title={<Trans>Item data</Trans>}>
+        <Section title={<Trans context="a merchandise item">Item data</Trans>}>
           <ItemForm
             initial={EMPTY_ITEM}
             pending={create.isPending}
-            submitLabel={<Trans>Add the item</Trans>}
+            submitLabel={<Trans context="a merchandise item">Add the item</Trans>}
             onSubmit={(body) => create.mutate({ params: { editionId: edition.id }, body })}
           />
         </Section>
@@ -121,13 +129,13 @@ export function MerchandiseItemPage() {
     <>
       <PageHeader title={item.name} description={edition.name} />
       {back}
-      <Section title={<Trans>Item data</Trans>}>
+      <Section title={<Trans context="a merchandise item">Item data</Trans>}>
         <ItemForm
           key={JSON.stringify(itemFields(item, money.toInput))}
           initial={itemFields(item, money.toInput)}
           disabled={!canWrite}
           pending={update.isPending}
-          submitLabel={<Trans>Save the item</Trans>}
+          submitLabel={<Trans context="a merchandise item">Save the item</Trans>}
           onSubmit={(body) => update.mutate({ params, body })}
         />
       </Section>
@@ -144,7 +152,7 @@ export function MerchandiseItemPage() {
         <SizeChartsEditor item={item} canWrite={canWrite} />
       </Section>
       {canWrite && (
-        <Section title={<Trans>Delete the item</Trans>}>
+        <Section title={<Trans context="a merchandise item">Delete the item</Trans>}>
           <p className="text-sm">
             <Trans>
               Deleting an item cannot be undone. To take it out of the shop for a while, hide it in
@@ -153,9 +161,9 @@ export function MerchandiseItemPage() {
           </p>
           <div>
             <IrreversibleAction
-              label={<Trans>Delete the item</Trans>}
+              label={<Trans context="a merchandise item">Delete the item</Trans>}
               title={<Trans>Delete the item “{name}”?</Trans>}
-              action={<Trans>Delete the item</Trans>}
+              action={<Trans context="a merchandise item">Delete the item</Trans>}
               onConfirm={() => remove.mutateAsync({ params })}
             >
               <Trans>

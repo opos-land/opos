@@ -173,7 +173,7 @@ describe('the add-ons page', () => {
     fireEvent.change(field('Limit'), { target: { value: 'limited' } })
 
     expect(field('Number of places')).toBeDefined()
-    expect(field('Show the places left below')).toBeDefined()
+    expect(field('Show the places left when fewer than')).toBeDefined()
   })
 
   it('moves an add-on, and offers no step past either end of the list', async () => {

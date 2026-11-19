@@ -65,7 +65,7 @@ export function MerchandisePage() {
           canWrite && (
             <Link to={`${base}/new`} className={buttonVariants()}>
               <PlusIcon data-icon="inline-start" />
-              <Trans>New item</Trans>
+              <Trans context="a merchandise item">New item</Trans>
             </Link>
           )
         }
@@ -182,7 +182,7 @@ function Selling({
       <FieldSet disabled={!canWrite}>
         <FormField
           label={t`Pre-order deadline`}
-          hint={t`Until this moment a variant marked unlimited sells without a stock limit; after it, a variant sells only from a number you entered. In the convention's time zone, ${zone}. Leave it empty for no pre-order.`}
+          hint={t`Until this moment a variant marked unlimited sells without a stock limit; after it, only a variant with a stock number sells, until that stock runs out. In the convention’s time zone, ${zone}. Leave it empty for no pre-order.`}
           error={invalid && t`Enter a date and a time, or leave it empty.`}
         >
           {(control) => (
@@ -239,7 +239,7 @@ function ItemRow({
   const params = { editionId: item.editionId, itemId: item.id }
   const update = useMutation({
     ...updateItemOptions(api),
-    meta: { success: msg`The item is saved.` },
+    meta: { success: msg({ context: 'a merchandise item', message: 'The item is saved.' }) },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: catalogKey(api) }),
   })
   const variants = item.variants.length

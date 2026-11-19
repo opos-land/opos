@@ -100,7 +100,7 @@ export function PicturesEditor({ item, canWrite }: { item: MerchandiseItem; canW
                           remove.mutateAsync({ params: { ...params, pictureId: picture.id } })
                         }
                       >
-                        <Trans>Its file is deleted with it.</Trans>
+                        <Trans context="a picture">Its file is deleted with it.</Trans>
                       </IrreversibleAction>
                     </div>
                   )}

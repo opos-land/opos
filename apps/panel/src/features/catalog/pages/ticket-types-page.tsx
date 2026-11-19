@@ -122,6 +122,7 @@ function TicketTypeRow({
   last: boolean
   canWrite: boolean
 }) {
+  const { i18n } = useLingui()
   const { api } = useCurrentTenant()
   const money = useMoney()
   const time = useTenantTime()
@@ -157,7 +158,9 @@ function TicketTypeRow({
         {price === null ? <Trans>No price in force</Trans> : money.format(price)}
       </TableCell>
       <TableCell>{time.range(type.saleStartsAt, type.saleEndsAt)}</TableCell>
-      <TableCell>{type.capacity ?? <Trans>No limit</Trans>}</TableCell>
+      <TableCell>
+        {type.capacity === null ? <Trans>No limit</Trans> : i18n.number(type.capacity)}
+      </TableCell>
       {canWrite && (
         <TableCell>
           <div className="flex flex-wrap gap-2">

@@ -51,7 +51,7 @@ test('an org builds the catalog of an edition from nothing', async ({
   await page.getByLabel(/^Price/).fill('40')
   await page.getByLabel('Limit').selectOption('limited')
   await page.getByLabel('Number of places').fill('40')
-  await page.getByLabel('Show the places left below').fill('10')
+  await page.getByLabel('Show the places left when fewer than').fill('10')
   await page.getByRole('button', { name: 'Add the add-on' }).click()
   await expect(notification(page, 'success', 'The add-on is added.')).toBeVisible()
   await page.getByLabel('Name', { exact: true }).fill('Sleeping room')

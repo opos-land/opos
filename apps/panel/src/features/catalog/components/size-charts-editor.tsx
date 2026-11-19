@@ -86,7 +86,7 @@ export function SizeChartsEditor({ item, canWrite }: { item: MerchandiseItem; ca
                         action={<Trans>Remove the size chart</Trans>}
                         onConfirm={() => remove.mutateAsync({ params })}
                       >
-                        <Trans>Its file is deleted with it.</Trans>
+                        <Trans context="a size chart">Its file is deleted with it.</Trans>
                       </IrreversibleAction>
                     </div>
                   )}

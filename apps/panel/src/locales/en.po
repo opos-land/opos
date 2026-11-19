@@ -198,8 +198,12 @@ msgstr "Add the custom field"
 msgid "Add the document"
 msgstr "Add the document"
 
-#: src/features/catalog/pages/merchandise-item-page.tsx
 #: src/features/program/pages/program-page.tsx
+msgid "Add the item"
+msgstr "Add the item"
+
+#: src/features/catalog/pages/merchandise-item-page.tsx
+msgctxt "a merchandise item"
 msgid "Add the item"
 msgstr "Add the item"
 
@@ -585,6 +589,7 @@ msgid "Delete the edition {editionName}?"
 msgstr "Delete the edition {editionName}?"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
+msgctxt "a merchandise item"
 msgid "Delete the item"
 msgstr "Delete the item"
 
@@ -1048,6 +1053,7 @@ msgid "Invite to the team"
 msgstr "Invite to the team"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
+msgctxt "a merchandise item"
 msgid "Item data"
 msgstr "Item data"
 
@@ -1060,7 +1066,12 @@ msgid "Its credentials are removed, and no shop of the convention can open until
 msgstr "Its credentials are removed, and no shop of the convention can open until an account is connected again."
 
 #: src/features/catalog/components/pictures-editor.tsx
+msgctxt "a picture"
+msgid "Its file is deleted with it."
+msgstr "Its file is deleted with it."
+
 #: src/features/catalog/components/size-charts-editor.tsx
+msgctxt "a size chart"
 msgid "Its file is deleted with it."
 msgstr "Its file is deleted with it."
 
@@ -1103,10 +1114,6 @@ msgstr "Limit"
 #: src/features/catalog/components/add-on-row.tsx
 msgid "Limited places: {capacity}"
 msgstr "Limited places: {capacity}"
-
-#: src/features/catalog/components/add-on-row.tsx
-#~ msgid "Limited: {capacity} places"
-#~ msgstr "Limited: {capacity} places"
 
 #: src/features/catalog/components/add-on-form.tsx
 msgid "Limited: a set number of places"
@@ -1242,6 +1249,7 @@ msgstr "New edition"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
+msgctxt "a merchandise item"
 msgid "New item"
 msgstr "New item"
 
@@ -1773,6 +1781,7 @@ msgid "Save the details"
 msgstr "Save the details"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
+msgctxt "a merchandise item"
 msgid "Save the item"
 msgstr "Save the item"
 
@@ -1872,8 +1881,8 @@ msgid "Show in the shop"
 msgstr "Show in the shop"
 
 #: src/features/catalog/components/add-on-form.tsx
-msgid "Show the places left below"
-msgstr "Show the places left below"
+msgid "Show the places left when fewer than"
+msgstr "Show the places left when fewer than"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Shown as not yet on sale or as closed, and not selectable"
@@ -2211,6 +2220,7 @@ msgstr "The item holds the most pictures it can: ten."
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
+msgctxt "a merchandise item"
 msgid "The item is saved."
 msgstr "The item is saved."
 
@@ -2589,8 +2599,8 @@ msgid "Until"
 msgstr "Until"
 
 #: src/features/catalog/pages/merchandise-page.tsx
-msgid "Until this moment a variant marked unlimited sells without a stock limit; after it, a variant sells only from a number you entered. In the convention's time zone, {zone}. Leave it empty for no pre-order."
-msgstr "Until this moment a variant marked unlimited sells without a stock limit; after it, a variant sells only from a number you entered. In the convention's time zone, {zone}. Leave it empty for no pre-order."
+msgid "Until this moment a variant marked unlimited sells without a stock limit; after it, only a variant with a stock number sells, until that stock runs out. In the convention’s time zone, {zone}. Leave it empty for no pre-order."
+msgstr "Until this moment a variant marked unlimited sells without a stock limit; after it, only a variant with a stock number sells, until that stock runs out. In the convention’s time zone, {zone}. Leave it empty for no pre-order."
 
 #: src/features/branding/pages/branding-page.tsx
 msgid "Upload the logo"

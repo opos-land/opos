@@ -235,7 +235,7 @@ export function TicketTypeForm({
                   />
                 )}
               </FormField>
-              <FormField label={t`From`}>
+              <FormField label={t`From`} hint={t`In the convention's time zone, ${zone}.`}>
                 {(control) => (
                   <Input
                     {...control}
@@ -245,7 +245,7 @@ export function TicketTypeForm({
                   />
                 )}
               </FormField>
-              <FormField label={t`Until`}>
+              <FormField label={t`Until`} hint={t`In the convention's time zone, ${zone}.`}>
                 {(control) => (
                   <Input
                     {...control}

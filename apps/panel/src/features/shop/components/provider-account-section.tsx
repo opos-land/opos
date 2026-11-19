@@ -95,7 +95,18 @@ function Account({ state: { account } }: { state: ProviderAccountState }) {
         <ul className="list-disc pl-5 text-sm">
           {account.missing.map((code) => {
             const message = missingMessage(code)
-            return <li key={code}>{message ? i18n._(message) : code}</li>
+            return (
+              <li key={code}>
+                {message ? (
+                  i18n._(message)
+                ) : (
+                  // A provider's module may name a condition this panel has no words for yet.
+                  <Trans>
+                    The provider reports a condition this panel cannot describe yet (code: {code}).
+                  </Trans>
+                )}
+              </li>
+            )
           })}
         </ul>
       )}

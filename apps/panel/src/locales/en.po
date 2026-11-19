@@ -52,6 +52,10 @@ msgstr "A page with answers for buyers, linked from the shop’s footer. Leave i
 msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 msgstr "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 
+#: src/features/shop/components/consent-form.tsx
+msgid "Acceptance"
+msgstr "Acceptance"
+
 #: src/features/editions/components/edition-layout.tsx
 msgid "Access"
 msgstr "Access"
@@ -150,8 +154,8 @@ msgid "An invitation has gone to {email}. Its link works once, until {validUntil
 msgstr "An invitation has gone to {email}. Its link works once, until {validUntil}."
 
 #: src/features/shop/model/providers.ts
-msgid "Any text connects an account that is ready. The fake provider refuses \"refused\", reports \"not-ready\" as not ready, and does not answer for \"unavailable\"."
-msgstr "Any text connects an account that is ready. The fake provider refuses \"refused\", reports \"not-ready\" as not ready, and does not answer for \"unavailable\"."
+msgid "Any text connects an account that is ready. The fake provider refuses “refused”, reports “not-ready” as not ready, and does not answer for “unavailable”."
+msgstr "Any text connects an account that is ready. The fake provider refuses “refused”, reports “not-ready” as not ready, and does not answer for “unavailable”."
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
@@ -365,8 +369,8 @@ msgid "Delete the document"
 msgstr "Delete the document"
 
 #: src/features/shop/components/document-card.tsx
-msgid "Delete the document {name}?"
-msgstr "Delete the document {name}?"
+msgid "Delete the document “{documentTitle}”?"
+msgstr "Delete the document “{documentTitle}”?"
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Delete the edition"
@@ -718,10 +722,6 @@ msgstr "Logo"
 msgid "Logo file"
 msgstr "Logo file"
 
-#: src/features/shop/components/consent-form.tsx
-msgid "may accept it or not"
-msgstr "may accept it or not"
-
 #: src/features/team/components/members-table.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Member"
@@ -754,10 +754,6 @@ msgstr "Move down"
 #: src/features/shop/components/consent-row.tsx
 msgid "Move up"
 msgstr "Move up"
-
-#: src/features/shop/components/consent-form.tsx
-msgid "must accept it to order"
-msgstr "must accept it to order"
 
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
@@ -857,12 +853,17 @@ msgid "OPOS panel"
 msgstr "OPOS panel"
 
 #: src/features/shop/components/consent-row.tsx
+msgctxt "a consent"
 msgid "Optional"
 msgstr "Optional"
 
 #: src/features/team/components/invite-form.tsx
 msgid "Optional, in the convention's time zone, {zone}."
 msgstr "Optional, in the convention's time zone, {zone}."
+
+#: src/features/shop/components/consent-form.tsx
+msgid "Optional: the buyer can order without accepting the consent"
+msgstr "Optional: the buyer can order without accepting the consent"
 
 #: src/features/auth/pages/login-page.tsx
 msgid "or"
@@ -1045,8 +1046,13 @@ msgid "Replace the logo of {name}?"
 msgstr "Replace the logo of {name}?"
 
 #: src/features/shop/components/consent-row.tsx
+msgctxt "a consent"
 msgid "Required"
 msgstr "Required"
+
+#: src/features/shop/components/consent-form.tsx
+msgid "Required: the buyer must accept the consent to order"
+msgstr "Required: the buyer must accept the consent to order"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -1230,10 +1236,6 @@ msgstr "The address of the speaker's confirmed account."
 msgid "The browser's language"
 msgstr "The browser's language"
 
-#: src/features/shop/components/consent-form.tsx
-msgid "The buyer"
-msgstr "The buyer"
-
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
 msgstr "The changes are saved."
@@ -1283,8 +1285,8 @@ msgid "The details are incomplete. The shop of an edition can open once every fi
 msgstr "The details are incomplete. The shop of an edition can open once every field below is set."
 
 #: src/features/shop/components/document-card.tsx
-msgid "The document {name} is deleted."
-msgstr "The document {name} is deleted."
+msgid "The document “{documentTitle}” is deleted."
+msgstr "The document “{documentTitle}” is deleted."
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "The document is added. Publish its first version."
@@ -1398,8 +1400,8 @@ msgid "The name of the place the edition takes place in. The portal shows the ve
 msgstr "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
 
 #: src/features/shop/components/document-card.tsx
-msgid "The new version of {name} is published."
-msgstr "The new version of {name} is published."
+msgid "The new version of “{documentTitle}” is published."
+msgstr "The new version of “{documentTitle}” is published."
 
 #: src/features/shop/components/seller-section.tsx
 msgid "The number the seller is registered under, such as KRS or NIP."
@@ -1449,6 +1451,10 @@ msgstr "The programme item is saved."
 msgid "The programme item must end after it starts."
 msgstr "The programme item must end after it starts."
 
+#: src/features/shop/components/provider-account-section.tsx
+msgid "The provider reports a condition this panel cannot describe yet (code: {code})."
+msgstr "The provider reports a condition this panel cannot describe yet (code: {code})."
+
 #: src/features/shop/components/seller-section.tsx
 msgid "The seller’s details are saved."
 msgstr "The seller’s details are saved."
@@ -1462,6 +1468,10 @@ msgid "The settings are saved."
 msgstr "The settings are saved."
 
 #: src/features/shop/pages/edition-shop-page.tsx
+msgid "The shop has been open since {openedAt}. Buyers reach it while the edition is published."
+msgstr "The shop has been open since {openedAt}. Buyers reach it while the edition is published."
+
+#: src/features/shop/pages/edition-shop-page.tsx
 msgid "The shop is closed: nothing can be ordered."
 msgstr "The shop is closed: nothing can be ordered."
 
@@ -1470,17 +1480,12 @@ msgid "The shop is closed."
 msgstr "The shop is closed."
 
 #: src/features/shop/pages/edition-shop-page.tsx
-msgid "The shop is open since {openedAt}. Buyers reach it while the edition is published."
-msgstr "The shop is open since {openedAt}. Buyers reach it while the edition is published."
-
-#: src/features/shop/pages/edition-shop-page.tsx
 msgid "The shop is open."
 msgstr "The shop is open."
 
-#. placeholder {0}: consent.text
 #: src/features/shop/components/consent-row.tsx
-msgid "The shop stops asking for it: “{0}”"
-msgstr "The shop stops asking for it: “{0}”"
+msgid "The shop stops asking for it: “{text}”."
+msgstr "The shop stops asking for it: “{text}”."
 
 #: src/features/shop/model/documents.ts
 msgid "The shop terms have a published version."

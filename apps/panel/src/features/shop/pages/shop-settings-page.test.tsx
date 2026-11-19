@@ -194,7 +194,12 @@ describe('ShopSettingsPage', () => {
 
     expect(await provider.findByText('Not ready to sell')).toBeDefined()
     expect(provider.getByText('The fake provider reports this account as not ready.')).toBeDefined()
-    expect(provider.getByText('p24.unknown')).toBeDefined()
+    // A condition this panel has no words for yet is told as a sentence that carries its code.
+    expect(
+      provider.getByText(
+        'The provider reports a condition this panel cannot describe yet (code: p24.unknown).',
+      ),
+    ).toBeDefined()
   })
 
   it('offers no account to connect where the environment has no provider', async () => {

@@ -58,15 +58,19 @@ export function ConsentForm({
           />
         )}
       </FormField>
-      <FormField label={t`The buyer`}>
+      <FormField label={t`Acceptance`}>
         {(control) => (
           <NativeSelect
             {...control}
             value={isRequired ? 'required' : 'optional'}
             onChange={(event) => setRequired(event.target.value === 'required')}
           >
-            <NativeSelectOption value="required">{t`must accept it to order`}</NativeSelectOption>
-            <NativeSelectOption value="optional">{t`may accept it or not`}</NativeSelectOption>
+            <NativeSelectOption value="required">
+              {t`Required: the buyer must accept the consent to order`}
+            </NativeSelectOption>
+            <NativeSelectOption value="optional">
+              {t`Optional: the buyer can order without accepting the consent`}
+            </NativeSelectOption>
           </NativeSelect>
         )}
       </FormField>

@@ -39,7 +39,7 @@ export function DocumentCard({
   // A new key empties the file field once its file is sent.
   const [field, setField] = useState(0)
   const params = { editionId: document.editionId, documentId: document.id }
-  const name = document.title
+  const documentTitle = document.title
 
   // The shop of the edition reads which documents have a published version.
   const refresh = () => queryClient.invalidateQueries({ queryKey: shopKey(api) })
@@ -50,7 +50,7 @@ export function DocumentCard({
   })
   const publish = useMutation({
     ...publishVersionOptions(api),
-    meta: { success: msg`The new version of ${name} is published.` },
+    meta: { success: msg`The new version of “${documentTitle}” is published.` },
     onSuccess: async () => {
       setFile(null)
       setField((key) => key + 1)
@@ -59,7 +59,7 @@ export function DocumentCard({
   })
   const remove = useMutation({
     ...removeDocumentOptions(api),
-    meta: { success: msg`The document ${name} is deleted.` },
+    meta: { success: msg`The document “${documentTitle}” is deleted.` },
     onSuccess: refresh,
   })
 
@@ -179,7 +179,7 @@ export function DocumentCard({
             </Button>
             <IrreversibleAction
               label={<Trans>Delete the document</Trans>}
-              title={<Trans>Delete the document {name}?</Trans>}
+              title={<Trans>Delete the document “{documentTitle}”?</Trans>}
               action={<Trans>Delete the document</Trans>}
               onConfirm={() => remove.mutateAsync({ params })}
             >

@@ -115,7 +115,7 @@ function Opening({
       <p className="text-sm">
         {shop.open ? (
           <Trans>
-            The shop is open since {openedAt}. Buyers reach it while the edition is published.
+            The shop has been open since {openedAt}. Buyers reach it while the edition is published.
           </Trans>
         ) : (
           <Trans>The shop is closed: nothing can be ordered.</Trans>

@@ -23,7 +23,7 @@ export const PROVIDERS: Record<
       {
         name: 'account',
         label: msg`Account`,
-        hint: msg`Any text connects an account that is ready. The fake provider refuses "refused", reports "not-ready" as not ready, and does not answer for "unavailable".`,
+        hint: msg`Any text connects an account that is ready. The fake provider refuses “refused”, reports “not-ready” as not ready, and does not answer for “unavailable”.`,
       },
     ],
   },

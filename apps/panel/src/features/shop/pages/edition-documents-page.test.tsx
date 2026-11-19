@@ -287,7 +287,7 @@ describe('EditionDocumentsPage', () => {
     await screen.findByRole('article', { name: 'House rules' })
 
     fireEvent.click(document_('House rules').getByRole('button', { name: 'Delete the document' }))
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete the document House rules?' })
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete the document “House rules”?' })
     expect(dialog.textContent).toContain('This action cannot be undone.')
     expect(removeDocument).not.toHaveBeenCalled()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete the document' }))
@@ -321,7 +321,7 @@ describe('EditionDocumentsPage', () => {
     fireEvent.change(screen.getByLabelText('Sentence the buyer accepts'), {
       target: { value: ' I accept the shop terms. ' },
     })
-    fireEvent.change(screen.getByLabelText('The buyer'), { target: { value: 'optional' } })
+    fireEvent.change(screen.getByLabelText('Acceptance'), { target: { value: 'optional' } })
     fireEvent.change(screen.getByLabelText('Linked document'), { target: { value: TERMS } })
     fireEvent.click(screen.getByRole('button', { name: 'Add the consent' }))
 
@@ -359,7 +359,7 @@ describe('EditionDocumentsPage', () => {
     fireEvent.change(within(first!).getByLabelText('Sentence the buyer accepts'), {
       target: { value: 'I accept the terms of the shop.' },
     })
-    fireEvent.change(within(first!).getByLabelText('The buyer'), { target: { value: 'optional' } })
+    fireEvent.change(within(first!).getByLabelText('Acceptance'), { target: { value: 'optional' } })
     fireEvent.change(within(first!).getByLabelText('Linked document'), { target: { value: '' } })
     fireEvent.click(within(first!).getByRole('button', { name: 'Save the consent' }))
 
@@ -382,7 +382,7 @@ describe('EditionDocumentsPage', () => {
 
     fireEvent.click(within(second!).getByRole('button', { name: 'Delete the consent' }))
     const dialog = screen.getByRole('alertdialog', { name: 'Delete this consent?' })
-    expect(dialog.textContent).toContain('Consent 2')
+    expect(dialog.textContent).toContain('“Consent 2”. This action cannot be undone.')
     expect(dialog.textContent).toContain('This action cannot be undone.')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete the consent' }))
 

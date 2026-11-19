@@ -102,7 +102,7 @@ test('a head connects the provider, sets the seller, publishes the documents and
   await expect(needs(page).getByText('Met')).toHaveCount(4)
   await page.getByRole('button', { name: 'Open the shop' }).click()
   await expect(notification(page, 'success', 'The shop is open.')).toBeVisible()
-  await expect(page.getByText(/The shop is open since/)).toBeVisible()
+  await expect(page.getByText(/The shop has been open since/)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Close the shop' })).toBeVisible()
 })
 

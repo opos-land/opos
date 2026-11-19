@@ -46,11 +46,15 @@ msgstr "Nowa edycja jest na początku nieaktywna i nieopublikowana."
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "A page with answers for buyers, linked from the shop’s footer. Leave it empty for none."
-msgstr "Strona z odpowiedziami dla kupujących, do której odsyła stopka sklepu. Zostaw puste, jeśli jej nie ma."
+msgstr "Strona z odpowiedziami dla kupujących, do której odsyła stopka sklepu. Zostaw pole puste, jeśli jej nie ma."
 
 #: src/features/shop/components/document-card.tsx
 msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 msgstr "Plik PDF o rozmiarze do 10 MB. Opublikowanej wersji nie można zmienić ani usunąć: poprawka to nowa wersja."
+
+#: src/features/shop/components/consent-form.tsx
+msgid "Acceptance"
+msgstr "Akceptacja"
 
 #: src/features/editions/components/edition-layout.tsx
 msgid "Access"
@@ -150,8 +154,8 @@ msgid "An invitation has gone to {email}. Its link works once, until {validUntil
 msgstr "Zaproszenie zostało wysłane na adres {email}. Link w nim działa jeden raz, do {validUntil}."
 
 #: src/features/shop/model/providers.ts
-msgid "Any text connects an account that is ready. The fake provider refuses \"refused\", reports \"not-ready\" as not ready, and does not answer for \"unavailable\"."
-msgstr "Dowolny tekst podłącza gotowe konto. Fałszywy dostawca odrzuca „refused”, zgłasza „not-ready” jako niegotowe i nie odpowiada na „unavailable”."
+msgid "Any text connects an account that is ready. The fake provider refuses “refused”, reports “not-ready” as not ready, and does not answer for “unavailable”."
+msgstr "Dowolny tekst podłącza gotowe konto. Testowy dostawca odrzuca „refused”, zgłasza „not-ready” jako niegotowe i nie odpowiada na „unavailable”."
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
@@ -285,7 +289,7 @@ msgstr "Zgody"
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Consents in their order"
-msgstr "Zgody w ich kolejności"
+msgstr "Zgody w kolejności wyświetlania"
 
 #: src/features/shop/components/seller-section.tsx
 msgid "Contact email"
@@ -365,8 +369,8 @@ msgid "Delete the document"
 msgstr "Usuń dokument"
 
 #: src/features/shop/components/document-card.tsx
-msgid "Delete the document {name}?"
-msgstr "Usunąć dokument {name}?"
+msgid "Delete the document “{documentTitle}”?"
+msgstr "Usunąć dokument „{documentTitle}”?"
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Delete the edition"
@@ -406,7 +410,7 @@ msgstr "Odłącz konto"
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Disconnect the payment provider account of {name}?"
-msgstr "Odłączyć konto u dostawcy płatności konwentu {name}?"
+msgstr "Odłączyć konto konwentu {name} u dostawcy płatności?"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Dismiss"
@@ -561,7 +565,7 @@ msgstr "wygasł"
 
 #: src/features/shop/model/providers.ts
 msgid "Fake provider (no real payments)"
-msgstr "Fałszywy dostawca (bez prawdziwych płatności)"
+msgstr "Testowy dostawca (bez prawdziwych płatności)"
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "FAQ"
@@ -718,10 +722,6 @@ msgstr "Logo"
 msgid "Logo file"
 msgstr "Plik z logo"
 
-#: src/features/shop/components/consent-form.tsx
-msgid "may accept it or not"
-msgstr "może ją zaakceptować lub nie"
-
 #: src/features/team/components/members-table.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Member"
@@ -741,7 +741,7 @@ msgstr "Spełniono"
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Missing"
-msgstr "Brakuje"
+msgstr "Nie spełniono"
 
 #: src/shared/ui/breadcrumb.tsx
 msgid "More"
@@ -754,10 +754,6 @@ msgstr "Przesuń w dół"
 #: src/features/shop/components/consent-row.tsx
 msgid "Move up"
 msgstr "Przesuń w górę"
-
-#: src/features/shop/components/consent-form.tsx
-msgid "must accept it to order"
-msgstr "musi ją zaakceptować, żeby zamówić"
 
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
@@ -857,12 +853,17 @@ msgid "OPOS panel"
 msgstr "Panel OPOS"
 
 #: src/features/shop/components/consent-row.tsx
+msgctxt "a consent"
 msgid "Optional"
 msgstr "Opcjonalna"
 
 #: src/features/team/components/invite-form.tsx
 msgid "Optional, in the convention's time zone, {zone}."
 msgstr "Opcjonalnie, w strefie czasowej konwentu, {zone}."
+
+#: src/features/shop/components/consent-form.tsx
+msgid "Optional: the buyer can order without accepting the consent"
+msgstr "Opcjonalna: kupujący może złożyć zamówienie bez akceptowania zgody"
 
 #: src/features/auth/pages/login-page.tsx
 msgid "or"
@@ -1045,8 +1046,13 @@ msgid "Replace the logo of {name}?"
 msgstr "Zmienić logo konwentu {name}?"
 
 #: src/features/shop/components/consent-row.tsx
+msgctxt "a consent"
 msgid "Required"
 msgstr "Wymagana"
+
+#: src/features/shop/components/consent-form.tsx
+msgid "Required: the buyer must accept the consent to order"
+msgstr "Wymagana: kupujący musi zaakceptować zgodę, żeby złożyć zamówienie"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -1155,7 +1161,7 @@ msgstr "Pokaż w sklepie"
 
 #: src/features/shop/components/consent-form.tsx
 msgid "Shown at the checkout beside a checkbox, in your own words, up to 1000 characters."
-msgstr "Wyświetlane przy składaniu zamówienia obok pola wyboru, Twoimi słowami, do 1000 znaków."
+msgstr "Wyświetlane przy składaniu zamówienia obok pola wyboru, twoimi słowami, do 1000 znaków."
 
 #: src/shared/ui/sidebar.tsx
 msgid "Sidebar"
@@ -1230,10 +1236,6 @@ msgstr "Adres e-mail potwierdzonego konta prelegenta."
 msgid "The browser's language"
 msgstr "Język przeglądarki"
 
-#: src/features/shop/components/consent-form.tsx
-msgid "The buyer"
-msgstr "Kupujący"
-
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
 msgstr "Zmiany zostały zapisane."
@@ -1272,7 +1274,7 @@ msgstr "Dane dostępowe są sprawdzane u dostawcy, przechowywane w postaci zaszy
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The credentials stored now go. Once the provider accepts the new ones, payments use them."
-msgstr "Zapisane teraz dane dostępowe znikną. Gdy dostawca przyjmie nowe, płatności będą z nich korzystać."
+msgstr "Obecne dane dostępowe zostaną usunięte. Gdy dostawca przyjmie nowe, płatności będą z nich korzystać."
 
 #: src/features/shop/components/seller-section.tsx
 msgid "The details are complete."
@@ -1283,8 +1285,8 @@ msgid "The details are incomplete. The shop of an edition can open once every fi
 msgstr "Dane są niekompletne. Sklep edycji można otworzyć, gdy wszystkie poniższe pola będą wypełnione."
 
 #: src/features/shop/components/document-card.tsx
-msgid "The document {name} is deleted."
-msgstr "Dokument {name} został usunięty."
+msgid "The document “{documentTitle}” is deleted."
+msgstr "Dokument „{documentTitle}” został usunięty."
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "The document is added. Publish its first version."
@@ -1296,7 +1298,7 @@ msgstr "Dokument został zapisany."
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "The documents are published in <0>Documents and consents</0>. The payment provider account and the seller’s details belong to the whole convention."
-msgstr "Dokumenty publikuje się w sekcji <0>Dokumenty i zgody</0>. Konto u dostawcy płatności i dane sprzedawcy należą do całego konwentu."
+msgstr "Dokumenty publikuje się na stronie <0>Dokumenty i zgody</0>. Konto u dostawcy płatności i dane sprzedawcy należą do całego konwentu."
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "The edition {editionName} is deleted."
@@ -1346,7 +1348,7 @@ msgstr "Edycja musi kończyć się po swoim początku."
 
 #: src/features/shop/model/providers.ts
 msgid "The fake provider reports this account as not ready."
-msgstr "Fałszywy dostawca zgłasza to konto jako niegotowe."
+msgstr "Testowy dostawca zgłasza to konto jako niegotowe."
 
 #: src/features/account/pages/account-page.tsx
 msgid "The interface language is saved."
@@ -1398,8 +1400,8 @@ msgid "The name of the place the edition takes place in. The portal shows the ve
 msgstr "Nazwa miejsca, w którym odbywa się edycja. Portal pokazuje miejsce na stronie edycji."
 
 #: src/features/shop/components/document-card.tsx
-msgid "The new version of {name} is published."
-msgstr "Nowa wersja dokumentu {name} została opublikowana."
+msgid "The new version of “{documentTitle}” is published."
+msgstr "Nowa wersja dokumentu „{documentTitle}” została opublikowana."
 
 #: src/features/shop/components/seller-section.tsx
 msgid "The number the seller is registered under, such as KRS or NIP."
@@ -1449,6 +1451,10 @@ msgstr "Punkt programu został zapisany."
 msgid "The programme item must end after it starts."
 msgstr "Punkt programu musi kończyć się po swoim początku."
 
+#: src/features/shop/components/provider-account-section.tsx
+msgid "The provider reports a condition this panel cannot describe yet (code: {code})."
+msgstr "Dostawca zgłasza warunek, którego ten panel nie potrafi jeszcze opisać (kod: {code})."
+
 #: src/features/shop/components/seller-section.tsx
 msgid "The seller’s details are saved."
 msgstr "Dane sprzedawcy zostały zapisane."
@@ -1462,6 +1468,10 @@ msgid "The settings are saved."
 msgstr "Ustawienia zostały zapisane."
 
 #: src/features/shop/pages/edition-shop-page.tsx
+msgid "The shop has been open since {openedAt}. Buyers reach it while the edition is published."
+msgstr "Sklep jest otwarty od {openedAt}. Kupujący mają do niego dostęp, dopóki edycja jest opublikowana."
+
+#: src/features/shop/pages/edition-shop-page.tsx
 msgid "The shop is closed: nothing can be ordered."
 msgstr "Sklep jest zamknięty: niczego nie można zamówić."
 
@@ -1470,17 +1480,12 @@ msgid "The shop is closed."
 msgstr "Sklep jest zamknięty."
 
 #: src/features/shop/pages/edition-shop-page.tsx
-msgid "The shop is open since {openedAt}. Buyers reach it while the edition is published."
-msgstr "Sklep jest otwarty od {openedAt}. Kupujący mają do niego dostęp, dopóki edycja jest opublikowana."
-
-#: src/features/shop/pages/edition-shop-page.tsx
 msgid "The shop is open."
 msgstr "Sklep jest otwarty."
 
-#. placeholder {0}: consent.text
 #: src/features/shop/components/consent-row.tsx
-msgid "The shop stops asking for it: “{0}”"
-msgstr "Sklep przestanie o nią prosić: „{0}”"
+msgid "The shop stops asking for it: “{text}”."
+msgstr "Sklep przestanie o nią prosić: „{text}”."
 
 #: src/features/shop/model/documents.ts
 msgid "The shop terms have a published version."
@@ -1698,7 +1703,7 @@ msgstr "Wyślemy ci link do ustawienia nowego hasła."
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "What a buyer accepts at the checkout, in the order below. The wording is yours, and so is the choice of which consent is required."
-msgstr "To, co kupujący akceptuje przy składaniu zamówienia, w poniższej kolejności. Treść należy do Ciebie, podobnie jak wybór, która zgoda jest wymagana."
+msgstr "To, co kupujący akceptuje przy składaniu zamówienia, w poniższej kolejności. Treść należy do ciebie, podobnie jak wybór, która zgoda jest wymagana."
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "What opening the shop needs"

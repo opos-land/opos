@@ -150,7 +150,7 @@ describe('EditionShopPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open the shop' }))
 
     expect(
-      await screen.findByText(/The shop is open since at 2027-06-01T08:00:00.000Z/),
+      await screen.findByText(/The shop has been open since at 2027-06-01T08:00:00.000Z/),
     ).toBeDefined()
     expect(open.mock.calls[0]?.[0]).toEqual({ params: { editionId: 'edition-2026' } })
     expect(screen.queryByRole('button', { name: 'Open the shop' })).toBeNull()
@@ -190,7 +190,7 @@ describe('EditionShopPage', () => {
     state.tickets = 'write'
     read.mockResolvedValue(opened)
     view()
-    await screen.findByText(/The shop is open since/)
+    await screen.findByText(/The shop has been open since/)
 
     fireEvent.click(screen.getByRole('button', { name: 'Close the shop' }))
 
@@ -238,7 +238,7 @@ describe('EditionShopPage', () => {
     read.mockResolvedValue({ ...opened, faqUrl: 'https://convention-a.test/faq' })
     view()
 
-    await screen.findByText(/The shop is open since/)
+    await screen.findByText(/The shop has been open since/)
     expect(screen.queryByRole('button')).toBeNull()
     expect(screen.getByLabelText('Address of the FAQ').matches(':disabled')).toBe(true)
     expect(screen.getByLabelText<HTMLInputElement>('Address of the FAQ').value).toBe(

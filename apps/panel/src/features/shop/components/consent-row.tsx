@@ -30,6 +30,7 @@ export function ConsentRow({
   const params = { editionId: consent.editionId, consentId: consent.id }
   const linked = documents.find((document) => document.id === consent.documentId)
   const linkedTitle = linked?.title ?? ''
+  const text = consent.text
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: shopKey(api) })
   const update = useMutation({
@@ -53,11 +54,11 @@ export function ConsentRow({
       <div className="flex flex-wrap items-center gap-2 text-sm">
         {consent.isRequired ? (
           <Badge>
-            <Trans>Required</Trans>
+            <Trans context="a consent">Required</Trans>
           </Badge>
         ) : (
           <Badge variant="secondary">
-            <Trans>Optional</Trans>
+            <Trans context="a consent">Optional</Trans>
           </Badge>
         )}
         {consent.hidden && (
@@ -117,7 +118,7 @@ export function ConsentRow({
               action={<Trans>Delete the consent</Trans>}
               onConfirm={() => remove.mutateAsync({ params })}
             >
-              <Trans>The shop stops asking for it: “{consent.text}”</Trans>
+              <Trans>The shop stops asking for it: “{text}”.</Trans>
             </IrreversibleAction>
           </div>
         ))}

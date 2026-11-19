@@ -46,7 +46,9 @@ describe('versionUrl', () => {
 
 describe('fileSize', () => {
   it.each([
-    [512, 'en', '512 byte'],
+    [1, 'en', '1 byte'],
+    [512, 'en', '512 bytes'],
+    [512, 'pl', '512 bajtów'],
     [2048, 'en', '2 kB'],
     [1536, 'en', '1.5 kB'],
     [5 * 1024 * 1024, 'en', '5 MB'],

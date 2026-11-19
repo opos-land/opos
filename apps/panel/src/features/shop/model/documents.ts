@@ -34,7 +34,8 @@ export function fileSize(bytes: number, locale: string) {
   return new Intl.NumberFormat(locale, {
     style: 'unit',
     unit,
-    unitDisplay: 'short',
+    // A count of bytes is a word, which the language declines; the larger units are symbols.
+    unitDisplay: unit === 'byte' ? 'long' : 'short',
     maximumFractionDigits: 1,
   }).format(value)
 }

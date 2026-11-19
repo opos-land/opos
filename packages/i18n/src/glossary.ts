@@ -46,6 +46,16 @@ export const glossary = {
     context: 'glossary',
     comment: 'Glossary term: venue (where an edition takes place)',
   }),
+  shop: msg({
+    message: 'shop',
+    context: 'glossary',
+    comment: 'Glossary term: shop (where an edition sells)',
+  }),
+  consent: msg({
+    message: 'consent',
+    context: 'glossary',
+    comment: 'Glossary term: consent (a sentence a buyer accepts with an order)',
+  }),
 }
 
 export type GlossaryTerm = keyof typeof glossary

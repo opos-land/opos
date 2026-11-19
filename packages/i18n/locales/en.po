@@ -101,6 +101,12 @@ msgstr "Confirm your email address to finish creating your OPOS account."
 msgid "Confirm your new email address"
 msgstr "Confirm your new email address"
 
+#. Glossary term: consent (a sentence a buyer accepts with an order)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "consent"
+msgstr "consent"
+
 #. Glossary term: tenant
 #: src/glossary.ts
 msgctxt "glossary"
@@ -256,6 +262,12 @@ msgstr "scanner"
 #: src/emails.ts
 msgid "Set a new password"
 msgstr "Set a new password"
+
+#. Glossary term: shop (where an edition sells)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "shop"
+msgstr "shop"
 
 #: src/errors.ts
 msgid "Sign-up is closed at the moment."

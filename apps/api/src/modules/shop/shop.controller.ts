@@ -50,7 +50,7 @@ export class ShopController {
   providerAccount() {
     return implement(contract.shop.providerAccount.get).handler(async () => {
       const account = await this.accounts.find()
-      return { account: account ? this.shown(account) : null }
+      return { account: account ? this.shown(account) : null, providers: this.providers.names() }
     })
   }
 
@@ -72,7 +72,7 @@ export class ShopController {
         credentials: this.vault.seal(credentials),
         readyAt: answer.outcome === 'ready' ? new Date() : null,
       })
-      return { account: this.shown(account) }
+      return { account: this.shown(account), providers: this.providers.names() }
     })
   }
 

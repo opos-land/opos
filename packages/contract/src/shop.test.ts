@@ -3,6 +3,7 @@ import { errorCodes } from './errors'
 import {
   PAYMENT_PROVIDERS,
   providerAccountSchema,
+  providerAccountStateSchema,
   putProviderAccountSchema,
   putSellerSchema,
   sellerSchema,
@@ -105,6 +106,18 @@ describe('the provider account', () => {
       credentials: { account: 'demo' },
     })
     expect(parsed).not.toHaveProperty('credentials')
+  })
+})
+
+describe('the state of the provider account', () => {
+  it('names the providers the environment has a module of, beside the account or none', () => {
+    expect(Object.keys(providerAccountStateSchema.shape).sort()).toEqual(['account', 'providers'])
+    expect(providerAccountStateSchema.parse({ account: null, providers: ['fake'] })).toEqual({
+      account: null,
+      providers: ['fake'],
+    })
+    refused(providerAccountStateSchema.safeParse({ account: null, providers: ['cash'] }))
+    refused(providerAccountStateSchema.safeParse({ account: null }))
   })
 })
 

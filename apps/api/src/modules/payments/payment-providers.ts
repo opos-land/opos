@@ -28,6 +28,11 @@ export class PaymentProviders {
     private readonly modules: ReadonlyMap<PaymentProvider, PaymentProviderModule>,
   ) {}
 
+  /** The providers this environment has a module of. */
+  names(): PaymentProvider[] {
+    return [...this.modules.keys()]
+  }
+
   /** Whether a module of the provider is loaded here. */
   loaded(provider: PaymentProvider) {
     return this.modules.has(provider)

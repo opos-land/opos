@@ -44,6 +44,11 @@ describe('PaymentProviders', () => {
     expect(providers.loaded('fake')).toBe(true)
   })
 
+  it('names the providers the environment has a module of: none on production', () => {
+    expect(providers.names()).toEqual(['fake'])
+    expect(new PaymentProviders(providerModules({ OPOS_ENV: 'production' })).names()).toEqual([])
+  })
+
   // A provider's call is outbound I/O, which never runs inside a transaction
   // (docs/ARCHITECTURE.md, API conventions).
   it('refuses to call a provider inside a transaction', async () => {

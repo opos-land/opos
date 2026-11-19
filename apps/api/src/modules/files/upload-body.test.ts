@@ -63,6 +63,37 @@ describe('uploadBodyParser', () => {
     expect(response.body).toEqual({ code: 'file.too-large' })
   })
 
+  // A router answers OPTIONS itself for a path it holds a route of: the preflight of an upload
+  // would end there, before CORS says who may send it.
+  it('leaves the preflight of a route that takes a file to what follows', async () => {
+    const server = express()
+    server.use(uploadBodyParser(contract))
+    server.options(/.*/, (_req, res) => {
+      res.set('x-answered-by', 'cors').sendStatus(204)
+    })
+
+    const response = await request(server).options(
+      '/editions/7a1e6b56-2c3f-4d55-9a2e-1f0b7c3d9e10/pictures',
+    )
+
+    expect(response.status).toBe(204)
+    expect(response.headers['x-answered-by']).toBe('cors')
+  })
+
+  it('parses no body of another method on the path of a route that takes a file', async () => {
+    const server = express()
+    server.use(uploadBodyParser(contract))
+    server.get(/.*/, (req, res) => {
+      res.json({ parsed: req.body !== undefined })
+    })
+
+    const response = await request(server).get(
+      '/editions/7a1e6b56-2c3f-4d55-9a2e-1f0b7c3d9e10/pictures',
+    )
+
+    expect(response.body).toEqual({ parsed: false })
+  })
+
   it('leaves every other route its default limit', async () => {
     const response = await request(app())
       .post('/other')

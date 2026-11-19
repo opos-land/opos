@@ -28,7 +28,13 @@ export function uploadBodyParser(router: AnyContractRouter): RequestHandler {
     })
   const routes = express.Router()
   for (const { method, path } of uploadRoutes(router)) {
-    routes[method.toLowerCase() as 'post' | 'put' | 'patch'](path, parse)
+    // Under every method, not the route's own alone: a router answers OPTIONS itself for a path
+    // it holds no handler of that method for, and the preflight of an upload would end here,
+    // before CORS names who may send it.
+    routes.all(path, (req, res, next) => {
+      if (req.method === method) parse(req, res, next)
+      else next()
+    })
   }
   return routes
 }

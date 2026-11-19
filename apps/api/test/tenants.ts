@@ -525,6 +525,7 @@ const ROW_ORDER: Record<string, string> = {
   order_consents: 'order_id, consent_id',
   order_qr_code_orders: 'order_id',
   order_accounts: 'order_id',
+  payment_provider_accounts: 'tenant_id',
   order_emails: 'queued_at, id',
   ticket_type_price_tiers: 'ticket_type_id, starts_at',
   ticket_type_supporter_prices: 'ticket_type_id, amount_minor',

@@ -57,6 +57,14 @@ msgstr "An account with this email address already exists."
 msgid "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
 msgstr "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
 
+#: src/errors.ts
+msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
+msgstr "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
+
+#: src/errors.ts
+msgid "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
+msgstr "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
+
 #. Glossary term: attendee
 #: src/glossary.ts
 msgctxt "glossary"
@@ -265,6 +273,10 @@ msgctxt "glossary"
 msgid "order"
 msgstr "order"
 
+#: src/errors.ts
+msgid "Orders already hold more than this limit: {held}. Set the limit to at least that number."
+msgstr "Orders already hold more than this limit: {held}. Set the limit to at least that number."
+
 #. Glossary term: org
 #: src/glossary.ts
 msgctxt "glossary"
@@ -450,8 +462,16 @@ msgid "This address is reserved for the platform. Choose another one."
 msgstr "This address is reserved for the platform. Choose another one."
 
 #: src/errors.ts
+msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
+msgstr "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
+
+#: src/errors.ts
 msgid "This convention already has an edition with this address."
 msgstr "This convention already has an edition with this address."
+
+#: src/errors.ts
+msgid "This convention has orders, which are kept for at least five years. It cannot be deleted."
+msgstr "This convention has orders, which are kept for at least five years. It cannot be deleted."
 
 #: src/errors.ts
 msgid "This convention is being changed right now. Try again in a moment."
@@ -468,6 +488,10 @@ msgstr "This document has reached the limit of versions: {limit}."
 #: src/errors.ts
 msgid "This edition has ended, so its programme items take no new likes."
 msgstr "This edition has ended, so its programme items take no new likes."
+
+#: src/errors.ts
+msgid "This edition has orders, so it cannot be deleted."
+msgstr "This edition has orders, so it cannot be deleted."
 
 #: src/errors.ts
 msgid "This edition has reached the limit of consents: {limit}."

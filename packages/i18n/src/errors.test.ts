@@ -46,6 +46,23 @@ describe('errorMessage', () => {
     ['document.in-use', 'Do tego dokumentu odsyła zgoda. Najpierw zmień lub usuń tę zgodę.'],
     ['shop.closed', 'Ten sklep w tej chwili nie prowadzi sprzedaży.'],
     [
+      'catalog.in-use',
+      'Ta zmiana usunęłaby coś, co jest już w zamówieniu. Zamiast usuwać, ukryj tę pozycję: zniknie z oferty, a w zamówieniach pozostanie.',
+    ],
+    [
+      'consent.in-use',
+      'To zostało już zaakceptowane w zamówieniu, więc nie można tego usunąć. Zamiast usuwać, ukryj: zniknie ze sklepu, a w zamówieniach pozostanie.',
+    ],
+    [
+      'shop.payments-under-way',
+      'Zamówienie w tym konwencie oczekuje na płatność. Dane dostępowe zmienisz, gdy zostanie opłacone albo wygaśnie.',
+    ],
+    ['edition.has-orders', 'Ta edycja ma zamówienia, więc nie można jej usunąć.'],
+    [
+      'tenant.has-orders',
+      'Ten konwent ma zamówienia, które przechowujemy co najmniej pięć lat. Nie można go usunąć.',
+    ],
+    [
       'order.total-changed',
       'Kwota twojego zamówienia się zmieniła. Sprawdź nową kwotę i ją potwierdź.',
     ],
@@ -86,6 +103,16 @@ describe('errorMessage', () => {
 
     expect(errorMessage(code)).not.toBe(unknownError)
     expect(i18n._({ ...errorMessage(code), values: { limit: 30 } })).toBe(text)
+  })
+
+  it('says in Polish how much orders hold of a limit set below it', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('catalog.below-held')).not.toBe(unknownError)
+    expect(i18n._({ ...errorMessage('catalog.below-held'), values: { held: 12 } })).toBe(
+      'Zamówienia zajmują już więcej, niż wynosi ten limit: 12. Ustaw limit nie niższy od tej liczby.',
+    )
   })
 
   it('says that a convention is suspended, with the glossary rendering', async () => {

@@ -12,7 +12,7 @@ import {
   type StoredProviderAccount,
 } from './provider-account.repository'
 import { isComplete, SellerRepository } from './seller.repository'
-import { credentialsRefused, providerUnavailable, shopOpen } from './shop.errors'
+import { credentialsRefused, paymentsUnderWay, providerUnavailable, shopOpen } from './shop.errors'
 
 /**
  * What belongs to the whole convention of its shop, behind the shop permission: the seller's
@@ -65,6 +65,9 @@ export class ShopController {
   connectProviderAccount() {
     return implement(contract.shop.providerAccount.put).handler(async () => {
       const { provider, credentials, answer } = this.context.prepared<CheckedCredentials>()
+      // Whatever the provider said of the new credentials, the stored ones stay while a payment
+      // that started with them is under way.
+      if (await this.accounts.paymentsUnderWay()) throw paymentsUnderWay()
       if (answer.outcome === 'refused') throw credentialsRefused()
       if (answer.outcome === 'unavailable') throw providerUnavailable(answer.reason)
       // An open shop keeps a ready account: credentials that leave it not ready wait for the
@@ -79,12 +82,16 @@ export class ShopController {
     })
   }
 
-  /** Disconnecting removes the credentials, and is refused while a shop of the convention is open. */
+  /**
+   * Disconnecting removes the credentials. It is refused while a shop of the convention is open,
+   * and while an order awaits payment: its payment is confirmed with them.
+   */
   @Implement(contract.shop.providerAccount.remove)
   @RequireTenant('shop', 'write')
   disconnectProviderAccount() {
     return implement(contract.shop.providerAccount.remove).handler(async () => {
       if (await this.shops.anyOpen()) throw shopOpen()
+      if (await this.accounts.paymentsUnderWay()) throw paymentsUnderWay()
       await this.accounts.remove()
     })
   }

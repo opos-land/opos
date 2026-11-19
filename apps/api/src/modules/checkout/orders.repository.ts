@@ -18,6 +18,7 @@ import {
 import { and, asc, count, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
+import { providerAccountLockKey } from '../shop/provider-account-lock'
 
 /** An order as it is written when it is placed. */
 export interface NewOrder {
@@ -101,6 +102,19 @@ export class OrdersRepository {
         .orderBy(asc(merchandiseVariants.id))
         .for('update')
     }
+  }
+
+  /**
+   * Keeps the provider account of the tenant as it is until the order is placed, sharing its lock
+   * with the other orders being placed: a change of its credentials waits, then counts the order
+   * and is refused, so the payment is confirmed with the credentials it starts with.
+   */
+  async holdProviderAccount(tenantId: string) {
+    await this.context
+      .tx()
+      .execute(
+        sql`select pg_advisory_xact_lock_shared(${providerAccountLockKey(tenantId)}::bigint)`,
+      )
   }
 
   /** How many orders of the edition await payment under the email. */

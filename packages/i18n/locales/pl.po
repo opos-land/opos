@@ -57,6 +57,14 @@ msgstr "Konto z tym adresem e-mail już istnieje."
 msgid "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
 msgstr "Administrator musi mieć włączone uwierzytelnianie dwuskładnikowe. Włącz je w portalu, a potem poproś o ponowne nadanie roli."
 
+#: src/errors.ts
+msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
+msgstr "To zostało już zaakceptowane w zamówieniu, więc nie można tego usunąć. Zamiast usuwać, ukryj: zniknie ze sklepu, a w zamówieniach pozostanie."
+
+#: src/errors.ts
+msgid "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
+msgstr "Zamówienie w tym konwencie oczekuje na płatność. Dane dostępowe zmienisz, gdy zostanie opłacone albo wygaśnie."
+
 #. Glossary term: attendee
 #: src/glossary.ts
 msgctxt "glossary"
@@ -265,6 +273,10 @@ msgctxt "glossary"
 msgid "order"
 msgstr "zamówienie"
 
+#: src/errors.ts
+msgid "Orders already hold more than this limit: {held}. Set the limit to at least that number."
+msgstr "Zamówienia zajmują już więcej, niż wynosi ten limit: {held}. Ustaw limit nie niższy od tej liczby."
+
 #. Glossary term: org
 #: src/glossary.ts
 msgctxt "glossary"
@@ -450,8 +462,16 @@ msgid "This address is reserved for the platform. Choose another one."
 msgstr "Ten adres jest zarezerwowany dla platformy. Wybierz inny."
 
 #: src/errors.ts
+msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
+msgstr "Ta zmiana usunęłaby coś, co jest już w zamówieniu. Zamiast usuwać, ukryj tę pozycję: zniknie z oferty, a w zamówieniach pozostanie."
+
+#: src/errors.ts
 msgid "This convention already has an edition with this address."
 msgstr "Ten konwent ma już edycję o tym adresie."
+
+#: src/errors.ts
+msgid "This convention has orders, which are kept for at least five years. It cannot be deleted."
+msgstr "Ten konwent ma zamówienia, które przechowujemy co najmniej pięć lat. Nie można go usunąć."
 
 #: src/errors.ts
 msgid "This convention is being changed right now. Try again in a moment."
@@ -468,6 +488,10 @@ msgstr "Ten dokument osiągnął limit wersji: {limit}."
 #: src/errors.ts
 msgid "This edition has ended, so its programme items take no new likes."
 msgstr "Ta edycja już się skończyła, więc nie można polubić jej punktów programu."
+
+#: src/errors.ts
+msgid "This edition has orders, so it cannot be deleted."
+msgstr "Ta edycja ma zamówienia, więc nie można jej usunąć."
 
 #: src/errors.ts
 msgid "This edition has reached the limit of consents: {limit}."

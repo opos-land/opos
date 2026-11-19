@@ -35,6 +35,7 @@ import {
 import { deleteMail, waitForMail } from './mailpit'
 import {
   addEdition,
+  addOrder,
   addRecoveryCodeHash,
   addVerifiedFactor,
   closeTenantDb,
@@ -542,6 +543,22 @@ describe('DELETE /admin/tenants/{tenantId}', () => {
     expect(res.body).toMatchObject({ code: 'tenant.not-suspended' })
     expect((await api().get(`/public/tenants/${tenant.slug}`)).status).toBe(200)
     expect(await loggedActions({ tenantId: tenant.id })).toEqual([])
+  })
+
+  // An order is kept for years after its edition: a convention that has one is not deleted.
+  it('refuses to delete a suspended tenant that holds an order', async () => {
+    const tenant = await tenantWithHead()
+    const edition = await addEdition(tenant.id, { slug: '2027', isPublished: true })
+    await addOrder(tenant.id, edition)
+    await suspend(tenant.id)
+
+    const res = await remove(tenant.id)
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject({ code: 'tenant.has-orders' })
+    expect((await asAdmin(api().get(`/admin/tenants/${tenant.id}`))).status).toBe(200)
+    expect(await loggedActions({ tenantId: tenant.id })).toEqual([])
+    await restore(tenant.id)
   })
 
   it('deletes a suspended tenant for good, and its head still signs in', async () => {

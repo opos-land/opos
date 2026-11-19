@@ -28,6 +28,7 @@ describe('errorCodes', () => {
 
   it.each([
     'tenant.not-suspended',
+    'tenant.has-orders',
     'tenant.slug-taken',
     'tenant.slug-reserved',
     'tenant.slug-retired',
@@ -50,6 +51,18 @@ describe('errorCodes', () => {
       expect(errorCodes).toContain(code)
     },
   )
+
+  // What an order keeps in place (docs/specs/0003-catalog.md, L2 and L3;
+  // docs/specs/0004-checkout-and-orders.md, A7).
+  it.each([
+    'catalog.in-use',
+    'catalog.below-held',
+    'consent.in-use',
+    'shop.payments-under-way',
+    'edition.has-orders',
+  ])('lists %s of the refusals an order causes', (code) => {
+    expect(errorCodes).toContain(code)
+  })
 
   it.each(errorCodes)('%s has a message in @opos/i18n/errors', (code) => {
     expect(errorMessages[code]).toBeDefined()

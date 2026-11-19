@@ -3,6 +3,7 @@ import { contract, tiersOverlap as overlapping } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
 import { invalidField, tiersOverlap } from './catalog.errors'
+import { HoldsRepository } from './holds.repository'
 import { TicketTypesRepository } from './ticket-types.repository'
 
 /**
@@ -13,7 +14,10 @@ import { TicketTypesRepository } from './ticket-types.repository'
  */
 @Controller()
 export class TicketTypesController {
-  constructor(private readonly ticketTypes: TicketTypesRepository) {}
+  constructor(
+    private readonly ticketTypes: TicketTypesRepository,
+    private readonly holds: HoldsRepository,
+  ) {}
 
   @Implement(contract.catalog.ticketTypes.list)
   @RequireEdition('tickets', 'read')
@@ -50,6 +54,9 @@ export class TicketTypesController {
       }
       if (tiers && overlapping(tiers)) throw tiersOverlap()
       await this.ticketTypes.checkOffers(editionId, input.body)
+      if (input.body.capacity !== undefined) {
+        await this.holds.fits('ticket-type', editionId, stored.id, input.body.capacity)
+      }
       return this.ticketTypes.update(editionId, stored.id, input.body)
     })
   }

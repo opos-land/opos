@@ -73,6 +73,7 @@ export class OrderPlacement {
     }
 
     const paid = totalMinor === 0
+    if (!paid) await this.orders.holdProviderAccount(tenantId)
     const resultToken = secretToken()
     const placed = await this.write(lines, {
       tenantId,

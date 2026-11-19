@@ -504,15 +504,13 @@ export class MerchandiseRepository {
     }
   }
 
-  /** Sets the stock of a variant of the item, null while it is unlimited; false when not found. */
+  /** Sets the stock of a variant of the item, null while it is unlimited. */
   async putStock(item: MerchandiseItem, variantId: string, stock: number | null) {
-    if (!item.variants.some((variant) => variant.id === variantId)) return false
     await this.context
       .tx()
       .update(merchandiseVariants)
       .set({ stock })
       .where(this.ofItem(merchandiseVariants, item, variantId))
-    return true
   }
 
   /** Refuses a picture more than an item holds, before its file is kept. */

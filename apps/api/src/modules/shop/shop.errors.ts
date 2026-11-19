@@ -9,6 +9,13 @@ import { ApiError } from '../../common/errors/api-error'
 /** A change that an open shop of the convention forbids: the shop is closed first. */
 export const shopOpen = () => new ApiError(409, 'shop.open', 'A shop of the convention is open')
 
+/**
+ * An order of the convention awaits payment: a payment under way is confirmed with the
+ * credentials it started with, so they stay as they are until it is paid or expires.
+ */
+export const paymentsUnderWay = () =>
+  new ApiError(409, 'shop.payments-under-way', 'An order of the convention awaits payment')
+
 /** The provider refused the credentials it was given: nothing of them is stored. */
 export const credentialsRefused = () =>
   new ApiError(422, 'provider.credentials-refused', 'The provider refused the credentials')

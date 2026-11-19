@@ -11,3 +11,7 @@ export const invalidField = (field: string, message: string) =>
 /** Two price tiers of a ticket type cover a moment together: it has one price at a time. */
 export const tiersOverlap = () =>
   new ApiError(422, 'ticket-type.tiers-overlap', 'Two price tiers overlap')
+
+/** A capacity or a stock set below what orders hold of it; `held` is how much they hold. */
+export const belowHeld = (held: number) =>
+  new ApiError(409, 'catalog.below-held', 'Orders hold more than the limit', { held })

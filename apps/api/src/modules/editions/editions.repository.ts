@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { type Edition } from '@opos/contract'
-import { editions, tenants } from '@opos/db'
+import { editions, refusedByOrder, tenants } from '@opos/db'
 import { and, desc, eq, ne } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError, notFound } from '../../common/errors/api-error'
@@ -134,6 +134,7 @@ export class EditionsRepository {
    * Deletes the edition unless it is active, in one statement: an activation committed meanwhile
    * makes the row fail the condition, so the tenant never loses its active edition. A delete
    * committed meanwhile leaves no row either, and the edition is then gone rather than active.
+   * An edition that has an order is not deleted: orders are kept for years after it.
    */
   async removeInactive(id: string) {
     const rows = await this.context
@@ -141,6 +142,14 @@ export class EditionsRepository {
       .delete(editions)
       .where(and(eq(editions.id, id), eq(editions.isActive, false)))
       .returning({ id: editions.id })
+      .catch((error: unknown) => {
+        // An order keeps its edition and everything it names of it: the database refuses the
+        // deletion, however late the order was placed.
+        if (refusedByOrder(error)) {
+          throw new ApiError(409, 'edition.has-orders', 'The edition has orders')
+        }
+        throw error
+      })
     if (rows.length > 0) return
     if (!(await this.find(id))) throw notFound('edition')
     throw new ApiError(409, 'edition.active', 'The active edition cannot be deleted')

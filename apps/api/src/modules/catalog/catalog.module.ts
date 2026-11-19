@@ -3,6 +3,7 @@ import { AddOnsController } from './add-ons.controller'
 import { AddOnsRepository } from './add-ons.repository'
 import { CustomFieldsController } from './custom-fields.controller'
 import { CustomFieldsRepository } from './custom-fields.repository'
+import { HoldsRepository } from './holds.repository'
 import { MerchandiseController } from './merchandise.controller'
 import { MerchandiseRepository } from './merchandise.repository'
 import { TicketTypesController } from './ticket-types.controller'
@@ -21,6 +22,7 @@ import { TicketTypesRepository } from './ticket-types.repository'
     AddOnsRepository,
     CustomFieldsRepository,
     MerchandiseRepository,
+    HoldsRepository,
   ],
   // The public route that serves a shown item's pictures reads which file is for everyone; the
   // shop reads the whole catalog to make its offer.

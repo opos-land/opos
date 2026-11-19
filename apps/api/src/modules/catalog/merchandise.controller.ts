@@ -8,6 +8,7 @@ import { isUuid } from '../../common/uuid'
 import { FilesService } from '../files/files.service'
 import { PICTURE_KIND, SIZE_CHART_KIND } from '../files/kinds'
 import { ServesFile, TakesFile } from '../files/takes-file.decorator'
+import { HoldsRepository } from './holds.repository'
 import { MerchandiseRepository } from './merchandise.repository'
 
 const hasValue = (item: MerchandiseItem, valueId: string) =>
@@ -23,6 +24,7 @@ const hasValue = (item: MerchandiseItem, valueId: string) =>
 export class MerchandiseController {
   constructor(
     private readonly items: MerchandiseRepository,
+    private readonly holds: HoldsRepository,
     private readonly files: FilesService,
     private readonly context: TenantContextService,
   ) {}
@@ -95,9 +97,10 @@ export class MerchandiseController {
     return implement(contract.catalog.merchandise.putStock).handler(async ({ input }) => {
       const { editionId, itemId, variantId } = input.params
       const item = await this.items.get(editionId, itemId)
-      if (!(await this.items.putStock(item, variantId, input.body.stock))) {
-        throw notFound('variant')
-      }
+      const variant = item.variants.find((own) => own.id === variantId)
+      if (!variant) throw notFound('variant')
+      await this.holds.fits('variant', editionId, variant.id, input.body.stock)
+      await this.items.putStock(item, variant.id, input.body.stock)
       return this.items.get(editionId, item.id)
     })
   }

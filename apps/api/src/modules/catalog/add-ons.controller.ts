@@ -3,6 +3,7 @@ import { type AddOn, addOnLimitIssue, contract, type UpdateAddOn } from '@opos/c
 import { Implement, implement } from '@orpc/nest'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
 import { AddOnsRepository } from './add-ons.repository'
+import { HoldsRepository } from './holds.repository'
 import { invalidField } from './catalog.errors'
 
 /**
@@ -41,7 +42,10 @@ export function limitAfter(stored: AddOn, changes: UpdateAddOn): UpdateAddOn {
  */
 @Controller()
 export class AddOnsController {
-  constructor(private readonly addOns: AddOnsRepository) {}
+  constructor(
+    private readonly addOns: AddOnsRepository,
+    private readonly holds: HoldsRepository,
+  ) {}
 
   @Implement(contract.catalog.addOns.list)
   @RequireEdition('tickets', 'read')
@@ -65,7 +69,11 @@ export class AddOnsController {
     return implement(contract.catalog.addOns.update).handler(async ({ input }) => {
       const { editionId, addOnId } = input.params
       const stored = await this.addOns.get(editionId, addOnId)
-      return this.addOns.update(editionId, stored.id, limitAfter(stored, input.body))
+      const changes = limitAfter(stored, input.body)
+      if (changes.capacity !== undefined) {
+        await this.holds.fits('add-on', editionId, stored.id, changes.capacity)
+      }
+      return this.addOns.update(editionId, stored.id, changes)
     })
   }
 

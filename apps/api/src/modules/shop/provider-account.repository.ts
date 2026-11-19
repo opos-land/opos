@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { type PaymentProvider } from '@opos/contract'
-import { paymentProviderAccounts } from '@opos/db'
-import { eq } from 'drizzle-orm'
+import { orders, paymentProviderAccounts } from '@opos/db'
+import { and, eq, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
+import { providerAccountLockKey } from './provider-account-lock'
 
 export interface StoredProviderAccount {
   provider: PaymentProvider
@@ -51,6 +52,24 @@ export class ProviderAccountRepository {
       .from(paymentProviderAccounts)
       .where(this.own())
     return row
+  }
+
+  /**
+   * Whether an order of the convention awaits payment. The lock on the tenant's provider account
+   * is taken first, alone, and an order with something to pay shares it while it is placed: one
+   * being placed is waited for and counted, and one placed after waits for the change of the
+   * credentials.
+   */
+  async paymentsUnderWay(): Promise<boolean> {
+    const tx = this.context.tx()
+    const tenantId = this.context.tenant().id
+    await tx.execute(sql`select pg_advisory_xact_lock(${providerAccountLockKey(tenantId)}::bigint)`)
+    const [order] = await tx
+      .select({ id: orders.id })
+      .from(orders)
+      .where(and(eq(orders.tenantId, tenantId), eq(orders.status, 'awaiting-payment')))
+      .limit(1)
+    return order !== undefined
   }
 
   /** Removes the account with its credentials; answers whether there was one. */

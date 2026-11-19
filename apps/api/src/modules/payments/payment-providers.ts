@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { type PaymentProvider } from '@opos/contract'
-import { open, seal, sealingKey } from '@opos/db/sealed'
+import { open, providerAccountOf, seal, sealingKey } from '@opos/db/sealed'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ENV, type Env } from '../../config/env'
 import { FakeProvider } from './fake-provider'
@@ -72,9 +72,16 @@ export class PaymentProviders {
   }
 }
 
+/** The account credentials are sealed for: a tenant's, with one provider. */
+export interface SealedFor {
+  tenantId: string
+  provider: PaymentProvider
+}
+
 /**
  * Seals a provider account's credentials with the key the API alone holds, and opens them to call
- * the provider. Sealed, they are the only form the database and a backup ever hold.
+ * the provider. Sealed, they are the only form the database and a backup ever hold; they are
+ * sealed for their tenant and provider, so a value moved to another account opens nothing.
  */
 @Injectable()
 export class CredentialsVault {
@@ -84,11 +91,17 @@ export class CredentialsVault {
     this.key = sealingKey(env.PAYMENT_CREDENTIALS_KEY)
   }
 
-  seal(credentials: Credentials): string {
-    return seal(this.key, JSON.stringify(credentials))
+  seal(account: SealedFor, credentials: Credentials): string {
+    return seal(
+      this.key,
+      JSON.stringify(credentials),
+      providerAccountOf(account.tenantId, account.provider),
+    )
   }
 
-  open(sealed: string): Credentials {
-    return JSON.parse(open(this.key, sealed)) as Credentials
+  open(account: SealedFor, sealed: string): Credentials {
+    return JSON.parse(
+      open(this.key, sealed, providerAccountOf(account.tenantId, account.provider)),
+    ) as Credentials
   }
 }

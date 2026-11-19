@@ -92,17 +92,34 @@ describe('PaymentProviders', () => {
 describe('CredentialsVault', () => {
   const vault = new CredentialsVault({ PAYMENT_CREDENTIALS_KEY: 'k'.repeat(64) })
 
+  const mine = { tenantId: '0198c1a0-0000-7000-8000-00000000000a', provider: 'fake' } as const
+
   it('opens the credentials it sealed, and shows none of them sealed', () => {
-    const sealed = vault.seal({ merchant: '12345', crc: 'top-secret-crc' })
+    const sealed = vault.seal(mine, { merchant: '12345', crc: 'top-secret-crc' })
 
     expect(sealed).not.toContain('top-secret-crc')
     expect(sealed).not.toContain('12345')
-    expect(vault.open(sealed)).toEqual({ merchant: '12345', crc: 'top-secret-crc' })
+    expect(vault.open(mine, sealed)).toEqual({ merchant: '12345', crc: 'top-secret-crc' })
   })
 
   it('does not open what another key sealed', () => {
     const other = new CredentialsVault({ PAYMENT_CREDENTIALS_KEY: 'o'.repeat(64) })
 
-    expect(() => vault.open(other.seal({ account: 'demo' }))).toThrow(/could not be opened/)
+    expect(() => vault.open(mine, other.seal(mine, { account: 'demo' }))).toThrow(
+      /could not be opened/,
+    )
+  })
+
+  // Credentials copied into the row of another convention, or kept under another provider, by
+  // someone who writes the database and holds no key.
+  it('does not open the credentials of another tenant, nor under another provider', () => {
+    const sealed = vault.seal(mine, { account: 'demo' })
+
+    expect(() =>
+      vault.open({ ...mine, tenantId: '0198c1a0-0000-7000-8000-00000000000b' }, sealed),
+    ).toThrow(/could not be opened/)
+    expect(() => vault.open({ ...mine, provider: 'przelewy24' }, sealed)).toThrow(
+      /could not be opened/,
+    )
   })
 })

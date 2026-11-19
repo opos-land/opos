@@ -238,6 +238,10 @@ export const seededDocumentVersion = async (slug: string) =>
     `)
   )[0]?.id
 
+/** Moves a tenant's provider account to another tenant, as only a hand in the database can. */
+export const moveProviderAccount = (from: string, to: string) =>
+  db.execute(sql`update payment_provider_accounts set tenant_id = ${to} where tenant_id = ${from}`)
+
 /** The provider account of the tenant, as stored. */
 export const storedProviderAccount = async (tenantId: string) =>
   (

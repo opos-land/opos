@@ -25,7 +25,7 @@ import {
   tenants,
   uploadedFiles,
 } from './schema'
-import { open, seal, sealingKey } from './sealed'
+import { open, providerAccountOf, seal, sealingKey } from './sealed'
 import { createTenant, restoreTenant, suspendTenant } from './tenants'
 import { totp } from './totp'
 
@@ -790,11 +790,12 @@ async function seedShop(tx: Tx, tenantId: string, shop: SeedShop) {
     .from(paymentProviderAccounts)
     .where(eq(paymentProviderAccounts.tenantId, tenantId))
   const wanted = JSON.stringify(credentials)
+  const sealedFor = providerAccountOf(tenantId, 'fake')
   const opens = (sealed: string) => {
     try {
-      return open(credentialsKey, sealed) === wanted
+      return open(credentialsKey, sealed, sealedFor) === wanted
     } catch {
-      // Sealed with another key, or not sealed at all.
+      // Sealed with another key or for another account, or not sealed at all.
       return false
     }
   }
@@ -803,7 +804,7 @@ async function seedShop(tx: Tx, tenantId: string, shop: SeedShop) {
   await tx.insert(paymentProviderAccounts).values({
     tenantId,
     provider: 'fake',
-    credentials: seal(credentialsKey, wanted),
+    credentials: seal(credentialsKey, wanted, sealedFor),
     readyAt: new Date(),
   })
 }

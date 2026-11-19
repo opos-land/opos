@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { DeleteObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { describe, expect, it } from 'vitest'
-import { open, sealingKey } from '../src/sealed'
+import { open, providerAccountOf, sealingKey } from '../src/sealed'
 import { migrator } from './db'
 
 // The seed refuses before it opens a connection: it runs where OPOS_ENV is local or dev, and a
@@ -344,7 +344,13 @@ describe('db:seed shop', () => {
       expect(stored.ready_at).toBeInstanceOf(Date)
       expect(stored.credentials).not.toContain('demo')
       expect(
-        JSON.parse(open(sealingKey(env('PAYMENT_CREDENTIALS_KEY')), stored.credentials)),
+        JSON.parse(
+          open(
+            sealingKey(env('PAYMENT_CREDENTIALS_KEY')),
+            stored.credentials,
+            providerAccountOf(a, 'fake'),
+          ),
+        ),
       ).toEqual({ account: 'demo' })
 
       // A rerun keeps the account it finds: its row is replaced, never changed, by the API alone.

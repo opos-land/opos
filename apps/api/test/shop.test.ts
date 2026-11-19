@@ -1,5 +1,5 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
-import { open, sealingKey } from '@opos/db/sealed'
+import { open, providerAccountOf, sealingKey } from '@opos/db/sealed'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { ROUTE_RATE_LIMITS } from '../src/common/rate-limit/route-rate-limit'
@@ -16,6 +16,7 @@ import {
   deleteCreatedTenants,
   member,
   type Member,
+  moveProviderAccount,
   openShop,
   storedProviderAccount,
   tenantWithHead,
@@ -59,6 +60,10 @@ const seller = {
   sellerRegistrationNumber: 'KRS 0000000000',
   contactEmail: 'shop@convention-a.test',
 }
+
+/** The credentials of a tenant's fake account, opened as the API opens them. */
+const opened = (tenantId: string, sealed: string) =>
+  open(sealingKey(env.PAYMENT_CREDENTIALS_KEY), sealed, providerAccountOf(tenantId, 'fake'))
 
 const connect = (tenant: Tenant, account = 'demo') =>
   call(
@@ -199,8 +204,22 @@ describe('the provider account', () => {
     expect(stored.provider).toBe('fake')
     expect(stored.readyAt).not.toBeNull()
     expect(stored.credentials).not.toContain('my-secret-account')
-    expect(JSON.parse(open(sealingKey(env.PAYMENT_CREDENTIALS_KEY), stored.credentials))).toEqual({
+    expect(JSON.parse(opened(t.id, stored.credentials))).toEqual({
       account: 'my-secret-account',
+    })
+  })
+
+  it('seals them for their convention: copied into the row of another, they open nothing', async () => {
+    const [mine, theirs] = await Promise.all([tenantWithHead(), tenantWithHead()])
+    await connect(mine, 'my-secret-account').expect(200)
+    const stored = (await storedProviderAccount(mine.id))!
+
+    expect(() => opened(theirs.id, stored.credentials)).toThrow(/could not be opened/)
+    // Moved there by a hand that writes the database, the account is one that cannot sell.
+    await moveProviderAccount(mine.id, theirs.id)
+    const read = await call(theirs.head, 'get', '/shop/provider-account', undefined, theirs.slug)
+    expect(read.body).toMatchObject({
+      account: { ready: false, missing: ['credentials.unreadable'] },
     })
   })
 
@@ -249,7 +268,7 @@ describe('the provider account', () => {
     const after = (await storedProviderAccount(t.id))!
     expect(after.credentials).not.toBe(before.credentials)
     expect(after.readyAt).toBeNull()
-    expect(JSON.parse(open(sealingKey(env.PAYMENT_CREDENTIALS_KEY), after.credentials))).toEqual({
+    expect(JSON.parse(opened(t.id, after.credentials))).toEqual({
       account: FAKE_ACCOUNT.notReady,
     })
   })

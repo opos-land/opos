@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { accounts, createTenant, type Database, tenants } from '@opos/db'
-import { seal, sealingKey } from '@opos/db/sealed'
+import { providerAccountOf, seal, sealingKey } from '@opos/db/sealed'
 import { inArray, sql } from 'drizzle-orm'
 import { apiEnv } from './stack'
 
@@ -145,7 +145,11 @@ export class TenantFactory {
     if (input.credentials) {
       const key = apiEnv.PAYMENT_CREDENTIALS_KEY
       if (!key) throw new Error('PAYMENT_CREDENTIALS_KEY is missing; run pnpm infra:init')
-      const sealed = seal(sealingKey(key), JSON.stringify(input.credentials))
+      const sealed = seal(
+        sealingKey(key),
+        JSON.stringify(input.credentials),
+        providerAccountOf(tenantId, 'fake'),
+      )
       await this.db.execute(sql`
         insert into payment_provider_accounts (tenant_id, provider, credentials, ready_at)
         values (${tenantId}, 'fake', ${sealed}, now())

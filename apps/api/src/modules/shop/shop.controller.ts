@@ -72,7 +72,7 @@ export class ShopController {
       if (answer.outcome !== 'ready' && (await this.shops.anyOpen())) throw shopOpen()
       const account = await this.accounts.replace({
         provider,
-        credentials: this.vault.seal(credentials),
+        credentials: this.vault.seal({ tenantId: this.context.tenant().id, provider }, credentials),
         readyAt: answer.outcome === 'ready' ? new Date() : null,
       })
       return { account: this.shown(account), providers: this.providers.names() }
@@ -97,7 +97,11 @@ export class ShopController {
   private shown(account: StoredProviderAccount): ProviderAccount {
     let missing: string[]
     try {
-      missing = this.providers.missing(account.provider, this.vault.open(account.credentials))
+      const sealedFor = { tenantId: this.context.tenant().id, provider: account.provider }
+      missing = this.providers.missing(
+        account.provider,
+        this.vault.open(sealedFor, account.credentials),
+      )
     } catch {
       missing = ['credentials.unreadable']
     }

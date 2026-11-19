@@ -1,6 +1,6 @@
 # Edition list and edition page
 
-- Status: Accepted
+- Status: Implemented
 - Domain owner: the team: the edition list and the edition's page are part of the core
 - Decisions: [0043](../adr/0043-list-every-published-edition-on-the-portals-home-page.md)
 

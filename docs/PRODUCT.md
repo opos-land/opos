@@ -41,7 +41,8 @@ done when this flow works with no manual database edits:
 2. The head creates an edition, marks it active and publishes it.
 3. They add programme items and assign a speaker to one.
 4. They connect the convention's own payment provider account and put tickets on sale.
-5. The convention's page in the portal shows the programme to anyone.
+5. The portal lists the edition on its home page, and the edition's page shows anyone when and
+   where it takes place and leads to its programme.
 6. A visitor buys tickets; the payment goes to the convention's account.
 7. The head invites an org to this edition's programme alone, and that is all the org sees.
 8. The visitor registers, by email or Google, and signs up for the edition, on a phone.
@@ -81,6 +82,7 @@ a ticket; what the scene calls accreditation is the ticket.
 | **locale**                    | a language in BCP 47 form (`pl`, `en`)                                                       |
 | **two-factor authentication** | a second sign-in step an account turns on for itself; 2FA, `mfa` in code                     |
 | **suspended**                 | of a convention: taken off the platform by the admin until restored                          |
+| **venue**                     | where an edition takes place: the name of the place, its address and its city                |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.
@@ -92,8 +94,9 @@ different convention.
 **A tenant is the convention brand**, not a single edition: its team, branding, configuration and
 address carry over between editions, and an attendee keeps their history with it.
 
-**A suspended convention is off for everyone but the admin**: its page is not found, its programme
-items leave every personal schedule, and its organizers see only that it is suspended. Restored, it
+**A suspended convention is off for everyone but the admin**: its page is not found, its editions
+leave the portal's list, its programme items leave every personal schedule, and its organizers see
+only that it is suspended. Restored, it
 is as it was. Only a suspended convention can be deleted, at once and for good, with everything it
 owns; the accounts stay ([0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
 
@@ -102,7 +105,7 @@ account the convention owns, and OPOS charges no fees.
 
 | Convention level                                  | Edition level                                    |
 | ------------------------------------------------- | ------------------------------------------------ |
-| name, address, custom domain, language, time zone | programme items, speakers, likes, reviews        |
+| name, address, custom domain, language, time zone | venue, programme items, speakers, likes, reviews |
 | team, shop (payment provider, currency), branding | tickets, attendee registrations, website content |
 
 The panel keeps the levels apart, so the organizers of one edition never meet the convention's
@@ -119,10 +122,10 @@ permissions open.
 An org holds permissions **per resource** on two levels, each **none** (the default), **read** or
 **write**: a new org has no access until granted, and need not have it in every edition.
 
-| Level      | Permissions                                                         |
-| ---------- | ------------------------------------------------------------------- |
-| convention | settings (data and team), shop (payment provider account), branding |
-| edition    | programme, tickets (sales and scanners), website content            |
+| Level      | Permissions                                                                |
+| ---------- | -------------------------------------------------------------------------- |
+| convention | settings (data and team), shop (payment provider account), branding (logo) |
+| edition    | programme, tickets (sales and scanners), website content                   |
 
 A **head** bypasses every permission, and the membership never expires. Every convention keeps at
 least one, handed over by promoting another member first; a demoted head keeps only the permissions
@@ -156,14 +159,23 @@ convention sends up to 20 an hour.
 
 ## 6. Addresses and domains
 
-| Address                                   | What is there                                          | MVP |
-| ----------------------------------------- | ------------------------------------------------------ | --- |
-| `opos.land`                               | the portal                                             | yes |
-| `opos.land/conventions/<convention>`      | a convention's page: programme, past editions, sign-up | yes |
-| `panel.opos.land`                         | the panel; the scanner at `/scanner`                   | yes |
-| `api.opos.land`                           | the API; public documentation at `/docs`               | yes |
-| `<convention>.opos.land`, a custom domain | the public convention website                          | no  |
-| `admin.opos.land`                         | the admin application                                  | yes |
+| Address                                        | What is there                                                             | MVP |
+| ---------------------------------------------- | ------------------------------------------------------------------------- | --- |
+| `opos.land`                                    | the portal: the editions of every convention, coming and past             | yes |
+| `opos.land/conventions/<convention>`           | a convention's page: its active edition, its other editions, sign-up      | yes |
+| `opos.land/conventions/<convention>/<edition>` | an edition's page: when and where it takes place, its programme, its shop | yes |
+| `panel.opos.land`                              | the panel; the scanner at `/scanner`                                      | yes |
+| `api.opos.land`                                | the API; public documentation at `/docs`                                  | yes |
+| `<convention>.opos.land`, a custom domain      | the public convention website                                             | no  |
+| `admin.opos.land`                              | the admin application                                                     | yes |
+
+**Publishing an edition lists it.** The portal's home page lists the published editions of every
+convention that is not suspended, to anyone: the coming ones, an edition under way among them, then
+the past ones. Publication alone decides it: no convention, org or admin lists or hides an edition
+apart from it ([0043](adr/0043-list-every-published-edition-on-the-portals-home-page.md)). A
+published edition has a page of its own, a past one too, which shows the convention's name and
+logo and the edition's dates and venue, and leads to its programme and, while it is open, to its
+shop. A convention with no logo shows none.
 
 **Only the admin sets a convention's address and custom domain.** Changing the address breaks every
 old link, and no address is a word the platform uses itself, such as `panel` or `api`. The address
@@ -295,7 +307,9 @@ interface language.
   deletion ([0029](adr/0029-ship-four-web-applications.md)); organizer invitations by email
 - Polish and English; language and time zone per convention
 - Sign-in by email or Google, confirmation and reset by email, two-factor authentication
-- The programme with speakers on the convention's page, likes, personal schedule, reviews
+- The list of every convention's published editions on the portal's home page; an edition's page
+  with its venue and the convention's logo
+- The programme with speakers on the edition's programme page, likes, personal schedule, reviews
 - Tickets sold to the convention's own account and checked at the venue; attendee registrations
 - Account deletion; a privacy policy linked from registration
 - File uploads, as far as a feature's spec asks for them
@@ -313,6 +327,6 @@ interface language.
 - Localized portal paths; content translations with a language switcher on the public website
 - Czech, Slovak, German; other currencies, payment methods and providers; more sign-in providers
 - Our own address during Google sign-in; changing an email address, confirmed by both addresses
-- Convention catalogue, speaker profiles, rooms, block schedule
+- Searching and filtering the list of editions, speaker profiles, rooms, block schedule
 - Custom roles, an audit log of team changes
 - The remaining GDPR obligations: record of processing, data export, log retention

@@ -28,6 +28,7 @@ import {
   type Member,
   openShop,
   restore,
+  seededDocumentVersion,
   setPublished,
   storedFiles,
   storedShop,
@@ -1000,6 +1001,18 @@ describe('a published version for everyone', () => {
     }
 
     await download(address).expect(200)
+  })
+
+  // The seed writes the rows of its demo documents and puts their files into the bucket itself,
+  // under the keys the storage reads: this fails when the two stop agreeing.
+  it('is served for a document the seed published, from the file the seed put into the bucket', async () => {
+    const versionId = await seededDocumentVersion('convention-a')
+    expect(versionId, 'run pnpm db:seed').toBeDefined()
+
+    const res = await download(path({ slug: 'convention-a' }, versionId!)).expect(200)
+
+    expect(res.headers['content-type']).toBe('application/pdf')
+    expect((res.body as Buffer).subarray(0, 5).toString('latin1')).toBe('%PDF-')
   })
 
   it("is addressed by the version alone: its file's own identifier names nothing", async () => {

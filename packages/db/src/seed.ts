@@ -1,21 +1,31 @@
 import { createHash } from 'node:crypto'
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { and, eq, notInArray, sql } from 'drizzle-orm'
 import { grantAdmin } from './admins'
 import { migrationDb } from './client'
+import { demoPdf } from './demo-pdf'
 import { migrationUrl, reachableUrl } from './migration-url'
 import {
   accountRecoveryCodes,
   accounts,
   admins,
+  editionConsents,
+  editionDocuments,
+  editionDocumentVersions,
   editionMemberships,
   editions,
+  editionShops,
+  paymentProviderAccounts,
   programItemLikes,
   programItems,
   programItemSpeakers,
   retiredTenantSlugs,
+  shopSellers,
   tenantMemberships,
   tenants,
+  uploadedFiles,
 } from './schema'
+import { open, seal, sealingKey } from './sealed'
 import { createTenant, restoreTenant, suspendTenant } from './tenants'
 import { totp } from './totp'
 
@@ -50,6 +60,30 @@ interface SeedItem {
   likedBy?: string[]
 }
 
+type DocumentKind = (typeof editionDocuments.kind.enumValues)[number]
+
+/** A legal document of a demo edition, published once as a PDF of these lines. */
+interface SeedDocument {
+  kind: DocumentKind
+  title: string
+  lines: string[]
+}
+
+/** A consent of a demo edition, in the order given; it may link the edition's document of a kind. */
+interface SeedConsent {
+  text: string
+  isRequired: boolean
+  document?: DocumentKind
+}
+
+/** The shop of a demo edition: what opening asks of the edition, and whether it is open. */
+interface SeedEditionShop {
+  open: boolean
+  faqUrl?: string
+  documents: SeedDocument[]
+  consents: SeedConsent[]
+}
+
 interface SeedEdition {
   slug: string
   name: string
@@ -62,6 +96,18 @@ interface SeedEdition {
   venueAddress: string
   venueCity: string
   program: SeedItem[]
+  /** Left out, the edition has set nothing of its shop. */
+  shop?: SeedEditionShop
+}
+
+/** What a demo convention has set of its shop: its seller's details and its provider account. */
+interface SeedShop {
+  sellerName: string
+  sellerAddress: string
+  sellerRegistrationNumber: string
+  contactEmail: string
+  /** The credentials the fake provider takes as ready to sell. */
+  credentials: Record<string, string>
 }
 
 interface SeedTenant {
@@ -72,6 +118,8 @@ interface SeedTenant {
   headEmail: string
   /** Suspended by the admin: off for everyone else, with everything it owns kept. */
   suspended?: boolean
+  /** Left out, the convention has set nothing of its shop. */
+  shop?: SeedShop
   editions: SeedEdition[]
   team: SeedMember[]
 }
@@ -131,6 +179,16 @@ const RECOVERY_CODES = Array.from(
   (_, index) => `DEMORECOVERYCOD${'ABCDEFGHIJ'[index]}`,
 )
 
+// The text of every demo document says what it is: OPOS ships no legal text of its own.
+const demoDocument = (kind: DocumentKind, title: string): SeedDocument => ({
+  kind,
+  title,
+  lines: [
+    'This is a demo document of a demo convention.',
+    'It stands in for a text the convention writes itself and binds nobody.',
+  ],
+})
+
 const TENANTS: SeedTenant[] = [
   {
     slug: 'convention-a',
@@ -138,6 +196,14 @@ const TENANTS: SeedTenant[] = [
     defaultLocale: 'pl',
     timezone: 'Europe/Warsaw',
     headEmail: 'head@convention-a.test',
+    // Ready to sell: the seller's details complete, and an account of the fake provider.
+    shop: {
+      sellerName: 'Convention A Foundation',
+      sellerAddress: 'ul. Przykładowa 1, 61-001 Poznań',
+      sellerRegistrationNumber: 'KRS 0000000000',
+      contactEmail: 'shop@convention-a.test',
+      credentials: { account: 'demo' },
+    },
     editions: [
       {
         slug: '2025',
@@ -167,6 +233,12 @@ const TENANTS: SeedTenant[] = [
           { title: 'Folklore in modern fantasy' },
           { title: 'Closing ceremony' },
         ],
+        // Closed, and not ready to open: it has its shop terms and no privacy policy.
+        shop: {
+          open: false,
+          documents: [demoDocument('shop-terms', 'Shop terms 2025')],
+          consents: [],
+        },
       },
       {
         slug: '2026',
@@ -195,6 +267,25 @@ const TENANTS: SeedTenant[] = [
           { title: 'An evening of fantasy music' },
           { title: 'Closing ceremony' },
         ],
+        // Open: every condition of opening holds.
+        shop: {
+          open: true,
+          faqUrl: 'https://convention-a.test/faq',
+          documents: [
+            demoDocument('shop-terms', 'Shop terms'),
+            demoDocument('privacy-policy', 'Privacy policy'),
+            demoDocument('edition-rules', 'Convention rules'),
+          ],
+          consents: [
+            { text: 'I accept the shop terms.', isRequired: true, document: 'shop-terms' },
+            {
+              text: 'I have read the privacy policy.',
+              isRequired: true,
+              document: 'privacy-policy',
+            },
+            { text: 'I want to receive news of the convention by email.', isRequired: false },
+          ],
+        },
       },
     ],
     team: [
@@ -296,6 +387,50 @@ const authUrl = `${supabaseUrl.replace(/\/+$/, '')}/auth/v1`
 const secretKey = required('SUPABASE_SECRET_KEY')
 
 const db = migrationDb(migrationUrl())
+
+// The key the API opens a provider account's credentials with seals the demo account's.
+const credentialsKey = sealingKey(required('PAYMENT_CREDENTIALS_KEY'))
+
+// The bucket the API reads holds the demo documents. Its address follows the rule of the database
+// URL too: a bucket off the loopback interface needs OPOS_ENV dev.
+const s3 = {
+  endpoint: required('S3_ENDPOINT'),
+  region: required('S3_REGION'),
+  bucket: required('S3_BUCKET'),
+  accessKeyId: required('S3_ACCESS_KEY_ID'),
+  secretAccessKey: required('S3_SECRET_ACCESS_KEY'),
+}
+try {
+  reachableUrl('S3_ENDPOINT', s3.endpoint)
+} catch (error) {
+  console.error((error as Error).message)
+  process.exit(1)
+}
+const bucket = new S3Client({
+  endpoint: s3.endpoint,
+  region: s3.region,
+  credentials: { accessKeyId: s3.accessKeyId, secretAccessKey: s3.secretAccessKey },
+  forcePathStyle: true,
+  // An S3-compatible bucket takes the checksums S3 itself asks for, and no others.
+  requestChecksumCalculation: 'WHEN_REQUIRED',
+  responseChecksumValidation: 'WHEN_REQUIRED',
+})
+
+/** The kind the API's storage keeps a version of a legal document as. */
+const DOCUMENT_FILE_KIND = 'edition-document'
+
+/**
+ * Where the API's storage reads an edition's file that is no image: under its tenant and the
+ * file, as `file` (apps/api/src/modules/files/owners.ts). An API test reads a seeded document
+ * through the public route, so a change of the layout there fails it.
+ */
+const fileObjectKey = (tenantId: string, fileId: string) => `tenants/${tenantId}/${fileId}/file`
+
+/** An object the bucket gets once the rows that point at it are committed. */
+interface PendingObject {
+  key: string
+  bytes: Buffer
+}
 
 /** A call to Supabase Auth, authorized by the secret key alone, or by a session on top of it. */
 async function authCall<T = object>(
@@ -480,6 +615,7 @@ async function seedTenant(spec: SeedTenant) {
     ),
   )
 
+  const objects: PendingObject[] = []
   await db.transaction(async (tx) => {
     await tx
       .update(tenants)
@@ -546,6 +682,14 @@ async function seedTenant(spec: SeedTenant) {
       }
     }
 
+    if (spec.shop) await seedShop(tx, tenantId, spec.shop)
+    for (const edition of spec.editions) {
+      if (!edition.shop) continue
+      objects.push(
+        ...(await seedEditionShop(tx, tenantId, editionIds.get(edition.slug)!, edition.shop)),
+      )
+    }
+
     // A head holds no permission of its own and never expires.
     const asHead = (id: string) => ({
       id,
@@ -607,8 +751,162 @@ async function seedTenant(spec: SeedTenant) {
     }
   })
 
+  // The rows are committed: the bucket gets the files they point at. A file already there is put
+  // again with the same bytes, so a bucket that lost one gets it back.
+  for (const { key, bytes } of objects) {
+    await bucket.send(
+      new PutObjectCommand({
+        Bucket: s3.bucket,
+        Key: key,
+        Body: bytes,
+        ContentType: 'application/pdf',
+      }),
+    )
+  }
+
   // A demo tenant is suspended or not as the list says, whatever an admin did to it since.
   await (spec.suspended ? suspendTenant(db, tenantId) : restoreTenant(db, tenantId))
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * The seller's details and the provider account of a demo convention. The account is kept while
+ * its credentials open to the demo ones: its row is replaced, never changed, so a rerun leaves it.
+ */
+async function seedShop(tx: Tx, tenantId: string, shop: SeedShop) {
+  const { credentials, ...seller } = shop
+  await tx
+    .insert(shopSellers)
+    .values({ tenantId, ...seller })
+    .onConflictDoUpdate({ target: shopSellers.tenantId, set: seller })
+
+  const [account] = await tx
+    .select({
+      provider: paymentProviderAccounts.provider,
+      credentials: paymentProviderAccounts.credentials,
+      readyAt: paymentProviderAccounts.readyAt,
+    })
+    .from(paymentProviderAccounts)
+    .where(eq(paymentProviderAccounts.tenantId, tenantId))
+  const wanted = JSON.stringify(credentials)
+  const opens = (sealed: string) => {
+    try {
+      return open(credentialsKey, sealed) === wanted
+    } catch {
+      // Sealed with another key, or not sealed at all.
+      return false
+    }
+  }
+  if (account?.provider === 'fake' && account.readyAt && opens(account.credentials)) return
+  await tx.delete(paymentProviderAccounts).where(eq(paymentProviderAccounts.tenantId, tenantId))
+  await tx.insert(paymentProviderAccounts).values({
+    tenantId,
+    provider: 'fake',
+    credentials: seal(credentialsKey, wanted),
+    readyAt: new Date(),
+  })
+}
+
+/**
+ * The shop of a demo edition: its documents, each with one version, its consents in their order,
+ * and whether it is open. A document is identified by its kind within a seeded edition, a consent
+ * by its sentence. Answers the files the bucket is to hold.
+ */
+async function seedEditionShop(
+  tx: Tx,
+  tenantId: string,
+  editionId: string,
+  shop: SeedEditionShop,
+): Promise<PendingObject[]> {
+  const objects: PendingObject[] = []
+  const documentIds = new Map<DocumentKind, string>()
+  for (const document of shop.documents) {
+    const [existing] = await tx
+      .select({ id: editionDocuments.id })
+      .from(editionDocuments)
+      .where(
+        and(eq(editionDocuments.editionId, editionId), eq(editionDocuments.kind, document.kind)),
+      )
+    const [saved] = existing
+      ? await tx
+          .update(editionDocuments)
+          .set({ title: document.title, hiddenAt: null })
+          .where(eq(editionDocuments.id, existing.id))
+          .returning({ id: editionDocuments.id })
+      : await tx
+          .insert(editionDocuments)
+          .values({ tenantId, editionId, kind: document.kind, title: document.title })
+          .returning({ id: editionDocuments.id })
+    const documentId = saved!.id
+    documentIds.set(document.kind, documentId)
+
+    const bytes = demoPdf(document.title, document.lines)
+    const file = {
+      contentType: 'application/pdf',
+      size: bytes.length,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+      name: `${document.title}.pdf`,
+    }
+    const [version] = await tx
+      .select({ fileId: editionDocumentVersions.fileId })
+      .from(editionDocumentVersions)
+      .where(
+        and(
+          eq(editionDocumentVersions.documentId, documentId),
+          eq(editionDocumentVersions.number, 1),
+        ),
+      )
+    let fileId = version?.fileId
+    if (fileId) {
+      // The seed owns its demo files: a text changed since the last run is the file's new bytes.
+      await tx.update(uploadedFiles).set(file).where(eq(uploadedFiles.id, fileId))
+    } else {
+      const [kept] = await tx
+        .insert(uploadedFiles)
+        .values({ tenantId, editionId, kind: DOCUMENT_FILE_KIND, ...file })
+        .returning({ id: uploadedFiles.id })
+      fileId = kept!.id
+      await tx
+        .insert(editionDocumentVersions)
+        .values({ tenantId, editionId, documentId, number: 1, fileId })
+    }
+    objects.push({ key: fileObjectKey(tenantId, fileId), bytes })
+  }
+
+  for (const [index, consent] of shop.consents.entries()) {
+    const values = {
+      documentId: consent.document ? documentIds.get(consent.document)! : null,
+      isRequired: consent.isRequired,
+      position: index + 1,
+      hiddenAt: null,
+    }
+    const [existing] = await tx
+      .select({ id: editionConsents.id })
+      .from(editionConsents)
+      .where(and(eq(editionConsents.editionId, editionId), eq(editionConsents.text, consent.text)))
+    if (existing) {
+      await tx.update(editionConsents).set(values).where(eq(editionConsents.id, existing.id))
+    } else {
+      await tx
+        .insert(editionConsents)
+        .values({ tenantId, editionId, text: consent.text, ...values })
+    }
+  }
+
+  // An open shop keeps the moment it was opened at.
+  const faqUrl = shop.faqUrl ?? null
+  await tx
+    .insert(editionShops)
+    .values({ tenantId, editionId, faqUrl, openedAt: shop.open ? new Date() : null })
+    .onConflictDoUpdate({
+      target: editionShops.editionId,
+      set: {
+        faqUrl,
+        openedAt: shop.open ? sql`coalesce(${editionShops.openedAt}, now())` : null,
+      },
+    })
+  return objects
 }
 
 try {

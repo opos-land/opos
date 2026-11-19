@@ -228,6 +228,16 @@ export const storedFiles = async (tenantId: string, kind: string) => [
     `)),
 ]
 
+/** A version of a legal document the seed published for a demo convention; a test only reads it. */
+export const seededDocumentVersion = async (slug: string) =>
+  (
+    await db.execute<{ id: string }>(sql`
+      select v.id from edition_document_versions v
+      join tenants t on t.id = v.tenant_id
+      where t.slug = ${slug} order by v.id limit 1
+    `)
+  )[0]?.id
+
 /** The provider account of the tenant, as stored. */
 export const storedProviderAccount = async (tenantId: string) =>
   (

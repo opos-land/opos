@@ -1,5 +1,8 @@
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { DeleteObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { describe, expect, it } from 'vitest'
+import { open, sealingKey } from '../src/sealed'
 import { migrator } from './db'
 
 // The seed refuses before it opens a connection: it runs where OPOS_ENV is local or dev, and a
@@ -51,6 +54,25 @@ describe('db:seed', { timeout: 30_000 }, () => {
         SUPABASE_SECRET_KEY: 'sb_secret_x',
       },
       /DATABASE_MIGRATION_URL/,
+    ],
+    [
+      {
+        OPOS_ENV: 'local',
+        SUPABASE_URL: 'http://127.0.0.1:54321',
+        SUPABASE_SECRET_KEY: 'sb_secret_x',
+        DATABASE_MIGRATION_URL: 'postgres://postgres:postgres@127.0.0.1:54322/postgres',
+      },
+      /PAYMENT_CREDENTIALS_KEY/,
+    ],
+    [
+      {
+        OPOS_ENV: 'local',
+        SUPABASE_URL: 'http://127.0.0.1:54321',
+        SUPABASE_SECRET_KEY: 'sb_secret_x',
+        DATABASE_MIGRATION_URL: 'postgres://postgres:postgres@127.0.0.1:54322/postgres',
+        PAYMENT_CREDENTIALS_KEY: 'k'.repeat(64),
+      },
+      /S3_ENDPOINT/,
     ],
   ])('stops on a missing variable: %o', (env, missing) => {
     const { status, stderr } = seed(env)
@@ -249,6 +271,196 @@ describe('db:seed run twice', () => {
     expect(second.status, second.stderr).toBe(0)
     expect(await rowCounts()).toEqual(before)
   })
+})
+
+// The shop's setup of the demo conventions (docs/specs/0002-shop-setup.md): one convention ready
+// to sell, with an edition whose shop is open and another whose shop misses a condition, and one
+// that has set nothing.
+describe('db:seed shop', () => {
+  const env = (name: string) => process.env[name]!
+  const bucket = new S3Client({
+    endpoint: env('S3_ENDPOINT'),
+    region: env('S3_REGION'),
+    credentials: {
+      accessKeyId: env('S3_ACCESS_KEY_ID'),
+      secretAccessKey: env('S3_SECRET_ACCESS_KEY'),
+    },
+    forcePathStyle: true,
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
+  })
+  const object = async (key: string) => {
+    const answer = await bucket.send(new GetObjectCommand({ Bucket: env('S3_BUCKET'), Key: key }))
+    return Buffer.from(await answer.Body!.transformToByteArray())
+  }
+
+  const tenantId = async (slug: string) =>
+    (await migrator<{ id: string }[]>`select id from tenants where slug = ${slug}`)[0]!.id
+  const editionId = async (tenant: string, slug: string) =>
+    (
+      await migrator<{ id: string }[]>`
+        select id from editions where tenant_id = ${tenant} and slug = ${slug}
+      `
+    )[0]!.id
+  const account = async (tenant: string) =>
+    (
+      await migrator<{ provider: string; credentials: string; ready_at: Date | null }[]>`
+        select provider, credentials, ready_at from payment_provider_accounts
+        where tenant_id = ${tenant}
+      `
+    )[0]
+  const documents = (edition: string) =>
+    migrator<{ kind: string; versions: number }[]>`
+      select d.kind, count(v.id)::int as versions
+      from edition_documents d
+      left join edition_document_versions v on v.document_id = d.id
+      where d.edition_id = ${edition} and d.hidden_at is null
+      group by d.id order by d.kind
+    `
+  const files = (tenant: string) =>
+    migrator<{ id: string; size: number; sha256: string; content_type: string }[]>`
+      select f.id, f.size, f.sha256, f.content_type
+      from edition_document_versions v join uploaded_files f on f.id = v.file_id
+      where v.tenant_id = ${tenant} order by f.id
+    `
+
+  it(
+    'makes convention A ready to sell, with the credentials of its account sealed',
+    { timeout: 120_000 },
+    async () => {
+      const run = runSeed('local')
+      expect(run.status, run.stderr).toBe(0)
+      const a = await tenantId('convention-a')
+
+      const [seller] = await migrator<Record<string, string | null>[]>`
+        select seller_name, seller_address, seller_registration_number, contact_email, currency
+        from shop_sellers where tenant_id = ${a}
+      `
+      expect(Object.values(seller!).every((part) => part)).toBe(true)
+      expect(seller!.currency).toBe('PLN')
+
+      const stored = (await account(a))!
+      expect(stored.provider).toBe('fake')
+      expect(stored.ready_at).toBeInstanceOf(Date)
+      expect(stored.credentials).not.toContain('demo')
+      expect(
+        JSON.parse(open(sealingKey(env('PAYMENT_CREDENTIALS_KEY')), stored.credentials)),
+      ).toEqual({ account: 'demo' })
+
+      // A rerun keeps the account it finds: its row is replaced, never changed, by the API alone.
+      expect(runSeed('local').status).toBe(0)
+      expect(await account(a)).toEqual(stored)
+    },
+  )
+
+  it(
+    'opens the shop of the coming edition, with its documents and consents',
+    { timeout: 120_000 },
+    async () => {
+      const run = runSeed('local')
+      expect(run.status, run.stderr).toBe(0)
+      const a = await tenantId('convention-a')
+      const edition = await editionId(a, '2026')
+
+      const [shop] = await migrator<{ opened_at: Date | null; faq_url: string | null }[]>`
+        select opened_at, faq_url from edition_shops where edition_id = ${edition}
+      `
+      expect(shop!.opened_at).toBeInstanceOf(Date)
+      expect(shop!.faq_url).toMatch(/^https:/)
+      expect([...(await documents(edition))]).toEqual([
+        { kind: 'shop-terms', versions: 1 },
+        { kind: 'privacy-policy', versions: 1 },
+        { kind: 'edition-rules', versions: 1 },
+      ])
+      const consents = await migrator<
+        { position: number; is_required: boolean; kind: string | null }[]
+      >`
+        select c.position, c.is_required, d.kind
+        from edition_consents c left join edition_documents d on d.id = c.document_id
+        where c.edition_id = ${edition} order by c.position
+      `
+      expect([...consents]).toEqual([
+        { position: 1, is_required: true, kind: 'shop-terms' },
+        { position: 2, is_required: true, kind: 'privacy-policy' },
+        { position: 3, is_required: false, kind: null },
+      ])
+
+      // A rerun keeps the moment the shop was opened.
+      expect(runSeed('local').status).toBe(0)
+      const [again] = await migrator<{ opened_at: Date | null }[]>`
+        select opened_at from edition_shops where edition_id = ${edition}
+      `
+      expect(again!.opened_at).toEqual(shop!.opened_at)
+    },
+  )
+
+  it(
+    'leaves the shop of the past edition closed, with one condition missing',
+    { timeout: 120_000 },
+    async () => {
+      const run = runSeed('local')
+      expect(run.status, run.stderr).toBe(0)
+      const a = await tenantId('convention-a')
+      const edition = await editionId(a, '2025')
+
+      const shops = await migrator<{ opened_at: Date | null }[]>`
+        select opened_at from edition_shops where edition_id = ${edition}
+      `
+      expect(shops.every((shop) => shop.opened_at === null)).toBe(true)
+      // The shop terms are there; the privacy policy opening asks for is not.
+      expect([...(await documents(edition))]).toEqual([{ kind: 'shop-terms', versions: 1 }])
+    },
+  )
+
+  it('sets nothing of a shop for convention B', { timeout: 120_000 }, async () => {
+    const run = runSeed('local')
+    expect(run.status, run.stderr).toBe(0)
+    const b = await tenantId('convention-b')
+
+    for (const table of [
+      'shop_sellers',
+      'payment_provider_accounts',
+      'edition_shops',
+      'edition_documents',
+      'edition_consents',
+    ]) {
+      const [row] = await migrator<{ count: number }[]>`
+        select count(*)::int as count from ${migrator(table)} where tenant_id = ${b}
+      `
+      expect(row!.count, table).toBe(0)
+    }
+  })
+
+  it(
+    'keeps each version as a PDF in the bucket, where the API reads it, and puts back a lost one',
+    { timeout: 120_000 },
+    async () => {
+      const run = runSeed('local')
+      expect(run.status, run.stderr).toBe(0)
+      const a = await tenantId('convention-a')
+      const kept = [...(await files(a))]
+      expect(kept).toHaveLength(4)
+      // The key the API's storage gives an edition's file: its tenant, the file, then `file`.
+      const key = (id: string) => `tenants/${a}/${id}/file`
+
+      for (const file of kept) {
+        const bytes = await object(key(file.id))
+        expect(bytes.subarray(0, 5).toString('latin1')).toBe('%PDF-')
+        expect(file.content_type).toBe('application/pdf')
+        expect(bytes.length).toBe(file.size)
+        expect(createHash('sha256').update(bytes).digest('hex')).toBe(file.sha256)
+      }
+
+      await bucket.send(
+        new DeleteObjectCommand({ Bucket: env('S3_BUCKET'), Key: key(kept[0]!.id) }),
+      )
+      expect(runSeed('local').status).toBe(0)
+
+      // The same rows, and the object back under the same key.
+      expect([...(await files(a))]).toEqual(kept)
+      expect((await object(key(kept[0]!.id))).length).toBe(kept[0]!.size)
+    },
+  )
 })
 
 // One account heads both conventions, so the panel's convention picker and switch have someone to

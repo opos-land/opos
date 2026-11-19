@@ -746,6 +746,9 @@ importers:
         specifier: 'catalog:'
         version: 3.4.9
     devDependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.1167.0
+        version: 3.1167.0
       '@opos/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config

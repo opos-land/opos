@@ -43,6 +43,11 @@ const TEMPLATES = {
     'DATABASE_MIGRATION_URL=',
     'SUPABASE_URL=',
     'SUPABASE_SECRET_KEY=',
+    'S3_ENDPOINT=',
+    'S3_REGION=local',
+    'S3_BUCKET=opos',
+    'S3_ACCESS_KEY_ID=',
+    'S3_SECRET_ACCESS_KEY=',
     '',
   ].join('\n'),
   'apps/panel/.env.example': 'VITE_API_URL=http://api.opos.localhost:3001\n',
@@ -373,6 +378,26 @@ test('initInfra keeps the keys of the bucket and the image server already set', 
   assert.equal(ctx.value('apps/api/.env', 'S3_SECRET_ACCESS_KEY'), 'mine')
   assert.equal(ctx.value('apps/api/.env', 'IMGPROXY_KEY'), 'ab')
   assert.equal(ctx.value('apps/api/.env', 'IMGPROXY_SALT'), 'cd')
+})
+
+test('initInfra gives the seed the bucket of the API, under the same key', async () => {
+  const ctx = setup({ env: { OPOS_S3_PORT: '24330' } })
+  await ctx.run()
+  // The seed puts the demo edition's legal documents where the API reads them.
+  for (const key of ['S3_ENDPOINT', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY']) {
+    assert.equal(ctx.value('packages/db/.env', key), ctx.value('apps/api/.env', key), key)
+  }
+  assert.equal(ctx.value('packages/db/.env', 'S3_ENDPOINT'), 'http://127.0.0.1:24330')
+  assert.equal(ctx.value('packages/db/.env', 'S3_BUCKET'), 'opos')
+  assert.match(ctx.value('packages/db/.env', 'S3_SECRET_ACCESS_KEY'), /^[0-9a-f]{64}$/)
+
+  // A key the API already holds is the one the seed gets, never a new one.
+  const kept = setup({
+    files: { 'apps/api/.env': 'S3_ACCESS_KEY_ID=mine\nS3_SECRET_ACCESS_KEY=mine\n' },
+  })
+  await kept.run()
+  assert.equal(kept.value('packages/db/.env', 'S3_ACCESS_KEY_ID'), 'mine')
+  assert.equal(kept.value('packages/db/.env', 'S3_SECRET_ACCESS_KEY'), 'mine')
 })
 
 test('initInfra addresses the bucket and the image server on their ports, moved or not', async () => {

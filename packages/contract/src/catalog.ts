@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { tenantRoute } from './common'
+import { type FileType, uploadedFileSchema } from './files'
 
 // What an edition sells and on what terms (docs/specs/0003-catalog.md): ticket types, add-ons,
 // merchandise and the custom fields it asks a ticket holder for, behind the tickets permission of
@@ -17,6 +18,12 @@ export const amountMinor = z.number().int().min(0).max(MAX_AMOUNT_MINOR)
  */
 export const MAX_ADD_ONS = 50
 export const MAX_CUSTOM_FIELDS = 20
+export const MAX_MERCHANDISE_ITEMS = 200
+export const MAX_ITEM_VARIANTS = 100
+export const MAX_ITEM_PICTURES = 10
+/** The most axes an item has, and the most values an axis. */
+export const MAX_OPTION_AXES = 3
+export const MAX_OPTION_VALUES = 30
 
 /** A place in an ordered list, counted from 1; one past the end is the last. */
 const position = z.number().int().positive()
@@ -130,6 +137,168 @@ export const updateCustomFieldSchema = z
 
 export type UpdateCustomField = z.infer<typeof updateCustomFieldSchema>
 
+/** A picture and a size chart are images alone, among the types the storage keeps. */
+export const MERCHANDISE_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const satisfies readonly FileType[]
+
+/** The largest picture or size chart, in bytes. */
+export const MAX_MERCHANDISE_IMAGE_SIZE = 5 * 1024 * 1024
+
+/**
+ * The sizes a picture and a size chart are served in: small in the shop's listing and the cart,
+ * large on an item's page and for a size chart.
+ */
+export const MERCHANDISE_IMAGE_VARIANTS = ['small', 'large'] as const
+
+export type MerchandiseImageVariant = (typeof MERCHANDISE_IMAGE_VARIANTS)[number]
+
+/** The most a variant's stock holds. */
+export const MAX_STOCK = 1_000_000
+
+/**
+ * An image of an item as a page shows it: the file its address names, and the width and height of
+ * the picture, whose proportions every size keeps.
+ */
+const imageSchema = z.object({
+  fileId: z.uuid(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+})
+
+export type MerchandiseImage = z.infer<typeof imageSchema>
+
+/** A variant of an item: one value of each of its axes, with its own stock. */
+export const merchandiseVariantSchema = z.object({
+  id: z.uuid(),
+  /** In the order of the item's axes; none for the one variant of an item without axes. */
+  valueIds: z.array(z.uuid()),
+  /** Null while the variant is unlimited, which sells until the pre-order deadline alone. */
+  stock: z.number().int().nullable(),
+  hidden: z.boolean(),
+})
+
+export type MerchandiseVariant = z.infer<typeof merchandiseVariantSchema>
+
+/**
+ * A merchandise item of an edition with its option axes, the variants that exist and its
+ * pictures in their order. It is picked up at the edition: nothing here is for shipping.
+ */
+export const merchandiseItemSchema = z.object({
+  id: z.uuid(),
+  editionId: z.uuid(),
+  name: z.string(),
+  description: z.string(),
+  amountMinor: z.number().int(),
+  /** The most of it a single order may take, over all its variants. */
+  perOrderLimit: z.number().int(),
+  picturesIllustrative: z.boolean(),
+  position,
+  /** Hidden from the shop; the orders that hold it keep it. */
+  hidden: z.boolean(),
+  axes: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string(),
+      values: z.array(
+        z.object({ id: z.uuid(), label: z.string(), sizeChart: imageSchema.nullable() }),
+      ),
+    }),
+  ),
+  variants: z.array(merchandiseVariantSchema),
+  pictures: z.array(imageSchema.extend({ id: z.uuid() })),
+})
+
+export type MerchandiseItem = z.infer<typeof merchandiseItemSchema>
+
+const optionName = z.string().trim().min(1).max(50)
+
+/** Whether the texts are each of their own, whatever their case. */
+const distinct = (texts: readonly string[]) =>
+  new Set(texts.map((text) => text.toLowerCase())).size === texts.length
+
+/**
+ * The axes of an item as a whole list, in their order. An axis or a value that names its
+ * identifier is the one the item has, renamed or moved; one without is new; one left out goes.
+ */
+const axesInput = <Id extends z.ZodType>(id: Id) =>
+  z
+    .array(
+      z.strictObject({
+        id,
+        name: optionName,
+        values: z
+          .array(z.strictObject({ id, label: optionName }))
+          .min(1)
+          .max(MAX_OPTION_VALUES)
+          .refine((values) => distinct(values.map((value) => value.label)), {
+            message: 'A value is named once in its axis',
+          }),
+      }),
+    )
+    .max(MAX_OPTION_AXES)
+    .refine((axes) => distinct(axes.map((axis) => axis.name)), {
+      message: 'An axis is named once in its item',
+    })
+
+const merchandiseItemFields = {
+  name,
+  description: z.string().trim().max(5000),
+  amountMinor,
+  perOrderLimit: z.number().int().min(1).max(100),
+  picturesIllustrative: z.boolean(),
+}
+
+export const createMerchandiseItemSchema = z
+  .strictObject({ ...merchandiseItemFields, axes: axesInput(z.undefined().optional()) })
+  .partial({ description: true, picturesIllustrative: true, axes: true })
+
+export type CreateMerchandiseItem = z.infer<typeof createMerchandiseItemSchema>
+
+/**
+ * A change of an item. Once an axis is added or taken away no variant fits the axes any more, so
+ * every variant goes; a value taken away takes the variants that held it.
+ */
+export const updateMerchandiseItemSchema = z
+  .strictObject({
+    ...merchandiseItemFields,
+    position,
+    hidden: z.boolean(),
+    axes: axesInput(z.uuid().optional()),
+    /** Every picture of the item, once each, in the order the shop shows them. */
+    pictureIds: z.array(z.uuid()).max(MAX_ITEM_PICTURES),
+  })
+  .partial()
+
+export type UpdateMerchandiseItem = z.infer<typeof updateMerchandiseItemSchema>
+
+/**
+ * The variants of an item that exist, as a whole list: each one value of each axis. One the item
+ * already has keeps its stock; a new one is out of stock until an org enters a number; one left
+ * out goes. The list may be longer than an item holds, which the API refuses by its own code.
+ */
+export const putVariantsSchema = z.strictObject({
+  variants: z
+    .array(
+      z.strictObject({
+        valueIds: z.array(z.uuid()).max(MAX_OPTION_AXES),
+        hidden: z.boolean().optional(),
+      }),
+    )
+    .max(MAX_OPTION_VALUES ** 2),
+})
+
+export type PutVariants = z.infer<typeof putVariantsSchema>
+
+/** A variant's stock: a number an org entered, or null to mark it unlimited. */
+export const putStockSchema = z.strictObject({
+  stock: z.number().int().min(0).max(MAX_STOCK).nullable(),
+})
+
+export const merchandiseImageBodySchema = z.strictObject({ file: uploadedFileSchema })
+
 const edition = z.object({ params: z.object({ editionId: z.string() }) })
 const addOn = z.object({ params: z.object({ editionId: z.string(), addOnId: z.string() }) })
 const customField = z.object({ params: z.object({ editionId: z.string(), fieldId: z.string() }) })
@@ -210,7 +379,126 @@ export const customFieldRoutes = {
     .input(customField),
 }
 
+const item = z.object({ params: z.object({ editionId: z.string(), itemId: z.string() }) })
+const variant = z.object({
+  params: z.object({ editionId: z.string(), itemId: z.string(), variantId: z.string() }),
+})
+const picture = z.object({
+  params: z.object({ editionId: z.string(), itemId: z.string(), pictureId: z.string() }),
+})
+const optionValue = z.object({
+  params: z.object({ editionId: z.string(), itemId: z.string(), valueId: z.string() }),
+})
+const merchandiseFile = z.object({
+  params: z.object({ editionId: z.string(), fileId: z.string(), variant: z.string() }),
+})
+
+export const merchandiseRoutes = {
+  list: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/merchandise-items',
+      summary:
+        "The edition's merchandise items in their order with their axes, variants and pictures, hidden ones too; needs tickets>=read",
+    })
+    .input(edition)
+    .output(z.array(merchandiseItemSchema)),
+  create: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/merchandise-items',
+      successStatus: 201,
+      summary:
+        'Add a merchandise item at the end of the list, up to the limit of an edition; needs tickets=write',
+    })
+    .input(edition.extend({ body: createMerchandiseItemSchema }))
+    .output(merchandiseItemSchema),
+  update: tenantRoute
+    .route({
+      method: 'PATCH',
+      path: '/editions/{editionId}/merchandise-items/{itemId}',
+      summary:
+        'Change an item, its axes and the order of its pictures, move it to a place of the list, hide it or show it; needs tickets=write',
+    })
+    .input(item.extend({ body: updateMerchandiseItemSchema }))
+    .output(merchandiseItemSchema),
+  remove: tenantRoute
+    .route({
+      method: 'DELETE',
+      path: '/editions/{editionId}/merchandise-items/{itemId}',
+      successStatus: 204,
+      summary: 'Delete an item with its variants, pictures and size charts; needs tickets=write',
+    })
+    .input(item),
+  putVariants: tenantRoute
+    .route({
+      method: 'PUT',
+      path: '/editions/{editionId}/merchandise-items/{itemId}/variants',
+      summary:
+        'Set the variants of an item that exist, up to the limit of an item; needs tickets=write',
+    })
+    .input(item.extend({ body: putVariantsSchema }))
+    .output(merchandiseItemSchema),
+  putStock: tenantRoute
+    .route({
+      method: 'PUT',
+      path: '/editions/{editionId}/merchandise-items/{itemId}/variants/{variantId}/stock',
+      summary: "Set a variant's stock, or mark it unlimited; needs tickets=write",
+    })
+    .input(variant.extend({ body: putStockSchema }))
+    .output(merchandiseItemSchema),
+  addPicture: tenantRoute
+    .meta({ takesFile: true })
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/merchandise-items/{itemId}/pictures',
+      successStatus: 201,
+      summary:
+        'Add an image as the last picture of an item, up to the limit of an item; needs tickets=write',
+    })
+    .input(item.extend({ body: merchandiseImageBodySchema }))
+    .output(merchandiseItemSchema),
+  removePicture: tenantRoute
+    .route({
+      method: 'DELETE',
+      path: '/editions/{editionId}/merchandise-items/{itemId}/pictures/{pictureId}',
+      successStatus: 204,
+      summary: 'Remove a picture of an item, its file with it; needs tickets=write',
+    })
+    .input(picture),
+  putSizeChart: tenantRoute
+    .meta({ takesFile: true })
+    .route({
+      method: 'PUT',
+      path: '/editions/{editionId}/merchandise-items/{itemId}/option-values/{valueId}/size-chart',
+      summary:
+        'Set an image as the size chart of a value, in place of the one it had; needs tickets=write',
+    })
+    .input(optionValue.extend({ body: merchandiseImageBodySchema }))
+    .output(merchandiseItemSchema),
+  removeSizeChart: tenantRoute
+    .route({
+      method: 'DELETE',
+      path: '/editions/{editionId}/merchandise-items/{itemId}/option-values/{valueId}/size-chart',
+      successStatus: 204,
+      summary: 'Remove the size chart of a value, its file with it; needs tickets=write',
+    })
+    .input(optionValue),
+  file: tenantRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/merchandise-files/{fileId}/{variant}',
+      outputStructure: 'detailed',
+      summary:
+        "A picture or a size chart of the edition's merchandise in one of its sizes, of a hidden item too; needs tickets>=read",
+    })
+    .input(merchandiseFile)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+}
+
 export const catalogContract = {
   addOns: addOnRoutes,
   customFields: customFieldRoutes,
+  merchandise: merchandiseRoutes,
 }

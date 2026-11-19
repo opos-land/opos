@@ -7,8 +7,16 @@ import {
   MAX_DOCUMENT_SIZE,
   MAX_FILE_SIZE,
   MAX_LOGO_SIZE,
+  MAX_MERCHANDISE_IMAGE_SIZE,
+  MERCHANDISE_IMAGE_TYPES,
+  type MerchandiseImageVariant,
 } from '@opos/contract'
-import { editionDocumentVersions, tenantLogos } from '@opos/db'
+import {
+  editionDocumentVersions,
+  merchandiseItemPictures,
+  merchandiseSizeCharts,
+  tenantLogos,
+} from '@opos/db'
 import { type AnyPgColumn } from 'drizzle-orm/pg-core'
 
 /** Who a file belongs to: the short list the core holds (docs/specs/0012-file-storage.md, D1). */
@@ -87,6 +95,16 @@ export function defineKinds(kinds: readonly FileKind[]): ReadonlyMap<string, Fil
 }
 
 /**
+ * The sizes of a merchandise picture and of a size chart (docs/specs/0003-catalog.md): small in
+ * the shop's listing and the cart, which a page shows first, large on an item's page and for a
+ * size chart.
+ */
+const merchandiseVariants = {
+  small: { width: 600, height: 600, fit: 'inside', withUpload: true },
+  large: { width: 2000, height: 2000, fit: 'inside' },
+} satisfies Record<MerchandiseImageVariant, VariantDeclaration>
+
+/**
  * The kinds the features declared. A feature that starts to take files adds its kind here and a
  * column to a table of its own; the storage does not change with it.
  */
@@ -114,6 +132,24 @@ export const FILE_KINDS: readonly FileKind[] = [
     maxSize: MAX_DOCUMENT_SIZE,
     pointer: editionDocumentVersions.fileId,
   },
+  // A picture of a merchandise item and the size chart of one of its values: an edition's images,
+  // for everyone once their item is shown in the shop.
+  {
+    name: 'merchandise-picture',
+    owner: 'edition',
+    types: MERCHANDISE_IMAGE_TYPES,
+    maxSize: MAX_MERCHANDISE_IMAGE_SIZE,
+    pointer: merchandiseItemPictures.fileId,
+    variants: merchandiseVariants,
+  },
+  {
+    name: 'merchandise-size-chart',
+    owner: 'edition',
+    types: MERCHANDISE_IMAGE_TYPES,
+    maxSize: MAX_MERCHANDISE_IMAGE_SIZE,
+    pointer: merchandiseSizeCharts.fileId,
+    variants: merchandiseVariants,
+  },
 ]
 
 /** The kind of a convention's logo. */
@@ -121,3 +157,7 @@ export const LOGO_KIND = 'convention-logo'
 
 /** The kind of a version of an edition's legal document. */
 export const DOCUMENT_KIND = 'edition-document'
+
+/** The kinds of a picture of a merchandise item and of the size chart of one of its values. */
+export const PICTURE_KIND = 'merchandise-picture'
+export const SIZE_CHART_KIND = 'merchandise-size-chart'

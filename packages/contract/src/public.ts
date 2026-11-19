@@ -118,6 +118,9 @@ const logoFile = z.object({
 const documentVersion = z.object({
   params: z.object({ slug: z.string(), versionId: z.string() }),
 })
+const merchandiseFile = z.object({
+  params: z.object({ slug: z.string(), fileId: z.string(), variant: z.string() }),
+})
 
 export const publicContract = {
   tenant: publicRoute
@@ -157,6 +160,17 @@ export const publicContract = {
         "A published version of a legal document of one of the convention's editions, as a download; no sign-in",
     })
     .input(documentVersion)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+  merchandiseFile: publicRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/public/tenants/{slug}/merchandise-files/{fileId}/{variant}',
+      outputStructure: 'detailed',
+      summary:
+        'A picture or a size chart of a merchandise item that is not hidden, of a published edition, in one of its sizes; no sign-in',
+    })
+    .input(merchandiseFile)
     .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
   editions: publicRoute
     .route({

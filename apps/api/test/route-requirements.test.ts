@@ -43,6 +43,7 @@ const publicRoutes = [
   'public.editionList',
   'public.logoFile',
   'public.documentVersion',
+  'public.merchandiseFile',
   'public.editions',
   'public.activeEdition',
   'public.edition',

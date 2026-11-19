@@ -229,6 +229,85 @@ export async function addAddOn(
   return row!.id
 }
 
+/** The row of an image of an edition, with nothing in the bucket. */
+async function addImage(tenantId: string, editionId: string, kind: string) {
+  const [file] = await db.execute<{ id: string }>(sql`
+    insert into uploaded_files
+      (tenant_id, edition_id, kind, content_type, size, sha256, name, width, height)
+    values (${tenantId}, ${editionId}, ${kind}, 'image/png', 10, repeat('e', 64), 'image.png',
+      40, 30)
+    returning id
+  `)
+  return file!.id
+}
+
+/**
+ * A merchandise item of an edition as its rows alone, last in the list, with nothing in the
+ * bucket. Without axes it has its one variant; `sized` gives it an axis with one value, the
+ * variant of that value and the value's size chart. `pictures` adds as many pictures.
+ */
+export async function addMerchandiseItem(
+  tenantId: string,
+  editionId: string,
+  values: {
+    name?: string
+    hidden?: boolean
+    sized?: boolean
+    pictures?: number
+    stock?: number | null
+  } = {},
+) {
+  const at = sql`${tenantId}, ${editionId}`
+  const [item] = await db.execute<{ id: string }>(sql`
+    insert into merchandise_items
+      (tenant_id, edition_id, name, amount_minor, per_order_limit, position, hidden_at)
+    values (${at}, ${values.name ?? 'Item'}, 5000, 5, ${lastPlace('merchandise_items', editionId)},
+      ${values.hidden ? sql`now()` : null})
+    returning id
+  `)
+  const id = item!.id
+  const [variant] = await db.execute<{ id: string }>(sql`
+    insert into merchandise_variants (tenant_id, edition_id, merchandise_item_id, stock)
+    values (${at}, ${id}, ${values.stock === undefined ? 0 : values.stock})
+    returning id
+  `)
+  let valueId: string | undefined
+  if (values.sized) {
+    const [axis] = await db.execute<{ id: string }>(sql`
+      insert into merchandise_option_axes (tenant_id, edition_id, merchandise_item_id, name, position)
+      values (${at}, ${id}, 'Size', 1)
+      returning id
+    `)
+    const [value] = await db.execute<{ id: string }>(sql`
+      insert into merchandise_option_values
+        (tenant_id, edition_id, merchandise_item_id, axis_id, label, position)
+      values (${at}, ${id}, ${axis!.id}, 'M', 1)
+      returning id
+    `)
+    valueId = value!.id
+    await db.execute(sql`
+      insert into merchandise_variant_values
+        (tenant_id, edition_id, merchandise_item_id, variant_id, axis_id, option_value_id)
+      values (${at}, ${id}, ${variant!.id}, ${axis!.id}, ${valueId})
+    `)
+    await db.execute(sql`
+      insert into merchandise_size_charts (tenant_id, edition_id, option_value_id, file_id)
+      values (${at}, ${valueId}, ${await addImage(tenantId, editionId, 'merchandise-size-chart')})
+    `)
+  }
+  const pictureIds: string[] = []
+  for (let place = 1; place <= (values.pictures ?? 0); place += 1) {
+    const [picture] = await db.execute<{ id: string }>(sql`
+      insert into merchandise_item_pictures
+        (tenant_id, edition_id, merchandise_item_id, file_id, position)
+      values (${at}, ${id}, ${await addImage(tenantId, editionId, 'merchandise-picture')}, ${place})
+      returning id
+    `)
+    pictureIds.push(picture!.id)
+  }
+  return { id, variantId: variant!.id, valueId, pictureIds }
+}
+
 /** A custom field of an edition as its row alone, last in the list. */
 export async function addCustomField(
   tenantId: string,
@@ -244,11 +323,22 @@ export async function addCustomField(
   return row!.id
 }
 
+/** What orders the rows of a table that has no moment of its own making. */
+const ROW_ORDER: Record<string, string> = {
+  edition_shops: 'edition_id',
+  uploaded_files: 'created_at, id',
+  merchandise_option_axes: 'merchandise_item_id, position',
+  merchandise_option_values: 'axis_id, position',
+  merchandise_item_pictures: 'merchandise_item_id, position',
+  merchandise_size_charts: 'option_value_id',
+  merchandise_variant_values: 'variant_id, axis_id',
+}
+
 /** The rows a table holds of the tenant, as stored, in the order they were added. */
 export const storedRows = async (table: string, tenantId: string) => [
   ...(await db.execute<Record<string, unknown>>(sql`
     select * from ${sql.identifier(table)} where tenant_id = ${tenantId}
-    order by ${table === 'edition_shops' ? sql`edition_id` : sql`created_at, id`}
+    order by ${sql.raw(ROW_ORDER[table] ?? 'created_at, id')}
   `)),
 ]
 
@@ -509,6 +599,13 @@ export async function openTransaction() {
 const CATALOG_TABLES = [
   ['add_ons', 'id'],
   ['edition_custom_fields', 'id'],
+  ['merchandise_items', 'id'],
+  ['merchandise_option_axes', 'id'],
+  ['merchandise_option_values', 'id'],
+  ['merchandise_variants', 'id'],
+  ['merchandise_variant_values', 'variant_id, axis_id'],
+  ['merchandise_item_pictures', 'id'],
+  ['merchandise_size_charts', 'option_value_id'],
 ] as const
 
 /** A row as a refused write must leave it: what the trigger of its last change wrote aside. */

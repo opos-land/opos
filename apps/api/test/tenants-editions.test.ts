@@ -15,6 +15,7 @@ import {
   addEditionAccess,
   addHead,
   addLogo,
+  addMerchandiseItem,
   addOrg,
   addProgramItem,
   closeTenantDb,
@@ -573,6 +574,7 @@ describe('concurrency', () => {
       consent: string
       addOn: string
       customField: string
+      merch: Awaited<ReturnType<typeof addMerchandiseItem>>
     }
     type Request = { method: Method; path: string; body?: object }
     const noEdition = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
@@ -730,12 +732,55 @@ describe('concurrency', () => {
         method: 'delete',
         path: `/editions/${s.edition}/custom-fields/${s.customField}`,
       }),
+      'catalog.merchandise.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/merchandise-items`,
+        body: { name: 'Late', amountMinor: 100, perOrderLimit: 1 },
+      }),
+      'catalog.merchandise.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}`,
+        body: { name: 'Late' },
+      }),
+      'catalog.merchandise.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}`,
+      }),
+      'catalog.merchandise.putVariants': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/variants`,
+        body: { variants: [] },
+      }),
+      'catalog.merchandise.putStock': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/variants/${s.merch.variantId}/stock`,
+        body: { stock: 77 },
+      }),
+      'catalog.merchandise.addPicture': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/pictures`,
+        body: { file: upload(png(40, 20), 'image/png', 'late.png') },
+      }),
+      'catalog.merchandise.removePicture': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/pictures/${s.merch.pictureIds[0]}`,
+      }),
+      'catalog.merchandise.putSizeChart': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/option-values/${s.merch.valueId}/size-chart`,
+        body: { file: upload(png(40, 20), 'image/png', 'late.png') },
+      }),
+      'catalog.merchandise.removeSizeChart': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/option-values/${s.merch.valueId}/size-chart`,
+      }),
     }
 
     /**
      * A tenant whose org holds settings=write, branding=write, shop=write, program=write and
      * tickets=write, another org to act on, a programme item, a logo, everything opening the
-     * shop asks for, a document of the edition's own, a consent, an add-on and a custom field.
+     * shop asks for, a document of the edition's own, a consent, an add-on, a custom field and
+     * a merchandise item with a value, its variant, its size chart and a picture.
      */
     async function setup(): Promise<Setup> {
       const t = await tenantWithHead()
@@ -756,6 +801,7 @@ describe('concurrency', () => {
       const consent = await addConsent(t.id, edition)
       const addOn = await addAddOn(t.id, edition)
       const customField = await addCustomField(t.id, edition)
+      const merch = await addMerchandiseItem(t.id, edition, { sized: true, pictures: 1 })
       return {
         t,
         edition,
@@ -768,6 +814,7 @@ describe('concurrency', () => {
         consent,
         addOn,
         customField,
+        merch,
       }
     }
 

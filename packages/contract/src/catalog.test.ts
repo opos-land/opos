@@ -4,13 +4,25 @@ import {
   ADD_ON_KINDS,
   createAddOnSchema,
   createCustomFieldSchema,
+  createMerchandiseItemSchema,
   customFieldSchema,
   MAX_ADD_ONS,
   MAX_AMOUNT_MINOR,
   MAX_CUSTOM_FIELDS,
+  MAX_ITEM_PICTURES,
+  MAX_ITEM_VARIANTS,
+  MAX_MERCHANDISE_IMAGE_SIZE,
+  MAX_MERCHANDISE_ITEMS,
+  MERCHANDISE_IMAGE_TYPES,
+  MERCHANDISE_IMAGE_VARIANTS,
+  merchandiseItemSchema,
+  putStockSchema,
+  putVariantsSchema,
   updateAddOnSchema,
   updateCustomFieldSchema,
+  updateMerchandiseItemSchema,
 } from './catalog'
+import { MAX_FILE_SIZE } from './files'
 import { errorCodes } from './errors'
 import { contract } from './index'
 
@@ -112,19 +124,122 @@ describe('a custom field', () => {
   })
 })
 
+describe('a merchandise item', () => {
+  const mug = { name: 'Mug', amountMinor: 3500, perOrderLimit: 4 }
+  const value = '0198c1a0-0000-7000-8000-000000000001'
+
+  it('is added with a name, a price and the most a single order may take of it', () => {
+    expect(createMerchandiseItemSchema.parse({ ...mug, name: ' Mug ' })).toEqual(mug)
+    refused(createMerchandiseItemSchema.safeParse({ name: 'Mug', amountMinor: 3500 }))
+    refused(createMerchandiseItemSchema.safeParse({ ...mug, perOrderLimit: 0 }))
+    refused(createMerchandiseItemSchema.safeParse({ ...mug, perOrderLimit: 101 }))
+  })
+
+  // Merchandise is picked up at the edition: the catalog has no field for shipping.
+  it('has no field for shipping', () => {
+    expect(JSON.stringify(Object.keys(merchandiseItemSchema.shape))).not.toMatch(/ship|deliver/i)
+    refused(createMerchandiseItemSchema.safeParse({ ...mug, shippingMinor: 1500 }))
+  })
+
+  it('may have up to three axes, each with a name and its values', () => {
+    const axis = (name: string) => ({ name, values: [{ label: 'One' }] })
+
+    expect(
+      createMerchandiseItemSchema.safeParse({ ...mug, axes: ['Cut', 'Size', 'Colour'].map(axis) })
+        .success,
+    ).toBe(true)
+    refused(createMerchandiseItemSchema.safeParse({ ...mug, axes: ['A', 'B', 'C', 'D'].map(axis) }))
+    refused(createMerchandiseItemSchema.safeParse({ ...mug, axes: [{ name: 'Cut', values: [] }] }))
+    refused(createMerchandiseItemSchema.safeParse({ ...mug, axes: [axis('Cut'), axis(' cut ')] }))
+    refused(
+      createMerchandiseItemSchema.safeParse({
+        ...mug,
+        axes: [{ name: 'Size', values: [{ label: 'M' }, { label: ' m' }] }],
+      }),
+    )
+    // A new item has no axis of its own yet to name.
+    refused(
+      createMerchandiseItemSchema.safeParse({ ...mug, axes: [{ ...axis('Cut'), id: value }] }),
+    )
+  })
+
+  it('changes with its axes and the order of its pictures as whole lists', () => {
+    expect(Object.keys(updateMerchandiseItemSchema.shape).sort()).toEqual([
+      'amountMinor',
+      'axes',
+      'description',
+      'hidden',
+      'name',
+      'perOrderLimit',
+      'pictureIds',
+      'picturesIllustrative',
+      'position',
+    ])
+    expect(
+      updateMerchandiseItemSchema.safeParse({
+        axes: [
+          { id: value, name: 'Cut', values: [{ id: value, label: 'Fitted' }, { label: 'New' }] },
+        ],
+      }).success,
+    ).toBe(true)
+  })
+
+  it('names the variants that exist by one value of each axis', () => {
+    expect(putVariantsSchema.parse({ variants: [{ valueIds: [value] }] })).toEqual({
+      variants: [{ valueIds: [value] }],
+    })
+    refused(putVariantsSchema.safeParse({ variants: [{ valueIds: ['M'] }] }))
+    refused(putVariantsSchema.safeParse({ variants: [{ valueIds: [value], stock: 5 }] }))
+    refused(putVariantsSchema.safeParse({}))
+  })
+
+  it('holds a stock that is a whole number from zero, or none while it is unlimited', () => {
+    expect(putStockSchema.parse({ stock: 0 })).toEqual({ stock: 0 })
+    expect(putStockSchema.parse({ stock: null })).toEqual({ stock: null })
+    refused(putStockSchema.safeParse({ stock: -1 }))
+    refused(putStockSchema.safeParse({ stock: 2.5 }))
+    refused(putStockSchema.safeParse({}))
+  })
+
+  it('takes its pictures and size charts as images alone, in two sizes', () => {
+    expect([...MERCHANDISE_IMAGE_TYPES]).toEqual(['image/jpeg', 'image/png', 'image/webp'])
+    expect([...MERCHANDISE_IMAGE_VARIANTS]).toEqual(['small', 'large'])
+    expect(MAX_MERCHANDISE_IMAGE_SIZE).toBeLessThanOrEqual(MAX_FILE_SIZE)
+    expect(MAX_ITEM_PICTURES).toBe(10)
+  })
+
+  it('answers its files by identifier and proportions, and no place in the bucket', () => {
+    expect(Object.keys(merchandiseItemSchema.shape.pictures.element.shape).sort()).toEqual([
+      'fileId',
+      'height',
+      'id',
+      'width',
+    ])
+  })
+})
+
 describe('the catalog of an edition', () => {
   it('holds a number of rows of each kind that one answer can carry', () => {
     expect(MAX_ADD_ONS).toBe(50)
     expect(MAX_CUSTOM_FIELDS).toBe(20)
+    expect(MAX_MERCHANDISE_ITEMS).toBe(200)
+    expect(MAX_ITEM_VARIANTS).toBe(100)
   })
 
   it('is reached under the edition of the path', () => {
     const routes = [
       ...Object.values(contract.catalog.addOns),
       ...Object.values(contract.catalog.customFields),
+      ...Object.values(contract.catalog.merchandise),
     ].map((procedure) => procedure['~orpc'].route.path)
 
     expect(routes.every((path) => path?.startsWith('/editions/{editionId}/'))).toBe(true)
+  })
+
+  it("serves a shown item's pictures to everyone, under the convention's address", () => {
+    expect(contract.public.merchandiseFile['~orpc'].route.path).toBe(
+      '/public/tenants/{slug}/merchandise-files/{fileId}/{variant}',
+    )
   })
 
   it('lists the code of a full list', () => {

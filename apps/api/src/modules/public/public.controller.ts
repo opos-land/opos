@@ -6,6 +6,7 @@ import { GlobalDbService } from '../../common/database/global-db.service'
 import { notFound, suspendedAsNotFound } from '../../common/errors/api-error'
 import { isUuid } from '../../common/uuid'
 import { LogoRepository } from '../branding/logo.repository'
+import { MerchandiseRepository } from '../catalog/merchandise.repository'
 import { FilesService } from '../files/files.service'
 import { DOCUMENT_KIND, LOGO_KIND } from '../files/kinds'
 import { DocumentsRepository } from '../shop/documents.repository'
@@ -22,6 +23,7 @@ export class PublicController {
     private readonly logos: LogoRepository,
     private readonly files: FilesService,
     private readonly documents: DocumentsRepository,
+    private readonly merchandise: MerchandiseRepository,
   ) {}
 
   /**
@@ -128,6 +130,30 @@ export class PublicController {
         .open(DOCUMENT_KIND, version.fileId, { editionId: version.editionId, tenantId: tenant.id })
         .catch(suspendedAsNotFound('convention'))
       return this.files.answer(file, { forEveryone: false })
+    })
+  }
+
+  /**
+   * A picture or a size chart of a merchandise item, for anyone, once the item is shown in the
+   * shop of a published edition (docs/specs/0003-catalog.md, M9): a hidden item's, an unpublished
+   * edition's and another convention's file are unknown addresses. The check runs in a short
+   * transaction of the tenant the address named, and the storage is then read outside every
+   * transaction, as that tenant. A file never changes, so the answer may be cached.
+   */
+  @Implement(contract.public.merchandiseFile)
+  merchandiseFile() {
+    return implement(contract.public.merchandiseFile).handler(async ({ input }) => {
+      const { slug, fileId, variant } = input.params
+      const tenant = await this.tenant(slug)
+      if (!isUuid(fileId)) throw notFound('file')
+      const shown = await this.context
+        .withTenant(tenant.id, () => this.merchandise.shownFile(tenant.id, fileId))
+        .catch(suspendedAsNotFound('convention'))
+      if (!shown) throw notFound('file')
+      const file = await this.files
+        .open(shown.kind, fileId, { variant, editionId: shown.editionId, tenantId: tenant.id })
+        .catch(suspendedAsNotFound('convention'))
+      return this.files.answer(file, { forEveryone: true })
     })
   }
 

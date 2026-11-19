@@ -56,6 +56,66 @@ export const glossary = {
     context: 'glossary',
     comment: 'Glossary term: consent (a sentence a buyer accepts with an order)',
   }),
+  priceTier: msg({
+    message: 'price tier',
+    context: 'glossary',
+    comment: 'Glossary term: price tier (a price of a ticket type within a date window)',
+  }),
+  supporterPrice: msg({
+    message: 'supporter price',
+    context: 'glossary',
+    comment: 'Glossary term: supporter price (a higher price a buyer may choose)',
+  }),
+  perk: msg({
+    message: 'perk',
+    context: 'glossary',
+    comment: 'Glossary term: perk (something a ticket type includes, never sold separately)',
+  }),
+  addOn: msg({
+    message: 'add-on',
+    context: 'glossary',
+    comment: 'Glossary term: add-on (an optional extra bought with a ticket)',
+  }),
+  merchandiseItem: msg({
+    message: 'merchandise item',
+    context: 'glossary',
+    comment: 'Glossary term: merchandise item (a product picked up at the edition)',
+  }),
+  variant: msg({
+    message: 'variant',
+    context: 'glossary',
+    comment: 'Glossary term: variant (a buyable option of a merchandise item, with its own stock)',
+  }),
+  sizeChart: msg({
+    message: 'size chart',
+    context: 'glossary',
+    comment: 'Glossary term: size chart',
+  }),
+  preorderDeadline: msg({
+    message: 'pre-order deadline',
+    context: 'glossary',
+    comment: 'Glossary term: pre-order deadline (until it merchandise sells without a stock limit)',
+  }),
+  ageBand: msg({
+    message: 'age band',
+    context: 'glossary',
+    comment: 'Glossary term: age band (child, teen or adult)',
+  }),
+  guardianConsent: msg({
+    message: 'guardian consent',
+    context: 'glossary',
+    comment: "Glossary term: guardian consent (a guardian's written consent for a teen)",
+  }),
+  customField: msg({
+    message: 'custom field',
+    context: 'glossary',
+    comment: 'Glossary term: custom field (a short text an edition asks a ticket holder for)',
+  }),
+  ticketHolder: msg({
+    message: 'ticket holder',
+    context: 'glossary',
+    comment: 'Glossary term: ticket holder (the person a ticket is issued to)',
+  }),
 }
 
 export type GlossaryTerm = keyof typeof glossary

@@ -27,11 +27,23 @@ msgstr "A shop of this convention is open. Close it first."
 msgid "Accept the invitation"
 msgstr "Accept the invitation"
 
+#. Glossary term: add-on (an optional extra bought with a ticket)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "add-on"
+msgstr "add-on"
+
 #. Glossary term: admin
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "administrator"
 msgstr "administrator"
+
+#. Glossary term: age band (child, teen or adult)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "age band"
+msgstr "age band"
 
 #: src/errors.ts
 msgid "An account with this email address already exists."
@@ -119,6 +131,12 @@ msgctxt "glossary"
 msgid "core"
 msgstr "core"
 
+#. Glossary term: custom field (a short text an edition asks a ticket holder for)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "custom field"
+msgstr "custom field"
+
 #. Glossary term: edition
 #: src/glossary.ts
 msgctxt "glossary"
@@ -136,6 +154,12 @@ msgstr "Enter the convention name."
 #: src/errors.ts
 msgid "Files are temporarily unavailable. Try again in a moment."
 msgstr "Files are temporarily unavailable. Try again in a moment."
+
+#. Glossary term: guardian consent (a guardian's written consent for a teen)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "guardian consent"
+msgstr "guardian consent"
 
 #. Glossary term: head
 #: src/glossary.ts
@@ -195,6 +219,12 @@ msgctxt "glossary"
 msgid "like"
 msgstr "like"
 
+#. Glossary term: merchandise item (a product picked up at the edition)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "merchandise item"
+msgstr "merchandise item"
+
 #. Glossary term: module
 #: src/glossary.ts
 msgctxt "glossary"
@@ -237,6 +267,24 @@ msgctxt "glossary"
 msgid "organizer"
 msgstr "organizer"
 
+#. Glossary term: perk (something a ticket type includes, never sold separately)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "perk"
+msgstr "perk"
+
+#. Glossary term: pre-order deadline (until it merchandise sells without a stock limit)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "pre-order deadline"
+msgstr "pre-order deadline"
+
+#. Glossary term: price tier (a price of a ticket type within a date window)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "price tier"
+msgstr "price tier"
+
 #. Glossary term: programme item
 #: src/glossary.ts
 msgctxt "glossary"
@@ -277,6 +325,12 @@ msgstr "Sign-up is closed at the moment."
 msgid "Signing in with Google failed. Try again."
 msgstr "Signing in with Google failed. Try again."
 
+#. Glossary term: size chart
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "size chart"
+msgstr "size chart"
+
 #: src/errors.ts
 msgid "Something went wrong. Try again."
 msgstr "Something went wrong. Try again."
@@ -286,6 +340,12 @@ msgstr "Something went wrong. Try again."
 msgctxt "glossary"
 msgid "speaker"
 msgstr "speaker"
+
+#. Glossary term: supporter price (a higher price a buyer may choose)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "supporter price"
+msgstr "supporter price"
 
 #. Glossary term: suspended (a convention the admin took off the platform)
 #: src/glossary.ts
@@ -451,6 +511,12 @@ msgctxt "glossary"
 msgid "ticket"
 msgstr "ticket"
 
+#. Glossary term: ticket holder (the person a ticket is issued to)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "ticket holder"
+msgstr "ticket holder"
+
 #. Glossary term: ticket type
 #: src/glossary.ts
 msgctxt "glossary"
@@ -496,6 +562,12 @@ msgstr "Two-factor authentication was turned off for your OPOS account. You can 
 msgctxt "glossary"
 msgid "user"
 msgstr "user"
+
+#. Glossary term: variant (a buyable option of a merchandise item, with its own stock)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "variant"
+msgstr "variant"
 
 #. Glossary term: venue (where an edition takes place)
 #: src/glossary.ts

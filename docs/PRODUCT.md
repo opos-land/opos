@@ -85,6 +85,18 @@ a ticket; what the scene calls accreditation is the ticket.
 | **venue**                     | where an edition takes place: the name of the place, its address and its city                |
 | **shop**                      | where an edition sells, opened by its organizers once what selling needs is set              |
 | **consent**                   | a sentence of the convention's own that a buyer accepts with an order, required or optional  |
+| **price tier**                | a price of a ticket type within a date window                                                |
+| **supporter price**           | a higher price a buyer may choose for a ticket type, in place of its price tier's            |
+| **perk**                      | something a ticket type includes: shown, never sold separately                               |
+| **add-on**                    | an optional extra bought with a ticket: unlimited, limited by a capacity or headcount only   |
+| **merchandise item**          | a product an edition sells, picked up at the edition and never shipped                       |
+| **variant**                   | a buyable option of a merchandise item, with its own stock                                   |
+| **size chart**                | a picture of the measurements of a merchandise item's sizes                                  |
+| **pre-order deadline**        | the moment until which a variant may sell without a stock limit                              |
+| **ticket holder**             | the person a ticket is issued to, named in its order                                         |
+| **age band**                  | child, teen or adult: a ticket holder's age on the edition's first day                       |
+| **guardian consent**          | a guardian's written consent for a teen, brought on paper to the edition                     |
+| **custom field**              | a short text an edition asks a ticket holder for, never anything sensitive                   |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.

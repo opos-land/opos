@@ -8,6 +8,19 @@ describe('glossary', () => {
   it.each([
     ['shop', 'shop', 'sklep'],
     ['consent', 'consent', 'zgoda'],
+    // The terms the catalog brings.
+    ['priceTier', 'price tier', 'próg cenowy'],
+    ['supporterPrice', 'supporter price', 'cena wspierająca'],
+    ['perk', 'perk', 'bonus'],
+    ['addOn', 'add-on', 'dodatek'],
+    ['merchandiseItem', 'merchandise item', 'gadżet'],
+    ['variant', 'variant', 'wariant'],
+    ['sizeChart', 'size chart', 'tabela rozmiarów'],
+    ['preorderDeadline', 'pre-order deadline', 'termin przedsprzedaży'],
+    ['ageBand', 'age band', 'przedział wiekowy'],
+    ['guardianConsent', 'guardian consent', 'zgoda opiekuna'],
+    ['customField', 'custom field', 'pole dodatkowe'],
+    ['ticketHolder', 'ticket holder', 'posiadacz akredytacji'],
   ] as const)('renders %s as its one word in each language', async (term, en, pl) => {
     const i18n = setupI18n()
 

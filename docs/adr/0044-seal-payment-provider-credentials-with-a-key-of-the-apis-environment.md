@@ -23,9 +23,12 @@ payment, with no person present.
 - The secret is validated when the API starts, differs from every other secret of the
   environment, and is given to the API's container alone. No runtime database role and no other
   application holds it.
+- A value is sealed for the tenant and the provider it belongs to, which are authenticated with
+  it and stored nowhere else: copied into the row of another convention, it opens nothing.
 - A sealed value names its format, so that a later key or cipher can be told from the first.
 - The database and its backups hold sealed values only. No route answers the credentials, sealed
-  or open, and no log line holds them.
+  or open, and no log line holds them open: a provider's module that fails is logged by the name
+  of its error alone.
 - The seed seals the demo convention's credentials with the same secret, on `local` and `dev`,
   where the fake provider takes no money.
 
@@ -50,7 +53,9 @@ The functions are in [sealed.ts](../../packages/db/src/sealed.ts), the rules of 
 ## Consequences
 
 - Losing the secret loses every stored account: each convention connects its account again. The
-  secret is backed up with the environment's other secrets, not with the database.
+  secret is backed up with the environment's other secrets, not with the database. Until then the
+  convention's settings show such an account as not ready; a route of an edition, which reads no
+  credentials, still counts it as it was stored.
 - Replacing the secret has the same effect today. Rotation without reconnecting, which opens with
   the old key and seals with the new, is not built; the format mark is there for it.
 - A person with the environment's secrets and the database reads the credentials. That is the

@@ -35,6 +35,8 @@ domain owner to confirm.
 | P5  | Giving credentials again replaces the stored ones, after the same check. It is refused while an order of the convention awaits payment: a payment under way is confirmed with the credentials it started with.                                                                  | new                                          |
 | P6  | An org with shop write access disconnects the account, which removes its credentials. Disconnecting is refused while a shop of the convention is open.                                                                                                                          | new                                          |
 | P7  | An account is connected only to a provider the environment has a module of; the panel offers those and no other.                                                                                                                                                                | new                                          |
+| P8  | Credentials that leave the account not ready are refused while a shop of the convention is open.                                                                                                                                                                                | new                                          |
+| P9  | A convention checks credentials with its provider up to 20 times an hour.                                                                                                                                                                                                       | new                                          |
 
 ### Seller's details
 
@@ -59,7 +61,7 @@ domain owner to confirm.
 | D7  | An org with tickets write access to the edition sets its documents and consents.                                                                                                               | B1.4                         |
 | D8  | An edition may give the address of its FAQ, linked from the shop's footer.                                                                                                                     | F1.1; where it is set is new |
 | D9  | An edition holds up to 30 documents, a document up to 50 versions, an edition up to 20 consents.                                                                                               | new                          |
-| D10 | A document a consent links is not deleted until the consent lets go of it.                                                                                                                     | new                          |
+| D10 | A consent links its document for good: another link is a new consent. A document a consent links is not deleted while that consent is there.                                                   | new                          |
 
 ### Opening the shop
 
@@ -141,13 +143,15 @@ answers whether the shop is open and each condition of O2 as a yes or a no.
 
 `shop.payments-under-way` (P5) and `consent.in-use` (D6) are refusals an order causes: they arrive
 with [checkout and orders](0004-checkout-and-orders.md). Until then `document.in-use` refuses the
-deletion of a document a consent links (D10).
+deletion of a document a consent links (D10). `PUT /shop/provider-account` also refuses with
+`shop.open` (P8) and `request.rate-limited` (P9). `PATCH …/consents/{consentId}` takes the
+sentence, whether it is required, the place and whether it is hidden, never the document (D10).
 
 One public route, without sign-in:
 
-| Route                                                      | Answers                                                          |
-| ---------------------------------------------------------- | ---------------------------------------------------------------- |
-| `GET /public/tenants/{slug}/document-versions/{versionId}` | the file of a published version (D3); anything else as not found |
+| Route                                                      | Answers                                                                            |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `GET /public/tenants/{slug}/document-versions/{versionId}` | the file of a published version (D3), kept by no cache; anything else as not found |
 
 ### Screens
 
@@ -177,7 +181,9 @@ condition missing. The seed puts the documents' files into the bucket itself
   gains one column, `edition_document_versions.file_id`: the sweep of files tells a version's file
   from one nothing points at, as for every kind of file.
 - `opos_app` reads `payment_provider_accounts.credentials`, since the API decrypts them to call the
-  provider; no route's answer carries the column, and a test of the contract keeps it so.
+  provider; no route's answer carries the column, and a test of the contract keeps it so. The
+  credentials are sealed for their tenant and provider: copied into another row, they open nothing.
+- A version's file is its own edition's: the foreign key runs through the tenant and the edition.
 - A version's file belongs to its tenant: the public route opens the tenant from its slug and
   answers a version of another tenant, and any version of a suspended one, as not found.
 - The provider account and the seller's details need `shop`, the edition's shop, documents and
@@ -242,5 +248,5 @@ e2e, each scenario making its own tenant and accounts and checking the BFF bound
   which changes the terms this spec is written in; Przelewy24 as the MVP's provider (D3), with
   [Przelewy24](0005-przelewy24.md). The module having its domain owner (D1) is carried into the
   documents with this spec's code; the two records above are proposed with it.
-- **The rules marked "new"** wait for the domain owner: P5, P6, P7, S3, the second sentence of S5,
+- **The rules marked "new"** wait for the domain owner: P5 to P9, S3, the second sentence of S5,
   the file of D2, D3, D8's place, D9, D10, O3, O5, O6 and the second sentence of O7.

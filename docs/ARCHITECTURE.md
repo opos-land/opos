@@ -501,8 +501,8 @@ steps of [adding a feature](#adding-a-feature).
 
 - **Payments.** The money goes to the convention's own provider account
   ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)); OPOS keeps only the
-  payment reference, and provider credentials sealed with a key of the API's environment, never
-  returned, logged or read by a route outside the shop permission
+  payment reference, and provider credentials sealed with a key of the API's environment for their
+  tenant and provider, never returned, logged or read by a route outside the shop permission
   ([0044](adr/0044-seal-payment-provider-credentials-with-a-key-of-the-apis-environment.md)). A
   provider is asked through one port, [payments](../apps/api/src/modules/payments), outside every
   transaction. A notification counts once its signature or the provider confirms it; a repeat, or

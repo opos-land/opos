@@ -233,14 +233,14 @@ provider account, and its seller's details, the legal entity a buyer's contract 
 address buyers write to. It sells in one currency, PLN. Each edition holds its legal documents and
 its consents, and opens a shop of its own.
 
-| Rule                 | Value                                                                                                                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Opening              | needs the provider account ready to sell, the seller's details complete, and a published version of the edition's shop terms and privacy policy; a refusal names what is missing |
-| While a shop is open | the account stays connected, the details stay complete, and the last document standing for the shop terms or the privacy policy is neither hidden nor deleted                    |
-| Publication          | an edition is published without an open shop, and a shop may open before its edition is published; buyers reach the shop only while both hold                                    |
-| Documents            | published as PDF versions that never change: a correction is a new version, and a published version stays readable by its link for as long as the convention is on the platform  |
-| Consents             | their wording, and which of them a buyer must accept, are the convention's own: OPOS ships no legal text and requires no consent by itself                                       |
-| Limits               | 30 documents an edition, 50 versions a document, 20 consents an edition                                                                                                          |
+| Rule                 | Value                                                                                                                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Opening              | needs the provider account ready to sell, the seller's details complete, and a published version of the edition's shop terms and privacy policy; a refusal names what is missing  |
+| While a shop is open | the account stays connected and ready to sell, the details stay complete, and the last document standing for the shop terms or the privacy policy is neither hidden nor deleted   |
+| Publication          | an edition is published without an open shop, and a shop may open before its edition is published; buyers reach the shop only while both hold                                     |
+| Documents            | published as PDF versions that never change: a correction is a new version, and a published version stays readable by its link for as long as the convention is on the platform   |
+| Consents             | their wording, and which of them a buyer must accept, are the convention's own: OPOS ships no legal text and requires no consent by itself; a consent links one document for good |
+| Limits               | 30 documents an edition, 50 versions a document, 20 consents an edition; 20 checks of credentials with the provider a convention an hour                                          |
 
 ---
 

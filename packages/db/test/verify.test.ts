@@ -337,6 +337,60 @@ describe('verifyDatabase', () => {
       },
     )
 
+    // The setup of the shop (docs/specs/0002-shop-setup.md): each grant it must not hold.
+    it.each([
+      [
+        'the currency of a seller, which is PLN alone',
+        'update (currency) on public.shop_sellers',
+        /opos_app UPDATE \(currency\) on shop_sellers/,
+      ],
+      [
+        'the credentials of a provider account, replaced by a new row',
+        'update (credentials) on public.payment_provider_accounts',
+        /opos_app UPDATE \(credentials\) on payment_provider_accounts/,
+      ],
+      [
+        'the kind of a document',
+        'update (kind) on public.edition_documents',
+        /opos_app UPDATE \(kind\) on edition_documents/,
+      ],
+      [
+        'the file of a published version',
+        'update (file_id) on public.edition_document_versions',
+        /opos_app UPDATE \(file_id\) on edition_document_versions/,
+      ],
+    ])('reports opos_app updating %s', async (_, grant, report) => {
+      const problems = await problemsAfter((sql) => sql.unsafe(`grant ${grant} to opos_app`))
+      expect(problems.join('\n')).toMatch(report)
+    })
+
+    it.each(['shop_sellers', 'edition_shops', 'edition_document_versions'])(
+      'reports opos_app deleting from %s, whose rows go only with what owns them',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant delete on public.${table} to opos_app`),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`opos_app DELETE on ${table}`))
+      },
+    )
+
+    it.each([
+      ['payment_provider_accounts', 'credentials'],
+      ['payment_provider_accounts', 'provider'],
+      ['shop_sellers', 'contact_email'],
+      ['edition_consents', 'text'],
+    ])(
+      'reports opos_app_global reading %s.%s, which no cross-tenant query needs',
+      async (table, column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+        )
+      },
+    )
+
     it('reports RLS on account_files, a global table', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`alter table public.account_files enable row level security`),

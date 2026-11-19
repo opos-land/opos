@@ -260,6 +260,20 @@
       "when": 1795052041450,
       "tag": "0036_edition_venue_and_tenant_logos_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795094746918,
+      "tag": "0037_shop_setup",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795094769896,
+      "tag": "0038_shop_setup_privileges",
+      "breakpoints": true
     }
   ]
 }

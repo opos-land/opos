@@ -26,6 +26,12 @@ const covered = [
   ['program_item_likes', 'tenant_id'],
   ['uploaded_files', 'tenant_id'],
   ['tenant_logos', 'tenant_id'],
+  ['shop_sellers', 'tenant_id'],
+  ['payment_provider_accounts', 'tenant_id'],
+  ['edition_shops', 'tenant_id'],
+  ['edition_documents', 'tenant_id'],
+  ['edition_document_versions', 'tenant_id'],
+  ['edition_consents', 'tenant_id'],
 ] as const
 
 class Rollback extends Error {}
@@ -35,7 +41,9 @@ let b: Awaited<ReturnType<typeof createTenant>>
 
 /**
  * A tenant with a row in every covered table: its head membership, an edition, its access, an
- * accepted invitation, a programme item with a speaker and a like, an uploaded file, and a logo.
+ * accepted invitation, a programme item with a speaker and a like, an uploaded file, a logo, and
+ * the setup of its shop: the seller, a provider account, the edition's shop, a document with a
+ * version and a consent.
  */
 async function populated() {
   const tenant = await createTenant()
@@ -66,6 +74,30 @@ async function populated() {
     returning id
   `
   await migrator`insert into tenant_logos (tenant_id, file_id) values (${tenant.id}, ${logo!.id})`
+  await migrator`insert into shop_sellers (tenant_id, seller_name) values (${tenant.id}, 'Seller')`
+  await migrator`
+    insert into payment_provider_accounts (tenant_id, provider, credentials)
+    values (${tenant.id}, 'fake', 'sealed')
+  `
+  await migrator`insert into edition_shops (tenant_id, edition_id) values (${tenant.id}, ${edition})`
+  const [terms] = await migrator<{ id: string }[]>`
+    insert into edition_documents (tenant_id, edition_id, kind, title)
+    values (${tenant.id}, ${edition}, 'shop-terms', 'Terms')
+    returning id
+  `
+  const [termsFile] = await migrator<{ id: string }[]>`
+    insert into uploaded_files (tenant_id, edition_id, kind, content_type, size, sha256, name)
+    values (${tenant.id}, ${edition}, 'edition-document', 'application/pdf', 1, ${'0'.repeat(64)}, 't.pdf')
+    returning id
+  `
+  await migrator`
+    insert into edition_document_versions (tenant_id, edition_id, document_id, number, file_id)
+    values (${tenant.id}, ${edition}, ${terms!.id}, 1, ${termsFile!.id})
+  `
+  await migrator`
+    insert into edition_consents (tenant_id, edition_id, document_id, text, is_required, position)
+    values (${tenant.id}, ${edition}, ${terms!.id}, 'I accept the terms.', true, 1)
+  `
   return tenant
 }
 
@@ -261,6 +293,9 @@ describe('tenant isolation', () => {
     const [file] = await migrator<{ id: string }[]>`
       select id from uploaded_files where tenant_id = ${a.id} and kind = 'test'
     `
+    const [document] = await migrator<{ id: string }[]>`
+      select id from edition_documents where tenant_id = ${a.id}
+    `
     // An account without a membership in a: only WITH CHECK can refuse it.
     const outsider = await createUser()
 
@@ -281,6 +316,16 @@ describe('tenant isolation', () => {
       `insert into uploaded_files (tenant_id, kind, content_type, size, sha256, name)
        values ('${a.id}', 'test', 'image/png', 1, repeat('0', 64), 'a.png')`,
       `insert into tenant_logos (tenant_id, file_id) values ('${a.id}', '${file!.id}')`,
+      `insert into shop_sellers (tenant_id) values ('${a.id}')`,
+      `insert into payment_provider_accounts (tenant_id, provider, credentials)
+       values ('${a.id}', 'fake', 'sealed')`,
+      `insert into edition_shops (tenant_id, edition_id) values ('${a.id}', '${edition!.id}')`,
+      `insert into edition_documents (tenant_id, edition_id, kind, title)
+       values ('${a.id}', '${edition!.id}', 'other', 'Foreign')`,
+      `insert into edition_document_versions (tenant_id, edition_id, document_id, number, file_id)
+       values ('${a.id}', '${edition!.id}', '${document!.id}', 9, '${file!.id}')`,
+      `insert into edition_consents (tenant_id, edition_id, text, is_required, position)
+       values ('${a.id}', '${edition!.id}', 'Foreign', false, 9)`,
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /row-level security/,

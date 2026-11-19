@@ -117,6 +117,14 @@ async function orgWith(c: Convention, tickets: 'read' | 'write', shop?: 'read' |
 
 const terms = (name = 'terms.pdf') => upload(pdf(), 'application/pdf', name)
 
+/** The settings of the catalog on a shop nothing was set for (docs/specs/0003-catalog.md). */
+const noSettings = {
+  ageBands: null,
+  guardianConsentFormUrl: null,
+  merchPreorderDeadline: null,
+  merchOnlyEnabled: false,
+  salesClosedMessage: null,
+}
 const nothingMet = {
   'provider-account': false,
   'seller-details': false,
@@ -140,6 +148,7 @@ describe('the shop of an edition', () => {
       open: false,
       openedAt: null,
       faqUrl: null,
+      ...noSettings,
       conditions: nothingMet,
     })
   })
@@ -273,6 +282,7 @@ describe('the shop of an edition', () => {
       open: true,
       openedAt: expect.any(String) as string,
       faqUrl: null,
+      ...noSettings,
       conditions: everythingMet,
     })
     expect((await c.as('get', '/shop')).body).toEqual(res.body)
@@ -334,10 +344,15 @@ describe('the shop of an edition', () => {
     const opened = await c.as('post', '/shop/open', undefined, org).expect(200)
 
     expect(Object.keys(read.body as object).sort()).toEqual([
+      'ageBands',
       'conditions',
       'faqUrl',
+      'guardianConsentFormUrl',
+      'merchOnlyEnabled',
+      'merchPreorderDeadline',
       'open',
       'openedAt',
+      'salesClosedMessage',
     ])
     expect(read.body).toMatchObject({ conditions: everythingMet })
     expect(JSON.stringify([read.body, opened.body])).not.toMatch(/Seller Ltd|sealed|fake/)

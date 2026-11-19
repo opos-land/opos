@@ -69,6 +69,7 @@ export const errorCodes = [
   'document.too-many',
   'document.too-many-versions',
   'consent.too-many',
+  'catalog.limit-reached',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

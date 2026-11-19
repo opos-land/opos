@@ -56,6 +56,7 @@ describe('errorMessage', () => {
     ['document.too-many', 'Ta edycja osiągnęła limit dokumentów: 30.'],
     ['document.too-many-versions', 'Ten dokument osiągnął limit wersji: 30.'],
     ['consent.too-many', 'Ta edycja osiągnęła limit zgód: 30.'],
+    ['catalog.limit-reached', 'Ta lista jest pełna: mieści najwyżej tyle pozycji: 30.'],
   ] as const)('says %s in Polish, with the limit', async (code, text) => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

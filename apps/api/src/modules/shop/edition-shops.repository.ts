@@ -6,12 +6,39 @@ import { TenantContextService } from '../../common/als/tenant-context.service'
 export interface StoredEditionShop {
   openedAt: Date | null
   faqUrl: string | null
+  teenFromAge: number | null
+  adultFromAge: number | null
+  guardianConsentFormUrl: string | null
+  merchPreorderDeadline: Date | null
+  merchOnlyEnabled: boolean
+  salesClosedMessage: string | null
 }
 
-const columns = { openedAt: editionShops.openedAt, faqUrl: editionShops.faqUrl }
+/** What an org sets of a shop: everything but whether it is open. */
+export type EditionShopSettings = Partial<Omit<StoredEditionShop, 'openedAt'>>
 
-/** A shop nothing was set for: closed, with no FAQ address. */
-const UNSET: StoredEditionShop = { openedAt: null, faqUrl: null }
+const columns = {
+  openedAt: editionShops.openedAt,
+  faqUrl: editionShops.faqUrl,
+  teenFromAge: editionShops.teenFromAge,
+  adultFromAge: editionShops.adultFromAge,
+  guardianConsentFormUrl: editionShops.guardianConsentFormUrl,
+  merchPreorderDeadline: editionShops.merchPreorderDeadline,
+  merchOnlyEnabled: editionShops.merchOnlyEnabled,
+  salesClosedMessage: editionShops.salesClosedMessage,
+}
+
+/** A shop nothing was set for: closed, with no setting of its own. */
+const UNSET: StoredEditionShop = {
+  openedAt: null,
+  faqUrl: null,
+  teenFromAge: null,
+  adultFromAge: null,
+  guardianConsentFormUrl: null,
+  merchPreorderDeadline: null,
+  merchOnlyEnabled: false,
+  salesClosedMessage: null,
+}
 
 /**
  * The shops of the editions of the tenant in context, one row an edition; RLS keeps every query
@@ -54,12 +81,14 @@ export class EditionShopsRepository {
     return row ?? UNSET
   }
 
-  async setFaqUrl(editionId: string, faqUrl: string | null) {
+  /** Sets what the change names and leaves the rest; the first setting makes the edition's row. */
+  async set(editionId: string, settings: EditionShopSettings) {
+    if (Object.keys(settings).length === 0) return
     await this.context
       .tx()
       .insert(editionShops)
-      .values({ tenantId: this.tenantId(), editionId, faqUrl })
-      .onConflictDoUpdate({ target: editionShops.editionId, set: { faqUrl } })
+      .values({ tenantId: this.tenantId(), editionId, ...settings })
+      .onConflictDoUpdate({ target: editionShops.editionId, set: settings })
   }
 
   /** Opens the shop; one already open keeps the moment it was opened. */

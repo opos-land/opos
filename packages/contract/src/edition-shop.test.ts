@@ -35,16 +35,26 @@ describe('the shop of an edition', () => {
   // more of the convention's provider account and seller's details.
   it('answers each condition as a yes or a no, and nothing of what stands behind it', () => {
     expect(Object.keys(editionShopSchema.shape).sort()).toEqual([
+      'ageBands',
       'conditions',
       'faqUrl',
+      'guardianConsentFormUrl',
+      'merchOnlyEnabled',
+      'merchPreorderDeadline',
       'open',
       'openedAt',
+      'salesClosedMessage',
     ])
     refused(
       editionShopSchema.safeParse({
         open: false,
         openedAt: null,
         faqUrl: null,
+        ageBands: null,
+        guardianConsentFormUrl: null,
+        merchPreorderDeadline: null,
+        merchOnlyEnabled: false,
+        salesClosedMessage: null,
         conditions: {
           'provider-account': 'fake',
           'seller-details': true,
@@ -61,6 +71,35 @@ describe('the shop of an edition', () => {
     })
     expect(updateEditionShopSchema.parse({ faqUrl: null })).toEqual({ faqUrl: null })
     expect(updateEditionShopSchema.parse({})).toEqual({})
+  })
+
+  // What an edition sets for its whole catalog (docs/specs/0003-catalog.md).
+  it('takes the two ages that divide child, teen and adult together, the second above the first', () => {
+    const ages = { ageBands: { teenFromAge: 13, adultFromAge: 18 } }
+
+    expect(updateEditionShopSchema.parse(ages)).toEqual(ages)
+    expect(updateEditionShopSchema.parse({ ageBands: null })).toEqual({ ageBands: null })
+    refused(updateEditionShopSchema.safeParse({ ageBands: { teenFromAge: 13 } }))
+    refused(updateEditionShopSchema.safeParse({ ageBands: { teenFromAge: 18, adultFromAge: 18 } }))
+    refused(updateEditionShopSchema.safeParse({ ageBands: { teenFromAge: 0, adultFromAge: 18 } }))
+    refused(updateEditionShopSchema.safeParse({ ageBands: { teenFromAge: 13, adultFromAge: 151 } }))
+  })
+
+  it('takes the consent form as a page on the web, the deadline as a moment and a trimmed message', () => {
+    const set = {
+      guardianConsentFormUrl: 'https://convention.test/consent.pdf',
+      merchPreorderDeadline: '2027-05-01T21:59:59.000Z',
+      merchOnlyEnabled: true,
+    }
+
+    expect(updateEditionShopSchema.parse({ ...set, salesClosedMessage: ' Soon. ' })).toEqual({
+      ...set,
+      salesClosedMessage: 'Soon.',
+    })
+    refused(updateEditionShopSchema.safeParse({ guardianConsentFormUrl: 'file:///consent.pdf' }))
+    refused(updateEditionShopSchema.safeParse({ merchPreorderDeadline: 'May' }))
+    refused(updateEditionShopSchema.safeParse({ salesClosedMessage: ' ' }))
+    refused(updateEditionShopSchema.safeParse({ salesClosedMessage: 'm'.repeat(1001) }))
   })
 
   it.each([

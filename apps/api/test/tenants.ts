@@ -199,6 +199,59 @@ export async function addConsent(
   return row!.id
 }
 
+/** The place after the last row of an ordered table of an edition. */
+const lastPlace = (table: string, editionId: string) =>
+  sql`(select coalesce(max(position), 0) + 1 from ${sql.identifier(table)} where edition_id = ${editionId})`
+
+/** An add-on of an edition as its row alone, last in the list: free and unlimited unless told. */
+export async function addAddOn(
+  tenantId: string,
+  editionId: string,
+  values: {
+    name?: string
+    amountMinor?: number
+    kind?: 'unlimited' | 'limited' | 'headcount'
+    capacity?: number
+    placesLeftThreshold?: number
+    hidden?: boolean
+  } = {},
+) {
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into add_ons
+      (tenant_id, edition_id, name, amount_minor, kind, capacity, places_left_threshold, position,
+        hidden_at)
+    values (${tenantId}, ${editionId}, ${values.name ?? 'Add-on'}, ${values.amountMinor ?? 0},
+      ${values.kind ?? 'unlimited'}, ${values.capacity ?? null},
+      ${values.placesLeftThreshold ?? null}, ${lastPlace('add_ons', editionId)},
+      ${values.hidden ? sql`now()` : null})
+    returning id
+  `)
+  return row!.id
+}
+
+/** A custom field of an edition as its row alone, last in the list. */
+export async function addCustomField(
+  tenantId: string,
+  editionId: string,
+  values: { label?: string; isRequired?: boolean; hidden?: boolean } = {},
+) {
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into edition_custom_fields (tenant_id, edition_id, label, is_required, position, hidden_at)
+    values (${tenantId}, ${editionId}, ${values.label ?? 'Field'}, ${values.isRequired ?? false},
+      ${lastPlace('edition_custom_fields', editionId)}, ${values.hidden ? sql`now()` : null})
+    returning id
+  `)
+  return row!.id
+}
+
+/** The rows a table holds of the tenant, as stored, in the order they were added. */
+export const storedRows = async (table: string, tenantId: string) => [
+  ...(await db.execute<Record<string, unknown>>(sql`
+    select * from ${sql.identifier(table)} where tenant_id = ${tenantId}
+    order by ${table === 'edition_shops' ? sql`edition_id` : sql`created_at, id`}
+  `)),
+]
+
 /**
  * Everything opening the shop of the edition asks for: a ready provider account, complete
  * seller's details, and the shop terms and the privacy policy with a version each.
@@ -452,6 +505,16 @@ export async function openTransaction() {
  * programme items and their speakers. Equal snapshots before and after a refused request mean it
  * changed nothing.
  */
+/** The tables of the catalog, each with what orders its rows. */
+const CATALOG_TABLES = [
+  ['add_ons', 'id'],
+  ['edition_custom_fields', 'id'],
+] as const
+
+/** A row as a refused write must leave it: what the trigger of its last change wrote aside. */
+const withoutUpdatedAt = (row: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(row).filter(([column]) => column !== 'updated_at'))
+
 export async function tenantState(tenantId: string) {
   const [tenant] = await db.execute(
     sql`select name, default_locale, timezone from tenants where id = ${tenantId}`,
@@ -476,9 +539,20 @@ export async function tenantState(tenantId: string) {
     sql`select id, kind from uploaded_files where tenant_id = ${tenantId} order by id`,
   )
   const shops = await db.execute(sql`
-    select edition_id, opened_at, faq_url from edition_shops
+    select edition_id, opened_at, faq_url, teen_from_age, adult_from_age,
+      guardian_consent_form_url, merch_preorder_deadline, merch_only_enabled, sales_closed_message
+    from edition_shops
     where tenant_id = ${tenantId} order by edition_id
   `)
+  const catalog: Record<string, unknown[]> = {}
+  for (const [table, order] of CATALOG_TABLES) {
+    catalog[table] = [
+      ...(await db.execute(sql`
+        select * from ${sql.identifier(table)} where tenant_id = ${tenantId}
+        order by ${sql.raw(order)}
+      `)),
+    ].map(withoutUpdatedAt)
+  }
   const documents = await db.execute(sql`
     select id, edition_id, kind, title, hidden_at from edition_documents
     where tenant_id = ${tenantId} order by id
@@ -517,6 +591,7 @@ export async function tenantState(tenantId: string) {
     documents: [...documents],
     documentVersions: [...documentVersions],
     consents: [...consents],
+    catalog,
     editions: [...editions],
     memberships: [...memberships],
     editionMemberships: [...editionMemberships],

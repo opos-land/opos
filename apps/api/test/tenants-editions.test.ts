@@ -7,7 +7,9 @@ import { deleteCreatedAccounts, session, testEmail } from './auth'
 import { upload } from './files'
 import { pdf, png } from './pictures'
 import {
+  addAddOn,
   addConsent,
+  addCustomField,
   addDocument,
   addEdition,
   addEditionAccess,
@@ -569,6 +571,8 @@ describe('concurrency', () => {
       item: string
       document: string
       consent: string
+      addOn: string
+      customField: string
     }
     type Request = { method: Method; path: string; body?: object }
     const noEdition = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
@@ -698,12 +702,40 @@ describe('concurrency', () => {
         method: 'delete',
         path: `/editions/${s.edition}/consents/${s.consent}`,
       }),
+      'catalog.addOns.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/add-ons`,
+        body: { name: 'Late', amountMinor: 0, kind: 'unlimited' },
+      }),
+      'catalog.addOns.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/add-ons/${s.addOn}`,
+        body: { name: 'Late' },
+      }),
+      'catalog.addOns.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/add-ons/${s.addOn}`,
+      }),
+      'catalog.customFields.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/custom-fields`,
+        body: { label: 'Late', isRequired: false },
+      }),
+      'catalog.customFields.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/custom-fields/${s.customField}`,
+        body: { label: 'Late' },
+      }),
+      'catalog.customFields.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/custom-fields/${s.customField}`,
+      }),
     }
 
     /**
      * A tenant whose org holds settings=write, branding=write, shop=write, program=write and
      * tickets=write, another org to act on, a programme item, a logo, everything opening the
-     * shop asks for, a document of the edition's own and a consent.
+     * shop asks for, a document of the edition's own, a consent, an add-on and a custom field.
      */
     async function setup(): Promise<Setup> {
       const t = await tenantWithHead()
@@ -722,7 +754,21 @@ describe('concurrency', () => {
       await makeShopReady(t.id, edition)
       const { id: document } = await addDocument(t.id, edition)
       const consent = await addConsent(t.id, edition)
-      return { t, edition, org: actor, orgId, otherId, newcomer, item, document, consent }
+      const addOn = await addAddOn(t.id, edition)
+      const customField = await addCustomField(t.id, edition)
+      return {
+        t,
+        edition,
+        org: actor,
+        orgId,
+        otherId,
+        newcomer,
+        item,
+        document,
+        consent,
+        addOn,
+        customField,
+      }
     }
 
     const send = (s: Setup, { method, path, body }: Request) =>

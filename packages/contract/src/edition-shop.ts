@@ -21,14 +21,36 @@ export const SHOP_CONDITIONS = [
 export type ShopCondition = (typeof SHOP_CONDITIONS)[number]
 
 /**
- * The shop of an edition: whether it is open, and each condition of opening as met or missing.
- * That yes or no is all it says of the convention's provider account and seller's details, which
- * stay behind the shop permission.
+ * The two ages that divide an edition's age bands, by a ticket holder's age on the edition's first
+ * day: below the first a child, from it a teen, from the second an adult.
+ */
+export const ageBandsSchema = z.object({
+  teenFromAge: z.number().int(),
+  adultFromAge: z.number().int(),
+})
+
+export type AgeBands = z.infer<typeof ageBandsSchema>
+
+/**
+ * The shop of an edition: whether it is open, each condition of opening as met or missing, and
+ * what the edition sets for its whole catalog (docs/specs/0003-catalog.md). The yes or no of a
+ * condition is all it says of the convention's provider account and seller's details, which stay
+ * behind the shop permission.
  */
 export const editionShopSchema = z.object({
   open: z.boolean(),
   openedAt: timestamp.nullable(),
   faqUrl: z.string().nullable(),
+  /** Null until the edition sets them. */
+  ageBands: ageBandsSchema.nullable(),
+  /** The form a teen's guardian prints, when the edition gives one. */
+  guardianConsentFormUrl: z.string().nullable(),
+  /** Until it a variant may sell without a stock limit; after it, from an entered number alone. */
+  merchPreorderDeadline: timestamp.nullable(),
+  /** Whether the shop takes an order of merchandise without a ticket. */
+  merchOnlyEnabled: z.boolean(),
+  /** What the shop shows while nothing is on sale. */
+  salesClosedMessage: z.string().nullable(),
   conditions: z.object({
     'provider-account': z.boolean(),
     'seller-details': z.boolean(),
@@ -39,9 +61,31 @@ export const editionShopSchema = z.object({
 
 export type EditionShop = z.infer<typeof editionShopSchema>
 
-/** The address of the edition's FAQ, which the shop's footer links: a page on the web, or none. */
+const link = z.httpUrl().max(2000).nullable()
+
+/**
+ * What an org sets of the shop: the address of the edition's FAQ, which the shop's footer links,
+ * and the settings of the catalog. An address is a page on the web, or none; the two ages come
+ * together, the second above the first.
+ */
 export const updateEditionShopSchema = z
-  .strictObject({ faqUrl: z.httpUrl().max(2000).nullable() })
+  .strictObject({
+    faqUrl: link,
+    ageBands: z
+      .strictObject({
+        teenFromAge: z.number().int().min(1).max(149),
+        adultFromAge: z.number().int().min(2).max(150),
+      })
+      .refine((ages) => ages.adultFromAge > ages.teenFromAge, {
+        path: ['adultFromAge'],
+        message: 'An adult is older than a teen',
+      })
+      .nullable(),
+    guardianConsentFormUrl: link,
+    merchPreorderDeadline: timestamp.nullable(),
+    merchOnlyEnabled: z.boolean(),
+    salesClosedMessage: z.string().trim().min(1).max(1000).nullable(),
+  })
   .partial()
 
 export type UpdateEditionShop = z.infer<typeof updateEditionShopSchema>
@@ -163,7 +207,8 @@ export const editionShopRoutes = {
     .route({
       method: 'PATCH',
       path: '/editions/{editionId}/shop',
-      summary: "Set the address of the edition's FAQ; needs tickets=write",
+      summary:
+        "Set the address of the edition's FAQ and the settings of its catalog: the ages of its age bands, the guardian consent form, the pre-order deadline, merch-only orders and the message of a shop with nothing on sale; needs tickets=write",
     })
     .input(edition.extend({ body: updateEditionShopSchema }))
     .output(editionShopSchema),

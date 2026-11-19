@@ -1,6 +1,7 @@
 import { adminContract } from './admin'
 import { authContract } from './auth'
 import { brandingContract } from './branding'
+import { catalogContract } from './catalog'
 import { editionsContract } from './editions'
 import { engagementContract } from './engagement'
 import { healthContract } from './health'
@@ -23,6 +24,7 @@ export const contract = {
   program: programContract,
   public: publicContract,
   shop: shopContract,
+  catalog: catalogContract,
   engagement: engagementContract,
   admin: adminContract,
 }
@@ -33,6 +35,7 @@ export * from './admin'
 export * from './auth'
 export * from './auth-mfa'
 export * from './branding'
+export * from './catalog'
 export * from './common'
 export * from './edition-shop'
 export * from './editions'

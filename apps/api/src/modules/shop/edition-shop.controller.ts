@@ -1,16 +1,32 @@
 import { Controller } from '@nestjs/common'
-import { contract, type EditionShop } from '@opos/contract'
+import { contract, type EditionShop, type UpdateEditionShop } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
-import { EditionShopsRepository } from './edition-shops.repository'
+import { type EditionShopSettings, EditionShopsRepository } from './edition-shops.repository'
 import { missingOf, ShopConditions } from './shop-conditions'
 import { shopNotReady } from './shop.errors'
 
+/** A change as the row takes it: the two ages apart, the deadline as a moment. */
+export function settingsOf(body: UpdateEditionShop): EditionShopSettings {
+  const { ageBands, merchPreorderDeadline, ...rest } = body
+  return {
+    ...rest,
+    ...(ageBands !== undefined && {
+      teenFromAge: ageBands?.teenFromAge ?? null,
+      adultFromAge: ageBands?.adultFromAge ?? null,
+    }),
+    ...(merchPreorderDeadline !== undefined && {
+      merchPreorderDeadline:
+        merchPreorderDeadline === null ? null : new Date(merchPreorderDeadline),
+    }),
+  }
+}
+
 /**
  * The shop of an edition, behind the tickets permission of the edition
- * (docs/specs/0002-shop-setup.md): whether it is open, what opening asks for, and its FAQ address.
- * A tenant-level permission grants none of it: an org with the shop permission alone opens no
- * shop.
+ * (docs/specs/0002-shop-setup.md): whether it is open, what opening asks for, its FAQ address and
+ * the settings of the edition's catalog (docs/specs/0003-catalog.md). A tenant-level permission
+ * grants none of it: an org with the shop permission alone opens no shop.
  */
 @Controller()
 export class EditionShopController {
@@ -25,6 +41,14 @@ export class EditionShopController {
       open: shop.openedAt !== null,
       openedAt: shop.openedAt?.toISOString() ?? null,
       faqUrl: shop.faqUrl,
+      ageBands:
+        shop.teenFromAge === null || shop.adultFromAge === null
+          ? null
+          : { teenFromAge: shop.teenFromAge, adultFromAge: shop.adultFromAge },
+      guardianConsentFormUrl: shop.guardianConsentFormUrl,
+      merchPreorderDeadline: shop.merchPreorderDeadline?.toISOString() ?? null,
+      merchOnlyEnabled: shop.merchOnlyEnabled,
+      salesClosedMessage: shop.salesClosedMessage,
       conditions: await this.conditions.of(editionId),
     }
   }
@@ -42,7 +66,7 @@ export class EditionShopController {
   update() {
     return implement(contract.shop.edition.update).handler(async ({ input }) => {
       const { editionId } = input.params
-      if (input.body.faqUrl !== undefined) await this.shops.setFaqUrl(editionId, input.body.faqUrl)
+      await this.shops.set(editionId, settingsOf(input.body))
       return this.shown(editionId)
     })
   }

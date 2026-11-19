@@ -1,20 +1,9 @@
 import { Controller } from '@nestjs/common'
-import { contract, type PriceTier } from '@opos/contract'
+import { contract, tiersOverlap as overlapping } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
 import { invalidField, tiersOverlap } from './catalog.errors'
 import { TicketTypesRepository } from './ticket-types.repository'
-
-/**
- * Whether two of the tiers cover a moment together. A tier holds its start and not its end, so
- * one may end at the moment the next one starts.
- */
-export function overlapping(tiers: readonly PriceTier[]): boolean {
-  const windows = tiers
-    .map((tier) => [Date.parse(tier.startsAt), Date.parse(tier.endsAt)] as const)
-    .sort(([a], [b]) => a - b)
-  return windows.some(([start], index) => index > 0 && start < windows[index - 1]![1])
-}
 
 /**
  * The ticket types of an edition, behind the tickets permission of the edition

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { overlapping } from './ticket-types.controller'
+import { tiersOverlap as overlapping } from '@opos/contract'
 
 const tier = (startsAt: string, endsAt: string) => ({ amountMinor: 100, startsAt, endsAt })
 const january = tier('2027-01-01T00:00:00.000Z', '2027-02-01T00:00:00.000Z')
 const february = tier('2027-02-01T00:00:00.000Z', '2027-03-01T00:00:00.000Z')
 
+// The check the routes of a ticket type refuse overlapping tiers by, which the panel runs too
+// before it sends them.
 describe('the price tiers of a ticket type', () => {
   it('do not overlap when there is none or one, or when each ends where the next starts', () => {
     expect(overlapping([])).toBe(false)

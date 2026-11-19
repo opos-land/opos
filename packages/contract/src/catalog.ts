@@ -69,6 +69,17 @@ export function priceAt(tiers: readonly PriceTier[], moment: Date): number | nul
 }
 
 /**
+ * Whether two of the tiers cover a moment together. A tier holds its start and not its end, so
+ * one may end at the moment the next one starts.
+ */
+export function tiersOverlap(tiers: readonly Pick<PriceTier, 'startsAt' | 'endsAt'>[]): boolean {
+  const windows = tiers
+    .map((tier) => [Date.parse(tier.startsAt), Date.parse(tier.endsAt)] as const)
+    .sort(([a], [b]) => a - b)
+  return windows.some(([start], index) => index > 0 && start < windows[index - 1]![1])
+}
+
+/**
  * The supporter prices a buyer is offered beside a price in force: those above it. One that is
  * not above it would be no support.
  */

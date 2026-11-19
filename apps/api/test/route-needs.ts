@@ -13,6 +13,7 @@ export type Need =
 const anyMember: Need = { scope: 'member' }
 const anyAccount: Need = { scope: 'account' }
 const settings = (level: Level): Need => ({ scope: 'tenant', resource: 'settings', level })
+const branding = (level: Level): Need => ({ scope: 'tenant', resource: 'branding', level })
 const program = (level: Level): Need => ({ scope: 'edition', resource: 'program', level })
 
 /** Tenant routes and what each needs; a head passes every one (PRODUCT.md 5). */
@@ -23,6 +24,9 @@ export const tenantRequirements: Record<string, Need> = {
   'tenants.members.invite': settings('write'),
   'tenants.members.update': settings('write'),
   'tenants.members.remove': settings('write'),
+  'branding.get': branding('read'),
+  'branding.putLogo': branding('write'),
+  'branding.removeLogo': branding('write'),
   'editions.list': anyMember,
   'editions.create': settings('write'),
   'editions.get': anyMember,

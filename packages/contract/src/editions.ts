@@ -16,6 +16,9 @@ export const editionSchema = z.object({
   endsAt: timestamp,
   isActive: z.boolean(),
   isPublished: z.boolean(),
+  venueName: z.string().nullable(),
+  venueAddress: z.string().nullable(),
+  venueCity: z.string().nullable(),
 })
 
 export type Edition = z.infer<typeof editionSchema>
@@ -27,17 +30,29 @@ const editionFields = z.object({
   endsAt: timestamp,
 })
 
+/** A part of the venue: text when given, null to clear it, never an empty text. */
+const venuePart = (max: number) => z.string().trim().min(1).max(max).nullable().optional()
+
+/** Where an edition takes place: the name of the place, its address and its city, each optional. */
+const venueFields = {
+  venueName: venuePart(200),
+  venueAddress: venuePart(300),
+  venueCity: venuePart(100),
+}
+
 export const endsAfterStart = (e: { startsAt?: string; endsAt?: string }) =>
   !e.startsAt || !e.endsAt || new Date(e.endsAt) > new Date(e.startsAt)
 export const endsAfterStartIssue = { message: 'endsAt must be after startsAt', path: ['endsAt'] }
 
 export const createEditionSchema = editionFields
+  .extend(venueFields)
   .strict()
   .refine(endsAfterStart, endsAfterStartIssue)
 
 export const updateEditionSchema = editionFields
   .extend({ isPublished: z.boolean() })
   .partial()
+  .extend(venueFields)
   .strict()
   .refine(endsAfterStart, endsAfterStartIssue)
 

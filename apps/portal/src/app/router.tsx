@@ -8,7 +8,12 @@ import {
   RegisterPage,
   RequireSession,
 } from '../features/auth'
-import { ConventionPage, EditionPage, ProgramItemPage } from '../features/conventions'
+import {
+  ConventionPage,
+  EditionPage,
+  EditionProgramPage,
+  ProgramItemPage,
+} from '../features/conventions'
 import { LandingPage, PrivacyPage } from '../features/landing'
 import { SchedulePage } from '../features/schedule'
 import { NotFoundView } from '../shared/ui'
@@ -44,6 +49,7 @@ export const router = createBrowserRouter([
       },
       { path: '/conventions/:tenantSlug', element: <ConventionPage /> },
       { path: '/conventions/:tenantSlug/:editionSlug', element: <EditionPage /> },
+      { path: '/conventions/:tenantSlug/:editionSlug/program', element: <EditionProgramPage /> },
       {
         path: '/conventions/:tenantSlug/:editionSlug/program/:programItemId',
         element: <ProgramItemPage />,

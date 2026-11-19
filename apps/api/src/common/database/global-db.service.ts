@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
+import { type EditionListPeriod, type ListedEdition } from '@opos/contract'
 import {
   accountFiles,
   type Database,
@@ -6,11 +7,26 @@ import {
   editions,
   programItemLikes,
   programItems,
+  tenantLogos,
   tenantMemberships,
   tenants,
   uploadedFiles,
 } from '@opos/db'
-import { and, asc, eq, gt, inArray, isNull, lt, ne, notExists, or, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  ne,
+  notExists,
+  or,
+  sql,
+} from 'drizzle-orm'
 import { type AnyPgColumn, alias } from 'drizzle-orm/pg-core'
 import { type TenantInContext, TenantContextService } from '../als/tenant-context.service'
 import { GLOBAL_DB } from './tokens'
@@ -56,6 +72,76 @@ export class GlobalDbService {
     if (!row) return undefined
     const { suspended: isSuspended, ...tenant } = row
     return { tenant, suspended: isSuspended }
+  }
+
+  /**
+   * `GET /public/editions`: a page of the list of editions on the portal's home page, bound by
+   * publication alone: the published editions of the tenants that are not suspended, with the
+   * columns anyone reads of each one convention at a time, and nothing of an account
+   * (docs/adr/0043-list-every-published-edition-on-the-portals-home-page.md). The coming editions
+   * have not ended and go from the one that starts soonest; the past ones from the last ended.
+   * A page continues from the place `after` carries, a moment and an identifier to compare with:
+   * nothing is looked up by it, so it answers nothing of an edition that is not listed, and a row
+   * published or taken back meanwhile neither repeats nor hides another. The moment orders to the
+   * millisecond, as an answer carries it.
+   */
+  async listedEditions({
+    period,
+    after,
+    limit,
+  }: {
+    period: EditionListPeriod
+    after?: { moment: Date; id: string }
+    limit: number
+  }): Promise<ListedEdition[]> {
+    const coming = period === 'coming'
+    const moment = sql`date_trunc('milliseconds', ${coming ? editions.startsAt : editions.endsAt})`
+    const place = after && sql`(${after.moment.toISOString()}::timestamptz, ${after.id}::uuid)`
+    const rows = await this.db
+      .select({
+        id: editions.id,
+        slug: editions.slug,
+        name: editions.name,
+        startsAt: editions.startsAt,
+        endsAt: editions.endsAt,
+        venueCity: editions.venueCity,
+        tenant: { slug: tenants.slug, name: tenants.name, timezone: tenants.timezone },
+        logo: {
+          fileId: tenantLogos.fileId,
+          width: uploadedFiles.width,
+          height: uploadedFiles.height,
+        },
+      })
+      .from(editions)
+      .innerJoin(tenants, eq(tenants.id, editions.tenantId))
+      .leftJoin(tenantLogos, eq(tenantLogos.tenantId, tenants.id))
+      .leftJoin(uploadedFiles, eq(uploadedFiles.id, tenantLogos.fileId))
+      .where(
+        and(
+          eq(editions.isPublished, true),
+          isNull(tenants.suspendedAt),
+          coming ? gt(editions.endsAt, sql`now()`) : lte(editions.endsAt, sql`now()`),
+          place &&
+            (coming
+              ? sql`(${moment}, ${editions.id}) > ${place}`
+              : sql`(${moment}, ${editions.id}) < ${place}`),
+        ),
+      )
+      .orderBy(...(coming ? [asc(moment), asc(editions.id)] : [desc(moment), desc(editions.id)]))
+      .limit(limit)
+    return rows.map(({ startsAt, endsAt, tenant, logo, ...row }) => ({
+      ...row,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+      tenant: {
+        ...tenant,
+        // A logo is an image, whose file always holds its width and height.
+        logo:
+          logo?.fileId && logo.width && logo.height
+            ? { fileId: logo.fileId, width: logo.width, height: logo.height }
+            : null,
+      },
+    }))
   }
 
   /**

@@ -40,6 +40,8 @@ const publicRoutes = [
   'auth.passwordForgot',
   'invitations.preview',
   'public.tenant',
+  'public.editionList',
+  'public.logoFile',
   'public.editions',
   'public.activeEdition',
   'public.edition',

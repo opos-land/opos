@@ -124,12 +124,14 @@ describe('TeamPage', () => {
       'Organizer',
       'Read',
       'No access',
+      'No access',
       '1 Jan 2026expired',
     ])
     expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
       'Member',
       'Role',
       'Settings',
+      'Branding',
       'Shop',
       'Access until',
     ])
@@ -143,6 +145,7 @@ describe('TeamPage', () => {
 
     expect(cells(await row(/Hanna Head/))).toEqual([
       'Head organizer',
+      'Full access',
       'Full access',
       'Full access',
       'No end date',

@@ -9,7 +9,7 @@ import { ConventionEntryPage } from './convention-entry-page'
 const state = vi.hoisted(() => ({
   editions: [] as Edition[],
   pending: false,
-  conventionSettings: false,
+  settingsEntry: null as '' | '/branding' | null,
 }))
 
 vi.mock('../hooks/use-editions', () => ({
@@ -23,7 +23,7 @@ vi.mock('../hooks/use-editions', () => ({
 vi.mock('../../tenants', () => ({
   useCurrentTenant: () => ({
     tenant: { slug: 'convention-a', name: 'Convention A' },
-    access: { seesConventionSettings: state.conventionSettings },
+    access: { settingsEntry: state.settingsEntry },
   }),
 }))
 
@@ -35,6 +35,9 @@ const edition = (slug: string, isActive = false): Edition => ({
   endsAt: '2026-06-07T16:00:00.000Z',
   isActive,
   isPublished: false,
+  venueName: null,
+  venueAddress: null,
+  venueCity: null,
 })
 
 function Location() {
@@ -63,7 +66,7 @@ beforeAll(() => {
 beforeEach(() => {
   state.editions = []
   state.pending = false
-  state.conventionSettings = false
+  state.settingsEntry = null
 })
 
 afterEach(cleanup)
@@ -77,10 +80,17 @@ describe('ConventionEntryPage', () => {
   })
 
   it('opens the editions of the convention settings when there is no edition yet to work in', () => {
-    state.conventionSettings = true
+    state.settingsEntry = ''
     view()
 
     expect(location()).toBe('/convention-a/settings/editions')
+  })
+
+  it('opens the branding to a member who holds nothing else of the convention', () => {
+    state.settingsEntry = '/branding'
+    view()
+
+    expect(location()).toBe('/convention-a/settings/branding')
   })
 
   it('tells a member who sees no edition and no settings that there is nothing yet', () => {

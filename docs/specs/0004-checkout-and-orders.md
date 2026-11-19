@@ -269,7 +269,9 @@ the provider's code and message stay on the attempt, for the orgs.
 
 ### Screens
 
-The portal, under the convention's page, each built for 360 px first:
+The portal, under the edition's page at `/conventions/<convention>/<edition>/shop`
+([edition list and edition page](0014-edition-list-and-edition-page.md)), each built for 360 px
+first:
 
 | Screen             | Holds                                                                |
 | ------------------ | -------------------------------------------------------------------- |

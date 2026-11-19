@@ -63,9 +63,9 @@ msgstr "Analityka"
 msgid "At least 8 characters."
 msgstr "Co najmniej 8 znaków."
 
-#: src/features/conventions/pages/edition-page.tsx
-msgid "Back to {conventionName}"
-msgstr "Wróć do konwentu {conventionName}"
+#: src/features/conventions/pages/edition-program-page.tsx
+msgid "Back to {editionName}"
+msgstr "Wróć do edycji {editionName}"
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Back to sign-in"
@@ -105,6 +105,10 @@ msgstr "Kod"
 #: src/features/account/components/two-factor-card.tsx
 msgid "Code from the app"
 msgstr "Kod z aplikacji"
+
+#: src/features/conventions/components/edition-directory.tsx
+msgid "Coming editions"
+msgstr "Nadchodzące edycje"
 
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Confirm"
@@ -358,6 +362,14 @@ msgstr "Nowe hasło"
 msgid "No account yet? <0>Create an account</0>"
 msgstr "Nie masz jeszcze konta? <0>Załóż konto</0>"
 
+#: src/features/conventions/components/edition-directory.tsx
+msgid "No edition has ended yet."
+msgstr "Żadna edycja jeszcze się nie zakończyła."
+
+#: src/features/conventions/components/edition-directory.tsx
+msgid "No edition is coming yet."
+msgstr "Nie ma jeszcze nadchodzących edycji."
+
 #: src/features/conventions/pages/convention-page.tsx
 msgid "No edition of this convention is active."
 msgstr "Żadna edycja tego konwentu nie jest teraz aktywna."
@@ -428,6 +440,10 @@ msgstr "Nie znaleziono strony"
 msgid "Password"
 msgstr "Hasło"
 
+#: src/features/conventions/components/edition-directory.tsx
+msgid "Past editions"
+msgstr "Minione edycje"
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
 msgstr "Naciśnij przycisk, aby wybrać nowe hasło."
@@ -446,6 +462,10 @@ msgstr "Polityka prywatności"
 #: src/features/consent/components/consent-settings.tsx
 msgid "Privacy settings"
 msgstr "Ustawienia prywatności"
+
+#: src/features/conventions/pages/edition-program-page.tsx
+msgid "Programme"
+msgstr "Program"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "QR code for your authenticator app"
@@ -502,6 +522,10 @@ msgstr "Zeskanuj kod QR aplikacją uwierzytelniającą albo wpisz do niej sekret
 msgid "Secret: <0>{secret}</0>"
 msgstr "Sekret: <0>{secret}</0>"
 
+#: src/features/conventions/components/edition-summary.tsx
+msgid "See the programme"
+msgstr "Zobacz program"
+
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Send a new link"
@@ -514,6 +538,10 @@ msgstr "Wyślij link potwierdzający ponownie"
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Send the link"
 msgstr "Wyślij link"
+
+#: src/features/conventions/components/edition-directory.tsx
+msgid "Show more"
+msgstr "Pokaż więcej"
 
 #: src/app/layout.tsx
 #: src/features/auth/components/sign-in-form.tsx
@@ -706,6 +734,10 @@ msgstr "Co przechowujemy"
 msgid "What you do on the platform: the editions you sign up for, the programme items you like and the reviews you write."
 msgstr "To, co robisz na platformie: edycje, na które się zapisujesz, punkty programu, które polubisz, i opinie, które wystawiasz."
 
+#: src/features/conventions/components/edition-summary.tsx
+msgid "When"
+msgstr "Kiedy"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "When you buy tickets: the email address, first name and last name given with the order, and the tickets in it. Payment details stay with the convention’s payment provider; OPOS keeps only the provider’s reference of the payment."
 msgstr "Gdy kupujesz akredytacje: adres e-mail, imię i nazwisko podane w zamówieniu oraz akredytacje, które ono obejmuje. Dane płatności zostają u operatora płatności konwentu; OPOS przechowuje tylko identyfikator płatności nadany przez operatora."
@@ -713,6 +745,10 @@ msgstr "Gdy kupujesz akredytacje: adres e-mail, imię i nazwisko podane w zamów
 #: src/features/landing/pages/privacy-page.tsx
 msgid "When you help organize a convention: your membership in its team and your permissions."
 msgstr "Gdy współorganizujesz konwent: twoje członkostwo w jego zespole i twoje uprawnienia."
+
+#: src/features/conventions/components/edition-summary.tsx
+msgid "Where"
+msgstr "Gdzie"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Who sees it"

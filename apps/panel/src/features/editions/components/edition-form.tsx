@@ -72,6 +72,26 @@ export function EditionForm({
         >
           {(control) => <Input {...control} {...form.register('endsAt')} type="datetime-local" />}
         </FormField>
+        <FormField
+          label={t`Venue`}
+          hint={t`The name of the place the edition takes place in. The portal shows the venue on the edition's page.`}
+          error={errors.venueName && t`Enter a name of up to 200 characters.`}
+        >
+          {(control) => <Input {...control} {...form.register('venueName')} />}
+        </FormField>
+        <FormField
+          label={t`Venue address`}
+          error={errors.venueAddress && t`Enter an address of up to 300 characters.`}
+        >
+          {(control) => <Input {...control} {...form.register('venueAddress')} />}
+        </FormField>
+        <FormField
+          label={t`City`}
+          hint={t`The portal shows the city on the list of editions too.`}
+          error={errors.venueCity && t`Enter a city of up to 100 characters.`}
+        >
+          {(control) => <Input {...control} {...form.register('venueCity')} />}
+        </FormField>
       </FieldSet>
 
       <div>

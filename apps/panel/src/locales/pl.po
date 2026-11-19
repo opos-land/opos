@@ -36,6 +36,10 @@ msgstr "Główny organizator ma wszystkie uprawnienia w każdej edycji, a jego d
 msgid "A head organizer has every permission, in every edition, and never expires."
 msgstr "Główny organizator ma wszystkie uprawnienia w każdej edycji, a jego dostęp nigdy nie wygasa."
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "A JPEG, PNG or WebP image of up to 2 MB."
+msgstr "Obraz JPEG, PNG lub WebP o rozmiarze do 2 MB."
+
 #: src/features/editions/pages/new-edition-page.tsx
 msgid "A new edition starts inactive and unpublished."
 msgstr "Nowa edycja jest na początku nieaktywna i nieopublikowana."
@@ -144,6 +148,12 @@ msgstr "Wróć do zaproszenia"
 msgid "Back to the team"
 msgstr "Wróć do zespołu"
 
+#: src/features/branding/pages/branding-page.tsx
+#: src/features/team/components/permission-labels.tsx
+#: src/features/tenants/components/convention-layout.tsx
+msgid "Branding"
+msgstr "Identyfikacja wizualna"
+
 #: src/shared/ui/breadcrumb.tsx
 msgid "breadcrumb"
 msgstr "Ścieżka nawigacji"
@@ -162,13 +172,25 @@ msgstr "Nie możesz się zalogować?"
 msgid "Choose a convention"
 msgstr "Wybierz konwent"
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "Choose a JPEG, PNG or WebP image."
+msgstr "Wybierz obraz JPEG, PNG lub WebP."
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Choose a time zone from the list."
 msgstr "Wybierz strefę czasową z listy."
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "Choose an image of up to 2 MB."
+msgstr "Wybierz obraz o rozmiarze do 2 MB."
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Choose your password"
 msgstr "Wybierz hasło"
+
+#: src/features/editions/components/edition-form.tsx
+msgid "City"
+msgstr "Miasto"
 
 #: src/shared/ui/sheet.tsx
 #: src/shared/ui/toast.tsx
@@ -333,6 +355,10 @@ msgstr "Puste pole oznacza brak daty końcowej. W strefie czasowej konwentu, {zo
 msgid "Ends"
 msgstr "Koniec"
 
+#: src/features/editions/components/edition-form.tsx
+msgid "Enter a city of up to 100 characters."
+msgstr "Podaj nazwę miasta o długości do 100 znaków."
+
 #: src/features/team/components/invite-form.tsx
 msgid "Enter a date and time in the future."
 msgstr "Podaj przyszłą datę i godzinę."
@@ -357,6 +383,10 @@ msgstr "Podaj prawidłową datę i godzinę."
 #: src/features/team/components/invite-form.tsx
 msgid "Enter a valid email address."
 msgstr "Podaj prawidłowy adres e-mail."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Enter an address of up to 300 characters."
+msgstr "Podaj adres o długości do 300 znaków."
 
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
@@ -504,6 +534,14 @@ msgstr "Jasny"
 #: src/shared/ui/messages.tsx
 msgid "Loading…"
 msgstr "Wczytywanie…"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Logo"
+msgstr "Logo"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Logo file"
+msgstr "Plik z logo"
 
 #: src/features/team/components/members-table.tsx
 #: src/features/team/pages/edition-access-page.tsx
@@ -695,6 +733,14 @@ msgstr "Odbierz dostęp"
 msgid "Remove from the team"
 msgstr "Usuń z zespołu"
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "Remove the logo"
+msgstr "Usuń logo"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Remove the logo of {name}?"
+msgstr "Usunąć logo konwentu {name}?"
+
 #: src/features/team/components/remove-member.tsx
 msgid "Removed from the team: {name}."
 msgstr "Usunięto z zespołu: {name}."
@@ -702,6 +748,14 @@ msgstr "Usunięto z zespołu: {name}."
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
 msgstr "Powtórz hasło"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Replace the logo"
+msgstr "Zmień logo"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Replace the logo of {name}?"
+msgstr "Zmienić logo konwentu {name}?"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -839,6 +893,10 @@ msgstr "Język przeglądarki"
 msgid "The changes are saved."
 msgstr "Zmiany zostały zapisane."
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "The convention has no logo."
+msgstr "Konwent nie ma logo."
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "The convention's address is set by the platform administrator."
 msgstr "Adres konwentu ustala administrator platformy."
@@ -898,13 +956,45 @@ msgstr "Zaproszenie jest dla adresu {email} i jest ważne do {validUntil}."
 msgid "The language of the convention's content and of invitations to people without an account."
 msgstr "Język treści konwentu i zaproszeń wysyłanych osobom bez konta."
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "The logo is removed."
+msgstr "Logo zostało usunięte."
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The logo is saved."
+msgstr "Logo zostało zapisane."
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The logo of {name}"
+msgstr "Logo konwentu {name}"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The logo shown now goes, and the portal shows the new one at once. To have the old one back, upload its file again."
+msgstr "Obecne logo zniknie, a portal od razu pokaże nowe. Aby wrócić do poprzedniego, trzeba ponownie wgrać jego plik."
+
 #: src/features/team/components/member-form.tsx
 msgid "The membership is saved: {name}."
 msgstr "Zapisano zmiany członkostwa: {name}."
 
+#: src/features/editions/components/edition-form.tsx
+msgid "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
+msgstr "Nazwa miejsca, w którym odbywa się edycja. Portal pokazuje miejsce na stronie edycji."
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "Hasła się różnią."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "The portal shows the city on the list of editions too."
+msgstr "Portal pokazuje miasto także na liście edycji."
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The portal shows the logo beside the convention’s name: on the list of editions, on the convention’s page and on the page of each edition."
+msgstr "Portal pokazuje logo obok nazwy konwentu: na liście edycji, na stronie konwentu i na stronie każdej edycji."
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The portal stops showing it at once. To have it back, upload its file again."
+msgstr "Portal od razu przestanie je pokazywać. Aby je przywrócić, trzeba ponownie wgrać plik."
 
 #: src/features/program/pages/program-item-page.tsx
 msgid "The programme item {itemTitle} is deleted."
@@ -1055,6 +1145,10 @@ msgstr "Uwierzytelnianie dwuskładnikowe jest włączone. Przy każdym logowaniu
 msgid "Unpublish"
 msgstr "Wycofaj publikację"
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "Upload the logo"
+msgstr "Wgraj logo"
+
 #: src/features/editions/components/edition-form.tsx
 msgid "Use 1 to 40 lowercase letters, digits and hyphens."
 msgstr "Użyj od 1 do 40 małych liter, cyfr i myślników."
@@ -1078,6 +1172,14 @@ msgstr "Użyj kodu z aplikacji"
 #: src/features/program/components/program-item-form.tsx
 msgid "Use up to 5000 characters."
 msgstr "Użyj najwyżej 5000 znaków."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Venue"
+msgstr "Miejsce"
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Venue address"
+msgstr "Adres miejsca"
 
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."

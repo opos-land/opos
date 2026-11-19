@@ -157,6 +157,20 @@ describe('MemberPage', () => {
     })
   })
 
+  it('grants the branding, which opens the logo of the convention to the member', async () => {
+    const user = userEvent.setup()
+    view('m-org')
+
+    await user.selectOptions(await screen.findByLabelText('Branding'), 'write')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByText('The team table')).toBeDefined()
+    expect(update.mock.calls[0]?.[0]).toEqual({
+      params: { membershipId: 'm-org' },
+      body: { brandingAccess: 'write' },
+    })
+  })
+
   it('removes the member only once its modal is confirmed, then returns to the team', async () => {
     const user = userEvent.setup()
     view('m-org')

@@ -36,6 +36,10 @@ msgstr "A head organizer has every permission in every edition and never expires
 msgid "A head organizer has every permission, in every edition, and never expires."
 msgstr "A head organizer has every permission, in every edition, and never expires."
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "A JPEG, PNG or WebP image of up to 2 MB."
+msgstr "A JPEG, PNG or WebP image of up to 2 MB."
+
 #: src/features/editions/pages/new-edition-page.tsx
 msgid "A new edition starts inactive and unpublished."
 msgstr "A new edition starts inactive and unpublished."
@@ -144,6 +148,12 @@ msgstr "Back to the invitation"
 msgid "Back to the team"
 msgstr "Back to the team"
 
+#: src/features/branding/pages/branding-page.tsx
+#: src/features/team/components/permission-labels.tsx
+#: src/features/tenants/components/convention-layout.tsx
+msgid "Branding"
+msgstr "Branding"
+
 #: src/shared/ui/breadcrumb.tsx
 msgid "breadcrumb"
 msgstr "breadcrumb"
@@ -162,13 +172,25 @@ msgstr "Cannot sign in?"
 msgid "Choose a convention"
 msgstr "Choose a convention"
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "Choose a JPEG, PNG or WebP image."
+msgstr "Choose a JPEG, PNG or WebP image."
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Choose a time zone from the list."
 msgstr "Choose a time zone from the list."
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "Choose an image of up to 2 MB."
+msgstr "Choose an image of up to 2 MB."
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Choose your password"
 msgstr "Choose your password"
+
+#: src/features/editions/components/edition-form.tsx
+msgid "City"
+msgstr "City"
 
 #: src/shared/ui/sheet.tsx
 #: src/shared/ui/toast.tsx
@@ -333,6 +355,10 @@ msgstr "Empty for no end date. In the convention's time zone, {zone}."
 msgid "Ends"
 msgstr "Ends"
 
+#: src/features/editions/components/edition-form.tsx
+msgid "Enter a city of up to 100 characters."
+msgstr "Enter a city of up to 100 characters."
+
 #: src/features/team/components/invite-form.tsx
 msgid "Enter a date and time in the future."
 msgstr "Enter a date and time in the future."
@@ -357,6 +383,10 @@ msgstr "Enter a valid date and time."
 #: src/features/team/components/invite-form.tsx
 msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Enter an address of up to 300 characters."
+msgstr "Enter an address of up to 300 characters."
 
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
@@ -504,6 +534,14 @@ msgstr "Light"
 #: src/shared/ui/messages.tsx
 msgid "Loading…"
 msgstr "Loading…"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Logo"
+msgstr "Logo"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Logo file"
+msgstr "Logo file"
 
 #: src/features/team/components/members-table.tsx
 #: src/features/team/pages/edition-access-page.tsx
@@ -695,6 +733,14 @@ msgstr "Remove access"
 msgid "Remove from the team"
 msgstr "Remove from the team"
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "Remove the logo"
+msgstr "Remove the logo"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Remove the logo of {name}?"
+msgstr "Remove the logo of {name}?"
+
 #: src/features/team/components/remove-member.tsx
 msgid "Removed from the team: {name}."
 msgstr "Removed from the team: {name}."
@@ -702,6 +748,14 @@ msgstr "Removed from the team: {name}."
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
 msgstr "Repeat the password"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Replace the logo"
+msgstr "Replace the logo"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "Replace the logo of {name}?"
+msgstr "Replace the logo of {name}?"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -839,6 +893,10 @@ msgstr "The browser's language"
 msgid "The changes are saved."
 msgstr "The changes are saved."
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "The convention has no logo."
+msgstr "The convention has no logo."
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "The convention's address is set by the platform administrator."
 msgstr "The convention's address is set by the platform administrator."
@@ -898,13 +956,45 @@ msgstr "The invitation is for {email} and is valid until {validUntil}."
 msgid "The language of the convention's content and of invitations to people without an account."
 msgstr "The language of the convention's content and of invitations to people without an account."
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "The logo is removed."
+msgstr "The logo is removed."
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The logo is saved."
+msgstr "The logo is saved."
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The logo of {name}"
+msgstr "The logo of {name}"
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The logo shown now goes, and the portal shows the new one at once. To have the old one back, upload its file again."
+msgstr "The logo shown now goes, and the portal shows the new one at once. To have the old one back, upload its file again."
+
 #: src/features/team/components/member-form.tsx
 msgid "The membership is saved: {name}."
 msgstr "The membership is saved: {name}."
 
+#: src/features/editions/components/edition-form.tsx
+msgid "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
+msgstr "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "The passwords differ."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "The portal shows the city on the list of editions too."
+msgstr "The portal shows the city on the list of editions too."
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The portal shows the logo beside the convention’s name: on the list of editions, on the convention’s page and on the page of each edition."
+msgstr "The portal shows the logo beside the convention’s name: on the list of editions, on the convention’s page and on the page of each edition."
+
+#: src/features/branding/pages/branding-page.tsx
+msgid "The portal stops showing it at once. To have it back, upload its file again."
+msgstr "The portal stops showing it at once. To have it back, upload its file again."
 
 #: src/features/program/pages/program-item-page.tsx
 msgid "The programme item {itemTitle} is deleted."
@@ -1055,6 +1145,10 @@ msgstr "Two-factor authentication is on. You enter a code from your authenticato
 msgid "Unpublish"
 msgstr "Unpublish"
 
+#: src/features/branding/pages/branding-page.tsx
+msgid "Upload the logo"
+msgstr "Upload the logo"
+
 #: src/features/editions/components/edition-form.tsx
 msgid "Use 1 to 40 lowercase letters, digits and hyphens."
 msgstr "Use 1 to 40 lowercase letters, digits and hyphens."
@@ -1078,6 +1172,14 @@ msgstr "Use the code of the app"
 #: src/features/program/components/program-item-form.tsx
 msgid "Use up to 5000 characters."
 msgstr "Use up to 5000 characters."
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Venue"
+msgstr "Venue"
+
+#: src/features/editions/components/edition-form.tsx
+msgid "Venue address"
+msgstr "Venue address"
 
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."

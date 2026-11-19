@@ -13,7 +13,7 @@ import {
 } from '../../../shared/ui'
 import { useCurrentTenant, useTenantTime } from '../../tenants'
 import { canManage, memberName } from '../model/member'
-import { SettingsLabel, ShopLabel } from './permission-labels'
+import { BrandingLabel, SettingsLabel, ShopLabel } from './permission-labels'
 
 function LevelText({ member, level }: { member: Member; level: Member['settingsAccess'] }) {
   if (member.role === 'head') return <Trans>Full access</Trans>
@@ -51,6 +51,9 @@ export function MembersTable({
             <SettingsLabel />
           </TableHead>
           <TableHead scope="col">
+            <BrandingLabel />
+          </TableHead>
+          <TableHead scope="col">
             <ShopLabel />
           </TableHead>
           <TableHead scope="col">
@@ -85,6 +88,9 @@ export function MembersTable({
               </TableCell>
               <TableCell>
                 <LevelText member={member} level={member.settingsAccess} />
+              </TableCell>
+              <TableCell>
+                <LevelText member={member} level={member.brandingAccess} />
               </TableCell>
               <TableCell>
                 <LevelText member={member} level={member.shopConfigAccess} />

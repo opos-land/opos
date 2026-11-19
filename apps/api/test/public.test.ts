@@ -7,10 +7,12 @@ import { createAccount, deleteCreatedAccounts } from './auth'
 import {
   addEdition,
   addLike,
+  addLogo,
   addProgramItem,
   addSpeaker,
   closeTenantDb,
   deleteCreatedTenants,
+  setVenue,
   tenantWithHead,
 } from './tenants'
 
@@ -47,14 +49,24 @@ async function published(tenantId: string, values: Parameters<typeof addEdition>
 }
 
 describe('the convention', () => {
-  it('answers its name, language and time zone to anyone, and nothing else', async () => {
+  it('answers its name, language, time zone and logo to anyone, and nothing else', async () => {
     const res = await get(`/${a.slug}`).expect(200)
 
     expect(res.body).toEqual({
       name: `Tenant ${a.slug}`,
       defaultLocale: expect.any(String) as string,
       timezone: expect.any(String) as string,
+      logo: null,
     })
+  })
+
+  it('answers its logo as the file and the proportions of the picture', async () => {
+    const t = await fresh()
+    const logo = await addLogo(t.id, 300, 100)
+
+    const res = await get(`/${t.slug}`).expect(200)
+
+    expect(res.body).toMatchObject({ logo })
   })
 
   it('answers 404 for an unknown address', async () => {
@@ -100,7 +112,22 @@ describe('editions', () => {
       startsAt: expect.any(String) as string,
       endsAt: expect.any(String) as string,
       isActive: true,
+      venueName: null,
+      venueAddress: null,
+      venueCity: null,
     })
+  })
+
+  it('shows the venue of an edition, on its own and among the others', async () => {
+    const t = await fresh()
+    const { id, slug } = await published(t.id)
+    await setVenue(id, { name: 'Congress Hall', address: '1 Main St', city: 'Poznań' })
+    const venue = { venueName: 'Congress Hall', venueAddress: '1 Main St', venueCity: 'Poznań' }
+
+    expect((await get(`/${t.slug}/editions/${slug}`).expect(200)).body).toMatchObject(venue)
+    expect((await get(`/${t.slug}/editions`).expect(200)).body).toEqual([
+      expect.objectContaining(venue),
+    ])
   })
 
   it('answers an unpublished edition exactly as an unknown one', async () => {

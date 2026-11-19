@@ -13,6 +13,9 @@ const editionColumns = {
   startsAt: editions.startsAt,
   endsAt: editions.endsAt,
   isActive: editions.isActive,
+  venueName: editions.venueName,
+  venueAddress: editions.venueAddress,
+  venueCity: editions.venueCity,
 }
 
 const itemColumns = {

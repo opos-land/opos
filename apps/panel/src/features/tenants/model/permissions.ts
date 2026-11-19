@@ -32,22 +32,36 @@ const HEAD_EDITION_ACCESS: EditionAccess = {
 export interface TenantAccess {
   isHead: boolean
   settings: Level
+  branding: Level
   shop: Level
   edition(editionId: string): EditionAccess
   /** A head and a member who reads the settings see every edition; others only their own. */
   seesEdition(editionId: string): boolean
   /**
    * Whether the member can open a section of the convention settings: general, editions
-   * and team at settings>=read; the shop joins them with its screen.
+   * and team at settings>=read, the branding at branding>=read; the shop joins them with its
+   * screen.
    */
   seesConventionSettings: boolean
+  /**
+   * The section the convention settings open on for the member, as its path under `/settings`:
+   * the general one for who reads the settings, the branding for who holds that alone, null for
+   * who opens none.
+   */
+  settingsEntry: '' | '/branding' | null
 }
 
 /** The member's access in the tenant of `membership`; a head passes every check, on both levels. */
 export function tenantAccess(membership: Membership): TenantAccess {
   const isHead = membership.role === 'head'
   const settings: Level = isHead ? 'write' : membership.settingsAccess
+  const branding: Level = isHead ? 'write' : membership.brandingAccess
   const shop: Level = isHead ? 'write' : membership.shopConfigAccess
+  const settingsEntry = atLeast(settings, 'read')
+    ? ''
+    : atLeast(branding, 'read')
+      ? '/branding'
+      : null
 
   const edition = (editionId: string): EditionAccess => {
     if (isHead) return HEAD_EDITION_ACCESS
@@ -64,6 +78,7 @@ export function tenantAccess(membership: Membership): TenantAccess {
   return {
     isHead,
     settings,
+    branding,
     shop,
     edition,
     seesEdition: (editionId) =>
@@ -71,7 +86,8 @@ export function tenantAccess(membership: Membership): TenantAccess {
       ((e) => [e.program, e.websiteContent, e.tickets])(edition(editionId)).some((level) =>
         atLeast(level, 'read'),
       ),
-    seesConventionSettings: atLeast(settings, 'read'),
+    seesConventionSettings: settingsEntry !== null,
+    settingsEntry,
   }
 }
 

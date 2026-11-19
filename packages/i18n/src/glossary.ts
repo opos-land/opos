@@ -41,6 +41,11 @@ export const glossary = {
     context: 'glossary',
     comment: 'Glossary term: suspended (a convention the admin took off the platform)',
   }),
+  venue: msg({
+    message: 'venue',
+    context: 'glossary',
+    comment: 'Glossary term: venue (where an edition takes place)',
+  }),
 }
 
 export type GlossaryTerm = keyof typeof glossary

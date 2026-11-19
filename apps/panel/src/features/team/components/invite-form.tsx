@@ -25,12 +25,19 @@ import { useCurrentTenant, useTenantTime } from '../../tenants'
 import { inviteMemberOptions, membersKey } from '../api/members'
 import { invitationNotice } from '../model/invitation'
 import { LevelSelect } from './level-select'
-import { ProgramLabel, SettingsLabel, ShopLabel, TicketsLabel } from './permission-labels'
+import {
+  BrandingLabel,
+  ProgramLabel,
+  SettingsLabel,
+  ShopLabel,
+  TicketsLabel,
+} from './permission-labels'
 
 const schema = z.object({
   email: z.email().max(254),
   role: z.enum(['head', 'org']),
   settingsAccess: level,
+  brandingAccess: level,
   shopConfigAccess: level,
   expiresAt: z.string(),
   editions: z.array(
@@ -57,6 +64,7 @@ export function InviteForm() {
     email: '',
     role: 'org',
     settingsAccess: 'none',
+    brandingAccess: 'none',
     shopConfigAccess: 'none',
     expiresAt: '',
     editions: (editions.data ?? []).map((e) => ({
@@ -105,6 +113,7 @@ export function InviteForm() {
         email: values.email,
         role: 'org',
         settingsAccess: values.settingsAccess,
+        brandingAccess: values.brandingAccess,
         shopConfigAccess: values.shopConfigAccess,
         expiresAt,
         editions: grants,
@@ -137,9 +146,12 @@ export function InviteForm() {
         </p>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <FormField label={<SettingsLabel />}>
               {(control) => <LevelSelect {...control} {...form.register('settingsAccess')} />}
+            </FormField>
+            <FormField label={<BrandingLabel />}>
+              {(control) => <LevelSelect {...control} {...form.register('brandingAccess')} />}
             </FormField>
             <FormField label={<ShopLabel />}>
               {(control) => <LevelSelect {...control} {...form.register('shopConfigAccess')} />}

@@ -24,6 +24,10 @@ export const editions = pgTable(
     endsAt: timestamp({ withTimezone: true }).notNull(),
     isActive: boolean().notNull().default(false),
     isPublished: boolean().notNull().default(false),
+    // Where the edition takes place; each is null until an org sets it.
+    venueName: text(),
+    venueAddress: text(),
+    venueCity: text(),
     ...timestamps,
   },
   (t) => [
@@ -40,5 +44,9 @@ export const editions = pgTable(
     check('editions_ends_after_start', sql`${t.endsAt} > ${t.startsAt}`),
     // The same pattern as editionSlug in packages/contract/src/editions.ts.
     check('editions_slug_format', sql`${t.slug} ~ '^[a-z0-9-]{1,40}$'`),
+    check(
+      'editions_venue_not_blank',
+      sql`btrim(${t.venueName}) <> '' and btrim(${t.venueAddress}) <> '' and btrim(${t.venueCity}) <> ''`,
+    ),
   ],
 )

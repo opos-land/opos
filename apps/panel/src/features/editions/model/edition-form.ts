@@ -11,6 +11,10 @@ export const editionFormSchema = z
     slug: editionSlug,
     startsAt: z.string().min(1),
     endsAt: z.string().min(1),
+    // The venue, each part empty until it is set.
+    venueName: z.string().trim().max(200),
+    venueAddress: z.string().trim().max(300),
+    venueCity: z.string().trim().max(100),
   })
   .refine((v) => v.endsAt > v.startsAt, { path: ['endsAt'] })
 
@@ -28,7 +32,13 @@ export interface EditionBody {
   slug: string
   startsAt: string
   endsAt: string
+  venueName: string | null
+  venueAddress: string | null
+  venueCity: string | null
 }
+
+/** A part of the venue as the API takes it: its text, or null for a part left empty. */
+const venuePart = (value: string) => value.trim() || null
 
 /** The request body, or null when a date names no instant of the zone. */
 export function editionBody(
@@ -38,5 +48,13 @@ export function editionBody(
   const startsAt = fromInput(values.startsAt)
   const endsAt = fromInput(values.endsAt)
   if (!startsAt || !endsAt) return null
-  return { name: values.name.trim(), slug: values.slug, startsAt, endsAt }
+  return {
+    name: values.name.trim(),
+    slug: values.slug,
+    startsAt,
+    endsAt,
+    venueName: venuePart(values.venueName),
+    venueAddress: venuePart(values.venueAddress),
+    venueCity: venuePart(values.venueCity),
+  }
 }

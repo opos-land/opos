@@ -24,7 +24,7 @@ graph LR
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/api`          | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key                                  |
 | `apps/panel`        | the organizers' SPA, desktop-first; later also the scanner under `/scanner`                                                                                                                                                                     |
-| `apps/portal`       | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule                                                                                                                                                      |
+| `apps/portal`       | the attendees' SPA, mobile-first: home page with the list of editions, account, convention and edition pages, likes, schedule                                                                                                                   |
 | `apps/admin`        | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md))                                                              |
 | `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape                                                                                                                                                                        |
 | `packages/db`       | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away                                                                                                                                  |
@@ -107,17 +107,22 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query                 | Bound                                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| a tenant by slug      | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address |
-| `GET /me/memberships` | the session's account; expired memberships left out, and the editions of a suspended tenant                   |
-| `GET /me/schedule`    | the session's own likes; published editions only, of tenants not suspended                                    |
-| `DELETE /me`          | the session's account; answers only whether it is a tenant's last head                                        |
-| the sweep of files    | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one      |
+| Query                  | Bound                                                                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| a tenant by slug       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                |
+| `GET /me/memberships`  | the session's account; expired memberships left out, and the editions of a suspended tenant                                  |
+| `GET /me/schedule`     | the session's own likes; published editions only, of tenants not suspended                                                   |
+| `GET /public/editions` | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time |
+| `DELETE /me`           | the session's account; answers only whether it is a tenant's last head                                                       |
+| the sweep of files     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                     |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
-proved (a signature, a link or device token) or the API's own job; it joins this table and puts its
-columns into `globalReads` of [verify.ts](../packages/db/src/verify.ts).
+proved (a signature, a link or device token), the API's own job, or publication, for what anyone
+already reads one convention at a time
+([0043](adr/0043-list-every-published-edition-on-the-portals-home-page.md)); it joins this table
+and puts its columns into `globalReads` of [verify.ts](../packages/db/src/verify.ts). What a query
+bound by publication answers is the schema of its route: a field added there is public at once,
+for every convention.
 
 **The admin routes** read and write across tenants on `opos_admin`, only in
 [AdminDbService](../apps/api/src/modules/admin/admin-db.service.ts) and only behind
@@ -253,7 +258,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   its requirement is judged, then the file in its JSON body, up to 21 MB, is received outside every
   transaction, then its one transaction keeps it; every other route keeps the default body limit.
   **A route that serves a file** (`servesFile`, `@ServesFile`) is judged in a short transaction and
-  reads the bucket outside every transaction. The routes that take a file share one rate limit per
+  reads the bucket outside every transaction. A public route serves only a file that is for
+  everyone, after its own check in a short transaction of the tenant its address names, and never
+  takes one. The routes that take a file share one rate limit per
   account. The bucket or imgproxy out of reach stops nothing else of the API.
 - **The API's own job**, the sweep of files, runs daily in each process behind an advisory lock, so
   one process sweeps at a time: it removes, once older than 24 hours, a file's row nothing points
@@ -296,6 +303,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `src/styles.test.ts` fails on a class Tailwind cannot build. No AI-generated graphics
   ([PRODUCT.md](PRODUCT.md#8-design-and-public-image)).
 - The portal is mobile-first: 360 px first, one column, no horizontal scrolling.
+- A picture someone uploaded comes from the API's own address, in a variant its kind declares, and
+  takes its width and height from the API, so that the page keeps its place before it loads. A
+  deployed application's content security policy allows pictures from the API alone beside its own.
 - The browser holds no session state: no token, no cookie read, the account from `GET /me`. A `401`
   brings one refresh shared by the tabs; only a refresh answered `401` signs out, `unavailable` never
   does, and `mfa-required` shows no account data.

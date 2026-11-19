@@ -1,12 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { type TenantContextService } from '../src/common/als/tenant-context.service'
 import { AccessRepository } from '../src/common/permissions/access.repository'
+import { LogoRepository } from '../src/modules/branding/logo.repository'
 import { InvitationsRepository } from '../src/modules/tenants/invitations.repository'
 import { deleteCreatedAccounts } from './auth'
 import { randomUUID } from 'node:crypto'
 import {
   addEdition,
   addEditionAccess,
+  addLogo,
   addOrg,
   closeTenantDb,
   deleteCreatedTenants,
@@ -60,6 +62,18 @@ describe('activeMembership', () => {
       new AccessRepository(contextOf(tx)).activeMembership(orgOfB.id),
     )
     expect(found).toMatchObject({ role: 'org', settingsAccess: 'write' })
+  })
+})
+
+// The logo a tenant's address names decides which file anyone may read.
+describe("a convention's logo", () => {
+  it("finds no logo of another tenant in this tenant's transaction", async () => {
+    const logo = await addLogo(b.id)
+
+    expect(await withoutRls(a.id, (tx) => new LogoRepository(contextOf(tx)).find(a.id))).toBeNull()
+    expect(await withoutRls(a.id, (tx) => new LogoRepository(contextOf(tx)).find(b.id))).toEqual(
+      logo,
+    )
   })
 })
 

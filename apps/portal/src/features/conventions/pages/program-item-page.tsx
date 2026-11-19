@@ -33,7 +33,7 @@ export function ProgramItemPage() {
       lead={<span className="block first-letter:uppercase">{time.when(startsAt, endsAt)}</span>}
     >
       <p>
-        <Link to={`/conventions/${tenantSlug}/${editionSlug}`} className={linkClass}>
+        <Link to={`/conventions/${tenantSlug}/${editionSlug}/program`} className={linkClass}>
           <Trans>The whole programme</Trans>
         </Link>
       </p>

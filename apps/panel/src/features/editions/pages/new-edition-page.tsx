@@ -10,7 +10,15 @@ import { atLeast, useCurrentTenant } from '../../tenants'
 import { createEditionOptions, editionsKey } from '../api/editions'
 import { EditionForm } from '../components/edition-form'
 
-const EMPTY = { name: '', slug: '', startsAt: '', endsAt: '' }
+const EMPTY = {
+  name: '',
+  slug: '',
+  startsAt: '',
+  endsAt: '',
+  venueName: '',
+  venueAddress: '',
+  venueCity: '',
+}
 
 /** A new edition of the convention (`/settings/editions/new`), for a member with `settings=write`. */
 export function NewEditionPage() {

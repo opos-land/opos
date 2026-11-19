@@ -13,6 +13,7 @@ describe('activateLocale', () => {
     expect(i18n._(glossary.tenant)).toBe('konwent')
     expect(i18n._(glossary.mfa)).toBe('uwierzytelnianie dwuskładnikowe')
     expect(i18n._(glossary.suspended)).toBe('zawieszony')
+    expect(i18n._(glossary.venue)).toBe('miejsce')
   })
 
   it('keeps the English source text in en', async () => {

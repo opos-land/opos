@@ -1,24 +1,21 @@
-import { Trans } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
 import { isNotFound } from '../../../shared/lib/errors'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import { ErrorMessage, linkClass, LoadingView, NotFoundView, Page } from '../../../shared/ui'
-import { conventionOptions, editionOptions, programItemsOptions } from '../api/conventions'
-import { ProgramList } from '../components/program-list'
-import { useConventionTime } from '../hooks/use-convention-time'
+import { conventionOptions, editionOptions } from '../api/conventions'
+import { ConventionLogo } from '../components/convention-logo'
+import { EditionSummary } from '../components/edition-summary'
 
-/** One published edition's programme, past or active. */
+/**
+ * One published edition, past or coming: its convention with the logo, when and where it takes
+ * place, and the way on to its programme.
+ */
 export function EditionPage() {
   const { tenantSlug = '', editionSlug = '' } = useParams()
   const convention = useQuery(conventionOptions(tenantSlug))
   const edition = useQuery(editionOptions(tenantSlug, editionSlug))
   usePageTitle(edition.data?.name ?? convention.data?.name)
-  const items = useQuery({
-    ...programItemsOptions(tenantSlug, editionSlug),
-    enabled: Boolean(edition.data),
-  })
-  const time = useConventionTime(convention.data?.timezone ?? 'UTC')
   const base = `/conventions/${tenantSlug}`
 
   if (convention.isError || edition.isError) {
@@ -27,25 +24,19 @@ export function EditionPage() {
   }
   if (convention.isPending || edition.isPending) return <LoadingView />
 
-  const conventionName = convention.data.name
   return (
-    <Page title={edition.data.name} lead={time.dates(edition.data.startsAt, edition.data.endsAt)}>
-      <p>
+    <Page title={edition.data.name}>
+      <p className="flex items-center gap-3">
+        <ConventionLogo tenantSlug={tenantSlug} logo={convention.data.logo} variant="large" />
         <Link to={base} className={linkClass}>
-          <Trans>Back to {conventionName}</Trans>
+          {convention.data.name}
         </Link>
       </p>
-      {items.isPending ? (
-        <LoadingView />
-      ) : items.isError ? (
-        <ErrorMessage error={items.error} />
-      ) : (
-        <ProgramList
-          items={items.data}
-          timeZone={convention.data.timezone}
-          editionPath={`${base}/${editionSlug}`}
-        />
-      )}
+      <EditionSummary
+        edition={edition.data}
+        timeZone={convention.data.timezone}
+        editionPath={`${base}/${editionSlug}`}
+      />
     </Page>
   )
 }

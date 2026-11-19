@@ -309,13 +309,19 @@ export class FilesService {
    * A kept file's bytes, for an image those of a declared variant, made by its first read. Outside
    * every transaction, once the feature has decided who reads: a convention's file in the tenant of
    * the context, an edition's in the edition the route's path names, an account's of the session's
-   * account. A file of another owner is not found before the bucket is asked. Another account's
+   * account. A public route, which admits nobody to a tenant and so has none in its context, names
+   * the tenant itself as `tenantId`, from the lookup of the address and never from a request's
+   * input. A file of another owner is not found before the bucket is asked. Another account's
    * file is read through a tenant row that points at it, which no feature needs yet.
    */
   async open(
     kindName: string,
     fileId: string,
-    { variant, editionId }: { variant?: string; editionId?: string } = {},
+    {
+      variant,
+      editionId,
+      tenantId,
+    }: { variant?: string; editionId?: string; tenantId?: string } = {},
   ): Promise<OpenedFile> {
     this.outsideTransactions('open')
     const kind = this.kind(kindName)
@@ -345,7 +351,7 @@ export class FilesService {
           ),
         )
     } else {
-      ownerId = this.context.tenant().id
+      ownerId = tenantId ?? this.context.tenant().id
       ;[row] = await this.context.withTenant(ownerId, () =>
         this.context
           .tx()

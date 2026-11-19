@@ -4,10 +4,13 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session, testEmail } from './auth'
+import { upload } from './files'
+import { png } from './pictures'
 import {
   addEdition,
   addEditionAccess,
   addHead,
+  addLogo,
   addOrg,
   addProgramItem,
   closeTenantDb,
@@ -626,21 +629,28 @@ describe('concurrency', () => {
         path: `/editions/${s.edition}/program-items/${s.item}/speakers`,
         body: { emails: [s.newcomer.email] },
       }),
+      'branding.putLogo': () => ({
+        method: 'put',
+        path: '/branding/logo',
+        body: { file: upload(png(40, 20), 'image/png', 'logo.png') },
+      }),
+      'branding.removeLogo': () => ({ method: 'delete', path: '/branding/logo' }),
     }
 
     /**
-     * A tenant whose org holds settings=write and program=write, another org to act on and a
-     * programme item.
+     * A tenant whose org holds settings=write, branding=write and program=write, another org to
+     * act on, a programme item and a logo.
      */
     async function setup(): Promise<Setup> {
       const t = await tenantWithHead()
       const edition = await addEdition(t.id)
       const [actor, other, newcomer] = await Promise.all([member(), member(), member()])
-      const orgId = await addOrg(t.id, actor, { settings: 'write' })
+      const orgId = await addOrg(t.id, actor, { settings: 'write', branding: 'write' })
       await addEditionAccess(t.id, orgId, edition, { program: 'write' })
       const otherId = await addOrg(t.id, other)
       await addEditionAccess(t.id, otherId, edition, {})
       const item = await addProgramItem(t.id, edition)
+      await addLogo(t.id)
       return { t, edition, org: actor, orgId, otherId, newcomer, item }
     }
 
@@ -670,14 +680,14 @@ describe('concurrency', () => {
         const s = await setup()
         const expected = await tenantState(s.t.id)
         expected.memberships = expected.memberships.map((row) =>
-          row.id === s.orgId ? { ...row, settings_access: 'none' } : row,
+          row.id === s.orgId ? { ...row, settings_access: 'none', branding_access: 'none' } : row,
         )
         expected.editionMemberships = expected.editionMemberships.map((row) =>
           row.tenant_membership_id === s.orgId ? { ...row, program_access: 'none' } : row,
         )
         const demotion = await openTransaction()
         await lockTenantWrites(demotion.sql, s.t)
-        await demotion.sql`update tenant_memberships set settings_access = 'none' where id = ${s.orgId}`
+        await demotion.sql`update tenant_memberships set settings_access = 'none', branding_access = 'none' where id = ${s.orgId}`
         await demotion.sql`update edition_memberships set program_access = 'none' where tenant_membership_id = ${s.orgId}`
 
         const pending = send(s, build(s))
@@ -1069,6 +1079,68 @@ describe('editions', () => {
       code: 'edition.active',
     })
     await call(a.head, 'delete', `/editions/${first.id}`).expect(204)
+  })
+
+  it('creates an edition with its venue, and with none when it gives none', async () => {
+    const venue = { venueName: 'Congress Hall', venueAddress: '1 Main St', venueCity: 'Poznań' }
+    const withVenue = await call(a.head, 'post', '/editions', {
+      slug: slug(),
+      name: 'Placed',
+      ...window,
+      ...venue,
+    }).expect(201)
+    expect(withVenue.body).toMatchObject(venue)
+
+    const without = await call(a.head, 'post', '/editions', {
+      slug: slug(),
+      name: 'Nowhere yet',
+      ...window,
+    }).expect(201)
+    expect(without.body).toMatchObject({ venueName: null, venueAddress: null, venueCity: null })
+  })
+
+  it('sets the venue of an edition, trims it and clears a part of it with null', async () => {
+    const { id } = (
+      await call(a.head, 'post', '/editions', { slug: slug(), name: 'Moving', ...window })
+    ).body as { id: string }
+
+    const set = await call(a.head, 'patch', `/editions/${id}`, {
+      venueName: '  Congress Hall ',
+      venueAddress: '1 Main St',
+      venueCity: 'Poznań',
+    }).expect(200)
+    expect(set.body).toMatchObject({
+      venueName: 'Congress Hall',
+      venueAddress: '1 Main St',
+      venueCity: 'Poznań',
+    })
+
+    const cleared = await call(a.head, 'patch', `/editions/${id}`, { venueAddress: null }).expect(
+      200,
+    )
+    expect(cleared.body).toMatchObject({
+      venueName: 'Congress Hall',
+      venueAddress: null,
+      venueCity: 'Poznań',
+    })
+    expect((await call(a.head, 'get', `/editions/${id}`)).body).toMatchObject({
+      venueName: 'Congress Hall',
+      venueAddress: null,
+      venueCity: 'Poznań',
+    })
+  })
+
+  it.each([
+    ['an empty name', { venueName: '' }, 'venueName'],
+    ['a name of spaces', { venueName: '   ' }, 'venueName'],
+    ['a name over 200 characters', { venueName: 'n'.repeat(201) }, 'venueName'],
+    ['an address over 300 characters', { venueAddress: 'a'.repeat(301) }, 'venueAddress'],
+    ['a city over 100 characters', { venueCity: 'c'.repeat(101) }, 'venueCity'],
+  ])('refuses a venue with %s', async (_, body, field) => {
+    const res = await call(a.head, 'patch', `/editions/${editionA}`, body)
+
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({ code: 'request.invalid', params: { field } })
   })
 
   it('publishes an edition', async () => {

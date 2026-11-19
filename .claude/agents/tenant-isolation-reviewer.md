@@ -47,8 +47,10 @@ sections before you review; when the diff and the document disagree, report it.
 **Cross-tenant access**
 - Every query on the `opos_app_global` role (`GlobalDbService`, `globalDb()`) appears in the table
   of cross-tenant queries in `docs/ARCHITECTURE.md` (Tenant isolation), is bound as that section
-  says — the account from the JWT or its confirmed email, a secret the caller proved, or a scheduled
-  job — and reads only the columns `globalReads` of `packages/db/src/verify.ts` lists.
+  says — the account from the JWT or its confirmed email, a secret the caller proved, a scheduled
+  job, or publication, for what anyone already reads one convention at a time — and reads only the
+  columns `globalReads` of `packages/db/src/verify.ts` lists. A query bound by publication takes
+  nothing from the caller to look a row up by: a cursor is compared with, never resolved.
 - Nothing else uses `globalDb()` or `migrationDb()` at runtime.
 
 **API (`apps/api`)**

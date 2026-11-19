@@ -441,6 +441,61 @@ describe('verifyDatabase', () => {
       },
     )
 
+    // Orders (docs/specs/0004-checkout-and-orders.md): each grant the application role must
+    // not hold.
+    it.each([
+      ['the number of an order', 'number', 'orders'],
+      ['the total of an order', 'total_minor', 'orders'],
+      ['the address of its buyer', 'email', 'orders'],
+      ['the edition of an order', 'edition_id', 'orders'],
+      ['the price of a line', 'amount_minor', 'order_lines'],
+      ['what a line sells', 'ticket_type_id', 'order_lines'],
+      ['the amount an attempt asked for', 'amount_minor', 'payment_attempts'],
+      ['the order of an attempt', 'order_id', 'payment_attempts'],
+      ['the account an order is attached to', 'account_id', 'order_accounts'],
+      ['the QR code an order carries', 'qr_code_id', 'order_qr_code_orders'],
+      ['the version an order accepted', 'document_version_id', 'order_consents'],
+      ['the recipient of an email', 'recipient', 'order_emails'],
+    ])('reports opos_app updating %s', async (_, column, table) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (${column}) on public.${table} to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(new RegExp(`opos_app UPDATE \\(${column}\\) on ${table}`))
+    })
+
+    it.each(['orders', 'order_lines', 'payment_attempts', 'order_consents', 'order_emails'])(
+      'reports opos_app deleting from %s, whose rows stay for as long as their order does',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant delete on public.${table} to opos_app`),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`opos_app DELETE on ${table}`))
+      },
+    )
+
+    // The reads across tenants this module adds are of identifiers alone: nothing of a buyer.
+    it.each([
+      ['orders', 'email'],
+      ['orders', 'holder_name'],
+      ['orders', 'number'],
+      ['orders', 'result_token_hash'],
+      ['payment_attempts', 'order_id'],
+      ['payment_attempts', 'information'],
+      ['order_emails', 'recipient'],
+      ['order_links', 'token_hash'],
+      ['order_qr_codes', 'code'],
+    ])(
+      'reports opos_app_global reading %s.%s, which no job of the API needs',
+      async (table, column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+        )
+      },
+    )
+
     it('reports RLS on account_files, a global table', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`alter table public.account_files enable row level security`),

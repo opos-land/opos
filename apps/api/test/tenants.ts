@@ -545,7 +545,11 @@ export const countEditions = async (tenantId: string, slug: string) =>
 
 /** Tenants go first: a tenant's last head cannot be deleted while the tenant exists. */
 export async function deleteCreatedTenants() {
-  if (tenantIds.length > 0) await db.delete(tenants).where(inArray(tenants.id, tenantIds))
+  if (tenantIds.length > 0) {
+    // An order keeps its edition, and so its tenant: the orders of a test's tenants go first.
+    await db.execute(sql`delete from orders where tenant_id in ${tenantIds}`)
+    await db.delete(tenants).where(inArray(tenants.id, tenantIds))
+  }
   tenantIds.length = 0
 }
 

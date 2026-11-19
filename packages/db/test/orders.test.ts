@@ -1,0 +1,548 @@
+import { describe, expect, it } from 'vitest'
+import { createEdition, createTenant, createUser, inTenant, migrator } from './db'
+
+// Orders and what they hold (docs/specs/0004-checkout-and-orders.md): an order with its lines,
+// answers, consents, QR code, payment attempts, emails and links. Every row is its tenant's and
+// its edition's, and points only at rows of the same two. An order is never deleted while its
+// edition stands, and what it holds of the catalog stays as long as it does.
+
+const HASH = 'a'.repeat(64)
+
+interface Place {
+  tenant: string
+  edition: string
+}
+
+async function place(): Promise<Place> {
+  const tenant = await createTenant()
+  return { tenant: tenant.id, edition: await createEdition(tenant.id) }
+}
+
+/** Another edition of the same tenant: a row of it is as foreign as another tenant's. */
+const sibling = async (at: Place): Promise<Place> => ({
+  tenant: at.tenant,
+  edition: await createEdition(at.tenant),
+})
+
+const one = async (query: Promise<{ id: string }[]>) => (await query)[0]!.id
+
+/** The characters of an order's number: none that is mistaken for another. */
+const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+
+let numbers = 0
+/** A number of ten characters no other order of the run has. */
+function number() {
+  let left = (numbers += 1)
+  let text = ''
+  while (left > 0) {
+    text = ALPHABET[left % ALPHABET.length]! + text
+    left = Math.floor(left / ALPHABET.length)
+  }
+  return text.padStart(10, 'Z')
+}
+
+const order = (at: Place, values: Record<string, unknown> = {}) => {
+  const row = {
+    tenant_id: at.tenant,
+    edition_id: at.edition,
+    number: number(),
+    status: 'awaiting-payment',
+    email: 'buyer@example.test',
+    holder_name: 'Ada',
+    age_band: 'adult',
+    total_minor: 10000,
+    holds: true,
+    hold_ends_at: '2099-01-01T00:00:00Z',
+    result_token_hash: HASH,
+    ...values,
+  }
+  return one(migrator`insert into orders ${migrator(row)} returning id`)
+}
+
+const ticketType = (at: Place) =>
+  one(migrator`
+    insert into ticket_types (tenant_id, edition_id, name, sale_starts_at, sale_ends_at,
+      allows_child, allows_teen, allows_adult, position)
+    values (${at.tenant}, ${at.edition}, 'Standard', '2026-01-01', '2099-01-01', true, true, true, 1)
+    returning id
+  `)
+
+const addOn = (at: Place) =>
+  one(migrator`
+    insert into add_ons (tenant_id, edition_id, name, amount_minor, kind, position)
+    values (${at.tenant}, ${at.edition}, 'Room', 0, 'unlimited', 1)
+    returning id
+  `)
+
+/** An item with its one variant; answers both. */
+async function item(at: Place) {
+  const id = await one(migrator`
+    insert into merchandise_items (tenant_id, edition_id, name, amount_minor, per_order_limit,
+      position)
+    values (${at.tenant}, ${at.edition}, 'Pin', 1500, 10, 1)
+    returning id
+  `)
+  const variant = await one(migrator`
+    insert into merchandise_variants (tenant_id, edition_id, merchandise_item_id, stock)
+    values (${at.tenant}, ${at.edition}, ${id}, 5)
+    returning id
+  `)
+  return { id, variant }
+}
+
+const line = (at: Place, orderId: string, values: Record<string, unknown>) => {
+  const row = {
+    tenant_id: at.tenant,
+    edition_id: at.edition,
+    order_id: orderId,
+    quantity: 1,
+    unit_amount_minor: 10000,
+    amount_minor: 10000,
+    ...values,
+  }
+  return one(migrator`insert into order_lines ${migrator(row)} returning id`)
+}
+
+const ticketLine = (at: Place, orderId: string, ticketTypeId: string) =>
+  line(at, orderId, { kind: 'ticket', ticket_type_id: ticketTypeId })
+
+const attempt = (at: Place, orderId: string, values: Record<string, unknown> = {}) => {
+  const row = {
+    tenant_id: at.tenant,
+    edition_id: at.edition,
+    order_id: orderId,
+    provider: 'fake',
+    status: 'started',
+    amount_minor: 10000,
+    ...values,
+  }
+  return one(migrator`insert into payment_attempts ${migrator(row)} returning id`)
+}
+
+describe('orders', () => {
+  it('belongs to an edition of its own tenant', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+
+    await expect(order({ tenant: a.tenant, edition: b.edition })).rejects.toThrow(
+      /orders_edition_fk/,
+    )
+  })
+
+  it('has a number of its own within its convention, which another convention may use too', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const taken = number()
+    await order(a, { number: taken })
+
+    await expect(order(await sibling(a), { number: taken })).rejects.toThrow(
+      /orders_tenant_number_unique/,
+    )
+    await order(b, { number: taken })
+  })
+
+  it.each([
+    ['a status OPOS does not know', { status: 'refunded' }, /order_status/],
+    ['a number that is not ten characters', { number: 'SHORT' }, /orders_number/],
+    ['a number with a character mistaken for another', { number: 'O000000001' }, /orders_number/],
+    ['a total below zero', { total_minor: -1 }, /orders_total/],
+    ['another currency', { currency: 'EUR' }, /orders_currency/],
+    ['a blank holder', { holder_name: ' ' }, /orders_holder_name/],
+    ['an age band OPOS does not know', { age_band: 'senior' }, /age_band/],
+    ['an email that is no address', { email: 'buyer' }, /orders_email/],
+    ['an email not written in lower case', { email: 'Buyer@Example.test' }, /orders_email/],
+  ])('refuses %s', async (_, values, constraint) => {
+    await expect(order(await place(), values)).rejects.toThrow(constraint)
+  })
+
+  it('takes an order with no age band and one with no email', async () => {
+    const at = await place()
+
+    // A merch-only order has no ticket holder to place in a band; a manual one has no buyer's
+    // address.
+    await order(at, { age_band: null })
+    await order(at, { email: null, status: 'paid-manual', holds: true, hold_ends_at: null })
+  })
+
+  it('keeps its edition: an edition that has an order is not deleted', async () => {
+    const at = await place()
+    await order(at)
+
+    await expect(
+      inTenant(at.tenant, (sql) => sql`delete from editions where id = ${at.edition}`),
+    ).rejects.toThrow(/orders_edition_fk/)
+    await expect(migrator`delete from tenants where id = ${at.tenant}`).rejects.toThrow(
+      /orders_edition_fk/,
+    )
+  })
+})
+
+describe('order_lines', () => {
+  it('sells a ticket type, an add-on or a variant of its own edition', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const elsewhere = await sibling(a)
+    const mine = await order(a)
+
+    for (const foreign of [b, elsewhere]) {
+      await expect(ticketLine(a, mine, await ticketType(foreign))).rejects.toThrow(
+        /order_lines_ticket_type_fk/,
+      )
+      await expect(
+        line(a, mine, { kind: 'add_on', add_on_id: await addOn(foreign) }),
+      ).rejects.toThrow(/order_lines_add_on_fk/)
+      const theirs = await item(foreign)
+      await expect(
+        line(a, mine, {
+          kind: 'merchandise',
+          merchandise_item_id: theirs.id,
+          merchandise_variant_id: theirs.variant,
+        }),
+        // Both the item and its variant are foreign: whichever key is checked first refuses.
+      ).rejects.toThrow(/order_lines_item_fk|order_lines_variant_fk/)
+      await expect(ticketLine(a, await order(foreign), await ticketType(a))).rejects.toThrow(
+        /order_lines_order_fk|order_lines_ticket_type_fk/,
+      )
+    }
+  })
+
+  it('names the variant of the item it names, and no other', async () => {
+    const at = await place()
+    const [pin, mug] = [await item(at), await item(at)]
+
+    await expect(
+      line(at, await order(at), {
+        kind: 'merchandise',
+        merchandise_item_id: pin.id,
+        merchandise_variant_id: mug.variant,
+      }),
+    ).rejects.toThrow(/order_lines_variant_fk/)
+  })
+
+  it.each([
+    ['a ticket line with no ticket type', { kind: 'ticket' }],
+    ['an add-on line that names a ticket type', { kind: 'add_on', ticket: true }],
+    ['a merchandise line with no variant', { kind: 'merchandise', item: true }],
+    ['a ticket line that names a variant too', { kind: 'ticket', ticket: true, variant: true }],
+  ])('refuses %s', async (_, shape) => {
+    const at = await place()
+    const pin = await item(at)
+    const values = {
+      kind: shape.kind,
+      ...('ticket' in shape && { ticket_type_id: await ticketType(at) }),
+      ...('item' in shape && { merchandise_item_id: pin.id }),
+      ...('variant' in shape && {
+        merchandise_item_id: pin.id,
+        merchandise_variant_id: pin.variant,
+      }),
+    }
+
+    await expect(line(at, await order(at), values)).rejects.toThrow(/order_lines_sells/)
+  })
+
+  it('holds at most one ticket an order, and any number of other lines', async () => {
+    const at = await place()
+    const [mine, standard, pin] = [await order(at), await ticketType(at), await item(at)]
+    await ticketLine(at, mine, standard)
+
+    await expect(ticketLine(at, mine, standard)).rejects.toThrow(/order_lines_one_ticket/)
+    for (let n = 0; n < 2; n += 1) {
+      await line(at, mine, {
+        kind: 'merchandise',
+        merchandise_item_id: pin.id,
+        merchandise_variant_id: pin.variant,
+      })
+    }
+    // Another order holds a ticket of its own.
+    await ticketLine(at, await order(at), standard)
+  })
+
+  it('refuses a quantity below one, and a ticket in more than one', async () => {
+    const at = await place()
+    const [mine, standard] = [await order(at), await ticketType(at)]
+
+    await expect(
+      line(at, mine, { kind: 'ticket', ticket_type_id: standard, quantity: 0 }),
+    ).rejects.toThrow(/order_lines_quantity/)
+    await expect(
+      line(at, mine, { kind: 'ticket', ticket_type_id: standard, quantity: 2 }),
+    ).rejects.toThrow(/order_lines_quantity/)
+  })
+
+  it('keeps what it sells: a row of the catalog an order holds is not deleted', async () => {
+    const at = await place()
+    const [mine, standard, room, pin] = [
+      await order(at),
+      await ticketType(at),
+      await addOn(at),
+      await item(at),
+    ]
+    await ticketLine(at, mine, standard)
+    await line(at, mine, { kind: 'add_on', add_on_id: room })
+    await line(at, mine, {
+      kind: 'merchandise',
+      merchandise_item_id: pin.id,
+      merchandise_variant_id: pin.variant,
+    })
+
+    for (const [table, id, key] of [
+      ['ticket_types', standard, /order_lines_ticket_type_fk/],
+      ['add_ons', room, /order_lines_add_on_fk/],
+      ['merchandise_variants', pin.variant, /order_lines_variant_fk/],
+      ['merchandise_items', pin.id, /order_lines_variant_fk|order_lines_item_fk/],
+    ] as const) {
+      await expect(
+        inTenant(at.tenant, (sql) => sql.unsafe(`delete from ${table} where id = '${id}'`)),
+      ).rejects.toThrow(key)
+    }
+  })
+})
+
+describe('what an order was told and accepted', () => {
+  const customField = (at: Place) =>
+    one(migrator`
+      insert into edition_custom_fields (tenant_id, edition_id, label, is_required, position)
+      values (${at.tenant}, ${at.edition}, 'City', true, 1)
+      returning id
+    `)
+  const consent = (at: Place) =>
+    one(migrator`
+      insert into edition_consents (tenant_id, edition_id, text, is_required, position)
+      values (${at.tenant}, ${at.edition}, 'I accept.', true, 1)
+      returning id
+    `)
+  const answer = (at: Place, orderId: string, fieldId: string, text = 'Poznań') =>
+    migrator`
+      insert into order_custom_field_answers (tenant_id, edition_id, order_id, custom_field_id, answer)
+      values (${at.tenant}, ${at.edition}, ${orderId}, ${fieldId}, ${text})
+    `
+  const accepted = (at: Place, orderId: string, consentId: string) =>
+    migrator`
+      insert into order_consents (tenant_id, edition_id, order_id, consent_id)
+      values (${at.tenant}, ${at.edition}, ${orderId}, ${consentId})
+    `
+
+  it('answers a custom field of its own edition once, in up to 200 characters', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const [mine, city] = [await order(a), await customField(a)]
+    await answer(a, mine, city)
+
+    await expect(answer(a, mine, city)).rejects.toThrow(/order_custom_field_answers_pkey/)
+    await expect(answer(a, await order(a), city, 'a'.repeat(201))).rejects.toThrow(
+      /order_custom_field_answers_answer/,
+    )
+    for (const foreign of [b, await sibling(a)]) {
+      await expect(answer(a, await order(a), await customField(foreign))).rejects.toThrow(
+        /order_custom_field_answers_field_fk/,
+      )
+    }
+  })
+
+  it('accepts a consent of its own edition once', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const [mine, terms] = [await order(a), await consent(a)]
+    await accepted(a, mine, terms)
+
+    await expect(accepted(a, mine, terms)).rejects.toThrow(/order_consents_pkey/)
+    for (const foreign of [b, await sibling(a)]) {
+      await expect(accepted(a, await order(a), await consent(foreign))).rejects.toThrow(
+        /order_consents_consent_fk/,
+      )
+    }
+  })
+
+  it('keeps the field it answered and the consent it accepted', async () => {
+    const at = await place()
+    const [mine, city, terms] = [await order(at), await customField(at), await consent(at)]
+    await answer(at, mine, city)
+    await accepted(at, mine, terms)
+
+    await expect(
+      inTenant(at.tenant, (sql) => sql`delete from edition_custom_fields where id = ${city}`),
+    ).rejects.toThrow(/order_custom_field_answers_field_fk/)
+    await expect(
+      inTenant(at.tenant, (sql) => sql`delete from edition_consents where id = ${terms}`),
+    ).rejects.toThrow(/order_consents_consent_fk/)
+  })
+})
+
+describe('the account and the QR code of an order', () => {
+  const attach = (at: Place, orderId: string, accountId: string) =>
+    migrator`
+      insert into order_accounts (tenant_id, edition_id, order_id, account_id)
+      values (${at.tenant}, ${at.edition}, ${orderId}, ${accountId})
+    `
+  const qrCode = (at: Place, hash = HASH) =>
+    one(migrator`
+      insert into order_qr_codes (tenant_id, edition_id, code_hash, code)
+      values (${at.tenant}, ${at.edition}, ${hash}, 'sealed')
+      returning id
+    `)
+  const carry = (at: Place, orderId: string, codeId: string) =>
+    migrator`
+      insert into order_qr_code_orders (tenant_id, edition_id, order_id, qr_code_id)
+      values (${at.tenant}, ${at.edition}, ${orderId}, ${codeId})
+    `
+
+  it('is attached to one account, and outlives it', async () => {
+    const at = await place()
+    const [mine, buyer, other] = [await order(at), await createUser(), await createUser()]
+    await attach(at, mine, buyer.id)
+
+    await expect(attach(at, mine, other.id)).rejects.toThrow(/order_accounts_pkey/)
+
+    await migrator`delete from auth.users where id = ${buyer.id}`
+    expect(await migrator`select 1 from orders where id = ${mine}`).toHaveLength(1)
+    expect(await migrator`select 1 from order_accounts where order_id = ${mine}`).toHaveLength(0)
+  })
+
+  it('carries one QR code, which several orders of an edition may share', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const [first, more, code] = [await order(a), await order(a), await qrCode(a, 'b'.repeat(64))]
+    await carry(a, first, code)
+    await carry(a, more, code)
+
+    await expect(carry(a, first, await qrCode(a, 'c'.repeat(64)))).rejects.toThrow(
+      /order_qr_code_orders_pkey/,
+    )
+    for (const foreign of [b, await sibling(a)]) {
+      await expect(
+        carry(a, await order(a), await qrCode(foreign, HASH.replace('a', String(numbers)))),
+      ).rejects.toThrow(/order_qr_code_orders_code_fk/)
+    }
+  })
+
+  it('finds a code by its hash, which no two codes share', async () => {
+    const at = await place()
+    const hash = 'd'.repeat(64)
+    await qrCode(at, hash)
+
+    await expect(qrCode(at, hash)).rejects.toThrow(/order_qr_codes_code_hash_unique/)
+  })
+})
+
+describe('payment_attempts', () => {
+  it('is an attempt of an order of its own edition', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+
+    for (const foreign of [b, await sibling(a)]) {
+      await expect(attempt(a, await order(foreign))).rejects.toThrow(/payment_attempts_order_fk/)
+    }
+  })
+
+  it.each([
+    ['a provider OPOS has no module of', { provider: 'cash' }, /payment_attempts_provider/],
+    ['a status OPOS does not know', { status: 'pending' }, /payment_attempt_status/],
+    ['an amount of nothing', { amount_minor: 0 }, /payment_attempts_amount/],
+    ['money said to be somewhere unknown', { money_with: 'bank' }, /payment_money_with/],
+    ['a reason no page of the shop words', { failure_reason: 'fraud' }, /payment_failure_reason/],
+  ])('refuses %s', async (_, values, constraint) => {
+    const at = await place()
+
+    await expect(attempt(at, await order(at), values)).rejects.toThrow(constraint)
+  })
+
+  it('keeps what its provider said of it', async () => {
+    const at = await place()
+    const id = await attempt(at, await order(at), {
+      status: 'failed',
+      failure_reason: 'declined',
+      failure_code: '100',
+      failure_message: 'Declined by the bank',
+      provider_reference: 'P24-1',
+      information: { transaction: '123' },
+    })
+
+    const [row] = await migrator`
+      select failure_reason, information, paid_amount_minor from payment_attempts where id = ${id}
+    `
+    expect(row).toEqual({
+      failure_reason: 'declined',
+      information: { transaction: '123' },
+      paid_amount_minor: null,
+    })
+  })
+})
+
+describe('order_emails and order_links', () => {
+  const email = (at: Place, orderId: string, values: Record<string, unknown> = {}) => {
+    const row = {
+      tenant_id: at.tenant,
+      edition_id: at.edition,
+      order_id: orderId,
+      kind: 'order-confirmation',
+      recipient: 'buyer@example.test',
+      ...values,
+    }
+    return one(migrator`insert into order_emails ${migrator(row)} returning id`)
+  }
+  const link = (at: Place, orderId: string, hash: string) =>
+    migrator`
+      insert into order_links (tenant_id, edition_id, order_id, token_hash, expires_at)
+      values (${at.tenant}, ${at.edition}, ${orderId}, ${hash}, '2099-01-01')
+    `
+
+  it('queues an email of an order of its own edition, not sent and never failed yet', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const id = await email(a, await order(a))
+
+    const [row] = await migrator`
+      select sent_at, failed_attempts, queued_at <= now() as queued, next_attempt_at <= now() as due
+      from order_emails where id = ${id}
+    `
+    expect(row).toEqual({ sent_at: null, failed_attempts: 0, queued: true, due: true })
+    for (const foreign of [b, await sibling(a)]) {
+      await expect(email(a, await order(foreign))).rejects.toThrow(/order_emails_order_fk/)
+    }
+    await expect(email(a, await order(a), { kind: 'newsletter' })).rejects.toThrow(
+      /order_email_kind/,
+    )
+  })
+
+  it('opens an order by the hash of a token, which no two links share', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const hash = 'e'.repeat(64)
+    await link(a, await order(a), hash)
+
+    await expect(link(a, await order(a), hash)).rejects.toThrow(/order_links_token_hash_unique/)
+    for (const foreign of [b, await sibling(a)]) {
+      await expect(link(a, await order(foreign), 'f'.repeat(64))).rejects.toThrow(
+        /order_links_order_fk/,
+      )
+    }
+  })
+})
+
+describe('what the application role changes of an order', () => {
+  it('never changes what an order is, costs or belongs to', async () => {
+    const at = await place()
+    const [mine, standard] = [await order(at), await ticketType(at)]
+    await ticketLine(at, mine, standard)
+    await attempt(at, mine)
+
+    for (const statement of [
+      `update orders set number = 'ZZZZZZZZZZ'`,
+      `update orders set total_minor = 1`,
+      `update orders set email = 'other@example.test'`,
+      `update orders set edition_id = '${at.edition}'`,
+      `update orders set result_token_hash = '${HASH}'`,
+      `update order_lines set amount_minor = 1`,
+      `update order_lines set unit_amount_minor = 1`,
+      `update order_lines set quantity = 5`,
+      `update order_lines set ticket_type_id = '${standard}'`,
+      // No route hands a line over yet: the scanner and order management bring the grant.
+      `update order_lines set handed_out_at = now()`,
+      `update payment_attempts set amount_minor = 1`,
+      `update payment_attempts set order_id = '${mine}'`,
+      `delete from orders`,
+      `delete from order_lines`,
+      `delete from payment_attempts`,
+    ]) {
+      await expect(inTenant(at.tenant, (sql) => sql.unsafe(statement))).rejects.toThrow(
+        /permission denied/,
+      )
+    }
+    // What a payment changes still changes.
+    await inTenant(at.tenant, async (sql) => {
+      await sql`update orders set status = 'paid', paid_at = now(), holds = true, hold_ends_at = null`
+      await sql`update payment_attempts set status = 'paid', paid_amount_minor = 10000, paid_at = now()`
+    })
+  })
+})

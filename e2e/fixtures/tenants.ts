@@ -255,7 +255,10 @@ export class TenantFactory {
   /** Tenants go before their accounts: a tenant's last head cannot leave while it exists. */
   async cleanup() {
     if (this.created.length === 0) return
-    await this.db.delete(tenants).where(inArray(tenants.id, this.created.splice(0)))
+    const ids = this.created.splice(0)
+    // An order keeps its edition, and so its tenant: a scenario's orders go first.
+    await this.db.execute(sql`delete from orders where tenant_id in ${ids}`)
+    await this.db.delete(tenants).where(inArray(tenants.id, ids))
   }
 }
 

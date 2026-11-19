@@ -71,6 +71,8 @@ export const editionDocumentVersions = pgTable(
   },
   (t) => [
     unique('edition_document_versions_document_number_unique').on(t.documentId, t.number),
+    // What an order points at: the version its buyer accepted, within its tenant and edition.
+    unique('edition_document_versions_id_tenant_edition_unique').on(t.id, t.tenantId, t.editionId),
     index('edition_document_versions_tenant_document_idx').on(t.tenantId, t.documentId),
     foreignKey({
       name: 'edition_document_versions_document_fk',
@@ -108,6 +110,8 @@ export const editionConsents = pgTable(
     ...timestamps,
   },
   (t) => [
+    // What an order points at: the consent its buyer accepted, within its tenant and edition.
+    unique('edition_consents_id_tenant_edition_unique').on(t.id, t.tenantId, t.editionId),
     index('edition_consents_tenant_edition_position_idx').on(t.tenantId, t.editionId, t.position),
     foreignKey({
       name: 'edition_consents_edition_fk',

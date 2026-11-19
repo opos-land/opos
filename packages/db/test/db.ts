@@ -46,6 +46,8 @@ export const trackTenant = (id: string) => tenantIds.push(id)
 const userIds: string[] = []
 
 afterAll(async () => {
+  // An order keeps its edition, and so its tenant: the orders of a test's tenants go first.
+  await migrator`delete from orders where tenant_id = any(${tenantIds}::uuid[])`
   await migrator`delete from tenants where id = any(${tenantIds}::uuid[])`
   await authAdmin`delete from auth.users where id = any(${userIds}::uuid[])`
   await Promise.all(

@@ -47,6 +47,16 @@ const covered = [
   ['merchandise_item_pictures', 'tenant_id'],
   ['merchandise_size_charts', 'tenant_id'],
   ['edition_custom_fields', 'tenant_id'],
+  ['orders', 'tenant_id'],
+  ['order_lines', 'tenant_id'],
+  ['order_custom_field_answers', 'tenant_id'],
+  ['order_consents', 'tenant_id'],
+  ['order_accounts', 'tenant_id'],
+  ['order_qr_codes', 'tenant_id'],
+  ['order_qr_code_orders', 'tenant_id'],
+  ['payment_attempts', 'tenant_id'],
+  ['order_emails', 'tenant_id'],
+  ['order_links', 'tenant_id'],
 ] as const
 
 class Rollback extends Error {}
@@ -60,7 +70,8 @@ let b: Awaited<ReturnType<typeof createTenant>>
  * the setup of its shop: the seller, a provider account, the edition's shop, a document with a
  * version and a consent, and a catalog: a ticket type with a tier, a supporter price and a perk,
  * an add-on and an item it offers, the item's axis, value, variant, picture and size chart, and a
- * custom field.
+ * custom field, and an order: with a line, an answer, a consent, an account, a QR code, a payment
+ * attempt, an email and a link.
  */
 async function populated() {
   const tenant = await createTenant()
@@ -195,7 +206,83 @@ async function catalog(tenantId: string, edition: string) {
     { option_value_id: value, file_id: await image('merchandise-size-chart') },
     'option_value_id',
   )
-  await add('edition_custom_fields', { label: 'Fandom', is_required: false, position: 1 })
+  const field = await add('edition_custom_fields', {
+    label: 'Fandom',
+    is_required: false,
+    position: 1,
+  })
+  await order(tenantId, edition, { ticketType, field })
+}
+
+/** A row in every table of an order (docs/specs/0004-checkout-and-orders.md). */
+async function order(
+  tenantId: string,
+  edition: string,
+  catalog: { ticketType: string; field: string },
+) {
+  const at = { tenant_id: tenantId, edition_id: edition }
+  const add = async (table: string, values: Record<string, unknown>, returning = 'id') => {
+    const [row] = await migrator<Record<string, string>[]>`
+      insert into ${migrator(table)} ${migrator({ ...at, ...values })}
+      returning ${migrator(returning)}
+    `
+    return row![returning]!
+  }
+  const id = await add('orders', {
+    // Ten characters of the order's alphabet, from the tenant's own identifier.
+    number: tenantId
+      .replace(/[^2-9a-f]/g, '')
+      .slice(0, 10)
+      .toUpperCase()
+      .padEnd(10, '2'),
+    status: 'awaiting-payment',
+    email: 'buyer@example.test',
+    holder_name: 'Ada',
+    age_band: 'adult',
+    total_minor: 10000,
+    holds: true,
+    result_token_hash: '0'.repeat(64),
+  })
+  const ofOrder = { order_id: id }
+  await add('order_lines', {
+    ...ofOrder,
+    kind: 'ticket',
+    ticket_type_id: catalog.ticketType,
+    quantity: 1,
+    unit_amount_minor: 10000,
+    amount_minor: 10000,
+  })
+  await add(
+    'order_custom_field_answers',
+    { ...ofOrder, custom_field_id: catalog.field, answer: 'Tolkien' },
+    'order_id',
+  )
+  const [consent] = await migrator<{ id: string }[]>`
+    select id from edition_consents where tenant_id = ${tenantId} limit 1
+  `
+  await add('order_consents', { ...ofOrder, consent_id: consent!.id }, 'order_id')
+  const [head] = await migrator<{ account_id: string }[]>`
+    select account_id from tenant_memberships where tenant_id = ${tenantId} limit 1
+  `
+  await add('order_accounts', { ...ofOrder, account_id: head!.account_id }, 'order_id')
+  const code = await add('order_qr_codes', { code_hash: `${id}-hash`, code: 'sealed' })
+  await add('order_qr_code_orders', { ...ofOrder, qr_code_id: code }, 'order_id')
+  await add('payment_attempts', {
+    ...ofOrder,
+    provider: 'fake',
+    status: 'started',
+    amount_minor: 10000,
+  })
+  await add('order_emails', {
+    ...ofOrder,
+    kind: 'order-confirmation',
+    recipient: 'buyer@example.test',
+  })
+  await add('order_links', {
+    ...ofOrder,
+    token_hash: `${id}-token`,
+    expires_at: '2099-01-01',
+  })
 }
 
 beforeAll(async () => {
@@ -270,6 +357,56 @@ async function foreignCatalogRows(tenantId: string, edition: string) {
      values (${at}, '${item}', '${variant}', '${axis}', '${value}')`,
     `insert into merchandise_size_charts (tenant_id, edition_id, option_value_id, file_id)
      values (${at}, '${value}', '${file!.id}')`,
+  ]
+}
+
+/**
+ * An insert into each table of an order, written for the tenant `tenantId` with the rows that
+ * tenant already holds: what another tenant's transaction must be refused.
+ */
+async function foreignOrderRows(tenantId: string, edition: string) {
+  const held = async (table: string, column = 'id') => {
+    const [row] = await migrator.unsafe<Record<string, string>[]>(
+      `select ${column} from ${table} where tenant_id = '${tenantId}' limit 1`,
+    )
+    return row![column]!
+  }
+  const at = `'${tenantId}', '${edition}'`
+  const [order, addOn, code] = await Promise.all(
+    ['orders', 'add_ons', 'order_qr_codes'].map((table) => held(table)),
+  )
+  const account = await held('tenant_memberships', 'account_id')
+  // An order of the tenant's own that holds none of the rows the inserts below add.
+  const [bare] = await migrator<{ id: string }[]>`
+    insert into orders (tenant_id, edition_id, number, status, holder_name, total_minor, holds,
+      result_token_hash)
+    values (${tenantId}, ${edition}, 'ZZZZZZZZZZ', 'paid-manual', 'Ada', 0, true, ${'0'.repeat(64)})
+    returning id
+  `
+  return [
+    `insert into orders (tenant_id, edition_id, number, status, holder_name, total_minor, holds,
+       result_token_hash)
+     values (${at}, 'YYYYYYYYYY', 'paid-manual', 'Foreign', 0, true, repeat('0', 64))`,
+    `insert into order_lines (tenant_id, edition_id, order_id, kind, add_on_id, quantity,
+       unit_amount_minor, amount_minor)
+     values (${at}, '${order}', 'add_on', '${addOn}', 1, 0, 0)`,
+    `insert into order_qr_codes (tenant_id, edition_id, code_hash, code)
+     values (${at}, 'foreign-hash', 'sealed')`,
+    `insert into payment_attempts (tenant_id, edition_id, order_id, provider, status, amount_minor)
+     values (${at}, '${order}', 'fake', 'started', 1)`,
+    `insert into order_emails (tenant_id, edition_id, order_id, kind, recipient)
+     values (${at}, '${order}', 'order-expired', 'foreign@example.test')`,
+    `insert into order_links (tenant_id, edition_id, order_id, token_hash, expires_at)
+     values (${at}, '${order}', 'foreign-token', '2099-01-01')`,
+    `insert into order_custom_field_answers (tenant_id, edition_id, order_id, custom_field_id,
+       answer)
+     values (${at}, '${bare!.id}', '${await held('edition_custom_fields')}', 'Foreign')`,
+    `insert into order_consents (tenant_id, edition_id, order_id, consent_id)
+     values (${at}, '${bare!.id}', '${await held('edition_consents')}')`,
+    `insert into order_accounts (tenant_id, edition_id, order_id, account_id)
+     values (${at}, '${bare!.id}', '${account}')`,
+    `insert into order_qr_code_orders (tenant_id, edition_id, order_id, qr_code_id)
+     values (${at}, '${bare!.id}', '${code}')`,
   ]
 }
 
@@ -495,6 +632,7 @@ describe('tenant isolation', () => {
       `insert into edition_consents (tenant_id, edition_id, text, is_required, position)
        values ('${a.id}', '${edition!.id}', 'Foreign', false, 9)`,
       ...(await foreignCatalogRows(a.id, edition!.id)),
+      ...(await foreignOrderRows(a.id, edition!.id)),
     ]) {
       await expect(inTenant(b.id, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /row-level security/,

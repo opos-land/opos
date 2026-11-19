@@ -42,6 +42,8 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
     'Dashboard',
     'Programme',
     'Shop',
+    'Add-ons',
+    'Ticket holders’ data',
     'Documents and consents',
     'Access',
     'Edition settings',

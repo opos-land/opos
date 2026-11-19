@@ -28,6 +28,14 @@ msgstr "{name} od razu straci dostęp do konwentu. Powrót do zespołu wymaga no
 msgid "A consent links its document for good. To link another one, add a new consent."
 msgstr "Zgoda odsyła do swojego dokumentu na stałe. Aby odesłać do innego, dodaj nową zgodę."
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "A custom field must not ask about health, beliefs, an identity document number or anything else a convention does not need to let a person in."
+msgstr "Pole dodatkowe nie może pytać o zdrowie, przekonania, numer dokumentu tożsamości ani o nic innego, czego konwent nie potrzebuje, żeby wpuścić osobę na miejsce."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "A form for a teen’s guardian to print and sign, linked from the checkout. Leave it empty for none."
+msgstr "Formularz, który opiekun nastolatka drukuje i podpisuje; link do niego pokazuje się przy składaniu zamówienia. Zostaw puste, jeśli go nie ma."
+
 #: src/features/team/pages/edition-access-page.tsx
 msgid "A head organizer already has access to every edition."
 msgstr "Główny organizator ma już dostęp do każdej edycji."
@@ -55,6 +63,14 @@ msgstr "Strona z odpowiedziami dla kupujących, do której odsyła stopka sklepu
 #: src/features/shop/components/document-card.tsx
 msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 msgstr "Plik PDF o rozmiarze do 10 MB. Opublikowanej wersji nie można zmienić ani usunąć: poprawka to nowa wersja."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "A teen from the age of"
+msgstr "Nastolatek: od ilu lat"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "A ticket holder is a child, a teen or an adult by their age on the first day of the edition. A child enters with a guardian present, a teen with a guardian’s written consent brought on paper."
+msgstr "Posiadacz akredytacji jest dzieckiem, nastolatkiem albo dorosłym według wieku w pierwszym dniu edycji. Dziecko wchodzi z obecnym opiekunem, nastolatek z pisemną zgodą opiekuna przyniesioną na papierze."
 
 #: src/features/shop/components/consent-form.tsx
 msgid "Acceptance"
@@ -116,9 +132,17 @@ msgstr "Aktywna"
 msgid "Add"
 msgstr "Dodaj"
 
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "Add the add-on"
+msgstr "Dodaj dodatek"
+
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Add the consent"
 msgstr "Dodaj zgodę"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Add the custom field"
+msgstr "Dodaj pole dodatkowe"
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Add the document"
@@ -127,6 +151,19 @@ msgstr "Dodaj dokument"
 #: src/features/program/pages/program-page.tsx
 msgid "Add the item"
 msgstr "Dodaj punkt programu"
+
+#: src/features/catalog/pages/add-ons-page.tsx
+#: src/features/editions/components/edition-layout.tsx
+msgid "Add-ons"
+msgstr "Dodatki"
+
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "Add-ons in their order"
+msgstr "Dodatki w ich kolejności"
+
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "Add-ons of the edition"
+msgstr "Dodatki edycji"
 
 #: src/features/team/model/invitation.ts
 msgid "Added to the team: {name}. They have been told by email."
@@ -141,9 +178,17 @@ msgstr "Adres"
 msgid "Address of the FAQ"
 msgstr "Adres FAQ"
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Address of the guardian consent form"
+msgstr "Adres formularza zgody opiekuna"
+
 #: src/features/shop/components/seller-section.tsx
 msgid "Address of the seller"
 msgstr "Adres sprzedawcy"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Age bands"
+msgstr "Przedziały wiekowe"
 
 #: src/features/editions/pages/editions-page.tsx
 msgid "All editions"
@@ -153,13 +198,29 @@ msgstr "Wszystkie edycje"
 msgid "All programme items"
 msgstr "Wszystkie punkty programu"
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "An adult from the age of"
+msgstr "Dorosły: od ilu lat"
+
 #: src/features/team/model/invitation.ts
 msgid "An invitation has gone to {email}. Its link works once, until {validUntil}."
 msgstr "Zaproszenie zostało wysłane na adres {email}. Link w nim działa jeden raz, do {validUntil}."
 
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "Answer"
+msgstr "Odpowiedź"
+
 #: src/features/shop/model/providers.ts
 msgid "Any text connects an account that is ready. The fake provider refuses “refused”, reports “not-ready” as not ready, and does not answer for “unavailable”."
 msgstr "Dowolny tekst podłącza gotowe konto. Testowy dostawca odrzuca „refused”, zgłasza „not-ready” jako niegotowe i nie odpowiada na „unavailable”."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Anyone younger is a child."
+msgstr "Każdy młodszy jest dzieckiem."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Ask for nothing sensitive"
+msgstr "Nie pytaj o nic wrażliwego"
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
@@ -205,6 +266,8 @@ msgstr "Na ten adres piszą kupujący. Pokazują go sklep i jego e-maile."
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
+#: src/features/catalog/components/add-on-form.tsx
+#: src/features/catalog/components/custom-field-form.tsx
 #: src/features/shop/components/consent-form.tsx
 #: src/shared/ui/irreversible-action.tsx
 msgid "Cancel"
@@ -347,6 +410,14 @@ msgstr "Utwórz edycję"
 msgid "Currency"
 msgstr "Waluta"
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Custom fields"
+msgstr "Pola dodatkowe"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Custom fields in their order"
+msgstr "Pola dodatkowe w ich kolejności"
+
 #: src/features/account/pages/account-page.tsx
 msgid "Dark"
 msgstr "Ciemny"
@@ -368,9 +439,25 @@ msgstr "Daty"
 msgid "Delete"
 msgstr "Usuń"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Delete the add-on"
+msgstr "Usuń dodatek"
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Delete the add-on “{name}”?"
+msgstr "Usunąć dodatek „{name}”?"
+
 #: src/features/shop/components/consent-row.tsx
 msgid "Delete the consent"
 msgstr "Usuń zgodę"
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "Delete the custom field"
+msgstr "Usuń pole dodatkowe"
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "Delete the custom field “{label}”?"
+msgstr "Usunąć pole dodatkowe „{label}”?"
 
 #: src/features/shop/components/document-card.tsx
 msgid "Delete the document"
@@ -408,6 +495,7 @@ msgstr "Usunięcia punktu programu nie można cofnąć."
 msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
 msgstr "Usunięcia edycji nie można cofnąć. Aktywnej edycji nie można usunąć."
 
+#: src/features/catalog/components/add-on-form.tsx
 #: src/features/program/components/program-item-form.tsx
 msgid "Description"
 msgstr "Opis"
@@ -437,6 +525,8 @@ msgstr "Dokumenty"
 msgid "Documents and consents"
 msgstr "Dokumenty i zgody"
 
+#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/components/custom-field-row.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Edit"
 msgstr "Edytuj"
@@ -496,6 +586,10 @@ msgstr "Podaj przyszłą datę i godzinę."
 msgid "Enter a name of up to 200 characters."
 msgstr "Podaj nazwę o długości do 200 znaków."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Enter a name."
+msgstr "Wpisz nazwę."
+
 #: src/features/shop/components/seller-section.tsx
 msgid "Enter a number of up to 50 characters."
 msgstr "Podaj numer o długości do 50 znaków."
@@ -516,6 +610,14 @@ msgstr "Podaj prawidłową datę i godzinę."
 msgid "Enter a valid email address."
 msgstr "Podaj prawidłowy adres e-mail."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Enter a whole number from 1, or leave it empty."
+msgstr "Wpisz liczbę całkowitą od 1 albo zostaw puste."
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Enter a whole number of places."
+msgstr "Wpisz liczbę miejsc jako liczbę całkowitą."
+
 #: src/features/editions/components/edition-form.tsx
 msgid "Enter an address of up to 300 characters."
 msgstr "Podaj adres o długości do 300 znaków."
@@ -524,13 +626,22 @@ msgstr "Podaj adres o długości do 300 znaków."
 msgid "Enter an address of up to 500 characters."
 msgstr "Podaj adres o długości do 500 znaków."
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Enter an address that starts with https:// or http://."
 msgstr "Podaj adres zaczynający się od https:// lub http://."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Enter an amount, such as 40 or 40.50."
+msgstr "Wpisz kwotę, na przykład 40 albo 40,50."
+
 #: src/features/shop/components/seller-section.tsx
 msgid "Enter an email address, or leave the field empty."
 msgstr "Podaj adres e-mail albo zostaw pole puste."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Enter both ages as whole numbers, the second higher than the first, or leave both empty."
+msgstr "Wpisz oba progi wieku jako liczby całkowite, drugi wyższy od pierwszego, albo zostaw oba pola puste."
 
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
@@ -587,6 +698,11 @@ msgstr "Dokończ logowanie"
 msgid "Forgot your password?"
 msgstr "Nie pamiętasz hasła?"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgctxt "a price"
+msgid "Free"
+msgstr "Bezpłatnie"
+
 #: src/features/team/components/members-table.tsx
 msgid "Full access"
 msgstr "Pełny dostęp"
@@ -616,16 +732,35 @@ msgstr "Główny organizator"
 msgid "Head organizers"
 msgstr "Główni organizatorzy"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Headcount only"
+msgstr "Tylko zliczanie chętnych"
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Headcount only: it counts interest and reserves no place"
+msgstr "Tylko zliczanie chętnych: liczy zainteresowanych i nie rezerwuje miejsca"
+
 #: src/features/shop/components/consent-row.tsx
 msgctxt "a consent"
 msgid "Hidden from the shop"
 msgstr "Ukryta w sklepie"
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgctxt "a custom field"
+msgid "Hidden from the shop"
+msgstr "Ukryte w sklepie"
 
 #: src/features/shop/components/document-card.tsx
 msgctxt "a document"
 msgid "Hidden from the shop"
 msgstr "Ukryty w sklepie"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgctxt "an add-on"
+msgid "Hidden from the shop"
+msgstr "Ukryty w sklepie"
+
+#: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 #: src/features/shop/components/document-card.tsx
 msgid "Hide from the shop"
@@ -710,6 +845,22 @@ msgstr "Rodzaj"
 msgid "Light"
 msgstr "Jasny"
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Limit"
+msgstr "Limit"
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Limited places: {capacity}"
+msgstr "Limit miejsc: {capacity}"
+
+#: src/features/catalog/components/add-on-row.tsx
+#~ msgid "Limited: {capacity} places"
+#~ msgstr ""
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Limited: a set number of places"
+msgstr "Limitowany: określona liczba miejsc"
+
 #: src/features/shop/components/consent-form.tsx
 msgid "Linked document"
 msgstr "Powiązany dokument"
@@ -744,6 +895,10 @@ msgid "Membership"
 msgstr "Członkostwo"
 
 #: src/features/shop/pages/edition-shop-page.tsx
+msgid "Message of a closed shop"
+msgstr "Komunikat zamkniętego sklepu"
+
+#: src/features/shop/pages/edition-shop-page.tsx
 msgid "Met"
 msgstr "Spełniono"
 
@@ -755,14 +910,17 @@ msgstr "Nie spełniono"
 msgid "More"
 msgstr "Więcej"
 
+#: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Move down"
 msgstr "Przesuń w dół"
 
+#: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Move up"
 msgstr "Przesuń w górę"
 
+#: src/features/catalog/components/add-on-form.tsx
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Name"
@@ -772,9 +930,17 @@ msgstr "Nazwa"
 msgid "Name of the seller"
 msgstr "Nazwa sprzedawcy"
 
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "New add-on"
+msgstr "Nowy dodatek"
+
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "New consent"
 msgstr "Nowa zgoda"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "New custom field"
+msgstr "Nowe pole dodatkowe"
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "New document"
@@ -805,6 +971,14 @@ msgstr "Brak dostępu"
 #: src/features/team/components/members-table.tsx
 msgid "No end date"
 msgstr "Bez daty końcowej"
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "No limit"
+msgstr "Bez limitu"
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "No limit: anyone may take it"
+msgstr "Bez limitu: każdy może go wziąć"
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "No payment provider account is connected."
@@ -838,6 +1012,10 @@ msgstr "Niegotowe do sprzedaży"
 msgid "Notifications"
 msgstr "Powiadomienia"
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Number of places"
+msgstr "Liczba miejsc"
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Open the invitation link from your email to join a convention's team."
 msgstr "Otwórz link z zaproszenia w wiadomości e-mail, aby dołączyć do zespołu konwentu."
@@ -865,6 +1043,15 @@ msgctxt "a consent"
 msgid "Optional"
 msgstr "Opcjonalna"
 
+#: src/features/catalog/components/custom-field-row.tsx
+msgctxt "a custom field"
+msgid "Optional"
+msgstr "Opcjonalne"
+
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "Optional extras a buyer takes with a ticket, such as a workshop or a place in the sleeping room. A ticket type offers the add-ons you choose for it."
+msgstr "Opcjonalne dodatki, które kupujący bierze razem z akredytacją, na przykład warsztat albo miejsce w sali noclegowej. Rodzaj akredytacji oferuje te dodatki, które dla niego wybierzesz."
+
 #: src/features/team/components/invite-form.tsx
 msgid "Optional, in the convention's time zone, {zone}."
 msgstr "Opcjonalnie, w strefie czasowej konwentu, {zone}."
@@ -872,6 +1059,10 @@ msgstr "Opcjonalnie, w strefie czasowej konwentu, {zone}."
 #: src/features/shop/components/consent-form.tsx
 msgid "Optional: the buyer can order without accepting the consent"
 msgstr "Opcjonalna: kupujący może złożyć zamówienie bez akceptowania zgody"
+
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "Optional: the buyer can order without answering"
+msgstr "Opcjonalna: kupujący może zamówić bez odpowiedzi"
 
 #: src/features/auth/pages/login-page.tsx
 msgid "or"
@@ -928,6 +1119,10 @@ msgstr "Naciśnij przycisk, aby wybrać nowe hasło."
 msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Price ({currency})"
+msgstr "Cena ({currency})"
+
 #: src/features/shop/model/documents.ts
 msgid "Privacy policy"
 msgstr "Polityka prywatności"
@@ -982,6 +1177,10 @@ msgstr "Opublikowana"
 #: src/features/account/components/two-factor-card.tsx
 msgid "QR code for your authenticator app"
 msgstr "Kod QR dla aplikacji uwierzytelniającej"
+
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "Question"
+msgstr "Pytanie"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx
@@ -1058,9 +1257,18 @@ msgctxt "a consent"
 msgid "Required"
 msgstr "Wymagana"
 
+#: src/features/catalog/components/custom-field-row.tsx
+msgctxt "a custom field"
+msgid "Required"
+msgstr "Wymagane"
+
 #: src/features/shop/components/consent-form.tsx
 msgid "Required: the buyer must accept the consent to order"
 msgstr "Wymagana: kupujący musi zaakceptować zgodę, żeby złożyć zamówienie"
+
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "Required: the buyer must answer to order"
+msgstr "Wymagana: kupujący musi odpowiedzieć, żeby zamówić"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -1081,17 +1289,33 @@ msgstr "Rola"
 msgid "Save"
 msgstr "Zapisz"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Save the add-on"
+msgstr "Zapisz dodatek"
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Save the address"
 msgstr "Zapisz adres"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Save the age bands"
+msgstr "Zapisz przedziały wiekowe"
 
 #: src/features/shop/components/consent-row.tsx
 msgid "Save the consent"
 msgstr "Zapisz zgodę"
 
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "Save the custom field"
+msgstr "Zapisz pole dodatkowe"
+
 #: src/features/shop/components/seller-section.tsx
 msgid "Save the details"
 msgstr "Zapisz dane"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Save the message"
+msgstr "Zapisz komunikat"
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password"
@@ -1162,14 +1386,27 @@ msgstr "Ustawienia sklepu konwentu"
 msgid "Shop terms"
 msgstr "Regulamin sklepu"
 
+#: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 #: src/features/shop/components/document-card.tsx
 msgid "Show in the shop"
 msgstr "Pokaż w sklepie"
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Show the places left below"
+msgstr "Pokazuj liczbę wolnych miejsc poniżej"
+
 #: src/features/shop/components/consent-form.tsx
 msgid "Shown at the checkout beside a checkbox, in your own words, up to 1000 characters."
 msgstr "Wyświetlane przy składaniu zamówienia obok pola wyboru, twoimi słowami, do 1000 znaków."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Shown in place of products while the shop is closed or nothing is on sale, up to 1000 characters. Leave it empty for the shop’s own short notice."
+msgstr "Wyświetlany zamiast produktów, gdy sklep jest zamknięty albo nic nie jest w sprzedaży; do 1000 znaków. Zostaw puste, a sklep pokaże własną krótką informację."
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Shown to the buyer, up to 1000 characters."
+msgstr "Wyświetlany kupującemu, do 1000 znaków."
 
 #: src/shared/ui/sidebar.tsx
 msgid "Sidebar"
@@ -1232,6 +1469,18 @@ msgstr "Zawieszony"
 msgid "Team"
 msgstr "Zespół"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgid "The add-on “{name}” is deleted."
+msgstr "Dodatek „{name}” został usunięty."
+
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "The add-on is added."
+msgstr "Dodatek został dodany."
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "The add-on is saved."
+msgstr "Dodatek został zapisany."
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "The address of the FAQ is saved."
 msgstr "Adres FAQ został zapisany."
@@ -1239,6 +1488,10 @@ msgstr "Adres FAQ został zapisany."
 #: src/features/program/components/speakers-editor.tsx
 msgid "The address of the speaker's confirmed account."
 msgstr "Adres e-mail potwierdzonego konta prelegenta."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "The age bands are saved."
+msgstr "Przedziały wiekowe zostały zapisane."
 
 #: src/features/account/pages/account-page.tsx
 msgid "The browser's language"
@@ -1284,6 +1537,18 @@ msgstr "Dane dostępowe są sprawdzane u dostawcy, przechowywane w postaci zaszy
 msgid "The credentials stored now go. Once the provider accepts the new ones, payments use them."
 msgstr "Obecne dane dostępowe zostaną usunięte. Gdy dostawca przyjmie nowe, płatności będą z nich korzystać."
 
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "The custom field “{label}” is deleted."
+msgstr "Pole dodatkowe „{label}” zostało usunięte."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "The custom field is added."
+msgstr "Pole dodatkowe zostało dodane."
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "The custom field is saved."
+msgstr "Pole dodatkowe zostało zapisane."
+
 #: src/features/shop/components/seller-section.tsx
 msgid "The details are complete."
 msgstr "Dane są kompletne."
@@ -1328,9 +1593,17 @@ msgstr "Edycja {editionName} została opublikowana."
 msgid "The edition {name} is created."
 msgstr "Edycja {name} została utworzona."
 
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "The edition has no add-ons yet."
+msgstr "Edycja nie ma jeszcze dodatków."
+
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "The edition has no consents yet."
 msgstr "Edycja nie ma jeszcze żadnych zgód."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "The edition has no custom fields yet."
+msgstr "Edycja nie ma jeszcze pól dodatkowych."
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "The edition has no documents yet."
@@ -1357,6 +1630,10 @@ msgstr "Edycja musi kończyć się po swoim początku."
 #: src/features/shop/model/providers.ts
 msgid "The fake provider reports this account as not ready."
 msgstr "Testowy dostawca zgłasza to konto jako niegotowe."
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "The gross amount. Enter 0 for a free add-on."
+msgstr "Kwota brutto. Wpisz 0, jeśli dodatek jest bezpłatny."
 
 #: src/features/account/pages/account-page.tsx
 msgid "The interface language is saved."
@@ -1402,6 +1679,10 @@ msgstr "Obecne logo zniknie, a portal od razu pokaże nowe. Aby wrócić do popr
 #: src/features/team/components/member-form.tsx
 msgid "The membership is saved: {name}."
 msgstr "Zapisano zmiany członkostwa: {name}."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The message is saved."
+msgstr "Komunikat został zapisany."
 
 #: src/features/editions/components/edition-form.tsx
 msgid "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
@@ -1491,9 +1772,21 @@ msgstr "Sklep jest zamknięty."
 msgid "The shop is open."
 msgstr "Sklep jest otwarty."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "The shop shows how many places are left only once fewer than this many remain. Leave it empty to never show them."
+msgstr "Sklep pokazuje liczbę wolnych miejsc dopiero wtedy, gdy zostanie ich mniej niż tyle. Zostaw puste, żeby nigdy jej nie pokazywać."
+
 #: src/features/shop/components/consent-row.tsx
 msgid "The shop stops asking for it: “{text}”."
 msgstr "Sklep przestanie o nią prosić: „{text}”."
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "The shop stops asking for it. To stop asking for a while, hide it instead."
+msgstr "Sklep przestanie o nie pytać. Jeśli ma nie pytać tylko przez jakiś czas, ukryj je zamiast usuwać."
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "The shop stops offering it, and no ticket type offers it any more. To take it out of the shop for a while, hide it instead."
+msgstr "Sklep przestanie go oferować i żaden rodzaj akredytacji nie będzie go już oferował. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go zamiast usuwać."
 
 #: src/features/shop/model/documents.ts
 msgid "The shop terms have a published version."
@@ -1552,6 +1845,11 @@ msgstr "To jest aktywna edycja konwentu."
 #: src/features/program/components/speakers-editor.tsx
 msgid "This item has no speakers yet."
 msgstr "Ten punkt programu nie ma jeszcze prelegentów."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/editions/components/edition-layout.tsx
+msgid "Ticket holders’ data"
+msgstr "Dane posiadaczy akredytacji"
 
 #: src/features/team/components/permission-labels.tsx
 msgid "Tickets"
@@ -1720,6 +2018,18 @@ msgstr "To, co kupujący akceptuje przy składaniu zamówienia, w poniższej kol
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "What opening the shop needs"
 msgstr "Czego wymaga otwarcie sklepu"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "What the checkout asks a ticket holder beyond the name, the email and the age band, in the order below. The answers stay with the order, in your convention."
+msgstr "O co posiadacza akredytacji pyta się przy składaniu zamówienia poza imieniem, adresem e-mail i przedziałem wiekowym, w poniższej kolejności. Odpowiedzi zostają przy zamówieniu, w twoim konwencie."
+
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "What the checkout asks the ticket holder, such as “City you travel from”. The answer is a text of up to 200 characters."
+msgstr "O co posiadacza akredytacji pyta się przy składaniu zamówienia, na przykład „Miasto, z którego przyjeżdżasz”. Odpowiedź to tekst do 200 znaków."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "While nothing is on sale"
+msgstr "Gdy nic nie jest w sprzedaży"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx

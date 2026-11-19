@@ -114,13 +114,15 @@ describe('EditionLayout', () => {
     expect(screen.queryByRole('navigation', { name: 'Convention A' })).toBeNull()
   })
 
-  it('shows the shop and the documents to an org who reads the tickets of the edition', () => {
+  it('shows the shop, the catalog and the documents to an org who reads the tickets of the edition', () => {
     state.tickets = 'read'
     view('/convention-a/editions/2026')
 
     expect(links('Edition 2026')).toEqual([
       ['Dashboard', '/convention-a/editions/2026'],
       ['Shop', '/convention-a/editions/2026/shop'],
+      ['Add-ons', '/convention-a/editions/2026/add-ons'],
+      ['Ticket holders’ data', '/convention-a/editions/2026/ticket-holders'],
       ['Documents and consents', '/convention-a/editions/2026/documents'],
     ])
   })

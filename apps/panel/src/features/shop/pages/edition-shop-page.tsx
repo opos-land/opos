@@ -19,6 +19,7 @@ import {
   NoPermissionView,
   PageHeader,
   Section,
+  Textarea,
 } from '../../../shared/ui'
 import { useEditionBySlug } from '../../editions'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
@@ -33,7 +34,8 @@ import { CONDITION_LABELS, missingConditions } from '../model/documents'
 
 /**
  * The shop of an edition (`/editions/:editionSlug/shop`): whether it is open, what opening asks
- * for, each condition as met or missing, and the address of its FAQ. Reading needs tickets>=read
+ * for, each condition as met or missing, the message of a shop with nothing on sale and the
+ * address of its FAQ. Reading needs tickets>=read
  * in the edition, changing tickets=write. Of the convention's provider account and seller's
  * details it shows a yes or a no, and leads to them only who holds the shop permission.
  */
@@ -69,6 +71,7 @@ export function EditionShopPage() {
             editionSlug={edition.slug}
             canWrite={canWrite}
           />
+          <ClosedMessage shop={shop.data} editionId={edition.id} canWrite={canWrite} />
           <Faq shop={shop.data} editionId={edition.id} canWrite={canWrite} />
         </>
       )}
@@ -191,6 +194,68 @@ function Opening({
           )}
         </div>
       )}
+    </Section>
+  )
+}
+
+/** What the shop shows in place of products while it is closed or nothing is on sale. */
+function ClosedMessage({
+  shop,
+  editionId,
+  canWrite,
+}: {
+  shop: EditionShop
+  editionId: string
+  canWrite: boolean
+}) {
+  const { t } = useLingui()
+  const { api } = useCurrentTenant()
+  const queryClient = useQueryClient()
+  const [value, setValue] = useState(shop.salesClosedMessage ?? '')
+  const update = useMutation({
+    ...updateEditionShopOptions(api),
+    meta: { success: msg`The message is saved.` },
+    onSuccess: (saved) =>
+      queryClient.setQueryData(editionShopOptions(api, editionId).queryKey, saved),
+  })
+
+  return (
+    <Section title={<Trans>While nothing is on sale</Trans>}>
+      <form
+        noValidate
+        className="flex max-w-lg flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault()
+          update.mutate({
+            params: { editionId },
+            body: { salesClosedMessage: value.trim() || null },
+          })
+        }}
+      >
+        <FieldSet disabled={!canWrite}>
+          <FormField
+            label={t`Message of a closed shop`}
+            hint={t`Shown in place of products while the shop is closed or nothing is on sale, up to 1000 characters. Leave it empty for the shop’s own short notice.`}
+          >
+            {(control) => (
+              <Textarea
+                {...control}
+                rows={3}
+                maxLength={1000}
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+              />
+            )}
+          </FormField>
+        </FieldSet>
+        {canWrite && (
+          <div>
+            <Button type="submit" disabled={update.isPending}>
+              <Trans>Save the message</Trans>
+            </Button>
+          </div>
+        )}
+      </form>
     </Section>
   )
 }

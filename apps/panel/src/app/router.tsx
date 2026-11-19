@@ -1,6 +1,7 @@
 import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale, AccountPage } from '../features/account'
 import { BrandingPage } from '../features/branding'
+import { AddOnsPage, TicketHoldersPage } from '../features/catalog'
 import {
   ConfirmPage,
   ForgotPasswordPage,
@@ -128,6 +129,8 @@ export const router = createBrowserRouter([
                   { path: 'program/:programItemId', element: <ProgramItemPage /> },
                   { path: 'shop', element: <EditionShopPage /> },
                   { path: 'documents', element: <EditionDocumentsPage /> },
+                  { path: 'add-ons', element: <AddOnsPage /> },
+                  { path: 'ticket-holders', element: <TicketHoldersPage /> },
                   { path: 'access', element: <EditionAccessPage /> },
                   { path: 'settings', element: <EditionSettingsPage /> },
                   { path: '*', element: <NotFoundView /> },

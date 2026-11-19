@@ -28,6 +28,14 @@ msgstr "{name} loses access to the convention at once. Coming back takes a new i
 msgid "A consent links its document for good. To link another one, add a new consent."
 msgstr "A consent links its document for good. To link another one, add a new consent."
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "A custom field must not ask about health, beliefs, an identity document number or anything else a convention does not need to let a person in."
+msgstr "A custom field must not ask about health, beliefs, an identity document number or anything else a convention does not need to let a person in."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "A form for a teen’s guardian to print and sign, linked from the checkout. Leave it empty for none."
+msgstr "A form for a teen’s guardian to print and sign, linked from the checkout. Leave it empty for none."
+
 #: src/features/team/pages/edition-access-page.tsx
 msgid "A head organizer already has access to every edition."
 msgstr "A head organizer already has access to every edition."
@@ -55,6 +63,14 @@ msgstr "A page with answers for buyers, linked from the shop’s footer. Leave i
 #: src/features/shop/components/document-card.tsx
 msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 msgstr "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "A teen from the age of"
+msgstr "A teen from the age of"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "A ticket holder is a child, a teen or an adult by their age on the first day of the edition. A child enters with a guardian present, a teen with a guardian’s written consent brought on paper."
+msgstr "A ticket holder is a child, a teen or an adult by their age on the first day of the edition. A child enters with a guardian present, a teen with a guardian’s written consent brought on paper."
 
 #: src/features/shop/components/consent-form.tsx
 msgid "Acceptance"
@@ -116,9 +132,17 @@ msgstr "Active"
 msgid "Add"
 msgstr "Add"
 
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "Add the add-on"
+msgstr "Add the add-on"
+
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Add the consent"
 msgstr "Add the consent"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Add the custom field"
+msgstr "Add the custom field"
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Add the document"
@@ -127,6 +151,19 @@ msgstr "Add the document"
 #: src/features/program/pages/program-page.tsx
 msgid "Add the item"
 msgstr "Add the item"
+
+#: src/features/catalog/pages/add-ons-page.tsx
+#: src/features/editions/components/edition-layout.tsx
+msgid "Add-ons"
+msgstr "Add-ons"
+
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "Add-ons in their order"
+msgstr "Add-ons in their order"
+
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "Add-ons of the edition"
+msgstr "Add-ons of the edition"
 
 #: src/features/team/model/invitation.ts
 msgid "Added to the team: {name}. They have been told by email."
@@ -141,9 +178,17 @@ msgstr "Address"
 msgid "Address of the FAQ"
 msgstr "Address of the FAQ"
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Address of the guardian consent form"
+msgstr "Address of the guardian consent form"
+
 #: src/features/shop/components/seller-section.tsx
 msgid "Address of the seller"
 msgstr "Address of the seller"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Age bands"
+msgstr "Age bands"
 
 #: src/features/editions/pages/editions-page.tsx
 msgid "All editions"
@@ -153,13 +198,29 @@ msgstr "All editions"
 msgid "All programme items"
 msgstr "All programme items"
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "An adult from the age of"
+msgstr "An adult from the age of"
+
 #: src/features/team/model/invitation.ts
 msgid "An invitation has gone to {email}. Its link works once, until {validUntil}."
 msgstr "An invitation has gone to {email}. Its link works once, until {validUntil}."
 
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "Answer"
+msgstr "Answer"
+
 #: src/features/shop/model/providers.ts
 msgid "Any text connects an account that is ready. The fake provider refuses “refused”, reports “not-ready” as not ready, and does not answer for “unavailable”."
 msgstr "Any text connects an account that is ready. The fake provider refuses “refused”, reports “not-ready” as not ready, and does not answer for “unavailable”."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Anyone younger is a child."
+msgstr "Anyone younger is a child."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Ask for nothing sensitive"
+msgstr "Ask for nothing sensitive"
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
@@ -205,6 +266,8 @@ msgstr "Buyers write to this address. The shop and its emails show it."
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
+#: src/features/catalog/components/add-on-form.tsx
+#: src/features/catalog/components/custom-field-form.tsx
 #: src/features/shop/components/consent-form.tsx
 #: src/shared/ui/irreversible-action.tsx
 msgid "Cancel"
@@ -347,6 +410,14 @@ msgstr "Create the edition"
 msgid "Currency"
 msgstr "Currency"
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Custom fields"
+msgstr "Custom fields"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Custom fields in their order"
+msgstr "Custom fields in their order"
+
 #: src/features/account/pages/account-page.tsx
 msgid "Dark"
 msgstr "Dark"
@@ -368,9 +439,25 @@ msgstr "Dates"
 msgid "Delete"
 msgstr "Delete"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Delete the add-on"
+msgstr "Delete the add-on"
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Delete the add-on “{name}”?"
+msgstr "Delete the add-on “{name}”?"
+
 #: src/features/shop/components/consent-row.tsx
 msgid "Delete the consent"
 msgstr "Delete the consent"
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "Delete the custom field"
+msgstr "Delete the custom field"
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "Delete the custom field “{label}”?"
+msgstr "Delete the custom field “{label}”?"
 
 #: src/features/shop/components/document-card.tsx
 msgid "Delete the document"
@@ -408,6 +495,7 @@ msgstr "Deleting a programme item cannot be undone."
 msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
 msgstr "Deleting an edition cannot be undone. The active edition cannot be deleted."
 
+#: src/features/catalog/components/add-on-form.tsx
 #: src/features/program/components/program-item-form.tsx
 msgid "Description"
 msgstr "Description"
@@ -437,6 +525,8 @@ msgstr "Documents"
 msgid "Documents and consents"
 msgstr "Documents and consents"
 
+#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/components/custom-field-row.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Edit"
 msgstr "Edit"
@@ -496,6 +586,10 @@ msgstr "Enter a date and time in the future."
 msgid "Enter a name of up to 200 characters."
 msgstr "Enter a name of up to 200 characters."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Enter a name."
+msgstr "Enter a name."
+
 #: src/features/shop/components/seller-section.tsx
 msgid "Enter a number of up to 50 characters."
 msgstr "Enter a number of up to 50 characters."
@@ -516,6 +610,14 @@ msgstr "Enter a valid date and time."
 msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Enter a whole number from 1, or leave it empty."
+msgstr "Enter a whole number from 1, or leave it empty."
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Enter a whole number of places."
+msgstr "Enter a whole number of places."
+
 #: src/features/editions/components/edition-form.tsx
 msgid "Enter an address of up to 300 characters."
 msgstr "Enter an address of up to 300 characters."
@@ -524,13 +626,22 @@ msgstr "Enter an address of up to 300 characters."
 msgid "Enter an address of up to 500 characters."
 msgstr "Enter an address of up to 500 characters."
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Enter an address that starts with https:// or http://."
 msgstr "Enter an address that starts with https:// or http://."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Enter an amount, such as 40 or 40.50."
+msgstr "Enter an amount, such as 40 or 40.50."
+
 #: src/features/shop/components/seller-section.tsx
 msgid "Enter an email address, or leave the field empty."
 msgstr "Enter an email address, or leave the field empty."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Enter both ages as whole numbers, the second higher than the first, or leave both empty."
+msgstr "Enter both ages as whole numbers, the second higher than the first, or leave both empty."
 
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
@@ -587,6 +698,11 @@ msgstr "Finish signing in"
 msgid "Forgot your password?"
 msgstr "Forgot your password?"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgctxt "a price"
+msgid "Free"
+msgstr "Free"
+
 #: src/features/team/components/members-table.tsx
 msgid "Full access"
 msgstr "Full access"
@@ -616,8 +732,21 @@ msgstr "Head organizer"
 msgid "Head organizers"
 msgstr "Head organizers"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Headcount only"
+msgstr "Headcount only"
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Headcount only: it counts interest and reserves no place"
+msgstr "Headcount only: it counts interest and reserves no place"
+
 #: src/features/shop/components/consent-row.tsx
 msgctxt "a consent"
+msgid "Hidden from the shop"
+msgstr "Hidden from the shop"
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgctxt "a custom field"
 msgid "Hidden from the shop"
 msgstr "Hidden from the shop"
 
@@ -626,6 +755,12 @@ msgctxt "a document"
 msgid "Hidden from the shop"
 msgstr "Hidden from the shop"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgctxt "an add-on"
+msgid "Hidden from the shop"
+msgstr "Hidden from the shop"
+
+#: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 #: src/features/shop/components/document-card.tsx
 msgid "Hide from the shop"
@@ -710,6 +845,22 @@ msgstr "Kind"
 msgid "Light"
 msgstr "Light"
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Limit"
+msgstr "Limit"
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Limited places: {capacity}"
+msgstr "Limited places: {capacity}"
+
+#: src/features/catalog/components/add-on-row.tsx
+#~ msgid "Limited: {capacity} places"
+#~ msgstr "Limited: {capacity} places"
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Limited: a set number of places"
+msgstr "Limited: a set number of places"
+
 #: src/features/shop/components/consent-form.tsx
 msgid "Linked document"
 msgstr "Linked document"
@@ -744,6 +895,10 @@ msgid "Membership"
 msgstr "Membership"
 
 #: src/features/shop/pages/edition-shop-page.tsx
+msgid "Message of a closed shop"
+msgstr "Message of a closed shop"
+
+#: src/features/shop/pages/edition-shop-page.tsx
 msgid "Met"
 msgstr "Met"
 
@@ -755,14 +910,17 @@ msgstr "Missing"
 msgid "More"
 msgstr "More"
 
+#: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Move down"
 msgstr "Move down"
 
+#: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Move up"
 msgstr "Move up"
 
+#: src/features/catalog/components/add-on-form.tsx
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Name"
@@ -772,9 +930,17 @@ msgstr "Name"
 msgid "Name of the seller"
 msgstr "Name of the seller"
 
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "New add-on"
+msgstr "New add-on"
+
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "New consent"
 msgstr "New consent"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "New custom field"
+msgstr "New custom field"
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "New document"
@@ -805,6 +971,14 @@ msgstr "No access"
 #: src/features/team/components/members-table.tsx
 msgid "No end date"
 msgstr "No end date"
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "No limit"
+msgstr "No limit"
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "No limit: anyone may take it"
+msgstr "No limit: anyone may take it"
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "No payment provider account is connected."
@@ -838,6 +1012,10 @@ msgstr "Not ready to sell"
 msgid "Notifications"
 msgstr "Notifications"
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Number of places"
+msgstr "Number of places"
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Open the invitation link from your email to join a convention's team."
 msgstr "Open the invitation link from your email to join a convention's team."
@@ -865,6 +1043,15 @@ msgctxt "a consent"
 msgid "Optional"
 msgstr "Optional"
 
+#: src/features/catalog/components/custom-field-row.tsx
+msgctxt "a custom field"
+msgid "Optional"
+msgstr "Optional"
+
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "Optional extras a buyer takes with a ticket, such as a workshop or a place in the sleeping room. A ticket type offers the add-ons you choose for it."
+msgstr "Optional extras a buyer takes with a ticket, such as a workshop or a place in the sleeping room. A ticket type offers the add-ons you choose for it."
+
 #: src/features/team/components/invite-form.tsx
 msgid "Optional, in the convention's time zone, {zone}."
 msgstr "Optional, in the convention's time zone, {zone}."
@@ -872,6 +1059,10 @@ msgstr "Optional, in the convention's time zone, {zone}."
 #: src/features/shop/components/consent-form.tsx
 msgid "Optional: the buyer can order without accepting the consent"
 msgstr "Optional: the buyer can order without accepting the consent"
+
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "Optional: the buyer can order without answering"
+msgstr "Optional: the buyer can order without answering"
 
 #: src/features/auth/pages/login-page.tsx
 msgid "or"
@@ -928,6 +1119,10 @@ msgstr "Press the button to choose a new password."
 msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Press the button to confirm your address. Then you choose your password."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Price ({currency})"
+msgstr "Price ({currency})"
+
 #: src/features/shop/model/documents.ts
 msgid "Privacy policy"
 msgstr "Privacy policy"
@@ -982,6 +1177,10 @@ msgstr "Published"
 #: src/features/account/components/two-factor-card.tsx
 msgid "QR code for your authenticator app"
 msgstr "QR code for your authenticator app"
+
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "Question"
+msgstr "Question"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx
@@ -1058,9 +1257,18 @@ msgctxt "a consent"
 msgid "Required"
 msgstr "Required"
 
+#: src/features/catalog/components/custom-field-row.tsx
+msgctxt "a custom field"
+msgid "Required"
+msgstr "Required"
+
 #: src/features/shop/components/consent-form.tsx
 msgid "Required: the buyer must accept the consent to order"
 msgstr "Required: the buyer must accept the consent to order"
+
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "Required: the buyer must answer to order"
+msgstr "Required: the buyer must answer to order"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -1081,17 +1289,33 @@ msgstr "Role"
 msgid "Save"
 msgstr "Save"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgid "Save the add-on"
+msgstr "Save the add-on"
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Save the address"
 msgstr "Save the address"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "Save the age bands"
+msgstr "Save the age bands"
 
 #: src/features/shop/components/consent-row.tsx
 msgid "Save the consent"
 msgstr "Save the consent"
 
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "Save the custom field"
+msgstr "Save the custom field"
+
 #: src/features/shop/components/seller-section.tsx
 msgid "Save the details"
 msgstr "Save the details"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Save the message"
+msgstr "Save the message"
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password"
@@ -1162,14 +1386,27 @@ msgstr "Shop settings of the convention"
 msgid "Shop terms"
 msgstr "Shop terms"
 
+#: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 #: src/features/shop/components/document-card.tsx
 msgid "Show in the shop"
 msgstr "Show in the shop"
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Show the places left below"
+msgstr "Show the places left below"
+
 #: src/features/shop/components/consent-form.tsx
 msgid "Shown at the checkout beside a checkbox, in your own words, up to 1000 characters."
 msgstr "Shown at the checkout beside a checkbox, in your own words, up to 1000 characters."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Shown in place of products while the shop is closed or nothing is on sale, up to 1000 characters. Leave it empty for the shop’s own short notice."
+msgstr "Shown in place of products while the shop is closed or nothing is on sale, up to 1000 characters. Leave it empty for the shop’s own short notice."
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "Shown to the buyer, up to 1000 characters."
+msgstr "Shown to the buyer, up to 1000 characters."
 
 #: src/shared/ui/sidebar.tsx
 msgid "Sidebar"
@@ -1232,6 +1469,18 @@ msgstr "Suspended"
 msgid "Team"
 msgstr "Team"
 
+#: src/features/catalog/components/add-on-row.tsx
+msgid "The add-on “{name}” is deleted."
+msgstr "The add-on “{name}” is deleted."
+
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "The add-on is added."
+msgstr "The add-on is added."
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "The add-on is saved."
+msgstr "The add-on is saved."
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "The address of the FAQ is saved."
 msgstr "The address of the FAQ is saved."
@@ -1239,6 +1488,10 @@ msgstr "The address of the FAQ is saved."
 #: src/features/program/components/speakers-editor.tsx
 msgid "The address of the speaker's confirmed account."
 msgstr "The address of the speaker's confirmed account."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "The age bands are saved."
+msgstr "The age bands are saved."
 
 #: src/features/account/pages/account-page.tsx
 msgid "The browser's language"
@@ -1284,6 +1537,18 @@ msgstr "The credentials are checked with the provider, stored encrypted and neve
 msgid "The credentials stored now go. Once the provider accepts the new ones, payments use them."
 msgstr "The credentials stored now go. Once the provider accepts the new ones, payments use them."
 
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "The custom field “{label}” is deleted."
+msgstr "The custom field “{label}” is deleted."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "The custom field is added."
+msgstr "The custom field is added."
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "The custom field is saved."
+msgstr "The custom field is saved."
+
 #: src/features/shop/components/seller-section.tsx
 msgid "The details are complete."
 msgstr "The details are complete."
@@ -1328,9 +1593,17 @@ msgstr "The edition {editionName} is published."
 msgid "The edition {name} is created."
 msgstr "The edition {name} is created."
 
+#: src/features/catalog/pages/add-ons-page.tsx
+msgid "The edition has no add-ons yet."
+msgstr "The edition has no add-ons yet."
+
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "The edition has no consents yet."
 msgstr "The edition has no consents yet."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "The edition has no custom fields yet."
+msgstr "The edition has no custom fields yet."
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "The edition has no documents yet."
@@ -1357,6 +1630,10 @@ msgstr "The edition must end after it starts."
 #: src/features/shop/model/providers.ts
 msgid "The fake provider reports this account as not ready."
 msgstr "The fake provider reports this account as not ready."
+
+#: src/features/catalog/components/add-on-form.tsx
+msgid "The gross amount. Enter 0 for a free add-on."
+msgstr "The gross amount. Enter 0 for a free add-on."
 
 #: src/features/account/pages/account-page.tsx
 msgid "The interface language is saved."
@@ -1402,6 +1679,10 @@ msgstr "The logo shown now goes, and the portal shows the new one at once. To ha
 #: src/features/team/components/member-form.tsx
 msgid "The membership is saved: {name}."
 msgstr "The membership is saved: {name}."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The message is saved."
+msgstr "The message is saved."
 
 #: src/features/editions/components/edition-form.tsx
 msgid "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
@@ -1491,9 +1772,21 @@ msgstr "The shop is closed."
 msgid "The shop is open."
 msgstr "The shop is open."
 
+#: src/features/catalog/components/add-on-form.tsx
+msgid "The shop shows how many places are left only once fewer than this many remain. Leave it empty to never show them."
+msgstr "The shop shows how many places are left only once fewer than this many remain. Leave it empty to never show them."
+
 #: src/features/shop/components/consent-row.tsx
 msgid "The shop stops asking for it: “{text}”."
 msgstr "The shop stops asking for it: “{text}”."
+
+#: src/features/catalog/components/custom-field-row.tsx
+msgid "The shop stops asking for it. To stop asking for a while, hide it instead."
+msgstr "The shop stops asking for it. To stop asking for a while, hide it instead."
+
+#: src/features/catalog/components/add-on-row.tsx
+msgid "The shop stops offering it, and no ticket type offers it any more. To take it out of the shop for a while, hide it instead."
+msgstr "The shop stops offering it, and no ticket type offers it any more. To take it out of the shop for a while, hide it instead."
 
 #: src/features/shop/model/documents.ts
 msgid "The shop terms have a published version."
@@ -1552,6 +1845,11 @@ msgstr "This is the convention's active edition."
 #: src/features/program/components/speakers-editor.tsx
 msgid "This item has no speakers yet."
 msgstr "This item has no speakers yet."
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/editions/components/edition-layout.tsx
+msgid "Ticket holders’ data"
+msgstr "Ticket holders’ data"
 
 #: src/features/team/components/permission-labels.tsx
 msgid "Tickets"
@@ -1720,6 +2018,18 @@ msgstr "What a buyer accepts at the checkout, in the order below. The wording is
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "What opening the shop needs"
 msgstr "What opening the shop needs"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgid "What the checkout asks a ticket holder beyond the name, the email and the age band, in the order below. The answers stay with the order, in your convention."
+msgstr "What the checkout asks a ticket holder beyond the name, the email and the age band, in the order below. The answers stay with the order, in your convention."
+
+#: src/features/catalog/components/custom-field-form.tsx
+msgid "What the checkout asks the ticket holder, such as “City you travel from”. The answer is a text of up to 200 characters."
+msgstr "What the checkout asks the ticket holder, such as “City you travel from”. The answer is a text of up to 200 characters."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "While nothing is on sale"
+msgstr "While nothing is on sale"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx

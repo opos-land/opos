@@ -52,7 +52,13 @@ const met = {
   'shop-terms': true,
   'privacy-policy': true,
 }
-const closed = { open: false, openedAt: null, faqUrl: null, conditions: met }
+const closed = {
+  open: false,
+  openedAt: null,
+  faqUrl: null,
+  salesClosedMessage: null,
+  conditions: met,
+}
 const opened = { ...closed, open: true, openedAt: '2027-06-01T08:00:00.000Z' }
 
 const view = (path = '/convention-a/editions/2026/shop') =>
@@ -86,9 +92,7 @@ beforeEach(() => {
   read.mockReset().mockResolvedValue(closed)
   update
     .mockReset()
-    .mockImplementation(({ body }: { body: { faqUrl: string | null } }) =>
-      Promise.resolve({ ...closed, faqUrl: body.faqUrl }),
-    )
+    .mockImplementation(({ body }: { body: object }) => Promise.resolve({ ...closed, ...body }))
   open.mockReset().mockResolvedValue(opened)
   close.mockReset().mockResolvedValue(closed)
 })
@@ -217,6 +221,26 @@ describe('EditionShopPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save the address' }))
     await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(2))
     expect(update.mock.calls[1]?.[0]).toMatchObject({ body: { faqUrl: null } })
+  })
+
+  it('saves the message of a shop with nothing on sale, and clears it with an empty field', async () => {
+    state.tickets = 'write'
+    view()
+    await screen.findByText('The shop is closed: nothing can be ordered.')
+    const field = screen.getByLabelText('Message of a closed shop')
+
+    fireEvent.change(field, { target: { value: ' Tickets return in spring. ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save the message' }))
+    await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(1))
+    expect(update.mock.calls[0]?.[0]).toEqual({
+      params: { editionId: 'edition-2026' },
+      body: { salesClosedMessage: 'Tickets return in spring.' },
+    })
+
+    fireEvent.change(field, { target: { value: ' ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save the message' }))
+    await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(2))
+    expect(update.mock.calls[1]?.[0]).toMatchObject({ body: { salesClosedMessage: null } })
   })
 
   it('tells an address that is no link beside its field, and sends nothing', async () => {

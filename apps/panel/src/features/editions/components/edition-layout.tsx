@@ -4,8 +4,10 @@ import {
   FileTextIcon,
   KeyRoundIcon,
   LayoutDashboardIcon,
+  PuzzleIcon,
   Settings2Icon,
   StoreIcon,
+  UsersIcon,
 } from 'lucide-react'
 import { useParams } from 'react-router'
 import { AreaFrame, atLeast, SidebarLink, useCurrentTenant } from '../../tenants'
@@ -46,6 +48,12 @@ export function EditionLayout() {
               <>
                 <SidebarLink to={`${base}/shop`} icon={<StoreIcon />}>
                   <Trans>Shop</Trans>
+                </SidebarLink>
+                <SidebarLink to={`${base}/add-ons`} icon={<PuzzleIcon />}>
+                  <Trans>Add-ons</Trans>
+                </SidebarLink>
+                <SidebarLink to={`${base}/ticket-holders`} icon={<UsersIcon />}>
+                  <Trans>Ticket holders’ data</Trans>
                 </SidebarLink>
                 <SidebarLink to={`${base}/documents`} icon={<FileTextIcon />}>
                   <Trans>Documents and consents</Trans>

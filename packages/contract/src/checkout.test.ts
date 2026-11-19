@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  BOT_CHECK_STAND_IN,
   cartSchema,
   FAILURE_REASONS,
   offerSchema,
@@ -449,5 +450,12 @@ describe('a started payment attempt', () => {
 
     expect(startedAttemptSchema.parse(started)).toEqual(started)
     expect(startedAttemptSchema.safeParse({ redirectUrl: 'pay/1' }).success).toBe(false)
+  })
+})
+
+describe('the bot check', () => {
+  // Until the portal's own check is built, a stand-in token passes on local and dev alone.
+  it('has a stand-in token that is no secret and fits the field', () => {
+    expect(BOT_CHECK_STAND_IN).toBe('stand-in-bot-check-passed')
   })
 })

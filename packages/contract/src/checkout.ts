@@ -340,6 +340,12 @@ export const RESULT_TOKEN_HOURS = 24
 /** The header a result token travels in: never a path or a query of the API. */
 export const RESULT_TOKEN_HEADER = 'x-result-token'
 
+/**
+ * What the portal sends as its bot check while its own check is not built: the API passes it on
+ * `local` and `dev` alone, and nothing on production.
+ */
+export const BOT_CHECK_STAND_IN = 'stand-in-bot-check-passed'
+
 /** The characters of an order's number: none that is mistaken for another. */
 export const ORDER_NUMBER_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
 export const ORDER_NUMBER_LENGTH = 10

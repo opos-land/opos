@@ -1,3 +1,4 @@
+import { BOT_CHECK_STAND_IN } from '@opos/contract'
 import { type Env } from '../../config/env'
 
 export const BOT_CHECK = Symbol('BOT_CHECK')
@@ -12,7 +13,7 @@ export interface BotCheck {
 }
 
 /** The token the stand-in passes; any other fails, so that a failed check has a test too. */
-export const STAND_IN_TOKEN = 'stand-in-bot-check-passed'
+export const STAND_IN_TOKEN = BOT_CHECK_STAND_IN
 
 /**
  * The stand-in of local and dev: the portal's own check is not specified yet, and this takes its

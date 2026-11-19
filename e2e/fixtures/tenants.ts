@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { accounts, createTenant, type Database, tenants } from '@opos/db'
+import { seal, sealingKey } from '@opos/db/sealed'
 import { inArray, sql } from 'drizzle-orm'
+import { apiEnv } from './stack'
 
 // The tenant a scenario works on: its own slug, created with createTenant as an admin creates one,
 // and the team written directly as postgres, as the seed writes it.
@@ -39,6 +41,25 @@ export interface OrgInput {
 export interface EditionAccess {
   program?: Level
   tickets?: Level
+}
+
+/** What a convention sets of its shop before any edition sells. */
+export interface ShopInput {
+  /**
+   * The credentials of its account with the fake provider, sealed as the API seals them; left
+   * out, the convention has connected no account.
+   */
+  credentials?: Record<string, string>
+  /** Left out, the seller's details are complete. */
+  seller?: false
+}
+
+/** The seller's details a scenario's convention holds once they are set. */
+export const SELLER = {
+  name: 'Seller Ltd',
+  address: '1 Main St, 00-001 Warszawa',
+  registrationNumber: 'KRS 0000000000',
+  contactEmail: 'shop@seller.test',
 }
 
 export class TenantFactory {
@@ -105,6 +126,59 @@ export class TenantFactory {
       values (${tenantId}, ${membershipId}, ${editionId}, ${access.program ?? 'none'},
         ${access.tickets ?? 'none'})
     `)
+  }
+
+  /**
+   * The convention's side of the shop's setup, as its rows: complete seller's details, and an
+   * account of the fake provider that is ready to sell, with its credentials sealed by the key of
+   * the API under test.
+   */
+  async setUpShop(tenantId: string, input: ShopInput = {}) {
+    if (input.seller !== false) {
+      await this.db.execute(sql`
+        insert into shop_sellers (tenant_id, seller_name, seller_address,
+          seller_registration_number, contact_email)
+        values (${tenantId}, ${SELLER.name}, ${SELLER.address}, ${SELLER.registrationNumber},
+          ${SELLER.contactEmail})
+      `)
+    }
+    if (input.credentials) {
+      const key = apiEnv.PAYMENT_CREDENTIALS_KEY
+      if (!key) throw new Error('PAYMENT_CREDENTIALS_KEY is missing; run pnpm infra:init')
+      const sealed = seal(sealingKey(key), JSON.stringify(input.credentials))
+      await this.db.execute(sql`
+        insert into payment_provider_accounts (tenant_id, provider, credentials, ready_at)
+        values (${tenantId}, 'fake', ${sealed}, now())
+      `)
+    }
+  }
+
+  /**
+   * A legal document of an edition with one published version, as its rows alone: nothing lies in
+   * the bucket, so a scenario that downloads a version publishes it through the panel instead.
+   */
+  async addDocument(
+    tenantId: string,
+    editionId: string,
+    kind: 'shop-terms' | 'privacy-policy' | 'edition-rules' | 'other',
+    title: string = kind,
+  ) {
+    const [document] = await this.db.execute<{ id: string }>(sql`
+      insert into edition_documents (tenant_id, edition_id, kind, title)
+      values (${tenantId}, ${editionId}, ${kind}, ${title})
+      returning id
+    `)
+    const [file] = await this.db.execute<{ id: string }>(sql`
+      insert into uploaded_files (tenant_id, edition_id, kind, content_type, size, sha256, name)
+      values (${tenantId}, ${editionId}, 'edition-document', 'application/pdf', 10,
+        repeat('d', 64), 'document.pdf')
+      returning id
+    `)
+    await this.db.execute(sql`
+      insert into edition_document_versions (tenant_id, edition_id, document_id, number, file_id)
+      values (${tenantId}, ${editionId}, ${document!.id}, 1, ${file!.id})
+    `)
+    return document!.id
   }
 
   /** The account's membership in the tenant as stored, or undefined. */

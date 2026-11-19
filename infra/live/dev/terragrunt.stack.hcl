@@ -118,6 +118,7 @@ unit "deployment" {
           "opos_admin_password",
           "send_email_hook_secret",
           "invite_secret",
+          "payment_credentials_key",
           "basic_auth_password",
         ] : key => replace(key, "_", "-")
       },

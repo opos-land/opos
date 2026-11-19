@@ -108,6 +108,8 @@ locals {
     # The generated value is lowercase letters and digits, which base64 reads as it stands
     SEND_EMAIL_HOOK_SECRET = "v1,whsec_${local.secret.send_email_hook_secret}"
     INVITE_SECRET          = local.secret.invite_secret
+    # Seals the credentials of the conventions' payment provider accounts; the API alone holds it
+    PAYMENT_CREDENTIALS_KEY = local.secret.payment_credentials_key
 
     API_URL    = local.url.api
     PANEL_URL  = local.url.panel

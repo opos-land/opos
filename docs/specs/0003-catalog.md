@@ -254,9 +254,6 @@ e2e:
 
 ## Open questions
 
-- **A catalog with orders (L2–L4):** the refusals `catalog.in-use` and `catalog.below-held`, and
-  the row locks of invariant 9, are built with
-  [checkout and orders](0004-checkout-and-orders.md), which brings the orders they count.
 - **A closed shop (M9):** a shown item's pictures are for everyone while its edition is published,
   whether or not its shop is open, as the route above says. Whether a closed shop should keep them
   to the edition's orgs is the domain owner's to say.

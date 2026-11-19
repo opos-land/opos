@@ -94,8 +94,9 @@ and after every restore.
 - **Global tables.** `accounts`, `account_recovery_codes` and `account_files` have no RLS: column
   privileges limit them, and the API reaches there only the account a verified token, a fresh
   session or a signed hook names; the sweep alone removes an account's file nothing points at.
-  Another account is read only in a tenant transaction, through a tenant table or by a confirmed
-  email behind a write permission and a rate limit of the tenant; or behind
+  Another account is read only in a tenant transaction, through a tenant table, by a confirmed
+  email behind a write permission and a rate limit of the tenant, or by the confirmed email of
+  an order as it is paid or written to, which answers nothing to the buyer; or behind
   `@RequireAdmin`, as a tenant's head, as an account an entry of the log names, or by its email
   address for a new tenant's first head and for a reset of two-factor authentication.
   The admin's tables are global too, and `opos_app` and `opos_app_global` hold nothing on them:
@@ -107,14 +108,17 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query                  | Bound                                                                                                                        |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| a tenant by slug       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                |
-| `GET /me/memberships`  | the session's account; expired memberships left out, and the editions of a suspended tenant                                  |
-| `GET /me/schedule`     | the session's own likes; published editions only, of tenants not suspended                                                   |
-| `GET /public/editions` | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time |
-| `DELETE /me`           | the session's account; answers only whether it is a tenant's last head                                                       |
-| the sweep of files     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                     |
+| Query                               | Bound                                                                                                                                            |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| a tenant by slug                    | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                    |
+| `GET /me/memberships`               | the session's account; expired memberships left out, and the editions of a suspended tenant                                                      |
+| `GET /me/schedule`                  | the session's own likes; published editions only, of tenants not suspended                                                                       |
+| `GET /public/editions`              | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                     |
+| `DELETE /me`                        | the session's account; answers only whether it is a tenant's last head                                                                           |
+| the sweep of files                  | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                         |
+| a payment attempt by its identifier | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds |
+| the orders whose hold ended         | the API's own job; identifiers alone, of tenants not suspended                                                                                   |
+| the emails of orders that are due   | the API's own job; identifiers alone, of tenants not suspended                                                                                   |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token), the API's own job, or publication, for what anyone
@@ -144,24 +148,26 @@ case in [verify.test.ts](../packages/db/test/verify.test.ts);
 
 ## Invariants
 
-| #   | Invariant                                                                                                  | Enforced by                                                                                                                                                                     |
-| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | At most one active edition per tenant                                                                      | a partial unique index; activation locks the tenant row                                                                                                                         |
-| 2   | At least one `head` per tenant, also against deleting the last head's account                              | constraint triggers deferred to commit, locking the tenant row                                                                                                                  |
-| 3   | An edition membership stays in the tenant of its membership and edition                                    | composite foreign keys                                                                                                                                                          |
-| 4   | A tenant write carries the tenant of the context                                                           | `TenantContextService.tx()`; `WITH CHECK`                                                                                                                                       |
-| 5   | Every `auth.users` row has exactly one `accounts` row                                                      | an insert trigger, a cascading foreign key                                                                                                                                      |
-| 6   | A `head` never expires and holds no tenant-level permission                                                | check constraints                                                                                                                                                               |
-| 7   | An attendee registration stays in its edition's tenant and goes with its account                           | a composite foreign key, a cascade                                                                                                                                              |
-| 8   | Speakers, likes and reviews stay in the tenant of their programme item                                     | composite foreign keys                                                                                                                                                          |
-| 9   | A limit on what is sold holds under concurrent sales                                                       | a sale locks the rows carrying the limit before counting                                                                                                                        |
-| 10  | Two scans of one ticket never act on the same state                                                        | a conditional update or a row lock, never a read first                                                                                                                          |
-| 11  | A scanner works only inside its tenant and edition                                                         | its tenant's context; every query filters on its edition                                                                                                                        |
-| 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                      | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                      |
-| 13  | A tenant is deleted only while suspended                                                                   | the statement that deletes it judges the suspension itself                                                                                                                      |
-| 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since |
+| #   | Invariant                                                                                                                   | Enforced by                                                                                                                                                                                  |
+| --- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | At most one active edition per tenant                                                                                       | a partial unique index; activation locks the tenant row                                                                                                                                      |
+| 2   | At least one `head` per tenant, also against deleting the last head's account                                               | constraint triggers deferred to commit, locking the tenant row                                                                                                                               |
+| 3   | An edition membership stays in the tenant of its membership and edition                                                     | composite foreign keys                                                                                                                                                                       |
+| 4   | A tenant write carries the tenant of the context                                                                            | `TenantContextService.tx()`; `WITH CHECK`                                                                                                                                                    |
+| 5   | Every `auth.users` row has exactly one `accounts` row                                                                       | an insert trigger, a cascading foreign key                                                                                                                                                   |
+| 6   | A `head` never expires and holds no tenant-level permission                                                                 | check constraints                                                                                                                                                                            |
+| 7   | An attendee registration stays in its edition's tenant and goes with its account                                            | a composite foreign key, a cascade                                                                                                                                                           |
+| 8   | Speakers, likes and reviews stay in the tenant of their programme item                                                      | composite foreign keys                                                                                                                                                                       |
+| 9   | A limit on what is sold holds under concurrent sales and changes of the limit                                               | a sale, and a change of a capacity or a stock, lock the rows carrying the limit in one fixed order before counting ([0053](adr/0053-lock-the-rows-that-carry-a-limit-in-one-fixed-order.md)) |
+| 10  | Two scans of one ticket never act on the same state                                                                         | a conditional update or a row lock, never a read first                                                                                                                                       |
+| 11  | A scanner works only inside its tenant and edition                                                                          | its tenant's context; every query filters on its edition                                                                                                                                     |
+| 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                                       | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                                   |
+| 13  | A tenant is deleted only while suspended                                                                                    | the statement that deletes it judges the suspension itself                                                                                                                                   |
+| 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants                  | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since              |
+| 15  | An order holds at most one ticket                                                                                           | a partial unique index                                                                                                                                                                       |
+| 16  | What an order names is never deleted from under it: its edition, what it sold, what its ticket holder answered and accepted | foreign keys that do not cascade ([0048](adr/0048-keep-what-an-order-names-with-foreign-keys-that-do-not-cascade.md))                                                                        |
 
-Invariants 7 and 9–11 belong to [modules not built yet](#modules-waiting-for-their-domain-owner);
+Invariants 7, 10 and 11 belong to [modules not built yet](#modules-waiting-for-their-domain-owner);
 [invariants.test.ts](../packages/db/test/invariants.test.ts),
 [tenants.test.ts](../packages/db/test/tenants.test.ts) and
 [accounts.test.ts](../packages/db/test/accounts.test.ts) cover the database-side ones.
@@ -266,10 +272,16 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - **A route that asks outside before it writes** (`@Prepares`), as connecting a payment provider
   account does, is a write: its requirement is judged, then the call out runs outside every
   transaction, then its one transaction judges the actor again and acts on the answer. An answer
-  for an actor refused meanwhile is stored nowhere.
-- **The API's own job**, the sweep of files, runs daily in each process behind an advisory lock, so
-  one process sweeps at a time: it removes, once older than 24 hours, a file's row nothing points
-  at and an object no row explains.
+  for an actor refused meanwhile is stored nowhere. A route that asks no membership may prepare
+  too, as placing an account's order does for its bot check, and one that asks outside between
+  its writes (`@CallsOut`), as the start of a payment attempt does, runs its handler outside
+  every transaction and opens its tenant's own.
+- **The API's own jobs** run in each process, each safe with several: the sweep of files daily
+  behind an advisory lock, so one process sweeps at a time, removing, once older than 24 hours,
+  a file's row nothing points at and an object no row explains; the expiry of orders every
+  minute and the outbox of their emails every quarter of a minute, each claiming a row under a
+  lock another process skips. A job finds its rows across tenants by identifiers alone, passes a
+  suspended tenant's by, and acts on each in its own tenant's transaction.
 - Every route has a default rate limit per account, or per address without a session; a route open
   to abuse adds its own in code
   ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)).
@@ -488,26 +500,34 @@ Reviews and attendee registrations get no code until their domain owner sets the
 module's [spec](specs/README.md)
 ([PRODUCT.md](PRODUCT.md#7-modules), [0019](adr/0019-documents-hold-rules-the-code-holds-the-rest.md));
 the lasting ones land here. The tickets module has its owner's rules and is built one spec at a
-time, the [shop's setup](specs/0002-shop-setup.md) and the [catalog](specs/0003-catalog.md) so
-far: what no spec has built yet keeps the rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
+time, the [shop's setup](specs/0002-shop-setup.md), the [catalog](specs/0003-catalog.md) and
+[checkout and orders](specs/0004-checkout-and-orders.md) so far: what no spec has built yet
+keeps the rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
 [cross-tenant query](#tenant-isolation), organizer routes behind the module's permission and the
 steps of [adding a feature](#adding-a-feature).
 
-| Module                 | Rules any shape keeps                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------- |
-| reviews                | invariant 8; deleted with the item or the author's account; organizer routes need `program` |
-| tickets                | invariants 9 and 10; organizer routes need `tickets`, the provider configuration `shop`     |
-| scanner                | invariants 10 and 11                                                                        |
-| attendee registrations | invariant 7                                                                                 |
+| Module                 | Rules any shape keeps                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| reviews                | invariant 8; deleted with the item or the author's account; organizer routes need `program`     |
+| tickets                | invariants 9, 10, 15 and 16; organizer routes need `tickets`, the provider configuration `shop` |
+| scanner                | invariants 10 and 11                                                                            |
+| attendee registrations | invariant 7                                                                                     |
 
 - **Payments.** The money goes to the convention's own provider account
-  ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)); OPOS keeps only the
-  payment reference, and provider credentials sealed with a key of the API's environment for their
-  tenant and provider, never returned, logged or read by a route outside the shop permission
+  ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)). Of a payment OPOS
+  keeps what the provider's module gives for the orgs, the amount, the time and the provider's
+  number of the transaction, and nothing of a card or a bank account; provider credentials are
+  sealed with a key of the API's environment for their tenant and provider, never returned,
+  logged or read by a route outside the shop permission
   ([0044](adr/0044-seal-payment-provider-credentials-with-a-key-of-the-apis-environment.md)). A
   provider is asked through one port, [payments](../apps/api/src/modules/payments), outside every
-  transaction. A notification counts once its signature or the provider confirms it; a repeat, or
-  a different amount, changes nothing. Only `local` and `dev` load a fake provider.
+  transaction. A notification names its attempt alone and counts once its signature holds: one
+  whose signature does not hold answers as an unknown address. A confirmation is taken in three
+  steps, a transaction that locks the order and decides, the module's call, a transaction that
+  writes the outcome, and the order is paid only in the last
+  ([0047](adr/0047-take-a-payment-in-three-steps-around-the-providers-call.md)); a repeat changes
+  nothing, and another amount than the total never pays the order. Only `local` and `dev` load a
+  fake provider.
 - **The shop's setup.** What opening a shop asks of the convention, an edition-level route answers
   as a yes or a no alone: the provider account and the seller's details stay behind `shop`. The
   conditions are read under the tenant's write lock, and every write that would take one away
@@ -523,6 +543,23 @@ steps of [adding a feature](#adding-a-feature).
   size chart of a merchandise item is a file for everyone once its item is not hidden and its
   edition is published, served under the convention's address by the identifier its row holds;
   before that the edition's orgs read it through a route of their own.
+- **Checkout and orders.** A buyer needs no membership: a visitor's routes open the tenant from
+  its address, an account's are tenant routes behind `@InTenant`, and both answer an unpublished
+  edition and a suspended tenant as an unknown address. A cart is priced by one function of the
+  contract, which the portal runs for the running total and the API for the order
+  ([0050](adr/0050-price-a-cart-with-one-function-of-the-contract.md)); an order is placed at
+  the total the buyer saw or not at all. The routes that open an order without a sign-in take
+  its result token in a header, for 24 hours from its placing; the token and an order link are
+  stored as hashes, the QR code of a paid order sealed for its own row
+  ([0051](adr/0051-keep-an-orders-secrets-as-hashes-and-its-qr-code-sealed.md)). The bot check
+  is verified before the order's transaction, by a stand-in on `local` and `dev` and by nothing
+  that passes on production
+  ([0052](adr/0052-stand-in-for-the-bot-check-until-the-portal-has-one.md)). An email of an order
+  is queued in the transaction of its cause and sent by the outbox
+  ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). The
+  credentials of a provider account stay as they are while an order awaits payment: an order
+  being placed and a change of them share one lock of the tenant's account. `opos_app` never
+  updates an order's number, prices or lines.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than

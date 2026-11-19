@@ -33,7 +33,7 @@ domain owner to confirm.
 | P3  | Connecting asks the provider's module to check the credentials with the provider. Refused credentials store nothing; a provider out of reach stores nothing and says so.                                                                                                        | the contract with a provider's module        |
 | P4  | An account is ready to sell once its credentials passed and the conditions its provider's module sets hold; the module says which are missing.                                                                                                                                  | B1.4                                         |
 | P5  | Giving credentials again replaces the stored ones, after the same check. It is refused while an order of the convention awaits payment: a payment under way is confirmed with the credentials it started with.                                                                  | new                                          |
-| P6  | An org with shop write access disconnects the account, which removes its credentials. Disconnecting is refused while a shop of the convention is open.                                                                                                                          | new                                          |
+| P6  | An org with shop write access disconnects the account, which removes its credentials. Disconnecting is refused while a shop of the convention is open, and while an order of the convention awaits payment, as P5 refuses new credentials.                                      | new                                          |
 | P7  | An account is connected only to a provider the environment has a module of; the panel offers those and no other.                                                                                                                                                                | new                                          |
 | P8  | Credentials that leave the account not ready are refused while a shop of the convention is open.                                                                                                                                                                                | new                                          |
 | P9  | A convention checks credentials with its provider up to 20 times an hour.                                                                                                                                                                                                       | new                                          |
@@ -122,7 +122,7 @@ Tenant routes:
 | `PUT /shop/seller`                                           | shop=write    | `shop.open` when the change makes the details incomplete                                                         |
 | `GET /shop/provider-account`                                 | shop>=read    |                                                                                                                  |
 | `PUT /shop/provider-account`                                 | shop=write    | `provider.credentials-refused`, `provider.unavailable`, `shop.payments-under-way`                                |
-| `DELETE /shop/provider-account`                              | shop=write    | `shop.open`                                                                                                      |
+| `DELETE /shop/provider-account`                              | shop=write    | `shop.open`, `shop.payments-under-way`                                                                           |
 | `GET /editions/{editionId}/shop`                             | tickets>=read |                                                                                                                  |
 | `PATCH /editions/{editionId}/shop`                           | tickets=write |                                                                                                                  |
 | `POST /editions/{editionId}/shop/open`                       | tickets=write | `shop.not-ready`, its `params` naming the missing conditions                                                     |
@@ -141,9 +141,9 @@ Tenant routes:
 credentials, and the providers the environment can connect (P7). `GET /editions/{editionId}/shop`
 answers whether the shop is open and each condition of O2 as a yes or a no.
 
-`shop.payments-under-way` (P5) and `consent.in-use` (D6) are refusals an order causes: they arrive
-with [checkout and orders](0004-checkout-and-orders.md). Until then `document.in-use` refuses the
-deletion of a document a consent links (D10). `PUT /shop/provider-account` also refuses with
+`shop.payments-under-way` (P5, P6) and `consent.in-use` (D6) are refusals an order causes, built
+with [checkout and orders](0004-checkout-and-orders.md). `document.in-use` refuses the deletion
+of a document a consent links (D10). `PUT /shop/provider-account` also refuses with
 `shop.open` (P8) and `request.rate-limited` (P9). `PATCH …/consents/{consentId}` takes the
 sentence, whether it is required, the place and whether it is hidden, never the document (D10).
 

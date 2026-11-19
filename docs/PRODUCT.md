@@ -59,44 +59,50 @@ interface language, following the scene's own vocabulary rather than a literal t
 Polish, **ticket** is rendered with the scene's word for admission to a convention, not the word for
 a ticket; what the scene calls accreditation is the ticket.
 
-| Term                          | Meaning                                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------------------------- |
-| **tenant**                    | a convention brand across the years, e.g. "Convention A"                                     |
-| **edition**                   | its annual instance, e.g. "Convention A 2026"                                                |
-| **programme item**            | an entry in an edition's programme; `ProgramItem` in code                                    |
-| **speaker**                   | an account an org assigns to a programme item                                                |
-| **like**                      | a user's mark adding a programme item to their personal schedule                             |
-| **review**                    | a user's rating of a programme item                                                          |
-| **ticket type**               | a kind of ticket an edition sells                                                            |
-| **order**                     | one purchase of tickets for an edition, with its payment                                     |
-| **ticket**                    | admission to an edition                                                                      |
-| **scanner**                   | a device checking tickets at the venue, with no account signed in                            |
-| **attendee**                  | an account's registration for an edition                                                     |
-| **admin**                     | runs the platform; creates conventions and their first heads; works in the admin application |
-| **org**                       | a member of a convention's organizing team; works in the panel                               |
-| **head**                      | a convention's head organizer: an org with no permission limits                              |
-| **user**                      | a convention attendee; works in the portal                                                   |
-| **core**                      | accounts, conventions, editions and permissions                                              |
-| **module**                    | a functional area built on the core                                                          |
-| **booth**                     | an exhibitor's stand at an edition, or online as a virtual booth                             |
-| **locale**                    | a language in BCP 47 form (`pl`, `en`)                                                       |
-| **two-factor authentication** | a second sign-in step an account turns on for itself; 2FA, `mfa` in code                     |
-| **suspended**                 | of a convention: taken off the platform by the admin until restored                          |
-| **venue**                     | where an edition takes place: the name of the place, its address and its city                |
-| **shop**                      | where an edition sells, opened by its organizers once what selling needs is set              |
-| **consent**                   | a sentence of the convention's own that a buyer accepts with an order, required or optional  |
-| **price tier**                | a price of a ticket type within a date window                                                |
-| **supporter price**           | a higher price a buyer may choose for a ticket type, in place of its price tier's            |
-| **perk**                      | something a ticket type includes: shown, never sold separately                               |
-| **add-on**                    | an optional extra bought with a ticket: unlimited, limited by a capacity or headcount only   |
-| **merchandise item**          | a product an edition sells, picked up at the edition and never shipped                       |
-| **variant**                   | a buyable option of a merchandise item, with its own stock                                   |
-| **size chart**                | a picture of the measurements of a merchandise item's sizes                                  |
-| **pre-order deadline**        | the moment until which a variant may sell without a stock limit                              |
-| **ticket holder**             | the person a ticket is issued to, named in its order                                         |
-| **age band**                  | child, teen or adult: a ticket holder's age on the edition's first day                       |
-| **guardian consent**          | a guardian's written consent for a teen, brought on paper to the edition                     |
-| **custom field**              | a short text an edition asks a ticket holder for, never anything sensitive                   |
+| Term                          | Meaning                                                                                            |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| **tenant**                    | a convention brand across the years, e.g. "Convention A"                                           |
+| **edition**                   | its annual instance, e.g. "Convention A 2026"                                                      |
+| **programme item**            | an entry in an edition's programme; `ProgramItem` in code                                          |
+| **speaker**                   | an account an org assigns to a programme item                                                      |
+| **like**                      | a user's mark adding a programme item to their personal schedule                                   |
+| **review**                    | a user's rating of a programme item                                                                |
+| **ticket type**               | a kind of ticket an edition sells                                                                  |
+| **order**                     | one checkout of an edition with its payment: at most one ticket, with its add-ons and merchandise  |
+| **ticket**                    | admission to an edition                                                                            |
+| **scanner**                   | a device checking tickets at the venue, with no account signed in                                  |
+| **attendee**                  | an account's registration for an edition                                                           |
+| **admin**                     | runs the platform; creates conventions and their first heads; works in the admin application       |
+| **org**                       | a member of a convention's organizing team; works in the panel                                     |
+| **head**                      | a convention's head organizer: an org with no permission limits                                    |
+| **user**                      | a convention attendee; works in the portal                                                         |
+| **core**                      | accounts, conventions, editions and permissions                                                    |
+| **module**                    | a functional area built on the core                                                                |
+| **booth**                     | an exhibitor's stand at an edition, or online as a virtual booth                                   |
+| **locale**                    | a language in BCP 47 form (`pl`, `en`)                                                             |
+| **two-factor authentication** | a second sign-in step an account turns on for itself; 2FA, `mfa` in code                           |
+| **suspended**                 | of a convention: taken off the platform by the admin until restored                                |
+| **venue**                     | where an edition takes place: the name of the place, its address and its city                      |
+| **shop**                      | where an edition sells, opened by its organizers once what selling needs is set                    |
+| **consent**                   | a sentence of the convention's own that a buyer accepts with an order, required or optional        |
+| **price tier**                | a price of a ticket type within a date window                                                      |
+| **supporter price**           | a higher price a buyer may choose for a ticket type, in place of its price tier's                  |
+| **perk**                      | something a ticket type includes: shown, never sold separately                                     |
+| **add-on**                    | an optional extra bought with a ticket: unlimited, limited by a capacity or headcount only         |
+| **merchandise item**          | a product an edition sells, picked up at the edition and never shipped                             |
+| **variant**                   | a buyable option of a merchandise item, with its own stock                                         |
+| **size chart**                | a picture of the measurements of a merchandise item's sizes                                        |
+| **pre-order deadline**        | the moment until which a variant may sell without a stock limit                                    |
+| **ticket holder**             | the person a ticket is issued to, named in its order                                               |
+| **age band**                  | child, teen or adult: a ticket holder's age on the edition's first day                             |
+| **guardian consent**          | a guardian's written consent for a teen, brought on paper to the edition                           |
+| **custom field**              | a short text an edition asks a ticket holder for, never anything sensitive                         |
+| **buyer**                     | who places an order and pays for it: a visitor under an email address, or an account under its own |
+| **payment**                   | money a payment provider reports for an order                                                      |
+| **payment attempt**           | one try at paying an order at its payment provider                                                 |
+| **hold**                      | what an unpaid order keeps of stock and capacity, for thirty minutes                               |
+| **QR code**                   | what a paid order is found by at the edition                                                       |
+| **order link**                | an emailed link that opens one order without a sign-in                                             |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.
@@ -270,6 +276,25 @@ convention's currency.
 | Ticket holders   | an edition sets the two ages that divide child, teen and adult by age on its first day, may link a guardian consent form, and asks its own custom fields: short texts, never anything sensitive                               |
 | Limits           | 50 ticket types, 50 add-ons, 200 merchandise items, 100 variants and ten pictures an item, 20 custom fields an edition                                                                                                        |
 
+**Checkout and orders.** A buyer orders in the edition's shop while the edition is published and
+its shop is open: a visitor under an email address typed twice, an account under its own, with no
+place in the convention's team. An order is one checkout with its payment: at most one ticket, for
+one ticket holder, with its add-ons and merchandise, or merchandise alone.
+
+| Rule                          | Value                                                                                                                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The shop                      | shows what is on sale with its price in force, or the org's "sales closed" message; it never shows how much is left, but "Sold out" and the places left of an add-on below its threshold                                  |
+| Placing                       | the API enforces every rule the shop displays; an order needs a passed bot check, every required consent and, for a teen, the acknowledgement that the guardian's consent is brought on paper                             |
+| The total                     | an order is placed at the total the buyer saw or not at all: a different one is shown and confirmed first; a tier or a sale window that ended less than 30 minutes before still holds for a buyer whose total rests on it |
+| The hold                      | a placed order awaits payment and holds its stock and capacity for 30 minutes; a payment attempt starts only within the hold, and a payment made counts whenever its confirmation comes                                   |
+| Paying                        | an order is paid only when its payment provider confirms the payment to OPOS; the buyer's return to the shop is never proof of it; an order with nothing to pay is paid at once                                           |
+| A payment that does not match | another amount than the total never pays the order: it needs review by an org; a payment an order no longer needs is refused where the provider can, and the buyer is told where the money is                             |
+| A paid order                  | has one QR code, sent with its confirmation, and an order link that opens it without a sign-in; a visitor's order under the confirmed email of an account becomes that account's                                          |
+| The order's data              | the ticket holder's name, age band, answers and consents, each consent with the exact document version and the time, are the convention's: kept with the order, never on the account                                      |
+| What an order keeps           | its prices, whatever the catalog does later; what it names is hidden and never deleted, and a capacity or a stock is never set below what orders hold                                                                     |
+| Emails                        | a fixed text with the convention's name, in the recipient's language or the convention's for an address with no account, listed on the order and sent again after a failed send                                           |
+| Limits                        | three orders awaiting payment an email address in an edition; the result page of an order opens for 24 hours, in the browser that placed it                                                                               |
+
 ---
 
 ## 8. Design and public image
@@ -281,6 +306,8 @@ OPOS's public image matters as much as its features.
 - **Honest placeholders**: until a design exists, the component library's default look, unchanged,
   and real copy.
 - **Every screen names itself** in the browser tab: the screen, then its edition or convention.
+- **The shop is for everyone**: its pages and the buyer's pages meet WCAG 2.1 AA, and the whole
+  checkout works on a screen 360 px wide.
 - **Light and dark**: every screen offers a toggle between a light and a dark theme. A signed-in
   account keeps its choice on the account, on every device; a visitor's stays in the browser. With
   no choice, the interface follows the system's theme.
@@ -302,11 +329,18 @@ and in Poznań.
 ## 10. Personal data and privacy
 
 OPOS stores an attendee's name, email address and activity; payment details stay with the payment
-provider.
+provider. With an order it stores what the convention needs of its ticket holder: a name or
+nickname, an age band, the answers to the edition's custom fields, the consents accepted and the
+buyer's email address. Of a payment it keeps the amount, the time and the provider's number of the
+transaction, and nothing of a card or a bank account.
 
 **Account deletion is self-service**, after a fresh sign-in, and takes likes, reviews, memberships
 and registrations with it. Orders stay as the convention's sales records; a last head hands the
 role over first.
+
+**Orders are kept for at least five years** from the end of their edition, as the convention's
+sales records. Nothing purges them, so an edition that has an order is not deleted, and neither is
+its convention.
 
 A password is set only after the email address is confirmed. A link from an email acts only when
 the button on its page is pressed. An email address leads to an account only once confirmed.

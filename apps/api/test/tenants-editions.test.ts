@@ -5,13 +5,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session, testEmail } from './auth'
 import { upload } from './files'
-import { png } from './pictures'
+import { pdf, png } from './pictures'
 import {
+  addConsent,
+  addDocument,
   addEdition,
   addEditionAccess,
   addHead,
   addLogo,
-  addProviderAccount,
   addOrg,
   addProgramItem,
   closeTenantDb,
@@ -19,10 +20,11 @@ import {
   deleteCreatedTenants,
   expireIn,
   holdOpen,
+  makeShopReady,
+  type Member,
   member,
   openTransaction,
   sleep,
-  type Member,
   tenantState,
   tenantWithHead,
 } from './tenants'
@@ -565,6 +567,8 @@ describe('concurrency', () => {
       otherId: string
       newcomer: Member
       item: string
+      document: string
+      consent: string
     }
     type Request = { method: Method; path: string; body?: object }
     const noEdition = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
@@ -652,11 +656,54 @@ describe('concurrency', () => {
         body: { provider: 'fake', credentials: { account: 'late' } },
       }),
       'shop.providerAccount.remove': () => ({ method: 'delete', path: '/shop/provider-account' }),
+      'shop.edition.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/shop`,
+        body: { faqUrl: 'https://late.test/faq' },
+      }),
+      'shop.edition.open': (s) => ({ method: 'post', path: `/editions/${s.edition}/shop/open` }),
+      // On a closed shop, which it leaves as it is: an open one would refuse the writes above that
+      // take away what it needs.
+      'shop.edition.close': (s) => ({ method: 'post', path: `/editions/${s.edition}/shop/close` }),
+      'shop.documents.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/documents`,
+        body: { kind: 'other', title: 'Late' },
+      }),
+      'shop.documents.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/documents/${s.document}`,
+        body: { title: 'Late' },
+      }),
+      'shop.documents.publishVersion': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/documents/${s.document}/versions`,
+        body: { file: upload(pdf(), 'application/pdf', 'late.pdf') },
+      }),
+      'shop.documents.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/documents/${s.document}`,
+      }),
+      'shop.consents.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/consents`,
+        body: { text: 'Late', isRequired: true },
+      }),
+      'shop.consents.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/consents/${s.consent}`,
+        body: { text: 'Late' },
+      }),
+      'shop.consents.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/consents/${s.consent}`,
+      }),
     }
 
     /**
-     * A tenant whose org holds settings=write, branding=write, shop=write and program=write,
-     * another org to act on, a programme item, a logo and a provider account.
+     * A tenant whose org holds settings=write, branding=write, shop=write, program=write and
+     * tickets=write, another org to act on, a programme item, a logo, everything opening the
+     * shop asks for, a document of the edition's own and a consent.
      */
     async function setup(): Promise<Setup> {
       const t = await tenantWithHead()
@@ -667,13 +714,15 @@ describe('concurrency', () => {
         branding: 'write',
         shop: 'write',
       })
-      await addEditionAccess(t.id, orgId, edition, { program: 'write' })
+      await addEditionAccess(t.id, orgId, edition, { program: 'write', tickets: 'write' })
       const otherId = await addOrg(t.id, other)
       await addEditionAccess(t.id, otherId, edition, {})
       const item = await addProgramItem(t.id, edition)
       await addLogo(t.id)
-      await addProviderAccount(t.id)
-      return { t, edition, org: actor, orgId, otherId, newcomer, item }
+      await makeShopReady(t.id, edition)
+      const { id: document } = await addDocument(t.id, edition)
+      const consent = await addConsent(t.id, edition)
+      return { t, edition, org: actor, orgId, otherId, newcomer, item, document, consent }
     }
 
     const send = (s: Setup, { method, path, body }: Request) =>
@@ -712,12 +761,14 @@ describe('concurrency', () => {
             : row,
         )
         expected.editionMemberships = expected.editionMemberships.map((row) =>
-          row.tenant_membership_id === s.orgId ? { ...row, program_access: 'none' } : row,
+          row.tenant_membership_id === s.orgId
+            ? { ...row, program_access: 'none', tickets_access: 'none' }
+            : row,
         )
         const demotion = await openTransaction()
         await lockTenantWrites(demotion.sql, s.t)
         await demotion.sql`update tenant_memberships set settings_access = 'none', branding_access = 'none', shop_config_access = 'none' where id = ${s.orgId}`
-        await demotion.sql`update edition_memberships set program_access = 'none' where tenant_membership_id = ${s.orgId}`
+        await demotion.sql`update edition_memberships set program_access = 'none', tickets_access = 'none' where tenant_membership_id = ${s.orgId}`
 
         const pending = send(s, build(s))
         await sleep(300)

@@ -7,7 +7,8 @@ import { notFound, suspendedAsNotFound } from '../../common/errors/api-error'
 import { isUuid } from '../../common/uuid'
 import { LogoRepository } from '../branding/logo.repository'
 import { FilesService } from '../files/files.service'
-import { LOGO_KIND } from '../files/kinds'
+import { DOCUMENT_KIND, LOGO_KIND } from '../files/kinds'
+import { DocumentsRepository } from '../shop/documents.repository'
 import { PublicRepository } from './public.repository'
 
 // Without sign-in and without X-Tenant-Slug: the address names the tenant, and each request opens
@@ -20,6 +21,7 @@ export class PublicController {
     private readonly repository: PublicRepository,
     private readonly logos: LogoRepository,
     private readonly files: FilesService,
+    private readonly documents: DocumentsRepository,
   ) {}
 
   /**
@@ -97,6 +99,30 @@ export class PublicController {
       if (logo?.fileId !== fileId) throw notFound('file')
       const file = await this.files
         .open(LOGO_KIND, fileId, { variant, tenantId: tenant.id })
+        .catch(suspendedAsNotFound('convention'))
+      return this.files.answer(file, { forEveryone: true })
+    })
+  }
+
+  /**
+   * A published version of a legal document, for anyone, as a download: a buyer reads what they
+   * accepted for as long as the convention is on the platform, also once the document is hidden
+   * or its edition is no longer published. Only a file a version of this convention points at is
+   * read; the check runs in a short transaction of the tenant, and the storage is then read
+   * outside every transaction, as the tenant the address named.
+   */
+  @Implement(contract.public.documentVersion)
+  documentVersion() {
+    return implement(contract.public.documentVersion).handler(async ({ input }) => {
+      const { slug, versionId } = input.params
+      const tenant = await this.tenant(slug)
+      if (!isUuid(versionId)) throw notFound('document version')
+      const version = await this.context
+        .withTenant(tenant.id, () => this.documents.versionFile(tenant.id, versionId))
+        .catch(suspendedAsNotFound('convention'))
+      if (!version) throw notFound('document version')
+      const file = await this.files
+        .open(DOCUMENT_KIND, version.fileId, { editionId: version.editionId, tenantId: tenant.id })
         .catch(suspendedAsNotFound('convention'))
       return this.files.answer(file, { forEveryone: true })
     })

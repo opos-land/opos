@@ -132,6 +132,102 @@ export const addProviderAccount = (tenantId: string) =>
     values (${tenantId}, 'fake', 'sealed', now())
   `)
 
+/** Complete seller's details of the tenant, as its shop settings set them. */
+export const addSeller = (tenantId: string) =>
+  db.execute(sql`
+    insert into shop_sellers
+      (tenant_id, seller_name, seller_address, seller_registration_number, contact_email)
+    values (${tenantId}, 'Seller Ltd', '1 Main St', '0000000000', 'shop@seller.test')
+    on conflict (tenant_id) do nothing
+  `)
+
+/**
+ * A legal document of an edition as its rows alone, with nothing in the bucket: the document, and
+ * as many versions as asked for, each pointing at a file's row of its own.
+ */
+export async function addDocument(
+  tenantId: string,
+  editionId: string,
+  kind: 'shop-terms' | 'privacy-policy' | 'edition-rules' | 'other' = 'other',
+  {
+    versions = 1,
+    hidden = false,
+    title = kind,
+  }: { versions?: number; hidden?: boolean; title?: string } = {},
+) {
+  const [document] = await db.execute<{ id: string }>(sql`
+    insert into edition_documents (tenant_id, edition_id, kind, title, hidden_at)
+    values (${tenantId}, ${editionId}, ${kind}, ${title}, ${hidden ? sql`now()` : null})
+    returning id
+  `)
+  const versionIds: string[] = []
+  const fileIds: string[] = []
+  for (let number = 1; number <= versions; number += 1) {
+    const [file] = await db.execute<{ id: string }>(sql`
+      insert into uploaded_files (tenant_id, edition_id, kind, content_type, size, sha256, name)
+      values (${tenantId}, ${editionId}, 'edition-document', 'application/pdf', 10,
+        repeat('d', 64), 'document.pdf')
+      returning id
+    `)
+    const [version] = await db.execute<{ id: string }>(sql`
+      insert into edition_document_versions (tenant_id, edition_id, document_id, number, file_id)
+      values (${tenantId}, ${editionId}, ${document!.id}, ${number}, ${file!.id})
+      returning id
+    `)
+    fileIds.push(file!.id)
+    versionIds.push(version!.id)
+  }
+  return { id: document!.id, versionIds, fileIds }
+}
+
+/** A consent of an edition as its row alone, last in the list unless a place is given. */
+export async function addConsent(
+  tenantId: string,
+  editionId: string,
+  values: { documentId?: string; text?: string; isRequired?: boolean; position?: number } = {},
+) {
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into edition_consents (tenant_id, edition_id, document_id, text, is_required, position)
+    values (${tenantId}, ${editionId}, ${values.documentId ?? null},
+      ${values.text ?? 'I accept the terms'}, ${values.isRequired ?? true},
+      ${
+        values.position ??
+        sql`(select coalesce(max(position), 0) + 1 from edition_consents where edition_id = ${editionId})`
+      })
+    returning id
+  `)
+  return row!.id
+}
+
+/**
+ * Everything opening the shop of the edition asks for: a ready provider account, complete
+ * seller's details, and the shop terms and the privacy policy with a version each.
+ */
+export async function makeShopReady(tenantId: string, editionId: string) {
+  await addProviderAccount(tenantId)
+  await addSeller(tenantId)
+  const terms = await addDocument(tenantId, editionId, 'shop-terms')
+  const privacy = await addDocument(tenantId, editionId, 'privacy-policy')
+  return { terms, privacy }
+}
+
+/** The shop of the edition, as stored; undefined while nothing was set for it. */
+export const storedShop = async (editionId: string) =>
+  (
+    await db.execute<{ openedAt: string | null; faqUrl: string | null }>(sql`
+      select opened_at as "openedAt", faq_url as "faqUrl"
+      from edition_shops where edition_id = ${editionId}
+    `)
+  )[0]
+
+/** The rows a kind of file has in the tenant, as stored. */
+export const storedFiles = async (tenantId: string, kind: string) => [
+  ...(await db.execute<{ id: string; editionId: string | null }>(sql`
+      select id, edition_id as "editionId" from uploaded_files
+      where tenant_id = ${tenantId} and kind = ${kind} order by id
+    `)),
+]
+
 /** The provider account of the tenant, as stored. */
 export const storedProviderAccount = async (tenantId: string) =>
   (
@@ -338,8 +434,9 @@ export async function openTransaction() {
 
 /**
  * Everything a tenant route can write in one tenant, as stored: the tenant, its logo, its
- * editions, its memberships on both levels, its programme items and their speakers. Equal
- * snapshots before and after a refused request mean it changed nothing.
+ * editions with their shops, documents and consents, its memberships on both levels, its
+ * programme items and their speakers. Equal snapshots before and after a refused request mean it
+ * changed nothing.
  */
 export async function tenantState(tenantId: string) {
   const [tenant] = await db.execute(
@@ -364,6 +461,22 @@ export async function tenantState(tenantId: string) {
   const files = await db.execute(
     sql`select id, kind from uploaded_files where tenant_id = ${tenantId} order by id`,
   )
+  const shops = await db.execute(sql`
+    select edition_id, opened_at, faq_url from edition_shops
+    where tenant_id = ${tenantId} order by edition_id
+  `)
+  const documents = await db.execute(sql`
+    select id, edition_id, kind, title, hidden_at from edition_documents
+    where tenant_id = ${tenantId} order by id
+  `)
+  const documentVersions = await db.execute(sql`
+    select id, document_id, number, file_id from edition_document_versions
+    where tenant_id = ${tenantId} order by id
+  `)
+  const consents = await db.execute(sql`
+    select id, edition_id, document_id, text, is_required, position, hidden_at
+    from edition_consents where tenant_id = ${tenantId} order by id
+  `)
   const memberships = await db.execute(sql`
     select id, account_id, role, settings_access, branding_access, shop_config_access, expires_at
     from tenant_memberships where tenant_id = ${tenantId} order by id
@@ -386,6 +499,10 @@ export async function tenantState(tenantId: string) {
     files: [...files],
     sellers: [...sellers],
     providerAccounts: [...providerAccounts],
+    shops: [...shops],
+    documents: [...documents],
+    documentVersions: [...documentVersions],
+    consents: [...consents],
     editions: [...editions],
     memberships: [...memberships],
     editionMemberships: [...editionMemberships],

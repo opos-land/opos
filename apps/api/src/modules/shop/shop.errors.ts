@@ -1,3 +1,9 @@
+import {
+  MAX_DOCUMENT_VERSIONS,
+  MAX_EDITION_CONSENTS,
+  MAX_EDITION_DOCUMENTS,
+  type ShopCondition,
+} from '@opos/contract'
 import { ApiError } from '../../common/errors/api-error'
 
 /** A change that an open shop of the convention forbids: the shop is closed first. */
@@ -17,3 +23,31 @@ export const providerUnavailable = (reason: string) =>
     { 'Retry-After': '30' },
     { expected: true, reason },
   )
+
+/** Opening is refused while a condition is missing: the params name each one that is. */
+export const shopNotReady = (missing: readonly ShopCondition[]) =>
+  new ApiError(
+    409,
+    'shop.not-ready',
+    'The shop cannot be opened yet',
+    Object.fromEntries(missing.map((condition) => [condition, 'missing'])),
+  )
+
+/** A document a consent links stays until the consent lets go of it. */
+export const documentInUse = () =>
+  new ApiError(409, 'document.in-use', 'A consent links the document')
+
+export const tooManyDocuments = () =>
+  new ApiError(409, 'document.too-many', 'The edition holds the most documents it can', {
+    limit: MAX_EDITION_DOCUMENTS,
+  })
+
+export const tooManyVersions = () =>
+  new ApiError(409, 'document.too-many-versions', 'The document holds the most versions it can', {
+    limit: MAX_DOCUMENT_VERSIONS,
+  })
+
+export const tooManyConsents = () =>
+  new ApiError(409, 'consent.too-many', 'The edition holds the most consents it can', {
+    limit: MAX_EDITION_CONSENTS,
+  })

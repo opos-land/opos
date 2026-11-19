@@ -8,6 +8,10 @@ msgstr ""
 "Language: pl\n"
 
 #: src/errors.ts
+msgid "A consent links this document. Change or delete the consent first."
+msgstr "Do tego dokumentu odsyła zgoda. Najpierw zmień lub usuń tę zgodę."
+
+#: src/errors.ts
 msgid "A convention must keep at least one head organizer. Make someone else a head organizer first."
 msgstr "Konwent musi mieć co najmniej jednego głównego organizatora. Najpierw nadaj tę rolę komuś innemu."
 
@@ -370,8 +374,20 @@ msgid "This convention is suspended. Contact the OPOS administrators to learn mo
 msgstr "Ten konwent jest zawieszony. Skontaktuj się z administratorami OPOS, aby dowiedzieć się więcej."
 
 #: src/errors.ts
+msgid "This document has reached the limit of versions: {limit}."
+msgstr "Ten dokument osiągnął limit wersji: {limit}."
+
+#: src/errors.ts
 msgid "This edition has ended, so its programme items take no new likes."
 msgstr "Ta edycja już się skończyła, więc nie można polubić jej punktów programu."
+
+#: src/errors.ts
+msgid "This edition has reached the limit of consents: {limit}."
+msgstr "Ta edycja osiągnęła limit zgód: {limit}."
+
+#: src/errors.ts
+msgid "This edition has reached the limit of documents: {limit}."
+msgstr "Ta edycja osiągnęła limit dokumentów: {limit}."
 
 #: src/errors.ts
 msgid "This edition has reached the limit of programme items: {limit}."

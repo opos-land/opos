@@ -2,10 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { type TenantContextService } from '../src/common/als/tenant-context.service'
 import { AccessRepository } from '../src/common/permissions/access.repository'
 import { LogoRepository } from '../src/modules/branding/logo.repository'
+import { DocumentsRepository } from '../src/modules/shop/documents.repository'
 import { InvitationsRepository } from '../src/modules/tenants/invitations.repository'
 import { deleteCreatedAccounts } from './auth'
 import { randomUUID } from 'node:crypto'
 import {
+  addDocument,
   addEdition,
   addEditionAccess,
   addLogo,
@@ -74,6 +76,21 @@ describe("a convention's logo", () => {
     expect(await withoutRls(a.id, (tx) => new LogoRepository(contextOf(tx)).find(b.id))).toEqual(
       logo,
     )
+  })
+})
+
+// The version a tenant's address names decides which file anyone may download.
+describe('the file of a published version', () => {
+  it("finds no version of another tenant in this tenant's transaction", async () => {
+    const document = await addDocument(b.id, editionOfB, 'shop-terms')
+    const [versionId] = document.versionIds
+    const find = (tenantId: string) =>
+      withoutRls(a.id, (tx) =>
+        new DocumentsRepository(contextOf(tx)).versionFile(tenantId, versionId!),
+      )
+
+    expect(await find(a.id)).toBeUndefined()
+    expect(await find(b.id)).toEqual({ fileId: document.fileIds[0], editionId: editionOfB })
   })
 })
 

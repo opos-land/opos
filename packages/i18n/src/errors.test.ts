@@ -43,12 +43,25 @@ describe('errorMessage', () => {
       'Dostawca płatności odrzucił te dane dostępowe. Sprawdź je i spróbuj ponownie.',
     ],
     ['provider.unavailable', 'Dostawca płatności nie odpowiada. Spróbuj ponownie za chwilę.'],
+    ['document.in-use', 'Do tego dokumentu odsyła zgoda. Najpierw zmień lub usuń tę zgodę.'],
   ] as const)('says %s in Polish', async (code, text) => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')
 
     expect(errorMessage(code)).not.toBe(unknownError)
     expect(i18n._(errorMessage(code))).toBe(text)
+  })
+
+  it.each([
+    ['document.too-many', 'Ta edycja osiągnęła limit dokumentów: 30.'],
+    ['document.too-many-versions', 'Ten dokument osiągnął limit wersji: 30.'],
+    ['consent.too-many', 'Ta edycja osiągnęła limit zgód: 30.'],
+  ] as const)('says %s in Polish, with the limit', async (code, text) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage(code)).not.toBe(unknownError)
+    expect(i18n._({ ...errorMessage(code), values: { limit: 30 } })).toBe(text)
   })
 
   it('says that a convention is suspended, with the glossary rendering', async () => {

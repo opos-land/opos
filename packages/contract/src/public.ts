@@ -115,6 +115,9 @@ const programItem = z.object({
 const logoFile = z.object({
   params: z.object({ slug: z.string(), fileId: z.string(), variant: z.string() }),
 })
+const documentVersion = z.object({
+  params: z.object({ slug: z.string(), versionId: z.string() }),
+})
 
 export const publicContract = {
   tenant: publicRoute
@@ -143,6 +146,17 @@ export const publicContract = {
       summary: "A variant of a convention's logo, as an image; no sign-in",
     })
     .input(logoFile)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+  documentVersion: publicRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/public/tenants/{slug}/document-versions/{versionId}',
+      outputStructure: 'detailed',
+      summary:
+        "A published version of a legal document of one of the convention's editions, as a download; no sign-in",
+    })
+    .input(documentVersion)
     .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
   editions: publicRoute
     .route({

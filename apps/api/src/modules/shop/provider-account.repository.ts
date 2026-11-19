@@ -40,6 +40,19 @@ export class ProviderAccountRepository {
     return row
   }
 
+  /**
+   * What opening a shop asks of the account, without its credentials: its provider, and whether
+   * it was ready to sell when it was connected.
+   */
+  async readiness(): Promise<Pick<StoredProviderAccount, 'provider' | 'readyAt'> | undefined> {
+    const [row] = await this.context
+      .tx()
+      .select({ provider: columns.provider, readyAt: columns.readyAt })
+      .from(paymentProviderAccounts)
+      .where(this.own())
+    return row
+  }
+
   /** Removes the account with its credentials; answers whether there was one. */
   async remove(): Promise<boolean> {
     const gone = await this.context

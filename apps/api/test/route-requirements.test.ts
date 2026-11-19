@@ -42,6 +42,7 @@ const publicRoutes = [
   'public.tenant',
   'public.editionList',
   'public.logoFile',
+  'public.documentVersion',
   'public.editions',
   'public.activeEdition',
   'public.edition',

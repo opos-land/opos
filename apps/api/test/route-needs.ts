@@ -16,6 +16,7 @@ const settings = (level: Level): Need => ({ scope: 'tenant', resource: 'settings
 const branding = (level: Level): Need => ({ scope: 'tenant', resource: 'branding', level })
 const shop = (level: Level): Need => ({ scope: 'tenant', resource: 'shop', level })
 const program = (level: Level): Need => ({ scope: 'edition', resource: 'program', level })
+const tickets = (level: Level): Need => ({ scope: 'edition', resource: 'tickets', level })
 
 /** Tenant routes and what each needs; a head passes every one (PRODUCT.md 5). */
 export const tenantRequirements: Record<string, Need> = {
@@ -33,6 +34,19 @@ export const tenantRequirements: Record<string, Need> = {
   'shop.providerAccount.get': shop('read'),
   'shop.providerAccount.put': shop('write'),
   'shop.providerAccount.remove': shop('write'),
+  'shop.edition.get': tickets('read'),
+  'shop.edition.update': tickets('write'),
+  'shop.edition.open': tickets('write'),
+  'shop.edition.close': tickets('write'),
+  'shop.documents.list': tickets('read'),
+  'shop.documents.create': tickets('write'),
+  'shop.documents.update': tickets('write'),
+  'shop.documents.publishVersion': tickets('write'),
+  'shop.documents.remove': tickets('write'),
+  'shop.consents.list': tickets('read'),
+  'shop.consents.create': tickets('write'),
+  'shop.consents.update': tickets('write'),
+  'shop.consents.remove': tickets('write'),
   'editions.list': anyMember,
   'editions.create': settings('write'),
   'editions.get': anyMember,

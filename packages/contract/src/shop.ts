@@ -1,8 +1,10 @@
 import { z } from 'zod'
 import { tenantRoute, timestamp } from './common'
+import { consentRoutes, documentRoutes, editionShopRoutes } from './edition-shop'
 
 // What a convention sets before an edition sells anything (docs/specs/0002-shop-setup.md): the
 // seller's details and the convention's own payment provider account, behind the shop permission.
+// What each edition sets, behind its tickets permission, is in edition-shop.ts.
 
 /** The payment providers OPOS has a module of; the fake one is loaded on local and dev alone. */
 export const PAYMENT_PROVIDERS = ['fake', 'przelewy24'] as const
@@ -116,4 +118,7 @@ export const shopContract = {
         'Disconnect the payment provider account and remove its credentials, while no shop of the convention is open; needs shop=write',
     }),
   },
+  edition: editionShopRoutes,
+  documents: documentRoutes,
+  consents: consentRoutes,
 }

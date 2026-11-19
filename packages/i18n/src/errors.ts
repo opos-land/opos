@@ -55,6 +55,10 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'shop.not-ready': msg`The shop cannot be opened yet: something it needs is missing.`,
   'provider.credentials-refused': msg`The payment provider refused these credentials. Check them and try again.`,
   'provider.unavailable': msg`The payment provider did not answer. Try again in a moment.`,
+  'document.in-use': msg`A consent links this document. Change or delete the consent first.`,
+  'document.too-many': msg`This edition has reached the limit of documents: {limit}.`,
+  'document.too-many-versions': msg`This document has reached the limit of versions: {limit}.`,
+  'consent.too-many': msg`This edition has reached the limit of consents: {limit}.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 
   'tenant.not-found': msg`We could not find this convention.`,

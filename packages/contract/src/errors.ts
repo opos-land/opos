@@ -65,6 +65,10 @@ export const errorCodes = [
   'shop.not-ready',
   'provider.credentials-refused',
   'provider.unavailable',
+  'document.in-use',
+  'document.too-many',
+  'document.too-many-versions',
+  'consent.too-many',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

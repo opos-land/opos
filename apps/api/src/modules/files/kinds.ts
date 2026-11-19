@@ -1,12 +1,14 @@
 import {
+  DOCUMENT_TYPES,
   FILE_TYPES,
   type FileType,
   LOGO_TYPES,
   type LogoVariant,
+  MAX_DOCUMENT_SIZE,
   MAX_FILE_SIZE,
   MAX_LOGO_SIZE,
 } from '@opos/contract'
-import { tenantLogos } from '@opos/db'
+import { editionDocumentVersions, tenantLogos } from '@opos/db'
 import { type AnyPgColumn } from 'drizzle-orm/pg-core'
 
 /** Who a file belongs to: the short list the core holds (docs/specs/0012-file-storage.md, D1). */
@@ -103,7 +105,19 @@ export const FILE_KINDS: readonly FileKind[] = [
       large: { width: 320, height: 320, fit: 'inside' },
     } satisfies Record<LogoVariant, VariantDeclaration>,
   },
+  // A version of an edition's legal document (docs/specs/0002-shop-setup.md): a PDF published
+  // once, which anyone downloads by the version's address.
+  {
+    name: 'edition-document',
+    owner: 'edition',
+    types: DOCUMENT_TYPES,
+    maxSize: MAX_DOCUMENT_SIZE,
+    pointer: editionDocumentVersions.fileId,
+  },
 ]
 
 /** The kind of a convention's logo. */
 export const LOGO_KIND = 'convention-logo'
+
+/** The kind of a version of an edition's legal document. */
+export const DOCUMENT_KIND = 'edition-document'

@@ -63,9 +63,9 @@ msgstr "Analytics"
 msgid "At least 8 characters."
 msgstr "At least 8 characters."
 
-#: src/features/conventions/pages/edition-page.tsx
-msgid "Back to {conventionName}"
-msgstr "Back to {conventionName}"
+#: src/features/conventions/pages/edition-program-page.tsx
+msgid "Back to {editionName}"
+msgstr "Back to {editionName}"
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Back to sign-in"
@@ -105,6 +105,10 @@ msgstr "Code"
 #: src/features/account/components/two-factor-card.tsx
 msgid "Code from the app"
 msgstr "Code from the app"
+
+#: src/features/conventions/components/edition-directory.tsx
+msgid "Coming editions"
+msgstr "Coming editions"
 
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Confirm"
@@ -358,6 +362,14 @@ msgstr "New password"
 msgid "No account yet? <0>Create an account</0>"
 msgstr "No account yet? <0>Create an account</0>"
 
+#: src/features/conventions/components/edition-directory.tsx
+msgid "No edition has ended yet."
+msgstr "No edition has ended yet."
+
+#: src/features/conventions/components/edition-directory.tsx
+msgid "No edition is coming yet."
+msgstr "No edition is coming yet."
+
 #: src/features/conventions/pages/convention-page.tsx
 msgid "No edition of this convention is active."
 msgstr "No edition of this convention is active."
@@ -428,6 +440,10 @@ msgstr "Page not found"
 msgid "Password"
 msgstr "Password"
 
+#: src/features/conventions/components/edition-directory.tsx
+msgid "Past editions"
+msgstr "Past editions"
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
 msgstr "Press the button to choose a new password."
@@ -446,6 +462,10 @@ msgstr "Privacy policy"
 #: src/features/consent/components/consent-settings.tsx
 msgid "Privacy settings"
 msgstr "Privacy settings"
+
+#: src/features/conventions/pages/edition-program-page.tsx
+msgid "Programme"
+msgstr "Programme"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "QR code for your authenticator app"
@@ -502,6 +522,10 @@ msgstr "Scan the QR code with an authenticator app, or type the secret into it. 
 msgid "Secret: <0>{secret}</0>"
 msgstr "Secret: <0>{secret}</0>"
 
+#: src/features/conventions/components/edition-summary.tsx
+msgid "See the programme"
+msgstr "See the programme"
+
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Send a new link"
@@ -514,6 +538,10 @@ msgstr "Send the confirmation link again"
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Send the link"
 msgstr "Send the link"
+
+#: src/features/conventions/components/edition-directory.tsx
+msgid "Show more"
+msgstr "Show more"
 
 #: src/app/layout.tsx
 #: src/features/auth/components/sign-in-form.tsx
@@ -706,6 +734,10 @@ msgstr "What we store"
 msgid "What you do on the platform: the editions you sign up for, the programme items you like and the reviews you write."
 msgstr "What you do on the platform: the editions you sign up for, the programme items you like and the reviews you write."
 
+#: src/features/conventions/components/edition-summary.tsx
+msgid "When"
+msgstr "When"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "When you buy tickets: the email address, first name and last name given with the order, and the tickets in it. Payment details stay with the convention’s payment provider; OPOS keeps only the provider’s reference of the payment."
 msgstr "When you buy tickets: the email address, first name and last name given with the order, and the tickets in it. Payment details stay with the convention’s payment provider; OPOS keeps only the provider’s reference of the payment."
@@ -713,6 +745,10 @@ msgstr "When you buy tickets: the email address, first name and last name given 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "When you help organize a convention: your membership in its team and your permissions."
 msgstr "When you help organize a convention: your membership in its team and your permissions."
+
+#: src/features/conventions/components/edition-summary.tsx
+msgid "Where"
+msgstr "Where"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Who sees it"

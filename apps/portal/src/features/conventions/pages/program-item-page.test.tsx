@@ -85,6 +85,13 @@ describe('ProgramItemPage', () => {
     await waitFor(() => expect(document.title).toBe('A panel on maps · Convention A 2027 · OPOS'))
   })
 
+  it("leads back to the edition's programme", async () => {
+    view()
+
+    const link = await screen.findByRole('link', { name: 'The whole programme' })
+    expect(link.getAttribute('href')).toBe('/conventions/convention-a/2027/program')
+  })
+
   it('says each date once for an item that runs past midnight in that zone', async () => {
     api.item.mockResolvedValue({
       ...panel,

@@ -24,10 +24,13 @@ export interface EditionInput {
   startsInDays?: number
   isActive?: boolean
   isPublished?: boolean
+  /** Where the edition takes place, as an org sets it in the edition's settings. */
+  venue?: { name?: string; address?: string; city?: string }
 }
 
 export interface OrgInput {
   settings?: Level
+  branding?: Level
   shopConfig?: Level
   /** An expiry a day in the past. */
   expired?: boolean
@@ -56,9 +59,11 @@ export class TenantFactory {
     const startsAt = new Date(Date.now() + (input.startsInDays ?? 90) * DAY)
     const endsAt = new Date(startsAt.getTime() + 2 * DAY)
     const [row] = await this.db.execute<{ id: string }>(sql`
-      insert into editions (tenant_id, slug, name, starts_at, ends_at, is_active, is_published)
+      insert into editions (tenant_id, slug, name, starts_at, ends_at, is_active, is_published,
+        venue_name, venue_address, venue_city)
       values (${tenantId}, ${slug}, ${input.name ?? `Edition ${slug}`}, ${startsAt.toISOString()},
-        ${endsAt.toISOString()}, ${input.isActive ?? false}, ${input.isPublished ?? false})
+        ${endsAt.toISOString()}, ${input.isActive ?? false}, ${input.isPublished ?? false},
+        ${input.venue?.name ?? null}, ${input.venue?.address ?? null}, ${input.venue?.city ?? null})
       returning id
     `)
     return { id: row!.id, slug, name: input.name ?? `Edition ${slug}` }
@@ -80,9 +85,9 @@ export class TenantFactory {
     const expiresAt = input.expired ? sql`now() - interval '1 day'` : null
     const [row] = await this.db.execute<{ id: string }>(sql`
       insert into tenant_memberships (account_id, tenant_id, role, settings_access,
-        shop_config_access, expires_at)
+        branding_access, shop_config_access, expires_at)
       values (${accountId}, ${tenantId}, 'org', ${input.settings ?? 'none'},
-        ${input.shopConfig ?? 'none'}, ${expiresAt})
+        ${input.branding ?? 'none'}, ${input.shopConfig ?? 'none'}, ${expiresAt})
       returning id
     `)
     return row!.id

@@ -4,11 +4,15 @@ import { SIGNED_IN_HOME } from '../../../shared/config/routes'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import { useSession } from '../../../shared/lib/session'
 import { buttonVariants, Section } from '../../../shared/ui'
+import { EditionDirectory } from '../../conventions'
 
 const primaryLink = buttonVariants({ size: 'lg' })
 const secondaryLink = buttonVariants({ variant: 'outline', size: 'lg' })
 
-/** The platform's home page. */
+/**
+ * The platform's home page: its introduction, then the published editions of every convention,
+ * the coming ones and the past ones, to anyone.
+ */
 export function LandingPage() {
   const { t } = useLingui()
   usePageTitle(t`Fantasy conventions, in one place`)
@@ -46,6 +50,7 @@ export function LandingPage() {
           </div>
         )}
       </header>
+      <EditionDirectory />
       <Section title={<Trans>For attendees</Trans>}>
         <p>
           <Trans>

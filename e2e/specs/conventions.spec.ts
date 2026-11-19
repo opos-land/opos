@@ -6,7 +6,7 @@ import { portalUrl } from '../fixtures/ui'
 
 const INSTANT = '2027-06-04T08:00:00.000Z'
 
-test('the programme shows on the page of each convention, in its own zone', async ({
+test('the programme of each convention is a step from its page, in its own zone', async ({
   page,
   accounts,
   tenants,
@@ -22,18 +22,24 @@ test('the programme shows on the page of each convention, in its own zone', asyn
   const item = await tenants.addProgramItem(warsaw.id, inWarsaw.id, 'Opening in Warsaw', INSTANT)
   await tenants.addProgramItem(newYork.id, inNewYork.id, 'Opening in New York', INSTANT)
 
+  // The convention's page shows its active edition and leads to that edition's programme.
   await page.goto(portalUrl(`/conventions/${warsaw.slug}`))
   await expect(page.getByRole('heading', { name: warsaw.name, level: 1 })).toBeVisible()
+  await page
+    .getByRole('region', { name: inWarsaw.name })
+    .getByRole('link', { name: 'See the programme' })
+    .click()
+  await expect(page).toHaveURL(portalUrl(`/conventions/${warsaw.slug}/${inWarsaw.slug}/program`))
   const opening = page.getByRole('listitem').filter({ hasText: 'Opening in Warsaw' })
   await expect(opening).toContainText('10:00')
   await expect(page.getByText('Opening in New York')).toBeHidden()
 
-  await page.goto(portalUrl(`/conventions/${newYork.slug}`))
+  await page.goto(portalUrl(`/conventions/${newYork.slug}/${inNewYork.slug}/program`))
   await expect(page.getByRole('listitem').filter({ hasText: 'Opening in New York' })).toContainText(
     '4:00',
   )
 
-  await page.goto(portalUrl(`/conventions/${warsaw.slug}`))
+  await page.goto(portalUrl(`/conventions/${warsaw.slug}/${inWarsaw.slug}/program`))
   await page.getByRole('link', { name: 'Opening in Warsaw' }).click()
   await expect(page).toHaveURL(
     portalUrl(`/conventions/${warsaw.slug}/${inWarsaw.slug}/program/${item}`),
@@ -47,6 +53,8 @@ test('an unpublished edition has no page', async ({ page, accounts, tenants }) =
   const draft = await tenants.addEdition(tenant.id, { isActive: true })
 
   await page.goto(portalUrl(`/conventions/${tenant.slug}/${draft.slug}`))
+  await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible()
+  await page.goto(portalUrl(`/conventions/${tenant.slug}/${draft.slug}/program`))
   await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible()
 
   await page.goto(portalUrl(`/conventions/${tenant.slug}`))

@@ -50,7 +50,6 @@ services:
       IMGPROXY_MAX_SRC_RESOLUTION: '50'
       IMGPROXY_MAX_ANIMATION_FRAMES: '1'
       IMGPROXY_MAX_RESULT_DIMENSION: '4096'
-      IMGPROXY_ENABLE_DEBUG_HEADERS: 'true'
     depends_on:
       s3:
         condition: service_healthy

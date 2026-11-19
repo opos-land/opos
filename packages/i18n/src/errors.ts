@@ -46,6 +46,11 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'edition.active': msg`You cannot delete the active edition. Activate another edition first.`,
   'like.edition-ended': msg`This edition has ended, so its programme items take no new likes.`,
   'program.too-many-items': msg`This edition has reached the limit of programme items: {limit}.`,
+  'file.type-refused': msg`This file cannot be accepted here: its type is not allowed, or the file is damaged. Choose another file.`,
+  'file.too-large': msg`This file is too large. Choose a smaller one.`,
+  'file.limit-reached': msg`There is no room for more files. Remove the ones you no longer need.`,
+  'storage.unavailable': msg`Files are temporarily unavailable. Try again in a moment.`,
+  'images.unavailable': msg`Images are temporarily unavailable. Try again in a moment.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 
   'tenant.not-found': msg`We could not find this convention.`,

@@ -21,6 +21,8 @@ export const ROUTE_RATE_LIMITS = {
   mfa: { limit: 10, ttl: 900_000 },
   /** Every admin route that changes anything: one counter, per admin. */
   adminWrites: { limit: 60, ttl: 3_600_000 },
+  /** Every route that takes a file: one counter, per account (modules/files). */
+  uploads: { limit: 120, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS

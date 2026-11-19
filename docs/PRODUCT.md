@@ -267,7 +267,14 @@ remove an entry, and an entry outlives the convention and the accounts it names
 
 Supabase hosts the database and sign-in in the EU on our behalf. Production data never leaves
 production: Dev holds demo data and the team's own accounts. Backups are encrypted; our own copies
-are kept up to three months. Emails reach the mail provider only over an encrypted connection.
+are kept up to three months. **Uploaded files stay in the EU behind OPOS**, in an encrypted bucket of
+each environment that no browser reaches
+([0041](adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)): only inert types, a PDF
+or a picture, each checked against its content. A picture is kept without what a camera wrote into
+it, no place, time, device or copyright field
+([0042](adr/0042-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md)). A file
+goes with what it was uploaded for, with its edition, its convention or its account; a removed one
+can be recovered by the operators for three months, as a backup can. Emails reach the mail provider only over an encrypted connection.
 There are no tracking or advertising cookies; the sign-in cookie is
 strictly necessary. **A tracker runs only with the visitor's consent**: analytics, advertising or any
 other tool the portal does not strictly need, allowed or refused per category in the consent banner
@@ -291,6 +298,7 @@ interface language.
 - The programme with speakers on the convention's page, likes, personal schedule, reviews
 - Tickets sold to the convention's own account and checked at the venue; attendee registrations
 - Account deletion; a privacy policy linked from registration
+- File uploads, as far as a feature's spec asks for them
 - A portal for phone browsers; the designer's interface, with no AI-generated graphics
 - Demo data; hosting and Supabase in the EU, with backups and a Dev environment
 
@@ -305,6 +313,6 @@ interface language.
 - Localized portal paths; content translations with a language switcher on the public website
 - Czech, Slovak, German; other currencies, payment methods and providers; more sign-in providers
 - Our own address during Google sign-in; changing an email address, confirmed by both addresses
-- Convention catalogue, speaker profiles, rooms, block schedule, file uploads
+- Convention catalogue, speaker profiles, rooms, block schedule
 - Custom roles, an audit log of team changes
 - The remaining GDPR obligations: record of processing, data export, log retention

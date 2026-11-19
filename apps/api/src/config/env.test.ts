@@ -15,6 +15,14 @@ const valid = {
   SMTP_HOST: '127.0.0.1',
   SMTP_PORT: '54325',
   MAIL_FROM: 'OPOS <no-reply@opos.localhost>',
+  S3_ENDPOINT: 'http://127.0.0.1:54330',
+  S3_REGION: 'local',
+  S3_BUCKET: 'opos',
+  S3_ACCESS_KEY_ID: 'a1b2c3',
+  S3_SECRET_ACCESS_KEY: 'd'.repeat(64),
+  IMGPROXY_URL: 'http://127.0.0.1:54331',
+  IMGPROXY_KEY: 'e'.repeat(64),
+  IMGPROXY_SALT: 'f'.repeat(64),
 }
 
 describe('loadEnv', () => {
@@ -23,6 +31,61 @@ describe('loadEnv', () => {
       SUPABASE_URL: 'http://127.0.0.1:54321',
       SUPABASE_SECRET_KEY: 'sb_secret_local',
       SMTP_PORT: 54325,
+    })
+  })
+
+  describe('the bucket and the image server', () => {
+    it('reads the bucket and the image server, the key and salt as bytes', () => {
+      const env = loadEnv(valid)
+      expect(env.S3_BUCKET).toBe('opos')
+      expect(env.IMGPROXY_KEY).toEqual(Buffer.from('e'.repeat(64), 'hex'))
+      expect(env.IMGPROXY_SALT).toEqual(Buffer.from('f'.repeat(64), 'hex'))
+    })
+
+    it('has imgproxy read the bucket at its own address unless told another', () => {
+      expect(loadEnv(valid).IMGPROXY_BUCKET_ENDPOINT).toBe('http://127.0.0.1:54330')
+      expect(
+        loadEnv({ ...valid, IMGPROXY_BUCKET_ENDPOINT: 'http://s3:7070' }).IMGPROXY_BUCKET_ENDPOINT,
+      ).toBe('http://s3:7070')
+      expect(loadEnv({ ...valid, IMGPROXY_BUCKET_ENDPOINT: '' }).IMGPROXY_BUCKET_ENDPOINT).toBe(
+        'http://127.0.0.1:54330',
+      )
+    })
+
+    it.each([
+      'S3_ENDPOINT',
+      'S3_REGION',
+      'S3_BUCKET',
+      'S3_ACCESS_KEY_ID',
+      'S3_SECRET_ACCESS_KEY',
+      'IMGPROXY_URL',
+      'IMGPROXY_KEY',
+      'IMGPROXY_SALT',
+    ])('refuses to start without %s, naming it', (key) => {
+      expect(() => loadEnv({ ...valid, [key]: '' })).toThrow(new RegExp(key))
+    })
+
+    it.each(['not hex', 'abc', 'e'.repeat(15)])('refuses an imgproxy key of %s', (value) => {
+      expect(() => loadEnv({ ...valid, IMGPROXY_KEY: value })).toThrow(/IMGPROXY_KEY/)
+    })
+
+    it('refuses a bucket name S3 would not take', () => {
+      expect(() => loadEnv({ ...valid, S3_BUCKET: 'Opos_Files' })).toThrow(/S3_BUCKET/)
+    })
+
+    it.each(['dev', 'production'])('refuses a bucket over plain http on %s', (OPOS_ENV) => {
+      const deployed = {
+        ...valid,
+        OPOS_ENV,
+        NODE_EXTRA_CA_CERTS: '/ca.crt',
+        DATABASE_URL: 'postgres://opos_app:a@db.x.supabase.co:5432/postgres?sslmode=verify-full',
+        DATABASE_GLOBAL_URL:
+          'postgres://opos_app_global:b@db.x.supabase.co:5432/postgres?sslmode=verify-full',
+      }
+      expect(() => loadEnv(deployed)).toThrow(/S3_ENDPOINT/)
+      expect(() =>
+        loadEnv({ ...deployed, S3_ENDPOINT: 'https://s3.fr-par.scw.cloud' }),
+      ).not.toThrow(/S3_ENDPOINT/)
     })
   })
 
@@ -143,6 +206,7 @@ describe('loadEnv', () => {
       DATABASE_GLOBAL_URL: `postgres://opos_app_global:b@${host}`,
       DATABASE_ADMIN_URL: `postgres://opos_admin:c@${host}`,
       ADMIN_URL: 'https://admin.dev.opos.land',
+      S3_ENDPOINT: 'https://s3.fr-par.scw.cloud',
     }
 
     it.each(['dev', 'production'])('takes OPOS_ENV %s with verified connections', (OPOS_ENV) => {

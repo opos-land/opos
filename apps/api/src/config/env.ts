@@ -4,6 +4,12 @@ import { z } from 'zod'
 /** A variable a template leaves empty counts as unset. */
 const optionalUrl = z.preprocess((value) => (value === '' ? undefined : value), z.url().optional())
 
+/** A key or a salt of imgproxy: hex, of at least 16 bytes, read into its bytes. */
+const hexKey = z
+  .string()
+  .regex(/^(?:[0-9a-f]{2}){16,}$/i, 'hex of at least 16 bytes')
+  .transform((value) => Buffer.from(value, 'hex'))
+
 /** The runtime role each pool connects as (packages/db/src/roles.ts), never postgres. */
 const POOL_ROLES = {
   DATABASE_URL: 'opos_app',
@@ -45,6 +51,19 @@ const envSchema = z
     SMTP_USER: z.string().default(''),
     SMTP_PASS: z.string().default(''),
     MAIL_FROM: z.string().min(1),
+    // The bucket of uploaded files (docs/specs/0012-file-storage.md): its address, region and
+    // name, and the key that opens it and nothing else.
+    S3_ENDPOINT: z.url(),
+    S3_REGION: z.string().min(1),
+    S3_BUCKET: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/, 'a bucket name'),
+    S3_ACCESS_KEY_ID: z.string().min(1),
+    S3_SECRET_ACCESS_KEY: z.string().min(1),
+    // The image server (docs/specs/0013-image-variants.md), its key and salt, and the bucket's
+    // address as it reaches it, which is S3_ENDPOINT unless the two sit on different networks.
+    IMGPROXY_URL: z.url(),
+    IMGPROXY_KEY: hexKey,
+    IMGPROXY_SALT: hexKey,
+    IMGPROXY_BUCKET_ENDPOINT: optionalUrl,
     // Replaces the limit of every route that sets none of its own. Only the e2e
     // suite sets it, and only on local: a fast run spends the default of an address in seconds.
     RATE_LIMIT_DEFAULT: z.coerce.number().int().positive().optional(),
@@ -70,6 +89,11 @@ const envSchema = z
       ),
     { message: 'ADMIN_URL must differ from PANEL_URL and PORTAL_URL', path: ['ADMIN_URL'] },
   )
+  // A deployed bucket is reached over TLS alone: its key signs every request.
+  .refine((env) => env.OPOS_ENV === 'local' || new URL(env.S3_ENDPOINT).protocol === 'https:', {
+    message: 'S3_ENDPOINT must be https on a deployed environment',
+    path: ['S3_ENDPOINT'],
+  })
   .refine((env) => env.INVITE_SECRET !== env.SUPABASE_SECRET_KEY, {
     message: 'INVITE_SECRET must differ from SUPABASE_SECRET_KEY',
     path: ['INVITE_SECRET'],
@@ -108,12 +132,17 @@ const envSchema = z
     }
   })
 
-export type Env = z.infer<typeof envSchema>
+const withDefaults = envSchema.transform((env) => ({
+  ...env,
+  IMGPROXY_BUCKET_ENDPOINT: env.IMGPROXY_BUCKET_ENDPOINT ?? env.S3_ENDPOINT,
+}))
+
+export type Env = z.infer<typeof withDefaults>
 
 export const ENV = Symbol('ENV')
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const result = envSchema.safeParse(source)
+  const result = withDefaults.safeParse(source)
   if (!result.success) {
     const issues = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n')
     throw new Error(`Invalid environment:\n${issues}`)

@@ -167,8 +167,8 @@ None of its own: a feature's seed keeps its demo files through the same storage.
   `tenant_id` ([ARCHITECTURE.md, Tenant isolation](../ARCHITECTURE.md#tenant-isolation)).
 - `account_files` is a global table, as `accounts` is: no RLS, limited by privileges, and gone with
   its account. The API writes and removes there only a file of the account its session names, and
-  reads another account's file only where a feature shows that account, as it reads another
-  account at all.
+  the sweep, the API's own job, one nothing points at; it reads another account's file only where
+  a feature shows that account, through a tenant row that points at the file.
 - An object's key starts with its owner, by kind and identifier: the tenant of the transaction
   context, or the account of the session, never a request's input. A file of another tenant is
   not found by its row, before the bucket is asked.

@@ -23,6 +23,13 @@ export interface ContractMeta {
   tenant?: boolean
   /** A route of the admin application, for an account holding the admin role. */
   admin?: boolean
+  /**
+   * A feature's route that takes a file in its JSON body: it gets the body limit of an upload and
+   * receives the file before its transaction (docs/specs/0012-file-storage.md).
+   */
+  takesFile?: boolean
+  /** A feature's route that answers a kept file, under the headers of the storage. */
+  servesFile?: boolean
 }
 
 type Operation = Exclude<NonNullable<Route['spec']>, (...args: never[]) => unknown>

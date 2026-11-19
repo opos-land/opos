@@ -6,6 +6,7 @@ import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { AdminDbService } from './admin-db.service'
 import { RequireAdmin } from './require-admin.decorator'
 import { TwoFactorResetService } from './two-factor-reset.service'
+import { FilesService } from '../files/files.service'
 
 // The routes of the admin application: @RequireAdmin applies JwtAuthGuard and AdminGuard. None
 // opens a tenant transaction, and none grants the admin role or takes it away.
@@ -16,6 +17,7 @@ export class AdminController {
     private readonly context: TenantContextService,
     private readonly limiter: RouteRateLimiter,
     private readonly twoFactor: TwoFactorResetService,
+    private readonly files: FilesService,
   ) {}
 
   /** The admin of the request, after one more write on the counter the admin's writes share. */
@@ -76,6 +78,8 @@ export class AdminController {
   deleteTenant() {
     return implement(contract.admin.deleteTenant).handler(async ({ input }) => {
       await this.admin.deleteTenant(input.params.tenantId, await this.writing())
+      // Its files' rows went with it; their objects go now, or with the sweep.
+      await this.files.forgetTenant(input.params.tenantId)
     })
   }
 

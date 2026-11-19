@@ -16,6 +16,7 @@ import {
 } from '../features/conventions'
 import { LandingPage, PrivacyPage } from '../features/landing'
 import { SchedulePage } from '../features/schedule'
+import { CheckoutPage, ResultPage, ShopPage } from '../features/shop'
 import { NotFoundView } from '../shared/ui'
 import { Layout } from './layout'
 
@@ -53,6 +54,12 @@ export const router = createBrowserRouter([
       {
         path: '/conventions/:tenantSlug/:editionSlug/program/:programItemId',
         element: <ProgramItemPage />,
+      },
+      { path: '/conventions/:tenantSlug/:editionSlug/shop', element: <ShopPage /> },
+      { path: '/conventions/:tenantSlug/:editionSlug/shop/checkout', element: <CheckoutPage /> },
+      {
+        path: '/conventions/:tenantSlug/:editionSlug/shop/result/:orderId',
+        element: <ResultPage />,
       },
       { path: '*', element: <NotFoundView /> },
     ],

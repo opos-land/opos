@@ -1,0 +1,433 @@
+import { Trans, useLingui } from '@lingui/react/macro'
+import { type Account, BOT_CHECK_STAND_IN, type Offer, type PlacedOrder } from '@opos/contract'
+import { formatDateTime, isLocale } from '@opos/i18n'
+import { ORPCError } from '@orpc/client'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
+import { errorCode, isNotFound } from '../../../shared/lib/errors'
+import { activeLocale } from '../../../shared/lib/i18n'
+import { notifyFailure } from '../../../shared/lib/notify'
+import { usePageTitle } from '../../../shared/lib/page-title'
+import { useSession } from '../../../shared/lib/session'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  buttonVariants,
+  ErrorMessage,
+  linkClass,
+  LoadingView,
+  NotFoundView,
+  Notice,
+  Page,
+} from '../../../shared/ui'
+import { loginPath, registerPath } from '../../auth'
+import {
+  conventionOptions,
+  editionOptions,
+  offerKey,
+  offerOptions,
+  placeOrder,
+  startPaymentAttempt,
+} from '../api/shop'
+import { AddOnsStep } from '../components/add-ons-step'
+import { HolderStep } from '../components/holder-step'
+import { MerchStep } from '../components/merch-step'
+import { stepName, StepsNav } from '../components/steps-nav'
+import { SummaryStep } from '../components/summary-step'
+import { useMoney } from '../hooks/use-money'
+import {
+  beginCheckout,
+  clearDraft,
+  type Draft,
+  holderIssues,
+  loadDraft,
+  orderBody,
+  quoteOf,
+  saveDraft,
+  type StepId,
+  stepsOf,
+  summaryIssues,
+  ticketTypeOf,
+  withTicketType,
+} from '../model/checkout'
+import { leaveTo } from '../model/leave'
+import { keepResultToken } from '../model/result-token'
+
+/** The ticket type the address asks for: an identifier, `none` for merchandise alone, or nothing. */
+const asked = (value: string | null) =>
+  value === null ? undefined : value === 'none' ? null : value
+
+/**
+ * The checkout of an edition's shop (docs/specs/0004-checkout-and-orders.md, C1-C19, O1-O10).
+ * This part reads what the checkout stands on: the convention, the edition, the offer and who is
+ * signed in. The checkout itself begins once all of them are known.
+ */
+export function CheckoutPage() {
+  const { t } = useLingui()
+  const { tenantSlug = '', editionSlug = '' } = useParams()
+  const [params] = useSearchParams()
+  usePageTitle(t`Checkout`)
+  const account = useSession((state) => state.account)
+  const sessionReady = useSession((state) => state.status !== 'loading')
+  const convention = useQuery(conventionOptions(tenantSlug))
+  const edition = useQuery(editionOptions(tenantSlug, editionSlug))
+  const offer = useQuery(offerOptions(tenantSlug, editionSlug))
+  const shop = `/conventions/${tenantSlug}/${editionSlug}/shop`
+  const ticketType = params.get('ticketType')
+
+  if (convention.isError || edition.isError || offer.isError) {
+    const failed = convention.error ?? edition.error ?? offer.error
+    return isNotFound(failed) ? <NotFoundView /> : <ErrorMessage error={failed} />
+  }
+  if (convention.isPending || edition.isPending || offer.isPending || !sessionReady) {
+    return <LoadingView />
+  }
+  // A closed shop sells nothing: its page says so.
+  if (!offer.data.open) return <Navigate to={shop} replace />
+
+  return (
+    <Checkout
+      // Another ticket type asked for, or another account, begins the checkout anew from what
+      // the tab kept.
+      key={`${ticketType ?? ''}:${account?.id ?? ''}`}
+      tenantSlug={tenantSlug}
+      editionSlug={editionSlug}
+      editionId={edition.data.id}
+      timeZone={convention.data.timezone}
+      offer={offer.data}
+      account={account}
+      wanted={asked(ticketType)}
+    />
+  )
+}
+
+/**
+ * The steps with the current one marked, the ticket type's name and the running total, updated at
+ * once on every change. What the buyer entered is kept in the tab until the order is placed, so
+ * Back and a reload lose nothing. The API enforces every rule again when the order is placed.
+ */
+function Checkout({
+  tenantSlug,
+  editionSlug,
+  editionId,
+  timeZone,
+  offer,
+  account,
+  wanted,
+}: {
+  tenantSlug: string
+  editionSlug: string
+  editionId: string
+  timeZone: string
+  offer: Offer
+  account: Account | null
+  wanted: string | null | undefined
+}) {
+  const { i18n } = useLingui()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const money = useMoney(offer.currency)
+  const shop = `/conventions/${tenantSlug}/${editionSlug}/shop`
+  const signedIn = account !== null
+
+  const [begun] = useState(() =>
+    beginCheckout(
+      offer,
+      loadDraft(tenantSlug, editionSlug),
+      wanted,
+      // A signed-in buyer's name is filled in from the account.
+      account ? [account.firstName, account.lastName].filter(Boolean).join(' ') : '',
+    ),
+  )
+  const [draft, setDraft] = useState(begun.draft)
+  /** Whether the buyer still has to say what becomes of the merchandise chosen before. */
+  const [asking, setAsking] = useState(begun.ask)
+  const [removed, setRemoved] = useState(begun.removedAddOns)
+  /** The steps the buyer tried to leave: their errors show from then on, never before. */
+  const [tried, setTried] = useState<ReadonlySet<StepId>>(new Set())
+  /** What ran out since it was chosen, marked on its step. */
+  const [ranOut, setRanOut] = useState<string | null>(null)
+  const [newTotal, setNewTotal] = useState<number | null>(null)
+  const heading = useRef<HTMLHeadingElement>(null)
+  const form = useRef<HTMLFormElement>(null)
+
+  const change = (changes: Partial<Draft>) =>
+    setDraft((current) => (current ? { ...current, ...changes } : current))
+
+  // Kept in the tab on every change, so a reload resumes on the same step with the same data.
+  useEffect(() => {
+    if (draft) saveDraft(tenantSlug, editionSlug, draft)
+  }, [draft, tenantSlug, editionSlug])
+
+  const step = draft?.step
+  useEffect(() => {
+    // The heading of a new step takes the focus, so a screen reader starts where the step does.
+    heading.current?.focus()
+  }, [step])
+
+  const place = useMutation({
+    mutationFn: async (order: { draft: Draft; totalMinor: number }) => {
+      const at = { slug: tenantSlug, editionSlug, editionId }
+      const placed: PlacedOrder = await placeOrder(
+        at,
+        orderBody(order.draft, order.totalMinor, BOT_CHECK_STAND_IN, signedIn),
+        signedIn,
+      )
+      // The order is placed: the checkout is over, and its result page opens with the token.
+      keepResultToken(placed.orderId, placed.resultToken)
+      clearDraft(tenantSlug, editionSlug)
+      if (placed.status === 'paid') return { placed, redirectUrl: null }
+      try {
+        const started = await startPaymentAttempt(at, placed.orderId, placed.resultToken, signedIn)
+        return { placed, redirectUrl: started.redirectUrl }
+      } catch (error) {
+        // The order stands and holds its stock: its result page offers another try.
+        notifyFailure(error)
+        return { placed, redirectUrl: null }
+      }
+    },
+    // The page shows what came of it itself.
+    meta: { success: false, failure: false },
+    onSuccess: ({ placed, redirectUrl }) => {
+      if (redirectUrl) leaveTo(redirectUrl)
+      else void navigate(`${shop}/result/${placed.orderId}`, { replace: true })
+    },
+    onError: (error) => {
+      const code = errorCode(error)
+      const data: unknown = error instanceof ORPCError ? error.data : undefined
+      const named = (data ?? {}) as { kind?: unknown; id?: unknown; totalMinor?: unknown }
+      // What the shop offers changed: it is read again, and the buyer sees it as it is now.
+      void queryClient.invalidateQueries({ queryKey: offerKey(tenantSlug, editionSlug) })
+      if (code === 'order.unavailable' && typeof named.id === 'string') {
+        // Back to the step of what ran out, with it marked.
+        setRanOut(named.id)
+        if (named.kind === 'add-on') return change({ step: 'add-ons' })
+        if (named.kind === 'variant') return change({ step: 'merch' })
+      }
+      if (code === 'order.total-changed' && typeof named.totalMinor === 'number') {
+        // A total never changes silently: the buyer is shown the new one and confirms it.
+        return setNewTotal(named.totalMinor)
+      }
+      if (code === 'order.email-refused') change({ step: 'holder' })
+      notifyFailure(error)
+    },
+  })
+
+  // Nothing chosen and nothing kept: the listing is where a checkout starts.
+  if (!draft) return <Navigate to={shop} replace />
+
+  // The buyer returned to the listing and picked another ticket type with merchandise chosen:
+  // they say whether to keep it. Add-ons the new one does not offer are removed, with a notice.
+  if (asking && wanted !== undefined) {
+    const swap = (keepMerchandise: boolean) => {
+      const next = withTicketType(offer, draft, wanted, keepMerchandise)
+      setRemoved(next.removedAddOns)
+      setDraft(next.draft)
+      setAsking(false)
+    }
+    return (
+      <AlertDialog open>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              <Trans>Keep the merchandise you chose?</Trans>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <Trans>
+                You picked another ticket type. Merchandise it does not offer is removed either way.
+              </Trans>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => swap(false)}>
+              <Trans>Remove the merchandise</Trans>
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => swap(true)}>
+              <Trans>Keep the merchandise</Trans>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    )
+  }
+
+  const type = ticketTypeOf(offer, draft)
+  const merchOnly = draft.ticketTypeId === null
+  // A ticket type that is gone from the offer cannot be checked out: back to the listing, where
+  // picking another one carries over what was entered.
+  if (!merchOnly && !type) return <Navigate to={shop} replace />
+
+  const steps = stepsOf(offer, draft)
+  const current: StepId = steps.includes(draft.step) ? draft.step : steps[0]!
+  const index = steps.indexOf(current)
+  const quote = quoteOf(offer, draft)
+  const lines = 'problem' in quote ? [] : quote.lines
+  const totalMinor = 'problem' in quote ? 0 : quote.totalMinor
+  const issues = holderIssues(offer, draft, signedIn)
+  const locale = isLocale(i18n.locale) ? i18n.locale : activeLocale()
+  const here = `${location.pathname}${location.search}`
+  const emptyMerchOnly = merchOnly && draft.items.length === 0
+
+  // A buyer who is not signed in is offered, before the email is asked, to go on without an
+  // account or to sign in or create one.
+  const gate = current === 'holder' && !signedIn && !draft.asVisitor
+
+  const go = (to: StepId) => {
+    setRanOut(null)
+    change({ step: to })
+  }
+  const next = (event: FormEvent) => {
+    event.preventDefault()
+    setTried((left) => new Set(left).add(current))
+    if (current === 'holder' && Object.keys(issues).length > 0) {
+      // Each field shows its own message, and the first one takes the focus.
+      requestAnimationFrame(() =>
+        form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+      )
+      return
+    }
+    // An order of merchandise alone needs at least one item.
+    if (current === 'merch' && emptyMerchOnly) return
+    if (current === 'summary') {
+      const missing = summaryIssues(offer, draft, totalMinor)
+      if (missing.consents.length > 0 || missing.provider || missing.guardian) return
+      if ('problem' in quote) return
+      setNewTotal(null)
+      place.mutate({ draft, totalMinor })
+      return
+    }
+    go(steps[index + 1]!)
+  }
+
+  return (
+    <Page title={<Trans>Checkout</Trans>}>
+      <p>
+        <Link to={shop} className={linkClass}>
+          <Trans>Back to the shop</Trans>
+        </Link>
+      </p>
+      <StepsNav steps={steps} current={current} merchOnly={merchOnly} />
+      <p aria-live="polite" className="flex flex-wrap justify-between gap-2 font-medium">
+        <span>{type ? type.name : <Trans>Merch only</Trans>}</span>
+        <span>
+          <Trans>Total: {money(totalMinor)}</Trans>
+        </span>
+      </p>
+      {removed.length > 0 && (
+        <Notice>
+          <Trans>
+            This ticket type does not offer what you had chosen, so it was removed:{' '}
+            {removed.join(', ')}.
+          </Trans>
+        </Notice>
+      )}
+
+      <h2 ref={heading} tabIndex={-1} className="text-xl font-semibold outline-none">
+        {i18n._(stepName(current, merchOnly))}
+      </h2>
+
+      {gate ? (
+        <div className="flex flex-col gap-3">
+          <p>
+            <Trans>
+              You can order without an account. With an account you find your orders in one place.
+            </Trans>
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button onClick={() => change({ asVisitor: true })}>
+              <Trans>Continue without an account</Trans>
+            </Button>
+            <Link to={loginPath(here)} className={buttonVariants({ variant: 'outline' })}>
+              <Trans>Sign in</Trans>
+            </Link>
+            <Link to={registerPath(here)} className={buttonVariants({ variant: 'outline' })}>
+              <Trans>Create an account</Trans>
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <form ref={form} onSubmit={next} noValidate className="flex flex-col gap-6">
+          {current === 'holder' && (
+            <HolderStep
+              offer={offer}
+              draft={draft}
+              issues={tried.has('holder') ? issues : {}}
+              accountEmail={account?.email ?? null}
+              change={change}
+            />
+          )}
+          {current === 'add-ons' && (
+            <AddOnsStep offer={offer} draft={draft} ranOut={ranOut} change={change} />
+          )}
+          {current === 'merch' && (
+            <MerchStep
+              offer={offer}
+              draft={draft}
+              tenantSlug={tenantSlug}
+              ranOut={ranOut}
+              preorderDeadline={
+                offer.merchPreorderDeadline &&
+                formatDateTime(new Date(offer.merchPreorderDeadline), locale, timeZone)
+              }
+              change={change}
+            />
+          )}
+          {current === 'summary' && (
+            <>
+              {newTotal !== null && (
+                <Notice>
+                  <Trans>
+                    The total of your order changed to {money(newTotal)}. Check it and place the
+                    order again to confirm.
+                  </Trans>
+                </Notice>
+              )}
+              <SummaryStep
+                offer={offer}
+                draft={draft}
+                tenantSlug={tenantSlug}
+                lines={lines}
+                totalMinor={totalMinor}
+                email={account?.email ?? draft.email.trim().toLowerCase()}
+                marked={tried.has('summary')}
+                change={change}
+              />
+            </>
+          )}
+          {current === 'merch' && emptyMerchOnly && tried.has('merch') && (
+            <p className="text-destructive" role="alert">
+              <Trans>Add at least one item to order.</Trans>
+            </p>
+          )}
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            {index > 0 ? (
+              <Button type="button" variant="outline" onClick={() => go(steps[index - 1]!)}>
+                <Trans>Back</Trans>
+              </Button>
+            ) : (
+              <span />
+            )}
+            {current === 'summary' ? (
+              <Button type="submit" disabled={place.isPending}>
+                {totalMinor > 0 ? <Trans>Order and pay</Trans> : <Trans>Order</Trans>}
+              </Button>
+            ) : (
+              <Button type="submit">
+                <Trans>Next</Trans>
+              </Button>
+            )}
+          </div>
+        </form>
+      )}
+    </Page>
+  )
+}

@@ -1,11 +1,13 @@
 import { type Offer } from '@opos/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  beginCheckout,
   cartOf,
   clearDraft,
   clearDrafts,
   type Draft,
   emptyDraft,
+  forgetDraftsAtSignOut,
   holderIssues,
   loadDraft,
   offeredAddOns,
@@ -311,6 +313,50 @@ describe('another ticket type', () => {
   })
 })
 
+describe('the start of a checkout', () => {
+  it('is empty for the ticket type asked for, with the account\u2019s name filled in', () => {
+    expect(beginCheckout(offer(), null, standard, 'Jan Kowal')).toEqual({
+      draft: { ...emptyDraft(standard!), holderName: 'Jan Kowal' },
+      removedAddOns: [],
+      ask: false,
+    })
+    expect(beginCheckout(offer(), null, null, '').draft).toEqual(emptyDraft(null))
+    // Nothing asked for and nothing kept: there is no checkout to show.
+    expect(beginCheckout(offer(), null, undefined, '').draft).toBeNull()
+  })
+
+  // A reload, Back and a return from signing in resume what the tab kept.
+  it('goes on with what the tab kept, a name already typed left as it is', () => {
+    const kept = filled({ step: 'merch' })
+
+    expect(beginCheckout(offer(), kept, undefined, 'Jan Kowal').draft).toEqual(kept)
+    expect(beginCheckout(offer(), kept, standard, 'Jan Kowal').draft).toEqual(kept)
+    expect(
+      beginCheckout(offer(), filled({ holderName: '' }), standard, 'Jan Kowal').draft?.holderName,
+    ).toBe('Jan Kowal')
+  })
+
+  it('moves to another ticket type at once when no merchandise was chosen, naming what it removed', () => {
+    const kept = filled({ addOnIds: [workshop!, room!] })
+
+    const started = beginCheckout(offer(), kept, supporter, '')
+
+    expect(started.ask).toBe(false)
+    expect(started.removedAddOns).toEqual(['Workshop'])
+    expect(started.draft).toMatchObject({ ticketTypeId: supporter, addOnIds: [room] })
+  })
+
+  it('asks whether to keep the merchandise before it moves to another ticket type', () => {
+    const kept = filled({ items: [{ variantId: small!, quantity: 1 }] })
+
+    expect(beginCheckout(offer(), kept, supporter, '')).toEqual({
+      draft: kept,
+      removedAddOns: [],
+      ask: true,
+    })
+  })
+})
+
 describe('the order a checkout places', () => {
   it('is the cart with the ticket holder’s data and the total the buyer saw', () => {
     const draft = filled({
@@ -376,6 +422,28 @@ describe('an unfinished checkout', () => {
     clearDrafts()
     expect(loadDraft('convention-b', '2027')).toBeNull()
     expect(window.sessionStorage.getItem('something-else')).toBe('kept')
+  })
+
+  // A sign-out clears it, on whatever page it happens.
+  it('is forgotten when the account of the tab signs out, and not when one signs in', () => {
+    let listener: (state: { account: unknown }, previous: { account: unknown }) => void = () => {}
+    const stop = forgetDraftsAtSignOut((heard) => {
+      listener = heard
+      return () => {
+        listener = () => {}
+      }
+    })
+    saveDraft('convention-a', '2026', filled())
+
+    listener({ account: { id: 'a' } }, { account: null })
+    expect(loadDraft('convention-a', '2026')).not.toBeNull()
+    listener({ account: null }, { account: { id: 'a' } })
+    expect(loadDraft('convention-a', '2026')).toBeNull()
+
+    saveDraft('convention-a', '2026', filled())
+    stop()
+    listener({ account: null }, { account: { id: 'a' } })
+    expect(loadDraft('convention-a', '2026')).not.toBeNull()
   })
 
   it('reads nothing from what is not a checkout', () => {

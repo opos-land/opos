@@ -7,15 +7,44 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#. placeholder {0}: addOn.placesLeft
+#: src/features/shop/components/add-ons-step.tsx
+msgid "{0, plural, one {# place left.} other {# places left.}}"
+msgstr "{0, plural, one {# place left.} other {# places left.}}"
+
+#. placeholder {0}: field.label
+#: src/features/shop/components/holder-step.tsx
+msgid "{0} (optional)"
+msgstr "{0} (optional)"
+
+#. placeholder {0}: consent.text
+#. placeholder {0}: sentence(providerConsent.text)
+#: src/features/shop/components/summary-step.tsx
+msgid "{0} (required)"
+msgstr "{0} (required)"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "{adultFromAge} and over"
+msgstr "{adultFromAge} and over"
+
 #: src/features/conventions/components/program-list.tsx
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
 msgstr "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
 
+#: src/features/shop/components/merch-step.tsx
+msgid "{label} (unavailable)"
+msgstr "{label} (unavailable)"
+
 #: src/features/conventions/components/program-list.tsx
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "{likes, plural, one {# like} other {# likes}}"
 msgstr "{likes, plural, one {# like} other {# likes}}"
+
+#. placeholder {0}: adultFromAge - 1
+#: src/features/shop/components/holder-step.tsx
+msgid "{teenFromAge} to {0}"
+msgstr "{teenFromAge} to {0}"
 
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "{tenantName}, {editionName}"
@@ -25,6 +54,10 @@ msgstr "{tenantName}, {editionName}"
 #: src/features/consent/components/consent-banner.tsx
 msgid "<0>{label}:</0> <1>{providers}</1>"
 msgstr "<0>{label}:</0> <1>{providers}</1>"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "A child enters only with a guardian present."
+msgstr "A child enters only with a guardian present."
 
 #: src/features/landing/pages/landing-page.tsx
 msgid "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
@@ -38,9 +71,41 @@ msgstr "A convention sees the sign-ups for its editions and the orders placed fo
 msgid "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
 msgstr "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
 
+#: src/features/shop/components/holder-step.tsx
+msgid "A supporter price is a higher price you choose to support the convention."
+msgstr "A supporter price is a higher price you choose to support the convention."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "A teen brings the guardian’s consent on paper to the convention."
+msgstr "A teen brings the guardian’s consent on paper to the convention."
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Accept this to place the order."
+msgstr "Accept this to place the order."
+
 #: src/app/layout.tsx
 msgid "Account"
 msgstr "Account"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Add at least one item to order."
+msgstr "Add at least one item to order."
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Add to the order"
+msgstr "Add to the order"
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Add-ons"
+msgstr "Add-ons"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Adult"
+msgstr "Adult"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Age band"
+msgstr "Age band"
 
 #: src/features/consent/components/consent-banner.tsx
 #: src/features/consent/components/consent-settings.tsx
@@ -55,6 +120,10 @@ msgstr "Already have an account? <0>Sign in</0>"
 msgid "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
 msgstr "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
 
+#: src/features/shop/pages/result-page.tsx
+msgid "An organizer will get in touch with you. You do not need to pay again."
+msgstr "An organizer will get in touch with you. You do not need to pay again."
+
 #: src/features/consent/model/tracker.ts
 msgid "Analytics"
 msgstr "Analytics"
@@ -62,6 +131,10 @@ msgstr "Analytics"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
 msgstr "At least 8 characters."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Back"
+msgstr "Back"
 
 #: src/features/conventions/pages/edition-program-page.tsx
 msgid "Back to {editionName}"
@@ -71,9 +144,29 @@ msgstr "Back to {editionName}"
 msgid "Back to sign-in"
 msgstr "Back to sign-in"
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Back to the edition"
+msgstr "Back to the edition"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Back to the shop"
+msgstr "Back to the shop"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Bank transfer"
+msgstr "Bank transfer"
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Buyer"
+msgstr "Buyer"
+
 #: src/features/auth/components/register-form.tsx
 msgid "By creating an account you confirm that you have read the <0>privacy policy</0>."
 msgstr "By creating an account you confirm that you have read the <0>privacy policy</0>."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "By the ticket holder’s age on the first day of the edition."
+msgstr "By the ticket holder’s age on the first day of the edition."
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
@@ -81,9 +174,36 @@ msgstr "By creating an account you confirm that you have read the <0>privacy pol
 msgid "Cancel"
 msgstr "Cancel"
 
+#: src/features/shop/pages/result-page.tsx
+msgid "Canceled"
+msgstr "Canceled"
+
 #: src/features/auth/pages/register-page.tsx
 msgid "Check your inbox"
 msgstr "Check your inbox"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Checkout"
+msgstr "Checkout"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Child"
+msgstr "Child"
+
+#: src/features/shop/components/holder-step.tsx
+#: src/features/shop/components/merch-step.tsx
+#: src/features/shop/pages/shop-page.tsx
+msgid "Choose"
+msgstr "Choose"
+
+#. placeholder {0}: type.name
+#: src/features/shop/pages/shop-page.tsx
+msgid "Choose {0}"
+msgstr "Choose {0}"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Choose a variant first."
+msgstr "Choose a variant first."
 
 #: src/features/consent/components/consent-settings.tsx
 msgid "Choose which optional tools OPOS may use in this browser. OPOS works the same without them."
@@ -127,6 +247,10 @@ msgstr "Confirm your address"
 msgid "Confirmation link"
 msgstr "Confirmation link"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Consents"
+msgstr "Consents"
+
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/login-page.tsx
 #: src/features/auth/pages/mfa-page.tsx
@@ -137,6 +261,10 @@ msgstr "Continue"
 msgid "Continue with Google"
 msgstr "Continue with Google"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Continue without an account"
+msgstr "Continue without an account"
+
 #: src/features/consent/model/tracker.ts
 msgid "Counting visits and seeing how the pages are used, to improve OPOS."
 msgstr "Counting visits and seeing how the pages are used, to improve OPOS."
@@ -144,6 +272,7 @@ msgstr "Counting visits and seeing how the pages are used, to improve OPOS."
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/pages/register-page.tsx
 #: src/features/landing/pages/landing-page.tsx
+#: src/features/shop/pages/checkout-page.tsx
 msgid "Create an account"
 msgstr "Create an account"
 
@@ -162,6 +291,10 @@ msgstr "Dark theme"
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Database backups contain personal data. They are encrypted and kept under the same rules as the data itself."
 msgstr "Database backups contain personal data. They are encrypted and kept under the same rules as the data itself."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Declined"
+msgstr "Declined"
 
 #: src/features/account/components/delete-account.tsx
 msgid "Delete my account"
@@ -187,12 +320,24 @@ msgstr "Deleting your account cannot be undone. Your likes, reviews, edition sig
 msgid "Dismiss"
 msgstr "Dismiss"
 
+#: src/features/shop/components/holder-step.tsx
+msgid "Download the guardian consent form"
+msgstr "Download the guardian consent form"
+
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Email"
 msgstr "Email"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Email address"
+msgstr "Email address"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Emails do not match."
+msgstr "Emails do not match."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Emails leave the platform for the mail provider only over an encrypted connection."
@@ -206,6 +351,7 @@ msgstr "Enter 1 to 100 characters."
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
+#: src/features/shop/components/holder-step.tsx
 msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
 
@@ -239,9 +385,17 @@ msgstr "Enter up to 100 characters."
 msgid "Enter your password."
 msgstr "Enter your password."
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Every price is a gross amount."
+msgstr "Every price is a gross amount."
+
 #: src/features/landing/pages/landing-page.tsx
 msgid "Fantasy conventions, in one place"
 msgstr "Fantasy conventions, in one place"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Fill in this field."
+msgstr "Fill in this field."
 
 #: src/app/layout.tsx
 msgid "Finish signing in"
@@ -268,6 +422,10 @@ msgstr "For organizers"
 msgid "Forgot your password?"
 msgstr "Forgot your password?"
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Frequently asked questions"
+msgstr "Frequently asked questions"
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Go to sign-in"
 msgstr "Go to sign-in"
@@ -275,6 +433,11 @@ msgstr "Go to sign-in"
 #: src/shared/ui/messages.tsx
 msgid "Go to the home page"
 msgstr "Go to the home page"
+
+#: src/features/conventions/components/edition-summary.tsx
+#: src/features/shop/pages/result-page.tsx
+msgid "Go to the shop"
+msgstr "Go to the shop"
 
 #: src/features/landing/pages/landing-page.tsx
 msgid "Go to your account"
@@ -296,6 +459,10 @@ msgstr "How OPOS handles your personal data."
 msgid "I have saved my codes"
 msgstr "I have saved my codes"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "I know that the ticket holder brings the guardian’s consent on paper to the convention. (required)"
+msgstr "I know that the ticket holder brings the guardian’s consent on paper to the convention. (required)"
+
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
 msgstr "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
@@ -308,6 +475,11 @@ msgstr "If you sign in with Google, Google confirms your email address and gives
 msgid "If you turn on two-factor authentication: the secret of your authenticator app, kept by our sign-in service, and ten one-time recovery codes, of which we keep only their hashes: nobody can read a code back, you included."
 msgstr "If you turn on two-factor authentication: the secret of your authenticator app, kept by our sign-in service, and ten one-time recovery codes, of which we keep only their hashes: nobody can read a code back, you included."
 
+#. placeholder {0}: item.name
+#: src/features/shop/components/merch-step.tsx
+msgid "In your order: {0}"
+msgstr "In your order: {0}"
+
 #: src/features/account/components/language-form.tsx
 msgid "Interface language"
 msgstr "Interface language"
@@ -316,9 +488,22 @@ msgstr "Interface language"
 msgid "Interface theme"
 msgstr "Interface theme"
 
+#: src/features/shop/components/add-ons-step.tsx
+#: src/features/shop/components/merch-step.tsx
+msgid "It ran out while you were ordering."
+msgstr "It ran out while you were ordering."
+
 #: src/features/account/components/delete-account.tsx
 msgid "Keep my account"
 msgstr "Keep my account"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Keep the merchandise"
+msgstr "Keep the merchandise"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Keep the merchandise you chose?"
+msgstr "Keep the merchandise you chose?"
 
 #: src/features/account/pages/account-page.tsx
 msgid "Language"
@@ -349,6 +534,19 @@ msgstr "Marketing"
 msgid "Measuring the results of advertising campaigns and showing advertising on other websites."
 msgstr "Measuring the results of advertising campaigns and showing advertising on other websites."
 
+#: src/features/shop/components/steps-nav.tsx
+msgid "Merch"
+msgstr "Merch"
+
+#: src/features/shop/pages/checkout-page.tsx
+#: src/features/shop/pages/shop-page.tsx
+msgid "Merch only"
+msgstr "Merch only"
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Merchandise is picked up at the convention. It is not shipped."
+msgstr "Merchandise is picked up at the convention. It is not shipped."
+
 #: src/app/layout.tsx
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "My schedule"
@@ -358,9 +556,17 @@ msgstr "My schedule"
 msgid "New password"
 msgstr "New password"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Next"
+msgstr "Next"
+
 #: src/features/auth/pages/login-page.tsx
 msgid "No account yet? <0>Create an account</0>"
 msgstr "No account yet? <0>Create an account</0>"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "No discount code applies to this ticket type."
+msgstr "No discount code applies to this ticket type."
 
 #: src/features/conventions/components/edition-directory.tsx
 msgid "No edition has ended yet."
@@ -374,9 +580,21 @@ msgstr "No edition is coming yet."
 msgid "No edition of this convention is active."
 msgstr "No edition of this convention is active."
 
+#: src/features/shop/components/add-ons-step.tsx
+msgid "No place is left."
+msgstr "No place is left."
+
 #: src/features/consent/components/consent-banner.tsx
 msgid "None of them runs until you allow it. You can change your choice at any time in the privacy settings at the bottom of the page."
 msgstr "None of them runs until you allow it. You can change your choice at any time in the privacy settings at the bottom of the page."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Not paid yet"
+msgstr "Not paid yet"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Not yet on sale"
+msgstr "Not yet on sale"
 
 #: src/shared/ui/toast.tsx
 msgid "Notifications"
@@ -424,6 +642,30 @@ msgstr "Optional tools"
 msgid "or"
 msgstr "or"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Order"
+msgstr "Order"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Order and pay"
+msgstr "Order and pay"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Order merchandise"
+msgstr "Order merchandise"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Order merchandise by {preorderDeadline} to be sure of getting it. After that it sells only while stock lasts."
+msgstr "Order merchandise by {preorderDeadline} to be sure of getting it. After that it sells only while stock lasts."
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Order merchandise without a ticket and pick it up at the convention."
+msgstr "Order merchandise without a ticket and pick it up at the convention."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Order number: <0>{number}</0>"
+msgstr "Order number: <0>{number}</0>"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Orders are the conventions’ sales records: they stay after the account with the same address is deleted."
 msgstr "Orders are the conventions’ sales records: they stay after the account with the same address is deleted."
@@ -436,6 +678,10 @@ msgstr "Other editions"
 msgid "Page not found"
 msgstr "Page not found"
 
+#: src/features/shop/pages/result-page.tsx
+msgid "Paid"
+msgstr "Paid"
+
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Password"
 msgstr "Password"
@@ -444,6 +690,14 @@ msgstr "Password"
 msgid "Past editions"
 msgstr "Past editions"
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Payment card"
+msgstr "Payment card"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Payment methods:"
+msgstr "Payment methods:"
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
 msgstr "Press the button to choose a new password."
@@ -451,6 +705,10 @@ msgstr "Press the button to choose a new password."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Press the button to confirm your address. Then you choose your password."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Price"
+msgstr "Price"
 
 #: src/app/layout.tsx
 #: src/features/consent/components/consent-banner.tsx
@@ -471,6 +729,15 @@ msgstr "Programme"
 msgid "QR code for your authenticator app"
 msgstr "QR code for your authenticator app"
 
+#. placeholder {0}: item.name
+#: src/features/shop/components/merch-step.tsx
+msgid "Quantity of {0}"
+msgstr "Quantity of {0}"
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Read the document"
+msgstr "Read the document"
+
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Recovery code"
 msgstr "Recovery code"
@@ -480,9 +747,30 @@ msgstr "Recovery code"
 msgid "Refuse all"
 msgstr "Refuse all"
 
+#. placeholder {0}: money(type.priceMinor!)
+#: src/features/shop/components/holder-step.tsx
+msgid "Regular price: {0}"
+msgstr "Regular price: {0}"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Remove"
+msgstr "Remove"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Remove {name}"
+msgstr "Remove {name}"
+
 #: src/features/conventions/components/like-button.tsx
 msgid "Remove the like"
 msgstr "Remove the like"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Remove the merchandise"
+msgstr "Remove the merchandise"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Repeat the email address"
+msgstr "Repeat the email address"
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
@@ -492,6 +780,14 @@ msgstr "Repeat the password"
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Reset your password"
 msgstr "Reset your password"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Sales are closed for now."
+msgstr "Sales are closed for now."
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Sales closed"
+msgstr "Sales closed"
 
 #: src/features/account/components/profile-form.tsx
 msgid "Save"
@@ -526,6 +822,14 @@ msgstr "Secret: <0>{secret}</0>"
 msgid "See the programme"
 msgstr "See the programme"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Select all required"
+msgstr "Select all required"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Seller"
+msgstr "Seller"
+
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Send a new link"
@@ -539,6 +843,10 @@ msgstr "Send the confirmation link again"
 msgid "Send the link"
 msgstr "Send the link"
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Shop"
+msgstr "Shop"
+
 #: src/features/conventions/components/edition-directory.tsx
 msgid "Show more"
 msgstr "Show more"
@@ -547,6 +855,7 @@ msgstr "Show more"
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/login-page.tsx
 #: src/features/landing/pages/landing-page.tsx
+#: src/features/shop/pages/checkout-page.tsx
 msgid "Sign in"
 msgstr "Sign in"
 
@@ -571,6 +880,41 @@ msgstr "Signing in no longer asks for a code, and the codes of your authenticato
 msgid "Signing out ends your session on this device."
 msgstr "Signing out ends your session on this device."
 
+#: src/features/shop/components/merch-step.tsx
+msgid "Size chart"
+msgstr "Size chart"
+
+#. placeholder {0}: value.label
+#: src/features/shop/components/merch-step.tsx
+msgid "Size chart: {0}"
+msgstr "Size chart: {0}"
+
+#: src/features/shop/components/merch-step.tsx
+#: src/features/shop/pages/shop-page.tsx
+msgid "Sold out"
+msgstr "Sold out"
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Start a new order"
+msgstr "Start a new order"
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Steps of the order"
+msgstr "Steps of the order"
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Summary"
+msgstr "Summary"
+
+#. placeholder {0}: money(price)
+#: src/features/shop/components/holder-step.tsx
+msgid "Supporter price: {0}"
+msgstr "Supporter price: {0}"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Teen"
+msgstr "Teen"
+
 #: src/features/account/components/language-form.tsx
 msgid "The browser's language"
 msgstr "The browser's language"
@@ -578,6 +922,10 @@ msgstr "The browser's language"
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
 msgstr "The changes are saved."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The code was wrong."
+msgstr "The code was wrong."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "The hash of a recovery code you have used: as a record, until you delete the account."
@@ -596,13 +944,68 @@ msgstr "The interface theme is saved."
 msgid "The number of likes of a programme item is public. Who liked it is never shown to anyone."
 msgstr "The number of likes of a programme item is public. Who liked it is never shown to anyone."
 
+#: src/features/shop/pages/result-page.tsx
+msgid "The order expired"
+msgstr "The order expired"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "The passwords differ."
 
+#: src/features/shop/pages/result-page.tsx
+msgid "The payment failed."
+msgstr "The payment failed."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "The payment provider cannot take an email address this long. Use a shorter one."
+msgstr "The payment provider cannot take an email address this long. Use a shorter one."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The payment took too long."
+msgstr "The payment took too long."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The payment was canceled."
+msgstr "The payment was canceled."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The payment was declined."
+msgstr "The payment was declined."
+
+#: src/features/shop/components/merch-step.tsx
+msgid "The pictures are illustrative: the item may differ in details."
+msgstr "The pictures are illustrative: the item may differ in details."
+
+#: src/features/shop/components/summary-step.tsx
+msgid "The QR code of your order will be sent to <0>{email}</0>."
+msgstr "The QR code of your order will be sent to <0>{email}</0>."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "The QR code of your order will be sent to this address."
+msgstr "The QR code of your order will be sent to this address."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "The QR code will be sent to your account’s address: <0>{accountEmail}</0>"
+msgstr "The QR code will be sent to your account’s address: <0>{accountEmail}</0>"
+
+#. placeholder {0}: item.name
+#. placeholder {1}: value.label
+#: src/features/shop/components/merch-step.tsx
+msgid "The size chart of {0}, {1}"
+msgstr "The size chart of {0}, {1}"
+
 #: src/features/account/components/theme-form.tsx
 msgid "The system's theme"
 msgstr "The system's theme"
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The time to pay for this order has ended. Nothing was charged."
+msgstr "The time to pay for this order has ended. Nothing was charged."
+
+#. placeholder {0}: money(newTotal)
+#: src/features/shop/pages/checkout-page.tsx
+msgid "The total of your order changed to {0}. Check it and place the order again to confirm."
+msgstr "The total of your order changed to {0}. Check it and place the order again to confirm."
 
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "The whole programme"
@@ -616,10 +1019,48 @@ msgstr "Theme"
 msgid "There is no programme yet."
 msgstr "There is no programme yet."
 
+#: src/features/shop/pages/result-page.tsx
+msgid "There was not enough money to pay."
+msgstr "There was not enough money to pay."
+
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
 #: src/shared/ui/irreversible-action.tsx
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
+
+#: src/features/shop/components/add-ons-step.tsx
+msgid "This only tells the convention how many to expect: no place is reserved."
+msgstr "This only tells the convention how many to expect: no place is reserved."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "This order is closed. If you have questions, contact the convention."
+msgstr "This order is closed. If you have questions, contact the convention."
+
+#. placeholder {0}: removed.join(', ')
+#: src/features/shop/pages/checkout-page.tsx
+msgid "This ticket type does not offer what you had chosen, so it was removed: {0}."
+msgstr "This ticket type does not offer what you had chosen, so it was removed: {0}."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "This ticket type is not sold for this age band."
+msgstr "This ticket type is not sold for this age band."
+
+#. placeholder {0}: allowing.join(', ')
+#: src/features/shop/components/holder-step.tsx
+msgid "This ticket type is not sold for this age band. It is sold with: {0}."
+msgstr "This ticket type is not sold for this age band. It is sold with: {0}."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "This value is not valid."
+msgstr "This value is not valid."
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Ticket holder"
+msgstr "Ticket holder"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Ticket holder’s name or nickname"
+msgstr "Ticket holder’s name or nickname"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
@@ -629,6 +1070,16 @@ msgstr "To run your account and sign you in; to let conventions sell you tickets
 msgid "Too much time has passed since you opened the link. Ask for a new one."
 msgstr "Too much time has passed since you opened the link. Ask for a new one."
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Total due"
+msgstr "Total due"
+
+#. placeholder {0}: money(totalMinor)
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Total: {0}"
+msgstr "Total: {0}"
+
+#: src/features/shop/pages/result-page.tsx
 #: src/shared/ui/messages.tsx
 msgid "Try again"
 msgstr "Try again"
@@ -678,6 +1129,10 @@ msgstr "Two-factor authentication is on."
 msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 msgstr "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 
+#: src/features/shop/components/holder-step.tsx
+msgid "under {teenFromAge}"
+msgstr "under {teenFromAge}"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 msgstr "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
@@ -698,6 +1153,15 @@ msgstr "Use at most 72 bytes; some characters count for more than one."
 msgid "Use the code of the app"
 msgstr "Use the code of the app"
 
+#. placeholder {0}: item.name
+#: src/features/shop/components/merch-step.tsx
+msgid "Variant of {0}"
+msgstr "Variant of {0}"
+
+#: src/features/shop/pages/result-page.tsx
+msgid "We cannot show this order here. The page opens in the browser the order was placed in, for 24 hours. Its confirmation comes by email once it is paid."
+msgstr "We cannot show this order here. The page opens in the browser the order was placed in, for 24 hours. Its confirmation comes by email once it is paid."
+
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
 msgstr "We could not find what you are looking for."
@@ -705,6 +1169,10 @@ msgstr "We could not find what you are looking for."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"
 msgstr "We could not sign you in"
+
+#: src/features/shop/pages/result-page.tsx
+msgid "We have no confirmation of your payment yet. This page updates by itself once the payment is confirmed."
+msgstr "We have no confirmation of your payment yet. This page updates by itself once the payment is confirmed."
 
 #: src/features/auth/pages/register-page.tsx
 msgid "We sent a confirmation link to {sentTo}. Open it to confirm your address and choose your password. The link works for one hour."
@@ -721,6 +1189,10 @@ msgstr "We sent a new link to {email}. Open it to choose your password."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "We sent a new link to {sentTo}."
 msgstr "We sent a new link to {sentTo}."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "We sent the QR code of your order to your email address."
+msgstr "We sent the QR code of your order to your email address."
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."
@@ -762,6 +1234,10 @@ msgstr "Why we store it"
 msgid "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
 msgstr "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "You can order without an account. With an account you find your orders in one place."
+msgstr "You can order without an account. With an account you find your orders in one place."
+
 #: src/features/account/components/delete-account.tsx
 msgid "You confirmed it is you again. Delete the account within 5 minutes."
 msgstr "You confirmed it is you again. Delete the account within 5 minutes."
@@ -773,6 +1249,10 @@ msgstr "You delete your account yourself in the account settings, after confirmi
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "You have not liked any programme items yet."
 msgstr "You have not liked any programme items yet."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "You picked another ticket type. Merchandise it does not offer is removed either way."
+msgstr "You picked another ticket type. Merchandise it does not offer is removed either way."
 
 #: src/features/account/pages/account-page.tsx
 msgid "Your account"
@@ -806,14 +1286,35 @@ msgstr "Your name"
 msgid "Your name is saved."
 msgstr "Your name is saved."
 
+#: src/features/shop/components/holder-step.tsx
+msgid "Your name or nickname"
+msgstr "Your name or nickname"
+
+#: src/features/shop/components/summary-step.tsx
+#: src/features/shop/pages/result-page.tsx
+msgid "Your order"
+msgstr "Your order"
+
 #: src/features/account/components/delete-account.tsx
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Your password"
 msgstr "Your password"
 
+#: src/features/shop/pages/result-page.tsx
+msgid "Your payment arrived, but it could not confirm the order."
+msgstr "Your payment arrived, but it could not confirm the order."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Your payment is under review"
+msgstr "Your payment is under review"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your rights"
 msgstr "Your rights"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Your ticket already includes:"
+msgstr "Your ticket already includes:"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your unused recovery codes: until you turn off two-factor authentication."

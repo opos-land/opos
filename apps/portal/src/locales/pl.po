@@ -7,15 +7,44 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: pl\n"
 
+#. placeholder {0}: addOn.placesLeft
+#: src/features/shop/components/add-ons-step.tsx
+msgid "{0, plural, one {# place left.} other {# places left.}}"
+msgstr "{0, plural, one {Zostało # miejsce.} few {Zostały # miejsca.} many {Zostało # miejsc.} other {Zostało # miejsca.}}"
+
+#. placeholder {0}: field.label
+#: src/features/shop/components/holder-step.tsx
+msgid "{0} (optional)"
+msgstr "{0} (opcjonalnie)"
+
+#. placeholder {0}: consent.text
+#. placeholder {0}: sentence(providerConsent.text)
+#: src/features/shop/components/summary-step.tsx
+msgid "{0} (required)"
+msgstr "{0} (wymagane)"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "{adultFromAge} and over"
+msgstr "od {adultFromAge} lat"
+
 #: src/features/conventions/components/program-list.tsx
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
 msgstr "{count, plural, one {Prelegent: {names}} few {Prelegenci: {names}} many {Prelegenci: {names}} other {Prelegenci: {names}}}"
 
+#: src/features/shop/components/merch-step.tsx
+msgid "{label} (unavailable)"
+msgstr "{label} (niedostępne)"
+
 #: src/features/conventions/components/program-list.tsx
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "{likes, plural, one {# like} other {# likes}}"
 msgstr "{likes, plural, one {# polubienie} few {# polubienia} many {# polubień} other {# polubienia}}"
+
+#. placeholder {0}: adultFromAge - 1
+#: src/features/shop/components/holder-step.tsx
+msgid "{teenFromAge} to {0}"
+msgstr "od {teenFromAge} do {0} lat"
 
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "{tenantName}, {editionName}"
@@ -25,6 +54,10 @@ msgstr "{tenantName}, {editionName}"
 #: src/features/consent/components/consent-banner.tsx
 msgid "<0>{label}:</0> <1>{providers}</1>"
 msgstr "<0>{label}:</0> <1>{providers}</1>"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "A child enters only with a guardian present."
+msgstr "Dziecko wchodzi tylko z obecnym opiekunem."
 
 #: src/features/landing/pages/landing-page.tsx
 msgid "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
@@ -38,9 +71,41 @@ msgstr "Konwent widzi zapisy na swoje edycje i złożone na nie zamówienia. Kon
 msgid "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
 msgstr "Opinia pokazuje twoje imię i nazwisko albo „anonimowo”, jeśli tak wybierzesz; anonimowość obowiązuje wobec wszystkich, także organizatorów. Komentarz do niej jest publiczny albo widoczny tylko dla prelegentów punktu programu, zależnie od twojego wyboru."
 
+#: src/features/shop/components/holder-step.tsx
+msgid "A supporter price is a higher price you choose to support the convention."
+msgstr "Cena wspierająca to wyższa cena, którą wybierasz, żeby wesprzeć konwent."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "A teen brings the guardian’s consent on paper to the convention."
+msgstr "Nastolatek przynosi na konwent zgodę opiekuna na papierze."
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Accept this to place the order."
+msgstr "Zaakceptuj, żeby złożyć zamówienie."
+
 #: src/app/layout.tsx
 msgid "Account"
 msgstr "Konto"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Add at least one item to order."
+msgstr "Dodaj co najmniej jeden gadżet, żeby złożyć zamówienie."
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Add to the order"
+msgstr "Dodaj do zamówienia"
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Add-ons"
+msgstr "Dodatki"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Adult"
+msgstr "Dorosły"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Age band"
+msgstr "Przedział wiekowy"
 
 #: src/features/consent/components/consent-banner.tsx
 #: src/features/consent/components/consent-settings.tsx
@@ -55,6 +120,10 @@ msgstr "Masz już konto? <0>Zaloguj się</0>"
 msgid "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
 msgstr "Zaproszenie do zespołu konwentu niczego nie zapisuje, dopóki nie zostanie przyjęte: zaproszony adres jest zawarty wyłącznie w wysłanym na niego linku."
 
+#: src/features/shop/pages/result-page.tsx
+msgid "An organizer will get in touch with you. You do not need to pay again."
+msgstr "Organizator skontaktuje się z tobą. Nie musisz płacić ponownie."
+
 #: src/features/consent/model/tracker.ts
 msgid "Analytics"
 msgstr "Analityka"
@@ -62,6 +131,10 @@ msgstr "Analityka"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
 msgstr "Co najmniej 8 znaków."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Back"
+msgstr "Wstecz"
 
 #: src/features/conventions/pages/edition-program-page.tsx
 msgid "Back to {editionName}"
@@ -71,9 +144,29 @@ msgstr "Wróć do edycji {editionName}"
 msgid "Back to sign-in"
 msgstr "Wróć do logowania"
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Back to the edition"
+msgstr "Wróć do edycji"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Back to the shop"
+msgstr "Wróć do sklepu"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Bank transfer"
+msgstr "Przelew bankowy"
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Buyer"
+msgstr "Kupujący"
+
 #: src/features/auth/components/register-form.tsx
 msgid "By creating an account you confirm that you have read the <0>privacy policy</0>."
 msgstr "Zakładając konto, potwierdzasz, że znasz <0>politykę prywatności</0>."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "By the ticket holder’s age on the first day of the edition."
+msgstr "Według wieku posiadacza akredytacji w pierwszym dniu edycji."
 
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
@@ -81,9 +174,36 @@ msgstr "Zakładając konto, potwierdzasz, że znasz <0>politykę prywatności</0
 msgid "Cancel"
 msgstr "Anuluj"
 
+#: src/features/shop/pages/result-page.tsx
+msgid "Canceled"
+msgstr "Anulowane"
+
 #: src/features/auth/pages/register-page.tsx
 msgid "Check your inbox"
 msgstr "Sprawdź skrzynkę pocztową"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Checkout"
+msgstr "Zamówienie"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Child"
+msgstr "Dziecko"
+
+#: src/features/shop/components/holder-step.tsx
+#: src/features/shop/components/merch-step.tsx
+#: src/features/shop/pages/shop-page.tsx
+msgid "Choose"
+msgstr "Wybierz"
+
+#. placeholder {0}: type.name
+#: src/features/shop/pages/shop-page.tsx
+msgid "Choose {0}"
+msgstr "Wybierz: {0}"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Choose a variant first."
+msgstr "Najpierw wybierz wariant."
 
 #: src/features/consent/components/consent-settings.tsx
 msgid "Choose which optional tools OPOS may use in this browser. OPOS works the same without them."
@@ -127,6 +247,10 @@ msgstr "Potwierdź swój adres"
 msgid "Confirmation link"
 msgstr "Link potwierdzający"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Consents"
+msgstr "Zgody"
+
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/login-page.tsx
 #: src/features/auth/pages/mfa-page.tsx
@@ -137,6 +261,10 @@ msgstr "Dalej"
 msgid "Continue with Google"
 msgstr "Kontynuuj przez Google"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Continue without an account"
+msgstr "Kontynuuj bez konta"
+
 #: src/features/consent/model/tracker.ts
 msgid "Counting visits and seeing how the pages are used, to improve OPOS."
 msgstr "Liczenie odwiedzin i sprawdzanie, jak używane są strony, aby ulepszać OPOS."
@@ -144,6 +272,7 @@ msgstr "Liczenie odwiedzin i sprawdzanie, jak używane są strony, aby ulepszać
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/pages/register-page.tsx
 #: src/features/landing/pages/landing-page.tsx
+#: src/features/shop/pages/checkout-page.tsx
 msgid "Create an account"
 msgstr "Załóż konto"
 
@@ -162,6 +291,10 @@ msgstr "Ciemny motyw"
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Database backups contain personal data. They are encrypted and kept under the same rules as the data itself."
 msgstr "Kopie zapasowe bazy danych zawierają dane osobowe. Są szyfrowane i przechowywane na tych samych zasadach co same dane."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Declined"
+msgstr "Odrzucone"
 
 #: src/features/account/components/delete-account.tsx
 msgid "Delete my account"
@@ -187,12 +320,24 @@ msgstr "Usunięcia konta nie można cofnąć. Razem z nim znikają twoje polubie
 msgid "Dismiss"
 msgstr "Zamknij"
 
+#: src/features/shop/components/holder-step.tsx
+msgid "Download the guardian consent form"
+msgstr "Pobierz formularz zgody opiekuna"
+
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Email"
 msgstr "E-mail"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Email address"
+msgstr "Adres e-mail"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Emails do not match."
+msgstr "Adresy e-mail nie są takie same."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Emails leave the platform for the mail provider only over an encrypted connection."
@@ -206,6 +351,7 @@ msgstr "Wpisz od 1 do 100 znaków."
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
+#: src/features/shop/components/holder-step.tsx
 msgid "Enter a valid email address."
 msgstr "Podaj prawidłowy adres e-mail."
 
@@ -239,9 +385,17 @@ msgstr "Wpisz do 100 znaków."
 msgid "Enter your password."
 msgstr "Podaj hasło."
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Every price is a gross amount."
+msgstr "Wszystkie ceny są cenami brutto."
+
 #: src/features/landing/pages/landing-page.tsx
 msgid "Fantasy conventions, in one place"
 msgstr "Konwenty fantastyki w jednym miejscu"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Fill in this field."
+msgstr "Wypełnij to pole."
 
 #: src/app/layout.tsx
 msgid "Finish signing in"
@@ -268,6 +422,10 @@ msgstr "Dla organizatorów"
 msgid "Forgot your password?"
 msgstr "Nie pamiętasz hasła?"
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Frequently asked questions"
+msgstr "Najczęstsze pytania"
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Go to sign-in"
 msgstr "Przejdź do logowania"
@@ -275,6 +433,11 @@ msgstr "Przejdź do logowania"
 #: src/shared/ui/messages.tsx
 msgid "Go to the home page"
 msgstr "Przejdź na stronę główną"
+
+#: src/features/conventions/components/edition-summary.tsx
+#: src/features/shop/pages/result-page.tsx
+msgid "Go to the shop"
+msgstr "Przejdź do sklepu"
 
 #: src/features/landing/pages/landing-page.tsx
 msgid "Go to your account"
@@ -296,6 +459,10 @@ msgstr "Jak OPOS postępuje z twoimi danymi osobowymi."
 msgid "I have saved my codes"
 msgstr "Kody są zapisane"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "I know that the ticket holder brings the guardian’s consent on paper to the convention. (required)"
+msgstr "Wiem, że posiadacz akredytacji przynosi na konwent zgodę opiekuna na papierze. (wymagane)"
+
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
 msgstr "Jeśli adres {sentTo} należy do konta, wysłaliśmy na niego link do ustawienia nowego hasła. Link działa jeden raz, przez godzinę."
@@ -308,6 +475,11 @@ msgstr "Jeśli logujesz się przez Google, Google potwierdza twój adres e-mail 
 msgid "If you turn on two-factor authentication: the secret of your authenticator app, kept by our sign-in service, and ten one-time recovery codes, of which we keep only their hashes: nobody can read a code back, you included."
 msgstr "Jeśli włączysz uwierzytelnianie dwuskładnikowe: sekret twojej aplikacji uwierzytelniającej, przechowywany przez nasz serwis logowania, oraz dziesięć jednorazowych kodów odzyskiwania, z których przechowujemy wyłącznie skróty: nikt nie odczyta kodu z powrotem, ty również."
 
+#. placeholder {0}: item.name
+#: src/features/shop/components/merch-step.tsx
+msgid "In your order: {0}"
+msgstr "W twoim zamówieniu: {0}"
+
 #: src/features/account/components/language-form.tsx
 msgid "Interface language"
 msgstr "Język interfejsu"
@@ -316,9 +488,22 @@ msgstr "Język interfejsu"
 msgid "Interface theme"
 msgstr "Motyw interfejsu"
 
+#: src/features/shop/components/add-ons-step.tsx
+#: src/features/shop/components/merch-step.tsx
+msgid "It ran out while you were ordering."
+msgstr "Skończyło się w trakcie składania zamówienia."
+
 #: src/features/account/components/delete-account.tsx
 msgid "Keep my account"
 msgstr "Zachowaj moje konto"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Keep the merchandise"
+msgstr "Zachowaj gadżety"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Keep the merchandise you chose?"
+msgstr "Zachować wybrane gadżety?"
 
 #: src/features/account/pages/account-page.tsx
 msgid "Language"
@@ -349,6 +534,19 @@ msgstr "Marketing"
 msgid "Measuring the results of advertising campaigns and showing advertising on other websites."
 msgstr "Mierzenie skuteczności kampanii reklamowych i wyświetlanie reklam w innych serwisach."
 
+#: src/features/shop/components/steps-nav.tsx
+msgid "Merch"
+msgstr "Gadżety"
+
+#: src/features/shop/pages/checkout-page.tsx
+#: src/features/shop/pages/shop-page.tsx
+msgid "Merch only"
+msgstr "Same gadżety"
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Merchandise is picked up at the convention. It is not shipped."
+msgstr "Gadżety odbiera się na konwencie. Nie są wysyłane."
+
 #: src/app/layout.tsx
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "My schedule"
@@ -358,9 +556,17 @@ msgstr "Mój plan"
 msgid "New password"
 msgstr "Nowe hasło"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Next"
+msgstr "Dalej"
+
 #: src/features/auth/pages/login-page.tsx
 msgid "No account yet? <0>Create an account</0>"
 msgstr "Nie masz jeszcze konta? <0>Załóż konto</0>"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "No discount code applies to this ticket type."
+msgstr "Tego rodzaju akredytacji nie obejmuje żaden kod rabatowy."
 
 #: src/features/conventions/components/edition-directory.tsx
 msgid "No edition has ended yet."
@@ -374,9 +580,21 @@ msgstr "Nie ma jeszcze nadchodzących edycji."
 msgid "No edition of this convention is active."
 msgstr "Żadna edycja tego konwentu nie jest teraz aktywna."
 
+#: src/features/shop/components/add-ons-step.tsx
+msgid "No place is left."
+msgstr "Nie ma już miejsc."
+
 #: src/features/consent/components/consent-banner.tsx
 msgid "None of them runs until you allow it. You can change your choice at any time in the privacy settings at the bottom of the page."
 msgstr "Żadne z nich nie uruchomi się, dopóki na to nie pozwolisz. Wybór zmienisz w każdej chwili w ustawieniach prywatności na dole strony."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Not paid yet"
+msgstr "Jeszcze nieopłacone"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Not yet on sale"
+msgstr "Jeszcze nie w sprzedaży"
 
 #: src/shared/ui/toast.tsx
 msgid "Notifications"
@@ -424,6 +642,30 @@ msgstr "Narzędzia opcjonalne"
 msgid "or"
 msgstr "albo"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Order"
+msgstr "Zamawiam"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Order and pay"
+msgstr "Zamawiam i płacę"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Order merchandise"
+msgstr "Zamów gadżety"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Order merchandise by {preorderDeadline} to be sure of getting it. After that it sells only while stock lasts."
+msgstr "Zamów gadżety do {preorderDeadline}, żeby mieć pewność, że je dostaniesz. Później sprzedajemy je tylko do wyczerpania zapasów."
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Order merchandise without a ticket and pick it up at the convention."
+msgstr "Zamów gadżety bez akredytacji i odbierz je na konwencie."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Order number: <0>{number}</0>"
+msgstr "Numer zamówienia: <0>{number}</0>"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Orders are the conventions’ sales records: they stay after the account with the same address is deleted."
 msgstr "Zamówienia są dokumentacją sprzedaży konwentów: zostają po usunięciu konta z tym samym adresem."
@@ -436,6 +678,10 @@ msgstr "Inne edycje"
 msgid "Page not found"
 msgstr "Nie znaleziono strony"
 
+#: src/features/shop/pages/result-page.tsx
+msgid "Paid"
+msgstr "Opłacone"
+
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Password"
 msgstr "Hasło"
@@ -444,6 +690,14 @@ msgstr "Hasło"
 msgid "Past editions"
 msgstr "Minione edycje"
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Payment card"
+msgstr "Karta płatnicza"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Payment methods:"
+msgstr "Metody płatności:"
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
 msgstr "Naciśnij przycisk, aby wybrać nowe hasło."
@@ -451,6 +705,10 @@ msgstr "Naciśnij przycisk, aby wybrać nowe hasło."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Price"
+msgstr "Cena"
 
 #: src/app/layout.tsx
 #: src/features/consent/components/consent-banner.tsx
@@ -471,6 +729,15 @@ msgstr "Program"
 msgid "QR code for your authenticator app"
 msgstr "Kod QR dla aplikacji uwierzytelniającej"
 
+#. placeholder {0}: item.name
+#: src/features/shop/components/merch-step.tsx
+msgid "Quantity of {0}"
+msgstr "Liczba sztuk: {0}"
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Read the document"
+msgstr "Przeczytaj dokument"
+
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Recovery code"
 msgstr "Kod odzyskiwania"
@@ -480,9 +747,30 @@ msgstr "Kod odzyskiwania"
 msgid "Refuse all"
 msgstr "Odrzuć wszystkie"
 
+#. placeholder {0}: money(type.priceMinor!)
+#: src/features/shop/components/holder-step.tsx
+msgid "Regular price: {0}"
+msgstr "Cena zwykła: {0}"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Remove"
+msgstr "Usuń"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Remove {name}"
+msgstr "Usuń: {name}"
+
 #: src/features/conventions/components/like-button.tsx
 msgid "Remove the like"
 msgstr "Usuń polubienie"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Remove the merchandise"
+msgstr "Usuń gadżety"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Repeat the email address"
+msgstr "Powtórz adres e-mail"
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
@@ -492,6 +780,14 @@ msgstr "Powtórz hasło"
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Reset your password"
 msgstr "Zresetuj hasło"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Sales are closed for now."
+msgstr "Sprzedaż jest na razie zamknięta."
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Sales closed"
+msgstr "Sprzedaż zakończona"
 
 #: src/features/account/components/profile-form.tsx
 msgid "Save"
@@ -526,6 +822,14 @@ msgstr "Sekret: <0>{secret}</0>"
 msgid "See the programme"
 msgstr "Zobacz program"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Select all required"
+msgstr "Zaznacz wszystkie wymagane"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Seller"
+msgstr "Sprzedawca"
+
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Send a new link"
@@ -539,6 +843,10 @@ msgstr "Wyślij link potwierdzający ponownie"
 msgid "Send the link"
 msgstr "Wyślij link"
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "Shop"
+msgstr "Sklep"
+
 #: src/features/conventions/components/edition-directory.tsx
 msgid "Show more"
 msgstr "Pokaż więcej"
@@ -547,6 +855,7 @@ msgstr "Pokaż więcej"
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/login-page.tsx
 #: src/features/landing/pages/landing-page.tsx
+#: src/features/shop/pages/checkout-page.tsx
 msgid "Sign in"
 msgstr "Zaloguj się"
 
@@ -571,6 +880,41 @@ msgstr "Logowanie nie będzie już wymagało kodu, a kody z aplikacji uwierzytel
 msgid "Signing out ends your session on this device."
 msgstr "Wylogowanie kończy twoją sesję na tym urządzeniu."
 
+#: src/features/shop/components/merch-step.tsx
+msgid "Size chart"
+msgstr "Tabela rozmiarów"
+
+#. placeholder {0}: value.label
+#: src/features/shop/components/merch-step.tsx
+msgid "Size chart: {0}"
+msgstr "Tabela rozmiarów: {0}"
+
+#: src/features/shop/components/merch-step.tsx
+#: src/features/shop/pages/shop-page.tsx
+msgid "Sold out"
+msgstr "Wyprzedane"
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Start a new order"
+msgstr "Złóż nowe zamówienie"
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Steps of the order"
+msgstr "Kroki zamówienia"
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Summary"
+msgstr "Podsumowanie"
+
+#. placeholder {0}: money(price)
+#: src/features/shop/components/holder-step.tsx
+msgid "Supporter price: {0}"
+msgstr "Cena wspierająca: {0}"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Teen"
+msgstr "Nastolatek"
+
 #: src/features/account/components/language-form.tsx
 msgid "The browser's language"
 msgstr "Język przeglądarki"
@@ -578,6 +922,10 @@ msgstr "Język przeglądarki"
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
 msgstr "Zmiany zostały zapisane."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The code was wrong."
+msgstr "Kod był błędny."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "The hash of a recovery code you have used: as a record, until you delete the account."
@@ -596,13 +944,68 @@ msgstr "Motyw interfejsu został zapisany."
 msgid "The number of likes of a programme item is public. Who liked it is never shown to anyone."
 msgstr "Liczba polubień punktu programu jest publiczna. To, kto go polubił, nie jest nikomu pokazywane."
 
+#: src/features/shop/pages/result-page.tsx
+msgid "The order expired"
+msgstr "Zamówienie wygasło"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "Hasła się różnią."
 
+#: src/features/shop/pages/result-page.tsx
+msgid "The payment failed."
+msgstr "Płatność się nie powiodła."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "The payment provider cannot take an email address this long. Use a shorter one."
+msgstr "Dostawca płatności nie przyjmuje tak długiego adresu e-mail. Użyj krótszego."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The payment took too long."
+msgstr "Płatność trwała zbyt długo."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The payment was canceled."
+msgstr "Płatność została anulowana."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The payment was declined."
+msgstr "Płatność została odrzucona."
+
+#: src/features/shop/components/merch-step.tsx
+msgid "The pictures are illustrative: the item may differ in details."
+msgstr "Zdjęcia są poglądowe: gadżet może się różnić w szczegółach."
+
+#: src/features/shop/components/summary-step.tsx
+msgid "The QR code of your order will be sent to <0>{email}</0>."
+msgstr "Kod QR zamówienia wyślemy na adres <0>{email}</0>."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "The QR code of your order will be sent to this address."
+msgstr "Na ten adres wyślemy kod QR zamówienia."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "The QR code will be sent to your account’s address: <0>{accountEmail}</0>"
+msgstr "Kod QR wyślemy na adres twojego konta: <0>{accountEmail}</0>"
+
+#. placeholder {0}: item.name
+#. placeholder {1}: value.label
+#: src/features/shop/components/merch-step.tsx
+msgid "The size chart of {0}, {1}"
+msgstr "Tabela rozmiarów: {0}, {1}"
+
 #: src/features/account/components/theme-form.tsx
 msgid "The system's theme"
 msgstr "Motyw systemu"
+
+#: src/features/shop/pages/result-page.tsx
+msgid "The time to pay for this order has ended. Nothing was charged."
+msgstr "Czas na opłacenie tego zamówienia minął. Nic nie zostało pobrane."
+
+#. placeholder {0}: money(newTotal)
+#: src/features/shop/pages/checkout-page.tsx
+msgid "The total of your order changed to {0}. Check it and place the order again to confirm."
+msgstr "Kwota zamówienia zmieniła się na {0}. Sprawdź ją i złóż zamówienie ponownie, żeby ją potwierdzić."
 
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "The whole programme"
@@ -616,10 +1019,48 @@ msgstr "Motyw"
 msgid "There is no programme yet."
 msgstr "Nie ma jeszcze programu."
 
+#: src/features/shop/pages/result-page.tsx
+msgid "There was not enough money to pay."
+msgstr "Zabrakło środków na płatność."
+
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
 #: src/shared/ui/irreversible-action.tsx
 msgid "This action cannot be undone."
 msgstr "Tej operacji nie można cofnąć."
+
+#: src/features/shop/components/add-ons-step.tsx
+msgid "This only tells the convention how many to expect: no place is reserved."
+msgstr "To tylko informacja dla konwentu, ilu osób się spodziewać: nie rezerwuje miejsca."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "This order is closed. If you have questions, contact the convention."
+msgstr "To zamówienie jest zamknięte. W razie pytań skontaktuj się z konwentem."
+
+#. placeholder {0}: removed.join(', ')
+#: src/features/shop/pages/checkout-page.tsx
+msgid "This ticket type does not offer what you had chosen, so it was removed: {0}."
+msgstr "Ten rodzaj akredytacji nie obejmuje tego, co było wybrane, więc usunęliśmy: {0}."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "This ticket type is not sold for this age band."
+msgstr "Tego rodzaju akredytacji nie sprzedajemy dla tego przedziału wiekowego."
+
+#. placeholder {0}: allowing.join(', ')
+#: src/features/shop/components/holder-step.tsx
+msgid "This ticket type is not sold for this age band. It is sold with: {0}."
+msgstr "Tego rodzaju akredytacji nie sprzedajemy dla tego przedziału wiekowego. Dla niego są: {0}."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "This value is not valid."
+msgstr "Ta wartość jest nieprawidłowa."
+
+#: src/features/shop/components/steps-nav.tsx
+msgid "Ticket holder"
+msgstr "Posiadacz akredytacji"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Ticket holder’s name or nickname"
+msgstr "Imię i nazwisko albo pseudonim posiadacza akredytacji"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
@@ -629,6 +1070,16 @@ msgstr "Aby prowadzić twoje konto i umożliwiać logowanie; aby konwenty mogły
 msgid "Too much time has passed since you opened the link. Ask for a new one."
 msgstr "Od otwarcia linku minęło zbyt dużo czasu. Poproś o nowy."
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Total due"
+msgstr "Do zapłaty"
+
+#. placeholder {0}: money(totalMinor)
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Total: {0}"
+msgstr "Razem: {0}"
+
+#: src/features/shop/pages/result-page.tsx
 #: src/shared/ui/messages.tsx
 msgid "Try again"
 msgstr "Spróbuj ponownie"
@@ -678,6 +1129,10 @@ msgstr "Uwierzytelnianie dwuskładnikowe jest włączone."
 msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 msgstr "Uwierzytelnianie dwuskładnikowe jest włączone. Przy każdym logowaniu podajesz kod z aplikacji uwierzytelniającej."
 
+#: src/features/shop/components/holder-step.tsx
+msgid "under {teenFromAge}"
+msgstr "poniżej {teenFromAge} lat"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 msgstr "Na podstawie RODO masz prawo dostępu do swoich danych, ich sprostowania, usunięcia, ograniczenia przetwarzania lub wniesienia sprzeciwu wobec niego, a także prawo wniesienia skargi do organu nadzorczego; w Polsce jest nim Prezes Urzędu Ochrony Danych Osobowych (UODO). Imię i nazwisko poprawiasz, a konto usuwasz samodzielnie w ustawieniach konta."
@@ -698,6 +1153,15 @@ msgstr "Użyj najwyżej 72 bajtów; niektóre znaki liczą się za więcej niż 
 msgid "Use the code of the app"
 msgstr "Użyj kodu z aplikacji"
 
+#. placeholder {0}: item.name
+#: src/features/shop/components/merch-step.tsx
+msgid "Variant of {0}"
+msgstr "Wariant: {0}"
+
+#: src/features/shop/pages/result-page.tsx
+msgid "We cannot show this order here. The page opens in the browser the order was placed in, for 24 hours. Its confirmation comes by email once it is paid."
+msgstr "Nie możemy tu pokazać tego zamówienia. Ta strona otwiera się w przeglądarce, w której złożono zamówienie, przez 24 godziny. Potwierdzenie przyjdzie e-mailem, gdy zamówienie zostanie opłacone."
+
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
 msgstr "Nie znaleźliśmy tego, czego szukasz."
@@ -705,6 +1169,10 @@ msgstr "Nie znaleźliśmy tego, czego szukasz."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"
 msgstr "Nie udało się zalogować"
+
+#: src/features/shop/pages/result-page.tsx
+msgid "We have no confirmation of your payment yet. This page updates by itself once the payment is confirmed."
+msgstr "Nie mamy jeszcze potwierdzenia płatności. Ta strona odświeży się sama, gdy płatność zostanie potwierdzona."
 
 #: src/features/auth/pages/register-page.tsx
 msgid "We sent a confirmation link to {sentTo}. Open it to confirm your address and choose your password. The link works for one hour."
@@ -721,6 +1189,10 @@ msgstr "Wysłaliśmy nowy link na adres {email}. Otwórz go, aby wybrać hasło.
 #: src/features/auth/pages/confirm-page.tsx
 msgid "We sent a new link to {sentTo}."
 msgstr "Wysłaliśmy nowy link na adres {sentTo}."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "We sent the QR code of your order to your email address."
+msgstr "Kod QR zamówienia wysłaliśmy na twój adres e-mail."
 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."
@@ -762,6 +1234,10 @@ msgstr "Po co je przechowujemy"
 msgid "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
 msgstr "Jesteś ostatnim głównym organizatorem konwentu, a każdy konwent musi mieć co najmniej jednego. W panelu organizatora ustanów głównym organizatorem inną osobę z zespołu tego konwentu, a potem usuń konto."
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "You can order without an account. With an account you find your orders in one place."
+msgstr "Możesz zamówić bez konta. Z kontem masz wszystkie zamówienia w jednym miejscu."
+
 #: src/features/account/components/delete-account.tsx
 msgid "You confirmed it is you again. Delete the account within 5 minutes."
 msgstr "Ponownie potwierdzono, że to ty. Usuń konto w ciągu 5 minut."
@@ -773,6 +1249,10 @@ msgstr "Konto usuwasz samodzielnie w ustawieniach konta, po ponownym potwierdzen
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "You have not liked any programme items yet."
 msgstr "Nie masz jeszcze polubionych punktów programu."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "You picked another ticket type. Merchandise it does not offer is removed either way."
+msgstr "Wybrano inny rodzaj akredytacji. Gadżety, których on nie obejmuje, i tak zostaną usunięte."
 
 #: src/features/account/pages/account-page.tsx
 msgid "Your account"
@@ -806,14 +1286,35 @@ msgstr "Imię i nazwisko"
 msgid "Your name is saved."
 msgstr "Imię i nazwisko zostały zapisane."
 
+#: src/features/shop/components/holder-step.tsx
+msgid "Your name or nickname"
+msgstr "Twoje imię i nazwisko albo pseudonim"
+
+#: src/features/shop/components/summary-step.tsx
+#: src/features/shop/pages/result-page.tsx
+msgid "Your order"
+msgstr "Twoje zamówienie"
+
 #: src/features/account/components/delete-account.tsx
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Your password"
 msgstr "Twoje hasło"
 
+#: src/features/shop/pages/result-page.tsx
+msgid "Your payment arrived, but it could not confirm the order."
+msgstr "Twoja płatność dotarła, ale nie mogła potwierdzić zamówienia."
+
+#: src/features/shop/pages/result-page.tsx
+msgid "Your payment is under review"
+msgstr "Twoja płatność jest sprawdzana"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your rights"
 msgstr "Twoje prawa"
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Your ticket already includes:"
+msgstr "Twoja akredytacja obejmuje już:"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your unused recovery codes: until you turn off two-factor authentication."

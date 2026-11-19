@@ -192,6 +192,36 @@ export function withTicketType(
 }
 
 /**
+ * How a checkout begins on its page: with what the tab kept, or empty for the ticket type the
+ * address asks for (`null` for merchandise alone, `undefined` for nothing asked). A signed-in
+ * buyer's name is filled in where none was typed. Another ticket type than the kept checkout is
+ * for takes its place at once, unless merchandise was chosen: the buyer then says whether to
+ * keep it (`ask`).
+ */
+export function beginCheckout(
+  offer: Offer,
+  kept: Draft | null,
+  wanted: string | null | undefined,
+  accountName: string,
+): { draft: Draft | null; removedAddOns: string[]; ask: boolean } {
+  const named = (draft: Draft): Draft =>
+    draft.holderName === '' && accountName !== '' ? { ...draft, holderName: accountName } : draft
+  if (!kept) {
+    return {
+      draft: wanted === undefined ? null : named(emptyDraft(wanted)),
+      removedAddOns: [],
+      ask: false,
+    }
+  }
+  if (wanted === undefined || wanted === kept.ticketTypeId) {
+    return { draft: named(kept), removedAddOns: [], ask: false }
+  }
+  if (kept.items.length > 0) return { draft: named(kept), removedAddOns: [], ask: true }
+  const next = withTicketType(offer, kept, wanted, true)
+  return { draft: named(next.draft), removedAddOns: next.removedAddOns, ask: false }
+}
+
+/**
  * The order the checkout places: the cart, the ticket holder's data, the consents and the total
  * the buyer saw. A signed-in buyer's carries no email: it is the account's.
  */
@@ -266,5 +296,19 @@ export function clearDrafts() {
   tab((storage) => {
     const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index))
     for (const key of keys) if (key?.startsWith(PREFIX)) storage.removeItem(key)
+  })
+}
+
+/**
+ * Forgets every checkout of the tab whenever its account signs out or its session ends: `watch`
+ * is the session store's `subscribe`. Answers the way to stop.
+ */
+export function forgetDraftsAtSignOut(
+  watch: (
+    listener: (state: { account: unknown }, previous: { account: unknown }) => void,
+  ) => () => void,
+) {
+  return watch((state, previous) => {
+    if (previous.account !== null && state.account === null) clearDrafts()
   })
 }

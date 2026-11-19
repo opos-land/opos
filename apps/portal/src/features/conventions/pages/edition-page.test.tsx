@@ -118,6 +118,13 @@ describe('EditionPage', () => {
     expect(link.getAttribute('href')).toBe('/conventions/convention-a/2027/program')
   })
 
+  it("links the edition's shop, which says itself whether it sells", async () => {
+    view()
+
+    const link = await screen.findByRole('link', { name: 'Go to the shop' })
+    expect(link.getAttribute('href')).toBe('/conventions/convention-a/2027/shop')
+  })
+
   it('shows no picture for a convention with no logo', async () => {
     api.convention.mockResolvedValue({
       name: 'Convention A',

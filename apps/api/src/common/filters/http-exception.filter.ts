@@ -45,6 +45,12 @@ const constraintErrors: Record<
     message: 'endsAt must be after startsAt',
     params: { field: 'endsAt' },
   },
+  // Tiers of one ticket type that overlap, written past the check of their route.
+  ticket_type_price_tiers_no_overlap: {
+    status: 422,
+    code: 'ticket-type.tiers-overlap',
+    message: 'Two price tiers overlap',
+  },
   editions_slug_format: {
     status: 400,
     code: 'request.invalid',

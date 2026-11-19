@@ -70,6 +70,7 @@ export const errorCodes = [
   'document.too-many-versions',
   'consent.too-many',
   'catalog.limit-reached',
+  'ticket-type.tiers-overlap',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

@@ -539,6 +539,10 @@ msgstr "Too many attempts. Try again later."
 msgid "Too many emails sent. Try again in a few minutes."
 msgstr "Too many emails sent. Try again in a few minutes."
 
+#: src/errors.ts
+msgid "Two price tiers cover the same time. A ticket type has one price at a time: change the dates so that the tiers do not overlap."
+msgstr "Two price tiers cover the same time. A ticket type has one price at a time: change the dates so that the tiers do not overlap."
+
 #. Glossary term: two-factor authentication
 #: src/glossary.ts
 msgctxt "glossary"

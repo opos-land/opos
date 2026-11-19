@@ -92,6 +92,13 @@ describe('toErrorResponse', () => {
     expect(toErrorResponse(violated(constraint))).toMatchObject({ status: 409, body: { code } })
   })
 
+  it('maps price tiers that overlap, written past the check of their route, to their own code', () => {
+    expect(toErrorResponse(violated('ticket_type_price_tiers_no_overlap'))).toMatchObject({
+      status: 422,
+      body: { code: 'ticket-type.tiers-overlap' },
+    })
+  })
+
   it('maps a like on an item deleted meanwhile to 404', () => {
     expect(toErrorResponse(violated('program_item_likes_program_item_fk'))).toMatchObject({
       status: 404,

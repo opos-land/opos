@@ -308,6 +308,35 @@ export async function addMerchandiseItem(
   return { id, variantId: variant!.id, valueId, pictureIds }
 }
 
+/**
+ * A ticket type of an edition as its rows alone, last in the list: on sale all of 2027, for every
+ * age band, with one tier of 100.00 over its whole sale window unless told otherwise.
+ */
+export async function addTicketType(
+  tenantId: string,
+  editionId: string,
+  values: { name?: string; capacity?: number; amountMinor?: number | null; hidden?: boolean } = {},
+) {
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into ticket_types
+      (tenant_id, edition_id, name, capacity, sale_starts_at, sale_ends_at, allows_child,
+        allows_teen, allows_adult, position, hidden_at)
+    values (${tenantId}, ${editionId}, ${values.name ?? 'Ticket type'}, ${values.capacity ?? null},
+      '2027-01-01T00:00:00Z', '2028-01-01T00:00:00Z', true, true, true,
+      ${lastPlace('ticket_types', editionId)}, ${values.hidden ? sql`now()` : null})
+    returning id
+  `)
+  if (values.amountMinor !== null) {
+    await db.execute(sql`
+      insert into ticket_type_price_tiers
+        (tenant_id, edition_id, ticket_type_id, amount_minor, starts_at, ends_at)
+      values (${tenantId}, ${editionId}, ${row!.id}, ${values.amountMinor ?? 10000},
+        '2027-01-01T00:00:00Z', '2028-01-01T00:00:00Z')
+    `)
+  }
+  return row!.id
+}
+
 /** A custom field of an edition as its row alone, last in the list. */
 export async function addCustomField(
   tenantId: string,
@@ -332,6 +361,11 @@ const ROW_ORDER: Record<string, string> = {
   merchandise_item_pictures: 'merchandise_item_id, position',
   merchandise_size_charts: 'option_value_id',
   merchandise_variant_values: 'variant_id, axis_id',
+  ticket_type_price_tiers: 'ticket_type_id, starts_at',
+  ticket_type_supporter_prices: 'ticket_type_id, amount_minor',
+  ticket_type_perks: 'ticket_type_id, position',
+  ticket_type_add_ons: 'ticket_type_id, add_on_id',
+  ticket_type_merchandise_items: 'ticket_type_id, merchandise_item_id',
 }
 
 /** The rows a table holds of the tenant, as stored, in the order they were added. */
@@ -606,6 +640,12 @@ const CATALOG_TABLES = [
   ['merchandise_variant_values', 'variant_id, axis_id'],
   ['merchandise_item_pictures', 'id'],
   ['merchandise_size_charts', 'option_value_id'],
+  ['ticket_types', 'id'],
+  ['ticket_type_price_tiers', 'id'],
+  ['ticket_type_supporter_prices', 'id'],
+  ['ticket_type_perks', 'id'],
+  ['ticket_type_add_ons', 'ticket_type_id, add_on_id'],
+  ['ticket_type_merchandise_items', 'ticket_type_id, merchandise_item_id'],
 ] as const
 
 /** A row as a refused write must leave it: what the trigger of its last change wrote aside. */

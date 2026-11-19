@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   addOnSchema,
   ADD_ON_KINDS,
+  AGE_BANDS,
   createAddOnSchema,
   createCustomFieldSchema,
   createMerchandiseItemSchema,
+  createTicketTypeSchema,
   customFieldSchema,
   MAX_ADD_ONS,
   MAX_AMOUNT_MINOR,
@@ -13,20 +15,138 @@ import {
   MAX_ITEM_VARIANTS,
   MAX_MERCHANDISE_IMAGE_SIZE,
   MAX_MERCHANDISE_ITEMS,
+  MAX_TICKET_TYPES,
   MERCHANDISE_IMAGE_TYPES,
   MERCHANDISE_IMAGE_VARIANTS,
   merchandiseItemSchema,
+  offeredSupporterPrices,
+  priceAt,
   putStockSchema,
   putVariantsSchema,
   updateAddOnSchema,
   updateCustomFieldSchema,
   updateMerchandiseItemSchema,
+  updateTicketTypeSchema,
 } from './catalog'
 import { MAX_FILE_SIZE } from './files'
 import { errorCodes } from './errors'
 import { contract } from './index'
 
 const refused = (result: { success: boolean }) => expect(result.success).toBe(false)
+
+describe('a ticket type', () => {
+  const standard = {
+    name: 'Standard',
+    saleStartsAt: '2027-01-01T00:00:00.000Z',
+    saleEndsAt: '2027-06-01T00:00:00.000Z',
+    ageBands: ['adult'],
+  }
+  const tier = (amountMinor: number, startsAt: string, endsAt: string) => ({
+    amountMinor,
+    startsAt,
+    endsAt,
+  })
+  const tiers = [
+    tier(12000, '2027-01-01T00:00:00.000Z', '2027-03-01T00:00:00.000Z'),
+    tier(15000, '2027-03-01T00:00:00.000Z', '2027-05-01T00:00:00.000Z'),
+  ]
+
+  it('allows some of the three age bands', () => {
+    expect([...AGE_BANDS]).toEqual(['child', 'teen', 'adult'])
+    refused(createTicketTypeSchema.safeParse({ ...standard, ageBands: [] }))
+    refused(createTicketTypeSchema.safeParse({ ...standard, ageBands: ['adult', 'adult'] }))
+    refused(createTicketTypeSchema.safeParse({ ...standard, ageBands: ['senior'] }))
+  })
+
+  it('is added with a name, a sale window that ends after it starts and its age bands', () => {
+    expect(createTicketTypeSchema.parse({ ...standard, name: ' Standard ' })).toEqual(standard)
+    refused(createTicketTypeSchema.safeParse({ ...standard, saleEndsAt: standard.saleStartsAt }))
+    refused(createTicketTypeSchema.safeParse({ name: 'Standard', ageBands: ['adult'] }))
+  })
+
+  it('has a capacity that is a whole number, or none: without one it is not limited', () => {
+    expect(createTicketTypeSchema.parse({ ...standard, capacity: null }).capacity).toBeNull()
+    expect(createTicketTypeSchema.parse({ ...standard, capacity: 0 }).capacity).toBe(0)
+    refused(createTicketTypeSchema.safeParse({ ...standard, capacity: -1 }))
+    refused(createTicketTypeSchema.safeParse({ ...standard, capacity: 10.5 }))
+  })
+
+  // Whether two tiers overlap the API answers by a code of its own, so the schema does not judge
+  // it: it judges each tier alone.
+  it('takes tiers that each end after they start, at a price that may be zero', () => {
+    expect(createTicketTypeSchema.safeParse({ ...standard, tiers }).success).toBe(true)
+    expect(
+      createTicketTypeSchema.safeParse({
+        ...standard,
+        tiers: [tier(0, standard.saleStartsAt, standard.saleEndsAt)],
+      }).success,
+    ).toBe(true)
+    refused(
+      createTicketTypeSchema.safeParse({
+        ...standard,
+        tiers: [tier(100, standard.saleEndsAt, standard.saleStartsAt)],
+      }),
+    )
+  })
+
+  it('takes supporter prices above zero, each once', () => {
+    expect(
+      createTicketTypeSchema.safeParse({ ...standard, supporterPrices: [20000, 30000] }).success,
+    ).toBe(true)
+    refused(createTicketTypeSchema.safeParse({ ...standard, supporterPrices: [0] }))
+    refused(createTicketTypeSchema.safeParse({ ...standard, supporterPrices: [20000, 20000] }))
+  })
+
+  it('changes with its tiers, supporter prices, perks and offers as whole lists', () => {
+    expect(Object.keys(updateTicketTypeSchema.shape).sort()).toEqual([
+      'addOnIds',
+      'ageBands',
+      'capacity',
+      'discountsExcluded',
+      'hidden',
+      'longDescription',
+      'merchandiseItemIds',
+      'name',
+      'perks',
+      'position',
+      'saleEndsAt',
+      'saleStartsAt',
+      'shortDescription',
+      'shownOutsideSaleWindow',
+      'supporterPrices',
+      'tiers',
+    ])
+    expect(updateTicketTypeSchema.parse({ tiers: [] })).toEqual({ tiers: [] })
+  })
+
+  describe('at a moment', () => {
+    const at = (moment: string) => priceAt(tiers, new Date(moment))
+
+    it('costs what the tier covering the moment says', () => {
+      expect(at('2027-02-01T12:00:00.000Z')).toBe(12000)
+      expect(at('2027-04-01T12:00:00.000Z')).toBe(15000)
+    })
+
+    it('belongs to a tier from its start, and no longer at its end', () => {
+      expect(at('2027-01-01T00:00:00.000Z')).toBe(12000)
+      expect(at('2027-02-28T23:59:59.999Z')).toBe(12000)
+      expect(at('2027-03-01T00:00:00.000Z')).toBe(15000)
+      expect(at('2027-04-30T23:59:59.999Z')).toBe(15000)
+    })
+
+    it('has no price where no tier covers the moment: it is not on sale', () => {
+      expect(at('2026-12-31T23:59:59.999Z')).toBeNull()
+      expect(at('2027-05-01T00:00:00.000Z')).toBeNull()
+      expect(priceAt([], new Date('2027-02-01T12:00:00.000Z'))).toBeNull()
+    })
+
+    it('offers the supporter prices above the price in force, and no other', () => {
+      expect(offeredSupporterPrices([10000, 12000, 20000, 30000], 12000)).toEqual([20000, 30000])
+      expect(offeredSupporterPrices([10000, 12000], 12000)).toEqual([])
+      expect(offeredSupporterPrices([100], 0)).toEqual([100])
+    })
+  })
+})
 
 describe('an add-on', () => {
   it('is without a limit, limited by a capacity, or a headcount that reserves nothing', () => {
@@ -222,6 +342,7 @@ describe('the catalog of an edition', () => {
   it('holds a number of rows of each kind that one answer can carry', () => {
     expect(MAX_ADD_ONS).toBe(50)
     expect(MAX_CUSTOM_FIELDS).toBe(20)
+    expect(MAX_TICKET_TYPES).toBe(50)
     expect(MAX_MERCHANDISE_ITEMS).toBe(200)
     expect(MAX_ITEM_VARIANTS).toBe(100)
   })
@@ -231,6 +352,7 @@ describe('the catalog of an edition', () => {
       ...Object.values(contract.catalog.addOns),
       ...Object.values(contract.catalog.customFields),
       ...Object.values(contract.catalog.merchandise),
+      ...Object.values(contract.catalog.ticketTypes),
     ].map((procedure) => procedure['~orpc'].route.path)
 
     expect(routes.every((path) => path?.startsWith('/editions/{editionId}/'))).toBe(true)
@@ -242,7 +364,8 @@ describe('the catalog of an edition', () => {
     )
   })
 
-  it('lists the code of a full list', () => {
+  it('lists the code of a full list and of tiers that overlap', () => {
     expect(errorCodes).toContain('catalog.limit-reached')
+    expect(errorCodes).toContain('ticket-type.tiers-overlap')
   })
 })

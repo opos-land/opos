@@ -18,6 +18,7 @@ import {
   addMerchandiseItem,
   addOrg,
   addProgramItem,
+  addTicketType,
   closeTenantDb,
   countHeads,
   deleteCreatedTenants,
@@ -575,6 +576,7 @@ describe('concurrency', () => {
       addOn: string
       customField: string
       merch: Awaited<ReturnType<typeof addMerchandiseItem>>
+      ticketType: string
     }
     type Request = { method: Method; path: string; body?: object }
     const noEdition = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
@@ -732,6 +734,25 @@ describe('concurrency', () => {
         method: 'delete',
         path: `/editions/${s.edition}/custom-fields/${s.customField}`,
       }),
+      'catalog.ticketTypes.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/ticket-types`,
+        body: {
+          name: 'Late',
+          saleStartsAt: '2027-01-01T00:00:00.000Z',
+          saleEndsAt: '2027-06-01T00:00:00.000Z',
+          ageBands: ['adult'],
+        },
+      }),
+      'catalog.ticketTypes.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/ticket-types/${s.ticketType}`,
+        body: { name: 'Late', tiers: [] },
+      }),
+      'catalog.ticketTypes.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/ticket-types/${s.ticketType}`,
+      }),
       'catalog.merchandise.create': (s) => ({
         method: 'post',
         path: `/editions/${s.edition}/merchandise-items`,
@@ -780,7 +801,8 @@ describe('concurrency', () => {
      * A tenant whose org holds settings=write, branding=write, shop=write, program=write and
      * tickets=write, another org to act on, a programme item, a logo, everything opening the
      * shop asks for, a document of the edition's own, a consent, an add-on, a custom field and
-     * a merchandise item with a value, its variant, its size chart and a picture.
+     * a merchandise item with a value, its variant, its size chart and a picture, and a ticket
+     * type with a price tier.
      */
     async function setup(): Promise<Setup> {
       const t = await tenantWithHead()
@@ -802,6 +824,7 @@ describe('concurrency', () => {
       const addOn = await addAddOn(t.id, edition)
       const customField = await addCustomField(t.id, edition)
       const merch = await addMerchandiseItem(t.id, edition, { sized: true, pictures: 1 })
+      const ticketType = await addTicketType(t.id, edition)
       return {
         t,
         edition,
@@ -815,6 +838,7 @@ describe('concurrency', () => {
         addOn,
         customField,
         merch,
+        ticketType,
       }
     }
 

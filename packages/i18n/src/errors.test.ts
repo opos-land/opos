@@ -44,6 +44,10 @@ describe('errorMessage', () => {
     ],
     ['provider.unavailable', 'Dostawca płatności nie odpowiada. Spróbuj ponownie za chwilę.'],
     ['document.in-use', 'Do tego dokumentu odsyła zgoda. Najpierw zmień lub usuń tę zgodę.'],
+    [
+      'ticket-type.tiers-overlap',
+      'Dwa progi cenowe obejmują ten sam czas. Rodzaj akredytacji ma w danej chwili jedną cenę: zmień daty tak, aby progi się nie nakładały.',
+    ],
   ] as const)('says %s in Polish', async (code, text) => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

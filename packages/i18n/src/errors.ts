@@ -60,6 +60,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'document.too-many-versions': msg`This document has reached the limit of versions: {limit}.`,
   'consent.too-many': msg`This edition has reached the limit of consents: {limit}.`,
   'catalog.limit-reached': msg`This list is full: it holds at most this many entries: {limit}.`,
+  'ticket-type.tiers-overlap': msg`Two price tiers cover the same time. A ticket type has one price at a time: change the dates so that the tiers do not overlap.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 
   'tenant.not-found': msg`We could not find this convention.`,

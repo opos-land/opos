@@ -7,3 +7,7 @@ export const limitReached = (limit: number) =>
 /** A field whose value does not fit the rest of what is stored, which no schema of a change sees. */
 export const invalidField = (field: string, message: string) =>
   new ApiError(400, 'request.invalid', message, { field })
+
+/** Two price tiers of a ticket type cover a moment together: it has one price at a time. */
+export const tiersOverlap = () =>
+  new ApiError(422, 'ticket-type.tiers-overlap', 'Two price tiers overlap')

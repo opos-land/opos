@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { tenantRoute } from './common'
+import { tenantRoute, timestamp } from './common'
 import { type FileType, uploadedFileSchema } from './files'
 
 // What an edition sells and on what terms (docs/specs/0003-catalog.md): ticket types, add-ons,
@@ -16,11 +16,16 @@ export const amountMinor = z.number().int().min(0).max(MAX_AMOUNT_MINOR)
  * What one edition may hold of each kind: the shop's offer is one answer, sent to anyone who
  * asks.
  */
+export const MAX_TICKET_TYPES = 50
 export const MAX_ADD_ONS = 50
 export const MAX_CUSTOM_FIELDS = 20
 export const MAX_MERCHANDISE_ITEMS = 200
 export const MAX_ITEM_VARIANTS = 100
 export const MAX_ITEM_PICTURES = 10
+/** The most price tiers, supporter prices and perks a ticket type has. */
+export const MAX_PRICE_TIERS = 20
+export const MAX_SUPPORTER_PRICES = 10
+export const MAX_PERKS = 20
 /** The most axes an item has, and the most values an axis. */
 export const MAX_OPTION_AXES = 3
 export const MAX_OPTION_VALUES = 30
@@ -29,6 +34,149 @@ export const MAX_OPTION_VALUES = 30
 const position = z.number().int().positive()
 
 const name = z.string().trim().min(1).max(100)
+
+/** Whether the entries are each of their own. */
+const unique = (entries: readonly unknown[]) => new Set(entries).size === entries.length
+
+/**
+ * The age bands of an edition, by a ticket holder's age on its first day. A ticket type allows
+ * some of them.
+ */
+export const AGE_BANDS = ['child', 'teen', 'adult'] as const
+
+export type AgeBand = (typeof AGE_BANDS)[number]
+
+/** A price tier: the price of a ticket type from one moment until another, which it excludes. */
+export const priceTierSchema = z.object({
+  amountMinor: z.number().int(),
+  startsAt: timestamp,
+  endsAt: timestamp,
+})
+
+export type PriceTier = z.infer<typeof priceTierSchema>
+
+/**
+ * The price of a ticket type at a moment: that of the tier covering it. A tier holds its start
+ * and not its end, so two that touch never both cover a moment. Null where no tier covers the
+ * moment: the ticket type is not on sale then.
+ */
+export function priceAt(tiers: readonly PriceTier[], moment: Date): number | null {
+  const at = moment.getTime()
+  const tier = tiers.find(
+    (candidate) => Date.parse(candidate.startsAt) <= at && at < Date.parse(candidate.endsAt),
+  )
+  return tier ? tier.amountMinor : null
+}
+
+/**
+ * The supporter prices a buyer is offered beside a price in force: those above it. One that is
+ * not above it would be no support.
+ */
+export const offeredSupporterPrices = (supporterPrices: readonly number[], price: number) =>
+  supporterPrices.filter((amount) => amount > price)
+
+/** A ticket type of an edition with its prices, its perks and what is offered with it. */
+export const ticketTypeSchema = z.object({
+  id: z.uuid(),
+  editionId: z.uuid(),
+  name: z.string(),
+  shortDescription: z.string(),
+  longDescription: z.string(),
+  /** Null while the ticket type is not limited. */
+  capacity: z.number().int().nullable(),
+  saleStartsAt: timestamp,
+  saleEndsAt: timestamp,
+  /** The age bands it allows, in the order of the bands. */
+  ageBands: z.array(z.enum(AGE_BANDS)),
+  /** No discount code applies to it, and its page says so. */
+  discountsExcluded: z.boolean(),
+  /** Outside its sale window the shop shows it as not yet on sale or as closed, or hides it. */
+  shownOutsideSaleWindow: z.boolean(),
+  position,
+  /** Hidden from the shop; the orders that hold it keep it. */
+  hidden: z.boolean(),
+  /** By their start. */
+  tiers: z.array(priceTierSchema),
+  /** From the lowest. */
+  supporterPrices: z.array(z.number().int()),
+  perks: z.array(z.string()),
+  /** The add-ons and the merchandise items offered with it, in the order of their own lists. */
+  addOnIds: z.array(z.uuid()),
+  merchandiseItemIds: z.array(z.uuid()),
+})
+
+export type TicketType = z.infer<typeof ticketTypeSchema>
+
+const ticketTypeFields = {
+  name,
+  shortDescription: z.string().trim().max(300),
+  longDescription: z.string().trim().max(5000),
+  capacity: z.number().int().min(0).max(1_000_000).nullable(),
+  saleStartsAt: timestamp,
+  saleEndsAt: timestamp,
+  ageBands: z
+    .array(z.enum(AGE_BANDS))
+    .min(1)
+    .refine(unique, { message: 'An age band is named once' }),
+  discountsExcluded: z.boolean(),
+  shownOutsideSaleWindow: z.boolean(),
+  // Whether two tiers overlap is the API's to refuse, by a code of its own.
+  tiers: z
+    .array(
+      z
+        .strictObject({ amountMinor, startsAt: timestamp, endsAt: timestamp })
+        .refine((tier) => Date.parse(tier.endsAt) > Date.parse(tier.startsAt), {
+          path: ['endsAt'],
+          message: 'A tier ends after it starts',
+        }),
+    )
+    .max(MAX_PRICE_TIERS),
+  supporterPrices: z
+    .array(amountMinor.min(1))
+    .max(MAX_SUPPORTER_PRICES)
+    .refine(unique, { message: 'A supporter price is offered once' }),
+  perks: z.array(name).max(MAX_PERKS),
+  addOnIds: z
+    .array(z.uuid())
+    .max(MAX_ADD_ONS)
+    .refine(unique, { message: 'An add-on is offered once' }),
+  merchandiseItemIds: z
+    .array(z.uuid())
+    .max(MAX_MERCHANDISE_ITEMS)
+    .refine(unique, { message: 'An item is offered once' }),
+}
+
+export const createTicketTypeSchema = z
+  .strictObject(ticketTypeFields)
+  .partial({
+    shortDescription: true,
+    longDescription: true,
+    capacity: true,
+    discountsExcluded: true,
+    shownOutsideSaleWindow: true,
+    tiers: true,
+    supporterPrices: true,
+    perks: true,
+    addOnIds: true,
+    merchandiseItemIds: true,
+  })
+  .refine((type) => Date.parse(type.saleEndsAt) > Date.parse(type.saleStartsAt), {
+    path: ['saleEndsAt'],
+    message: 'The sale window ends after it starts',
+  })
+
+export type CreateTicketType = z.infer<typeof createTicketTypeSchema>
+
+/**
+ * A change of a ticket type. Its tiers, supporter prices, perks and offers travel as whole lists:
+ * one a change names replaces the stored one, one it leaves out stays. Whether the sale window
+ * still ends after it starts depends on the stored ticket type, so the API checks the outcome.
+ */
+export const updateTicketTypeSchema = z
+  .strictObject({ ...ticketTypeFields, position, hidden: z.boolean() })
+  .partial()
+
+export type UpdateTicketType = z.infer<typeof updateTicketTypeSchema>
 
 /**
  * What limits an add-on: nothing, a capacity, or nothing at all because it only counts interest
@@ -379,6 +527,50 @@ export const customFieldRoutes = {
     .input(customField),
 }
 
+const ticketTypeParams = z.object({
+  params: z.object({ editionId: z.string(), ticketTypeId: z.string() }),
+})
+
+export const ticketTypeRoutes = {
+  list: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/ticket-types',
+      summary:
+        "The edition's ticket types in their order with their tiers, supporter prices, perks and offers, hidden ones too; needs tickets>=read",
+    })
+    .input(edition)
+    .output(z.array(ticketTypeSchema)),
+  create: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/ticket-types',
+      successStatus: 201,
+      summary:
+        'Add a ticket type at the end of the list, up to the limit of an edition; tiers that overlap are refused with ticket-type.tiers-overlap; needs tickets=write',
+    })
+    .input(edition.extend({ body: createTicketTypeSchema }))
+    .output(ticketTypeSchema),
+  update: tenantRoute
+    .route({
+      method: 'PATCH',
+      path: '/editions/{editionId}/ticket-types/{ticketTypeId}',
+      summary:
+        'Change a ticket type and the lists that travel with it, move it to a place of the list, hide it or show it; needs tickets=write',
+    })
+    .input(ticketTypeParams.extend({ body: updateTicketTypeSchema }))
+    .output(ticketTypeSchema),
+  remove: tenantRoute
+    .route({
+      method: 'DELETE',
+      path: '/editions/{editionId}/ticket-types/{ticketTypeId}',
+      successStatus: 204,
+      summary:
+        'Delete a ticket type with its tiers, supporter prices and perks; needs tickets=write',
+    })
+    .input(ticketTypeParams),
+}
+
 const item = z.object({ params: z.object({ editionId: z.string(), itemId: z.string() }) })
 const variant = z.object({
   params: z.object({ editionId: z.string(), itemId: z.string(), variantId: z.string() }),
@@ -498,6 +690,7 @@ export const merchandiseRoutes = {
 }
 
 export const catalogContract = {
+  ticketTypes: ticketTypeRoutes,
   addOns: addOnRoutes,
   customFields: customFieldRoutes,
   merchandise: merchandiseRoutes,

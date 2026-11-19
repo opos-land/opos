@@ -64,6 +64,15 @@ export class PaymentProviders {
   }
 
   /**
+   * What the provider's module requires of the shop's pages and the methods it lists, with no
+   * call; undefined where no module of the provider is loaded.
+   */
+  pages(provider: PaymentProvider) {
+    const module = this.modules.get(provider)
+    return module && { requirements: module.requirements(), methods: module.methods() }
+  }
+
+  /**
    * The conditions of readiness stored credentials still miss, with no call; an account whose
    * provider has no module here cannot sell, and says so.
    */

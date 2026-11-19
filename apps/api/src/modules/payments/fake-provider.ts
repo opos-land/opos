@@ -1,4 +1,9 @@
-import { type CheckAnswer, type Credentials, type PaymentProviderModule } from './provider'
+import {
+  type CheckAnswer,
+  type Credentials,
+  type PaymentProviderModule,
+  type ProviderRequirements,
+} from './provider'
 
 /**
  * The accounts the fake provider answers in a way of their own, by the `account` of the
@@ -28,5 +33,32 @@ export class FakeProvider implements PaymentProviderModule {
 
   missing(credentials: Credentials): string[] {
     return credentials.account === FAKE_ACCOUNT.notReady ? ['fake.not-ready'] : []
+  }
+
+  /**
+   * A consent of its own that "Select all required" may not tick, and an email no longer than a
+   * real provider takes: what the shop's pages do with either has a test and a demo.
+   */
+  requirements(): ProviderRequirements {
+    return {
+      consent: {
+        text: {
+          en: 'I accept the terms of the fake payment provider, which takes no money.',
+          pl: 'Akceptuję regulamin testowego dostawcy płatności, który nie pobiera pieniędzy.',
+        },
+        links: [
+          {
+            label: { en: 'Terms of the fake payment provider', pl: 'Regulamin testowego dostawcy' },
+            url: 'https://example.com/fake-provider/terms',
+          },
+        ],
+        selectAllAllowed: false,
+      },
+      maxEmailLength: 50,
+    }
+  }
+
+  methods(): string[] {
+    return ['blik', 'transfer', 'card']
   }
 }

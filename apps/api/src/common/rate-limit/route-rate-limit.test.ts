@@ -62,6 +62,7 @@ describe('RouteRateLimiter', () => {
       adminWrites: { limit: 60, ttl: 3_600_000 },
       uploads: { limit: 120, ttl: 3_600_000 },
       providerConnects: { limit: 20, ttl: 3_600_000 },
+      shopQuotes: { limit: 600, ttl: 3_600_000 },
     })
   })
 })

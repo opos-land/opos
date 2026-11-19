@@ -44,6 +44,8 @@ const publicRoutes = [
   'public.logoFile',
   'public.documentVersion',
   'public.merchandiseFile',
+  'public.shop',
+  'public.shopQuote',
   'public.editions',
   'public.activeEdition',
   'public.edition',

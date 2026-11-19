@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
-import { FAKE_ACCOUNT } from './fake-provider'
+import { FAKE_ACCOUNT, FakeProvider } from './fake-provider'
 import { CredentialsVault, PaymentProviders, providerModules } from './payment-providers'
 
 const context = new TenantContextService({} as never)
@@ -45,11 +45,9 @@ describe('PaymentProviders', () => {
   })
 
   it('answers a module that throws as a provider out of reach, naming the error and nothing it said', async () => {
-    const module = {
-      name: 'fake' as const,
+    const module = Object.assign(new FakeProvider(), {
       connect: () => Promise.reject(new TypeError('refused for key=my-secret')),
-      missing: () => [],
-    }
+    })
     const failing = new PaymentProviders(new Map([['fake', module]]))
 
     const answer = await context.run(

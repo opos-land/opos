@@ -22,7 +22,8 @@ import { ShopController } from './shop.controller'
     ShopConditions,
     ConnectProviderPreparation,
   ],
-  // The public route that serves a published version reads which file it points at.
-  exports: [DocumentsRepository],
+  // The public route that serves a published version reads which file it points at; the shop's
+  // offer reads the documents and the consents of an edition.
+  exports: [DocumentsRepository, ConsentsRepository],
 })
 export class ShopModule {}

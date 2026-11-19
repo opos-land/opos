@@ -71,6 +71,8 @@ export const errorCodes = [
   'consent.too-many',
   'catalog.limit-reached',
   'ticket-type.tiers-overlap',
+  'shop.closed',
+  'order.unavailable',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

@@ -22,7 +22,8 @@ import { TicketTypesRepository } from './ticket-types.repository'
     CustomFieldsRepository,
     MerchandiseRepository,
   ],
-  // The public route that serves a shown item's pictures reads which file is for everyone.
-  exports: [MerchandiseRepository],
+  // The public route that serves a shown item's pictures reads which file is for everyone; the
+  // shop reads the whole catalog to make its offer.
+  exports: [TicketTypesRepository, AddOnsRepository, CustomFieldsRepository, MerchandiseRepository],
 })
 export class CatalogModule {}

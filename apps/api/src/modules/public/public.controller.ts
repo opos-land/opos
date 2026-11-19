@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common'
-import { contract, editionListPlace, editionSlug } from '@opos/contract'
+import { contract, editionListPlace } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { GlobalDbService } from '../../common/database/global-db.service'
@@ -10,6 +10,7 @@ import { MerchandiseRepository } from '../catalog/merchandise.repository'
 import { FilesService } from '../files/files.service'
 import { DOCUMENT_KIND, LOGO_KIND } from '../files/kinds'
 import { DocumentsRepository } from '../shop/documents.repository'
+import { PublicConvention } from './public-convention'
 import { PublicRepository } from './public.repository'
 
 // Without sign-in and without X-Tenant-Slug: the address names the tenant, and each request opens
@@ -19,6 +20,7 @@ export class PublicController {
   constructor(
     private readonly global: GlobalDbService,
     private readonly context: TenantContextService,
+    private readonly convention: PublicConvention,
     private readonly repository: PublicRepository,
     private readonly logos: LogoRepository,
     private readonly files: FilesService,
@@ -26,21 +28,12 @@ export class PublicController {
     private readonly merchandise: MerchandiseRepository,
   ) {}
 
-  /**
-   * An address outside the slugs' alphabet names nothing, and must not reach a query. A suspended
-   * convention is not found, as an unknown address is.
-   */
-  private async tenant(slug: string) {
-    if (!editionSlug.safeParse(slug).success) throw notFound('convention')
-    const found = await this.global.tenantBySlug(slug)
-    if (!found || found.suspended) throw notFound('convention')
-    return found.tenant
+  private tenant(slug: string) {
+    return this.convention.tenant(slug)
   }
 
-  private async inConvention<T>(slug: string, read: () => Promise<T>) {
-    return this.context
-      .withTenant((await this.tenant(slug)).id, read)
-      .catch(suspendedAsNotFound('convention'))
+  private inConvention<T>(slug: string, read: () => Promise<T>) {
+    return this.convention.within(slug, read)
   }
 
   @Implement(contract.public.tenant)

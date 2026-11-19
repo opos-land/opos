@@ -314,32 +314,187 @@ export async function addMerchandiseItem(
 }
 
 /**
- * A ticket type of an edition as its rows alone, last in the list: on sale all of 2027, for every
- * age band, with one tier of 100.00 over its whole sale window unless told otherwise.
+ * A ticket type of an edition as its rows alone, last in the list: on sale from 2020 until 2099,
+ * for every age band, with one tier of 100.00 over its whole sale window unless told otherwise.
  */
 export async function addTicketType(
   tenantId: string,
   editionId: string,
-  values: { name?: string; capacity?: number; amountMinor?: number | null; hidden?: boolean } = {},
+  values: {
+    name?: string
+    capacity?: number
+    /** The price of its one tier; null for no tier at all. */
+    amountMinor?: number | null
+    hidden?: boolean
+    saleStartsAt?: string
+    saleEndsAt?: string
+    shownOutsideSaleWindow?: boolean
+    discountsExcluded?: boolean
+    ageBands?: ('child' | 'teen' | 'adult')[]
+    /** Its tiers, in place of the one over its whole sale window. */
+    tiers?: { amountMinor: number; startsAt: string; endsAt: string }[]
+    supporterPrices?: number[]
+    perks?: string[]
+  } = {},
 ) {
+  const saleStartsAt = values.saleStartsAt ?? '2020-01-01T00:00:00Z'
+  const saleEndsAt = values.saleEndsAt ?? '2099-01-01T00:00:00Z'
+  const bands = values.ageBands ?? ['child', 'teen', 'adult']
   const [row] = await db.execute<{ id: string }>(sql`
     insert into ticket_types
       (tenant_id, edition_id, name, capacity, sale_starts_at, sale_ends_at, allows_child,
-        allows_teen, allows_adult, position, hidden_at)
+        allows_teen, allows_adult, discounts_excluded, shown_outside_sale_window, position,
+        hidden_at)
     values (${tenantId}, ${editionId}, ${values.name ?? 'Ticket type'}, ${values.capacity ?? null},
-      '2027-01-01T00:00:00Z', '2028-01-01T00:00:00Z', true, true, true,
-      ${lastPlace('ticket_types', editionId)}, ${values.hidden ? sql`now()` : null})
+      ${saleStartsAt}, ${saleEndsAt}, ${bands.includes('child')}, ${bands.includes('teen')},
+      ${bands.includes('adult')}, ${values.discountsExcluded ?? false},
+      ${values.shownOutsideSaleWindow ?? false}, ${lastPlace('ticket_types', editionId)},
+      ${values.hidden ? sql`now()` : null})
     returning id
   `)
-  if (values.amountMinor !== null) {
+  const tiers =
+    values.tiers ??
+    (values.amountMinor === null
+      ? []
+      : [{ amountMinor: values.amountMinor ?? 10000, startsAt: saleStartsAt, endsAt: saleEndsAt }])
+  for (const tier of tiers) {
     await db.execute(sql`
       insert into ticket_type_price_tiers
         (tenant_id, edition_id, ticket_type_id, amount_minor, starts_at, ends_at)
-      values (${tenantId}, ${editionId}, ${row!.id}, ${values.amountMinor ?? 10000},
-        '2027-01-01T00:00:00Z', '2028-01-01T00:00:00Z')
+      values (${tenantId}, ${editionId}, ${row!.id}, ${tier.amountMinor}, ${tier.startsAt},
+        ${tier.endsAt})
+    `)
+  }
+  for (const amount of values.supporterPrices ?? []) {
+    await db.execute(sql`
+      insert into ticket_type_supporter_prices (tenant_id, edition_id, ticket_type_id, amount_minor)
+      values (${tenantId}, ${editionId}, ${row!.id}, ${amount})
+    `)
+  }
+  for (const [index, perk] of (values.perks ?? []).entries()) {
+    await db.execute(sql`
+      insert into ticket_type_perks (tenant_id, edition_id, ticket_type_id, name, position)
+      values (${tenantId}, ${editionId}, ${row!.id}, ${perk}, ${index + 1})
     `)
   }
   return row!.id
+}
+
+/** What a ticket type offers: the add-ons and the merchandise items taken with it. */
+export async function offerWith(
+  tenantId: string,
+  editionId: string,
+  ticketTypeId: string,
+  offered: { addOnIds?: string[]; itemIds?: string[] },
+) {
+  for (const addOnId of offered.addOnIds ?? []) {
+    await db.execute(sql`
+      insert into ticket_type_add_ons (tenant_id, edition_id, ticket_type_id, add_on_id)
+      values (${tenantId}, ${editionId}, ${ticketTypeId}, ${addOnId})
+    `)
+  }
+  for (const itemId of offered.itemIds ?? []) {
+    await db.execute(sql`
+      insert into ticket_type_merchandise_items
+        (tenant_id, edition_id, ticket_type_id, merchandise_item_id)
+      values (${tenantId}, ${editionId}, ${ticketTypeId}, ${itemId})
+    `)
+  }
+}
+
+/** The settings an edition gives its catalog, on the row of its shop; the row is made if need be. */
+export async function setCatalogSettings(
+  tenantId: string,
+  editionId: string,
+  values: {
+    merchPreorderDeadline?: string | null
+    merchOnlyEnabled?: boolean
+    salesClosedMessage?: string | null
+    faqUrl?: string | null
+    teenFromAge?: number
+    adultFromAge?: number
+    guardianConsentFormUrl?: string
+  },
+) {
+  await db.execute(sql`
+    insert into edition_shops (tenant_id, edition_id) values (${tenantId}, ${editionId})
+    on conflict (edition_id) do nothing
+  `)
+  await db.execute(sql`
+    update edition_shops set
+      merch_preorder_deadline = ${values.merchPreorderDeadline ?? null},
+      merch_only_enabled = ${values.merchOnlyEnabled ?? false},
+      sales_closed_message = ${values.salesClosedMessage ?? null},
+      faq_url = ${values.faqUrl ?? null},
+      teen_from_age = ${values.teenFromAge ?? null},
+      adult_from_age = ${values.adultFromAge ?? null},
+      guardian_consent_form_url = ${values.guardianConsentFormUrl ?? null}
+    where edition_id = ${editionId}
+  `)
+}
+
+/** Sets one column of one row, as postgres: for a state no helper above makes. */
+export const setColumn = (table: string, id: string, column: string, value: unknown) =>
+  db.execute(sql`
+    update ${sql.identifier(table)} set ${sql.identifier(column)} = ${value} where id = ${id}
+  `)
+
+/** The characters of an order's number: none that is mistaken for another. */
+const ORDER_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+
+/**
+ * An order as its rows alone, with the lines given: awaiting payment and holding what it took
+ * unless told otherwise. For a test of what orders hold of a limit.
+ */
+export async function addOrder(
+  tenantId: string,
+  editionId: string,
+  values: {
+    status?: string
+    holds?: boolean
+    email?: string
+    ticketTypeId?: string
+    addOnIds?: string[]
+    variants?: { itemId: string; variantId: string; quantity: number }[]
+    holdEndsAt?: string
+  } = {},
+) {
+  const number = Array.from(
+    randomUUID().replace(/-/g, '').slice(0, 10),
+    (digit) => ORDER_ALPHABET[parseInt(digit, 16)]!,
+  ).join('')
+  const [order] = await db.execute<{ id: string }>(sql`
+    insert into orders (tenant_id, edition_id, number, status, email, holder_name, age_band,
+      total_minor, holds, hold_ends_at, result_token_hash)
+    values (${tenantId}, ${editionId}, ${number}, ${values.status ?? 'awaiting-payment'},
+      ${values.email ?? 'buyer@example.test'}, 'Ada', 'adult', 10000, ${values.holds ?? true},
+      ${values.holdEndsAt ?? '2099-01-01T00:00:00Z'}, repeat('0', 64))
+    returning id
+  `)
+  const at = sql`${tenantId}, ${editionId}, ${order!.id}`
+  if (values.ticketTypeId) {
+    await db.execute(sql`
+      insert into order_lines (tenant_id, edition_id, order_id, kind, ticket_type_id, quantity,
+        unit_amount_minor, amount_minor)
+      values (${at}, 'ticket', ${values.ticketTypeId}, 1, 10000, 10000)
+    `)
+  }
+  for (const addOnId of values.addOnIds ?? []) {
+    await db.execute(sql`
+      insert into order_lines (tenant_id, edition_id, order_id, kind, add_on_id, quantity,
+        unit_amount_minor, amount_minor)
+      values (${at}, 'add_on', ${addOnId}, 1, 0, 0)
+    `)
+  }
+  for (const variant of values.variants ?? []) {
+    await db.execute(sql`
+      insert into order_lines (tenant_id, edition_id, order_id, kind, merchandise_item_id,
+        merchandise_variant_id, quantity, unit_amount_minor, amount_minor)
+      values (${at}, 'merchandise', ${variant.itemId}, ${variant.variantId}, ${variant.quantity},
+        5000, ${variant.quantity * 5000})
+    `)
+  }
+  return { id: order!.id, number }
 }
 
 /** A custom field of an edition as its row alone, last in the list. */

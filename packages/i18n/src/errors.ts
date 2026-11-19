@@ -61,6 +61,8 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'consent.too-many': msg`This edition has reached the limit of consents: {limit}.`,
   'catalog.limit-reached': msg`This list has reached its limit of entries: {limit}.`,
   'ticket-type.tiers-overlap': msg`Two price tiers cover the same time. A ticket type has one price at a time: change the dates so that the tiers do not overlap.`,
+  'shop.closed': msg`This shop is not selling right now.`,
+  'order.unavailable': msg`Something in your order is no longer available. Check your order and try again.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 
   'tenant.not-found': msg`We could not find this convention.`,

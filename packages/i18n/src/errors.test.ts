@@ -44,6 +44,11 @@ describe('errorMessage', () => {
     ],
     ['provider.unavailable', 'Dostawca płatności nie odpowiada. Spróbuj ponownie za chwilę.'],
     ['document.in-use', 'Do tego dokumentu odsyła zgoda. Najpierw zmień lub usuń tę zgodę.'],
+    ['shop.closed', 'Ten sklep w tej chwili nie prowadzi sprzedaży.'],
+    [
+      'order.unavailable',
+      'Coś z twojego zamówienia nie jest już dostępne. Sprawdź zamówienie i spróbuj ponownie.',
+    ],
     [
       'ticket-type.tiers-overlap',
       'Dwa progi cenowe obejmują ten sam czas. Rodzaj akredytacji ma w danej chwili jedną cenę: zmień daty tak, aby progi się nie nakładały.',

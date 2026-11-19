@@ -332,6 +332,10 @@ msgid "size chart"
 msgstr "size chart"
 
 #: src/errors.ts
+msgid "Something in your order is no longer available. Check your order and try again."
+msgstr "Something in your order is no longer available. Check your order and try again."
+
+#: src/errors.ts
 msgid "Something went wrong. Try again."
 msgstr "Something went wrong. Try again."
 
@@ -508,6 +512,10 @@ msgstr "This person is already in the team. Change their membership on the team 
 #: src/errors.ts
 msgid "This request cannot be made from this address. Reload the page and try again."
 msgstr "This request cannot be made from this address. Reload the page and try again."
+
+#: src/errors.ts
+msgid "This shop is not selling right now."
+msgstr "This shop is not selling right now."
 
 #. Glossary term: ticket
 #: src/glossary.ts

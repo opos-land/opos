@@ -8,7 +8,9 @@ import {
   tenants,
   type Transaction,
 } from '@opos/db'
+import { providerAccountOf, seal, sealingKey } from '@opos/db/sealed'
 import { inArray, sql } from 'drizzle-orm'
+import { loadEnv } from '../src/config/env'
 import { createAccount, signIn } from './auth'
 
 // Tenants, editions and memberships for API tests, written as postgres.
@@ -131,6 +133,24 @@ export const addProviderAccount = (tenantId: string) =>
     insert into payment_provider_accounts (tenant_id, provider, credentials, ready_at)
     values (${tenantId}, 'fake', 'sealed', now())
   `)
+
+/**
+ * A provider account of the fake provider whose credentials the API opens, as connecting it
+ * through the shop's settings stores them; it takes the place of the tenant's account. The
+ * `account` chooses how the fake provider answers (FAKE_ACCOUNT).
+ */
+export async function connectFake(tenantId: string, account = 'demo') {
+  const sealed = seal(
+    sealingKey(loadEnv().PAYMENT_CREDENTIALS_KEY),
+    JSON.stringify({ account }),
+    providerAccountOf(tenantId, 'fake'),
+  )
+  await db.execute(sql`delete from payment_provider_accounts where tenant_id = ${tenantId}`)
+  await db.execute(sql`
+    insert into payment_provider_accounts (tenant_id, provider, credentials, ready_at)
+    values (${tenantId}, 'fake', ${sealed}, now())
+  `)
+}
 
 /** Complete seller's details of the tenant, as its shop settings set them. */
 export const addSeller = (tenantId: string) =>

@@ -2,7 +2,7 @@ import { adminContract } from './admin'
 import { authContract } from './auth'
 import { brandingContract } from './branding'
 import { catalogContract } from './catalog'
-import { checkoutContract } from './checkout'
+import { checkoutContract, paymentsContract } from './checkout'
 import { editionsContract } from './editions'
 import { engagementContract } from './engagement'
 import { healthContract } from './health'
@@ -27,6 +27,7 @@ export const contract = {
   shop: shopContract,
   catalog: catalogContract,
   checkout: checkoutContract,
+  payments: paymentsContract,
   engagement: engagementContract,
   admin: adminContract,
 }

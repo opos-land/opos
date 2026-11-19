@@ -3,9 +3,12 @@ import { logoSchema } from './branding'
 import {
   cartSchema,
   offerSchema,
+  orderResultSchema,
   placedOrderSchema,
   placeVisitorOrderSchema,
   quoteSchema,
+  resultTokenHeaders,
+  startedAttemptSchema,
 } from './checkout'
 import { publicRoute, timestamp } from './common'
 
@@ -129,6 +132,12 @@ const merchandiseFile = z.object({
   params: z.object({ slug: z.string(), fileId: z.string(), variant: z.string() }),
 })
 
+/** An order a public address names, opened by its result token alone. */
+const order = z.object({
+  params: z.object({ slug: z.string(), orderId: z.string() }),
+  headers: resultTokenHeaders,
+})
+
 export const publicContract = {
   tenant: publicRoute
     .route({
@@ -207,6 +216,25 @@ export const publicContract = {
     })
     .input(edition.extend({ body: placeVisitorOrderSchema }))
     .output(placedOrderSchema),
+  orderResult: publicRoute
+    .route({
+      method: 'GET',
+      path: '/public/tenants/{slug}/orders/{orderId}/result',
+      summary:
+        "What the result page shows of an order: its status and number alone; by the order's result token, in a header; no sign-in",
+    })
+    .input(order)
+    .output(orderResultSchema),
+  startPaymentAttempt: publicRoute
+    .route({
+      method: 'POST',
+      path: '/public/tenants/{slug}/orders/{orderId}/payment-attempts',
+      successStatus: 201,
+      summary:
+        "Start a payment attempt for an order and answer where to send the buyer; by the order's result token, in a header; refused with order.hold-ended, order.already-paid or provider.unavailable; no sign-in",
+    })
+    .input(order)
+    .output(startedAttemptSchema),
   editions: publicRoute
     .route({
       method: 'GET',

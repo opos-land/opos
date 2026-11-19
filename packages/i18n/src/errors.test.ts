@@ -76,6 +76,8 @@ describe('errorMessage', () => {
       'Ten adres e-mail ma już zamówienia oczekujące na płatność. Opłać jedno z nich albo poczekaj, aż wygaśnie.',
     ],
     ['bot-check.failed', 'Nie udało się potwierdzić, że nie jesteś robotem. Spróbuj ponownie.'],
+    ['order.hold-ended', 'Czas na opłacenie tego zamówienia minął. Złóż nowe zamówienie.'],
+    ['order.already-paid', 'To zamówienie nie czeka już na płatność. Sprawdź jego status.'],
     [
       'order.unavailable',
       'Coś z twojego zamówienia nie jest już dostępne. Sprawdź zamówienie i spróbuj ponownie.',

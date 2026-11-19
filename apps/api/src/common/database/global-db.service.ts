@@ -2,14 +2,15 @@ import { Inject, Injectable } from '@nestjs/common'
 import { type EditionListPeriod, type ListedEdition } from '@opos/contract'
 import {
   accountFiles,
-  type Database,
   editionMemberships,
   editions,
+  paymentAttempts,
   programItemLikes,
   programItems,
   tenantLogos,
   tenantMemberships,
   tenants,
+  type Database,
   uploadedFiles,
 } from '@opos/db'
 import {
@@ -29,6 +30,7 @@ import {
 } from 'drizzle-orm'
 import { type AnyPgColumn, alias } from 'drizzle-orm/pg-core'
 import { type TenantInContext, TenantContextService } from '../als/tenant-context.service'
+import { isUuid } from '../uuid'
 import { GLOBAL_DB } from './tokens'
 
 /**
@@ -312,6 +314,20 @@ export class GlobalDbService {
           unpointed(uploadedFiles.id),
         ),
       )
+  }
+
+  /**
+   * The tenant and the provider of a payment attempt, by its identifier: the address of a
+   * provider's notification names nothing else. It answers those two alone, and nothing of the
+   * attempt counts before the provider's signature holds, which its tenant's transaction judges.
+   */
+  async paymentAttempt(id: string): Promise<{ tenantId: string; provider: string } | undefined> {
+    if (!isUuid(id)) return undefined
+    const [row] = await this.db
+      .select({ tenantId: paymentAttempts.tenantId, provider: paymentAttempts.provider })
+      .from(paymentAttempts)
+      .where(eq(paymentAttempts.id, id))
+    return row
   }
 
   /** The sweep: which of these files have a row, and of what kind. Identifiers alone. */

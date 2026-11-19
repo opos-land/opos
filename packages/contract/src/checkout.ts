@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { ADD_ON_KINDS, AGE_BANDS, MAX_CUSTOM_FIELD_ANSWER, MAX_CUSTOM_FIELDS } from './catalog'
-import { tenantRoute, timestamp } from './common'
+import { publicRoute, tenantRoute, timestamp } from './common'
 import { ageBandsSchema, DOCUMENT_KINDS, MAX_EDITION_CONSENTS } from './edition-shop'
 import { PAYMENT_PROVIDERS, SHOP_CURRENCY } from './shop'
 
@@ -407,6 +407,61 @@ export const placedOrderSchema = z.object({
 export type PlacedOrder = z.infer<typeof placedOrderSchema>
 
 /** The routes of a signed-in account in a convention, with no membership needed, as a like has none. */
+/** The statuses of an order (docs/specs/0004-checkout-and-orders.md, Order statuses). */
+export const ORDER_STATUSES = [
+  'awaiting-payment',
+  'paid',
+  'paid-manual',
+  'expired',
+  'needs-review',
+  'declined',
+  'canceled',
+] as const
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number]
+
+/**
+ * Why a payment attempt failed, as a buyer reads it: the shop's own short list. A provider's
+ * module maps its own codes to them; the provider's code and message are for the orgs alone.
+ */
+export const FAILURE_REASONS = [
+  'declined',
+  'insufficient-funds',
+  'wrong-code',
+  'timed-out',
+  'canceled',
+  'failed',
+] as const
+
+export type FailureReason = (typeof FAILURE_REASONS)[number]
+
+/** The result token of an order: it travels in a header, never in a path or a query. */
+export const resultTokenHeaders = z.object({ [RESULT_TOKEN_HEADER]: z.string().min(1).max(200) })
+
+/**
+ * What the result page shows of an order: its status and number alone, no personal data, and
+ * what the page needs to offer another try or a new checkout.
+ */
+export const orderResultSchema = z.object({
+  number: z.string(),
+  status: z.enum(ORDER_STATUSES),
+  /** When the hold of an order awaiting payment ends: a payment attempt starts only within it. */
+  holdEndsAt: timestamp.nullable(),
+  /** Why the last attempt failed, when its provider reported it and the order still awaits. */
+  failureReason: z.enum(FAILURE_REASONS).nullable(),
+  /** For an order that needs review: where the money is, as the provider's module words it. */
+  moneyWith: sentence.nullable(),
+  /** The edition of the order, for the way back to its shop. */
+  editionSlug: z.string(),
+})
+
+export type OrderResult = z.infer<typeof orderResultSchema>
+
+/** A payment attempt just started: where to send the buyer. */
+export const startedAttemptSchema = z.object({ redirectUrl: z.url() })
+
+export type StartedAttempt = z.infer<typeof startedAttemptSchema>
+
 export const checkoutContract = {
   placeOrder: tenantRoute
     .route({
@@ -418,4 +473,50 @@ export const checkoutContract = {
     })
     .input(z.object({ params: z.object({ editionId: z.string() }), body: placeOrderSchema }))
     .output(placedOrderSchema),
+  startPaymentAttempt: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/orders/{orderId}/payment-attempts',
+      successStatus: 201,
+      summary:
+        "Start a payment attempt for the account's own order and answer where to send the buyer; refused with order.hold-ended, order.already-paid or provider.unavailable; any signed-in account",
+    })
+    .input(
+      z.object({
+        params: z.object({ editionId: z.string(), orderId: z.string() }),
+        // The result token, when the tab has it: the address the buyer returns to carries it.
+        headers: resultTokenHeaders.partial(),
+      }),
+    )
+    .output(startedAttemptSchema),
+}
+
+/**
+ * What a payment provider tells the API of an attempt. The body is the provider's own; its
+ * module reads it, and one whose signature does not hold answers as an unknown address.
+ */
+const notification = z.object({
+  params: z.object({ provider: z.string(), attemptId: z.string() }),
+  body: z.unknown(),
+})
+
+export const paymentsContract = {
+  notification: publicRoute
+    .route({
+      method: 'POST',
+      path: '/payments/{provider}/notifications/{attemptId}',
+      summary:
+        "Take a provider's notification of a payment made; answered with provider.unavailable when the provider's process could not be finished, for the provider to repeat it; no sign-in",
+    })
+    .input(notification)
+    .output(z.object({})),
+  additionalNotification: publicRoute
+    .route({
+      method: 'POST',
+      path: '/payments/{provider}/notifications/{attemptId}/additional',
+      summary:
+        'Take what else a provider reports of an attempt: a failure and its reason; no sign-in',
+    })
+    .input(notification)
+    .output(z.object({})),
 }

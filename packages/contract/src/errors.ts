@@ -83,6 +83,8 @@ export const errorCodes = [
   'order.consent-missing',
   'order.email-refused',
   'order.too-many-unpaid',
+  'order.hold-ended',
+  'order.already-paid',
   'bot-check.failed',
 ] as const
 

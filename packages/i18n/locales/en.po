@@ -426,6 +426,10 @@ msgid "The shop cannot be opened yet: something it needs is missing."
 msgstr "The shop cannot be opened yet: something it needs is missing."
 
 #: src/errors.ts
+msgid "The time to pay for this order has ended. Start a new order."
+msgstr "The time to pay for this order has ended. Start a new order."
+
+#: src/errors.ts
 msgid "The total of your order has changed. Check the new total and confirm it."
 msgstr "The total of your order has changed. Check the new total and confirm it."
 
@@ -544,6 +548,10 @@ msgstr "This language is not supported."
 #: src/errors.ts
 msgid "This list has reached its limit of entries: {limit}."
 msgstr "This list has reached its limit of entries: {limit}."
+
+#: src/errors.ts
+msgid "This order does not wait for a payment any more. Check its status."
+msgstr "This order does not wait for a payment any more. Check its status."
 
 #: src/errors.ts
 msgid "This person is already in the team. Change their membership on the team screen."

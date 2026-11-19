@@ -29,6 +29,8 @@ export const ROUTE_RATE_LIMITS = {
   shopQuotes: { limit: 600, ttl: 3_600_000 },
   /** Placing an order, by a visitor or by an account: one counter, per client address. */
   orderPlacements: { limit: 300, ttl: 3_600_000 },
+  /** Starting a payment attempt, by a visitor or by an account: one counter, per client address. */
+  paymentAttempts: { limit: 300, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS

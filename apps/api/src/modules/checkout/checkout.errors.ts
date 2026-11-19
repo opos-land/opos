@@ -42,3 +42,11 @@ export const tooManyUnpaid = (limit: number) =>
   new ApiError(409, 'order.too-many-unpaid', 'Too many orders await payment', { limit })
 
 export const botCheckFailed = () => new ApiError(403, 'bot-check.failed', 'The bot check failed')
+
+/** A payment attempt starts only within the hold of its order. */
+export const holdEnded = () =>
+  new ApiError(409, 'order.hold-ended', 'The hold of the order has ended')
+
+/** The order does not await a payment any more: it was paid, or a payment for it is being settled. */
+export const alreadyPaid = () =>
+  new ApiError(409, 'order.already-paid', 'The order does not await a payment')

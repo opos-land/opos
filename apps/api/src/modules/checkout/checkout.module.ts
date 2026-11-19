@@ -12,18 +12,25 @@ import { OrderPlacement } from './order-placement.service'
 import { OrderSettlement } from './order-settlement.service'
 import { OrdersController } from './orders.controller'
 import { OrdersRepository } from './orders.repository'
+import { PaymentAttempts } from './payment-attempts.service'
+import { PaymentConfirmations } from './payment-confirmations.service'
+import { PaymentsController } from './payments.controller'
+import { PaymentsRepository } from './payments.repository'
 import { ShopPublicController } from './shop.controller'
 
 /** Checkout and orders (docs/specs/0004-checkout-and-orders.md). */
 @Module({
   imports: [CatalogModule, ShopModule, PaymentsModule, PublicModule],
-  controllers: [ShopPublicController, OrdersController],
+  controllers: [ShopPublicController, OrdersController, PaymentsController],
   providers: [
     OfferRepository,
     OfferService,
     OrdersRepository,
     OrderPlacement,
     OrderSettlement,
+    PaymentsRepository,
+    PaymentConfirmations,
+    PaymentAttempts,
     BotCheckPreparation,
     { provide: BOT_CHECK, inject: [ENV], useFactory: (env: Env) => botCheckOf(env) },
   ],

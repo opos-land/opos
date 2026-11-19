@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
-  type Cart,
   cartSchema,
-  type Offer,
+  FAILURE_REASONS,
   offerSchema,
   ORDER_NUMBER_ALPHABET,
+  ORDER_STATUSES,
+  orderResultSchema,
   placeOrderSchema,
   placeVisitorOrderSchema,
   priceCart,
+  RESULT_TOKEN_HEADER,
+  resultTokenHeaders,
+  startedAttemptSchema,
+  type Cart,
+  type Offer,
 } from './checkout'
 import { contract } from './index'
 
@@ -384,5 +390,64 @@ describe('placing an order', () => {
     expect(contract.checkout.placeOrder['~orpc'].route.path).toBe(
       '/editions/{editionId}/shop/orders',
     )
+  })
+})
+
+describe('the result of an order', () => {
+  const result = {
+    number: 'ABCDEFGHJK',
+    status: 'awaiting-payment',
+    holdEndsAt: '2026-05-01T10:30:00.000Z',
+    failureReason: null,
+    moneyWith: null,
+    editionSlug: '2026',
+  }
+
+  // The result page shows no personal data: the order's status and number alone, with what the
+  // page needs to offer another try.
+  it('holds the status and the number, and nothing of the buyer', () => {
+    expect(orderResultSchema.parse(result)).toEqual(result)
+    expect(Object.keys(orderResultSchema.shape).sort()).toEqual([
+      'editionSlug',
+      'failureReason',
+      'holdEndsAt',
+      'moneyWith',
+      'number',
+      'status',
+    ])
+  })
+
+  it.each(ORDER_STATUSES)('takes the status %s', (status) => {
+    expect(orderResultSchema.safeParse({ ...result, status }).success).toBe(true)
+  })
+
+  it.each(FAILURE_REASONS)('takes the reason %s of a failed attempt, and no other', (reason) => {
+    expect(orderResultSchema.safeParse({ ...result, failureReason: reason }).success).toBe(true)
+    expect(orderResultSchema.safeParse({ ...result, failureReason: 'E-4012' }).success).toBe(false)
+  })
+
+  it('says where the money is in each language the provider has it in', () => {
+    const moneyWith = { en: 'With the convention.', pl: 'U konwentu.' }
+
+    expect(orderResultSchema.parse({ ...result, moneyWith }).moneyWith).toEqual(moneyWith)
+  })
+})
+
+describe('the result token', () => {
+  // It travels in a header, never in a path or a query of the API.
+  it('is a header of its own, and is not empty', () => {
+    expect(RESULT_TOKEN_HEADER).toBe('x-result-token')
+    expect(resultTokenHeaders.safeParse({ 'x-result-token': 'abc' }).success).toBe(true)
+    expect(resultTokenHeaders.safeParse({ 'x-result-token': '' }).success).toBe(false)
+    expect(resultTokenHeaders.safeParse({}).success).toBe(false)
+  })
+})
+
+describe('a started payment attempt', () => {
+  it('answers where to send the buyer, as an address', () => {
+    const started = { redirectUrl: 'https://provider.test/pay/1' }
+
+    expect(startedAttemptSchema.parse(started)).toEqual(started)
+    expect(startedAttemptSchema.safeParse({ redirectUrl: 'pay/1' }).success).toBe(false)
   })
 })

@@ -60,6 +60,8 @@ describe('errorCodes', () => {
     'consent.in-use',
     'shop.payments-under-way',
     'edition.has-orders',
+    'order.hold-ended',
+    'order.already-paid',
   ])('lists %s of the refusals an order causes', (code) => {
     expect(errorCodes).toContain(code)
   })

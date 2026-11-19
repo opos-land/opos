@@ -9,6 +9,7 @@ import { ModuleRef, Reflector } from '@nestjs/core'
 import { uploadedFileSchema } from '@opos/contract'
 import { from, lastValueFrom, type Observable } from 'rxjs'
 import { GlobalDbService } from '../database/global-db.service'
+import { CALLS_OUT } from '../decorators/calls-out.decorator'
 import { PREPARES, type Preparation } from '../decorators/prepares.decorator'
 import { TENANT_REQUIREMENT } from '../decorators/require-tenant.decorator'
 import {
@@ -67,8 +68,14 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     const takesFile = this.reflector.get<TakesFileOptions | undefined>(TAKES_FILE, ctx.getHandler())
     const servesFile = this.reflector.get<boolean | undefined>(SERVES_FILE, ctx.getHandler())
     const prepares = this.reflector.get<Type<Preparation> | undefined>(PREPARES, ctx.getHandler())
+    const callsOut = this.reflector.get<boolean | undefined>(CALLS_OUT, ctx.getHandler())
     return from(
-      this.handle(requirement, request, response, next, { takesFile, servesFile, prepares }),
+      this.handle(requirement, request, response, next, {
+        takesFile,
+        servesFile,
+        prepares,
+        callsOut,
+      }),
     )
   }
 
@@ -81,6 +88,7 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       takesFile?: TakesFileOptions
       servesFile?: boolean
       prepares?: Type<Preparation>
+      callsOut?: boolean
     } = {},
   ) {
     const slug = request.headers['x-tenant-slug']
@@ -129,10 +137,15 @@ export class TenantTransactionInterceptor implements NestInterceptor {
         () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,
         ended,
       )
-    if (files.servesFile) {
+    if (files.callsOut && requirement.kind !== 'account') {
+      // Its handler writes in transactions of its own, with no write lock: only a route that
+      // lowers nobody's access and asks no membership may.
+      throw new Error('A route that calls out between its transactions asks no membership')
+    }
+    if (files.servesFile || files.callsOut) {
       if (write) throw new Error('A route that serves a file is a read')
-      // Checked in a short transaction, then run outside every transaction, so the bucket and
-      // imgproxy are never waited for inside one (modules/files).
+      // Checked in a short transaction, then run outside every transaction, so the bucket,
+      // imgproxy and a payment provider are never waited for inside one (modules/files).
       const membership = await this.context.transaction(tenant.id, async () => {
         await admit()
         return this.context.membership()

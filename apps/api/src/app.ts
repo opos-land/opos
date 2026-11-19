@@ -38,7 +38,14 @@ export async function configureApp(app: NestExpressApplication, env: Env) {
       applicationFromOrigin((req as { headers: { origin?: unknown } }).headers.origin, env) !== null
     callback(null, {
       origin: allowed ? applicationOrigins(env) : false,
-      allowedHeaders: ['Authorization', 'Content-Type', 'X-Tenant-Slug', 'Accept-Language'],
+      allowedHeaders: [
+        'Authorization',
+        'Content-Type',
+        'X-Tenant-Slug',
+        'Accept-Language',
+        // The result token of an order, which travels in no path and no query.
+        'X-Result-Token',
+      ],
       // Not CORS-safelisted: without this an application cannot read it on a 429.
       exposedHeaders: ['Retry-After'],
       // The session travels in the API's cookies, for these origins only.

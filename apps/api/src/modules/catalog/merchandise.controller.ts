@@ -145,7 +145,7 @@ export class MerchandiseController {
       const { editionId, itemId, valueId } = input.params
       const item = await this.items.get(editionId, itemId)
       if (!hasValue(item, valueId)) throw notFound('option value')
-      const old = await this.items.clearSizeChart(valueId)
+      const old = await this.items.clearSizeChart(item, valueId)
       if (old) await this.files.release(SIZE_CHART_KIND, old, editionId)
       const kept = await this.files.keep(this.files.received(), editionId)
       await this.items.setSizeChart(editionId, valueId, kept.id)
@@ -159,7 +159,7 @@ export class MerchandiseController {
     return implement(contract.catalog.merchandise.removeSizeChart).handler(async ({ input }) => {
       const { editionId, itemId, valueId } = input.params
       const item = await this.items.get(editionId, itemId)
-      const fileId = hasValue(item, valueId) ? await this.items.clearSizeChart(valueId) : undefined
+      const fileId = await this.items.clearSizeChart(item, valueId)
       if (!fileId) throw notFound('size chart')
       await this.files.release(SIZE_CHART_KIND, fileId, editionId)
     })
@@ -178,11 +178,11 @@ export class MerchandiseController {
     return implement(contract.catalog.merchandise.file).handler(async ({ input }) => {
       const { editionId, fileId, variant } = input.params
       if (!isUuid(fileId)) throw notFound('file')
-      const kind = await this.context.withTenant(this.context.tenant().id, () =>
-        this.items.fileKind(editionId, fileId),
+      const found = await this.context.withTenant(this.context.tenant().id, () =>
+        this.items.file(editionId, fileId),
       )
-      if (!kind) throw notFound('file')
-      const file = await this.files.open(kind, fileId, { variant, editionId })
+      if (!found) throw notFound('file')
+      const file = await this.files.open(found.kind, found.fileId, { variant, editionId })
       return this.files.answer(file, { forEveryone: false })
     })
   }

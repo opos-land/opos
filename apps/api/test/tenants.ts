@@ -272,6 +272,7 @@ export async function addMerchandiseItem(
     returning id
   `)
   let valueId: string | undefined
+  let chartFileId: string | undefined
   if (values.sized) {
     const [axis] = await db.execute<{ id: string }>(sql`
       insert into merchandise_option_axes (tenant_id, edition_id, merchandise_item_id, name, position)
@@ -290,22 +291,26 @@ export async function addMerchandiseItem(
         (tenant_id, edition_id, merchandise_item_id, variant_id, axis_id, option_value_id)
       values (${at}, ${id}, ${variant!.id}, ${axis!.id}, ${valueId})
     `)
+    chartFileId = await addImage(tenantId, editionId, 'merchandise-size-chart')
     await db.execute(sql`
       insert into merchandise_size_charts (tenant_id, edition_id, option_value_id, file_id)
-      values (${at}, ${valueId}, ${await addImage(tenantId, editionId, 'merchandise-size-chart')})
+      values (${at}, ${valueId}, ${chartFileId})
     `)
   }
   const pictureIds: string[] = []
+  const pictureFileIds: string[] = []
   for (let place = 1; place <= (values.pictures ?? 0); place += 1) {
+    const fileId = await addImage(tenantId, editionId, 'merchandise-picture')
     const [picture] = await db.execute<{ id: string }>(sql`
       insert into merchandise_item_pictures
         (tenant_id, edition_id, merchandise_item_id, file_id, position)
-      values (${at}, ${id}, ${await addImage(tenantId, editionId, 'merchandise-picture')}, ${place})
+      values (${at}, ${id}, ${fileId}, ${place})
       returning id
     `)
     pictureIds.push(picture!.id)
+    pictureFileIds.push(fileId)
   }
-  return { id, variantId: variant!.id, valueId, pictureIds }
+  return { id, variantId: variant!.id, valueId, chartFileId, pictureIds, pictureFileIds }
 }
 
 /**

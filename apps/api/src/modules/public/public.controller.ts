@@ -151,7 +151,11 @@ export class PublicController {
         .catch(suspendedAsNotFound('convention'))
       if (!shown) throw notFound('file')
       const file = await this.files
-        .open(shown.kind, fileId, { variant, editionId: shown.editionId, tenantId: tenant.id })
+        .open(shown.kind, shown.fileId, {
+          variant,
+          editionId: shown.editionId,
+          tenantId: tenant.id,
+        })
         .catch(suspendedAsNotFound('convention'))
       return this.files.answer(file, { forEveryone: true })
     })

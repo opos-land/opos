@@ -389,7 +389,7 @@ describe('the axes of an item', () => {
     expect(bare.variants).toMatchObject([{ valueIds: [], stock: 0 }])
   })
 
-  it('take no axis or value of another item', async () => {
+  it('take no axis or value of another item: it is unknown here', async () => {
     const c = await convention()
     const made = await addShirt(c)
     const other = await addShirt(c)
@@ -401,11 +401,14 @@ describe('the axes of an item', () => {
       [{ ...cut!, values: [theirCut!.values[0]!] }],
       [{ id: randomUUID(), name: 'Size', values: [{ label: 'M' }] }],
     ]) {
-      const res = await c.as('patch', `/merchandise-items/${made.id}`, { axes }).expect(400)
-      expect(res.body).toMatchObject({ code: 'request.invalid' })
+      const res = await c.as('patch', `/merchandise-items/${made.id}`, { axes }).expect(404)
+      expect(res.body).toMatchObject({ code: 'request.not-found' })
     }
     expect(axesOf(item(await c.as('patch', `/merchandise-items/${made.id}`, {})))).toEqual(
       axesOf(made),
+    )
+    expect(axesOf(item(await c.as('patch', `/merchandise-items/${other.id}`, {})))).toEqual(
+      axesOf(other),
     )
   })
 })
@@ -464,10 +467,6 @@ describe('the variants of an item', () => {
       'a combination twice',
       (of: MerchandiseItem) => [combination(of, "Women's", 'S'), combination(of, 'S', "Women's")],
     ],
-    [
-      'a value that is no value of the item',
-      (of: MerchandiseItem) => [{ valueIds: [valueOf(of, 'S'), randomUUID()] }],
-    ],
   ])('are refused with %s, and the list stays', async (_, build) => {
     const c = await convention()
     const made = await addShirt(c)
@@ -477,6 +476,21 @@ describe('the variants of an item', () => {
       .expect(400)
 
     expect(res.body).toMatchObject({ code: 'request.invalid' })
+    expect(await storedRows('merchandise_variants', c.t.id)).toEqual([])
+  })
+
+  it('take no value of another item: it is unknown here', async () => {
+    const c = await convention()
+    const [made, other] = [await addShirt(c), await addShirt(c)]
+
+    for (const foreign of [valueOf(other, 'S'), randomUUID()]) {
+      const res = await c
+        .as('put', `/merchandise-items/${made.id}/variants`, {
+          variants: [{ valueIds: [valueOf(made, "Women's"), foreign] }],
+        })
+        .expect(404)
+      expect(res.body).toMatchObject({ code: 'request.not-found' })
+    }
     expect(await storedRows('merchandise_variants', c.t.id)).toEqual([])
   })
 
@@ -615,10 +629,19 @@ describe('the pictures of an item', () => {
     for (const pictureIds of [
       [ids[0], ids[1]],
       [ids[0], ids[0], ids[1]],
-      [...ids, randomUUID()],
     ]) {
       await c.as('patch', `/merchandise-items/${made.id}`, { pictureIds }).expect(400)
     }
+    // A picture of another item, or of none, is unknown here.
+    const other = await addMerchandiseItem(c.t.id, c.edition, { pictures: 1 })
+    for (const foreign of [other.pictureIds[0]!, randomUUID()]) {
+      await c
+        .as('patch', `/merchandise-items/${made.id}`, { pictureIds: [...ids, foreign] })
+        .expect(404)
+    }
+    expect(item(await c.as('patch', `/merchandise-items/${made.id}`, {})).pictures).toEqual(
+      moved.pictures,
+    )
   })
 
   it('are removed one at a time, the file with the picture', async () => {
@@ -638,6 +661,22 @@ describe('the pictures of an item', () => {
     ])
     expect(await objectKeys(fileKey('edition', c.t.id, pictures[0]!.fileId))).toEqual([])
     await c.as('delete', `/merchandise-items/${made.id}/pictures/${pictures[0]!.id}`).expect(404)
+  })
+
+  it('are removed through their own item alone', async () => {
+    const c = await convention()
+    const made = item(await c.as('post', '/merchandise-items', mug))
+    const other = await addMerchandiseItem(c.t.id, c.edition, { pictures: 1 })
+    const elsewhere = await addMerchandiseItem(c.t.id, await addEdition(c.t.id), { pictures: 1 })
+    const theirs = await addMerchandiseItem(b.id, editionB, { pictures: 1 })
+
+    for (const foreign of [other, elsewhere, theirs]) {
+      await c
+        .as('delete', `/merchandise-items/${made.id}/pictures/${foreign.pictureIds[0]}`)
+        .expect(404)
+    }
+    expect(await storedRows('merchandise_item_pictures', c.t.id)).toHaveLength(2)
+    expect(await storedRows('merchandise_item_pictures', b.id)).toHaveLength(1)
   })
 
   it.each([
@@ -732,6 +771,22 @@ describe('the size chart of a value', () => {
     expect(await storedFiles(c.t.id, 'merchandise-size-chart')).toEqual([])
   })
 
+  it('is taken away through its own item alone', async () => {
+    const c = await convention()
+    const made = await addShirt(c)
+    const other = await addMerchandiseItem(c.t.id, c.edition, { sized: true })
+    const elsewhere = await addMerchandiseItem(c.t.id, await addEdition(c.t.id), { sized: true })
+    const theirs = await addMerchandiseItem(b.id, editionB, { sized: true })
+
+    for (const foreign of [other, elsewhere, theirs]) {
+      await c
+        .as('delete', `/merchandise-items/${made.id}/option-values/${foreign.valueId}/size-chart`)
+        .expect(404)
+    }
+    expect(await storedRows('merchandise_size_charts', c.t.id)).toHaveLength(2)
+    expect(await storedRows('merchandise_size_charts', b.id)).toHaveLength(1)
+  })
+
   it('goes with its value', async () => {
     const c = await convention()
     const made = await addShirt(c)
@@ -796,6 +851,23 @@ describe("a picture as the edition's orgs read it", () => {
       expect(res.headers['content-type']).toBe('image/webp')
       expect(res.headers['cache-control']).toMatch(/no-store/)
     }
+  })
+
+  // A uuid reads the same in either case, and the bucket's keys do not: the file is opened by the
+  // identifier its row holds, never by the text of the address.
+  it('is served under its identifier written in capitals too', async () => {
+    const c = await convention()
+    const files = await withFiles(c)
+    await setPublished(c.edition, true)
+    const loud = files.shot.toUpperCase()
+
+    const asOrg = await c.as('get', `/merchandise-files/${loud}/large`)
+    const asAnyone = await anyone().get(
+      `/public/tenants/${c.t.slug}/merchandise-files/${loud}/large`,
+    )
+
+    expect([asOrg.status, asAnyone.status]).toEqual([200, 200])
+    expect(asAnyone.headers['content-type']).toBe('image/webp')
   })
 
   it('is no file of the edition when it is anything else', async () => {

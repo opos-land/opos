@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { type TenantContextService } from '../src/common/als/tenant-context.service'
 import { AccessRepository } from '../src/common/permissions/access.repository'
 import { LogoRepository } from '../src/modules/branding/logo.repository'
+import { MerchandiseRepository } from '../src/modules/catalog/merchandise.repository'
 import { DocumentsRepository } from '../src/modules/shop/documents.repository'
 import { InvitationsRepository } from '../src/modules/tenants/invitations.repository'
 import { deleteCreatedAccounts } from './auth'
@@ -11,11 +12,13 @@ import {
   addEdition,
   addEditionAccess,
   addLogo,
+  addMerchandiseItem,
   addOrg,
   closeTenantDb,
   deleteCreatedTenants,
   member,
   type Member,
+  setPublished,
   storedMembership,
   tenantWithHead,
   withoutRls,
@@ -91,6 +94,23 @@ describe('the file of a published version', () => {
 
     expect(await find(a.id)).toBeUndefined()
     expect(await find(b.id)).toEqual({ fileId: document.fileIds[0], editionId: editionOfB })
+  })
+})
+
+describe('a file of merchandise that is for everyone', () => {
+  it("finds no picture and no size chart of another tenant in this tenant's transaction", async () => {
+    await setPublished(editionOfB, true)
+    const item = await addMerchandiseItem(b.id, editionOfB, { sized: true, pictures: 1 })
+    const find = (tenantId: string, fileId: string) =>
+      withoutRls(a.id, (tx) => new MerchandiseRepository(contextOf(tx)).shownFile(tenantId, fileId))
+
+    for (const [fileId, kind] of [
+      [item.pictureFileIds[0]!, 'merchandise-picture'],
+      [item.chartFileId!, 'merchandise-size-chart'],
+    ] as const) {
+      expect(await find(a.id, fileId)).toBeUndefined()
+      expect(await find(b.id, fileId)).toEqual({ kind, fileId, editionId: editionOfB })
+    }
   })
 })
 

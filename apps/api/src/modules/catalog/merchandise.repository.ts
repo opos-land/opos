@@ -20,6 +20,7 @@ import {
   uploadedFiles,
 } from '@opos/db'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import { type AnyPgColumn } from 'drizzle-orm/pg-core'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
 import { moved } from '../../common/order'
@@ -69,6 +70,18 @@ export class MerchandiseRepository {
 
   private inEdition(editionId: string, id: string) {
     return and(eq(merchandiseItems.editionId, editionId), eq(merchandiseItems.id, id))
+  }
+
+  /**
+   * A row of the item, by its identifier. The caller found the identifier among the item's own
+   * rows already; the statement names the item too, so that it holds whoever calls it.
+   */
+  private ofItem<Table extends { id: AnyPgColumn; merchandiseItemId: AnyPgColumn }>(
+    table: Table,
+    item: Pick<MerchandiseItem, 'id'>,
+    id: string,
+  ) {
+    return and(eq(table.merchandiseItemId, item.id), eq(table.id, id))
   }
 
   /** The items as a screen shows them, each with its axes, its variants and its pictures. */
@@ -254,7 +267,7 @@ export class MerchandiseRepository {
     const { axes = [], ...fields } = values
     const [row] = await tx
       .insert(merchandiseItems)
-      .values({ ...this.at(editionId), ...fields, position: held.length + 1 })
+      .values({ ...fields, ...this.at(editionId), position: held.length + 1 })
       .returning({ id: merchandiseItems.id })
     if (axes.length === 0) await this.addBareVariant(editionId, row!.id)
     else await this.addAxes(editionId, row!.id, axes)
@@ -308,10 +321,12 @@ export class MerchandiseRepository {
     const stored = new Map(item.axes.map((axis) => [axis.id, axis]))
     for (const axis of axes) {
       const own = axis.id === undefined ? undefined : stored.get(axis.id)
-      if (axis.id !== undefined && !own) throw invalidField('axes', 'An axis of another item')
+      // An axis of another item and a value of another axis are unknown here, as a row outside
+      // the parent its path names is.
+      if (axis.id !== undefined && !own) throw notFound('option axis')
       const ownValues = new Set(own?.values.map((value) => value.id))
       if (axis.values.some((value) => value.id !== undefined && !ownValues.has(value.id))) {
-        throw invalidField('axes', 'A value of another axis')
+        throw notFound('option value')
       }
     }
     const keptAxes = new Set(axes.flatMap((axis) => axis.id ?? []))
@@ -340,16 +355,24 @@ export class MerchandiseRepository {
     }
     if (goneAxes.length > 0) {
       await tx.delete(merchandiseOptionAxes).where(
-        inArray(
-          merchandiseOptionAxes.id,
-          goneAxes.map((axis) => axis.id),
+        and(
+          eq(merchandiseOptionAxes.merchandiseItemId, id),
+          inArray(
+            merchandiseOptionAxes.id,
+            goneAxes.map((axis) => axis.id),
+          ),
         ),
       )
     }
     if (goneValues.length > 0) {
       await tx
         .delete(merchandiseOptionValues)
-        .where(inArray(merchandiseOptionValues.id, goneValues))
+        .where(
+          and(
+            eq(merchandiseOptionValues.merchandiseItemId, id),
+            inArray(merchandiseOptionValues.id, goneValues),
+          ),
+        )
     }
     const of = { ...this.at(editionId), merchandiseItemId: id }
     for (const [index, axis] of axes.entries()) {
@@ -360,7 +383,7 @@ export class MerchandiseRepository {
       await tx
         .update(merchandiseOptionAxes)
         .set({ name: axis.name, position: index + 1 })
-        .where(eq(merchandiseOptionAxes.id, axis.id))
+        .where(this.ofItem(merchandiseOptionAxes, item, axis.id))
       for (const [place, value] of axis.values.entries()) {
         if (value.id === undefined) {
           await tx
@@ -370,7 +393,7 @@ export class MerchandiseRepository {
           await tx
             .update(merchandiseOptionValues)
             .set({ label: value.label, position: place + 1 })
-            .where(eq(merchandiseOptionValues.id, value.id))
+            .where(this.ofItem(merchandiseOptionValues, item, value.id))
         }
       }
     }
@@ -382,11 +405,8 @@ export class MerchandiseRepository {
   async orderPictures(item: MerchandiseItem, pictureIds: readonly string[]) {
     const own = new Set(item.pictures.map((picture) => picture.id))
     const named = new Set(pictureIds)
-    if (
-      named.size !== pictureIds.length ||
-      named.size !== own.size ||
-      pictureIds.some((id) => !own.has(id))
-    ) {
+    if (pictureIds.some((id) => !own.has(id))) throw notFound('picture')
+    if (named.size !== pictureIds.length || named.size !== own.size) {
       throw invalidField('pictureIds', 'Every picture of the item, once each')
     }
     const tx = this.context.tx()
@@ -394,7 +414,7 @@ export class MerchandiseRepository {
       await tx
         .update(merchandiseItemPictures)
         .set({ position: index + 1 })
-        .where(eq(merchandiseItemPictures.id, pictureId))
+        .where(this.ofItem(merchandiseItemPictures, item, pictureId))
     }
   }
 
@@ -435,11 +455,8 @@ export class MerchandiseRepository {
     const wanted = new Map<string, (typeof variants)[number]>()
     for (const variant of variants) {
       const axes = new Set(variant.valueIds.map((valueId) => axisOf.get(valueId)))
-      if (
-        axes.has(undefined) ||
-        axes.size !== item.axes.length ||
-        variant.valueIds.length !== item.axes.length
-      ) {
+      if (axes.has(undefined)) throw notFound('option value')
+      if (axes.size !== item.axes.length || variant.valueIds.length !== item.axes.length) {
         throw invalidField('variants', 'A variant has one value of each axis of its item')
       }
       const key = variantKey(variant.valueIds)
@@ -451,7 +468,14 @@ export class MerchandiseRepository {
     const stored = new Map(item.variants.map((variant) => [variantKey(variant.valueIds), variant]))
     const gone = [...stored].filter(([key]) => !wanted.has(key)).map(([, variant]) => variant.id)
     if (gone.length > 0) {
-      await tx.delete(merchandiseVariants).where(inArray(merchandiseVariants.id, gone))
+      await tx
+        .delete(merchandiseVariants)
+        .where(
+          and(
+            eq(merchandiseVariants.merchandiseItemId, item.id),
+            inArray(merchandiseVariants.id, gone),
+          ),
+        )
     }
     const of = { ...this.at(item.editionId), merchandiseItemId: item.id }
     for (const [key, variant] of wanted) {
@@ -461,7 +485,7 @@ export class MerchandiseRepository {
           await tx
             .update(merchandiseVariants)
             .set({ hiddenAt: hiddenAt(merchandiseVariants.hiddenAt, variant.hidden) })
-            .where(eq(merchandiseVariants.id, own.id))
+            .where(this.ofItem(merchandiseVariants, item, own.id))
         }
         continue
       }
@@ -487,7 +511,7 @@ export class MerchandiseRepository {
       .tx()
       .update(merchandiseVariants)
       .set({ stock })
-      .where(eq(merchandiseVariants.id, variantId))
+      .where(this.ofItem(merchandiseVariants, item, variantId))
     return true
   }
 
@@ -514,22 +538,35 @@ export class MerchandiseRepository {
     const picture = item.pictures.find((shot) => shot.id === pictureId)
     if (!picture) return undefined
     const tx = this.context.tx()
-    await tx.delete(merchandiseItemPictures).where(eq(merchandiseItemPictures.id, picture.id))
+    await tx
+      .delete(merchandiseItemPictures)
+      .where(this.ofItem(merchandiseItemPictures, item, picture.id))
     for (const [index, left] of item.pictures.filter((shot) => shot.id !== picture.id).entries()) {
       await tx
         .update(merchandiseItemPictures)
         .set({ position: index + 1 })
-        .where(eq(merchandiseItemPictures.id, left.id))
+        .where(this.ofItem(merchandiseItemPictures, item, left.id))
     }
     return picture.fileId
   }
 
-  /** Takes away the size chart of a value; answers its file, or none. */
-  async clearSizeChart(valueId: string): Promise<string | undefined> {
+  /**
+   * Takes away the size chart of a value of the item; answers its file, or none. A value that is
+   * not the item's has no chart here, whatever chart it has elsewhere.
+   */
+  async clearSizeChart(item: MerchandiseItem, valueId: string): Promise<string | undefined> {
+    if (!item.axes.some((axis) => axis.values.some((value) => value.id === valueId))) {
+      return undefined
+    }
     const [gone] = await this.context
       .tx()
       .delete(merchandiseSizeCharts)
-      .where(eq(merchandiseSizeCharts.optionValueId, valueId))
+      .where(
+        and(
+          eq(merchandiseSizeCharts.editionId, item.editionId),
+          eq(merchandiseSizeCharts.optionValueId, valueId),
+        ),
+      )
       .returning({ fileId: merchandiseSizeCharts.fileId })
     return gone?.fileId
   }
@@ -543,13 +580,17 @@ export class MerchandiseRepository {
   }
 
   /**
-   * The kind of a file of the edition's merchandise: a picture or a size chart of one of its
-   * items, hidden ones too. Anything else is no file of this route.
+   * A file of the edition's merchandise: a picture or a size chart of one of its items, hidden
+   * ones too, with its kind. Anything else is no file of this route. The identifier is the one
+   * the row holds: a uuid reads the same in either case, and the bucket's keys do not.
    */
-  async fileKind(editionId: string, fileId: string): Promise<string | undefined> {
+  async file(
+    editionId: string,
+    fileId: string,
+  ): Promise<{ kind: string; fileId: string } | undefined> {
     const tx = this.context.tx()
     const [picture] = await tx
-      .select({ id: merchandiseItemPictures.id })
+      .select({ fileId: merchandiseItemPictures.fileId })
       .from(merchandiseItemPictures)
       .where(
         and(
@@ -557,9 +598,9 @@ export class MerchandiseRepository {
           eq(merchandiseItemPictures.fileId, fileId),
         ),
       )
-    if (picture) return PICTURE_KIND
+    if (picture) return { kind: PICTURE_KIND, fileId: picture.fileId }
     const [chart] = await tx
-      .select({ id: merchandiseSizeCharts.optionValueId })
+      .select({ fileId: merchandiseSizeCharts.fileId })
       .from(merchandiseSizeCharts)
       .where(
         and(
@@ -567,18 +608,19 @@ export class MerchandiseRepository {
           eq(merchandiseSizeCharts.fileId, fileId),
         ),
       )
-    return chart ? SIZE_CHART_KIND : undefined
+    return chart ? { kind: SIZE_CHART_KIND, fileId: chart.fileId } : undefined
   }
 
   /**
    * A file of the tenant's merchandise that is for everyone: a picture or a size chart of an item
    * that is not hidden, of a published edition. The query names the tenant itself besides RLS,
-   * since what it answers decides which file anyone may read.
+   * since what it answers decides which file anyone may read. The identifier is the one the row
+   * holds, as in `file`.
    */
   async shownFile(
     tenantId: string,
     fileId: string,
-  ): Promise<{ kind: string; editionId: string } | undefined> {
+  ): Promise<{ kind: string; fileId: string; editionId: string } | undefined> {
     const tx = this.context.tx()
     const shown = and(
       eq(merchandiseItems.tenantId, tenantId),
@@ -586,7 +628,10 @@ export class MerchandiseRepository {
       eq(editions.isPublished, true),
     )
     const [picture] = await tx
-      .select({ editionId: merchandiseItemPictures.editionId })
+      .select({
+        fileId: merchandiseItemPictures.fileId,
+        editionId: merchandiseItemPictures.editionId,
+      })
       .from(merchandiseItemPictures)
       .innerJoin(
         merchandiseItems,
@@ -594,9 +639,9 @@ export class MerchandiseRepository {
       )
       .innerJoin(editions, eq(editions.id, merchandiseItems.editionId))
       .where(and(eq(merchandiseItemPictures.fileId, fileId), shown))
-    if (picture) return { kind: PICTURE_KIND, editionId: picture.editionId }
+    if (picture) return { kind: PICTURE_KIND, ...picture }
     const [chart] = await tx
-      .select({ editionId: merchandiseSizeCharts.editionId })
+      .select({ fileId: merchandiseSizeCharts.fileId, editionId: merchandiseSizeCharts.editionId })
       .from(merchandiseSizeCharts)
       .innerJoin(
         merchandiseOptionValues,
@@ -608,6 +653,6 @@ export class MerchandiseRepository {
       )
       .innerJoin(editions, eq(editions.id, merchandiseItems.editionId))
       .where(and(eq(merchandiseSizeCharts.fileId, fileId), shown))
-    return chart ? { kind: SIZE_CHART_KIND, editionId: chart.editionId } : undefined
+    return chart ? { kind: SIZE_CHART_KIND, ...chart } : undefined
   }
 }

@@ -18,6 +18,7 @@ import {
   ticketTypeSupporterPrices,
 } from '@opos/db'
 import { and, asc, eq, inArray } from 'drizzle-orm'
+import { type AnyPgColumn } from 'drizzle-orm/pg-core'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
 import { moved } from '../../common/order'
@@ -220,8 +221,11 @@ export class TicketTypesRepository {
   private async setLists(editionId: string, id: string, lists: Lists) {
     const tx = this.context.tx()
     const of = { tenantId: this.context.tenant().id, editionId, ticketTypeId: id }
+    /** The rows of a list of this ticket type, in the edition the request was checked against. */
+    const own = (list: { editionId: AnyPgColumn; ticketTypeId: AnyPgColumn }) =>
+      and(eq(list.editionId, editionId), eq(list.ticketTypeId, id))
     if (lists.tiers) {
-      await tx.delete(ticketTypePriceTiers).where(eq(ticketTypePriceTiers.ticketTypeId, id))
+      await tx.delete(ticketTypePriceTiers).where(own(ticketTypePriceTiers))
       if (lists.tiers.length > 0) {
         await tx.insert(ticketTypePriceTiers).values(
           lists.tiers.map((tier) => ({
@@ -234,9 +238,7 @@ export class TicketTypesRepository {
       }
     }
     if (lists.supporterPrices) {
-      await tx
-        .delete(ticketTypeSupporterPrices)
-        .where(eq(ticketTypeSupporterPrices.ticketTypeId, id))
+      await tx.delete(ticketTypeSupporterPrices).where(own(ticketTypeSupporterPrices))
       if (lists.supporterPrices.length > 0) {
         await tx
           .insert(ticketTypeSupporterPrices)
@@ -244,7 +246,7 @@ export class TicketTypesRepository {
       }
     }
     if (lists.perks) {
-      await tx.delete(ticketTypePerks).where(eq(ticketTypePerks.ticketTypeId, id))
+      await tx.delete(ticketTypePerks).where(own(ticketTypePerks))
       if (lists.perks.length > 0) {
         await tx
           .insert(ticketTypePerks)
@@ -252,7 +254,7 @@ export class TicketTypesRepository {
       }
     }
     if (lists.addOnIds) {
-      await tx.delete(ticketTypeAddOns).where(eq(ticketTypeAddOns.ticketTypeId, id))
+      await tx.delete(ticketTypeAddOns).where(own(ticketTypeAddOns))
       if (lists.addOnIds.length > 0) {
         await tx
           .insert(ticketTypeAddOns)
@@ -260,9 +262,7 @@ export class TicketTypesRepository {
       }
     }
     if (lists.merchandiseItemIds) {
-      await tx
-        .delete(ticketTypeMerchandiseItems)
-        .where(eq(ticketTypeMerchandiseItems.ticketTypeId, id))
+      await tx.delete(ticketTypeMerchandiseItems).where(own(ticketTypeMerchandiseItems))
       if (lists.merchandiseItemIds.length > 0) {
         await tx
           .insert(ticketTypeMerchandiseItems)
@@ -283,11 +283,12 @@ export class TicketTypesRepository {
     const { addOnIds, merchandiseItemIds, ...row } = fields
     const [made] = await tx
       .insert(ticketTypes)
+      // The tenant and the edition come last, whatever the values hold.
       .values({
-        tenantId: this.context.tenant().id,
-        editionId,
         ...row,
         ...allowed(ageBands),
+        tenantId: this.context.tenant().id,
+        editionId,
         saleStartsAt: new Date(saleStartsAt),
         saleEndsAt: new Date(saleEndsAt),
         position: held.length + 1,

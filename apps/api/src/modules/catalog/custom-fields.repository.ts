@@ -73,10 +73,11 @@ export class CustomFieldsRepository {
     const [row] = await this.context
       .tx()
       .insert(editionCustomFields)
+      // The tenant and the edition come last, whatever the values hold.
       .values({
+        ...values,
         tenantId: this.context.tenant().id,
         editionId,
-        ...values,
         position: held.length + 1,
       })
       .returning(columns)

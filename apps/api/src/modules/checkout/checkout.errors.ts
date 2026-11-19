@@ -17,3 +17,28 @@ export const orderUnavailable = (problem: Exclude<CartProblem, { kind: 'closed' 
 /** The refusal a cart's problem stands for. */
 export const cartRefusal = (problem: CartProblem) =>
   problem.kind === 'closed' ? shopClosed() : orderUnavailable(problem)
+
+/** A field of an order that does not fit what the shop displays. */
+export const invalidOrder = (field: string, message: string) =>
+  new ApiError(400, 'request.invalid', message, { field })
+
+/** The total differs from the one the buyer saw: nothing is placed, and the new one is told. */
+export const totalChanged = (totalMinor: number) =>
+  new ApiError(409, 'order.total-changed', 'The total of the order changed', { totalMinor })
+
+/**
+ * A consent the order needs was not accepted: one of the edition's, by its identifier, the
+ * provider's own, or a teen's guardian's on paper.
+ */
+export const consentMissing = (consent: string) =>
+  new ApiError(422, 'order.consent-missing', 'A required consent is missing', { consent })
+
+/** The provider's module cannot take the buyer's email. */
+export const emailRefused = () =>
+  new ApiError(422, 'order.email-refused', 'The payment provider cannot take the email')
+
+/** The email holds the most orders awaiting payment it may in the edition. */
+export const tooManyUnpaid = (limit: number) =>
+  new ApiError(409, 'order.too-many-unpaid', 'Too many orders await payment', { limit })
+
+export const botCheckFailed = () => new ApiError(403, 'bot-check.failed', 'The bot check failed')

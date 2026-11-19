@@ -3,14 +3,29 @@ import { CatalogModule } from '../catalog/catalog.module'
 import { PaymentsModule } from '../payments/payments.module'
 import { PublicModule } from '../public/public.module'
 import { ShopModule } from '../shop/shop.module'
+import { ENV, type Env } from '../../config/env'
+import { BOT_CHECK, botCheckOf } from './bot-check'
+import { BotCheckPreparation } from './bot-check.preparation'
 import { OfferRepository } from './offer.repository'
 import { OfferService } from './offer.service'
+import { OrderPlacement } from './order-placement.service'
+import { OrderSettlement } from './order-settlement.service'
+import { OrdersController } from './orders.controller'
+import { OrdersRepository } from './orders.repository'
 import { ShopPublicController } from './shop.controller'
 
 /** Checkout and orders (docs/specs/0004-checkout-and-orders.md). */
 @Module({
   imports: [CatalogModule, ShopModule, PaymentsModule, PublicModule],
-  controllers: [ShopPublicController],
-  providers: [OfferRepository, OfferService],
+  controllers: [ShopPublicController, OrdersController],
+  providers: [
+    OfferRepository,
+    OfferService,
+    OrdersRepository,
+    OrderPlacement,
+    OrderSettlement,
+    BotCheckPreparation,
+    { provide: BOT_CHECK, inject: [ENV], useFactory: (env: Env) => botCheckOf(env) },
+  ],
 })
 export class CheckoutModule {}

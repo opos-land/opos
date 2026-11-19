@@ -142,7 +142,21 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
     }
     if (files.takesFile && !write) throw new Error('A route that takes a file is a write')
-    if (files.prepares && !write) throw new Error('A route that prepares is a write')
+    /** Runs the preparation outside every transaction, as the tenant whose requirement passed. */
+    const prepare = async (prepares: Type<Preparation>) => {
+      enter()
+      const preparation = this.modules.get<Preparation>(prepares, { strict: false })
+      TenantContextService.store().prepared = await preparation.prepare(request.body)
+    }
+    if (files.prepares && !write) {
+      // A read's requirement is judged inside its one transaction, after any call out. Only a
+      // route that asks no membership has nothing left to judge: its session passed already.
+      if (requirement.kind !== 'account') {
+        throw new Error('A route that prepares is a write, or one that asks no membership')
+      }
+      await prepare(files.prepares)
+      return run()
+    }
     if (!write) return run()
     // A write is checked once in a short transaction of its own, so a refused one never queues,
     // then waits in its tenant's queue without a connection, then runs and gives its turn back
@@ -153,13 +167,9 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       enter()
       await this.receive(files.takesFile, request)
     }
-    if (files.prepares) {
-      // The tenant whose requirement just passed, and no transaction: the outbound call the
-      // route's transaction then acts on, such as a payment provider's check of credentials.
-      enter()
-      const preparation = this.modules.get<Preparation>(files.prepares, { strict: false })
-      TenantContextService.store().prepared = await preparation.prepare(request.body)
-    }
+    // The outbound call the route's transaction then acts on, such as a payment provider's check
+    // of credentials.
+    if (files.prepares) await prepare(files.prepares)
     return this.queue.run(tenant.id, (release) => run(release))
   }
 

@@ -63,6 +63,11 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'ticket-type.tiers-overlap': msg`Two price tiers cover the same time. A ticket type has one price at a time: change the dates so that the tiers do not overlap.`,
   'shop.closed': msg`This shop is not selling right now.`,
   'order.unavailable': msg`Something in your order is no longer available. Check your order and try again.`,
+  'order.total-changed': msg`The total of your order has changed. Check the new total and confirm it.`,
+  'order.consent-missing': msg`Accept every required consent to place the order.`,
+  'order.email-refused': msg`The payment provider cannot take this email address. Use a shorter one.`,
+  'order.too-many-unpaid': msg`This email address already has orders waiting for payment. Pay one of them or wait until it expires.`,
+  'bot-check.failed': msg`We could not confirm that you are not a robot. Try again.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 
   'tenant.not-found': msg`We could not find this convention.`,

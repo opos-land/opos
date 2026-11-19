@@ -63,6 +63,7 @@ describe('RouteRateLimiter', () => {
       uploads: { limit: 120, ttl: 3_600_000 },
       providerConnects: { limit: 20, ttl: 3_600_000 },
       shopQuotes: { limit: 600, ttl: 3_600_000 },
+      orderPlacements: { limit: 300, ttl: 3_600_000 },
     })
   })
 })

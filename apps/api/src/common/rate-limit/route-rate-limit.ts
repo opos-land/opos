@@ -27,6 +27,8 @@ export const ROUTE_RATE_LIMITS = {
   providerConnects: { limit: 20, ttl: 3_600_000 },
   /** `POST .../shop/quote`, per client address: a cart is priced on every change of it. */
   shopQuotes: { limit: 600, ttl: 3_600_000 },
+  /** Placing an order, by a visitor or by an account: one counter, per client address. */
+  orderPlacements: { limit: 300, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS

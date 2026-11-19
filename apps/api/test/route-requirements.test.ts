@@ -46,6 +46,7 @@ const publicRoutes = [
   'public.merchandiseFile',
   'public.shop',
   'public.shopQuote',
+  'public.placeOrder',
   'public.editions',
   'public.activeEdition',
   'public.edition',

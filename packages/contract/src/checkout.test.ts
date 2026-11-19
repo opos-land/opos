@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { type Cart, cartSchema, type Offer, offerSchema, priceCart } from './checkout'
+import {
+  type Cart,
+  cartSchema,
+  type Offer,
+  offerSchema,
+  ORDER_NUMBER_ALPHABET,
+  placeOrderSchema,
+  placeVisitorOrderSchema,
+  priceCart,
+} from './checkout'
+import { contract } from './index'
 
 const id = (n: number) => `0198c1a0-0000-7000-8000-${String(n).padStart(12, '0')}`
 const [STANDARD, SUPPORTER, ROOM, WORKSHOP, SHIRT, PIN, WOMENS_S, WOMENS_M, PIN_ONLY] = [
@@ -306,5 +316,73 @@ describe('the price of a cart', () => {
     emptied.ticketTypes[0]!.state = 'sold-out'
 
     expect(priceCart(emptied, cart())).toEqual({ problem: { kind: 'ticket-type', id: STANDARD } })
+  })
+})
+
+describe('placing an order', () => {
+  const order = {
+    cart: { ticket: { ticketTypeId: STANDARD } },
+    holderName: ' Ada ',
+    ageBand: 'adult',
+    expectedTotalMinor: 12000,
+    botCheckToken: 'token',
+  }
+
+  it('takes the cart, the ticket holder, the total the buyer saw and the token of the bot check', () => {
+    expect(placeOrderSchema.parse(order)).toEqual({
+      cart: { ticket: { ticketTypeId: STANDARD }, addOnIds: [], items: [] },
+      holderName: 'Ada',
+      ageBand: 'adult',
+      customFieldAnswers: [],
+      consentIds: [],
+      providerConsentAccepted: false,
+      guardianConsentAcknowledged: false,
+      expectedTotalMinor: 12000,
+      botCheckToken: 'token',
+    })
+  })
+
+  it.each([
+    ['no name of the ticket holder', { holderName: ' ' }],
+    ['no word on the age band', { ageBand: undefined }],
+    ['no total', { expectedTotalMinor: undefined }],
+    ['no token of the bot check', { botCheckToken: '' }],
+    [
+      'an answer over 200 characters',
+      { customFieldAnswers: [{ fieldId: STANDARD, answer: 'a'.repeat(201) }] },
+    ],
+    ['a price of its own', { totalMinor: 1 }],
+  ])('is refused with %s', (_, changes) => {
+    expect(placeOrderSchema.safeParse({ ...order, ...changes }).success).toBe(false)
+  })
+
+  // An account buys under its own email: its route takes none, so none can be put in its place.
+  it('takes no email from an account, and an email typed twice from a visitor', () => {
+    const typed = { email: 'Buyer@Example.test', emailConfirmation: ' buyer@example.test ' }
+
+    expect(placeOrderSchema.safeParse({ ...order, ...typed }).success).toBe(false)
+    expect(placeVisitorOrderSchema.safeParse({ ...order, ...typed }).success).toBe(true)
+    expect(placeVisitorOrderSchema.safeParse(order).success).toBe(false)
+    expect(
+      placeVisitorOrderSchema.safeParse({
+        ...order,
+        ...typed,
+        emailConfirmation: 'other@example.test',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('numbers an order in characters that are not mistaken for one another', () => {
+    expect(ORDER_NUMBER_ALPHABET).not.toMatch(/[01OIL]/)
+    expect(new Set(ORDER_NUMBER_ALPHABET).size).toBe(ORDER_NUMBER_ALPHABET.length)
+  })
+
+  it('is reached under the convention and the edition by a visitor, and under the edition by an account', () => {
+    expect(contract.public.placeOrder['~orpc'].route.path).toBe(
+      '/public/tenants/{slug}/editions/{editionSlug}/shop/orders',
+    )
+    expect(contract.checkout.placeOrder['~orpc'].route.path).toBe(
+      '/editions/{editionId}/shop/orders',
+    )
   })
 })

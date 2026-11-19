@@ -12,7 +12,8 @@ export interface Preparation<T = unknown> {
 }
 
 /**
- * A tenant route at `write` that calls out before its transaction: once its requirement passed,
+ * A tenant route at `write`, or one that asks no membership, that calls out before its
+ * transaction: once its requirement passed,
  * the preparation runs outside every transaction, and the route's own transaction reads its
  * answer through TenantContextService.prepared(). Outbound I/O never runs inside a transaction
  * (docs/ARCHITECTURE.md, API conventions).

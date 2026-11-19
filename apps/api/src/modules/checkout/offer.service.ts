@@ -28,7 +28,12 @@ export class OfferService {
     private readonly providers: PaymentProviders,
   ) {}
 
-  async of(tenantId: string, editionId: string, at = new Date()): Promise<Offer> {
+  /**
+   * The offer at `at`. `ticketsAt` prices the ticket types at another moment, for an order whose
+   * total rests on a tier or a sale window that ended a little before: stock, capacity and
+   * everything else are read as they stand at `at`.
+   */
+  async of(tenantId: string, editionId: string, at = new Date(), ticketsAt = at): Promise<Offer> {
     const shop = await this.offers.shop(editionId)
     const open = shop?.openedAt != null
     const documents = await this.documents.list(editionId)
@@ -70,7 +75,7 @@ export class OfferService {
 
     const held = await this.offers.held(editionId)
     const ticketTypes = (await this.ticketTypes.list(editionId)).flatMap(
-      (type) => offeredTicketType(type, at, held.ticketTypes.get(type.id) ?? 0) ?? [],
+      (type) => offeredTicketType(type, ticketsAt, held.ticketTypes.get(type.id) ?? 0) ?? [],
     )
     const addOns = (await this.addOns.list(editionId))
       .filter((addOn) => !addOn.hidden)

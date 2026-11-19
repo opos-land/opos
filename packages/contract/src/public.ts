@@ -1,6 +1,12 @@
 import { z } from 'zod'
 import { logoSchema } from './branding'
-import { cartSchema, offerSchema, quoteSchema } from './checkout'
+import {
+  cartSchema,
+  offerSchema,
+  placedOrderSchema,
+  placeVisitorOrderSchema,
+  quoteSchema,
+} from './checkout'
 import { publicRoute, timestamp } from './common'
 
 // What a convention's page shows to anyone. A field added here is public at once.
@@ -191,6 +197,16 @@ export const publicContract = {
     })
     .input(edition.extend({ body: cartSchema }))
     .output(quoteSchema),
+  placeOrder: publicRoute
+    .route({
+      method: 'POST',
+      path: '/public/tenants/{slug}/editions/{editionSlug}/shop/orders',
+      successStatus: 201,
+      summary:
+        "Place a visitor's order; refused with shop.closed, order.unavailable naming what ran out, order.total-changed with the new total, order.consent-missing, order.email-refused, order.too-many-unpaid or bot-check.failed; no sign-in",
+    })
+    .input(edition.extend({ body: placeVisitorOrderSchema }))
+    .output(placedOrderSchema),
   editions: publicRoute
     .route({
       method: 'GET',

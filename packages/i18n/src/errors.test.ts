@@ -46,6 +46,20 @@ describe('errorMessage', () => {
     ['document.in-use', 'Do tego dokumentu odsyła zgoda. Najpierw zmień lub usuń tę zgodę.'],
     ['shop.closed', 'Ten sklep w tej chwili nie prowadzi sprzedaży.'],
     [
+      'order.total-changed',
+      'Kwota twojego zamówienia się zmieniła. Sprawdź nową kwotę i ją potwierdź.',
+    ],
+    ['order.consent-missing', 'Zaakceptuj każdą wymaganą zgodę, żeby złożyć zamówienie.'],
+    [
+      'order.email-refused',
+      'Dostawca płatności nie przyjmuje tego adresu e-mail. Użyj krótszego adresu.',
+    ],
+    [
+      'order.too-many-unpaid',
+      'Ten adres e-mail ma już zamówienia oczekujące na płatność. Opłać jedno z nich albo poczekaj, aż wygaśnie.',
+    ],
+    ['bot-check.failed', 'Nie udało się potwierdzić, że nie jesteś robotem. Spróbuj ponownie.'],
+    [
       'order.unavailable',
       'Coś z twojego zamówienia nie jest już dostępne. Sprawdź zamówienie i spróbuj ponownie.',
     ],

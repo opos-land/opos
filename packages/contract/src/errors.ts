@@ -73,6 +73,11 @@ export const errorCodes = [
   'ticket-type.tiers-overlap',
   'shop.closed',
   'order.unavailable',
+  'order.total-changed',
+  'order.consent-missing',
+  'order.email-refused',
+  'order.too-many-unpaid',
+  'bot-check.failed',
 ] as const
 
 export type ErrorCode = (typeof errorCodes)[number]

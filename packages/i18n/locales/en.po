@@ -23,6 +23,10 @@ msgstr "A head organizer already has access to every edition."
 msgid "A shop of this convention is open. Close it first."
 msgstr "A shop of this convention is open. Close it first."
 
+#: src/errors.ts
+msgid "Accept every required consent to place the order."
+msgstr "Accept every required consent to place the order."
+
 #: src/emails.ts
 msgid "Accept the invitation"
 msgstr "Accept the invitation"
@@ -390,6 +394,10 @@ msgid "The password is too weak. Use at least 8 characters."
 msgstr "The password is too weak. Use at least 8 characters."
 
 #: src/errors.ts
+msgid "The payment provider cannot take this email address. Use a shorter one."
+msgstr "The payment provider cannot take this email address. Use a shorter one."
+
+#: src/errors.ts
 msgid "The payment provider did not answer. Try again in a moment."
 msgstr "The payment provider did not answer. Try again in a moment."
 
@@ -404,6 +412,10 @@ msgstr "The service is temporarily unavailable. Try again in a moment."
 #: src/errors.ts
 msgid "The shop cannot be opened yet: something it needs is missing."
 msgstr "The shop cannot be opened yet: something it needs is missing."
+
+#: src/errors.ts
+msgid "The total of your order has changed. Check the new total and confirm it."
+msgstr "The total of your order has changed. Check the new total and confirm it."
 
 #: src/errors.ts
 msgid "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."
@@ -468,6 +480,10 @@ msgstr "This edition has reached the limit of documents: {limit}."
 #: src/errors.ts
 msgid "This edition has reached the limit of programme items: {limit}."
 msgstr "This edition has reached the limit of programme items: {limit}."
+
+#: src/errors.ts
+msgid "This email address already has orders waiting for payment. Pay one of them or wait until it expires."
+msgstr "This email address already has orders waiting for payment. Pay one of them or wait until it expires."
 
 #: src/errors.ts
 msgid "This file cannot be accepted here: its type is not allowed, or the file is damaged. Choose another file."
@@ -590,6 +606,10 @@ msgstr "variant"
 msgctxt "glossary"
 msgid "venue"
 msgstr "venue"
+
+#: src/errors.ts
+msgid "We could not confirm that you are not a robot. Try again."
+msgstr "We could not confirm that you are not a robot. Try again."
 
 #: src/errors.ts
 msgid "We could not find this convention."

@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { ADD_ON_KINDS, AGE_BANDS } from './catalog'
-import { timestamp } from './common'
-import { ageBandsSchema, DOCUMENT_KINDS } from './edition-shop'
+import { ADD_ON_KINDS, AGE_BANDS, MAX_CUSTOM_FIELD_ANSWER, MAX_CUSTOM_FIELDS } from './catalog'
+import { tenantRoute, timestamp } from './common'
+import { ageBandsSchema, DOCUMENT_KINDS, MAX_EDITION_CONSENTS } from './edition-shop'
 import { PAYMENT_PROVIDERS, SHOP_CURRENCY } from './shop'
 
 // The shop of an edition as a buyer meets it (docs/specs/0004-checkout-and-orders.md): its offer,
@@ -325,4 +325,97 @@ export function priceCart(
   }
 
   return { lines, totalMinor: lines.reduce((total, line) => total + line.amountMinor, 0) }
+}
+
+/** How long an unpaid order holds its stock and capacity, and how long a price outlasts its tier. */
+export const HOLD_MINUTES = 30
+export const PRICE_GRACE_MINUTES = 30
+
+/** The most orders awaiting payment one email holds in an edition. */
+export const MAX_UNPAID_ORDERS = 3
+
+/** How long the token of a placed order opens its result page. */
+export const RESULT_TOKEN_HOURS = 24
+
+/** The header a result token travels in: never a path or a query of the API. */
+export const RESULT_TOKEN_HEADER = 'x-result-token'
+
+/** The characters of an order's number: none that is mistaken for another. */
+export const ORDER_NUMBER_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+export const ORDER_NUMBER_LENGTH = 10
+
+/**
+ * What placing an order takes beside its buyer's address: the cart, the ticket holder's data, the
+ * consents accepted, the total the buyer saw and the token of the bot check. An order with no
+ * ticket has no age band and answers no custom field; its `holderName` is the buyer's own.
+ */
+const placeOrderFields = {
+  cart: cartSchema,
+  holderName: z.string().trim().min(1).max(200),
+  ageBand: z.enum(AGE_BANDS).nullable(),
+  customFieldAnswers: z
+    .array(
+      z.strictObject({
+        fieldId: z.uuid(),
+        answer: z.string().trim().min(1).max(MAX_CUSTOM_FIELD_ANSWER),
+      }),
+    )
+    .max(MAX_CUSTOM_FIELDS)
+    .default([]),
+  /** The consents of the edition the buyer accepted. */
+  consentIds: z.array(z.uuid()).max(MAX_EDITION_CONSENTS).default([]),
+  /** The provider's own consent, where its module requires one and there is something to pay. */
+  providerConsentAccepted: z.boolean().default(false),
+  /** A teen's buyer acknowledges that the guardian's consent is brought on paper. */
+  guardianConsentAcknowledged: z.boolean().default(false),
+  /** The total the buyer saw: an order is never placed at another. */
+  expectedTotalMinor: z.number().int().min(0),
+  botCheckToken: z.string().min(1).max(4000),
+}
+
+/** An order placed by an account: under the account's own email, which no body names. */
+export const placeOrderSchema = z.strictObject(placeOrderFields)
+
+export type PlaceOrder = z.infer<typeof placeOrderSchema>
+
+/** An order placed by a visitor: under an email typed twice. */
+export const placeVisitorOrderSchema = z
+  .strictObject({
+    ...placeOrderFields,
+    email: z.email().max(254),
+    emailConfirmation: z.string(),
+  })
+  .refine((order) => order.email.toLowerCase() === order.emailConfirmation.trim().toLowerCase(), {
+    path: ['emailConfirmation'],
+    message: 'Emails do not match',
+  })
+
+export type PlaceVisitorOrder = z.infer<typeof placeVisitorOrderSchema>
+
+/**
+ * A placed order: its number, where it stands, and the token that opens its result page for a
+ * day. One with nothing to pay is paid at once.
+ */
+export const placedOrderSchema = z.object({
+  orderId: z.uuid(),
+  number: z.string(),
+  status: z.enum(['awaiting-payment', 'paid']),
+  totalMinor: z.number().int().min(0),
+  resultToken: z.string(),
+})
+
+export type PlacedOrder = z.infer<typeof placedOrderSchema>
+
+/** The routes of a signed-in account in a convention, with no membership needed, as a like has none. */
+export const checkoutContract = {
+  placeOrder: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/shop/orders',
+      successStatus: 201,
+      summary:
+        "Place the account's order in the edition's shop, under the account's email; refused as the public route refuses; any signed-in account",
+    })
+    .input(z.object({ params: z.object({ editionId: z.string() }), body: placeOrderSchema }))
+    .output(placedOrderSchema),
 }

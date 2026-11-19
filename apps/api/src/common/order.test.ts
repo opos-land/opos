@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { moved } from './consents.repository'
+import { moved } from './order'
 
-describe('moving a consent', () => {
+describe('moving a row of an ordered list', () => {
   const order = ['a', 'b', 'c', 'd']
 
   it.each([

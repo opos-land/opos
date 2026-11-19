@@ -9,6 +9,7 @@ import { editionConsents } from '@opos/db'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
+import { moved } from '../../common/order'
 import { isUuid } from '../../common/uuid'
 import { tooManyConsents } from './shop.errors'
 
@@ -25,16 +26,6 @@ const columns = {
 type Row = Omit<Consent, 'hidden'> & { hiddenAt: Date | null }
 
 const toConsent = ({ hiddenAt, ...row }: Row): Consent => ({ ...row, hidden: hiddenAt !== null })
-
-/**
- * Where `id` lands when it moves to `place`, counted from 1, among the consents in their order:
- * the others keep their order and make room, and a place past the end is the last one.
- */
-export function moved(order: readonly string[], id: string, place: number): string[] {
-  const rest = order.filter((other) => other !== id)
-  const index = Math.min(Math.max(place, 1), rest.length + 1) - 1
-  return [...rest.slice(0, index), id, ...rest.slice(index)]
-}
 
 /**
  * The consents of the editions of the tenant in context, in their order; RLS keeps every query

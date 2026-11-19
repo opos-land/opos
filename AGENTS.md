@@ -63,11 +63,13 @@ note is ambiguous or contradicts itself, ask before writing. The note itself nev
 repository, and personal names only in [CONTRIBUTORS.md](CONTRIBUTORS.md): roles instead.
 
 **Business rules come from the domain owner.** Each module's rules are set by its domain owner
-([PRODUCT.md 7](docs/PRODUCT.md#7-modules)). A module still waiting for its owner — today reviews,
-tickets with payments and the scanner, and attendee registrations — is not built, and its tables,
-routes, screens and flows are not invented: the documents hold only the rules any shape of it keeps
+([PRODUCT.md 7](docs/PRODUCT.md#7-modules)). A module still waiting for its owner — today reviews
+and attendee registrations — is not built, and its tables, routes, screens and flows are not
+invented: the documents hold only the rules any shape of it keeps
 ([architecture](docs/ARCHITECTURE.md#modules-waiting-for-their-domain-owner)). Asked to build one,
-say so and ask for the owner's rules first; they land in the module's spec before the code.
+say so and ask for the owner's rules first; they land in the module's spec before the code. The
+tickets module has its owner's rules and is built from its specs, one at a time: what no spec
+covers is asked of its owner, not invented.
 
 ## Document style
 

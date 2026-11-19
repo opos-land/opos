@@ -20,18 +20,18 @@ graph LR
     imgproxy -->|signed address| s3
 ```
 
-| Part                | Role                                                                                                                                                                                                                                            |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/api`          | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key                                  |
-| `apps/panel`        | the organizers' SPA, desktop-first; later also the scanner under `/scanner`                                                                                                                                                                     |
-| `apps/portal`       | the attendees' SPA, mobile-first: home page with the list of editions, account, convention and edition pages, likes, schedule                                                                                                                   |
-| `apps/admin`        | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md))                                                              |
-| `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape                                                                                                                                                                        |
-| `packages/db`       | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away                                                                                                                                  |
-| `packages/i18n`     | locales, detection, formatters and the shared catalog                                                                                                                                                                                           |
-| Supabase            | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md))                                                                             |
-| S3 bucket           | the uploaded files, one private bucket per environment, in the EU and encrypted at rest; only the API holds its key, which opens it alone ([0041](adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md))                              |
-| imgproxy            | makes an image's master and its variants, reached by the API alone with signed requests, reading one object at an address the API signed for a minute ([0042](adr/0042-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md)) |
+| Part                | Role                                                                                                                                                                                                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api`          | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key                                                                                                                                      |
+| `apps/panel`        | the organizers' SPA, desktop-first; later also the scanner under `/scanner`                                                                                                                                                                                                                                                                         |
+| `apps/portal`       | the attendees' SPA, mobile-first: home page with the list of editions, account, convention and edition pages, likes, schedule                                                                                                                                                                                                                       |
+| `apps/admin`        | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md))                                                                                                                                                                  |
+| `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape                                                                                                                                                                                                                                                                            |
+| `packages/db`       | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away                                                                                                                                                                                                                                      |
+| `packages/i18n`     | locales, detection, formatters and the shared catalog                                                                                                                                                                                                                                                                                               |
+| Supabase            | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md))                                                                                                                                                                                 |
+| S3 bucket           | the uploaded files, one private bucket per environment, in the EU and encrypted at rest; the API holds its key, which opens it alone ([0041](adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)), and so does the seed, on `local` and `dev`, for its demo files ([0045](adr/0045-let-the-seed-put-its-demo-files-into-the-bucket.md)) |
+| imgproxy            | makes an image's master and its variants, reached by the API alone with signed requests, reading one object at an address the API signed for a minute ([0042](adr/0042-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md))                                                                                                     |
 
 - The packages have no build step; only the translation catalogs compile.
 - **The BFF boundary**
@@ -262,6 +262,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   everyone, after its own check in a short transaction of the tenant its address names, and never
   takes one. The routes that take a file share one rate limit per
   account. The bucket or imgproxy out of reach stops nothing else of the API.
+- **A route that asks outside before it writes** (`@Prepares`), as connecting a payment provider
+  account does, is a write: its requirement is judged, then the call out runs outside every
+  transaction, then its one transaction judges the actor again and acts on the answer. An answer
+  for an actor refused meanwhile is stored nowhere.
 - **The API's own job**, the sweep of files, runs daily in each process behind an advisory lock, so
   one process sweeps at a time: it removes, once older than 24 hours, a file's row nothing points
   at and an object no row explains.
@@ -271,20 +275,20 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - A log line written on purpose names no token, password or email address; an unexpected error is
   logged whole, never sent in the body.
 
-| Status | Meaning                                                                                  | Default code                               |
-| ------ | ---------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `400`  | validation; `params.field` names the field                                               | `request.invalid`                          |
-| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own    | `session.invalid`                          |
-| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own | `permission.denied`                        |
-| `404`  | absent or of another tenant                                                              | `request.not-found`                        |
-| `409`  | an invariant or unique constraint, by constraint name; an owner's files over its limit   | always specific                            |
-| `410`  | an invitation expired or revoked                                                         | `invitation.expired`, `invitation.revoked` |
-| `413`  | a file over its kind's limit, or an image over 50 megapixels                             | `file.too-large`                           |
-| `415`  | a body that is not JSON                                                                  | `request.invalid`                          |
-| `422`  | a file whose content is not what its type says, or not of its kind's types               | `file.type-refused`                        |
-| `429`  | rate limit, with `Retry-After`                                                           | `request.rate-limited`                     |
-| `500`  | unexpected; no details in the body                                                       | `server.error`                             |
-| `503`  | a write waiting too long; Supabase Auth, the bucket or imgproxy out of reach             | `request.busy`, `server.unavailable`       |
+| Status | Meaning                                                                                                            | Default code                                                 |
+| ------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `400`  | validation; `params.field` names the field                                                                         | `request.invalid`                                            |
+| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own                              | `session.invalid`                                            |
+| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own                           | `permission.denied`                                          |
+| `404`  | absent or of another tenant                                                                                        | `request.not-found`                                          |
+| `409`  | an invariant or unique constraint, by constraint name; an owner's files over its limit                             | always specific                                              |
+| `410`  | an invitation expired or revoked                                                                                   | `invitation.expired`, `invitation.revoked`                   |
+| `413`  | a file over its kind's limit, or an image over 50 megapixels                                                       | `file.too-large`                                             |
+| `415`  | a body that is not JSON                                                                                            | `request.invalid`                                            |
+| `422`  | a file whose content is not what its type says, or not of its kind's types; credentials a payment provider refuses | `file.type-refused`, `provider.credentials-refused`          |
+| `429`  | rate limit, with `Retry-After`                                                                                     | `request.rate-limited`                                       |
+| `500`  | unexpected; no details in the body                                                                                 | `server.error`                                               |
+| `503`  | a write waiting too long; Supabase Auth, the bucket, imgproxy or a payment provider out of reach                   | `request.busy`, `server.unavailable`, `provider.unavailable` |
 
 ## Frontends
 
@@ -479,10 +483,12 @@ whole history, `pnpm audit` on high advisories).
 
 ## Modules waiting for their domain owner
 
-Reviews, tickets with payments and the scanner, and attendee registrations get no code until their
-domain owner sets their rules in the module's [spec](specs/README.md)
+Reviews and attendee registrations get no code until their domain owner sets their rules in the
+module's [spec](specs/README.md)
 ([PRODUCT.md](PRODUCT.md#7-modules), [0019](adr/0019-documents-hold-rules-the-code-holds-the-rest.md));
-the lasting ones land here. Any shape keeps tenant tables under RLS, a read across tenants as a new
+the lasting ones land here. The tickets module has its owner's rules and is built one spec at a
+time, the [shop's setup](specs/0002-shop-setup.md) first: what no spec has built yet keeps the
+rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
 [cross-tenant query](#tenant-isolation), organizer routes behind the module's permission and the
 steps of [adding a feature](#adding-a-feature).
 
@@ -495,9 +501,18 @@ steps of [adding a feature](#adding-a-feature).
 
 - **Payments.** The money goes to the convention's own provider account
   ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)); OPOS keeps only the
-  payment reference, and provider credentials encrypted with a key the API alone holds, never
-  returned. A notification counts once its signature or the provider confirms it; a repeat, or a
-  different amount, changes nothing. Only `local` and `dev` load a fake provider.
+  payment reference, and provider credentials sealed with a key of the API's environment, never
+  returned, logged or read by a route outside the shop permission
+  ([0044](adr/0044-seal-payment-provider-credentials-with-a-key-of-the-apis-environment.md)). A
+  provider is asked through one port, [payments](../apps/api/src/modules/payments), outside every
+  transaction. A notification counts once its signature or the provider confirms it; a repeat, or
+  a different amount, changes nothing. Only `local` and `dev` load a fake provider.
+- **The shop's setup.** What opening a shop asks of the convention, an edition-level route answers
+  as a yes or a no alone: the provider account and the seller's details stay behind `shop`. The
+  conditions are read under the tenant's write lock, and every write that would take one away
+  from an open shop is refused under the same lock. A published version of a legal document is a
+  file for everyone, served by the version's own identifier and bound to the tenant its address
+  names; it is not bound by its edition's publication, since a buyer reads what they accepted.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than

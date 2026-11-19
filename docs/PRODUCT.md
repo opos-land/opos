@@ -83,6 +83,8 @@ a ticket; what the scene calls accreditation is the ticket.
 | **two-factor authentication** | a second sign-in step an account turns on for itself; 2FA, `mfa` in code                     |
 | **suspended**                 | of a convention: taken off the platform by the admin until restored                          |
 | **venue**                     | where an edition takes place: the name of the place, its address and its city                |
+| **shop**                      | where an edition sells, opened by its organizers once what selling needs is set              |
+| **consent**                   | a sentence of the convention's own that a buyer accepts with an order, required or optional  |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.
@@ -103,10 +105,10 @@ owns; the accounts stay ([0031](adr/0031-suspend-a-tenant-before-deleting-it.md)
 **OPOS does not touch the conventions' money.** Ticket payments go straight to a payment provider
 account the convention owns, and OPOS charges no fees.
 
-| Convention level                                  | Edition level                                    |
-| ------------------------------------------------- | ------------------------------------------------ |
-| name, address, custom domain, language, time zone | venue, programme items, speakers, likes, reviews |
-| team, shop (payment provider, currency), branding | tickets, attendee registrations, website content |
+| Convention level                                                            | Edition level                                                                              |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| name, address, custom domain, language, time zone                           | venue, programme items, speakers, likes, reviews                                           |
+| team, shop (payment provider account, seller's details, currency), branding | the shop with its documents and consents, tickets, attendee registrations, website content |
 
 The panel keeps the levels apart, so the organizers of one edition never meet the convention's
 management: an edition opens to an org with a permission in it or read access to settings, the
@@ -122,10 +124,14 @@ permissions open.
 An org holds permissions **per resource** on two levels, each **none** (the default), **read** or
 **write**: a new org has no access until granted, and need not have it in every edition.
 
-| Level      | Permissions                                                                |
-| ---------- | -------------------------------------------------------------------------- |
-| convention | settings (data and team), shop (payment provider account), branding (logo) |
-| edition    | programme, tickets (sales and scanners), website content                   |
+| Level      | Permissions                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| convention | settings (data and team), shop (payment provider account, seller's details), branding (logo) |
+| edition    | programme, tickets (the edition's shop, sales and scanners), website content                 |
+
+A permission on one level grants none on the other: an org with the tickets of an edition opens
+its shop, and learns of the convention's provider account and seller's details only whether they
+are ready; an org with the shop permission alone opens no shop.
 
 A **head** bypasses every permission, and the membership never expires. Every convention keeps at
 least one, handed over by promoting another member first; a demoted head keeps only the permissions
@@ -189,8 +195,8 @@ of a deleted convention is never given to another
 **Every module has a domain owner**, who knows how conventions run that area and sets the module's
 rules, a built module's included. Rules nobody with that knowledge has set are not guessed: for a
 module still waiting for its owner, this document states only what it delivers and the rules any
-shape of it keeps. Reviews, tickets with the scanner, and attendee registrations wait for their
-owners.
+shape of it keeps. Reviews and attendee registrations wait for their owners; the tickets module has
+its owner's rules and is built one [spec](specs/README.md) at a time.
 
 | Module    | Covers                                                       | MVP |
 | --------- | ------------------------------------------------------------ | --- |
@@ -221,6 +227,20 @@ the domain owner of tickets. Any shape keeps these rules:
 | Provider credentials | given by an org with shop write access; stored encrypted, never shown again     |
 | Scanner              | serves one edition; its access ends no later than the enabling org's; revocable |
 | Link without sign-in | an order or ticket link carries a secret nobody can guess                       |
+
+**The shop's setup.** A convention sets once what each of its editions sells with: its own payment
+provider account, and its seller's details, the legal entity a buyer's contract is with and the
+address buyers write to. It sells in one currency, PLN. Each edition holds its legal documents and
+its consents, and opens a shop of its own.
+
+| Rule                 | Value                                                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Opening              | needs the provider account ready to sell, the seller's details complete, and a published version of the edition's shop terms and privacy policy; a refusal names what is missing |
+| While a shop is open | the account stays connected, the details stay complete, and the last document standing for the shop terms or the privacy policy is neither hidden nor deleted                    |
+| Publication          | an edition is published without an open shop, and a shop may open before its edition is published; buyers reach the shop only while both hold                                    |
+| Documents            | published as PDF versions that never change: a correction is a new version, and a published version stays readable by its link for as long as the convention is on the platform  |
+| Consents             | their wording, and which of them a buyer must accept, are the convention's own: OPOS ships no legal text and requires no consent by itself                                       |
+| Limits               | 30 documents an edition, 50 versions a document, 20 consents an edition                                                                                                          |
 
 ---
 

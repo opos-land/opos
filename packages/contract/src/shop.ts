@@ -11,6 +11,9 @@ export const PAYMENT_PROVIDERS = ['fake', 'przelewy24'] as const
 
 export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number]
 
+/** The one currency a convention sells in: every amount of its shop is of it. */
+export const SHOP_CURRENCY = 'PLN'
+
 /** A part of the seller's details: text when given, null to clear it, never an empty text. */
 const part = (max: number) => z.string().trim().min(1).max(max).nullable()
 
@@ -33,7 +36,7 @@ export const sellerSchema = z.object({
   sellerRegistrationNumber: z.string().nullable(),
   contactEmail: z.string().nullable(),
   /** The one currency the convention sells in. */
-  currency: z.literal('PLN'),
+  currency: z.literal(SHOP_CURRENCY),
   complete: z.boolean(),
 })
 

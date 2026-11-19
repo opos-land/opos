@@ -1,4 +1,5 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
+import { SHOP_CURRENCY } from '@opos/contract'
 import { open, providerAccountOf, sealingKey } from '@opos/db/sealed'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -94,7 +95,9 @@ describe("the seller's details", () => {
     const t = await tenantWithHead()
 
     const set = await call(t.head, 'put', '/shop/seller', seller, t.slug).expect(200)
-    expect(set.body).toEqual({ ...seller, currency: 'PLN', complete: true })
+    // The one currency the contract names for every amount of a shop.
+    expect(SHOP_CURRENCY).toBe('PLN')
+    expect(set.body).toEqual({ ...seller, currency: SHOP_CURRENCY, complete: true })
     expect((await call(t.head, 'get', '/shop/seller', undefined, t.slug)).body).toEqual(set.body)
 
     const cleared = await call(

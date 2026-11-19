@@ -15,6 +15,7 @@ const TEMPLATES = {
     'OPOS_ENV=',
     'SEND_EMAIL_HOOK_SECRET=',
     'INVITE_SECRET=',
+    'PAYMENT_CREDENTIALS_KEY=',
     'DATABASE_URL=',
     'DATABASE_GLOBAL_URL=',
     'DATABASE_ADMIN_URL=',
@@ -38,6 +39,7 @@ const TEMPLATES = {
     'OPOS_APP_PASSWORD=',
     'OPOS_APP_GLOBAL_PASSWORD=',
     'OPOS_ADMIN_PASSWORD=',
+    'PAYMENT_CREDENTIALS_KEY=',
     'DATABASE_MIGRATION_URL=',
     'SUPABASE_URL=',
     'SUPABASE_SECRET_KEY=',
@@ -237,6 +239,22 @@ test('initInfra gives the API the hook secret supabase already holds', async () 
   const ctx = setup({ files: { 'supabase/.env': `SEND_EMAIL_HOOK_SECRET=${kept}\n` } })
   await ctx.run()
   assert.equal(ctx.value('apps/api/.env', 'SEND_EMAIL_HOOK_SECRET'), kept)
+})
+
+test('initInfra gives the API and the seed one key for the payment credentials, and keeps it', async () => {
+  const ctx = setup()
+  await ctx.run()
+  const key = ctx.value('apps/api/.env', 'PAYMENT_CREDENTIALS_KEY')
+  assert.match(key, /^[0-9a-f]{64}$/)
+  // The seed seals the demo account's credentials with the key the API opens them with.
+  assert.equal(ctx.value('packages/db/.env', 'PAYMENT_CREDENTIALS_KEY'), key)
+  assert.notEqual(key, ctx.value('apps/api/.env', 'INVITE_SECRET'))
+
+  // A checkout that lost one of the two files takes the key from the other.
+  const kept = setup({ files: { 'packages/db/.env': 'PAYMENT_CREDENTIALS_KEY=mine\n' } })
+  await kept.run()
+  assert.equal(kept.value('apps/api/.env', 'PAYMENT_CREDENTIALS_KEY'), 'mine')
+  assert.equal(kept.value('packages/db/.env', 'PAYMENT_CREDENTIALS_KEY'), 'mine')
 })
 
 test('initInfra generates distinct secrets and builds the database URLs from the passwords', async () => {

@@ -241,6 +241,9 @@ export async function initInfra({
     hex,
     passwordIn('DATABASE_ADMIN_URL'),
   )
+  // One key for the API, which seals a convention's payment credentials and opens them, and for
+  // the seed, which seals the demo account's.
+  const paymentKey = pick(['apps/api', 'packages/db'], 'PAYMENT_CREDENTIALS_KEY', hex)
   const dbPort = env.SUPABASE_DB_PORT ?? '54322'
   const local = (port) => `http://127.0.0.1:${port}`
   const databaseUrl = (role, password) =>
@@ -249,6 +252,7 @@ export async function initInfra({
   fill('apps/api', {
     SEND_EMAIL_HOOK_SECRET: hookSecret,
     INVITE_SECRET: pick(['apps/api'], 'INVITE_SECRET', hex),
+    PAYMENT_CREDENTIALS_KEY: paymentKey,
     DATABASE_URL: databaseUrl('opos_app', appPassword),
     DATABASE_GLOBAL_URL: databaseUrl('opos_app_global', appGlobalPassword),
     DATABASE_ADMIN_URL: databaseUrl('opos_admin', adminPassword),
@@ -264,6 +268,7 @@ export async function initInfra({
     OPOS_APP_PASSWORD: appPassword,
     OPOS_APP_GLOBAL_PASSWORD: appGlobalPassword,
     OPOS_ADMIN_PASSWORD: adminPassword,
+    PAYMENT_CREDENTIALS_KEY: paymentKey,
   })
 
   // 3. the local signing key: config.toml names the file, and the CLI refuses when it is missing.

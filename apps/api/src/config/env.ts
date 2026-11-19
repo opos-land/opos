@@ -39,6 +39,9 @@ const envSchema = z
     SEND_EMAIL_HOOK_SECRET: z.string().regex(/^v1,whsec_[A-Za-z0-9+/]+={0,2}$/),
     // Signs organizer invitations; never the same as SUPABASE_SECRET_KEY.
     INVITE_SECRET: z.string().min(32),
+    // Seals the credentials of a convention's payment provider account
+    // (docs/specs/0002-shop-setup.md); never the same as another secret.
+    PAYMENT_CREDENTIALS_KEY: z.string().min(32),
     // The API's own address, the one browsers and Supabase Auth reach it at.
     API_URL: z.url(),
     PANEL_URL: z.url(),
@@ -97,6 +100,14 @@ const envSchema = z
   .refine((env) => env.INVITE_SECRET !== env.SUPABASE_SECRET_KEY, {
     message: 'INVITE_SECRET must differ from SUPABASE_SECRET_KEY',
     path: ['INVITE_SECRET'],
+  })
+  .refine((env) => env.PAYMENT_CREDENTIALS_KEY !== env.INVITE_SECRET, {
+    message: 'PAYMENT_CREDENTIALS_KEY must differ from INVITE_SECRET',
+    path: ['PAYMENT_CREDENTIALS_KEY'],
+  })
+  .refine((env) => env.PAYMENT_CREDENTIALS_KEY !== env.SUPABASE_SECRET_KEY, {
+    message: 'PAYMENT_CREDENTIALS_KEY must differ from SUPABASE_SECRET_KEY',
+    path: ['PAYMENT_CREDENTIALS_KEY'],
   })
   // On Dev and production, every pool reaches the project directly with verified TLS
   // (docs/adr/0013-connect-to-postgres-directly-with-verified-tls.md).

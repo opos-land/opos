@@ -9,6 +9,7 @@ const valid = {
   SUPABASE_SECRET_KEY: 'sb_secret_local',
   SEND_EMAIL_HOOK_SECRET: `v1,whsec_${Buffer.alloc(32, 1).toString('base64')}`,
   INVITE_SECRET: 'c'.repeat(64),
+  PAYMENT_CREDENTIALS_KEY: 'e'.repeat(64),
   API_URL: 'http://api.opos.localhost:3001',
   PANEL_URL: 'http://panel.opos.localhost:5173',
   PORTAL_URL: 'http://opos.localhost:5174',
@@ -113,6 +114,7 @@ describe('loadEnv', () => {
     'SUPABASE_URL',
     'SUPABASE_SECRET_KEY',
     'INVITE_SECRET',
+    'PAYMENT_CREDENTIALS_KEY',
     'DATABASE_URL',
     'OPOS_ENV',
     'API_URL',
@@ -133,6 +135,29 @@ describe('loadEnv', () => {
   it('takes OPOS_ENV local', () => {
     expect(loadEnv(valid)).toMatchObject({ OPOS_ENV: 'local' })
   })
+
+  it('refuses a PAYMENT_CREDENTIALS_KEY shorter than 32 characters', () => {
+    expect(() => loadEnv({ ...valid, PAYMENT_CREDENTIALS_KEY: 'short' })).toThrow(
+      /PAYMENT_CREDENTIALS_KEY/,
+    )
+  })
+
+  it.each(['INVITE_SECRET', 'SUPABASE_SECRET_KEY'])(
+    'refuses a PAYMENT_CREDENTIALS_KEY equal to %s, naming no value',
+    (other) => {
+      const secret = 'f'.repeat(64)
+
+      let message = ''
+      try {
+        loadEnv({ ...valid, PAYMENT_CREDENTIALS_KEY: secret, [other]: secret })
+      } catch (error) {
+        message = (error as Error).message
+      }
+
+      expect(message).toMatch(new RegExp(`PAYMENT_CREDENTIALS_KEY must differ from ${other}`))
+      expect(message).not.toContain(secret)
+    },
+  )
 
   it('refuses an INVITE_SECRET equal to the secret key, naming no value', () => {
     const secret = 'd'.repeat(64)

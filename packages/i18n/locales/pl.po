@@ -453,6 +453,12 @@ msgctxt "glossary"
 msgid "user"
 msgstr "użytkownik"
 
+#. Glossary term: venue (where an edition takes place)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "venue"
+msgstr "miejsce"
+
 #: src/errors.ts
 msgid "We could not find this convention."
 msgstr "Nie znaleziono tego konwentu."

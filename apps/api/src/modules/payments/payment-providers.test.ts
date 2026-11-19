@@ -44,6 +44,26 @@ describe('PaymentProviders', () => {
     expect(providers.loaded('fake')).toBe(true)
   })
 
+  it('answers a module that throws as a provider out of reach, naming the error and nothing it said', async () => {
+    const module = {
+      name: 'fake' as const,
+      connect: () => Promise.reject(new TypeError('refused for key=my-secret')),
+      missing: () => [],
+    }
+    const failing = new PaymentProviders(new Map([['fake', module]]))
+
+    const answer = await context.run(
+      () => failing.connect('fake', { account: 'my-secret' }),
+      '127.0.0.1',
+    )
+
+    expect(answer).toEqual({
+      outcome: 'unavailable',
+      reason: "the provider's module threw TypeError",
+    })
+    expect(JSON.stringify(answer)).not.toContain('my-secret')
+  })
+
   it('names the providers the environment has a module of: none on production', () => {
     expect(providers.names()).toEqual(['fake'])
     expect(new PaymentProviders(providerModules({ OPOS_ENV: 'production' })).names()).toEqual([])

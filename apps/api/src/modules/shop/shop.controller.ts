@@ -67,6 +67,9 @@ export class ShopController {
       const { provider, credentials, answer } = this.context.prepared<CheckedCredentials>()
       if (answer.outcome === 'refused') throw credentialsRefused()
       if (answer.outcome === 'unavailable') throw providerUnavailable(answer.reason)
+      // An open shop keeps a ready account: credentials that leave it not ready wait for the
+      // shop to close, as disconnecting does.
+      if (answer.outcome !== 'ready' && (await this.shops.anyOpen())) throw shopOpen()
       const account = await this.accounts.replace({
         provider,
         credentials: this.vault.seal(credentials),
@@ -86,13 +89,23 @@ export class ShopController {
     })
   }
 
-  /** The account as the panel shows it: never its credentials, opened here only to ask what they miss. */
+  /**
+   * The account as the panel shows it: never its credentials, opened here only to ask what they
+   * miss. Credentials this API can no longer open, as after its key was replaced, leave the
+   * account not ready until its convention gives them again.
+   */
   private shown(account: StoredProviderAccount): ProviderAccount {
+    let missing: string[]
+    try {
+      missing = this.providers.missing(account.provider, this.vault.open(account.credentials))
+    } catch {
+      missing = ['credentials.unreadable']
+    }
     return {
       provider: account.provider,
       connectedAt: account.createdAt.toISOString(),
-      ready: account.readyAt !== null,
-      missing: this.providers.missing(account.provider, this.vault.open(account.credentials)),
+      ready: account.readyAt !== null && missing.length === 0,
+      missing,
     }
   }
 }

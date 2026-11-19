@@ -1,14 +1,16 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { open, sealingKey } from '@opos/db/sealed'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { ROUTE_RATE_LIMITS } from '../src/common/rate-limit/route-rate-limit'
 import { loadEnv } from '../src/config/env'
-import { FAKE_ACCOUNT } from '../src/modules/payments/fake-provider'
+import { FAKE_ACCOUNT, FakeProvider } from '../src/modules/payments/fake-provider'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session } from './auth'
 import {
   addEdition,
   addOrg,
+  addProviderAccount,
   closeShop,
   closeTenantDb,
   deleteCreatedTenants,
@@ -316,6 +318,124 @@ describe('the provider account', () => {
     expect(res.body).toEqual({})
     expect(await storedProviderAccount(t.id)).toBeUndefined()
     await call(t.head, 'delete', '/shop/provider-account', undefined, t.slug).expect(204)
+  })
+
+  it('carries nothing of the credentials in a refusal or a failure', async () => {
+    const t = await tenantWithHead()
+    const call_ = (extra: string) =>
+      call(
+        t.head,
+        'put',
+        '/shop/provider-account',
+        { provider: 'fake', credentials: { account: extra, secret: 'never-in-an-answer' } },
+        t.slug,
+      )
+
+    const refused = await call_(FAKE_ACCOUNT.refused)
+    const unavailable = await call_(FAKE_ACCOUNT.unavailable)
+
+    expect(refused.status).toBe(422)
+    expect(unavailable.status).toBe(503)
+    for (const res of [refused, unavailable]) {
+      expect(JSON.stringify(res.body)).not.toContain('never-in-an-answer')
+      expect(Object.keys(res.body as object).sort()).toEqual(['code', 'message'])
+    }
+  })
+
+  it('asks the provider nothing for an actor the route refuses', async () => {
+    const t = await tenantWithHead()
+    const [reader, outsider] = await Promise.all([member(), member()])
+    await addOrg(t.id, reader, { shop: 'read', settings: 'write' })
+    const asked = vi.spyOn(FakeProvider.prototype, 'connect')
+
+    try {
+      for (const who of [reader, outsider]) {
+        const res = await call(
+          who,
+          'put',
+          '/shop/provider-account',
+          { provider: 'fake', credentials: { account: FAKE_ACCOUNT.unavailable } },
+          t.slug,
+        )
+        // 403 and not the provider's 503: the call out comes after the check, never before.
+        expect(res.status).toBe(403)
+      }
+      expect(asked).not.toHaveBeenCalled()
+    } finally {
+      asked.mockRestore()
+    }
+  })
+
+  it('answers a provider that fails outright as one out of reach, and stores nothing', async () => {
+    const t = await tenantWithHead()
+    const failing = vi
+      .spyOn(FakeProvider.prototype, 'connect')
+      .mockRejectedValue(new Error('socket hang up with key=my-secret-account'))
+
+    try {
+      const res = await connect(t, 'my-secret-account')
+
+      expect(res.status).toBe(503)
+      expect(res.body).toMatchObject({ code: 'provider.unavailable' })
+      expect(JSON.stringify(res.body)).not.toContain('my-secret-account')
+      expect(await storedProviderAccount(t.id)).toBeUndefined()
+    } finally {
+      failing.mockRestore()
+    }
+  })
+
+  it('says of credentials it can no longer open that the account is not ready, and still answers', async () => {
+    const t = await tenantWithHead()
+    // Sealed with a key this API does not hold, as after the key was replaced.
+    await addProviderAccount(t.id)
+
+    const res = await call(t.head, 'get', '/shop/provider-account', undefined, t.slug).expect(200)
+
+    expect(res.body).toMatchObject({
+      account: { provider: 'fake', ready: false, missing: ['credentials.unreadable'] },
+    })
+    // Connecting again takes the place of what could not be opened.
+    await connect(t).expect(200)
+    const read = await call(t.head, 'get', '/shop/provider-account', undefined, t.slug)
+    expect(read.body).toMatchObject({ account: { ready: true, missing: [] } })
+  })
+
+  it('checks credentials with the provider only so often for one convention', async () => {
+    const t = await tenantWithHead()
+    const { limit } = ROUTE_RATE_LIMITS.providerConnects
+    for (let sent = 0; sent < limit; sent += 1) await connect(t).expect(200)
+    const before = await storedProviderAccount(t.id)
+    const asked = vi.spyOn(FakeProvider.prototype, 'connect')
+
+    try {
+      const res = await connect(t, FAKE_ACCOUNT.notReady)
+
+      expect(res.status).toBe(429)
+      expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+      expect(res.headers['retry-after']).toBeDefined()
+      expect(asked).not.toHaveBeenCalled()
+      expect(await storedProviderAccount(t.id)).toEqual(before)
+    } finally {
+      asked.mockRestore()
+    }
+  })
+
+  it('cannot be replaced by an account that is not ready while a shop of the convention is open', async () => {
+    const t = await tenantWithHead()
+    const edition = await addEdition(t.id)
+    await connect(t).expect(200)
+    await openShop(t.id, edition)
+    const before = await storedProviderAccount(t.id)
+
+    const refused = await connect(t, FAKE_ACCOUNT.notReady)
+    expect(refused.status).toBe(409)
+    expect(refused.body).toMatchObject({ code: 'shop.open' })
+    expect(await storedProviderAccount(t.id)).toEqual(before)
+    // Credentials that keep the account ready take the place of the stored ones.
+    await connect(t, 'other').expect(200)
+
+    await closeShop(edition)
+    await connect(t, FAKE_ACCOUNT.notReady).expect(200)
   })
 
   it('cannot be disconnected while a shop of the convention is open', async () => {

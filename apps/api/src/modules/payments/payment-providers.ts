@@ -49,7 +49,15 @@ export class PaymentProviders {
     }
     const module = this.modules.get(provider)
     if (!module) return { outcome: 'unknown-provider' }
-    const answer = await module.connect(credentials)
+    let answer: Awaited<ReturnType<PaymentProviderModule['connect']>>
+    try {
+      answer = await module.connect(credentials)
+    } catch (error) {
+      // A module that fails outright is a provider out of reach. Its error may quote the request
+      // it sent, so only its name goes on: no log line holds the credentials.
+      const name = error instanceof Error ? error.name : 'a value that is no error'
+      return { outcome: 'unavailable', reason: `the provider's module threw ${name}` }
+    }
     if (answer.outcome !== 'accepted') return answer
     const missing = module.missing(credentials)
     return missing.length === 0 ? { outcome: 'ready' } : { outcome: 'not-ready', missing }

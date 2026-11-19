@@ -61,6 +61,7 @@ describe('RouteRateLimiter', () => {
       mfa: { limit: 10, ttl: 900_000 },
       adminWrites: { limit: 60, ttl: 3_600_000 },
       uploads: { limit: 120, ttl: 3_600_000 },
+      providerConnects: { limit: 20, ttl: 3_600_000 },
     })
   })
 })

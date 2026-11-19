@@ -106,10 +106,13 @@ export class PublicController {
 
   /**
    * A published version of a legal document, for anyone, as a download: a buyer reads what they
-   * accepted for as long as the convention is on the platform, also once the document is hidden
-   * or its edition is no longer published. Only a file a version of this convention points at is
-   * read; the check runs in a short transaction of the tenant, and the storage is then read
-   * outside every transaction, as the tenant the address named.
+   * accepted for as long as the convention is on the platform. The edition's publication does not
+   * bind it, in either direction: a version is readable by its address from the moment it is
+   * published, whether its edition is published, was, or never was, and also once its document
+   * is hidden. Only a file a version of this convention points at is read; the check runs in a
+   * short transaction of the tenant, and the storage is then read outside every transaction, as
+   * the tenant the address named. No cache keeps the answer, so a deleted document and a suspended
+   * convention stop answering at once.
    */
   @Implement(contract.public.documentVersion)
   documentVersion() {
@@ -124,7 +127,7 @@ export class PublicController {
       const file = await this.files
         .open(DOCUMENT_KIND, version.fileId, { editionId: version.editionId, tenantId: tenant.id })
         .catch(suspendedAsNotFound('convention'))
-      return this.files.answer(file, { forEveryone: true })
+      return this.files.answer(file, { forEveryone: false })
     })
   }
 

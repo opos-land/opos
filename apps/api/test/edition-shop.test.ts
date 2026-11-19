@@ -525,8 +525,12 @@ describe('the documents of an edition', () => {
     const document = await add(c)
     const elsewhere = await addDocument(b.id, editionB)
 
+    const other = await addEdition(c.t.id)
+    const sibling = await addDocument(c.t.id, other, 'other', { versions: 0 })
+
     expect((await c.as('post', `/documents/${document.id}/versions`, {})).status).toBe(400)
-    for (const id of [randomUUID(), elsewhere.id, 'not-a-uuid']) {
+    // A document of another edition of the same convention is none of this path either.
+    for (const id of [randomUUID(), elsewhere.id, sibling.id, 'not-a-uuid']) {
       const res = await c.as('post', `/documents/${id}/versions`, { file: terms() })
       expect(res.status, id).toBe(404)
     }
@@ -967,9 +971,22 @@ describe('a published version for everyone', () => {
     expect(res.headers['content-disposition']).toMatch(
       /^attachment; filename="Regulamin sklepu.pdf"/,
     )
-    expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable')
+    // Kept by no cache: a deleted document and a suspended convention stop answering at once.
+    expect(res.headers['cache-control']).toBe('private, no-store')
     expect(res.headers['x-content-type-options']).toBe('nosniff')
     expect(Buffer.compare(res.body as Buffer, pdf())).toBe(0)
+  })
+
+  it('is served for an edition that was never published', async () => {
+    const c = await convention()
+    const document = await published(c)
+
+    // A buyer reads what they accepted whatever became of the edition; the address is the
+    // version's own identifier, which the panel alone shows until the shop links it.
+    await download(path(c.t, document.versions[0]!.id)).expect(200)
+    await setPublished(c.edition, true)
+    await setPublished(c.edition, false)
+    await download(path(c.t, document.versions[0]!.id)).expect(200)
   })
 
   it('stays readable once its document is hidden, and once a newer version is published', async () => {

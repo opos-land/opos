@@ -116,6 +116,36 @@ export const glossary = {
     context: 'glossary',
     comment: 'Glossary term: ticket holder (the person a ticket is issued to)',
   }),
+  buyer: msg({
+    message: 'buyer',
+    context: 'glossary',
+    comment: 'Glossary term: buyer (who places an order and pays for it)',
+  }),
+  payment: msg({
+    message: 'payment',
+    context: 'glossary',
+    comment: 'Glossary term: payment (money a payment provider reports for an order)',
+  }),
+  paymentAttempt: msg({
+    message: 'payment attempt',
+    context: 'glossary',
+    comment: 'Glossary term: payment attempt (one try at paying an order at its provider)',
+  }),
+  hold: msg({
+    message: 'hold',
+    context: 'glossary',
+    comment: 'Glossary term: hold (what an unpaid order keeps of stock and capacity for a time)',
+  }),
+  qrCode: msg({
+    message: 'QR code',
+    context: 'glossary',
+    comment: 'Glossary term: QR code (what a paid order is found by at the edition)',
+  }),
+  orderLink: msg({
+    message: 'order link',
+    context: 'glossary',
+    comment: 'Glossary term: order link (an emailed link that opens one order without a sign-in)',
+  }),
 }
 
 export type GlossaryTerm = keyof typeof glossary

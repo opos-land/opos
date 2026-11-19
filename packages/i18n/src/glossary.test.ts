@@ -21,6 +21,13 @@ describe('glossary', () => {
     ['guardianConsent', 'guardian consent', 'zgoda opiekuna'],
     ['customField', 'custom field', 'pole dodatkowe'],
     ['ticketHolder', 'ticket holder', 'posiadacz akredytacji'],
+    // The terms checkout and orders bring.
+    ['buyer', 'buyer', 'kupujący'],
+    ['payment', 'payment', 'płatność'],
+    ['paymentAttempt', 'payment attempt', 'próba płatności'],
+    ['hold', 'hold', 'rezerwacja'],
+    ['qrCode', 'QR code', 'kod QR'],
+    ['orderLink', 'order link', 'link do zamówienia'],
   ] as const)('renders %s as its one word in each language', async (term, en, pl) => {
     const i18n = setupI18n()
 

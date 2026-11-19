@@ -44,6 +44,14 @@ msgstr "A JPEG, PNG or WebP image of up to 2 MB."
 msgid "A new edition starts inactive and unpublished."
 msgstr "A new edition starts inactive and unpublished."
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "A page with answers for buyers, linked from the shop’s footer. Leave it empty for none."
+msgstr "A page with answers for buyers, linked from the shop’s footer. Leave it empty for none."
+
+#: src/features/shop/components/document-card.tsx
+msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
+msgstr "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
+
 #: src/features/editions/components/edition-layout.tsx
 msgid "Access"
 msgstr "Access"
@@ -72,6 +80,7 @@ msgstr "Access until"
 
 #: src/features/account/components/nav-user.tsx
 #: src/features/account/pages/account-page.tsx
+#: src/features/shop/model/providers.ts
 msgid "Account"
 msgstr "Account"
 
@@ -99,6 +108,14 @@ msgstr "Active"
 msgid "Add"
 msgstr "Add"
 
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Add the consent"
+msgstr "Add the consent"
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Add the document"
+msgstr "Add the document"
+
 #: src/features/program/pages/program-page.tsx
 msgid "Add the item"
 msgstr "Add the item"
@@ -112,6 +129,14 @@ msgstr "Added to the team: {name}. They have been told by email."
 msgid "Address"
 msgstr "Address"
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Address of the FAQ"
+msgstr "Address of the FAQ"
+
+#: src/features/shop/components/seller-section.tsx
+msgid "Address of the seller"
+msgstr "Address of the seller"
+
 #: src/features/editions/pages/editions-page.tsx
 msgid "All editions"
 msgstr "All editions"
@@ -123,6 +148,10 @@ msgstr "All programme items"
 #: src/features/team/model/invitation.ts
 msgid "An invitation has gone to {email}. Its link works once, until {validUntil}."
 msgstr "An invitation has gone to {email}. Its link works once, until {validUntil}."
+
+#: src/features/shop/model/providers.ts
+msgid "Any text connects an account that is ready. The fake provider refuses \"refused\", reports \"not-ready\" as not ready, and does not answer for \"unavailable\"."
+msgstr "Any text connects an account that is ready. The fake provider refuses \"refused\", reports \"not-ready\" as not ready, and does not answer for \"unavailable\"."
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
@@ -158,8 +187,17 @@ msgstr "Branding"
 msgid "breadcrumb"
 msgstr "breadcrumb"
 
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Buyers pay straight into the convention’s own account with a payment provider. OPOS holds no money."
+msgstr "Buyers pay straight into the convention’s own account with a payment provider. OPOS holds no money."
+
+#: src/features/shop/components/seller-section.tsx
+msgid "Buyers write to this address. The shop and its emails show it."
+msgstr "Buyers write to this address. The shop and its emails show it."
+
 #: src/features/account/components/reauthenticate-form.tsx
 #: src/features/account/components/two-factor-card.tsx
+#: src/features/shop/components/consent-form.tsx
 #: src/shared/ui/irreversible-action.tsx
 msgid "Cancel"
 msgstr "Cancel"
@@ -175,6 +213,14 @@ msgstr "Choose a convention"
 #: src/features/branding/pages/branding-page.tsx
 msgid "Choose a JPEG, PNG or WebP image."
 msgstr "Choose a JPEG, PNG or WebP image."
+
+#: src/features/shop/components/document-card.tsx
+msgid "Choose a PDF file."
+msgstr "Choose a PDF file."
+
+#: src/features/shop/components/document-card.tsx
+msgid "Choose a PDF of up to 10 MB."
+msgstr "Choose a PDF of up to 10 MB."
 
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Choose a time zone from the list."
@@ -196,6 +242,10 @@ msgstr "City"
 #: src/shared/ui/toast.tsx
 msgid "Close"
 msgstr "Close"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Close the shop"
+msgstr "Close the shop"
 
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Code"
@@ -220,6 +270,26 @@ msgstr "Confirm your address"
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Confirmation link"
 msgstr "Confirmation link"
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Connect the account"
+msgstr "Connect the account"
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Connected"
+msgstr "Connected"
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Consents"
+msgstr "Consents"
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Consents in their order"
+msgstr "Consents in their order"
+
+#: src/features/shop/components/seller-section.tsx
+msgid "Contact email"
+msgstr "Contact email"
 
 #: src/shared/ui/messages.tsx
 msgid "Contact the OPOS administrators to learn more."
@@ -261,6 +331,10 @@ msgstr "Create an account"
 msgid "Create the edition"
 msgstr "Create the edition"
 
+#: src/features/shop/components/seller-section.tsx
+msgid "Currency"
+msgstr "Currency"
+
 #: src/features/account/pages/account-page.tsx
 msgid "Dark"
 msgstr "Dark"
@@ -282,6 +356,18 @@ msgstr "Dates"
 msgid "Delete"
 msgstr "Delete"
 
+#: src/features/shop/components/consent-row.tsx
+msgid "Delete the consent"
+msgstr "Delete the consent"
+
+#: src/features/shop/components/document-card.tsx
+msgid "Delete the document"
+msgstr "Delete the document"
+
+#: src/features/shop/components/document-card.tsx
+msgid "Delete the document {name}?"
+msgstr "Delete the document {name}?"
+
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Delete the edition"
 msgstr "Delete the edition"
@@ -298,6 +384,10 @@ msgstr "Delete the programme item"
 msgid "Delete the programme item {title}?"
 msgstr "Delete the programme item {title}?"
 
+#: src/features/shop/components/consent-row.tsx
+msgid "Delete this consent?"
+msgstr "Delete this consent?"
+
 #: src/features/program/pages/program-item-page.tsx
 msgid "Deleting a programme item cannot be undone."
 msgstr "Deleting a programme item cannot be undone."
@@ -310,6 +400,14 @@ msgstr "Deleting an edition cannot be undone. The active edition cannot be delet
 msgid "Description"
 msgstr "Description"
 
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Disconnect the account"
+msgstr "Disconnect the account"
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Disconnect the payment provider account of {name}?"
+msgstr "Disconnect the payment provider account of {name}?"
+
 #: src/features/account/components/two-factor-card.tsx
 msgid "Dismiss"
 msgstr "Dismiss"
@@ -317,6 +415,19 @@ msgstr "Dismiss"
 #: src/shared/ui/sidebar.tsx
 msgid "Displays the mobile sidebar."
 msgstr "Displays the mobile sidebar."
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Documents"
+msgstr "Documents"
+
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Documents and consents"
+msgstr "Documents and consents"
+
+#: src/features/shop/components/consent-row.tsx
+msgid "Edit"
+msgstr "Edit"
 
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/team/components/invite-form.tsx
@@ -327,6 +438,10 @@ msgstr "Edition"
 #: src/features/editions/pages/new-edition-page.tsx
 msgid "Edition data"
 msgstr "Edition data"
+
+#: src/features/shop/model/documents.ts
+msgid "Edition rules"
+msgstr "Edition rules"
 
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/editions/pages/edition-settings-page.tsx
@@ -364,9 +479,14 @@ msgid "Enter a date and time in the future."
 msgstr "Enter a date and time in the future."
 
 #: src/features/editions/components/edition-form.tsx
+#: src/features/shop/components/seller-section.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Enter a name of up to 200 characters."
 msgstr "Enter a name of up to 200 characters."
+
+#: src/features/shop/components/seller-section.tsx
+msgid "Enter a number of up to 50 characters."
+msgstr "Enter a number of up to 50 characters."
 
 #: src/features/program/components/program-item-form.tsx
 msgid "Enter a title of 3 to 200 characters."
@@ -387,6 +507,18 @@ msgstr "Enter a valid email address."
 #: src/features/editions/components/edition-form.tsx
 msgid "Enter an address of up to 300 characters."
 msgstr "Enter an address of up to 300 characters."
+
+#: src/features/shop/components/seller-section.tsx
+msgid "Enter an address of up to 500 characters."
+msgstr "Enter an address of up to 500 characters."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Enter an address that starts with https:// or http://."
+msgstr "Enter an address that starts with https:// or http://."
+
+#: src/features/shop/components/seller-section.tsx
+msgid "Enter an email address, or leave the field empty."
+msgstr "Enter an email address, or leave the field empty."
 
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
@@ -427,6 +559,14 @@ msgstr "Enter your password."
 msgid "expired"
 msgstr "expired"
 
+#: src/features/shop/model/providers.ts
+msgid "Fake provider (no real payments)"
+msgstr "Fake provider (no real payments)"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "FAQ"
+msgstr "FAQ"
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Finish signing in"
 msgstr "Finish signing in"
@@ -463,6 +603,21 @@ msgstr "Head organizer"
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Head organizers"
 msgstr "Head organizers"
+
+#: src/features/shop/components/consent-row.tsx
+msgctxt "a consent"
+msgid "Hidden from the shop"
+msgstr "Hidden from the shop"
+
+#: src/features/shop/components/document-card.tsx
+msgctxt "a document"
+msgid "Hidden from the shop"
+msgstr "Hidden from the shop"
+
+#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/components/document-card.tsx
+msgid "Hide from the shop"
+msgstr "Hide from the shop"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "I already have an account"
@@ -515,6 +670,10 @@ msgstr "Invite"
 msgid "Invite to the team"
 msgstr "Invite to the team"
 
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Its credentials are removed, and no shop of the convention can open until an account is connected again."
+msgstr "Its credentials are removed, and no shop of the convention can open until an account is connected again."
+
 #: src/features/program/pages/program-item-page.tsx
 msgid "Its likes and its list of speakers go with it."
 msgstr "Its likes and its list of speakers go with it."
@@ -523,13 +682,29 @@ msgstr "Its likes and its list of speakers go with it."
 msgid "Its programme items, with their likes and lists of speakers, and the team’s access to the edition go with it."
 msgstr "Its programme items, with their likes and lists of speakers, and the team’s access to the edition go with it."
 
+#: src/features/shop/components/document-card.tsx
+msgid "Its versions and their files go with it, and their links stop working."
+msgstr "Its versions and their files go with it, and their links stop working."
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Join the organizing team"
 msgstr "Join the organizing team"
 
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Kind"
+msgstr "Kind"
+
 #: src/features/account/pages/account-page.tsx
 msgid "Light"
 msgstr "Light"
+
+#: src/features/shop/components/consent-form.tsx
+msgid "Linked document"
+msgstr "Linked document"
+
+#: src/features/shop/components/consent-row.tsx
+msgid "Links the document: {linkedTitle}"
+msgstr "Links the document: {linkedTitle}"
 
 #: src/shared/ui/messages.tsx
 msgid "Loading…"
@@ -542,6 +717,10 @@ msgstr "Logo"
 #: src/features/branding/pages/branding-page.tsx
 msgid "Logo file"
 msgstr "Logo file"
+
+#: src/features/shop/components/consent-form.tsx
+msgid "may accept it or not"
+msgstr "may accept it or not"
 
 #: src/features/team/components/members-table.tsx
 #: src/features/team/pages/edition-access-page.tsx
@@ -556,14 +735,38 @@ msgstr "Members"
 msgid "Membership"
 msgstr "Membership"
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Met"
+msgstr "Met"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Missing"
+msgstr "Missing"
+
 #: src/shared/ui/breadcrumb.tsx
 msgid "More"
 msgstr "More"
+
+#: src/features/shop/components/consent-row.tsx
+msgid "Move down"
+msgstr "Move down"
+
+#: src/features/shop/components/consent-row.tsx
+msgid "Move up"
+msgstr "Move up"
+
+#: src/features/shop/components/consent-form.tsx
+msgid "must accept it to order"
+msgstr "must accept it to order"
 
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Name"
 msgstr "Name"
+
+#: src/features/shop/components/seller-section.tsx
+msgid "Name of the seller"
+msgstr "Name of the seller"
 
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/editions/pages/new-edition-page.tsx
@@ -578,6 +781,10 @@ msgstr "New password"
 msgid "New programme item"
 msgstr "New programme item"
 
+#: src/features/shop/components/document-card.tsx
+msgid "New version"
+msgstr "New version"
+
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx
 msgid "No access"
@@ -587,13 +794,33 @@ msgstr "No access"
 msgid "No end date"
 msgstr "No end date"
 
+#: src/features/shop/components/provider-account-section.tsx
+msgid "No payment provider account is connected."
+msgstr "No payment provider account is connected."
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "No payment provider can be connected in this environment yet."
+msgstr "No payment provider can be connected in this environment yet."
+
 #: src/shared/ui/messages.tsx
 msgid "No permissions"
 msgstr "No permissions"
 
+#: src/features/shop/components/document-card.tsx
+msgid "No version is published yet."
+msgstr "No version is published yet."
+
+#: src/features/shop/components/consent-form.tsx
+msgid "None"
+msgstr "None"
+
 #: src/features/editions/components/edition-status.tsx
 msgid "Not published"
 msgstr "Not published"
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Not ready to sell"
+msgstr "Not ready to sell"
 
 #: src/shared/ui/toast.tsx
 msgid "Notifications"
@@ -607,11 +834,23 @@ msgstr "Open the invitation link from your email to join a convention's team."
 msgid "Open the link from your email to confirm your address or reset your password."
 msgstr "Open the link from your email to confirm your address or reset your password."
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Open the shop"
+msgstr "Open the shop"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Opening"
+msgstr "Opening"
+
 #: src/features/auth/components/auth-layout.tsx
 #: src/features/tenants/components/area-switcher.tsx
 #: src/shared/lib/page-title.ts
 msgid "OPOS panel"
 msgstr "OPOS panel"
+
+#: src/features/shop/components/consent-row.tsx
+msgid "Optional"
+msgstr "Optional"
 
 #: src/features/team/components/invite-form.tsx
 msgid "Optional, in the convention's time zone, {zone}."
@@ -636,6 +875,10 @@ msgstr "Organizers"
 msgid "Organizers join a convention's team through an invitation sent by email. The link in it lets you create an account here."
 msgstr "Organizers join a convention's team through an invitation sent by email. The link in it lets you create an account here."
 
+#: src/features/shop/model/documents.ts
+msgid "Other document"
+msgstr "Other document"
+
 #: src/shared/ui/messages.tsx
 msgid "Page not found"
 msgstr "Page not found"
@@ -647,6 +890,10 @@ msgstr "Part of the edition's address in the portal: lowercase letters, digits a
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Password"
 msgstr "Password"
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Payment provider account"
+msgstr "Payment provider account"
 
 #: src/features/team/pages/team-page.tsx
 msgid "Permissions in each edition are set on the edition's access page."
@@ -663,6 +910,10 @@ msgstr "Press the button to choose a new password."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Press the button to confirm your address. Then you choose your password."
+
+#: src/features/shop/model/documents.ts
+msgid "Privacy policy"
+msgstr "Privacy policy"
 
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/program/pages/program-item-page.tsx
@@ -691,9 +942,21 @@ msgstr "Programme of {name}"
 msgid "Programme times and edition dates are shown in this time zone."
 msgstr "Programme times and edition dates are shown in this time zone."
 
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Provider"
+msgstr "Provider"
+
+#: src/features/shop/model/providers.ts
+msgid "Przelewy24"
+msgstr "Przelewy24"
+
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Publish"
 msgstr "Publish"
+
+#: src/features/shop/components/document-card.tsx
+msgid "Publish the version"
+msgstr "Publish the version"
 
 #: src/features/editions/components/edition-status.tsx
 msgid "Published"
@@ -708,9 +971,17 @@ msgstr "QR code for your authenticator app"
 msgid "Read"
 msgstr "Read"
 
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Ready to sell"
+msgstr "Ready to sell"
+
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Recovery code"
 msgstr "Recovery code"
+
+#: src/features/shop/components/seller-section.tsx
+msgid "Register or tax number"
+msgstr "Register or tax number"
 
 #: src/features/program/components/speakers-editor.tsx
 msgid "Remove"
@@ -749,6 +1020,14 @@ msgstr "Removed from the team: {name}."
 msgid "Repeat the password"
 msgstr "Repeat the password"
 
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Replace the credentials"
+msgstr "Replace the credentials"
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "Replace the credentials of the payment provider account?"
+msgstr "Replace the credentials of the payment provider account?"
+
 #: src/features/branding/pages/branding-page.tsx
 msgid "Replace the logo"
 msgstr "Replace the logo"
@@ -756,6 +1035,10 @@ msgstr "Replace the logo"
 #: src/features/branding/pages/branding-page.tsx
 msgid "Replace the logo of {name}?"
 msgstr "Replace the logo of {name}?"
+
+#: src/features/shop/components/consent-row.tsx
+msgid "Required"
+msgstr "Required"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -776,6 +1059,18 @@ msgstr "Role"
 msgid "Save"
 msgstr "Save"
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Save the address"
+msgstr "Save the address"
+
+#: src/features/shop/components/consent-row.tsx
+msgid "Save the consent"
+msgstr "Save the consent"
+
+#: src/features/shop/components/seller-section.tsx
+msgid "Save the details"
+msgstr "Save the details"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password"
 msgstr "Save the password"
@@ -783,6 +1078,10 @@ msgstr "Save the password"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password and join the team"
 msgstr "Save the password and join the team"
+
+#: src/features/shop/components/document-card.tsx
+msgid "Save the title"
+msgstr "Save the title"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
@@ -800,6 +1099,10 @@ msgstr "Scan the QR code with an authenticator app, or type the secret into it. 
 msgid "Secret: <0>{secret}</0>"
 msgstr "Secret: <0>{secret}</0>"
 
+#: src/features/shop/components/seller-section.tsx
+msgid "Seller’s details"
+msgstr "Seller’s details"
+
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Send a new link"
@@ -813,13 +1116,38 @@ msgstr "Send a password link"
 msgid "Send the link"
 msgstr "Send the link"
 
+#: src/features/shop/components/consent-form.tsx
+msgid "Sentence the buyer accepts"
+msgstr "Sentence the buyer accepts"
+
 #: src/features/team/components/permission-labels.tsx
 msgid "Settings"
 msgstr "Settings"
 
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/shop/pages/edition-shop-page.tsx
+#: src/features/shop/pages/shop-settings-page.tsx
 #: src/features/team/components/permission-labels.tsx
+#: src/features/tenants/components/convention-layout.tsx
 msgid "Shop"
 msgstr "Shop"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Shop settings of the convention"
+msgstr "Shop settings of the convention"
+
+#: src/features/shop/model/documents.ts
+msgid "Shop terms"
+msgstr "Shop terms"
+
+#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/components/document-card.tsx
+msgid "Show in the shop"
+msgstr "Show in the shop"
+
+#: src/features/shop/components/consent-form.tsx
+msgid "Shown at the checkout beside a checkbox, in your own words, up to 1000 characters."
+msgstr "Shown at the checkout beside a checkbox, in your own words, up to 1000 characters."
 
 #: src/shared/ui/sidebar.tsx
 msgid "Sidebar"
@@ -867,6 +1195,7 @@ msgstr "Starts"
 
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/editions-page.tsx
+#: src/features/shop/components/provider-account-section.tsx
 msgid "Status"
 msgstr "Status"
 
@@ -881,6 +1210,10 @@ msgstr "Suspended"
 msgid "Team"
 msgstr "Team"
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The address of the FAQ is saved."
+msgstr "The address of the FAQ is saved."
+
 #: src/features/program/components/speakers-editor.tsx
 msgid "The address of the speaker's confirmed account."
 msgstr "The address of the speaker's confirmed account."
@@ -889,17 +1222,73 @@ msgstr "The address of the speaker's confirmed account."
 msgid "The browser's language"
 msgstr "The browser's language"
 
+#: src/features/shop/components/consent-form.tsx
+msgid "The buyer"
+msgstr "The buyer"
+
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
 msgstr "The changes are saved."
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "The consent is added."
+msgstr "The consent is added."
+
+#: src/features/shop/components/consent-row.tsx
+msgid "The consent is deleted."
+msgstr "The consent is deleted."
+
+#: src/features/shop/components/consent-row.tsx
+msgid "The consent is saved."
+msgstr "The consent is saved."
 
 #: src/features/branding/pages/branding-page.tsx
 msgid "The convention has no logo."
 msgstr "The convention has no logo."
 
+#: src/features/shop/components/seller-section.tsx
+msgid "The convention sells in one currency."
+msgstr "The convention sells in one currency."
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "The convention's address is set by the platform administrator."
 msgstr "The convention's address is set by the platform administrator."
+
+#: src/features/shop/model/documents.ts
+msgid "The convention’s payment provider account is connected and ready to sell."
+msgstr "The convention’s payment provider account is connected and ready to sell."
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "The credentials are checked with the provider, stored encrypted and never shown again."
+msgstr "The credentials are checked with the provider, stored encrypted and never shown again."
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "The credentials stored now go. Once the provider accepts the new ones, payments use them."
+msgstr "The credentials stored now go. Once the provider accepts the new ones, payments use them."
+
+#: src/features/shop/components/seller-section.tsx
+msgid "The details are complete."
+msgstr "The details are complete."
+
+#: src/features/shop/components/seller-section.tsx
+msgid "The details are incomplete. The shop of an edition can open once every field below is set."
+msgstr "The details are incomplete. The shop of an edition can open once every field below is set."
+
+#: src/features/shop/components/document-card.tsx
+msgid "The document {name} is deleted."
+msgstr "The document {name} is deleted."
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "The document is added. Publish its first version."
+msgstr "The document is added. Publish its first version."
+
+#: src/features/shop/components/document-card.tsx
+msgid "The document is saved."
+msgstr "The document is saved."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The documents are published in <0>Documents and consents</0>. The payment provider account and the seller’s details belong to the whole convention."
+msgstr "The documents are published in <0>Documents and consents</0>. The payment provider account and the seller’s details belong to the whole convention."
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "The edition {editionName} is deleted."
@@ -921,6 +1310,14 @@ msgstr "The edition {editionName} is published."
 msgid "The edition {name} is created."
 msgstr "The edition {name} is created."
 
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "The edition has no consents yet."
+msgstr "The edition has no consents yet."
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "The edition has no documents yet."
+msgstr "The edition has no documents yet."
+
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "The edition is not published: the portal does not show it."
@@ -939,6 +1336,10 @@ msgstr "The edition is saved."
 msgid "The edition must end after it starts."
 msgstr "The edition must end after it starts."
 
+#: src/features/shop/model/providers.ts
+msgid "The fake provider reports this account as not ready."
+msgstr "The fake provider reports this account as not ready."
+
 #: src/features/account/pages/account-page.tsx
 msgid "The interface language is saved."
 msgstr "The interface language is saved."
@@ -955,6 +1356,14 @@ msgstr "The invitation is for {email} and is valid until {validUntil}."
 #: src/features/tenants/pages/settings-page.tsx
 msgid "The language of the convention's content and of invitations to people without an account."
 msgstr "The language of the convention's content and of invitations to people without an account."
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "The legal documents of this edition, each published as a PDF. The shop links the newest version of a document, and an order keeps the version its buyer accepted. Opening the shop needs the shop terms and the privacy policy."
+msgstr "The legal documents of this edition, each published as a PDF. The shop links the newest version of a document, and an order keeps the version its buyer accepted. Opening the shop needs the shop terms and the privacy policy."
+
+#: src/features/shop/components/seller-section.tsx
+msgid "The legal entity that runs the convention and sells its tickets."
+msgstr "The legal entity that runs the convention and sells its tickets."
 
 #: src/features/branding/pages/branding-page.tsx
 msgid "The logo is removed."
@@ -980,9 +1389,25 @@ msgstr "The membership is saved: {name}."
 msgid "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
 msgstr "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
 
+#: src/features/shop/components/document-card.tsx
+msgid "The new version of {name} is published."
+msgstr "The new version of {name} is published."
+
+#: src/features/shop/components/seller-section.tsx
+msgid "The number the seller is registered under, such as KRS or NIP."
+msgstr "The number the seller is registered under, such as KRS or NIP."
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "The passwords differ."
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "The payment provider account is connected."
+msgstr "The payment provider account is connected."
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "The payment provider account is disconnected."
+msgstr "The payment provider account is disconnected."
 
 #: src/features/editions/components/edition-form.tsx
 msgid "The portal shows the city on the list of editions too."
@@ -995,6 +1420,10 @@ msgstr "The portal shows the logo beside the convention’s name: on the list of
 #: src/features/branding/pages/branding-page.tsx
 msgid "The portal stops showing it at once. To have it back, upload its file again."
 msgstr "The portal stops showing it at once. To have it back, upload its file again."
+
+#: src/features/shop/model/documents.ts
+msgid "The privacy policy has a published version."
+msgstr "The privacy policy has a published version."
 
 #: src/features/program/pages/program-item-page.tsx
 msgid "The programme item {itemTitle} is deleted."
@@ -1012,9 +1441,46 @@ msgstr "The programme item is saved."
 msgid "The programme item must end after it starts."
 msgstr "The programme item must end after it starts."
 
+#: src/features/shop/components/seller-section.tsx
+msgid "The seller’s details are saved."
+msgstr "The seller’s details are saved."
+
+#: src/features/shop/model/documents.ts
+msgid "The seller’s details of the convention are complete."
+msgstr "The seller’s details of the convention are complete."
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "The settings are saved."
 msgstr "The settings are saved."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The shop is closed: nothing can be ordered."
+msgstr "The shop is closed: nothing can be ordered."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The shop is closed."
+msgstr "The shop is closed."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The shop is open since {openedAt}. Buyers reach it while the edition is published."
+msgstr "The shop is open since {openedAt}. Buyers reach it while the edition is published."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The shop is open."
+msgstr "The shop is open."
+
+#. placeholder {0}: consent.text
+#: src/features/shop/components/consent-row.tsx
+msgid "The shop stops asking for it: “{0}”"
+msgstr "The shop stops asking for it: “{0}”"
+
+#: src/features/shop/model/documents.ts
+msgid "The shop terms have a published version."
+msgstr "The shop terms have a published version."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The shop was not opened. These conditions are not met yet:"
+msgstr "The shop was not opened. These conditions are not met yet:"
 
 #: src/features/program/components/speakers-editor.tsx
 msgid "The speakers are saved."
@@ -1049,6 +1515,10 @@ msgstr "This convention is suspended"
 msgid "This edition is not the convention's active one."
 msgstr "This edition is not the convention's active one."
 
+#: src/features/shop/model/providers.ts
+msgid "This environment cannot reach the provider of this account."
+msgstr "This environment cannot reach the provider of this account."
+
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "This is the convention's active edition."
@@ -1080,8 +1550,13 @@ msgstr "Time zone"
 
 #: src/features/program/components/program-item-form.tsx
 #: src/features/program/pages/program-page.tsx
+#: src/features/shop/components/document-card.tsx
 msgid "Title"
 msgstr "Title"
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Title of the new document"
+msgstr "Title of the new document"
 
 #: src/shared/ui/sidebar.tsx
 msgid "Toggle Sidebar"
@@ -1181,6 +1656,10 @@ msgstr "Venue"
 msgid "Venue address"
 msgstr "Venue address"
 
+#: src/features/shop/components/document-card.tsx
+msgid "Version {number}"
+msgstr "Version {number}"
+
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
 msgstr "We could not find what you are looking for."
@@ -1208,6 +1687,14 @@ msgstr "We will send a confirmation link to your address. Once you open it, you 
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."
 msgstr "We will send you a link to set a new password."
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "What a buyer accepts at the checkout, in the order below. The wording is yours, and so is the choice of which consent is required."
+msgstr "What a buyer accepts at the checkout, in the order below. The wording is yours, and so is the choice of which consent is required."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "What opening the shop needs"
+msgstr "What opening the shop needs"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx

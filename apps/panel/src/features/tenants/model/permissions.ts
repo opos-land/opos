@@ -39,16 +39,15 @@ export interface TenantAccess {
   seesEdition(editionId: string): boolean
   /**
    * Whether the member can open a section of the convention settings: general, editions
-   * and team at settings>=read, the branding at branding>=read; the shop joins them with its
-   * screen.
+   * and team at settings>=read, the branding at branding>=read, the shop at shop>=read.
    */
   seesConventionSettings: boolean
   /**
    * The section the convention settings open on for the member, as its path under `/settings`:
-   * the general one for who reads the settings, the branding for who holds that alone, null for
-   * who opens none.
+   * the general one for who reads the settings, else the branding, else the shop, null for who
+   * opens none.
    */
-  settingsEntry: '' | '/branding' | null
+  settingsEntry: '' | '/branding' | '/shop' | null
 }
 
 /** The member's access in the tenant of `membership`; a head passes every check, on both levels. */
@@ -61,7 +60,9 @@ export function tenantAccess(membership: Membership): TenantAccess {
     ? ''
     : atLeast(branding, 'read')
       ? '/branding'
-      : null
+      : atLeast(shop, 'read')
+        ? '/shop'
+        : null
 
   const edition = (editionId: string): EditionAccess => {
     if (isHead) return HEAD_EDITION_ACCESS

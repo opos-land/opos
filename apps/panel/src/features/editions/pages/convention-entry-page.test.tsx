@@ -9,7 +9,7 @@ import { ConventionEntryPage } from './convention-entry-page'
 const state = vi.hoisted(() => ({
   editions: [] as Edition[],
   pending: false,
-  settingsEntry: null as '' | '/branding' | null,
+  settingsEntry: null as '' | '/branding' | '/shop' | null,
 }))
 
 vi.mock('../hooks/use-editions', () => ({

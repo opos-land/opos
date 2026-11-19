@@ -19,6 +19,7 @@ import {
   NewEditionPage,
 } from '../features/editions'
 import { ProgramItemPage, ProgramPage } from '../features/program'
+import { EditionDocumentsPage, EditionShopPage, ShopSettingsPage } from '../features/shop'
 import { EditionAccessPage, InvitePage, MemberPage, TeamPage } from '../features/team'
 import {
   AreaFrame,
@@ -113,6 +114,7 @@ export const router = createBrowserRouter([
                   { path: 'team/invite', element: <InvitePage /> },
                   { path: 'team/:membershipId', element: <MemberPage /> },
                   { path: 'branding', element: <BrandingPage /> },
+                  { path: 'shop', element: <ShopSettingsPage /> },
                   { path: '*', element: <NotFoundView /> },
                 ],
               },
@@ -124,6 +126,8 @@ export const router = createBrowserRouter([
                   { index: true, element: <EditionDashboardPage /> },
                   { path: 'program', element: <ProgramPage /> },
                   { path: 'program/:programItemId', element: <ProgramItemPage /> },
+                  { path: 'shop', element: <EditionShopPage /> },
+                  { path: 'documents', element: <EditionDocumentsPage /> },
                   { path: 'access', element: <EditionAccessPage /> },
                   { path: 'settings', element: <EditionSettingsPage /> },
                   { path: '*', element: <NotFoundView /> },

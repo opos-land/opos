@@ -72,8 +72,15 @@ describe('ConventionLayout', () => {
       ['Editions', '/convention-a/settings/editions'],
       ['Team', '/convention-a/settings/team'],
       ['Branding', '/convention-a/settings/branding'],
+      ['Shop', '/convention-a/settings/shop'],
     ])
     expect(screen.getByText('the general settings')).toBeDefined()
+  })
+
+  it('opens the shop alone to an org who holds the shop alone', () => {
+    view(membership({ shopConfigAccess: 'read' }))
+
+    expect(links()).toEqual([['Shop', '/convention-a/settings/shop']])
   })
 
   it('opens the branding alone to an org who holds the branding alone', () => {
@@ -119,6 +126,6 @@ describe('ConventionLayout', () => {
 
     expect(screen.getByRole('heading', { name: 'No permissions' })).toBeDefined()
     expect(screen.queryByText('the general settings')).toBeNull()
-    expect(links()).toHaveLength(4)
+    expect(links()).toHaveLength(5)
   })
 })

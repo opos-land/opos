@@ -41,6 +41,8 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
   await expect(menu.getByRole('link')).toHaveText([
     'Dashboard',
     'Programme',
+    'Shop',
+    'Documents and consents',
     'Access',
     'Edition settings',
   ])

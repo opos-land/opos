@@ -1,5 +1,12 @@
 import { Trans } from '@lingui/react/macro'
-import { CalendarClockIcon, KeyRoundIcon, LayoutDashboardIcon, Settings2Icon } from 'lucide-react'
+import {
+  CalendarClockIcon,
+  FileTextIcon,
+  KeyRoundIcon,
+  LayoutDashboardIcon,
+  Settings2Icon,
+  StoreIcon,
+} from 'lucide-react'
 import { useParams } from 'react-router'
 import { AreaFrame, atLeast, SidebarLink, useCurrentTenant } from '../../tenants'
 import { useEditionBySlug } from '../hooks/use-editions'
@@ -34,6 +41,16 @@ export function EditionLayout() {
               <SidebarLink to={`${base}/program`} icon={<CalendarClockIcon />}>
                 <Trans>Programme</Trans>
               </SidebarLink>
+            )}
+            {atLeast(level.tickets, 'read') && (
+              <>
+                <SidebarLink to={`${base}/shop`} icon={<StoreIcon />}>
+                  <Trans>Shop</Trans>
+                </SidebarLink>
+                <SidebarLink to={`${base}/documents`} icon={<FileTextIcon />}>
+                  <Trans>Documents and consents</Trans>
+                </SidebarLink>
+              </>
             )}
             {atLeast(access.settings, 'read') && (
               <>

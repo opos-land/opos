@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   editions: [] as Edition[],
   settings: 'none',
   program: 'none',
+  tickets: 'none',
 }))
 
 vi.mock('../hooks/use-editions', () => ({
@@ -32,7 +33,11 @@ vi.mock('../../tenants', async (importOriginal) => ({
       isHead: false,
       settings: state.settings,
       shop: 'none',
-      edition: () => ({ program: state.program, websiteContent: 'none', tickets: 'none' }),
+      edition: () => ({
+        program: state.program,
+        websiteContent: 'none',
+        tickets: state.tickets,
+      }),
       seesEdition: () => true,
     },
     api: {},
@@ -88,6 +93,7 @@ beforeEach(() => {
   state.editions = [edition('2027', 'Edition 2027'), edition('2026', 'Edition 2026')]
   state.settings = 'none'
   state.program = 'none'
+  state.tickets = 'none'
 })
 
 afterEach(cleanup)
@@ -106,6 +112,17 @@ describe('EditionLayout', () => {
     ])
     expect(screen.getByText('the edition dashboard')).toBeDefined()
     expect(screen.queryByRole('navigation', { name: 'Convention A' })).toBeNull()
+  })
+
+  it('shows the shop and the documents to an org who reads the tickets of the edition', () => {
+    state.tickets = 'read'
+    view('/convention-a/editions/2026')
+
+    expect(links('Edition 2026')).toEqual([
+      ['Dashboard', '/convention-a/editions/2026'],
+      ['Shop', '/convention-a/editions/2026/shop'],
+      ['Documents and consents', '/convention-a/editions/2026/documents'],
+    ])
   })
 
   it('shows an org with the programme alone only the dashboard and the programme', () => {

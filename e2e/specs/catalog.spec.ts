@@ -1,7 +1,7 @@
 import { type Locator, type Page } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import { picture } from '../fixtures/documents'
-import { notification, panelUrl, signInToPanel } from '../fixtures/ui'
+import { notification, panelUrl, portalUrl, signInToPanel } from '../fixtures/ui'
 
 // The catalog of an edition (docs/specs/0003-catalog.md): what it sells and on what terms, set in
 // the panel behind the tickets permission of the edition.
@@ -260,6 +260,61 @@ test('tiers that overlap are refused where they are typed, and by the API too', 
   // No tier covers today: the list says the ticket type has no price in force.
   await page.getByRole('link', { name: 'All ticket types' }).click()
   await expect(row(page, 'Standard')).toContainText('No price in force')
+})
+
+// A change of the catalog is what the shop sells from the next request on: nothing is published
+// in between, and nothing waits for the shop to close.
+test('a price changed and an item hidden while the shop is open show in the shop at once', async ({
+  page,
+  accounts,
+  tenants,
+}) => {
+  const head = await accounts.create()
+  const tenant = await tenants.create({ headEmail: head.email })
+  const edition = await tenants.addEdition(tenant.id, {
+    name: `Open ${tenant.slug}`,
+    isActive: true,
+    isPublished: true,
+  })
+  await tenants.sellingShop(tenant.id, edition.id)
+  const shop = portalUrl(`/conventions/${tenant.slug}/${edition.slug}/shop`)
+
+  await page.goto(shop)
+  await expect(page.getByText('120.00')).toBeVisible()
+
+  await signInToPanel(page, head.email, head.password)
+  const editionMenu = menu(page, edition.name)
+  await editionMenu.getByRole('link', { name: 'Ticket types' }).click()
+  await page.getByRole('link', { name: 'Standard', exact: true }).click()
+  await page
+    .getByRole('group', { name: 'Price tier 1', exact: true })
+    .getByLabel(/^Price/)
+    .fill('135')
+  await page.getByRole('button', { name: 'Save the ticket type' }).click()
+  await expect(notification(page, 'success', /saved/)).toBeVisible()
+  await editionMenu.getByRole('link', { name: 'Merchandise' }).click()
+  await row(page, 'Enamel pin').getByRole('button', { name: 'Hide from the shop' }).click()
+  await expect(
+    row(page, 'Enamel pin').getByRole('button', { name: 'Show in the shop' }),
+  ).toBeVisible()
+
+  // The shop shows the new price, and offers the hidden item no longer.
+  await page.goto(shop)
+  await expect(page.getByText('135.00')).toBeVisible()
+  await expect(page.getByText('120.00')).toBeHidden()
+  await page.getByRole('link', { name: 'Choose Standard' }).click()
+  // The panel's session is not the portal's: here the head buys as a visitor would.
+  await page.getByRole('button', { name: 'Continue without an account' }).click()
+  await page.getByLabel('Ticket holder’s name or nickname').fill('Ada')
+  await page.getByLabel('Age band').selectOption('adult')
+  await page.getByLabel('Email address', { exact: true }).fill('buyer@example.test')
+  await page.getByLabel('Repeat the email address').fill('buyer@example.test')
+  await page.getByLabel('City you travel from').fill('Poznań')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Next' }).click()
+  await expect(page.getByRole('heading', { name: 'Merch', level: 2 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'T-shirt' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Enamel pin' })).toBeHidden()
 })
 
 test('an org with tickets read access sees the catalog and can change nothing', async ({

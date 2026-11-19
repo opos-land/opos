@@ -1,4 +1,5 @@
 import { totp } from '@opos/db/totp'
+import AxeBuilder from '@axe-core/playwright'
 import { expect, type Page } from '@playwright/test'
 import { stack } from './stack'
 
@@ -128,3 +129,19 @@ export const notification = (
     .getByRole('region', { name: 'Notifications' })
     .locator(`[data-slot="toast"][data-type="${type}"]`)
     .filter({ hasText: text })
+
+/**
+ * The page as it stands meets WCAG 2.1 AA, as far as a machine can tell
+ * (docs/specs/0004-checkout-and-orders.md, Q2).
+ */
+export async function expectAccessible(page: Page) {
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(
+    violations.map(
+      (violation) =>
+        `${violation.id}: ${violation.nodes.map((node) => node.target.join(' ')).join(' | ')}`,
+    ),
+  ).toEqual([])
+}

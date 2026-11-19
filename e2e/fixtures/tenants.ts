@@ -230,6 +230,103 @@ export class TenantFactory {
     return { ticketTypeId: ticketType!.id, addOnId: addOn!.id, itemId: item!.id }
   }
 
+  /**
+   * An edition's shop that sells, as its rows alone: the convention's side set up with an account
+   * of the fake provider, the two documents opening asks for, a required consent linking the
+   * terms, the small catalog with its item offered with the ticket type, a T-shirt in two sizes,
+   * and the shop open. `ticketMinor` is the price of the ticket type.
+   */
+  async sellingShop(
+    tenantId: string,
+    editionId: string,
+    { ticketMinor = 12000, account = 'demo' }: { ticketMinor?: number; account?: string } = {},
+  ) {
+    const at = sql`${tenantId}, ${editionId}`
+    await this.setUpShop(tenantId, { credentials: { account } })
+    const terms = await this.addDocument(tenantId, editionId, 'shop-terms', 'Shop terms')
+    await this.addDocument(tenantId, editionId, 'privacy-policy', 'Privacy policy')
+    await this.db.execute(sql`
+      insert into edition_consents (tenant_id, edition_id, document_id, text, is_required, position)
+      values (${at}, ${terms}, 'I accept the shop terms.', true, 1)
+    `)
+    const catalog = await this.addCatalog(tenantId, editionId)
+    await this.db.execute(sql`
+      update ticket_type_price_tiers set amount_minor = ${ticketMinor}
+      where ticket_type_id = ${catalog.ticketTypeId}
+    `)
+    const [shirt] = await this.db.execute<{ id: string }>(sql`
+      insert into merchandise_items (tenant_id, edition_id, name, amount_minor, per_order_limit,
+        position)
+      values (${at}, 'T-shirt', 8000, 5, 2)
+      returning id
+    `)
+    const [axis] = await this.db.execute<{ id: string }>(sql`
+      insert into merchandise_option_axes (tenant_id, edition_id, merchandise_item_id, name,
+        position)
+      values (${at}, ${shirt!.id}, 'Size', 1)
+      returning id
+    `)
+    const variants: Record<string, string> = {}
+    for (const [index, label] of ['M', 'L'].entries()) {
+      const [value] = await this.db.execute<{ id: string }>(sql`
+        insert into merchandise_option_values (tenant_id, edition_id, merchandise_item_id,
+          axis_id, label, position)
+        values (${at}, ${shirt!.id}, ${axis!.id}, ${label}, ${index + 1})
+        returning id
+      `)
+      const [variant] = await this.db.execute<{ id: string }>(sql`
+        insert into merchandise_variants (tenant_id, edition_id, merchandise_item_id, stock)
+        values (${at}, ${shirt!.id}, 5)
+        returning id
+      `)
+      await this.db.execute(sql`
+        insert into merchandise_variant_values (tenant_id, edition_id, merchandise_item_id,
+          variant_id, axis_id, option_value_id)
+        values (${at}, ${shirt!.id}, ${variant!.id}, ${axis!.id}, ${value!.id})
+      `)
+      variants[label] = variant!.id
+    }
+    for (const itemId of [catalog.itemId, shirt!.id]) {
+      await this.db.execute(sql`
+        insert into ticket_type_merchandise_items (tenant_id, edition_id, ticket_type_id,
+          merchandise_item_id)
+        values (${at}, ${catalog.ticketTypeId}, ${itemId})
+      `)
+    }
+    await this.db.execute(sql`
+      insert into edition_shops (tenant_id, edition_id, opened_at, merch_only_enabled)
+      values (${at}, now(), true)
+      on conflict (edition_id) do update set opened_at = now(), merch_only_enabled = true
+    `)
+    return { ...catalog, shirtId: shirt!.id, shirtVariants: variants }
+  }
+
+  /** Closes the shop of an edition, with the message its page then shows. */
+  async closeShop(editionId: string, message: string) {
+    await this.db.execute(sql`
+      update edition_shops set opened_at = null, sales_closed_message = ${message}
+      where edition_id = ${editionId}
+    `)
+  }
+
+  /** Sets what is left of a variant, as its stock. */
+  async setStock(variantId: string, stock: number) {
+    await this.db.execute(sql`
+      update merchandise_variants set stock = ${stock} where id = ${variantId}
+    `)
+  }
+
+  /** The orders of a tenant as stored: their status, and the account each is attached to. */
+  async orders(tenantId: string) {
+    return [
+      ...(await this.db.execute<{ status: string; email: string; accountId: string | null }>(sql`
+        select o.status, o.email, a.account_id as "accountId"
+        from orders o left join order_accounts a on a.order_id = o.id
+        where o.tenant_id = ${tenantId} order by o.placed_at
+      `)),
+    ]
+  }
+
   /** The account's membership in the tenant as stored, or undefined. */
   async membership(tenantId: string, accountId: string) {
     const [row] = await this.db.execute<{ role: string; settingsAccess: string }>(sql`

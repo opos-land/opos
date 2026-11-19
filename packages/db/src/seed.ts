@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { DeleteObjectsCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { and, eq, notInArray, sql } from 'drizzle-orm'
 import { grantAdmin } from './admins'
@@ -24,6 +24,15 @@ import {
   merchandiseSizeCharts,
   merchandiseVariants,
   merchandiseVariantValues,
+  orderAccounts,
+  orderConsents,
+  orderCustomFieldAnswers,
+  orderEmails,
+  orderLines,
+  orderQrCodeOrders,
+  orderQrCodes,
+  orders,
+  paymentAttempts,
   paymentProviderAccounts,
   programItemLikes,
   programItems,
@@ -40,7 +49,7 @@ import {
   ticketTypeSupporterPrices,
   uploadedFiles,
 } from './schema'
-import { open, providerAccountOf, seal, sealingKey } from './sealed'
+import { open, orderQrCodeOf, providerAccountOf, seal, sealingKey } from './sealed'
 import { createTenant, restoreTenant, suspendTenant } from './tenants'
 import { totp } from './totp'
 
@@ -149,6 +158,38 @@ interface SeedCatalog {
   ticketTypes: SeedTicketType[]
 }
 
+/** A try at paying a demo order at the fake provider. */
+interface SeedAttempt {
+  status: (typeof paymentAttempts.status.enumValues)[number]
+  /** What the provider confirmed of one paid or refused; left out, what the order asked for. */
+  paidAmountMinor?: number
+  failureReason?: (typeof paymentAttempts.failureReason.enumValues)[number]
+}
+
+/**
+ * A demo order: what it holds by the names of the catalog, at the prices the catalog has when it
+ * is first seeded.
+ */
+interface SeedOrder {
+  /** Its number, by which the seed finds it again. */
+  number: string
+  status: (typeof orders.status.enumValues)[number]
+  /** Left out for a manual order, which an org placed. */
+  email?: string
+  holderName: string
+  ageBand: (typeof orders.ageBand.enumValues)[number] | null
+  ticketType?: string
+  addOns?: string[]
+  /** An item by its name, its variant by its values, and how many. */
+  items?: { name: string; values?: string[]; quantity: number }[]
+  /** The demo account the order is attached to. */
+  account?: string
+  attempts?: SeedAttempt[]
+  /** The emails it sent, listed as sent: the seed sends nothing. */
+  emails?: (typeof orderEmails.kind.enumValues)[number][]
+  placedDaysAgo: number
+}
+
 /** The shop of a demo edition: what opening asks of the edition, and whether it is open. */
 interface SeedEditionShop {
   open: boolean
@@ -157,6 +198,8 @@ interface SeedEditionShop {
   consents: SeedConsent[]
   /** Left out, the edition sells nothing. */
   catalog?: SeedCatalog
+  /** The orders placed of the catalog. */
+  orders?: SeedOrder[]
 }
 
 interface SeedEdition {
@@ -349,6 +392,115 @@ const DEMO_CATALOG: SeedCatalog = {
   ],
 }
 
+// An order in each status (docs/specs/0004-checkout-and-orders.md, Seed): among them one with a
+// teen as its ticket holder, one of merchandise alone, one attached to a demo account, and a
+// payment an order no longer needed. Their numbers use no character mistaken for another.
+const DEMO_ORDERS: SeedOrder[] = [
+  {
+    number: 'DEMPAYWAT2',
+    status: 'awaiting-payment',
+    email: 'waiting@example.com',
+    holderName: 'Demo Waiting',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    attempts: [{ status: 'started' }],
+    placedDaysAgo: 0,
+  },
+  {
+    number: 'DEMPAD2222',
+    status: 'paid',
+    email: 'attendee@example.com',
+    holderName: 'Jan Kowal',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    addOns: ['Miniature painting workshop', 'Sleeping room'],
+    items: [
+      { name: 'T-shirt', values: ["Men's", 'M'], quantity: 1 },
+      { name: 'Enamel pin', quantity: 2 },
+    ],
+    account: 'attendee@example.com',
+    // Paid twice: the second payment was one the order no longer needed, and was refused.
+    attempts: [{ status: 'paid' }, { status: 'refused' }],
+    emails: ['order-confirmation', 'payment-not-needed'],
+    placedDaysAgo: 6,
+  },
+  {
+    number: 'DEMTEEN222',
+    status: 'paid',
+    email: 'guardian@example.com',
+    holderName: 'Demo Teen',
+    ageBand: 'teen',
+    ticketType: 'Standard',
+    attempts: [{ status: 'failed', failureReason: 'wrong-code' }, { status: 'paid' }],
+    emails: ['order-confirmation'],
+    placedDaysAgo: 5,
+  },
+  {
+    number: 'DEMMERCH22',
+    status: 'paid',
+    email: 'merch@example.com',
+    holderName: 'Demo Merch',
+    ageBand: null,
+    items: [{ name: 'Enamel pin', quantity: 3 }],
+    attempts: [{ status: 'paid' }],
+    emails: ['order-confirmation'],
+    placedDaysAgo: 4,
+  },
+  {
+    number: 'DEMMANUA22',
+    status: 'paid-manual',
+    holderName: 'Demo Guest',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    placedDaysAgo: 3,
+  },
+  {
+    number: 'DEMEXPRD22',
+    status: 'expired',
+    email: 'late@example.com',
+    holderName: 'Demo Late',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    attempts: [{ status: 'failed', failureReason: 'canceled' }],
+    emails: ['order-expired'],
+    placedDaysAgo: 3,
+  },
+  {
+    number: 'DEMREVEW22',
+    status: 'needs-review',
+    email: 'review@example.com',
+    holderName: 'Demo Review',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    addOns: ['Sleeping room'],
+    attempts: [{ status: 'paid', paidAmountMinor: 10000 }],
+    emails: ['payment-under-review'],
+    placedDaysAgo: 2,
+  },
+  {
+    number: 'DEMDECNE22',
+    status: 'declined',
+    email: 'declined@example.com',
+    holderName: 'Demo Declined',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    attempts: [{ status: 'paid', paidAmountMinor: 100 }],
+    emails: ['payment-under-review'],
+    placedDaysAgo: 8,
+  },
+  {
+    number: 'DEMCANCE22',
+    status: 'canceled',
+    email: 'canceled@example.com',
+    holderName: 'Demo Canceled',
+    ageBand: 'adult',
+    ticketType: 'Supporter',
+    attempts: [{ status: 'paid' }],
+    emails: ['order-confirmation'],
+    placedDaysAgo: 9,
+  },
+]
+
 const TENANTS: SeedTenant[] = [
   {
     slug: 'convention-a',
@@ -446,6 +598,7 @@ const TENANTS: SeedTenant[] = [
             { text: 'I want to receive news of the convention by email.', isRequired: false },
           ],
           catalog: DEMO_CATALOG,
+          orders: DEMO_ORDERS,
         },
       },
     ],
@@ -861,6 +1014,9 @@ async function seedTenant(spec: SeedTenant) {
       if (edition.shop.catalog) {
         objects.push(...(await seedCatalog(tx, tenantId, editionId, edition, edition.shop.catalog)))
       }
+      for (const order of edition.shop.orders ?? []) {
+        await seedOrder(tx, tenantId, editionId, order)
+      }
     }
 
     // A head holds no permission of its own and never expires.
@@ -1275,6 +1431,229 @@ async function seedCatalog(
  * The axes, values, size charts and variants of a demo item. A variant is found by its values,
  * so its row stays across runs; one the list no longer names goes.
  */
+/** A QR code's text, as the API draws one: 160 random bits in capitals and digits. */
+const demoQrCode = () =>
+  Array.from(randomBytes(32), (byte) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'[byte % 32]).join('')
+
+/**
+ * A demo order, placed once: one the seed finds by its number stays as a demo left it. Its lines
+ * take their prices from the catalog as it stands, and its total is their sum.
+ */
+async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: SeedOrder) {
+  const [existing] = await tx
+    .select({ id: orders.id })
+    .from(orders)
+    .where(and(eq(orders.tenantId, tenantId), eq(orders.number, order.number)))
+  if (existing) return
+  const at = { tenantId, editionId }
+  const placedAt = new Date(Date.now() - order.placedDaysAgo * DAY - HOUR)
+  const settledAt = new Date(placedAt.getTime() + 5 * 60 * 1000)
+
+  const lines: (typeof orderLines.$inferInsert)[] = []
+  const line = (values: Partial<typeof orderLines.$inferInsert> & { unitAmountMinor: number }) => {
+    const quantity = values.quantity ?? 1
+    lines.push({
+      ...at,
+      orderId: '',
+      kind: 'ticket',
+      quantity,
+      amountMinor: quantity * values.unitAmountMinor,
+      ...values,
+    })
+  }
+  if (order.ticketType) {
+    const [type] = await tx
+      .select({ id: ticketTypes.id, amountMinor: ticketTypePriceTiers.amountMinor })
+      .from(ticketTypes)
+      .innerJoin(ticketTypePriceTiers, eq(ticketTypePriceTiers.ticketTypeId, ticketTypes.id))
+      .where(and(eq(ticketTypes.editionId, editionId), eq(ticketTypes.name, order.ticketType)))
+      .orderBy(ticketTypePriceTiers.startsAt)
+      .limit(1)
+    if (!type) throw new Error(`No demo ticket type ${order.ticketType}`)
+    line({ kind: 'ticket', ticketTypeId: type.id, unitAmountMinor: type.amountMinor })
+  }
+  for (const name of order.addOns ?? []) {
+    const [addOn] = await tx
+      .select({ id: addOns.id, amountMinor: addOns.amountMinor })
+      .from(addOns)
+      .where(and(eq(addOns.editionId, editionId), eq(addOns.name, name)))
+    if (!addOn) throw new Error(`No demo add-on ${name}`)
+    line({ kind: 'add_on', addOnId: addOn.id, unitAmountMinor: addOn.amountMinor })
+  }
+  for (const wanted of order.items ?? []) {
+    const [item] = await tx
+      .select({ id: merchandiseItems.id, amountMinor: merchandiseItems.amountMinor })
+      .from(merchandiseItems)
+      .where(and(eq(merchandiseItems.editionId, editionId), eq(merchandiseItems.name, wanted.name)))
+    if (!item) throw new Error(`No demo merchandise item ${wanted.name}`)
+    const variants = await tx
+      .select({ id: merchandiseVariants.id, label: merchandiseOptionValues.label })
+      .from(merchandiseVariants)
+      .leftJoin(
+        merchandiseVariantValues,
+        eq(merchandiseVariantValues.variantId, merchandiseVariants.id),
+      )
+      .leftJoin(
+        merchandiseOptionValues,
+        eq(merchandiseOptionValues.id, merchandiseVariantValues.optionValueId),
+      )
+      .where(eq(merchandiseVariants.merchandiseItemId, item.id))
+    const values = [...(wanted.values ?? [])].sort().join('|')
+    const variant = [...new Set(variants.map((row) => row.id))].find(
+      (id) =>
+        variants
+          .filter((row) => row.id === id)
+          .flatMap((row) => row.label ?? [])
+          .sort()
+          .join('|') === values,
+    )
+    if (!variant) throw new Error(`No demo variant of ${wanted.name}: ${values}`)
+    line({
+      kind: 'merchandise',
+      merchandiseItemId: item.id,
+      merchandiseVariantId: variant,
+      quantity: wanted.quantity,
+      unitAmountMinor: item.amountMinor,
+    })
+  }
+  const totalMinor = lines.reduce((sum, { amountMinor }) => sum + amountMinor, 0)
+
+  const paid = ['paid', 'paid-manual', 'canceled'].includes(order.status)
+  const [placed] = await tx
+    .insert(orders)
+    .values({
+      ...at,
+      number: order.number,
+      status: order.status,
+      email: order.email ?? null,
+      holderName: order.holderName,
+      ageBand: order.ageBand,
+      totalMinor,
+      // What each status holds of stock and capacity.
+      holds: ['awaiting-payment', 'paid', 'paid-manual', 'needs-review'].includes(order.status),
+      // The one awaiting payment keeps doing so while the demo stands: its hold ends in ten years.
+      holdEndsAt:
+        order.status === 'awaiting-payment'
+          ? new Date(Date.now() + 3650 * DAY)
+          : order.status === 'expired'
+            ? new Date(placedAt.getTime() + 30 * 60 * 1000)
+            : null,
+      placedAt,
+      paidAt: paid ? settledAt : null,
+      guardianConsentAcknowledgedAt: order.ageBand === 'teen' ? placedAt : null,
+      providerConsentAcceptedAt: order.email ? placedAt : null,
+      // Nobody holds the token of a demo order: its result page opens for no one.
+      resultTokenHash: createHash('sha256').update(randomBytes(32)).digest('hex'),
+    })
+    .returning({ id: orders.id })
+  const orderId = placed!.id
+  const of = { ...at, orderId }
+  await tx.insert(orderLines).values(lines.map((values) => ({ ...values, orderId })))
+
+  // What a buyer answers and accepts with an order; a manual order has neither.
+  if (order.email) {
+    if (order.ticketType) {
+      const fields = await tx
+        .select({ id: editionCustomFields.id })
+        .from(editionCustomFields)
+        .where(
+          and(
+            eq(editionCustomFields.editionId, editionId),
+            eq(editionCustomFields.isRequired, true),
+          ),
+        )
+      if (fields.length > 0) {
+        await tx
+          .insert(orderCustomFieldAnswers)
+          .values(fields.map((field) => ({ ...of, customFieldId: field.id, answer: 'Poznań' })))
+      }
+    }
+    const consents = await tx
+      .select({
+        id: editionConsents.id,
+        // The version in force of the document the consent links, named in full: a column of
+        // the outer table is written here without its table.
+        versionId: sql<string | null>`(
+          select v.id from edition_document_versions v
+          where v.document_id = edition_consents.document_id
+          order by v.number desc limit 1
+        )`,
+      })
+      .from(editionConsents)
+      .where(and(eq(editionConsents.editionId, editionId), eq(editionConsents.isRequired, true)))
+    if (consents.length > 0) {
+      await tx.insert(orderConsents).values(
+        consents.map((consent) => ({
+          ...of,
+          consentId: consent.id,
+          documentVersionId: consent.versionId,
+          acceptedAt: placedAt,
+        })),
+      )
+    }
+  }
+
+  if (order.account) {
+    // Read in this transaction: the seed's one connection is the transaction's.
+    const [account] = await tx
+      .select({ id: accounts.id })
+      .from(accounts)
+      .where(eq(accounts.email, order.account))
+    if (!account) throw new Error(`Seed account ${order.account} is missing`)
+    await tx.insert(orderAccounts).values({ ...of, accountId: account.id })
+  }
+
+  // A paid order of the shop has one QR code, sealed for its own row.
+  if (order.status === 'paid') {
+    const id = randomUUID()
+    const code = demoQrCode()
+    await tx.insert(orderQrCodes).values({
+      ...at,
+      id,
+      codeHash: createHash('sha256').update(code).digest('hex'),
+      code: seal(credentialsKey, code, orderQrCodeOf(tenantId, id)),
+    })
+    await tx.insert(orderQrCodeOrders).values({ ...of, qrCodeId: id })
+  }
+
+  for (const [index, attempt] of (order.attempts ?? []).entries()) {
+    const confirmed = attempt.status === 'paid' || attempt.status === 'refused'
+    const reference = confirmed ? `FAKE-DEMO-${order.number}-${index + 1}` : null
+    await tx.insert(paymentAttempts).values({
+      ...of,
+      provider: 'fake',
+      status: attempt.status,
+      amountMinor: totalMinor,
+      paidAmountMinor: confirmed ? (attempt.paidAmountMinor ?? totalMinor) : null,
+      paidAt: confirmed ? settledAt : null,
+      confirmedAt: confirmed ? settledAt : null,
+      moneyWith: attempt.status === 'paid' ? 'convention' : confirmed ? 'buyer' : null,
+      providerReference: reference,
+      information: reference ? { transaction: reference } : null,
+      failureReason: attempt.failureReason ?? null,
+      failureCode: attempt.failureReason ?? null,
+      failureMessage: attempt.failureReason
+        ? `The fake provider reports ${attempt.failureReason}`
+        : null,
+      // In the order they were started.
+      createdAt: new Date(placedAt.getTime() + (index + 1) * 60 * 1000),
+    })
+  }
+
+  if (order.email && order.emails) {
+    await tx.insert(orderEmails).values(
+      order.emails.map((kind) => ({
+        ...of,
+        kind,
+        recipient: order.email!,
+        queuedAt: settledAt,
+        sentAt: settledAt,
+        nextAttemptAt: settledAt,
+      })),
+    )
+  }
+}
+
 async function seedVariants(
   tx: Tx,
   of: { tenantId: string; editionId: string; merchandiseItemId: string },

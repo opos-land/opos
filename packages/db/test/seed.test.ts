@@ -7,7 +7,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3'
 import { describe, expect, it } from 'vitest'
-import { open, providerAccountOf, sealingKey } from '../src/sealed'
+import { open, orderQrCodeOf, providerAccountOf, sealingKey } from '../src/sealed'
 import { migrator } from './db'
 
 // The seed refuses before it opens a connection: it runs where OPOS_ENV is local or dev, and a
@@ -593,6 +593,154 @@ describe('db:seed shop', () => {
         select sha256 from uploaded_files where id = ${chart!.id}
       `
     expect(again!.sha256).toBe(chart!.sha256)
+  })
+
+  // The orders of the edition with an open shop (docs/specs/0004-checkout-and-orders.md, Seed).
+  it(
+    'gives the coming edition an order in each status, with what each status holds',
+    { timeout: 120_000 },
+    async () => {
+      const run = runSeed('local')
+      expect(run.status, run.stderr).toBe(0)
+      const a = await tenantId('convention-a')
+      const edition = await editionId(a, '2026')
+
+      const orders = await migrator<
+        {
+          id: string
+          number: string
+          status: string
+          holds: boolean
+          age_band: string | null
+          email: string | null
+          total_minor: number
+          lines_total: number
+          tickets: number
+          qr_codes: number
+          attached_to: string | null
+          guardian: boolean
+          hold_ends_at: Date | null
+        }[]
+      >`
+        select o.id, o.number, o.status, o.holds, o.age_band, o.email, o.total_minor,
+          o.hold_ends_at, o.guardian_consent_acknowledged_at is not null as guardian,
+          (select coalesce(sum(l.amount_minor), 0)::int from order_lines l where l.order_id = o.id)
+            as lines_total,
+          (select count(*)::int from order_lines l where l.order_id = o.id and l.kind = 'ticket')
+            as tickets,
+          (select count(*)::int from order_qr_code_orders q where q.order_id = o.id) as qr_codes,
+          (select c.email from order_accounts oa join accounts c on c.id = oa.account_id
+            where oa.order_id = o.id) as attached_to
+        from orders o where o.edition_id = ${edition} order by o.number
+      `
+      expect(orders.map((order) => order.status).sort()).toEqual([
+        'awaiting-payment',
+        'canceled',
+        'declined',
+        'expired',
+        'needs-review',
+        'paid',
+        'paid',
+        'paid',
+        'paid-manual',
+      ])
+      for (const order of orders) {
+        // The total of an order is the sum of its lines, to the cent.
+        expect(order.lines_total, order.number).toBe(order.total_minor)
+        expect(order.tickets, order.number).toBeLessThanOrEqual(1)
+        // What each status holds of stock and capacity.
+        expect(order.holds, order.number).toBe(
+          ['awaiting-payment', 'paid', 'paid-manual', 'needs-review'].includes(order.status),
+        )
+        // A paid order of the shop has one QR code; no other order has one.
+        expect(order.qr_codes, order.number).toBe(order.status === 'paid' ? 1 : 0)
+      }
+      const paid = orders.filter((order) => order.status === 'paid')
+      // One with a teen as its ticket holder, one of merchandise alone, one of a demo account.
+      expect(paid.filter((order) => order.age_band === 'teen' && order.guardian)).toHaveLength(1)
+      expect(paid.filter((order) => order.age_band === null && order.tickets === 0)).toHaveLength(1)
+      expect(paid.map((order) => order.attached_to).filter(Boolean)).toEqual([
+        'attendee@example.com',
+      ])
+      // A manual order was placed by an org: nobody's email.
+      expect(orders.find((order) => order.status === 'paid-manual')!.email).toBeNull()
+      // The one awaiting payment keeps doing so while the demo stands.
+      const awaiting = orders.find((order) => order.status === 'awaiting-payment')!
+      expect(awaiting.hold_ends_at!.getTime()).toBeGreaterThan(Date.now() + 365 * 24 * 3_600_000)
+
+      // The QR code opens with the key the API holds, sealed for its own row.
+      const codes = await migrator<{ id: string; code: string; code_hash: string }[]>`
+        select id, code, code_hash from order_qr_codes where edition_id = ${edition}
+      `
+      expect(codes).toHaveLength(3)
+      const key = sealingKey(env('PAYMENT_CREDENTIALS_KEY'))
+      for (const code of codes) {
+        const text = open(key, code.code, orderQrCodeOf(a, code.id))
+        expect(text).toMatch(/^[A-Z2-7]{32}$/)
+        expect(code.code_hash).toBe(createHash('sha256').update(text).digest('hex'))
+      }
+
+      const attempts = await migrator<
+        {
+          order_status: string
+          status: string
+          amount_minor: number
+          paid_amount_minor: number | null
+          money_with: string | null
+          failure_reason: string | null
+        }[]
+      >`
+        select o.status as order_status, p.status, p.amount_minor, p.paid_amount_minor,
+          p.money_with, p.failure_reason
+        from payment_attempts p join orders o on o.id = p.order_id
+        where p.edition_id = ${edition} order by o.number, p.created_at
+      `
+      // A payment an order no longer needed, refused: its money stays with the buyer.
+      expect(attempts).toContainEqual(
+        expect.objectContaining({ order_status: 'paid', status: 'refused', money_with: 'buyer' }),
+      )
+      // The one that needs review was paid another amount than it asked for.
+      const review = attempts.find((attempt) => attempt.order_status === 'needs-review')!
+      expect(review).toMatchObject({ status: 'paid', money_with: 'convention' })
+      expect(review.paid_amount_minor).not.toBe(review.amount_minor)
+      // The expired one was tried and failed; a manual order has no attempt.
+      expect(attempts).toContainEqual(
+        expect.objectContaining({ order_status: 'expired', status: 'failed' }),
+      )
+      expect(attempts.some((attempt) => attempt.order_status === 'paid-manual')).toBe(false)
+
+      // The ticket holder's answers and consents are kept with the order, and its emails are
+      // listed as sent: the seed sends nothing.
+      const [kept] = await migrator<{ answers: number; consents: number; unsent: number }[]>`
+        select
+          (select count(*)::int from order_custom_field_answers where edition_id = ${edition})
+            as answers,
+          (select count(*)::int from order_consents where edition_id = ${edition}) as consents,
+          (select count(*)::int from order_emails where edition_id = ${edition} and sent_at is null)
+            as unsent
+      `
+      expect(kept!.answers).toBeGreaterThan(0)
+      expect(kept!.consents).toBeGreaterThan(0)
+      expect(kept!.unsent).toBe(0)
+    },
+  )
+
+  // An order a demo changed stays as it was left: the seed places none anew.
+  it('leaves an order it placed as the demo changed it', { timeout: 120_000 }, async () => {
+    expect(runSeed('local').status).toBe(0)
+    const a = await tenantId('convention-a')
+    const [order] = await migrator<{ id: string }[]>`
+      select id from orders where tenant_id = ${a} and status = 'declined' limit 1
+    `
+    await migrator`update orders set holder_name = 'Changed by a demo' where id = ${order!.id}`
+    try {
+      expect(runSeed('local').status).toBe(0)
+      expect(await migrator`select holder_name from orders where id = ${order!.id}`).toMatchObject([
+        { holder_name: 'Changed by a demo' },
+      ])
+    } finally {
+      await migrator`update orders set holder_name = 'Demo Declined' where id = ${order!.id}`
+    }
   })
 
   it('sets nothing of a shop for convention B', { timeout: 120_000 }, async () => {

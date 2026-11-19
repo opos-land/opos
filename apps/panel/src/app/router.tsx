@@ -1,7 +1,14 @@
 import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale, AccountPage } from '../features/account'
 import { BrandingPage } from '../features/branding'
-import { AddOnsPage, TicketHoldersPage, TicketTypePage, TicketTypesPage } from '../features/catalog'
+import {
+  AddOnsPage,
+  MerchandiseItemPage,
+  MerchandisePage,
+  TicketHoldersPage,
+  TicketTypePage,
+  TicketTypesPage,
+} from '../features/catalog'
 import {
   ConfirmPage,
   ForgotPasswordPage,
@@ -133,6 +140,9 @@ export const router = createBrowserRouter([
                   { path: 'ticket-types/new', element: <TicketTypePage /> },
                   { path: 'ticket-types/:ticketTypeId', element: <TicketTypePage /> },
                   { path: 'add-ons', element: <AddOnsPage /> },
+                  { path: 'merchandise', element: <MerchandisePage /> },
+                  { path: 'merchandise/new', element: <MerchandiseItemPage /> },
+                  { path: 'merchandise/:itemId', element: <MerchandiseItemPage /> },
                   { path: 'ticket-holders', element: <TicketHoldersPage /> },
                   { path: 'access', element: <EditionAccessPage /> },
                   { path: 'settings', element: <EditionSettingsPage /> },

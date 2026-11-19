@@ -768,6 +768,14 @@ msgstr "Nazwa"
 msgid "Name of the seller"
 msgstr "Nazwa sprzedawcy"
 
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "New consent"
+msgstr "Nowa zgoda"
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "New document"
+msgstr "Nowy dokument"
+
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/editions/pages/new-edition-page.tsx
 msgid "New edition"

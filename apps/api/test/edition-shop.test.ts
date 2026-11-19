@@ -417,6 +417,27 @@ describe('the documents of an edition', () => {
     expect(await list(c)).toEqual([document])
   })
 
+  it('are listed by kind, those opening asks for first, and within a kind as they were added', async () => {
+    const c = await convention()
+    for (const [kind, title] of [
+      ['other', 'Map of the venue'],
+      ['edition-rules', 'Rules'],
+      ['privacy-policy', 'Privacy'],
+      ['shop-terms', 'Terms'],
+      ['other', 'Accessibility'],
+    ]) {
+      await add(c, kind, title)
+    }
+
+    expect((await list(c)).map((document) => document.title)).toEqual([
+      'Terms',
+      'Privacy',
+      'Rules',
+      'Map of the venue',
+      'Accessibility',
+    ])
+  })
+
   it.each([
     ['a kind OPOS does not know', { kind: 'cookies', title: 'Cookies' }],
     ['no title', { kind: 'other' }],

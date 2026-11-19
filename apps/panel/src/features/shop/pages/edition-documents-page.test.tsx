@@ -179,6 +179,22 @@ describe('EditionDocumentsPage', () => {
     expect(screen.queryByLabelText('Sentence the buyer accepts')).toBeNull()
   })
 
+  it('names the forms that add a document and a consent, for a member who may add them', async () => {
+    state.tickets = 'write'
+    view()
+    await screen.findByText('Consent 1')
+
+    expect(screen.getByRole('heading', { name: 'New document', level: 3 })).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'New consent', level: 3 })).toBeDefined()
+    cleanup()
+
+    state.tickets = 'read'
+    view()
+    await screen.findByText('Consent 1')
+    expect(screen.queryByRole('heading', { name: 'New document' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'New consent' })).toBeNull()
+  })
+
   it('adds a document with its kind and title', async () => {
     state.tickets = 'write'
     view()

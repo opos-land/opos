@@ -134,6 +134,9 @@ function NewDocument({ editionId }: { editionId: string }) {
         if (trimmed) create.mutate({ params: { editionId }, body: { kind, title: trimmed } })
       }}
     >
+      <h3 className="text-sm font-medium">
+        <Trans>New document</Trans>
+      </h3>
       <FormField label={t`Kind`}>
         {(control) => (
           <NativeSelect
@@ -218,7 +221,10 @@ function ConsentList({
         </>
       )}
       {canWrite && (
-        <div className="border-t pt-4">
+        <div className="flex flex-col gap-4 border-t pt-4">
+          <h3 className="text-sm font-medium">
+            <Trans>New consent</Trans>
+          </h3>
           <ConsentForm
             key={form}
             initial={NEW_CONSENT}

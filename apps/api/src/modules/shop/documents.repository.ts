@@ -83,7 +83,12 @@ export class DocumentsRepository {
       .select(columns)
       .from(editionDocuments)
       .where(eq(editionDocuments.editionId, editionId))
-      .orderBy(asc(editionDocuments.createdAt), asc(editionDocuments.id))
+      // By kind, in the order the kinds are declared, then as they were added.
+      .orderBy(
+        asc(editionDocuments.kind),
+        asc(editionDocuments.createdAt),
+        asc(editionDocuments.id),
+      )
     return this.withVersions(rows)
   }
 

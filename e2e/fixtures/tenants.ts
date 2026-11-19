@@ -185,6 +185,51 @@ export class TenantFactory {
     return document!.id
   }
 
+  /**
+   * A small catalog of an edition, as its rows alone: a ticket type with a price in force now, an
+   * add-on it offers, a merchandise item sold as one variant, and a custom field.
+   */
+  async addCatalog(tenantId: string, editionId: string) {
+    const at = sql`${tenantId}, ${editionId}`
+    const [ticketType] = await this.db.execute<{ id: string }>(sql`
+      insert into ticket_types (tenant_id, edition_id, name, sale_starts_at, sale_ends_at,
+        allows_child, allows_teen, allows_adult, position)
+      values (${at}, 'Standard', now() - interval '30 days', now() + interval '30 days', false,
+        true, true, 1)
+      returning id
+    `)
+    await this.db.execute(sql`
+      insert into ticket_type_price_tiers (tenant_id, edition_id, ticket_type_id, amount_minor,
+        starts_at, ends_at)
+      values (${at}, ${ticketType!.id}, 12000, now() - interval '30 days',
+        now() + interval '30 days')
+    `)
+    const [addOn] = await this.db.execute<{ id: string }>(sql`
+      insert into add_ons (tenant_id, edition_id, name, amount_minor, kind, capacity, position)
+      values (${at}, 'Workshop', 4000, 'limited', 30, 1)
+      returning id
+    `)
+    await this.db.execute(sql`
+      insert into ticket_type_add_ons (tenant_id, edition_id, ticket_type_id, add_on_id)
+      values (${at}, ${ticketType!.id}, ${addOn!.id})
+    `)
+    const [item] = await this.db.execute<{ id: string }>(sql`
+      insert into merchandise_items (tenant_id, edition_id, name, amount_minor, per_order_limit,
+        position)
+      values (${at}, 'Enamel pin', 1500, 10, 1)
+      returning id
+    `)
+    await this.db.execute(sql`
+      insert into merchandise_variants (tenant_id, edition_id, merchandise_item_id, stock)
+      values (${at}, ${item!.id}, 200)
+    `)
+    await this.db.execute(sql`
+      insert into edition_custom_fields (tenant_id, edition_id, label, is_required, position)
+      values (${at}, 'City you travel from', true, 1)
+    `)
+    return { ticketTypeId: ticketType!.id, addOnId: addOn!.id, itemId: item!.id }
+  }
+
   /** The account's membership in the tenant as stored, or undefined. */
   async membership(tenantId: string, accountId: string) {
     const [row] = await this.db.execute<{ role: string; settingsAccess: string }>(sql`

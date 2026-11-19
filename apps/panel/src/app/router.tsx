@@ -1,5 +1,6 @@
 import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale, AccountPage } from '../features/account'
+import { BrandingPage } from '../features/branding'
 import {
   ConfirmPage,
   ForgotPasswordPage,
@@ -111,6 +112,7 @@ export const router = createBrowserRouter([
                   { path: 'team', element: <TeamPage /> },
                   { path: 'team/invite', element: <InvitePage /> },
                   { path: 'team/:membershipId', element: <MemberPage /> },
+                  { path: 'branding', element: <BrandingPage /> },
                   { path: '*', element: <NotFoundView /> },
                 ],
               },

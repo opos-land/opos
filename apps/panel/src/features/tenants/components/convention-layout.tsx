@@ -1,11 +1,13 @@
 import { Trans } from '@lingui/react/macro'
-import { CalendarRangeIcon, SlidersHorizontalIcon, UsersIcon } from 'lucide-react'
+import { CalendarRangeIcon, PaletteIcon, SlidersHorizontalIcon, UsersIcon } from 'lucide-react'
+import { atLeast } from '../model/permissions'
 import { AreaFrame, SidebarLink } from './area-frame'
 import { useCurrentTenant } from './tenant-context'
 
 /**
  * The convention settings: what belongs to the whole convention, for a member who may
- * open them. A section of one edition never appears here; it lives in the edition's own menu.
+ * open them, each section by its own permission. A section of one edition never appears here; it
+ * lives in the edition's own menu.
  */
 export function ConventionLayout() {
   const { tenant, access } = useCurrentTenant()
@@ -20,15 +22,24 @@ export function ConventionLayout() {
         title: <Trans>Convention settings</Trans>,
         links: (
           <>
-            <SidebarLink to={base} end icon={<SlidersHorizontalIcon />}>
-              <Trans>General</Trans>
-            </SidebarLink>
-            <SidebarLink to={`${base}/editions`} icon={<CalendarRangeIcon />}>
-              <Trans>Editions</Trans>
-            </SidebarLink>
-            <SidebarLink to={`${base}/team`} icon={<UsersIcon />}>
-              <Trans>Team</Trans>
-            </SidebarLink>
+            {atLeast(access.settings, 'read') && (
+              <>
+                <SidebarLink to={base} end icon={<SlidersHorizontalIcon />}>
+                  <Trans>General</Trans>
+                </SidebarLink>
+                <SidebarLink to={`${base}/editions`} icon={<CalendarRangeIcon />}>
+                  <Trans>Editions</Trans>
+                </SidebarLink>
+                <SidebarLink to={`${base}/team`} icon={<UsersIcon />}>
+                  <Trans>Team</Trans>
+                </SidebarLink>
+              </>
+            )}
+            {atLeast(access.branding, 'read') && (
+              <SidebarLink to={`${base}/branding`} icon={<PaletteIcon />}>
+                <Trans>Branding</Trans>
+              </SidebarLink>
+            )}
           </>
         ),
       }}

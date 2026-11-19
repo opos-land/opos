@@ -19,9 +19,9 @@ const edition: Edition = {
   endsAt: '2026-06-07T16:00:00.000Z',
   isActive: false,
   isPublished: false,
-  venueName: null,
-  venueAddress: null,
-  venueCity: null,
+  venueName: 'Congress Hall',
+  venueAddress: '1 Main St',
+  venueCity: 'Poznań',
 }
 
 vi.mock('../hooks/use-editions', () => ({
@@ -130,6 +130,24 @@ describe('EditionSettingsPage', () => {
     expect(update.mock.calls[0]?.[0]).toMatchObject({
       params: { editionId: 'edition-1' },
       body: { slug: 'next-year' },
+    })
+  })
+
+  it('shows the venue and saves it with the data of the edition, a cleared part as none', async () => {
+    state.settings = 'write'
+    update.mockResolvedValue(edition)
+    view()
+
+    expect(screen.getByLabelText<HTMLInputElement>('Venue').value).toBe('Congress Hall')
+    expect(screen.getByLabelText<HTMLInputElement>('Venue address').value).toBe('1 Main St')
+    fireEvent.change(screen.getByLabelText('Venue address'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('City'), { target: { value: 'Gniezno' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await vi.waitFor(() => expect(update).toHaveBeenCalled())
+    expect(update.mock.calls[0]?.[0]).toMatchObject({
+      params: { editionId: 'edition-1' },
+      body: { venueName: 'Congress Hall', venueAddress: null, venueCity: 'Gniezno' },
     })
   })
 

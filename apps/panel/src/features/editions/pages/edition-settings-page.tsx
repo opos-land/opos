@@ -97,6 +97,9 @@ export function EditionSettingsPage() {
             slug: edition.slug,
             startsAt: time.toInput(edition.startsAt),
             endsAt: time.toInput(edition.endsAt),
+            venueName: edition.venueName ?? '',
+            venueAddress: edition.venueAddress ?? '',
+            venueCity: edition.venueCity ?? '',
           }}
           disabled={!canWrite}
           pending={update.isPending}

@@ -56,6 +56,7 @@ test.describe('team management in the panel', () => {
       'Organizer',
       'Read',
       'No access',
+      'No access',
       'No end date',
     ])
     // The whole row opens the member's page, not only the name.

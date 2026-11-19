@@ -7,6 +7,7 @@ const warsaw = (value: string) => fromZonedWallTime(value, 'Europe/Warsaw')?.toI
 const org: MemberFormValues = {
   role: 'org',
   settingsAccess: 'read',
+  brandingAccess: 'none',
   shopConfigAccess: 'none',
   expiresAt: '',
 }
@@ -50,6 +51,9 @@ describe('memberChange', () => {
     expect(memberChange(org, { ...org, shopConfigAccess: 'read' }, warsaw)).toEqual({
       shopConfigAccess: 'read',
     })
+    expect(memberChange(org, { ...org, brandingAccess: 'write' }, warsaw)).toEqual({
+      brandingAccess: 'write',
+    })
     expect(memberChange(org, org, warsaw)).toEqual({})
   })
 
@@ -76,6 +80,7 @@ describe('memberChange', () => {
     const head: MemberFormValues = {
       role: 'head',
       settingsAccess: 'none',
+      brandingAccess: 'none',
       shopConfigAccess: 'none',
       expiresAt: '',
     }

@@ -26,7 +26,7 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/settings/editions/new`))
   const create = page.getByRole('region', { name: 'Edition data' })
   await create.getByLabel('Name').fill('Next year')
-  await create.getByLabel('Address').fill('next-year')
+  await create.getByLabel('Address', { exact: true }).fill('next-year')
   await create.getByLabel('Starts').fill('2027-06-04T10:00')
   await create.getByLabel('Ends').fill('2027-06-06T18:00')
   await create.getByRole('button', { name: 'Create the edition' }).click()

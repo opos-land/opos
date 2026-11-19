@@ -98,6 +98,7 @@ describe('NewEditionPage', () => {
     await user.type(screen.getByLabelText('Address'), 'next-year')
     fireEvent.change(screen.getByLabelText('Starts'), { target: { value: '2027-06-04T10:00' } })
     fireEvent.change(screen.getByLabelText('Ends'), { target: { value: '2027-06-06T18:00' } })
+    await user.type(screen.getByLabelText('City'), 'Poznań')
     await user.click(screen.getByRole('button', { name: 'Create the edition' }))
 
     expect(await screen.findByText('The edition area')).toBeDefined()
@@ -107,6 +108,9 @@ describe('NewEditionPage', () => {
         slug: 'next-year',
         startsAt: '2027-06-04T10:00:00.000Z',
         endsAt: '2027-06-06T18:00:00.000Z',
+        venueName: null,
+        venueAddress: null,
+        venueCity: 'Poznań',
       },
     })
   })

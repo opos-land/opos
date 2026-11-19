@@ -18,6 +18,9 @@ const edition: Edition = {
   endsAt: '2026-06-07T16:00:00.000Z',
   isActive: true,
   isPublished: false,
+  venueName: null,
+  venueAddress: null,
+  venueCity: null,
 }
 
 vi.mock('../hooks/use-editions', () => ({

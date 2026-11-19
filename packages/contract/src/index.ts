@@ -1,5 +1,6 @@
 import { adminContract } from './admin'
 import { authContract } from './auth'
+import { brandingContract } from './branding'
 import { editionsContract } from './editions'
 import { engagementContract } from './engagement'
 import { healthContract } from './health'
@@ -15,6 +16,7 @@ export const contract = {
   auth: authContract,
   me: meContract,
   tenants: tenantsContract,
+  branding: brandingContract,
   editions: editionsContract,
   invitations: invitationsContract,
   program: programContract,
@@ -28,6 +30,7 @@ export type Contract = typeof contract
 export * from './admin'
 export * from './auth'
 export * from './auth-mfa'
+export * from './branding'
 export * from './common'
 export * from './editions'
 export * from './engagement'

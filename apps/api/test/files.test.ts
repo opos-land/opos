@@ -3,7 +3,7 @@ import { Body, Controller, Get, Module, Param, Post } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { contract, type ContractMeta } from '@opos/contract'
 import { type AnyContractRouter, isContractProcedure } from '@orpc/contract'
-import { getTableName, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TenantContextService } from '../src/common/als/tenant-context.service'
 import { GlobalDbService } from '../src/common/database/global-db.service'
@@ -48,8 +48,8 @@ import { addEdition, deleteCreatedTenants, restore, suspend, tenantWithHead } fr
 
 // File storage and image variants against the local Versity Gateway and imgproxy, through the
 // service and the kinds declared for the tests (docs/specs/0012-file-storage.md,
-// docs/specs/0013-image-variants.md). One file, so that the sweep never runs beside another test's
-// upload.
+// docs/specs/0013-image-variants.md). One file, run after every other (vitest.config.ts), so that
+// the sweep never runs beside another test's upload.
 
 const kinds = Object.values(KINDS)
 const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
@@ -180,12 +180,11 @@ describe('the kinds the features declared', () => {
   // that kind every day, and db:verify refuses a grant globalReads does not list
   // (docs/ARCHITECTURE.md, Tenant isolation).
   it('let opos_app_global read the column each kind points from', async () => {
+    // The sweep's own query on the role's connection, for files older than any: a pointing
+    // column the role cannot read refuses it before a row is looked at.
+    const global = app.get(GlobalDbService)
     for (const kind of FILE_KINDS) {
-      const table = `public.${getTableName(kind.pointer.table)}`
-      const [row] = await asPostgres(
-        sql`select has_column_privilege('opos_app_global', ${table}, ${kind.pointer.name}, 'SELECT') as readable`,
-      )
-      expect(row, kind.name).toEqual({ readable: true })
+      await expect(global.unpointedFiles(kind, new Date(0)), kind.name).resolves.toEqual([])
     }
   })
 })
@@ -440,9 +439,11 @@ describe('a route that takes or serves a file', () => {
     expect(missing.body).toMatchObject({ code: 'request.invalid', params: { field: 'file' } })
   })
 
-  // A feature's route carries the storage's shape only with its own requirement
-  // (docs/specs/0012-file-storage.md, Tenant isolation and permissions).
-  it('marks no contract route as taking or serving a file but a tenant or account route', () => {
+  // A feature's route carries the storage's shape only with its own rule of who sends and who
+  // reads (docs/specs/0012-file-storage.md, Tenant isolation and permissions): never an admin
+  // route, and a file is taken only behind a tenant's or an account's requirement, while a public
+  // route may serve what is for everyone.
+  it('marks no admin route as taking or serving a file, and no public route as taking one', () => {
     const marked = (router: AnyContractRouter): ContractMeta[] =>
       Object.values(router).flatMap((value: AnyContractRouter) =>
         isContractProcedure(value)
@@ -452,6 +453,15 @@ describe('a route that takes or serves a file', () => {
           : marked(value),
       )
     for (const meta of marked(contract)) expect(meta.admin).not.toBe(true)
+    const open = (router: AnyContractRouter): ContractMeta[] =>
+      Object.values(router).flatMap((value: AnyContractRouter) => {
+        if (!isContractProcedure(value)) return open(value)
+        const { spec } = value['~orpc'].route
+        const operation = typeof spec === 'function' ? spec({ responses: {} }) : spec
+        const withoutSignIn = Array.isArray(operation?.security) && operation.security.length === 0
+        return withoutSignIn ? [value['~orpc'].meta as ContractMeta] : []
+      })
+    for (const meta of open(contract)) expect(meta.takesFile).not.toBe(true)
   })
 })
 

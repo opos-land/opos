@@ -1,7 +1,9 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
+import { contract } from '@opos/contract'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { loadEnv } from '../src/config/env'
+import { uploadRoutes } from '../src/modules/files/upload-body'
 import { createApp } from './app'
 
 // An explicit list of origins, the four request headers, Retry-After exposed,
@@ -31,6 +33,28 @@ describe('CORS', () => {
 
     expect(res.headers['access-control-allow-origin']).toBe(origin)
     expect(res.headers['access-control-allow-credentials']).toBe('true')
+  })
+
+  // A browser asks before it sends a file: a route that takes one has a parser of its own before
+  // the routes, which must leave the question to CORS.
+  it.each(uploadRoutes(contract))(
+    'answers the preflight of $method $path, a route that takes a file',
+    async ({ method, path }) => {
+      const res = await request(app.getHttpServer())
+        .options(path.replace(/:\w+/g, '7a1e6b56-2c3f-4d55-9a2e-1f0b7c3d9e10'))
+        .set('Origin', env.PANEL_URL)
+        .set('Access-Control-Request-Method', method)
+        .set('Access-Control-Request-Headers', 'content-type,x-tenant-slug')
+        .expect(204)
+
+      expect(res.headers['access-control-allow-origin']).toBe(env.PANEL_URL)
+      expect(res.headers['access-control-allow-credentials']).toBe('true')
+      expect(String(res.headers['access-control-allow-methods'])).toContain(method)
+    },
+  )
+
+  it('finds a route that takes a file to ask about', () => {
+    expect(uploadRoutes(contract).length).toBeGreaterThan(0)
   })
 
   it('allows the four request headers and no other', async () => {

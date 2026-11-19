@@ -38,6 +38,9 @@ const created: Edition = {
   endsAt: '2027-06-06T18:00:00.000Z',
   isActive: false,
   isPublished: false,
+  venueName: null,
+  venueAddress: null,
+  venueCity: null,
 }
 
 const view = () =>

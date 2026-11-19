@@ -64,17 +64,59 @@ export async function addEdition(
     isActive?: boolean
     startsAt?: string
     endsAt?: string
+    venueCity?: string
   } = {},
 ) {
   const slug = values.slug ?? randomUUID().slice(0, 8)
   const rows = await db.execute<{ id: string }>(sql`
-    insert into editions (tenant_id, slug, name, starts_at, ends_at, is_published, is_active)
+    insert into editions (tenant_id, slug, name, starts_at, ends_at, is_published, is_active, venue_city)
     values (${tenantId}, ${slug}, ${slug}, ${values.startsAt ?? '2027-06-01'},
-      ${values.endsAt ?? '2027-06-03'}, ${values.isPublished ?? false}, ${values.isActive ?? false})
+      ${values.endsAt ?? '2027-06-03'}, ${values.isPublished ?? false}, ${values.isActive ?? false},
+      ${values.venueCity ?? null})
     returning id
   `)
   return rows[0]!.id
 }
+
+/** Sets the venue of an edition, as its settings do. */
+export const setVenue = (
+  editionId: string,
+  venue: { name: string; address: string; city: string },
+) =>
+  db.execute(sql`
+    update editions
+    set venue_name = ${venue.name}, venue_address = ${venue.address}, venue_city = ${venue.city}
+    where id = ${editionId}
+  `)
+
+/** Publishes an edition or takes it back, as its settings do. */
+export const setPublished = (editionId: string, isPublished: boolean) =>
+  db.execute(sql`update editions set is_published = ${isPublished} where id = ${editionId}`)
+
+/**
+ * A logo of the tenant as its rows alone, with nothing in the bucket: for a test of what the
+ * database holds or of what a list answers.
+ */
+export async function addLogo(tenantId: string, width = 400, height = 200) {
+  const rows = await db.execute<{ id: string }>(sql`
+    insert into uploaded_files (tenant_id, kind, content_type, size, sha256, name, width, height)
+    values (${tenantId}, 'convention-logo', 'image/png', 10, repeat('c', 64), 'logo.png',
+      ${width}, ${height})
+    returning id
+  `)
+  await db.execute(
+    sql`insert into tenant_logos (tenant_id, file_id) values (${tenantId}, ${rows[0]!.id})`,
+  )
+  return { fileId: rows[0]!.id, width, height }
+}
+
+/** The file the tenant's logo points at, as stored. */
+export const logoOf = async (tenantId: string) =>
+  (
+    await db.execute<{ fileId: string }>(
+      sql`select file_id as "fileId" from tenant_logos where tenant_id = ${tenantId}`,
+    )
+  )[0]?.fileId
 
 export async function addProgramItem(
   tenantId: string,
@@ -264,18 +306,25 @@ export async function openTransaction() {
 }
 
 /**
- * Everything a tenant route can write in one tenant, as stored: the tenant, its editions, its
- * memberships on both levels, its programme items and their speakers. Equal snapshots before and
- * after a refused request mean it changed nothing.
+ * Everything a tenant route can write in one tenant, as stored: the tenant, its logo, its
+ * editions, its memberships on both levels, its programme items and their speakers. Equal
+ * snapshots before and after a refused request mean it changed nothing.
  */
 export async function tenantState(tenantId: string) {
   const [tenant] = await db.execute(
     sql`select name, default_locale, timezone from tenants where id = ${tenantId}`,
   )
   const editions = await db.execute(sql`
-    select id, slug, name, starts_at, ends_at, is_active, is_published
+    select id, slug, name, starts_at, ends_at, is_active, is_published,
+      venue_name, venue_address, venue_city
     from editions where tenant_id = ${tenantId} order by id
   `)
+  const logos = await db.execute(
+    sql`select file_id from tenant_logos where tenant_id = ${tenantId}`,
+  )
+  const files = await db.execute(
+    sql`select id, kind from uploaded_files where tenant_id = ${tenantId} order by id`,
+  )
   const memberships = await db.execute(sql`
     select id, account_id, role, settings_access, branding_access, shop_config_access, expires_at
     from tenant_memberships where tenant_id = ${tenantId} order by id
@@ -294,6 +343,8 @@ export async function tenantState(tenantId: string) {
   `)
   return {
     tenant,
+    logos: [...logos],
+    files: [...files],
     editions: [...editions],
     memberships: [...memberships],
     editionMemberships: [...editionMemberships],

@@ -1,4 +1,12 @@
-import { FILE_TYPES, type FileType, MAX_FILE_SIZE } from '@opos/contract'
+import {
+  FILE_TYPES,
+  type FileType,
+  LOGO_TYPES,
+  type LogoVariant,
+  MAX_FILE_SIZE,
+  MAX_LOGO_SIZE,
+} from '@opos/contract'
+import { tenantLogos } from '@opos/db'
 import { type AnyPgColumn } from 'drizzle-orm/pg-core'
 
 /** Who a file belongs to: the short list the core holds (docs/specs/0012-file-storage.md, D1). */
@@ -80,4 +88,22 @@ export function defineKinds(kinds: readonly FileKind[]): ReadonlyMap<string, Fil
  * The kinds the features declared. A feature that starts to take files adds its kind here and a
  * column to a table of its own; the storage does not change with it.
  */
-export const FILE_KINDS: readonly FileKind[] = []
+export const FILE_KINDS: readonly FileKind[] = [
+  // A convention's logo (docs/specs/0014-edition-list-and-edition-page.md): small in a row of the
+  // list of editions, which a page shows first, and large on the convention's and an edition's
+  // page.
+  {
+    name: 'convention-logo',
+    owner: 'convention',
+    types: LOGO_TYPES,
+    maxSize: MAX_LOGO_SIZE,
+    pointer: tenantLogos.fileId,
+    variants: {
+      small: { width: 96, height: 96, fit: 'inside', withUpload: true },
+      large: { width: 320, height: 320, fit: 'inside' },
+    } satisfies Record<LogoVariant, VariantDeclaration>,
+  },
+]
+
+/** The kind of a convention's logo. */
+export const LOGO_KIND = 'convention-logo'

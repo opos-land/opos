@@ -31,6 +31,7 @@ import { ENV, type Env } from './config/env'
 import { MeModule } from './modules/accounts/me.module'
 import { AdminModule } from './modules/admin/admin.module'
 import { AuthModule } from './modules/auth/auth.module'
+import { BrandingModule } from './modules/branding/branding.module'
 import { EditionsModule } from './modules/editions/editions.module'
 import { EngagementModule } from './modules/engagement/engagement.module'
 import { FilesModule } from './modules/files/files.module'
@@ -71,6 +72,7 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
         MeModule,
         AuthModule,
         TenantsModule,
+        BrandingModule,
         EditionsModule,
         ProgramModule,
         PublicModule,

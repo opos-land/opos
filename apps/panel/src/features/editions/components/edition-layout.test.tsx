@@ -51,6 +51,9 @@ const edition = (slug: string, name: string): Edition => ({
   endsAt: '2026-06-07T16:00:00.000Z',
   isActive: false,
   isPublished: false,
+  venueName: null,
+  venueAddress: null,
+  venueCity: null,
 })
 
 const view = (path: string) =>

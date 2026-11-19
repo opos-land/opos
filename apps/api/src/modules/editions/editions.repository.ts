@@ -14,6 +14,16 @@ const columns = {
   endsAt: editions.endsAt,
   isActive: editions.isActive,
   isPublished: editions.isPublished,
+  venueName: editions.venueName,
+  venueAddress: editions.venueAddress,
+  venueCity: editions.venueCity,
+}
+
+/** The venue as a request gives it: a part left out stays as it is, null clears it. */
+interface Venue {
+  venueName?: string | null
+  venueAddress?: string | null
+  venueCity?: string | null
 }
 
 type Row = Omit<Edition, 'startsAt' | 'endsAt'> & { startsAt: Date; endsAt: Date }
@@ -79,7 +89,7 @@ export class EditionsRepository {
   }
 
   /** A taken slug violates editions_tenant_slug_unique, which the filter answers with 409. */
-  async create(values: { slug: string; name: string; startsAt: string; endsAt: string }) {
+  async create(values: { slug: string; name: string; startsAt: string; endsAt: string } & Venue) {
     const [row] = await this.context
       .tx()
       .insert(editions)
@@ -88,6 +98,9 @@ export class EditionsRepository {
         name: values.name,
         startsAt: new Date(values.startsAt),
         endsAt: new Date(values.endsAt),
+        venueName: values.venueName,
+        venueAddress: values.venueAddress,
+        venueCity: values.venueCity,
         tenantId: this.context.tenant().id,
       })
       .returning(columns)
@@ -103,7 +116,7 @@ export class EditionsRepository {
       startsAt?: string
       endsAt?: string
       isPublished?: boolean
-    },
+    } & Venue,
   ) {
     if (Object.keys(changes).length === 0) return this.get(id)
     const [row] = await this.context

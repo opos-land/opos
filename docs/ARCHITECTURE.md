@@ -56,7 +56,8 @@ Dev's deployment is described in [infra](../infra/README.md) but not running yet
 ([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)); a
 deployed environment reaches its database directly, with TLS verified against Supabase's CA
 ([0039](adr/0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md)). The backups are
-decided but not built ([0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
+decided but not built ([0014](adr/0014-back-up-production-beyond-supabase.md)), nor is a deployed
+environment's bucket of uploaded files with its imgproxy, which the API needs to start; the modules
 [waiting for their domain owner](#modules-waiting-for-their-domain-owner) have only their rules.
 
 ## Tenant isolation

@@ -108,6 +108,7 @@ msgstr "Dostęp ważny do"
 msgid "Account"
 msgstr "Konto"
 
+#: src/features/catalog/pages/ticket-types-page.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Actions"
 msgstr "Działania"
@@ -132,6 +133,18 @@ msgstr "Aktywna"
 msgid "Add"
 msgstr "Dodaj"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Add a perk"
+msgstr "Dodaj bonus"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Add a price tier"
+msgstr "Dodaj próg cenowy"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Add a supporter price"
+msgstr "Dodaj cenę wspierającą"
+
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "Add the add-on"
 msgstr "Dodaj dodatek"
@@ -152,6 +165,10 @@ msgstr "Dodaj dokument"
 msgid "Add the item"
 msgstr "Dodaj punkt programu"
 
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "Add the ticket type"
+msgstr "Dodaj rodzaj akredytacji"
+
 #: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/editions/components/edition-layout.tsx
 msgid "Add-ons"
@@ -164,6 +181,10 @@ msgstr "Dodatki w ich kolejności"
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "Add-ons of the edition"
 msgstr "Dodatki edycji"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Add-ons offered with it"
+msgstr "Dodatki oferowane razem z nim"
 
 #: src/features/team/model/invitation.ts
 msgid "Added to the team: {name}. They have been told by email."
@@ -186,9 +207,17 @@ msgstr "Adres formularza zgody opiekuna"
 msgid "Address of the seller"
 msgstr "Adres sprzedawcy"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Adult"
+msgstr "Dorosły"
+
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "Age bands"
 msgstr "Przedziały wiekowe"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Age bands allowed"
+msgstr "Dozwolone przedziały wiekowe"
 
 #: src/features/editions/pages/editions-page.tsx
 msgid "All editions"
@@ -197,6 +226,14 @@ msgstr "Wszystkie edycje"
 #: src/features/program/pages/program-item-page.tsx
 msgid "All programme items"
 msgstr "Wszystkie punkty programu"
+
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "All ticket types"
+msgstr "Wszystkie rodzaje akredytacji"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Allow at least one age band."
+msgstr "Zaznacz co najmniej jeden przedział wiekowy."
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "An adult from the age of"
@@ -276,6 +313,15 @@ msgstr "Anuluj"
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Cannot sign in?"
 msgstr "Nie możesz się zalogować?"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgid "Capacity"
+msgstr "Limit sztuk"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Child"
+msgstr "Dziecko"
 
 #: src/features/tenants/components/area-switcher.tsx
 msgid "Choose a convention"
@@ -483,6 +529,14 @@ msgstr "Usuń punkt programu"
 msgid "Delete the programme item {title}?"
 msgstr "Usunąć punkt programu „{title}”?"
 
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "Delete the ticket type"
+msgstr "Usuń rodzaj akredytacji"
+
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "Delete the ticket type “{name}”?"
+msgstr "Usunąć rodzaj akredytacji „{name}”?"
+
 #: src/features/shop/components/consent-row.tsx
 msgid "Delete this consent?"
 msgstr "Usunąć tę zgodę?"
@@ -490,6 +544,10 @@ msgstr "Usunąć tę zgodę?"
 #: src/features/program/pages/program-item-page.tsx
 msgid "Deleting a programme item cannot be undone."
 msgstr "Usunięcia punktu programu nie można cofnąć."
+
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "Deleting a ticket type cannot be undone. To take it out of the shop for a while, hide it in the list of ticket types instead."
+msgstr "Usunięcia rodzaju akredytacji nie da się cofnąć. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go na liście rodzajów akredytacji."
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
@@ -508,6 +566,10 @@ msgstr "Odłącz konto"
 msgid "Disconnect the payment provider account of {name}?"
 msgstr "Odłączyć konto konwentu {name} u dostawcy płatności?"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Discounts"
+msgstr "Rabaty"
+
 #: src/features/account/components/two-factor-card.tsx
 msgid "Dismiss"
 msgstr "Zamknij"
@@ -524,6 +586,10 @@ msgstr "Dokumenty"
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Documents and consents"
 msgstr "Dokumenty i zgody"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
+msgstr "Każdy próg to cena brutto obowiązująca od jednej chwili do drugiej. W chwili, której nie obejmuje żaden próg, rodzaj akredytacji nie jest w sprzedaży."
 
 #: src/features/catalog/components/add-on-row.tsx
 #: src/features/catalog/components/custom-field-row.tsx
@@ -587,6 +653,7 @@ msgid "Enter a name of up to 200 characters."
 msgstr "Podaj nazwę o długości do 200 znaków."
 
 #: src/features/catalog/components/add-on-form.tsx
+#: src/features/catalog/components/ticket-type-form.tsx
 msgid "Enter a name."
 msgstr "Wpisz nazwę."
 
@@ -618,6 +685,10 @@ msgstr "Wpisz liczbę całkowitą od 1 albo zostaw puste."
 msgid "Enter a whole number of places."
 msgstr "Wpisz liczbę miejsc jako liczbę całkowitą."
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Enter a whole number, or leave it empty."
+msgstr "Wpisz liczbę całkowitą albo zostaw puste."
+
 #: src/features/editions/components/edition-form.tsx
 msgid "Enter an address of up to 300 characters."
 msgstr "Podaj adres o długości do 300 znaków."
@@ -642,6 +713,10 @@ msgstr "Podaj adres e-mail albo zostaw pole puste."
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "Enter both ages as whole numbers, the second higher than the first, or leave both empty."
 msgstr "Wpisz oba progi wieku jako liczby całkowite, drugi wyższy od pierwszego, albo zostaw oba pola puste."
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Enter each supporter price as an amount above zero, each once."
+msgstr "Wpisz każdą cenę wspierającą jako kwotę większą od zera, każdą tylko raz."
 
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
@@ -674,9 +749,18 @@ msgstr "Wpisz sześć cyfr z aplikacji uwierzytelniającej."
 msgid "Enter the start date and time."
 msgstr "Podaj datę i godzinę rozpoczęcia."
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Enter when the sale starts and when it ends, the end later."
+msgstr "Wpisz początek i koniec sprzedaży; koniec musi być później niż początek."
+
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Enter your password."
 msgstr "Podaj hasło."
+
+#: src/features/catalog/components/ticket-type-form.tsx
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgid "Excluded from discounts"
+msgstr "Wyłączony z rabatów"
 
 #: src/features/team/components/members-table.tsx
 msgid "expired"
@@ -703,6 +787,10 @@ msgctxt "a price"
 msgid "Free"
 msgstr "Bezpłatnie"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "From"
+msgstr "Od"
+
 #: src/features/team/components/members-table.tsx
 msgid "Full access"
 msgstr "Pełny dostęp"
@@ -711,6 +799,10 @@ msgstr "Pełny dostęp"
 #: src/features/tenants/pages/settings-page.tsx
 msgid "General"
 msgstr "Ogólne"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Give every tier a price and both moments, the second later than the first."
+msgstr "Podaj dla każdego progu cenę i obie daty; druga musi być późniejsza od pierwszej."
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/invitation-page.tsx
@@ -755,16 +847,33 @@ msgctxt "a document"
 msgid "Hidden from the shop"
 msgstr "Ukryty w sklepie"
 
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgctxt "a ticket type"
+msgid "Hidden from the shop"
+msgstr "Ukryty w sklepie"
+
 #: src/features/catalog/components/add-on-row.tsx
 msgctxt "an add-on"
 msgid "Hidden from the shop"
 msgstr "Ukryty w sklepie"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Hidden: the shop does not show the ticket type"
+msgstr "Ukryty: sklep nie pokazuje tego rodzaju akredytacji"
 
 #: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 #: src/features/shop/components/document-card.tsx
 msgid "Hide from the shop"
 msgstr "Ukryj w sklepie"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Higher amounts a buyer may choose instead of the price of the tier. The shop offers only those above the price in force."
+msgstr "Wyższe kwoty, które kupujący może wybrać zamiast ceny z progu. Sklep oferuje tylko te, które są wyższe od obowiązującej ceny."
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "How many of this ticket type may be sold. Leave it empty for no limit."
+msgstr "Ile akredytacji tego rodzaju można sprzedać. Zostaw puste, jeśli nie ma limitu."
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "I already have an account"
@@ -790,6 +899,7 @@ msgstr "Jeśli wiadomość nie dotrze w ciągu kilku minut, ten adres może już
 msgid "If you confirmed your address in another browser, or someone else registered it before you, ask for a link that lets you set a new password."
 msgstr "Jeśli adres został potwierdzony w innej przeglądarce albo ktoś inny zarejestrował go przed tobą, poproś o link, który pozwoli ustawić nowe hasło."
 
+#: src/features/catalog/components/ticket-type-form.tsx
 #: src/features/editions/components/edition-form.tsx
 #: src/features/program/components/program-item-form.tsx
 msgid "In the convention's time zone, {zone}."
@@ -824,6 +934,10 @@ msgstr "Jego dane dostępowe zostaną usunięte, a żaden sklep konwentu nie otw
 #: src/features/program/pages/program-item-page.tsx
 msgid "Its likes and its list of speakers go with it."
 msgstr "Razem z nim znikną jego polubienia i lista prelegentów."
+
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "Its price tiers, supporter prices and perks go with it."
+msgstr "Razem z nim znikają jego progi cenowe, ceny wspierające i bonusy."
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Its programme items, with their likes and lists of speakers, and the team’s access to the edition go with it."
@@ -881,6 +995,10 @@ msgstr "Logo"
 msgid "Logo file"
 msgstr "Plik z logo"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Long description"
+msgstr "Długi opis"
+
 #: src/features/team/components/members-table.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Member"
@@ -893,6 +1011,10 @@ msgstr "Członkowie zespołu"
 #: src/features/team/pages/member-page.tsx
 msgid "Membership"
 msgstr "Członkostwo"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Merchandise offered with it"
+msgstr "Gadżety oferowane razem z nim"
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Message of a closed shop"
@@ -921,6 +1043,8 @@ msgid "Move up"
 msgstr "Przesuń w górę"
 
 #: src/features/catalog/components/add-on-form.tsx
+#: src/features/catalog/components/ticket-type-form.tsx
+#: src/features/catalog/pages/ticket-types-page.tsx
 #: src/features/editions/components/edition-form.tsx
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Name"
@@ -959,6 +1083,11 @@ msgstr "Nowe hasło"
 msgid "New programme item"
 msgstr "Nowy punkt programu"
 
+#: src/features/catalog/pages/ticket-type-page.tsx
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgid "New ticket type"
+msgstr "Nowy rodzaj akredytacji"
+
 #: src/features/shop/components/document-card.tsx
 msgid "New version"
 msgstr "Nowa wersja"
@@ -968,11 +1097,16 @@ msgstr "Nowa wersja"
 msgid "No access"
 msgstr "Brak dostępu"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "No discount code applies to this ticket type, and its page says so."
+msgstr "Żaden kod rabatowy nie działa na ten rodzaj akredytacji, a jego strona o tym informuje."
+
 #: src/features/team/components/members-table.tsx
 msgid "No end date"
 msgstr "Bez daty końcowej"
 
 #: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/ticket-types-page.tsx
 msgid "No limit"
 msgstr "Bez limitu"
 
@@ -991,6 +1125,10 @@ msgstr "W tym środowisku nie można jeszcze podłączyć żadnego dostawcy pła
 #: src/shared/ui/messages.tsx
 msgid "No permissions"
 msgstr "Brak uprawnień"
+
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgid "No price in force"
+msgstr "Brak obowiązującej ceny"
 
 #: src/features/shop/components/document-card.tsx
 msgid "No version is published yet."
@@ -1087,6 +1225,10 @@ msgstr "Organizatorzy dołączają do zespołu konwentu przez zaproszenie wysła
 msgid "Other document"
 msgstr "Inny dokument"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Outside the sale window"
+msgstr "Poza okresem sprzedaży"
+
 #: src/shared/ui/messages.tsx
 msgid "Page not found"
 msgstr "Nie znaleziono strony"
@@ -1102,6 +1244,14 @@ msgstr "Hasło"
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Payment provider account"
 msgstr "Konto u dostawcy płatności"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Perk {number}"
+msgstr "Bonus {number}"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Perks"
+msgstr "Bonusy"
 
 #: src/features/team/pages/team-page.tsx
 msgid "Permissions in each edition are set on the edition's access page."
@@ -1120,8 +1270,21 @@ msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
 
 #: src/features/catalog/components/add-on-form.tsx
+#: src/features/catalog/components/ticket-type-form.tsx
 msgid "Price ({currency})"
 msgstr "Cena ({currency})"
+
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgid "Price now"
+msgstr "Cena teraz"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Price tier {number}"
+msgstr "Próg cenowy {number}"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Price tiers"
+msgstr "Progi cenowe"
 
 #: src/features/shop/model/documents.ts
 msgid "Privacy policy"
@@ -1220,6 +1383,18 @@ msgstr "Odbierz dostęp"
 msgid "Remove from the team"
 msgstr "Usuń z zespołu"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Remove perk {number}"
+msgstr "Usuń bonus {number}"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Remove price tier {number}"
+msgstr "Usuń próg cenowy {number}"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Remove supporter price {number}"
+msgstr "Usuń cenę wspierającą {number}"
+
 #: src/features/branding/pages/branding-page.tsx
 msgid "Remove the logo"
 msgstr "Usuń logo"
@@ -1281,6 +1456,19 @@ msgstr "Zresetuj hasło"
 msgid "Role"
 msgstr "Rola"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgid "Sale"
+msgstr "Sprzedaż"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Sale ends"
+msgstr "Koniec sprzedaży"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Sale starts"
+msgstr "Początek sprzedaży"
+
 #: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 #: src/features/team/components/edition-access-row.tsx
@@ -1324,6 +1512,10 @@ msgstr "Zapisz hasło"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password and join the team"
 msgstr "Zapisz hasło i dołącz do zespołu"
+
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "Save the ticket type"
+msgstr "Zapisz rodzaj akredytacji"
 
 #: src/features/shop/components/document-card.tsx
 msgid "Save the title"
@@ -1386,6 +1578,10 @@ msgstr "Ustawienia sklepu konwentu"
 msgid "Shop terms"
 msgstr "Regulamin sklepu"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Short description"
+msgstr "Krótki opis"
+
 #: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 #: src/features/shop/components/document-card.tsx
@@ -1396,9 +1592,21 @@ msgstr "Pokaż w sklepie"
 msgid "Show the places left below"
 msgstr "Pokazuj liczbę wolnych miejsc poniżej"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Shown as not yet on sale or as closed, and not selectable"
+msgstr "Widoczny jako „jeszcze nie w sprzedaży” albo „sprzedaż zakończona”, bez możliwości wyboru"
+
 #: src/features/shop/components/consent-form.tsx
 msgid "Shown at the checkout beside a checkbox, in your own words, up to 1000 characters."
 msgstr "Wyświetlane przy składaniu zamówienia obok pola wyboru, twoimi słowami, do 1000 znaków."
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Shown at the first step of the checkout, up to 5000 characters."
+msgstr "Wyświetlany w pierwszym kroku składania zamówienia, do 5000 znaków."
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Shown beside the name in the shop, up to 300 characters."
+msgstr "Wyświetlany w sklepie obok nazwy, do 300 znaków."
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Shown in place of products while the shop is closed or nothing is on sale, up to 1000 characters. Leave it empty for the shop’s own short notice."
@@ -1458,6 +1666,14 @@ msgstr "Początek"
 msgid "Status"
 msgstr "Stan"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Supporter price {number} ({currency})"
+msgstr "Cena wspierająca {number} ({currency})"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Supporter prices"
+msgstr "Ceny wspierające"
+
 #. The state of a convention the admin suspended
 #: src/features/tenants/pages/tenant-picker-page.tsx
 msgid "Suspended"
@@ -1468,6 +1684,10 @@ msgstr "Zawieszony"
 #: src/features/tenants/components/convention-layout.tsx
 msgid "Team"
 msgstr "Zespół"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Teen"
+msgstr "Nastolatek"
 
 #: src/features/catalog/components/add-on-row.tsx
 msgid "The add-on “{name}” is deleted."
@@ -1593,6 +1813,7 @@ msgstr "Edycja {editionName} została opublikowana."
 msgid "The edition {name} is created."
 msgstr "Edycja {name} została utworzona."
 
+#: src/features/catalog/components/ticket-type-form.tsx
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "The edition has no add-ons yet."
 msgstr "Edycja nie ma jeszcze dodatków."
@@ -1608,6 +1829,14 @@ msgstr "Edycja nie ma jeszcze pól dodatkowych."
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "The edition has no documents yet."
 msgstr "Edycja nie ma jeszcze żadnych dokumentów."
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "The edition has no merchandise yet."
+msgstr "Edycja nie ma jeszcze gadżetów."
+
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgid "The edition has no ticket types yet."
+msgstr "Edycja nie ma jeszcze rodzajów akredytacji."
 
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/edition-settings-page.tsx
@@ -1812,6 +2041,19 @@ msgstr "Motyw systemu"
 msgid "The team has no organizers besides its head organizers."
 msgstr "Zespół nie ma organizatorów poza głównymi organizatorami."
 
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "The ticket type “{added}” is added."
+msgstr "Rodzaj akredytacji „{added}” został dodany."
+
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "The ticket type “{name}” is deleted."
+msgstr "Rodzaj akredytacji „{name}” został usunięty."
+
+#: src/features/catalog/pages/ticket-type-page.tsx
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgid "The ticket type is saved."
+msgstr "Rodzaj akredytacji został zapisany."
+
 #: src/features/editions/pages/editions-page.tsx
 msgid "There are no editions yet."
 msgstr "Nie ma jeszcze żadnej edycji."
@@ -1850,6 +2092,20 @@ msgstr "Ten punkt programu nie ma jeszcze prelegentów."
 #: src/features/editions/components/edition-layout.tsx
 msgid "Ticket holders’ data"
 msgstr "Dane posiadaczy akredytacji"
+
+#: src/features/catalog/pages/ticket-type-page.tsx
+msgid "Ticket type data"
+msgstr "Dane rodzaju akredytacji"
+
+#: src/features/catalog/pages/ticket-type-page.tsx
+#: src/features/catalog/pages/ticket-types-page.tsx
+#: src/features/editions/components/edition-layout.tsx
+msgid "Ticket types"
+msgstr "Rodzaje akredytacji"
+
+#: src/features/catalog/pages/ticket-types-page.tsx
+msgid "Ticket types of the edition"
+msgstr "Rodzaje akredytacji edycji"
 
 #: src/features/team/components/permission-labels.tsx
 msgid "Tickets"
@@ -1914,6 +2170,10 @@ msgstr "Włącz"
 msgid "Turn on two-factor authentication"
 msgstr "Włącz uwierzytelnianie dwuskładnikowe"
 
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Two tiers cover the same time. Change the moments so that the tiers do not overlap."
+msgstr "Dwa progi obejmują ten sam czas. Zmień daty tak, aby progi się nie nakładały."
+
 #: src/features/account/pages/account-page.tsx
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Two-factor authentication"
@@ -1942,6 +2202,10 @@ msgstr "Uwierzytelnianie dwuskładnikowe jest włączone. Przy każdym logowaniu
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Unpublish"
 msgstr "Wycofaj publikację"
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "Until"
+msgstr "Do"
 
 #: src/features/branding/pages/branding-page.tsx
 msgid "Upload the logo"
@@ -2026,6 +2290,10 @@ msgstr "O co posiadacza akredytacji pyta się przy składaniu zamówienia poza i
 #: src/features/catalog/components/custom-field-form.tsx
 msgid "What the checkout asks the ticket holder, such as “City you travel from”. The answer is a text of up to 200 characters."
 msgstr "O co posiadacza akredytacji pyta się przy składaniu zamówienia, na przykład „Miasto, z którego przyjeżdżasz”. Odpowiedź to tekst do 200 znaków."
+
+#: src/features/catalog/components/ticket-type-form.tsx
+msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
+msgstr "Co zawiera akredytacja, na przykład przypinkę albo identyfikator: widoczne dla kupującego, nigdy niesprzedawane osobno."
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "While nothing is on sale"

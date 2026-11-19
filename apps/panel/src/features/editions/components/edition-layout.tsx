@@ -7,6 +7,7 @@ import {
   PuzzleIcon,
   Settings2Icon,
   StoreIcon,
+  TicketIcon,
   UsersIcon,
 } from 'lucide-react'
 import { useParams } from 'react-router'
@@ -48,6 +49,9 @@ export function EditionLayout() {
               <>
                 <SidebarLink to={`${base}/shop`} icon={<StoreIcon />}>
                   <Trans>Shop</Trans>
+                </SidebarLink>
+                <SidebarLink to={`${base}/ticket-types`} icon={<TicketIcon />}>
+                  <Trans>Ticket types</Trans>
                 </SidebarLink>
                 <SidebarLink to={`${base}/add-ons`} icon={<PuzzleIcon />}>
                   <Trans>Add-ons</Trans>

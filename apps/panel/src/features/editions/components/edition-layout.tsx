@@ -1,6 +1,7 @@
 import { Trans } from '@lingui/react/macro'
 import {
   CalendarClockIcon,
+  ChartColumnIcon,
   FileTextIcon,
   KeyRoundIcon,
   LayoutDashboardIcon,
@@ -56,6 +57,9 @@ export function EditionLayout() {
                 </SidebarLink>
                 <SidebarLink to={`${base}/orders`} icon={<ReceiptTextIcon />}>
                   <Trans>Orders</Trans>
+                </SidebarLink>
+                <SidebarLink to={`${base}/sales`} icon={<ChartColumnIcon />}>
+                  <Trans>Sales</Trans>
                 </SidebarLink>
                 <SidebarLink to={`${base}/scanners`} icon={<ScanLineIcon />}>
                   <Trans>Scanners</Trans>

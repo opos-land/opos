@@ -7,6 +7,10 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#: src/features/sales/pages/sales-page.tsx
+msgid "“Sold” counts what paid orders hold, manual ones among them. “Pending” counts the orders awaiting payment and those needing review, which may still fall away. An expired, declined or canceled order counts nowhere."
+msgstr "“Sold” counts what paid orders hold, manual ones among them. “Pending” counts the orders awaiting payment and those needing review, which may still fall away. An expired, declined or canceled order counts nowhere."
+
 #. placeholder {0}: item.name
 #: src/features/orders/pages/orders-page.tsx
 msgid "{0}: any variant"
@@ -300,6 +304,7 @@ msgstr "Add the ticket type"
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/orders/pages/manual-order-page.tsx
 #: src/features/orders/pages/orders-page.tsx
+#: src/features/sales/pages/sales-page.tsx
 msgid "Add-ons"
 msgstr "Add-ons"
 
@@ -314,6 +319,10 @@ msgstr "Add-ons of the edition"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Add-ons offered with it"
 msgstr "Add-ons offered with it"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Add-ons taken"
+msgstr "Add-ons taken"
 
 #: src/features/team/model/invitation.ts
 msgid "Added to the team: {name}. They have been told by email."
@@ -338,6 +347,7 @@ msgstr "Address of the seller"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 #: src/features/orders/model/labels.ts
+#: src/features/sales/pages/sales-page.tsx
 msgid "Adult"
 msgstr "Adult"
 
@@ -426,6 +436,10 @@ msgstr "An organizer who left the team"
 msgid "Answer"
 msgstr "Answer"
 
+#: src/features/sales/pages/sales-page.tsx
+msgid "Answers to custom fields"
+msgstr "Answers to custom fields"
+
 #: src/features/shop/model/providers.ts
 msgid "Any text connects an account that is ready. The fake provider refuses “refused”, reports “not-ready” as not ready, and does not answer for “unavailable”."
 msgstr "Any text connects an account that is ready. The fake provider refuses “refused”, reports “not-ready” as not ready, and does not answer for “unavailable”."
@@ -461,6 +475,11 @@ msgstr "Awaiting payment"
 
 #: src/features/orders/pages/production-numbers-page.tsx
 msgctxt "production numbers"
+msgid "Awaiting payment"
+msgstr "Awaiting payment"
+
+#: src/features/sales/pages/sales-page.tsx
+msgctxt "sales"
 msgid "Awaiting payment"
 msgstr "Awaiting payment"
 
@@ -556,6 +575,7 @@ msgstr "Change the email"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 #: src/features/orders/model/labels.ts
+#: src/features/sales/pages/sales-page.tsx
 msgid "Child"
 msgstr "Child"
 
@@ -924,6 +944,10 @@ msgstr "Documents and consents"
 #: src/features/orders/pages/production-numbers-page.tsx
 msgid "Download as a file"
 msgstr "Download as a file"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Each list is a file a spreadsheet opens, with the orders as they are now. The files hold names and email addresses: keep them as carefully as the convention’s other personal data."
+msgstr "Each list is a file a spreadsheet opens, with the orders as they are now. The files hold names and email addresses: keep them as carefully as the convention’s other personal data."
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
@@ -1307,6 +1331,7 @@ msgid "Head organizers"
 msgstr "Head organizers"
 
 #: src/features/catalog/components/add-on-row.tsx
+#: src/features/sales/pages/sales-page.tsx
 msgid "Headcount only"
 msgstr "Headcount only"
 
@@ -1548,6 +1573,10 @@ msgstr "Linked document"
 msgid "Links the document: {linkedTitle}"
 msgstr "Links the document: {linkedTitle}"
 
+#: src/features/sales/pages/sales-page.tsx
+msgid "Lists to download"
+msgstr "Lists to download"
+
 #: src/shared/ui/messages.tsx
 msgid "Loading…"
 msgstr "Loading…"
@@ -1596,8 +1625,13 @@ msgstr "Membership"
 #: src/features/discounts/components/discount-code-form.tsx
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/orders/pages/manual-order-page.tsx
+#: src/features/sales/pages/sales-page.tsx
 msgid "Merchandise"
 msgstr "Merchandise"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Merchandise by variant"
+msgstr "Merchandise by variant"
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Merchandise is picked up at the edition: the shop promises no shipping. A ticket type offers the items you choose for it."
@@ -1610,6 +1644,10 @@ msgstr "Merchandise item"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Merchandise offered with it"
 msgstr "Merchandise offered with it"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Merchandise pick list"
+msgstr "Merchandise pick list"
 
 #: src/features/orders/pages/production-numbers-page.tsx
 msgid "Merchandise to produce"
@@ -1671,6 +1709,11 @@ msgstr "Move up"
 msgid "Name"
 msgstr "Name"
 
+#: src/features/sales/pages/sales-page.tsx
+msgctxt "a thing an edition sells"
+msgid "Name"
+msgstr "Name"
+
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Name of axis {number}"
 msgstr "Name of axis {number}"
@@ -1694,6 +1737,11 @@ msgstr "Needs review"
 
 #: src/features/orders/pages/production-numbers-page.tsx
 msgctxt "production numbers"
+msgid "Needs review"
+msgstr "Needs review"
+
+#: src/features/sales/pages/sales-page.tsx
+msgctxt "sales"
 msgid "Needs review"
 msgstr "Needs review"
 
@@ -2062,6 +2110,10 @@ msgstr "Paid - manual"
 msgid "Paid by invoice"
 msgstr "Paid by invoice"
 
+#: src/features/sales/pages/sales-page.tsx
+msgid "Paid in the shop"
+msgstr "Paid in the shop"
+
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "Pair a phone with {name}"
 msgstr "Pair a phone with {name}"
@@ -2086,9 +2138,18 @@ msgstr "Payment attempts"
 msgid "Payment provider account"
 msgstr "Payment provider account"
 
+#: src/features/sales/pages/sales-page.tsx
+msgid "Payments"
+msgstr "Payments"
+
 #: src/features/orders/model/labels.ts
 msgid "Payout batch number"
 msgstr "Payout batch number"
+
+#: src/features/sales/pages/sales-page.tsx
+msgctxt "sales"
+msgid "Pending"
+msgstr "Pending"
 
 #: src/features/discounts/components/discount-code-form.tsx
 msgid "Percent off"
@@ -2303,6 +2364,10 @@ msgstr "Record the order"
 msgid "Recorded as"
 msgstr "Recorded as"
 
+#: src/features/sales/pages/sales-page.tsx
+msgid "Recorded by organizers"
+msgstr "Recorded by organizers"
+
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Recovery code"
 msgstr "Recovery code"
@@ -2440,6 +2505,14 @@ msgstr "Resend the QR code"
 msgid "Reset your password"
 msgstr "Reset your password"
 
+#: src/features/sales/pages/sales-page.tsx
+msgid "Revenue"
+msgstr "Revenue"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Revenue and orders"
+msgstr "Revenue and orders"
+
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "Revoke"
 msgstr "Revoke"
@@ -2482,6 +2555,11 @@ msgstr "Sale ends"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Sale starts"
 msgstr "Sale starts"
+
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/sales/pages/sales-page.tsx
+msgid "Sales"
+msgstr "Sales"
 
 #: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
@@ -2735,6 +2813,11 @@ msgstr "Size chart of {label}"
 msgid "Size charts"
 msgstr "Size charts"
 
+#: src/features/sales/pages/sales-page.tsx
+msgctxt "sales"
+msgid "Sold"
+msgstr "Sold"
+
 #: src/features/team/pages/invite-page.tsx
 msgid "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
 msgstr "Someone with a confirmed account joins at once; anyone else gets a link valid for 7 days. You cannot grant more than you hold yourself."
@@ -2827,6 +2910,7 @@ msgstr "Team"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 #: src/features/orders/model/labels.ts
+#: src/features/sales/pages/sales-page.tsx
 msgid "Teen"
 msgstr "Teen"
 
@@ -3039,6 +3123,10 @@ msgstr "The edition has no scanners yet."
 #: src/features/catalog/pages/ticket-types-page.tsx
 msgid "The edition has no ticket types yet."
 msgstr "The edition has no ticket types yet."
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "The edition has no ticket types."
+msgstr "The edition has no ticket types."
 
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/edition-settings-page.tsx
@@ -3582,6 +3670,18 @@ msgstr "Ticket holder’s name"
 msgid "Ticket holder’s name (optional)"
 msgstr "Ticket holder’s name (optional)"
 
+#: src/features/sales/pages/sales-page.tsx
+msgid "Ticket holders"
+msgstr "Ticket holders"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Ticket holders by age band"
+msgstr "Ticket holders by age band"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Ticket holders of the sold tickets"
+msgstr "Ticket holders of the sold tickets"
+
 #: src/features/catalog/pages/ticket-holders-page.tsx
 #: src/features/editions/components/edition-layout.tsx
 msgid "Ticket holders’ data"
@@ -3608,9 +3708,14 @@ msgstr "Ticket types"
 msgid "Ticket types of the edition"
 msgstr "Ticket types of the edition"
 
+#: src/features/sales/pages/sales-page.tsx
 #: src/features/team/components/permission-labels.tsx
 msgid "Tickets"
 msgstr "Tickets"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Tickets by ticket type"
+msgstr "Tickets by ticket type"
 
 #: src/features/team/components/invite-form.tsx
 msgid "Tickets in {edition}"
@@ -3900,6 +4005,10 @@ msgstr "What the code applies to"
 #: src/features/orders/pages/order-page.tsx
 msgid "What the order holds"
 msgstr "What the order holds"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "What the paid orders came to. The orders an organizer recorded by hand are counted apart: their money did not go through the payment provider."
+msgstr "What the paid orders came to. The orders an organizer recorded by hand are counted apart: their money did not go through the payment provider."
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."

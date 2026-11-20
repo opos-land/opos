@@ -28,6 +28,7 @@ import {
 } from '../features/editions'
 import { ManualOrderPage, OrderPage, OrdersPage, ProductionNumbersPage } from '../features/orders'
 import { DiscountCodesPage } from '../features/discounts'
+import { SalesPage } from '../features/sales'
 import { ScannerPage, ScannersPage } from '../features/scanner'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionDocumentsPage, EditionShopPage, ShopSettingsPage } from '../features/shop'
@@ -145,6 +146,7 @@ export const router = createBrowserRouter([
                   { path: 'orders/new', element: <ManualOrderPage /> },
                   { path: 'orders/:orderId', element: <OrderPage /> },
                   { path: 'production-numbers', element: <ProductionNumbersPage /> },
+                  { path: 'sales', element: <SalesPage /> },
                   { path: 'scanners', element: <ScannersPage /> },
                   { path: 'ticket-types', element: <TicketTypesPage /> },
                   { path: 'ticket-types/new', element: <TicketTypePage /> },

@@ -36,6 +36,8 @@ export const editionShops = pgTable(
     merchPreorderDeadline: timestamp({ withTimezone: true }),
     merchOnlyEnabled: boolean().notNull().default(false),
     salesClosedMessage: text(),
+    /** Where and when merchandise is handed over, as the page of an order tells its buyer. */
+    pickupInformation: text(),
     ...timestamps,
   },
   (t) => [
@@ -51,5 +53,6 @@ export const editionShops = pgTable(
       sql`(${t.teenFromAge} is null) = (${t.adultFromAge} is null) and (${t.teenFromAge} is null or (${t.teenFromAge} >= 1 and ${t.adultFromAge} > ${t.teenFromAge} and ${t.adultFromAge} <= 150))`,
     ),
     check('edition_shops_sales_closed_message', sql`char_length(${t.salesClosedMessage}) <= 1000`),
+    check('edition_shops_pickup_information', sql`char_length(${t.pickupInformation}) <= 1000`),
   ],
 )

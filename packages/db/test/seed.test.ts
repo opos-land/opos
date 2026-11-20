@@ -621,10 +621,14 @@ describe('db:seed shop', () => {
           guardian: boolean
           hold_ends_at: Date | null
           manual_reason: string | null
+          extends_number: string | null
+          qr_code_id: string | null
         }[]
       >`
         select o.id, o.number, o.status, o.holds, o.age_band, o.email, o.total_minor,
           o.hold_ends_at, o.manual_reason, o.guardian_consent_acknowledged_at is not null as guardian,
+          (select e.number from orders e where e.id = o.extends_order_id) as extends_number,
+          (select q.qr_code_id from order_qr_code_orders q where q.order_id = o.id) as qr_code_id,
           (select coalesce(sum(l.amount_minor), 0)::int from order_lines l where l.order_id = o.id)
             as lines_total,
           (select count(*)::int from order_lines l where l.order_id = o.id and l.kind = 'ticket')
@@ -640,6 +644,7 @@ describe('db:seed shop', () => {
         'declined',
         'expired',
         'needs-review',
+        'paid',
         'paid',
         'paid',
         'paid',
@@ -664,10 +669,22 @@ describe('db:seed shop', () => {
       const paid = orders.filter((order) => order.status === 'paid')
       // One with a teen as its ticket holder, one of merchandise alone, one of a demo account.
       expect(paid.filter((order) => order.age_band === 'teen' && order.guardian)).toHaveLength(1)
-      expect(paid.filter((order) => order.age_band === null && order.tickets === 0)).toHaveLength(1)
-      expect(paid.map((order) => order.attached_to).filter(Boolean)).toEqual([
+      const first = paid.filter((order) => order.extends_number === null)
+      expect(first.filter((order) => order.age_band === null && order.tickets === 0)).toHaveLength(
+        1,
+      )
+      expect(first.map((order) => order.attached_to).filter(Boolean)).toEqual([
         'attendee@example.com',
       ])
+      // The demo account bought more for its paid order (docs/specs/0009-buyer-self-service.md,
+      // Seed): an order of its own, with no ticket, on the QR code of the one it extends.
+      const more = paid.filter((order) => order.extends_number !== null)
+      expect(more).toMatchObject([
+        { extends_number: 'DEMPAD2222', attached_to: 'attendee@example.com', tickets: 0 },
+      ])
+      expect(more[0]!.qr_code_id).toBe(
+        orders.find((order) => order.number === 'DEMPAD2222')!.qr_code_id,
+      )
       // A manual order was recorded by an org: nobody's email, and one of each reason. A
       // complimentary one costs nothing.
       const manual = orders.filter((order) => order.status === 'paid-manual')
@@ -698,6 +715,27 @@ describe('db:seed shop', () => {
         expect(text).toMatch(/^[A-Z2-7]{32}$/)
         expect(code.code_hash).toBe(createHash('sha256').update(text).digest('hex'))
       }
+
+      // One order link that opens and one that expired, each under a token the demo knows.
+      const links = await migrator<{ number: string; valid: boolean; token_hash: string }[]>`
+        select o.number, l.expires_at > now() as valid, l.token_hash
+        from order_links l join orders o on o.id = l.order_id
+        where l.edition_id = ${edition} order by o.number
+      `
+      expect(links.map(({ number, valid }) => ({ number, valid }))).toEqual([
+        { number: 'DEMPAD2222', valid: true },
+        { number: 'DEMTEEN222', valid: false },
+      ])
+      for (const link of links) {
+        expect(link.token_hash).toBe(
+          createHash('sha256').update(`demo-order-link-${link.number}`).digest('hex'),
+        )
+      }
+      // The edition says where and when its merchandise is handed over.
+      const [shop] = await migrator<{ pickup_information: string | null }[]>`
+        select pickup_information from edition_shops where edition_id = ${edition}
+      `
+      expect(shop!.pickup_information).toMatch(/merchandise desk/)
 
       const attempts = await migrator<
         {

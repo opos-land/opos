@@ -98,6 +98,11 @@ export const orders = pgTable(
     resultTokenHash: text().notNull(),
     /** The discount code the order used; its discount line carries the amount taken off. */
     discountCodeId: uuid(),
+    /**
+     * The order a "Buy more" order was started from: once paid, it joins the QR code that order
+     * carries.
+     */
+    extendsOrderId: uuid(),
     /** Set for an order an org recorded in the panel, which nobody placed in the shop. */
     manualReason: manualOrderReason(),
     /** What the org noted of a manual order. */
@@ -116,6 +121,7 @@ export const orders = pgTable(
     unique('orders_id_tenant_edition_unique').on(t.id, t.tenantId, t.editionId),
     index('orders_tenant_edition_status_idx').on(t.tenantId, t.editionId, t.status),
     index('orders_tenant_email_idx').on(t.tenantId, t.email),
+    index('orders_tenant_extends_idx').on(t.tenantId, t.extendsOrderId),
     // No cascade: an order outlives everything but a decision to purge it, so an edition that has
     // one is not deleted, and neither is its convention.
     foreignKey({
@@ -138,6 +144,14 @@ export const orders = pgTable(
       columns: [t.discountCodeId, t.tenantId, t.editionId],
       foreignColumns: [discountCodes.id, discountCodes.tenantId, discountCodes.editionId],
     }),
+    // An order extends an order of its own edition, and so of its own tenant. No cascade: the
+    // two go together, with their edition.
+    foreignKey({
+      name: 'orders_extends_fk',
+      columns: [t.extendsOrderId, t.tenantId, t.editionId],
+      foreignColumns: [t.id, t.tenantId, t.editionId],
+    }),
+    check('orders_extends_another', sql`${t.extendsOrderId} <> ${t.id}`),
     // A manual order has a reason and nobody's email: an org recorded it at the desk.
     check(
       'orders_manual_reason',

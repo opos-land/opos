@@ -453,6 +453,7 @@ describe('verifyDatabase', () => {
       ['the item of a line', 'merchandise_item_id', 'order_lines'],
       ['the code of a QR code', 'code', 'order_qr_codes'],
       ['when an order link expires', 'expires_at', 'order_links'],
+      ['the order an order extends', 'extends_order_id', 'orders'],
       // A scanner's name, its end and the org behind it are set once, when it is enabled.
       ['the name of a scanner', 'name', 'scanner_devices'],
       ['when a scanner ends', 'expires_at', 'scanner_devices'],
@@ -493,7 +494,9 @@ describe('verifyDatabase', () => {
       ['payment_attempts', 'information'],
       ['order_emails', 'recipient'],
       ['order_emails', 'kind'],
-      ['order_links', 'token_hash'],
+      // An order link is found across tenants by a hash, and nothing of its order is read there.
+      ['order_links', 'order_id'],
+      ['order_links', 'expires_at'],
       ['order_qr_codes', 'code'],
       // A scanner is found across tenants by a hash, and nothing of it is read there.
       ['scanner_devices', 'name'],

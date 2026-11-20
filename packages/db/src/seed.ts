@@ -29,6 +29,7 @@ import {
   orderCustomFieldAnswers,
   orderEmails,
   orderLines,
+  orderLinks,
   orderQrCodeOrders,
   orderQrCodes,
   orders,
@@ -156,6 +157,8 @@ interface SeedCatalog {
   preorderEndsDaysBefore: number
   merchOnly: boolean
   salesClosedMessage: string
+  /** Where and when merchandise is handed over, as the page of an order says it. */
+  pickupInformation: string
   customFields: { label: string; isRequired: boolean }[]
   addOns: SeedAddOn[]
   items: SeedMerchandise[]
@@ -198,6 +201,13 @@ interface SeedOrder {
   emailChanged?: boolean
   /** The discount code the buyer entered; its line carries what the code took off. */
   discountCode?: string
+  /** The number of the order it was started from with "Buy more", whose QR code it joins. */
+  extends?: string
+  /**
+   * An order link under the token `demo-order-link-<number>`, so that the demo can open the
+   * order's page: one that still opens, or one that expired a day ago.
+   */
+  link?: 'valid' | 'expired'
   placedDaysAgo: number
 }
 
@@ -342,6 +352,8 @@ const DEMO_CATALOG: SeedCatalog = {
   preorderEndsDaysBefore: 21,
   merchOnly: true,
   salesClosedMessage: 'Sales are closed for now. See you at the convention.',
+  pickupInformation:
+    'Pick up your merchandise at the merchandise desk in the main hall, on every day of the convention from 10:00 to 18:00. Show the QR code of your order.',
   customFields: [
     { label: 'City you travel from', isRequired: true },
     { label: 'Favourite fandom', isRequired: false },
@@ -447,7 +459,23 @@ const DEMO_ORDERS: SeedOrder[] = [
     // Paid twice: the second payment was one the order no longer needed, and was refused.
     attempts: [{ status: 'paid' }, { status: 'refused' }],
     emails: ['order-confirmation', 'payment-not-needed'],
+    link: 'valid',
     placedDaysAgo: 6,
+  },
+  // What the demo account bought later with "Buy more" (docs/specs/0009-buyer-self-service.md,
+  // Seed): an order of its own, on the QR code of the first.
+  {
+    number: 'DEMEXTEND2',
+    status: 'paid',
+    email: 'attendee@example.com',
+    holderName: 'Jan Kowal',
+    ageBand: null,
+    items: [{ name: 'Enamel pin', quantity: 1 }],
+    account: 'attendee@example.com',
+    extends: 'DEMPAD2222',
+    attempts: [{ status: 'paid' }],
+    emails: ['order-confirmation'],
+    placedDaysAgo: 2,
   },
   {
     number: 'DEMTEEN222',
@@ -458,6 +486,7 @@ const DEMO_ORDERS: SeedOrder[] = [
     ticketType: 'Standard',
     attempts: [{ status: 'failed', failureReason: 'wrong-code' }, { status: 'paid' }],
     emails: ['order-confirmation'],
+    link: 'expired',
     placedDaysAgo: 5,
   },
   {
@@ -1406,6 +1435,7 @@ async function seedCatalog(
       ),
       merchOnlyEnabled: catalog.merchOnly,
       salesClosedMessage: catalog.salesClosedMessage,
+      pickupInformation: catalog.pickupInformation,
     })
     .where(eq(editionShops.editionId, editionId))
 
@@ -1620,13 +1650,37 @@ async function seedDiscountCode(
   }
 }
 
+/**
+ * The order link of a demo order, under a token the demo knows: the tokens of real links are
+ * random, and only their hashes are kept. Made once; one that is there stays.
+ */
+async function seedOrderLink(
+  tx: Tx,
+  of: { tenantId: string; editionId: string; orderId: string },
+  order: SeedOrder,
+) {
+  if (!order.link) return
+  await tx
+    .insert(orderLinks)
+    .values({
+      ...of,
+      tokenHash: createHash('sha256').update(`demo-order-link-${order.number}`).digest('hex'),
+      expiresAt: new Date(Date.now() + (order.link === 'valid' ? 3650 : -1) * DAY),
+    })
+    .onConflictDoNothing({ target: orderLinks.tokenHash })
+}
+
 async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: SeedOrder) {
   const [existing] = await tx
     .select({ id: orders.id })
     .from(orders)
     .where(and(eq(orders.tenantId, tenantId), eq(orders.number, order.number)))
-  if (existing) return
   const at = { tenantId, editionId }
+  if (existing) {
+    // The order stays as the demo left it; its link is one the demo can always open.
+    await seedOrderLink(tx, { ...at, orderId: existing.id }, order)
+    return
+  }
   const placedAt = new Date(Date.now() - order.placedDaysAgo * DAY - HOUR)
   const settledAt = new Date(placedAt.getTime() + 5 * 60 * 1000)
 
@@ -1732,6 +1786,18 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
   }
   const totalMinor = lines.reduce((sum, { amountMinor }) => sum + amountMinor, 0)
 
+  // The order a "Buy more" order was started from, with the QR code it carries.
+  let extended: { id: string; qrCodeId: string } | null = null
+  if (order.extends) {
+    const [row] = await tx
+      .select({ id: orders.id, qrCodeId: orderQrCodeOrders.qrCodeId })
+      .from(orders)
+      .innerJoin(orderQrCodeOrders, eq(orderQrCodeOrders.orderId, orders.id))
+      .where(and(eq(orders.tenantId, tenantId), eq(orders.number, order.extends)))
+    if (!row) throw new Error(`No paid demo order ${order.extends} to extend`)
+    extended = row
+  }
+
   const paid = ['paid', 'paid-manual', 'canceled'].includes(order.status)
   const [placed] = await tx
     .insert(orders)
@@ -1761,6 +1827,7 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
       manualReason: order.manualReason ?? null,
       note: order.note ?? null,
       discountCodeId,
+      extendsOrderId: extended?.id ?? null,
     })
     .returning({ id: orders.id })
   const orderId = placed!.id
@@ -1836,8 +1903,13 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
       return id
     }
     if (order.emailChanged) await code(settledAt)
-    await tx.insert(orderQrCodeOrders).values({ ...of, qrCodeId: await code(null) })
+    // What was bought with "Buy more" joins the QR code of the order it extends.
+    await tx
+      .insert(orderQrCodeOrders)
+      .values({ ...of, qrCodeId: extended?.qrCodeId ?? (await code(null)) })
   }
+
+  await seedOrderLink(tx, of, order)
 
   for (const [index, attempt] of (order.attempts ?? []).entries()) {
     const confirmed = attempt.status === 'paid' || attempt.status === 'refused'

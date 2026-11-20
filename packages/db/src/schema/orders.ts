@@ -538,9 +538,10 @@ export const orderEmails = pgTable(
      */
     withdrawnAt: timestamp({ withTimezone: true }),
     /**
-     * What it said, kept as it is sent: its subject and its text, in the language it went out
-     * in, without the QR code and the token of the order link, which only its recipient sees
-     * (docs/specs/0006-order-management.md, F4). Empty for one sent before texts were kept.
+     * What it said, kept as it is sent: its subject and its text, written in the convention's
+     * language, without the QR code and the token of the order link, which only its recipient
+     * sees, and with no word of an account (docs/specs/0006-order-management.md, F4). Empty for
+     * one sent before texts were kept.
      */
     subject: text(),
     body: text(),

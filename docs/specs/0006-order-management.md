@@ -5,9 +5,10 @@
 - Brief: [0001](../briefs/0001-convention-shop.md), B4, P2, B5.3 and B6.5
 - Decisions: [0055](../adr/0055-record-a-sale-made-outside-the-shop-as-a-manual-order.md),
   [0056](../adr/0056-cancel-and-decline-an-order-without-returning-money.md),
-  [0057](../adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md) and
-  [0058](../adr/0058-let-the-api-change-the-variant-an-order-line-names.md), proposed; what the
-  owner still has to confirm is among its [open questions](#open-questions)
+  [0057](../adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md),
+  [0058](../adr/0058-let-the-api-change-the-variant-an-order-line-names.md) and
+  [0068](../adr/0068-keep-what-a-sent-email-of-an-order-said-without-what-hands-the-order-over.md),
+  proposed; what the owner still has to confirm is among its [open questions](#open-questions)
 
 ## Goal
 
@@ -26,11 +27,12 @@ needs write access.
 
 ### Finding and reading
 
-| #   | Rule                                                                                                                                                                                                                            | Brief       |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| F1  | An org searches an edition's orders by number, name, email or QR code, and filters them by status, product, variant and date.                                                                                                   | B4.1        |
-| F2  | An order's page shows its lines, the ticket holder's data, the custom field answers, the consents with the document versions accepted, the payment attempts with what the provider's module keeps of each, and the emails sent. | B4.2        |
-| F3  | The panel lists every order in "Needs review" until it is settled, and shows on the edition how many there are.                                                                                                                 | P2.5, UR-12 |
+| #   | Rule                                                                                                                                                                                                                                                                                                                                                                                             | Brief       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| F1  | An org searches an edition's orders by number, name, email or QR code, and filters them by status, product, variant and date.                                                                                                                                                                                                                                                                    | B4.1        |
+| F2  | An order's page shows its lines, the ticket holder's data, the custom field answers, the consents with the document versions accepted, the payment attempts with what the provider's module keeps of each, and the emails sent.                                                                                                                                                                  | B4.2        |
+| F3  | The panel lists every order in "Needs review" until it is settled, and shows on the edition how many there are.                                                                                                                                                                                                                                                                                  | P2.5, UR-12 |
+| F4  | An org sees every email of the edition's orders in one list, the newest first, searched by the address it went to or by its order's number. An email's page shows to whom it went, of which order and when, and what it said: its subject and its text as they went out, without the QR code and the order link, which only its recipient sees. An email that has not gone out says nothing yet. | new         |
 
 ### Corrections
 
@@ -105,7 +107,9 @@ No table is new. `orders` ([checkout and orders](0004-checkout-and-orders.md)) g
 (`desk`, `invoice`, `complimentary`), `note`, `review_cause` (`amount`, `unavailable`),
 `canceled_at`, `cancel_reason`, `declined_at` and `decline_reason`. A changed email replaces the
 order's row in `order_qr_codes`: the old one keeps its `replaced_at`, so the scanner can say why it
-is refused.
+is refused. `order_emails` gains `subject` and `body`: what an email said, written as it is marked
+sent and empty until then
+([0068](../adr/0068-keep-what-a-sent-email-of-an-order-said-without-what-hands-the-order-over.md)).
 
 ### Routes
 
@@ -115,6 +119,8 @@ Tenant routes, each under `/editions/{editionId}`:
 | -------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | `GET /orders`                                      | tickets>=read; a page of at most 100, with the search and the filters of F1 |                                                                |
 | `GET /orders/{orderId}`                            | tickets>=read                                                               |                                                                |
+| `GET /order-emails`                                | tickets>=read; a page of at most 100, with the search of F4                 |                                                                |
+| `GET /order-emails/{emailId}`                      | tickets>=read                                                               |                                                                |
 | `PATCH /orders/{orderId}/holder`                   | tickets=write                                                               | `order.not-correctable`                                        |
 | `PUT /orders/{orderId}/email`                      | tickets=write                                                               | `order.not-correctable`                                        |
 | `PUT /orders/{orderId}/lines/{lineId}/variant`     | tickets=write                                                               | `order.not-correctable`, `order.unavailable`                   |
@@ -142,7 +148,9 @@ A correction is two kinds of email, one for the ticket holder's name and one for
 written from the order as it stands when it is sent; a changed email is one to the new address
 and one to the old. An email that carries the QR code goes only to the address the order has
 when it is sent: one still queued for an address the order has left is withdrawn. An order's page
-lists an alert to the orgs without their addresses, and names no account.
+and the list of F4 show an alert to the orgs without their addresses, and name no account; the
+search of F4 finds an alert by its order's number alone. What is kept of an email has `[…]` where
+its QR code and the token of its order link stood.
 
 ### Screens
 
@@ -152,6 +160,8 @@ The panel, inside an edition:
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | orders             | the list with the search and the filters; the orders needing review first                                                                    |
 | an order           | F2; the corrections; resending; the cancellation; marking a hand-out and taking one back; for an order in review, marking paid and declining |
+| emails             | the list of F4 with its search; a row opens the email                                                                                        |
+| an email           | to whom it went, of which order and when; what it said, and that the QR code and the order link are left out of it                           |
 | new manual order   | the catalog at the prices in force, the reason and the note, the fields of M4, and the notice of M6                                          |
 | production numbers | S2 and S3, with the export                                                                                                                   |
 
@@ -163,7 +173,8 @@ cancellation carries the sentence of X4.
 ### Seed
 
 The orders the seed of checkout and orders makes cover each status; this spec adds a manual order
-of each reason and an order whose email was changed.
+of each reason and an order whose email was changed. Each email the seed lists as sent says what
+one of its kind says: the seed sends nothing.
 
 ## Tenant isolation and permissions
 
@@ -176,6 +187,8 @@ of each reason and an order whose email was changed.
 - R1 reads the edition's heads and orgs with tickets write access inside the tenant's transaction;
   an expired membership gets no alert.
 - An org's search reads names and email addresses of the edition's orders alone.
+- What an email said is read within its tenant, by an org with `tickets` of its edition; the role
+  that works across tenants is granted neither its subject nor its text.
 
 ## Tests
 
@@ -198,6 +211,10 @@ Integration, in `apps/api/test`:
   gone, refused, then allowed once raised. Declining: the status, nothing held, the email.
 - The alerts reach the heads and the orgs with tickets write access, and nobody else.
 - The production numbers before and after the deadline, with orders in each status.
+- What is kept of a sent email: its subject and text as they went out, with no QR code and no
+  token of an order link in them, for each kind of email that carries one; nothing of an email
+  whose send failed. The list of F4: its order, its search, an alert without its address and
+  found by no address, no email of another edition.
 
 e2e, each scenario making its own tenant and checking the BFF boundary:
 
@@ -210,6 +227,8 @@ e2e, each scenario making its own tenant and checking the BFF boundary:
 4. A paid order is canceled through the modal, and its stock returns.
 5. An order in review is listed first; raising the stock lets the org mark it paid.
 6. An org with tickets read access sees the orders and can change nothing.
+7. An org finds the confirmation of a paid order among the edition's emails and reads what it
+   said, without the QR code it carried.
 
 ## Out of scope
 
@@ -225,9 +244,11 @@ e2e, each scenario making its own tenant and checking the BFF boundary:
 
 - **Records to accept:** manual and complimentary orders and desk sales in the MVP (D2 of the
   brief), proposed in 0055 with the change of PRODUCT.md 11 it brings; an org canceling paid
-  orders and declining payments while OPOS returns no money (D14), proposed in 0056.
+  orders and declining payments while OPOS returns no money (D14), proposed in 0056; keeping what
+  a sent email said, without its QR code and its order link, proposed in 0068.
 - **For the domain owner to confirm:** that a manual order is recorded while the shop is closed
   and sells merchandise alone where the shop does not; that every line of a manual order, one
   paid by invoice too, is handed out as it is recorded; that the production numbers of an edition
   with no pre-order deadline are read at any time; that the reason of a cancellation or a decline
-  is not sent to the buyer.
+  is not sent to the buyer; that an org reads what an email said (F4), and for how long its text
+  is kept.

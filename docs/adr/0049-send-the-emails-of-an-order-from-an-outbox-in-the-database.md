@@ -35,8 +35,9 @@ fails the person is told and asks again.
   email, and the buyer of a paid order has no QR code.
 - **A queue service.** One more thing to host, back up and keep in step with the database, for a
   volume a table handles.
-- **Render the email when it is queued.** The text would be stored with the personal data in it,
-  and an order link's secret with it.
+- **Render the email when it is queued.** The text would tell the order as it stood at its cause,
+  not as it stands when the email goes out, and an order link's secret would be stored with it
+  until then.
 
 ## Consequences
 
@@ -45,3 +46,5 @@ fails the person is told and asks again.
 - An email reads the order at the moment it is sent, not at the moment of its cause: an order
   that changed in between is described as it is.
 - The confirmation makes an order link each time it is sent, of which only the hash is kept.
+- What a sent email said is kept on its row, without its QR code and the token of its order link
+  ([0068](0068-keep-what-a-sent-email-of-an-order-said-without-what-hands-the-order-over.md)).

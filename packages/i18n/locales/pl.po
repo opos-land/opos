@@ -48,8 +48,8 @@ msgid "A payment of {paid} arrived for the order {number} of {conventionName}, w
 msgstr "Do zamówienia {number} konwentu {conventionName}, które nie czekało na płatność, wpłynęła płatność na kwotę {paid}, a dostawca płatności nie mógł jej odrzucić."
 
 #: src/errors.ts
-msgid "A scanner cannot work longer than your access to the convention. Set an earlier end."
-msgstr "Skaner nie może działać dłużej niż twój dostęp do konwentu. Ustaw wcześniejszy koniec."
+msgid "A scanner cannot work longer than your access to the convention. Set an earlier end, or ask an organizer whose access lasts longer."
+msgstr "Skaner nie może działać dłużej niż twój dostęp do konwentu. Ustaw wcześniejszy koniec albo poproś organizatora, którego dostęp trwa dłużej."
 
 #: src/errors.ts
 msgid "A shop of this convention is open. Close it first."

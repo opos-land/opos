@@ -95,7 +95,7 @@ describe('errorMessage', () => {
     ['scanner.name-taken', 'Inny skaner tej edycji ma już tę nazwę. Wybierz inną.'],
     [
       'scanner.outlives-org',
-      'Skaner nie może działać dłużej niż twój dostęp do konwentu. Ustaw wcześniejszy koniec.',
+      'Skaner nie może działać dłużej niż twój dostęp do konwentu. Ustaw wcześniejszy koniec albo poproś organizatora, którego dostęp trwa dłużej.',
     ],
     [
       'scanner.ended',

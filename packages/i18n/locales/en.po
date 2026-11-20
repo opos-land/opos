@@ -48,8 +48,8 @@ msgid "A payment of {paid} arrived for the order {number} of {conventionName}, w
 msgstr "A payment of {paid} arrived for the order {number} of {conventionName}, which was not waiting for one, and the payment provider could not refuse it."
 
 #: src/errors.ts
-msgid "A scanner cannot work longer than your access to the convention. Set an earlier end."
-msgstr "A scanner cannot work longer than your access to the convention. Set an earlier end."
+msgid "A scanner cannot work longer than your access to the convention. Set an earlier end, or ask an organizer whose access lasts longer."
+msgstr "A scanner cannot work longer than your access to the convention. Set an earlier end, or ask an organizer whose access lasts longer."
 
 #: src/errors.ts
 msgid "A shop of this convention is open. Close it first."

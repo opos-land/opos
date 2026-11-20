@@ -88,7 +88,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'scan.not-valid': msg`This QR code is not valid.`,
   'scanner.limit-reached': msg`This edition has reached its limit of enabled scanners: {limit}.`,
   'scanner.name-taken': msg`Another scanner of this edition already has this name. Choose another.`,
-  'scanner.outlives-org': msg`A scanner cannot work longer than your access to the convention. Set an earlier end.`,
+  'scanner.outlives-org': msg`A scanner cannot work longer than your access to the convention. Set an earlier end, or ask an organizer whose access lasts longer.`,
   'scanner.code-refused': msg`This pairing code does not work: it was already used or it expired. Ask an organizer for a new one.`,
   'scanner.revoked': msg`This scanner no longer works: its access was revoked or expired. Pair the phone again.`,
   'scanner.ended': msg`This scanner was revoked or its access has ended, so it gets no new pairing code. Enable a new scanner.`,

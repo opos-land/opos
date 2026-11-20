@@ -99,7 +99,7 @@ describe('errorMessage', () => {
     ],
     [
       'scanner.ended',
-      'Ten skaner został odwołany albo jego dostęp się skończył, więc nie dostanie nowego kodu parowania. Włącz nowy skaner.',
+      'Dostęp tego skanera został cofnięty albo wygasł, więc skaner nie dostanie nowego kodu parowania. Włącz nowy skaner.',
     ],
     [
       'scanner.code-refused',

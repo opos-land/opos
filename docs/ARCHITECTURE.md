@@ -56,8 +56,7 @@ Dev's deployment is described in [infra](../infra/README.md) but not running yet
 ([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)); a
 deployed environment reaches its database directly, with TLS verified against Supabase's CA
 ([0039](adr/0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md)). The backups are
-decided but not built ([0014](adr/0014-back-up-production-beyond-supabase.md)), nor is a deployed
-environment's bucket of uploaded files with its imgproxy, which the API needs to start; the modules
+decided but not built ([0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
 [waiting for their domain owner](#modules-waiting-for-their-domain-owner) have only their rules.
 
 ## Tenant isolation
@@ -373,8 +372,12 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 | Deployed by | the developer           | a push to `develop`                       | a push to `main`, after a reviewer |
 
 - `OPOS_ENV` is the one switch between environments; a fake payment provider serves `local` and
-  `dev`. Each environment has a bucket of its own, Dev's holding demo files; the local stack and
-  CI run Versity Gateway as the bucket and imgproxy in containers beside Supabase's, which
+  `dev`. Each environment has a bucket of its own, Dev's holding demo files, in a Scaleway project
+  that holds it alone, so that the API's key opens it and nothing else, and its deployment runs
+  imgproxy beside the API
+  ([0044](adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
+  the local stack and CI run Versity Gateway as the bucket and imgproxy in containers beside
+  Supabase's, which
   `pnpm infra:init` and `pnpm infra:up` start ([compose.yaml](../infra/local/compose.yaml)). Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
   through Scaleway's Transactional Email, from its own domain
   ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
@@ -418,7 +421,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,
   which turbo hashes, and [mise-tasks.test.mjs](../scripts/mise-tasks.test.mjs) keeps both lists
   equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). The
-  `deploy:*` commands alone are mise tasks with no root script: their tools come from mise.
+  deploy commands are root scripts too, one Node script tested like the others, driving tools that
+  come from mise; no shell script runs on an operator's machine
+  ([0045](adr/0045-run-the-deploy-commands-as-node-scripts.md)). `deploy:check`, `deploy:images`
+  and `deploy:lock` alone are mise tasks with no root script: they only run those tools.
 - The infrastructure lives in [infra](../infra/README.md): an environment is one directory with
   one `env.yaml`, its plain settings and the names of its secrets, and nothing else configures it.
   Every provider is pinned to an exact version with its lock file committed, at least 7 days old

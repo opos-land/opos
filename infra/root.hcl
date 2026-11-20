@@ -10,10 +10,10 @@ locals {
   region     = local.env.scaleway.region
 }
 
-# One state per unit, in the bucket infra/bootstrap.sh made, through Scaleway's S3 API, keyed by the
+# One state per unit, in the bucket the bootstrap made (scripts/deploy.mjs), through Scaleway's S3 API, keyed by the
 # unit's place in the environment without the generated directory. The block is written as it
 # stands rather than through remote_state, whose checks of the bucket speak to AWS.
-# The deploy commands hand OpenTofu the operator's key (infra/run.sh); a lock file in the bucket
+# The deploy commands hand OpenTofu the operator's key (scripts/deploy.mjs); a lock file in the bucket
 # keeps two runs of one unit apart.
 generate "backend" {
   path      = "backend.tf"
@@ -41,8 +41,8 @@ generate "backend" {
 
 # OpenTofu encrypts the state and every plan, and refuses to write either in the clear: values the
 # containers and CI need pass through the state. The key derives from a passphrase in the project's
-# Secret Manager, which infra/state-passphrase.sh reads for the length of a run. Its revision is
-# fixed: a new one goes in beside this one, with this one as the fallback, until every state is
+# Secret Manager, which the state-passphrase command of scripts/deploy.mjs reads for the length of a
+# run. Its revision is fixed: a new one goes in beside this one, with this one as the fallback, until every state is
 # written again.
 generate "encryption" {
   path      = "encryption.tf"
@@ -51,7 +51,7 @@ generate "encryption" {
     terraform {
       encryption {
         key_provider "external" "passphrase" {
-          command = ["${get_repo_root()}/infra/state-passphrase.sh", "${local.project_id}", "${local.region}", "1"]
+          command = ["node", "${get_repo_root()}/scripts/deploy.mjs", "state-passphrase", "${local.project_id}", "${local.region}", "1"]
         }
 
         key_provider "pbkdf2" "state" {
@@ -76,7 +76,7 @@ generate "encryption" {
   EOF
 }
 
-# The operator's own Scaleway key, from the profile infra/run.sh names: no credential in this
+# The operator's own Scaleway key, from the profile the deploy commands name (scripts/deploy.mjs): no credential in this
 # repository.
 generate "scaleway" {
   path      = "scaleway.tf"

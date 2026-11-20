@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs'
 import { describe, it } from 'node:test'
 
 const compose = readFileSync(new URL('../infra/docker/compose.yaml', import.meta.url), 'utf8')
+const local = readFileSync(new URL('../infra/local/compose.yaml', import.meta.url), 'utf8')
 
 /** The variables of each service's `environment`, read by indentation from `services`. */
 export function environments(text) {
@@ -72,16 +73,39 @@ export function exposed(text) {
   return services
 }
 
+/** The lines of one service, from its name to the next service or top-level key. */
+export function service(text, name) {
+  const lines = text.split('\n')
+  const start = lines.indexOf(`  ${name}:`)
+  if (start === -1) return ''
+  const end = lines.findIndex((line, index) => index > start && /^( {2})?\S/.test(line))
+  return lines.slice(start, end === -1 ? undefined : end).join('\n')
+}
+
+/** The settings of imgproxy's own environment but its key, its salt and its sources. */
+const imgproxySettings = (text) =>
+  [...service(text, 'imgproxy').matchAll(/^ {6}(IMGPROXY_\w+: .*)$/gm)]
+    .map((match) => match[1])
+    .filter((line) => !/^IMGPROXY_(KEY|SALT|ALLOWED_SOURCES):/.test(line))
+
+/** The image a service runs. */
+const image = (text, name) => /^ {4}image: (\S+)$/m.exec(service(text, name))?.[1]
+
 // Coolify's proxy routes a host to the one port its service exposes: the domains of the deployment
-// name none (infra/modules/deployment). Mail's own port, 1025, stays inside the deployment's network.
+// name none (infra/modules/deployment). Mail's own port, 1025, and imgproxy's, which the API alone
+// asks, stay inside the deployment's network.
 const PORTS = {
   api: ['3001'],
   panel: ['8080'],
   portal: ['8080'],
   admin: ['8080'],
   mail: ['8025'],
+  imgproxy: [],
   tools: [],
 }
+
+/** Whether a variable is a key of the bucket. */
+const BUCKET_KEY = /^S3_(ACCESS_KEY_ID|SECRET_ACCESS_KEY)$/
 
 const MIGRATION_ONLY = /^(DATABASE_MIGRATION_URL|OPOS_\w+_PASSWORD)$/
 
@@ -92,6 +116,7 @@ describe('the compose file of a deployment', () => {
     assert.deepEqual(Object.keys(services).sort(), [
       'admin',
       'api',
+      'imgproxy',
       'mail',
       'panel',
       'portal',
@@ -128,9 +153,54 @@ describe('the compose file of a deployment', () => {
     const unexposed = compose.replace(/^ {4}expose:\n {6}- '3001'\n/m, '')
     assert.deepEqual(exposed(unexposed).api, [])
   })
-})
 
-const local = readFileSync(new URL('../infra/local/compose.yaml', import.meta.url), 'utf8')
+  // docs/specs/0012-file-storage.md, W2, and docs/specs/0013-image-variants.md, I3
+  it("gives the bucket's key to the API alone, and imgproxy's key to the API and imgproxy alone", () => {
+    for (const variable of ['S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'IMGPROXY_KEY']) {
+      assert.ok(services.api.includes(variable), variable)
+    }
+    for (const [name, variables] of Object.entries(services)) {
+      if (name !== 'api') {
+        assert.deepEqual(
+          variables.filter((variable) => BUCKET_KEY.test(variable)),
+          [],
+          name,
+        )
+      }
+      if (name !== 'api' && name !== 'imgproxy') {
+        assert.deepEqual(
+          variables.filter((variable) => /^IMGPROXY_(KEY|SALT)$/.test(variable)),
+          [],
+          name,
+        )
+      }
+    }
+  })
+
+  it('catches a bucket key given to imgproxy', () => {
+    const leaked = compose.replace(
+      /^( {6}IMGPROXY_ALLOWED_SOURCES: .*\n)/m,
+      '$1      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?}\n',
+    )
+    assert.ok(environments(leaked).imgproxy.includes('S3_SECRET_ACCESS_KEY'))
+  })
+
+  it("runs the local stack's imgproxy, with its settings, reading the bucket alone", () => {
+    assert.equal(image(compose, 'imgproxy'), image(local, 'imgproxy'))
+    assert.match(image(compose, 'imgproxy'), /^[\w./-]+:v[\d.]+@sha256:[0-9a-f]{64}$/)
+    assert.deepEqual(imgproxySettings(compose), imgproxySettings(local))
+    assert.match(
+      service(compose, 'imgproxy'),
+      /IMGPROXY_ALLOWED_SOURCES: \$\{S3_ENDPOINT:\?\}\/\$\{S3_BUCKET:\?\}\//,
+    )
+    assert.match(service(compose, 'api'), /IMGPROXY_URL: http:\/\/imgproxy:8080\n/)
+  })
+
+  it('catches a setting of imgproxy the deployment drops', () => {
+    const dropped = compose.replace("      IMGPROXY_STRIP_METADATA: 'true'\n", '')
+    assert.notDeepEqual(imgproxySettings(dropped), imgproxySettings(local))
+  })
+})
 
 /** Every `- '<address>:<port>:<port>'` a service publishes under `ports`. */
 const published = (text) =>

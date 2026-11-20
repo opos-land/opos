@@ -116,6 +116,16 @@ locals {
 
     MAIL_FROM = var.mail_from
 
+    # The files unit's bucket, opened by the shared unit's key alone
+    S3_ENDPOINT          = var.files.endpoint
+    S3_REGION            = var.files.region
+    S3_BUCKET            = var.files.bucket
+    S3_ACCESS_KEY_ID     = var.files.access_key
+    S3_SECRET_ACCESS_KEY = local.secret.files_secret_key
+    # imgproxy reads its key and salt as hex: the generated value's SHA-256, 32 bytes
+    IMGPROXY_KEY  = sha256(local.secret.imgproxy_key)
+    IMGPROXY_SALT = sha256(local.secret.imgproxy_salt)
+
     BASIC_AUTH_PASSWORD = local.secret.basic_auth_password
   })
 }

@@ -31,6 +31,8 @@ export const ROUTE_RATE_LIMITS = {
   orderPlacements: { limit: 300, ttl: 3_600_000 },
   /** Starting a payment attempt, by a visitor or by an account: one counter, per client address. */
   paymentAttempts: { limit: 300, ttl: 3_600_000 },
+  /** Resending an order's confirmation, per order: each one is an email to its buyer. */
+  confirmationResends: { limit: 5, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS

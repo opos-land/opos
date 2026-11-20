@@ -79,6 +79,8 @@ describe('errorMessage', () => {
     ['order.hold-ended', 'Czas na opłacenie tego zamówienia minął. Złóż nowe zamówienie.'],
     ['order.already-paid', 'To zamówienie nie czeka już na płatność. Sprawdź jego status.'],
     ['order.not-cancelable', 'Anulować można tylko opłacone zamówienie.'],
+    ['order.not-paid', 'To można zrobić tylko z opłaconym zamówieniem.'],
+    ['scan.already-handed-out', 'To zostało już wydane.'],
     ['order.not-in-review', 'To zamówienie nie jest już do wyjaśnienia. Sprawdź jego status.'],
     [
       'order.not-correctable',

@@ -3,6 +3,7 @@ import {
   cancelOrderSchema,
   changeOrderEmailSchema,
   declineOrderSchema,
+  handOutSchema,
   manualOrderSchema,
   MANUAL_REASONS,
   MAX_ORDER_PAGE,
@@ -210,5 +211,21 @@ describe('a manual order', () => {
     ['a total', { ...sale, expectedTotalMinor: 0 }],
   ])('refuses %s', (_, body) => {
     expect(manualOrderSchema.safeParse(body).success).toBe(false)
+  })
+})
+
+// A hand-out marked on an order's page (H1).
+describe('a hand-out', () => {
+  const [first, second] = [
+    '00000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000002',
+  ]
+
+  it('names the lines handed out, each once', () => {
+    expect(handOutSchema.parse({ lineIds: [first, second] })).toEqual({ lineIds: [first, second] })
+    for (const lineIds of [[], [first, first], ['a line']]) {
+      expect(handOutSchema.safeParse({ lineIds }).success).toBe(false)
+    }
+    expect(handOutSchema.safeParse({}).success).toBe(false)
   })
 })

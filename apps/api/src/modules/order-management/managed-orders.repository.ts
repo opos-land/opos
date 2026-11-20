@@ -8,7 +8,7 @@ import {
   orderQrCodes,
   orders,
 } from '@opos/db'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
 import { isUuid } from '../../common/uuid'
@@ -164,6 +164,33 @@ export class ManagedOrdersRepository {
       .tx()
       .update(orderLines)
       .set({ merchandiseVariantId: variantId })
+      .where(eq(orderLines.id, lineId))
+  }
+
+  /** The lines of the order that are handed over: every line but a discount. */
+  async lines(orderId: string) {
+    return this.context
+      .tx()
+      .select({ id: orderLines.id, handedOutAt: orderLines.handedOutAt })
+      .from(orderLines)
+      .where(and(eq(orderLines.orderId, orderId), ne(orderLines.kind, 'discount')))
+  }
+
+  /** Marks the lines of the order as handed out at `at`. */
+  async handOut(orderId: string, lineIds: readonly string[], at: Date) {
+    await this.context
+      .tx()
+      .update(orderLines)
+      .set({ handedOutAt: at })
+      .where(and(eq(orderLines.orderId, orderId), inArray(orderLines.id, [...lineIds])))
+  }
+
+  /** Takes the hand-out mark of a line back. */
+  async takeBack(lineId: string) {
+    await this.context
+      .tx()
+      .update(orderLines)
+      .set({ handedOutAt: null })
       .where(eq(orderLines.id, lineId))
   }
 }

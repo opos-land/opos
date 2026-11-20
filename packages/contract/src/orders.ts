@@ -241,6 +241,23 @@ export const manualOrderSchema = z.strictObject({
 
 export type ManualOrder = z.infer<typeof manualOrderSchema>
 
+/** The most lines one hand-out names: more than any order holds. */
+export const MAX_HAND_OUT_LINES = 200
+
+/**
+ * The lines of an order an org marks as handed out on its page, for a buyer whose QR code
+ * cannot be read: entry is the ticket's line, items the merchandise lines.
+ */
+export const handOutSchema = z.strictObject({
+  lineIds: z
+    .array(z.uuid())
+    .min(1)
+    .max(MAX_HAND_OUT_LINES)
+    .refine((ids) => new Set(ids).size === ids.length, 'A line is named once'),
+})
+
+export type HandOut = z.infer<typeof handOutSchema>
+
 const reason = z.string().trim().min(1).max(500)
 
 /**
@@ -344,5 +361,31 @@ export const ordersContract = {
         'Declines an order that needs review with a reason: it holds nothing, gets no QR code, and its buyer is told; needs tickets=write',
     })
     .input(order.extend({ body: declineOrderSchema }))
+    .output(orderDetailSchema),
+  resendConfirmation: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/orders/{orderId}/resend-confirmation',
+      summary:
+        "Sends a paid order's confirmation again to its email, with the same QR code and a fresh order link; needs tickets=write",
+    })
+    .input(order)
+    .output(orderDetailSchema),
+  handOut: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/orders/{orderId}/hand-outs',
+      summary:
+        'Marks lines of a paid order as handed out, with the time; refused with scan.already-handed-out for a line that was; needs tickets=write',
+    })
+    .input(order.extend({ body: handOutSchema }))
+    .output(orderDetailSchema),
+  takeBackHandOut: tenantRoute
+    .route({
+      method: 'DELETE',
+      path: '/editions/{editionId}/orders/{orderId}/lines/{lineId}/hand-out',
+      summary: "Takes a line's hand-out mark back, whoever made it; needs tickets=write",
+    })
+    .input(line)
     .output(orderDetailSchema),
 }

@@ -5,6 +5,7 @@ import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
 import { ManualOrders } from './manual-orders.service'
 import { OrderCorrections } from './order-corrections.service'
+import { OrderHandOuts } from './order-hand-outs.service'
 import { OrderReadsRepository } from './order-reads.repository'
 import { OrderSettling } from './order-settling.service'
 
@@ -19,6 +20,7 @@ export class ManagedOrdersController {
     private readonly corrections: OrderCorrections,
     private readonly settling: OrderSettling,
     private readonly manual: ManualOrders,
+    private readonly handOuts: OrderHandOuts,
     private readonly context: TenantContextService,
   ) {}
 
@@ -104,6 +106,36 @@ export class ManagedOrdersController {
     return implement(contract.orders.decline).handler(async ({ input }) => {
       const { editionId, orderId } = input.params
       await this.settling.decline(editionId, orderId, input.body.reason)
+      return this.reads.get(editionId, orderId)
+    })
+  }
+
+  @Implement(contract.orders.resendConfirmation)
+  @RequireEdition('tickets', 'write')
+  resendConfirmation() {
+    return implement(contract.orders.resendConfirmation).handler(async ({ input }) => {
+      const { editionId, orderId } = input.params
+      await this.handOuts.resend(editionId, orderId)
+      return this.reads.get(editionId, orderId)
+    })
+  }
+
+  @Implement(contract.orders.handOut)
+  @RequireEdition('tickets', 'write')
+  handOut() {
+    return implement(contract.orders.handOut).handler(async ({ input }) => {
+      const { editionId, orderId } = input.params
+      await this.handOuts.handOut(editionId, orderId, input.body.lineIds)
+      return this.reads.get(editionId, orderId)
+    })
+  }
+
+  @Implement(contract.orders.takeBackHandOut)
+  @RequireEdition('tickets', 'write')
+  takeBackHandOut() {
+    return implement(contract.orders.takeBackHandOut).handler(async ({ input }) => {
+      const { editionId, orderId, lineId } = input.params
+      await this.handOuts.takeBack(editionId, orderId, lineId)
       return this.reads.get(editionId, orderId)
     })
   }

@@ -654,6 +654,10 @@ msgid "This address is reserved for the platform. Choose another one."
 msgstr "Ten adres jest zarezerwowany dla platformy. Wybierz inny."
 
 #: src/errors.ts
+msgid "This can be done only with a paid order."
+msgstr "To można zrobić tylko z opłaconym zamówieniem."
+
+#: src/errors.ts
 msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
 msgstr "Ta zmiana usunęłaby coś, co jest już w zamówieniu. Zamiast usuwać, ukryj tę pozycję: zniknie z oferty, a w zamówieniach pozostanie."
 
@@ -768,6 +772,10 @@ msgstr "Tego żądania nie można wykonać z tego adresu. Odśwież stronę i sp
 #: src/errors.ts
 msgid "This shop is not selling right now."
 msgstr "Ten sklep w tej chwili nie prowadzi sprzedaży."
+
+#: src/errors.ts
+msgid "This was already handed out."
+msgstr "To zostało już wydane."
 
 #. Glossary term: ticket
 #: src/glossary.ts

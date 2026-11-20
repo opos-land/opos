@@ -78,6 +78,8 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'order.not-correctable': msg`This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address.`,
   'order.not-cancelable': msg`Only a paid order can be canceled.`,
   'order.not-in-review': msg`This order does not need review any more. Check its status.`,
+  'order.not-paid': msg`This can be done only with a paid order.`,
+  'scan.already-handed-out': msg`This was already handed out.`,
   'bot-check.failed': msg`We could not confirm that you are not a robot. Try again.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 

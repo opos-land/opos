@@ -4,6 +4,7 @@ import { ManagedOrdersController } from './managed-orders.controller'
 import { ManagedOrdersRepository } from './managed-orders.repository'
 import { ManualOrders } from './manual-orders.service'
 import { OrderCorrections } from './order-corrections.service'
+import { OrderHandOuts } from './order-hand-outs.service'
 import { OrderReadsRepository } from './order-reads.repository'
 import { OrderSettling } from './order-settling.service'
 
@@ -17,6 +18,7 @@ import { OrderSettling } from './order-settling.service'
     OrderCorrections,
     OrderSettling,
     ManualOrders,
+    OrderHandOuts,
   ],
 })
 export class OrderManagementModule {}

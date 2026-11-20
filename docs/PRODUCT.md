@@ -338,6 +338,17 @@ panel: reading them needs read access, every change write access.
 | Handing out        | on an order's page an org marks a line of a paid order as handed out, or takes a mark back, for a buyer whose QR code cannot be read                                                                                                                                                                                                     |
 | Production numbers | once the pre-order deadline has passed: the count of every variant, what paid orders hold apart from what awaits payment and needs review, as a file too                                                                                                                                                                                 |
 
+**The pre-edition reminder.** A few days before the edition every buyer gets one email with what
+they need at the gate.
+
+| Rule       | Value                                                                                                                                                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| When       | an org with tickets write access sets how many days before the edition's first day it goes out, at 9:00 in the convention's time zone; with no number set, none is sent                                                            |
+| Who        | once to the email of every QR code of the edition that an order not canceled still holds: orders sharing a code get one. A manual order, which has no email, gets none, and neither does an order paid after the reminder went out |
+| What       | the QR code, the edition's opening hours as an org wrote them and its pick-up information; for a child or a teen as the ticket holder, the guardian rules and the address of the consent form                                      |
+| Once       | a reminder is sent once an edition: changing the number of days after it went out sends nothing again                                                                                                                              |
+| Suspension | a suspended convention sends none, and a reminder missed on its day is not sent late                                                                                                                                               |
+
 **Sales reports.** An org with tickets read access to an edition sees how it sells, as it sells,
 and takes away the lists the convention works from.
 

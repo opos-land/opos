@@ -109,19 +109,20 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query                               | Bound                                                                                                                                                          |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| a tenant by slug                    | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                  |
-| `GET /me/memberships`               | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                    |
-| `GET /me/schedule`                  | the session's own likes; published editions only, of tenants not suspended                                                                                     |
-| `GET /public/editions`              | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                   |
-| `DELETE /me`                        | the session's account; answers only whether it is a tenant's last head                                                                                         |
-| the sweep of files                  | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                       |
-| a payment attempt by its identifier | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds               |
-| the orders whose hold ended         | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
-| the emails of orders that are due   | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
-| a scanner by a hash                 | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction |
-| an order link by a hash             | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                   |
+| Query                                  | Bound                                                                                                                                                          |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| a tenant by slug                       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                  |
+| `GET /me/memberships`                  | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                    |
+| `GET /me/schedule`                     | the session's own likes; published editions only, of tenants not suspended                                                                                     |
+| `GET /public/editions`                 | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                   |
+| `DELETE /me`                           | the session's account; answers only whether it is a tenant's last head                                                                                         |
+| the sweep of files                     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                       |
+| a payment attempt by its identifier    | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds               |
+| the orders whose hold ended            | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
+| the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
+| a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction |
+| an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                   |
+| the editions whose reminder may be due | the API's own job; identifiers and the tenant's time zone alone, of published editions of tenants not suspended                                                |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token), the API's own job, or publication, for what anyone
@@ -288,8 +289,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   behind an advisory lock, so one process sweeps at a time, removing, once older than 24 hours,
   a file's row nothing points at and an object no row explains; the expiry of orders every
   minute and the outbox of their emails every quarter of a minute, each claiming a row under a
-  lock another process skips. A job finds its rows across tenants by identifiers alone, passes a
-  suspended tenant's by, and acts on each in its own tenant's transaction.
+  lock another process skips; the reminders before an edition every five minutes, each queued
+  under a lock of its edition's shop row, so a second process finds it gone out. A job finds its
+  rows across tenants by identifiers alone, passes a suspended tenant's by, and acts on each in
+  its own tenant's transaction.
 - Every route has a default rate limit per account, or per address without a session; a route open
   to abuse adds its own in code
   ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)).
@@ -620,6 +623,13 @@ steps of [adding a feature](#adding-a-feature).
   begins like a formula is written with a leading apostrophe. A file holds names and email
   addresses: it is written for the org who asked, kept nowhere, and no log holds any of it; the
   lists share a rate limit an account.
+- **The pre-edition reminder.** It goes out at 9:00 by the clock of the convention's time zone,
+  so many days before the edition's first day in that zone, and on that day alone: a reminder
+  missed on its day is not sent late. Its job queues one email a QR code that a paid order still
+  carries and notes that the reminder went out in one transaction of the edition's tenant, so it
+  is queued whole or not at all, once an edition. The email is written when it is sent, from the
+  order as it then stands: it carries the QR code, so it is withdrawn like a confirmation when
+  the order has left its address, and an order canceled since gets none.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than

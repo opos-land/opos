@@ -69,7 +69,6 @@ const view = () =>
   )
 
 const row = (name: string) => screen.getByRole('listitem', { name })
-const field = (label: string | RegExp) => screen.getByLabelText<HTMLInputElement>(label)
 
 beforeAll(() => {
   i18n.load('en', {})
@@ -126,54 +125,17 @@ describe('the add-ons page', () => {
     await screen.findByRole('listitem', { name: 'Add-on 1' })
     expect(screen.queryByRole('button')).toBeNull()
     expect(screen.queryByLabelText('Name')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'New add-on' })).toBeNull()
   })
 
-  it('adds an add-on with the price read as an amount of minor units', async () => {
+  it('links a member who may add to the page of a new add-on, and holds no form of one', async () => {
     view()
     await screen.findByText('The edition has no add-ons yet.')
 
-    fireEvent.change(field('Name'), { target: { value: ' Workshop ' } })
-    fireEvent.change(field(/^Price/), { target: { value: '40,5' } })
-    fireEvent.change(field('Limit'), { target: { value: 'limited' } })
-    fireEvent.change(field('Number of places'), { target: { value: '30' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add the add-on' }))
-
-    await waitFor(() => expect(createAddOn).toHaveBeenCalledTimes(1))
-    expect(createAddOn.mock.calls[0]![0]).toEqual({
-      params: { editionId: 'edition-2026' },
-      body: {
-        name: 'Workshop',
-        description: '',
-        amountMinor: 4050,
-        kind: 'limited',
-        capacity: 30,
-        placesLeftThreshold: null,
-      },
-    })
-  })
-
-  it('names what is wrong beside its field, and sends nothing', async () => {
-    view()
-    await screen.findByText('The edition has no add-ons yet.')
-
-    fireEvent.change(field(/^Price/), { target: { value: 'free' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add the add-on' }))
-
-    expect(await screen.findByText('Enter a name.')).toBeDefined()
-    expect(screen.getByText('Enter an amount, such as 40 or 40.50.')).toBeDefined()
-    expect(field('Name').getAttribute('aria-invalid')).toBe('true')
-    expect(createAddOn).not.toHaveBeenCalled()
-  })
-
-  it('asks for the places of a limited add-on alone', async () => {
-    view()
-    await screen.findByText('The edition has no add-ons yet.')
-
-    expect(screen.queryByLabelText('Number of places')).toBeNull()
-    fireEvent.change(field('Limit'), { target: { value: 'limited' } })
-
-    expect(field('Number of places')).toBeDefined()
-    expect(field('Show the places left when fewer than')).toBeDefined()
+    expect(screen.getByRole('link', { name: 'New add-on' }).getAttribute('href')).toBe(
+      '/convention-a/editions/2026/add-ons/new',
+    )
+    expect(screen.queryByLabelText('Name')).toBeNull()
   })
 
   it('moves an add-on, and offers no step past either end of the list', async () => {

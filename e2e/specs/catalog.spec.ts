@@ -44,9 +44,11 @@ test('an org builds the catalog of an edition from nothing', async ({
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
   const editionMenu = menu(page, edition.name)
 
-  // Two add-ons: one limited by a capacity, one that only counts interest.
+  // Two add-ons: one limited by a capacity, one that only counts interest. Each is added on a
+  // page of its own, which leads back to the add-ons.
   await followFolderLink(editionMenu, 'Shop', 'Add-ons')
   await expect(page.getByText('The edition has no add-ons yet.')).toBeVisible()
+  await page.getByRole('link', { name: 'New add-on' }).click()
   await page.getByLabel('Name', { exact: true }).fill('Miniature painting workshop')
   await page.getByLabel(/^Price/).fill('40')
   await page.getByLabel('Limit').selectOption('limited')
@@ -54,6 +56,9 @@ test('an org builds the catalog of an edition from nothing', async ({
   await page.getByLabel('Show the places left when fewer than').fill('10')
   await page.getByRole('button', { name: 'Add the add-on' }).click()
   await expect(notification(page, 'success', 'The add-on is added.')).toBeVisible()
+  // Back on the list: until then the trail above the page names "New add-on" as a link too.
+  await expect(page.getByRole('heading', { name: 'Add-ons', level: 1 })).toBeVisible()
+  await page.getByRole('link', { name: 'New add-on' }).click()
   await page.getByLabel('Name', { exact: true }).fill('Sleeping room')
   await page.getByLabel(/^Price/).fill('0')
   await page.getByLabel('Limit').selectOption('headcount')

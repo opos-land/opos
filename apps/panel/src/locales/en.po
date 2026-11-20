@@ -266,7 +266,7 @@ msgstr "Add a value to axis {number}"
 msgid "Add an axis"
 msgstr "Add an axis"
 
-#: src/features/catalog/pages/add-ons-page.tsx
+#: src/features/catalog/pages/new-add-on-page.tsx
 msgid "Add the add-on"
 msgstr "Add the add-on"
 
@@ -302,6 +302,10 @@ msgstr "Add the picture"
 #: src/features/catalog/pages/ticket-type-page.tsx
 msgid "Add the ticket type"
 msgstr "Add the ticket type"
+
+#: src/features/catalog/pages/new-add-on-page.tsx
+msgid "Add-on data"
+msgstr "Add-on data"
 
 #: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/discounts/components/discount-code-form.tsx
@@ -375,6 +379,10 @@ msgstr "Alert: a payment to return"
 #: src/features/orders/model/labels.ts
 msgid "Alert: the order needs review"
 msgstr "Alert: the order needs review"
+
+#: src/features/catalog/pages/new-add-on-page.tsx
+msgid "All add-ons"
+msgstr "All add-ons"
 
 #: src/features/discounts/pages/new-discount-code-page.tsx
 msgid "All discount codes"
@@ -1774,6 +1782,7 @@ msgid "Never"
 msgstr "Never"
 
 #: src/features/catalog/pages/add-ons-page.tsx
+#: src/features/catalog/pages/new-add-on-page.tsx
 msgid "New add-on"
 msgstr "New add-on"
 
@@ -2961,7 +2970,7 @@ msgstr "Teen"
 msgid "The add-on “{name}” is deleted."
 msgstr "The add-on “{name}” is deleted."
 
-#: src/features/catalog/pages/add-ons-page.tsx
+#: src/features/catalog/pages/new-add-on-page.tsx
 msgid "The add-on is added."
 msgstr "The add-on is added."
 

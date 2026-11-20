@@ -3,6 +3,7 @@ import { AccountLocale, AccountPage } from '../features/account'
 import { BrandingPage } from '../features/branding'
 import {
   AddOnsPage,
+  NewAddOnPage,
   MerchandiseItemPage,
   MerchandisePage,
   TicketHoldersPage,
@@ -152,6 +153,7 @@ export const router = createBrowserRouter([
                   { path: 'ticket-types/new', element: <TicketTypePage /> },
                   { path: 'ticket-types/:ticketTypeId', element: <TicketTypePage /> },
                   { path: 'add-ons', element: <AddOnsPage /> },
+                  { path: 'add-ons/new', element: <NewAddOnPage /> },
                   { path: 'merchandise', element: <MerchandisePage /> },
                   { path: 'merchandise/new', element: <MerchandiseItemPage /> },
                   { path: 'merchandise/:itemId', element: <MerchandiseItemPage /> },

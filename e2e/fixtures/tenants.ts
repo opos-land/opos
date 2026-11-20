@@ -316,6 +316,34 @@ export class TenantFactory {
     `)
   }
 
+  /** Sets how many tickets of a ticket type there are. */
+  async setCapacity(ticketTypeId: string, capacity: number) {
+    await this.db.execute(sql`
+      update ticket_types set capacity = ${capacity} where id = ${ticketTypeId}
+    `)
+  }
+
+  /**
+   * Ends the hold of an order that awaits payment, as the expiry job does once its time is up:
+   * it holds nothing from then on.
+   */
+  async expireOrder(orderId: string) {
+    await this.db.execute(sql`
+      update orders set status = 'expired', holds = false, hold_ends_at = now() - interval '1 minute'
+      where id = ${orderId}
+    `)
+  }
+
+  /** The order links of an order as stored: whether each still opens. */
+  async orderLinks(orderId: string) {
+    return [
+      ...(await this.db.execute<{ ended: boolean }>(sql`
+        select ended_at is not null as ended from order_links
+        where order_id = ${orderId} order by created_at
+      `)),
+    ]
+  }
+
   /** The orders of a tenant as stored: their status, and the account each is attached to. */
   async orders(tenantId: string) {
     return [

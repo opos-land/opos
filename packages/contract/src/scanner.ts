@@ -205,7 +205,7 @@ export const scannersContract = {
       method: 'POST',
       path: '/editions/{editionId}/scanners/{scannerId}/pairing-code',
       summary:
-        'Gives a scanner a new pairing code and answers it, once: the phone that held the scanner holds it no more; refused with scanner.ended for a scanner revoked or ended; needs tickets=write',
+        'Gives a scanner a new pairing code and answers it, once: the phone that held the scanner holds it no more; refused with scanner.ended for a scanner revoked or ended or whose org has left, and with scanner.outlives-org for an org whose own access ends before the scanner does; needs tickets=write',
     })
     .input(scanner)
     .output(enabledScannerSchema),

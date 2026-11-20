@@ -95,10 +95,18 @@ export class ScannerService {
    * Gives a scanner of the edition a new pairing code (D14) and answers it: the only time that
    * code is told. The phone that held the scanner holds it no more from this moment, whether or
    * not another opens the new code. A scanner of another edition is not found; one that was
-   * revoked or has ended is refused.
+   * revoked or has ended, or whose org has left, is refused, and so is an org whose own access
+   * ends before the scanner does.
    */
   async pairAgain(editionId: string, scannerId: string, now = new Date()): Promise<EnabledScanner> {
-    await this.scanners.get(editionId, scannerId)
+    const membership = this.context.membership()
+    const scanner = await this.scanners.get(editionId, scannerId)
+    if (!membership) throw notFound('scanner')
+    // The phone the code pairs holds the scanner until the scanner ends: an org whose own
+    // access ends before that hands no scanner on, as it enables none that outlives it.
+    if (membership.expiresAt && new Date(scanner.expiresAt) > membership.expiresAt) {
+      throw scannerOutlivesOrg()
+    }
     const pairingCode = secretToken()
     const pairingExpiresAt = new Date(now.getTime() + PAIRING_MINUTES * MINUTE)
     const renewed = await this.scanners.renewPairing(
@@ -122,16 +130,25 @@ export class ScannerService {
    */
   async pair(code: string, now = new Date()): Promise<PairedScanner> {
     await this.rateLimiter.consume('scannerPairings', `ip:${this.context.clientAddress()}`)
-    const found = await this.global.scannerByPairingCode(hashOf(code))
+    const pairingCodeHash = hashOf(code)
+    const found = await this.global.scannerByPairingCode(pairingCodeHash)
     if (!found) throw pairingCodeRefused()
     return this.context.withTenant(found.tenantId, async () => {
       // Locked: of two phones that open one code at the same moment, one becomes the scanner.
-      const scanner = await this.scanners.standing(found.tenantId, found.id, now, false)
+      // Asked for by the code again: a new one may have replaced it since it was found.
+      const scanner = await this.scanners.standing(found.tenantId, found.id, now, {
+        pairingCodeHash,
+      })
       if (!scanner || scanner.pairingExpiresAt <= now) throw pairingCodeRefused()
       const names = await this.scanners.names(found.tenantId, scanner.editionId)
       if (!names) throw pairingCodeRefused()
       const token = secretToken()
-      await this.scanners.pair(found.tenantId, scanner.id, hashOf(token), now)
+      await this.scanners.pair(
+        found.tenantId,
+        scanner.id,
+        { pairingCodeHash, tokenHash: hashOf(token) },
+        now,
+      )
       return {
         token,
         name: scanner.name,
@@ -196,8 +213,9 @@ export class ScannerService {
 
   /**
    * Runs `fn` as the scanner the request's token named, in its tenant's transaction. The
-   * device's access is judged here at every request: that it was not revoked and has not ended,
-   * and the org who enabled it, whose expiry and removal end it. A suspended tenant is refused
+   * device's access is judged here at every request: that it still holds the token the request
+   * came with, was not revoked and has not ended, and the org who enabled it, whose expiry and
+   * removal end it. A suspended tenant is refused
    * where its transaction opens.
    */
   private async asScanner<T>(
@@ -208,7 +226,9 @@ export class ScannerService {
     const found = this.context.scanner()
     await this.rateLimiter.consume(limit, `scanner:${found.id}`)
     return this.context.withTenant(found.tenantId, async () => {
-      const scanner = await this.scanners.standing(found.tenantId, found.id, now)
+      const scanner = await this.scanners.standing(found.tenantId, found.id, now, {
+        tokenHash: found.tokenHash,
+      })
       if (!scanner) throw scannerRevoked()
       await this.scanners.touch(found.tenantId, scanner.id, now)
       return fn(scanner)

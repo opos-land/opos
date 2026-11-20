@@ -29,6 +29,13 @@ export interface TenantMembership {
 export type TenantInContext = Tenant
 
 /** What one request knows about itself; the guards and the interceptor fill it. */
+/** A scanner as a request names it: found across tenants by the hash of its device's token. */
+export interface ScannerInContext {
+  id: string
+  tenantId: string
+  tokenHash: string
+}
+
 export interface RequestStore {
   /** The client address, an IPv6 one by its /64, as the rate limit counts it. */
   clientAddress?: string
@@ -44,10 +51,11 @@ export interface RequestStore {
   tenant?: TenantInContext
   membership?: TenantMembership | null
   /**
-   * The scanner a device's token named, and its tenant: a caller with no account and no
-   * membership (modules/scanner). Whether it still stands is judged in its tenant's transaction.
+   * The scanner a device's token named, its tenant and the hash of that token: a caller with no
+   * account and no membership (modules/scanner). Whether it still stands, and still holds the
+   * token, is judged in its tenant's transaction.
    */
-  scanner?: { id: string; tenantId: string }
+  scanner?: ScannerInContext
   tx?: Transaction
   /** A transaction on opos_app for the session's own global rows, outside every tenant. */
   accountTx?: Transaction
@@ -134,12 +142,12 @@ export class TenantContextService {
     return account
   }
 
-  setScanner(scanner: { id: string; tenantId: string }) {
+  setScanner(scanner: ScannerInContext) {
     TenantContextService.store().scanner = scanner
   }
 
   /** The scanner the request's token named; only behind ScannerGuard. */
-  scanner(): { id: string; tenantId: string } {
+  scanner(): ScannerInContext {
     const { scanner } = TenantContextService.store()
     if (!scanner) throw new Error('No scanner in the request store: ScannerGuard did not run')
     return scanner

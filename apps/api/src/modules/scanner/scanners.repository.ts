@@ -54,6 +54,16 @@ export interface StandingScanner {
  * context: the transaction is one opened for the tenant its token named, so the reads that
  * decide what the device may do filter on that tenant themselves.
  */
+/** A scanner with the membership of the org who enabled it. */
+const enabledBy = and(
+  eq(tenantMemberships.id, scannerDevices.enabledByMembershipId),
+  eq(tenantMemberships.tenantId, scannerDevices.tenantId),
+)
+
+/** That membership is one whose access has not ended at `now`. */
+const inTheTeam = (now: Date) =>
+  or(isNull(tenantMemberships.expiresAt), gt(tenantMemberships.expiresAt, now))
+
 @Injectable()
 export class ScannersRepository {
   constructor(private readonly context: TenantContextService) {}
@@ -131,9 +141,11 @@ export class ScannersRepository {
   }
 
   /**
-   * Gives the scanner of the edition a new pairing code, when it stands at `now`: not revoked and
-   * not ended. In one statement the phone that held it loses its token and the scanner waits for
-   * the phone that opens the new code. Answers whether it did.
+   * Gives the scanner of the edition a new pairing code, when it stands at `now`: not revoked,
+   * not ended, and enabled by an org who is still in the team with an access that has not ended,
+   * since a code for any other scanner would pair no phone. Its row is locked first; then, in one
+   * statement, the phone that held it loses its token and the scanner waits for the phone that
+   * opens the new code. Answers whether it did.
    */
   async renewPairing(
     editionId: string,
@@ -141,8 +153,23 @@ export class ScannersRepository {
     pairing: { codeHash: string; expiresAt: Date },
     now: Date,
   ): Promise<boolean> {
-    const renewed = await this.context
-      .tx()
+    const tx = this.context.tx()
+    const [stands] = await tx
+      .select({ id: scannerDevices.id })
+      .from(scannerDevices)
+      .innerJoin(tenantMemberships, enabledBy)
+      .where(
+        and(
+          eq(scannerDevices.editionId, editionId),
+          eq(scannerDevices.id, id),
+          isNull(scannerDevices.revokedAt),
+          gt(scannerDevices.expiresAt, now),
+          inTheTeam(now),
+        ),
+      )
+      .for('update', { of: scannerDevices })
+    if (!stands) return false
+    await tx
       .update(scannerDevices)
       .set({
         pairingCodeHash: pairing.codeHash,
@@ -150,16 +177,8 @@ export class ScannersRepository {
         pairedAt: null,
         tokenHash: null,
       })
-      .where(
-        and(
-          eq(scannerDevices.editionId, editionId),
-          eq(scannerDevices.id, id),
-          isNull(scannerDevices.revokedAt),
-          gt(scannerDevices.expiresAt, now),
-        ),
-      )
-      .returning({ id: scannerDevices.id })
-    return renewed.length > 0
+      .where(eq(scannerDevices.id, stands.id))
+    return true
   }
 
   /** When the edition ends, or undefined. */
@@ -231,15 +250,19 @@ export class ScannersRepository {
 
   /**
    * The scanner of the tenant when it stands at `now`: not revoked, not ended, and enabled by an
-   * org who is still in the team with an access that has not ended. `paired` asks for one a phone
-   * holds the token of, or for one still waiting for its phone, its row locked.
+   * org who is still in the team with an access that has not ended. It is asked for by the hash
+   * of the secret the phone sent, which the scanner must hold at this moment: the token of a
+   * paired one, or the pairing code of one still waiting for its phone, its row then locked. The
+   * hash found the scanner across tenants a moment before, and a new pairing code may have
+   * replaced either since.
    */
   async standing(
     tenantId: string,
     id: string,
     now: Date,
-    paired = true,
+    by: { tokenHash: string } | { pairingCodeHash: string },
   ): Promise<(StandingScanner & { expiresAt: Date; pairingExpiresAt: Date }) | undefined> {
+    const paired = 'tokenHash' in by
     const query = this.context
       .tx()
       .select({
@@ -251,34 +274,51 @@ export class ScannersRepository {
         pairingExpiresAt: scannerDevices.pairingExpiresAt,
       })
       .from(scannerDevices)
-      .innerJoin(
-        tenantMemberships,
-        and(
-          eq(tenantMemberships.id, scannerDevices.enabledByMembershipId),
-          eq(tenantMemberships.tenantId, scannerDevices.tenantId),
-        ),
-      )
+      .innerJoin(tenantMemberships, enabledBy)
       .where(
         and(
           eq(scannerDevices.tenantId, tenantId),
           eq(scannerDevices.id, id),
           isNull(scannerDevices.revokedAt),
           gt(scannerDevices.expiresAt, now),
-          paired ? sql`${scannerDevices.pairedAt} is not null` : isNull(scannerDevices.pairedAt),
-          or(isNull(tenantMemberships.expiresAt), gt(tenantMemberships.expiresAt, now)),
+          paired
+            ? and(
+                sql`${scannerDevices.pairedAt} is not null`,
+                eq(scannerDevices.tokenHash, by.tokenHash),
+              )
+            : and(
+                isNull(scannerDevices.pairedAt),
+                eq(scannerDevices.pairingCodeHash, by.pairingCodeHash),
+              ),
+          inTheTeam(now),
         ),
       )
     const [row] = await (paired ? query : query.for('update', { of: scannerDevices }))
     return row
   }
 
-  /** A phone spent the pairing code: it holds the token from now on, and the code is used. */
-  async pair(tenantId: string, id: string, tokenHash: string, at: Date) {
+  /**
+   * A phone spent the pairing code: it holds the token from now on, and the code is used. Only
+   * the scanner that still waits for a phone under that code is paired.
+   */
+  async pair(
+    tenantId: string,
+    id: string,
+    secrets: { pairingCodeHash: string; tokenHash: string },
+    at: Date,
+  ) {
     await this.context
       .tx()
       .update(scannerDevices)
-      .set({ pairedAt: at, tokenHash })
-      .where(and(eq(scannerDevices.tenantId, tenantId), eq(scannerDevices.id, id)))
+      .set({ pairedAt: at, tokenHash: secrets.tokenHash })
+      .where(
+        and(
+          eq(scannerDevices.tenantId, tenantId),
+          eq(scannerDevices.id, id),
+          isNull(scannerDevices.pairedAt),
+          eq(scannerDevices.pairingCodeHash, secrets.pairingCodeHash),
+        ),
+      )
   }
 
   /** Notes that the scanner of the tenant was used; one revoked meanwhile is left as it is. */

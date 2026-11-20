@@ -8,7 +8,8 @@ import { scannerRevoked } from './scanner.errors'
  * Names the scanner of a request by the device's token in `Authorization: Bearer`, before
  * anything of the request is read: no token and an unknown one answer alike, and tell nothing
  * of the body. The token is looked up across tenants by its hash, which answers the scanner and
- * its tenant alone; whether the device still stands is judged in that tenant's transaction.
+ * its tenant alone; whether the device still stands, and still holds that token, is judged in
+ * that tenant's transaction.
  */
 @Injectable()
 export class ScannerGuard implements CanActivate {
@@ -24,9 +25,10 @@ export class ScannerGuard implements CanActivate {
     const authorization = typeof headers.authorization === 'string' ? headers.authorization : ''
     const token = /^Bearer (\S+)$/.exec(authorization)?.[1]
     if (!token) throw scannerRevoked()
-    const scanner = await this.global.scannerByToken(hashOf(token))
+    const tokenHash = hashOf(token)
+    const scanner = await this.global.scannerByToken(tokenHash)
     if (!scanner) throw scannerRevoked()
-    this.context.setScanner(scanner)
+    this.context.setScanner({ ...scanner, tokenHash })
     return true
   }
 }

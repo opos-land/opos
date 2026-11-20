@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { type EnabledScanner, MAX_SCANNERS, type Scanner, type ScannerDetail } from '@opos/contract'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { GlobalDbService } from '../src/common/database/global-db.service'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session } from './auth'
 import {
@@ -33,6 +34,10 @@ let app: NestExpressApplication
 beforeAll(async () => {
   app = await createApp()
   await app.listen(0, '127.0.0.1')
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 afterAll(async () => {
@@ -435,6 +440,82 @@ describe('a new pairing code', () => {
       expect(res.body).toMatchObject({ code: 'scanner.ended' })
     }
     expect(await c.stored()).toEqual(before)
+  })
+
+  // The phone a new code pairs holds the scanner until the scanner ends: an org hands no
+  // scanner on past the end of its own access (D3).
+  it('is refused to an org whose own access ends before the scanner does', async () => {
+    const c = await convention()
+    const gate = await addScanner(c.t.id, c.edition, {
+      expiresAt: new Date(Date.now() + 60 * DAY).toISOString(),
+    })
+    const [leaving, staying] = [await member(), await member()]
+    const soon = await addOrg(c.t.id, leaving, { expiresAt: new Date(Date.now() + 30 * DAY) })
+    const later = await addOrg(c.t.id, staying, { expiresAt: new Date(Date.now() + 90 * DAY) })
+    for (const org of [soon, later]) {
+      await addEditionAccess(c.t.id, org, c.edition, { tickets: 'write' })
+    }
+    const before = await c.stored()
+
+    const refused = await c.as(leaving, 'post', `/${gate.id}/pairing-code`).expect(422)
+
+    expect(refused.body).toMatchObject({ code: 'scanner.outlives-org' })
+    // The phone that holds the scanner keeps it.
+    expect(await c.stored()).toEqual(before)
+    await c.as(staying, 'post', `/${gate.id}/pairing-code`).expect(200)
+  })
+
+  // A scanner answers to the org who enabled it: once that org's access has ended it opens
+  // nothing, so a code for it would pair no phone.
+  it('is refused for a scanner whose org has left the team or lost its access', async () => {
+    const c = await convention()
+    const gone = await addOrg(c.t.id, await member(), { expired: true })
+    const expired = await addScanner(c.t.id, c.edition, { membershipId: gone })
+    const orphan = await addScanner(c.t.id, c.edition, { membershipId: null })
+    const before = await c.stored()
+
+    for (const scanner of [expired, orphan]) {
+      const res = await c.head('post', `/${scanner.id}/pairing-code`).expect(409)
+      expect(res.body).toMatchObject({ code: 'scanner.ended' })
+    }
+    expect(await c.stored()).toEqual(before)
+  })
+
+  // A code and a token are found across tenants by their hash, a moment before the scanner is
+  // judged in its tenant: what is judged there is the secret the phone sent, not the row the
+  // hash once named.
+  it('pairs no phone by the code it replaced, also when that code was found a moment before', async () => {
+    const c = await convention()
+    const first = enabled(await c.head('post', '', { name: 'Main gate' }).expect(201))
+    const again = enabled(await c.head('post', `/${first.id}/pairing-code`).expect(200))
+    vi.spyOn(app.get(GlobalDbService), 'scannerByPairingCode').mockResolvedValueOnce({
+      id: first.id,
+      tenantId: c.t.id,
+    })
+
+    const refused = await pair(first.pairingCode).expect(403)
+
+    expect(refused.body).toMatchObject({ code: 'scanner.code-refused' })
+    expect((await c.stored())[0]).toMatchObject({ paired_at: null, token_hash: null })
+    // The new code is still the one that pairs a phone.
+    await pair(again.pairingCode).expect(200)
+  })
+
+  it('knows no phone by the token it took back, also when that token was found a moment before', async () => {
+    const c = await convention()
+    const first = enabled(await c.head('post', '', { name: 'Main gate' }).expect(201))
+    const phone = (await pair(first.pairingCode).expect(200)).body as { token: string }
+    const again = enabled(await c.head('post', `/${first.id}/pairing-code`).expect(200))
+    const next = (await pair(again.pairingCode).expect(200)).body as { token: string }
+    vi.spyOn(app.get(GlobalDbService), 'scannerByToken').mockResolvedValueOnce({
+      id: first.id,
+      tenantId: c.t.id,
+    })
+
+    const refused = await scan(phone.token).expect(401)
+
+    expect(refused.body).toMatchObject({ code: 'scanner.revoked' })
+    await scan(next.token).expect(409)
   })
 
   it('knows the scanners of its own edition alone', async () => {

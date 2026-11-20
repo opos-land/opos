@@ -139,13 +139,16 @@ describe('a file of merchandise that is for everyone', () => {
 describe('what a scanner opens', () => {
   it("finds no scanner of another tenant in this tenant's transaction", async () => {
     const scanner = await addScanner(b.id, editionOfB)
-    const find = (tenantId: string) =>
+    const tokenHash = createHash('sha256').update(scanner.token).digest('hex')
+    const find = (tenantId: string, by = { tokenHash }) =>
       withoutRls(a.id, (tx) =>
-        new ScannersRepository(contextOf(tx)).standing(tenantId, scanner.id, new Date()),
+        new ScannersRepository(contextOf(tx)).standing(tenantId, scanner.id, new Date(), by),
       )
 
     expect(await find(a.id)).toBeUndefined()
     expect(await find(b.id)).toMatchObject({ id: scanner.id, tenantId: b.id })
+    // Nor by a token the scanner does not hold.
+    expect(await find(b.id, { tokenHash: 'f'.repeat(64) })).toBeUndefined()
   })
 
   it("reads no QR code, no order and no line of another tenant in this tenant's transaction", async () => {

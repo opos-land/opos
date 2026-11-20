@@ -57,11 +57,16 @@ export class OrdersController {
   startPaymentAttempt() {
     return implement(contract.checkout.startPaymentAttempt).handler(async ({ input }) => {
       await this.limiter.consume('paymentAttempts', `ip:${this.context.clientAddress()}`)
-      return this.attempts.start(this.context.tenant(), input.params.orderId, {
-        accountId: this.context.account().id,
-        editionId: input.params.editionId,
-        token: input.headers[RESULT_TOKEN_HEADER],
-      })
+      return this.attempts.start(
+        this.context.tenant(),
+        input.params.orderId,
+        {
+          accountId: this.context.account().id,
+          editionId: input.params.editionId,
+          token: input.headers[RESULT_TOKEN_HEADER],
+        },
+        input.headers['accept-language'],
+      )
     })
   }
 }

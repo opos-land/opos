@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
 import { Inject, Injectable } from '@nestjs/common'
 import { type OrderResult, RESULT_TOKEN_HOURS, type StartedAttempt } from '@opos/contract'
+import { parseAcceptLanguage } from '@opos/i18n'
 import { TenantContextService, type TenantInContext } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
 import { ENV, type Env } from '../../config/env'
@@ -46,9 +47,15 @@ export class PaymentAttempts {
   /**
    * Starts a payment attempt for the order and answers where to send the buyer. The module is
    * asked about the earlier attempts first: when one was paid, that payment is confirmed instead
-   * and no new one starts.
+   * and no new one starts. `language` is the request's Accept-Language: the provider's pages
+   * speak the language of the buyer's interface, or the convention's.
    */
-  async start(tenant: TenantInContext, orderId: string, opener: Opener): Promise<StartedAttempt> {
+  async start(
+    tenant: TenantInContext,
+    orderId: string,
+    opener: Opener,
+    language?: string,
+  ): Promise<StartedAttempt> {
     const first = await this.context.withTenant(tenant.id, async () => {
       const order = await this.opened(tenant.id, orderId, opener, new Date())
       this.payable(order, new Date())
@@ -87,7 +94,7 @@ export class PaymentAttempts {
       // The convention and the order's number: nothing of the buyer or the ticket holder.
       description: `${tenant.name} ${order.number}`,
       email: order.email ?? '',
-      locale: tenant.defaultLocale,
+      locale: parseAcceptLanguage(language)[0] ?? tenant.defaultLocale,
       returnUrl:
         `${this.portalUrl}/conventions/${tenant.slug}/${order.editionSlug}/shop/result/${order.id}` +
         (token ? `?token=${encodeURIComponent(token)}` : ''),

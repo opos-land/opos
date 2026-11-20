@@ -67,6 +67,13 @@ const envSchema = z
     IMGPROXY_KEY: hexKey,
     IMGPROXY_SALT: hexKey,
     IMGPROXY_BUCKET_ENDPOINT: optionalUrl,
+    // Where Przelewy24 answers, in place of its own two addresses: for the tests of its module
+    // alone, and only on local, where no real account is connected.
+    PRZELEWY24_URL: optionalUrl,
+    PRZELEWY24_SANDBOX_URL: optionalUrl,
+    // The address the API calls a payment provider from, which never changes: a convention
+    // enters it in its provider's panel, and the provider account's screen shows it.
+    API_EGRESS_ADDRESS: z.union([z.ipv4(), z.ipv6()]).optional(),
     // Replaces the limit of every route that sets none of its own. Only the e2e
     // suite sets it, and only on local: a fast run spends the default of an address in seconds.
     RATE_LIMIT_DEFAULT: z.coerce.number().int().positive().optional(),
@@ -74,6 +81,14 @@ const envSchema = z
   .refine((env) => env.RATE_LIMIT_DEFAULT === undefined || env.OPOS_ENV === 'local', {
     message: 'RATE_LIMIT_DEFAULT is allowed only when OPOS_ENV is local',
     path: ['RATE_LIMIT_DEFAULT'],
+  })
+  .refine((env) => env.PRZELEWY24_URL === undefined || env.OPOS_ENV === 'local', {
+    message: 'PRZELEWY24_URL is allowed only when OPOS_ENV is local',
+    path: ['PRZELEWY24_URL'],
+  })
+  .refine((env) => env.PRZELEWY24_SANDBOX_URL === undefined || env.OPOS_ENV === 'local', {
+    message: 'PRZELEWY24_SANDBOX_URL is allowed only when OPOS_ENV is local',
+    path: ['PRZELEWY24_SANDBOX_URL'],
   })
   .refine((env) => env.DATABASE_ADMIN_URL === undefined || env.ADMIN_URL !== undefined, {
     message: 'ADMIN_URL is required with DATABASE_ADMIN_URL',

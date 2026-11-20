@@ -90,6 +90,46 @@ describe('loadEnv', () => {
     })
   })
 
+  // Przelewy24 answers at two addresses of its own. Another address stands in for them in the
+  // tests of its module alone: never where real money is taken or a real account is connected.
+  describe('PRZELEWY24_URL and PRZELEWY24_SANDBOX_URL', () => {
+    it('are unset by default, and take an address on local', () => {
+      expect(loadEnv(valid).PRZELEWY24_URL).toBeUndefined()
+      expect(loadEnv(valid).PRZELEWY24_SANDBOX_URL).toBeUndefined()
+      const replaced = loadEnv({
+        ...valid,
+        PRZELEWY24_URL: 'http://127.0.0.1:9001',
+        PRZELEWY24_SANDBOX_URL: 'http://127.0.0.1:9002',
+      })
+      expect(replaced).toMatchObject({
+        PRZELEWY24_URL: 'http://127.0.0.1:9001',
+        PRZELEWY24_SANDBOX_URL: 'http://127.0.0.1:9002',
+      })
+    })
+
+    it.each(['dev', 'production'])('are refused where OPOS_ENV is %s', (OPOS_ENV) => {
+      for (const name of ['PRZELEWY24_URL', 'PRZELEWY24_SANDBOX_URL']) {
+        expect(() => loadEnv({ ...valid, OPOS_ENV, [name]: 'http://127.0.0.1:9001' })).toThrow(
+          new RegExp(name),
+        )
+      }
+    })
+  })
+
+  // The address the API calls a payment provider from, which a convention enters in the
+  // provider's panel: shown on the provider account's screen where it is set.
+  describe('API_EGRESS_ADDRESS', () => {
+    it('is unset by default, and is an address when set', () => {
+      expect(loadEnv(valid).API_EGRESS_ADDRESS).toBeUndefined()
+      expect(loadEnv({ ...valid, API_EGRESS_ADDRESS: '203.0.113.7' }).API_EGRESS_ADDRESS).toBe(
+        '203.0.113.7',
+      )
+      expect(() => loadEnv({ ...valid, API_EGRESS_ADDRESS: 'not an address' })).toThrow(
+        /API_EGRESS_ADDRESS/,
+      )
+    })
+  })
+
   describe('RATE_LIMIT_DEFAULT', () => {
     it('is unset by default', () => {
       expect(loadEnv(valid).RATE_LIMIT_DEFAULT).toBeUndefined()

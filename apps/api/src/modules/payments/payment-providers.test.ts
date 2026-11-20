@@ -15,6 +15,25 @@ describe('providerModules', () => {
   it('loads no fake provider on production', () => {
     expect([...providerModules({ OPOS_ENV: 'production', API_URL }).keys()]).not.toContain('fake')
   })
+
+  // The first real provider is there wherever the API runs.
+  it.each(['local', 'dev', 'production'] as const)('loads Przelewy24 on %s', (OPOS_ENV) => {
+    expect([...providerModules({ OPOS_ENV, API_URL }).keys()]).toContain('przelewy24')
+  })
+
+  it('connects no sandbox account of Przelewy24 on production, before anything is asked', async () => {
+    const sandbox = {
+      merchantId: '1',
+      posId: '1',
+      crc: 'c',
+      apiKey: 'k',
+      sandbox: 'true',
+      abandonedPaymentEmailOff: 'true',
+    }
+    const production = providerModules({ OPOS_ENV: 'production', API_URL }).get('przelewy24')!
+
+    expect(await production.connect(sandbox)).toEqual({ outcome: 'refused' })
+  })
 })
 
 describe('PaymentProviders', () => {
@@ -38,11 +57,15 @@ describe('PaymentProviders', () => {
   })
 
   it('answers that a provider with no module loaded is none it knows', async () => {
+    // An environment that loads the fake provider alone.
+    const fakeAlone = new PaymentProviders(new Map([['fake', new FakeProvider()]]))
+
     expect(
-      await context.run(() => providers.connect('przelewy24', { a: 'b' }), '127.0.0.1'),
+      await context.run(() => fakeAlone.connect('przelewy24', { a: 'b' }), '127.0.0.1'),
     ).toEqual({ outcome: 'unknown-provider' })
-    expect(providers.loaded('przelewy24')).toBe(false)
-    expect(providers.loaded('fake')).toBe(true)
+    expect(fakeAlone.loaded('przelewy24')).toBe(false)
+    expect(fakeAlone.loaded('fake')).toBe(true)
+    expect(providers.loaded('przelewy24')).toBe(true)
   })
 
   it('answers a module that throws as a provider out of reach, naming the error and nothing it said', async () => {
@@ -63,11 +86,11 @@ describe('PaymentProviders', () => {
     expect(JSON.stringify(answer)).not.toContain('my-secret')
   })
 
-  it('names the providers the environment has a module of: none on production', () => {
-    expect(providers.names()).toEqual(['fake'])
+  it('names the providers the environment has a module of: no fake one on production', () => {
+    expect(providers.names()).toEqual(['fake', 'przelewy24'])
     expect(
       new PaymentProviders(providerModules({ OPOS_ENV: 'production', API_URL })).names(),
-    ).toEqual([])
+    ).toEqual(['przelewy24'])
   })
 
   // A provider's call is outbound I/O, which never runs inside a transaction
@@ -86,7 +109,13 @@ describe('PaymentProviders', () => {
       'fake.not-ready',
     ])
     expect(providers.missing('fake', { account: 'demo' })).toEqual([])
-    expect(providers.missing('przelewy24', { a: 'b' })).toEqual(['provider.not-loaded'])
+    expect(
+      new PaymentProviders(new Map([['fake', new FakeProvider()]])).missing('przelewy24', {
+        a: 'b',
+      }),
+    ).toEqual(['provider.not-loaded'])
+    // Credentials that name no account of Przelewy24 miss just that.
+    expect(providers.missing('przelewy24', { a: 'b' })).toEqual(['przelewy24.credentials-invalid'])
   })
 })
 

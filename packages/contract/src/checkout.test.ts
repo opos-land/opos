@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  attemptHeaders,
   BOT_CHECK_STAND_IN,
   cartSchema,
   FAILURE_REASONS,
@@ -441,6 +442,18 @@ describe('the result token', () => {
     expect(resultTokenHeaders.safeParse({ 'x-result-token': 'abc' }).success).toBe(true)
     expect(resultTokenHeaders.safeParse({ 'x-result-token': '' }).success).toBe(false)
     expect(resultTokenHeaders.safeParse({}).success).toBe(false)
+  })
+})
+
+describe('the start of a payment attempt', () => {
+  // The provider's pages follow the language of the buyer's interface, which travels as any
+  // request's does.
+  it('takes the language of the buyer’s interface beside the result token', () => {
+    const headers = attemptHeaders.parse({ 'x-result-token': 'abc', 'accept-language': 'en' })
+
+    expect(headers).toEqual({ 'x-result-token': 'abc', 'accept-language': 'en' })
+    expect(attemptHeaders.safeParse({ 'x-result-token': 'abc' }).success).toBe(true)
+    expect(attemptHeaders.safeParse({ 'accept-language': 'en' }).success).toBe(false)
   })
 })
 

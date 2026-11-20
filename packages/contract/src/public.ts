@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { logoSchema } from './branding'
 import {
+  attemptHeaders,
   cartSchema,
   offerSchema,
   orderResultSchema,
@@ -233,7 +234,7 @@ export const publicContract = {
       summary:
         "Start a payment attempt for an order and answer where to send the buyer; by the order's result token, in a header; refused with order.hold-ended, order.already-paid or provider.unavailable; no sign-in",
     })
-    .input(order)
+    .input(order.extend({ headers: attemptHeaders }))
     .output(startedAttemptSchema),
   editions: publicRoute
     .route({

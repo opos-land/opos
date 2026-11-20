@@ -48,7 +48,12 @@ export class PaymentsController {
       await this.limiter.consume('paymentAttempts', `ip:${this.context.clientAddress()}`)
       const tenant = await this.convention.tenant(input.params.slug)
       return this.attempts
-        .start(tenant, input.params.orderId, { token: input.headers[RESULT_TOKEN_HEADER] })
+        .start(
+          tenant,
+          input.params.orderId,
+          { token: input.headers[RESULT_TOKEN_HEADER] },
+          input.headers['accept-language'],
+        )
         .catch(suspendedAsNotFound('order'))
     })
   }

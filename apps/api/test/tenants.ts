@@ -139,16 +139,24 @@ export const addProviderAccount = (tenantId: string) =>
  * through the shop's settings stores them; it takes the place of the tenant's account. The
  * `account` chooses how the fake provider answers (FAKE_ACCOUNT).
  */
-export async function connectFake(tenantId: string, account = 'demo') {
+export const connectFake = (tenantId: string, account = 'demo') =>
+  connectAccount(tenantId, 'fake', { account })
+
+/** A provider account of the tenant with these credentials, sealed as the API seals them. */
+export async function connectAccount(
+  tenantId: string,
+  provider: 'fake' | 'przelewy24',
+  credentials: Record<string, string>,
+) {
   const sealed = seal(
     sealingKey(loadEnv().PAYMENT_CREDENTIALS_KEY),
-    JSON.stringify({ account }),
-    providerAccountOf(tenantId, 'fake'),
+    JSON.stringify(credentials),
+    providerAccountOf(tenantId, provider),
   )
   await db.execute(sql`delete from payment_provider_accounts where tenant_id = ${tenantId}`)
   await db.execute(sql`
     insert into payment_provider_accounts (tenant_id, provider, credentials, ready_at)
-    values (${tenantId}, 'fake', ${sealed}, now())
+    values (${tenantId}, ${provider}, ${sealed}, now())
   `)
 }
 

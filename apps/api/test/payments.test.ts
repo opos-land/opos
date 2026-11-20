@@ -176,6 +176,23 @@ describe('a payment attempt', () => {
     expect(await s.order(placed.orderId)).toMatchObject({ status: 'awaiting-payment' })
   })
 
+  // The provider's pages speak the language of the buyer's interface, or the convention's.
+  it('tells the provider the language of the buyer’s interface', async () => {
+    const s = await shop()
+    const placed = await s.place()
+
+    const inEnglish = await s.start(placed).set('Accept-Language', 'en').expect(201)
+    const inDefault = await s.start(placed).expect(201)
+    const unknown = await s.start(placed).set('Accept-Language', 'de-DE, fr;q=0.5').expect(201)
+
+    const locale = (res: { body: unknown }) =>
+      fake().started((res.body as StartedAttempt).redirectUrl.split('/').pop()!)!.locale
+    expect(locale(inEnglish)).toBe('en')
+    // The convention's own, Polish unless it chose otherwise.
+    expect(locale(inDefault)).toBe('pl')
+    expect(locale(unknown)).toBe('pl')
+  })
+
   it('opens with the result token of its order alone', async () => {
     const s = await shop()
     const [placed, other] = [await s.place(), await s.place('other@example.test')]

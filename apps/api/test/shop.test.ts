@@ -174,7 +174,7 @@ describe('the provider account', () => {
 
     const res = await call(t.head, 'get', '/shop/provider-account', undefined, t.slug).expect(200)
 
-    expect(res.body).toEqual({ account: null, providers: ['fake'] })
+    expect(res.body).toEqual({ account: null, providers: ['fake', 'przelewy24'] })
   })
 
   it('connects with credentials the provider accepts, ready to sell, and never answers them', async () => {
@@ -190,7 +190,7 @@ describe('the provider account', () => {
         missing: [],
       },
       // The providers this environment has a module of: what the panel offers to connect.
-      providers: ['fake'],
+      providers: ['fake', 'przelewy24'],
     })
     expect(JSON.stringify(res.body)).not.toContain('my-secret-account')
     const read = await call(t.head, 'get', '/shop/provider-account', undefined, t.slug).expect(200)
@@ -276,22 +276,6 @@ describe('the provider account', () => {
     })
   })
 
-  it('refuses a provider it has no module of, before anything is stored', async () => {
-    const t = await tenantWithHead()
-
-    const res = await call(
-      t.head,
-      'put',
-      '/shop/provider-account',
-      { provider: 'przelewy24', credentials: { merchant: '1' } },
-      t.slug,
-    )
-
-    expect(res.status).toBe(400)
-    expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'provider' } })
-    expect(await storedProviderAccount(t.id)).toBeUndefined()
-  })
-
   it.each([
     ['no credentials', { provider: 'fake' }],
     ['a provider OPOS does not know', { provider: 'cash', credentials: { a: 'b' } }],
@@ -326,7 +310,7 @@ describe('the provider account', () => {
 
     const other = await call(b.head, 'get', '/shop/provider-account', undefined, b.slug)
 
-    expect(other.body).toEqual({ account: null, providers: ['fake'] })
+    expect(other.body).toEqual({ account: null, providers: ['fake', 'przelewy24'] })
   })
 
   it('is disconnected with 204, its credentials removed, and disconnecting none answers the same', async () => {

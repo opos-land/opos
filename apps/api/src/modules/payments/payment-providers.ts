@@ -4,6 +4,8 @@ import { open, providerAccountOf, seal, sealingKey } from '@opos/db/sealed'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ENV, type Env } from '../../config/env'
 import { FakeProvider } from './fake-provider'
+import { PRZELEWY24_ADDRESSES, Przelewy24Client } from './przelewy24/client'
+import { Przelewy24Provider } from './przelewy24/przelewy24-provider'
 import {
   type AttemptOf,
   type CheckAnswer,
@@ -24,15 +26,26 @@ import {
 export const PROVIDER_MODULES = Symbol('PROVIDER_MODULES')
 
 /**
- * The provider modules this environment loads, by name. Only local and dev load the fake provider
- * (docs/ARCHITECTURE.md, Modules waiting for their domain owner): on production no credentials
- * connect an account that takes no money.
+ * The provider modules this environment loads, by name. Przelewy24 is loaded everywhere, and
+ * connects a sandbox account only where no real money is taken. Only local and dev load the fake
+ * provider (docs/ARCHITECTURE.md, Modules waiting for their domain owner): on production no
+ * credentials connect an account that takes no money.
  */
 export function providerModules(
-  env: Pick<Env, 'OPOS_ENV' | 'API_URL'>,
+  env: Pick<Env, 'OPOS_ENV' | 'API_URL'> &
+    Partial<Pick<Env, 'PRZELEWY24_URL' | 'PRZELEWY24_SANDBOX_URL'>>,
 ): ReadonlyMap<PaymentProvider, PaymentProviderModule> {
-  const modules: PaymentProviderModule[] =
-    env.OPOS_ENV === 'production' ? [] : [new FakeProvider(env.API_URL.replace(/\/$/, ''))]
+  const production = env.OPOS_ENV === 'production'
+  const przelewy24 = new Przelewy24Provider({
+    sandboxAllowed: !production,
+    client: new Przelewy24Client({
+      production: env.PRZELEWY24_URL ?? PRZELEWY24_ADDRESSES.production,
+      sandbox: env.PRZELEWY24_SANDBOX_URL ?? PRZELEWY24_ADDRESSES.sandbox,
+    }),
+  })
+  const modules: PaymentProviderModule[] = production
+    ? [przelewy24]
+    : [new FakeProvider(env.API_URL.replace(/\/$/, '')), przelewy24]
   return new Map(modules.map((module) => [module.name, module]))
 }
 

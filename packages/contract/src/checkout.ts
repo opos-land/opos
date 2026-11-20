@@ -445,6 +445,14 @@ export type FailureReason = (typeof FAILURE_REASONS)[number]
 export const resultTokenHeaders = z.object({ [RESULT_TOKEN_HEADER]: z.string().min(1).max(200) })
 
 /**
+ * The headers of a route that starts a payment attempt: the result token, and the language of the
+ * buyer's interface, which the provider's own pages follow.
+ */
+export const attemptHeaders = resultTokenHeaders.extend({
+  'accept-language': z.string().max(200).optional(),
+})
+
+/**
  * What the result page shows of an order: its status and number alone, no personal data, and
  * what the page needs to offer another try or a new checkout.
  */
@@ -491,7 +499,7 @@ export const checkoutContract = {
       z.object({
         params: z.object({ editionId: z.string(), orderId: z.string() }),
         // The result token, when the tab has it: the address the buyer returns to carries it.
-        headers: resultTokenHeaders.partial(),
+        headers: attemptHeaders.partial(),
       }),
     )
     .output(startedAttemptSchema),

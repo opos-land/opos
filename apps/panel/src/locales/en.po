@@ -286,7 +286,7 @@ msgstr "Add the custom field"
 msgid "Add the document"
 msgstr "Add the document"
 
-#: src/features/program/pages/program-page.tsx
+#: src/features/program/pages/new-program-item-page.tsx
 msgid "Add the item"
 msgstr "Add the item"
 
@@ -396,6 +396,7 @@ msgstr "All editions"
 msgid "All merchandise"
 msgstr "All merchandise"
 
+#: src/features/program/pages/new-program-item-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 msgid "All programme items"
 msgstr "All programme items"
@@ -1853,6 +1854,7 @@ msgstr "New password"
 msgid "New picture"
 msgstr "New picture"
 
+#: src/features/program/pages/new-program-item-page.tsx
 #: src/features/program/pages/program-page.tsx
 msgid "New programme item"
 msgstr "New programme item"
@@ -2326,6 +2328,7 @@ msgstr "Programme"
 msgid "Programme in {edition}"
 msgstr "Programme in {edition}"
 
+#: src/features/program/pages/new-program-item-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 msgid "Programme item data"
 msgstr "Programme item data"
@@ -3512,7 +3515,7 @@ msgstr "The privacy policy has a published version."
 msgid "The programme item {itemTitle} is deleted."
 msgstr "The programme item {itemTitle} is deleted."
 
-#: src/features/program/pages/program-page.tsx
+#: src/features/program/pages/new-program-item-page.tsx
 msgid "The programme item {title} is added."
 msgstr "The programme item {title} is added."
 

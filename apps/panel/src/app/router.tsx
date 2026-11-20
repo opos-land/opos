@@ -32,7 +32,7 @@ import { ManualOrderPage, OrderPage, OrdersPage, ProductionNumbersPage } from '.
 import { DiscountCodesPage, NewDiscountCodePage } from '../features/discounts'
 import { SalesPage } from '../features/sales'
 import { NewScannerPage, ScannerPage, ScannersPage } from '../features/scanner'
-import { ProgramItemPage, ProgramPage } from '../features/program'
+import { NewProgramItemPage, ProgramItemPage, ProgramPage } from '../features/program'
 import {
   EditionDocumentsPage,
   EditionShopPage,
@@ -147,6 +147,7 @@ export const router = createBrowserRouter([
                 children: [
                   { index: true, element: <EditionDashboardPage /> },
                   { path: 'program', element: <ProgramPage /> },
+                  { path: 'program/new', element: <NewProgramItemPage /> },
                   { path: 'program/:programItemId', element: <ProgramItemPage /> },
                   { path: 'shop', element: <EditionShopPage /> },
                   { path: 'documents', element: <EditionDocumentsPage /> },

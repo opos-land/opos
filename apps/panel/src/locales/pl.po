@@ -286,7 +286,7 @@ msgstr "Dodaj pole dodatkowe"
 msgid "Add the document"
 msgstr "Dodaj dokument"
 
-#: src/features/program/pages/program-page.tsx
+#: src/features/program/pages/new-program-item-page.tsx
 msgid "Add the item"
 msgstr "Dodaj punkt programu"
 
@@ -396,6 +396,7 @@ msgstr "Wszystkie edycje"
 msgid "All merchandise"
 msgstr "Wszystkie gadżety"
 
+#: src/features/program/pages/new-program-item-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 msgid "All programme items"
 msgstr "Wszystkie punkty programu"
@@ -1853,6 +1854,7 @@ msgstr "Nowe hasło"
 msgid "New picture"
 msgstr "Nowe zdjęcie"
 
+#: src/features/program/pages/new-program-item-page.tsx
 #: src/features/program/pages/program-page.tsx
 msgid "New programme item"
 msgstr "Nowy punkt programu"
@@ -2326,6 +2328,7 @@ msgstr "Program"
 msgid "Programme in {edition}"
 msgstr "Program w edycji {edition}"
 
+#: src/features/program/pages/new-program-item-page.tsx
 #: src/features/program/pages/program-item-page.tsx
 msgid "Programme item data"
 msgstr "Dane punktu programu"
@@ -3512,7 +3515,7 @@ msgstr "Polityka prywatności ma opublikowaną wersję."
 msgid "The programme item {itemTitle} is deleted."
 msgstr "Punkt programu „{itemTitle}” został usunięty."
 
-#: src/features/program/pages/program-page.tsx
+#: src/features/program/pages/new-program-item-page.tsx
 msgid "The programme item {title} is added."
 msgstr "Punkt programu „{title}” został dodany."
 

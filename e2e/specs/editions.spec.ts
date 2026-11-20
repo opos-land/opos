@@ -104,7 +104,9 @@ test('a head adds a programme item with a speaker', async ({ page, accounts, ten
     .click()
   await expect(page.getByText('There are no programme items yet.')).toBeVisible()
 
-  const create = page.getByRole('region', { name: 'New programme item' })
+  // An item is added on a page of its own, which opens the item once it is there.
+  await page.getByRole('link', { name: 'New programme item' }).click()
+  const create = page.getByRole('region', { name: 'Programme item data' })
   await create.getByLabel('Title').fill('Opening ceremony')
   await create.getByLabel('Starts').fill('2027-06-04T10:00')
   await create.getByLabel('Ends').fill('2027-06-04T11:00')

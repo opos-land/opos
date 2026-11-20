@@ -104,15 +104,18 @@ describe('ProgramPage', () => {
     const link = await screen.findByRole('link', { name: 'A panel on maps' })
     expect(link.getAttribute('href')).toBe('/convention-a/editions/2027/program/item-1')
     expect(screen.getByText('Kasia Mazur')).toBeDefined()
+    expect(screen.queryByRole('link', { name: 'New programme item' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Add the item' })).toBeNull()
     expect(document.title).toBe('Programme · Edition 2027 · OPOS panel')
   })
 
-  it('offers the form to a member with program=write', async () => {
+  it('links a member with program=write to the page of a new item, and holds no form of one', async () => {
     level.program = 'write'
     view()
 
-    expect(await screen.findByRole('button', { name: 'Add the item' })).toBeDefined()
+    const link = await screen.findByRole('link', { name: 'New programme item' })
+    expect(link.getAttribute('href')).toBe('/convention-a/editions/2027/program/new')
+    expect(screen.queryByRole('button', { name: 'Add the item' })).toBeNull()
   })
 
   it('says when the edition has no items', async () => {

@@ -1,10 +1,10 @@
-import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { type ProgramItem } from '@opos/contract'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
+import { PlusIcon } from 'lucide-react'
+import { Link, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
+  buttonVariants,
   ErrorMessage,
   LoadingView,
   NoPermissionView,
@@ -19,20 +19,18 @@ import {
 } from '../../../shared/ui'
 import { useEditionBySlug } from '../../editions'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
-import { createProgramItemOptions, programItemsOptions, programKey } from '../api/program'
-import { ProgramItemForm } from '../components/program-item-form'
+import { programItemsOptions } from '../api/program'
 import { speakerName } from '../model/speakers'
 
-const EMPTY = { title: '', description: '', startsAt: '', endsAt: '' }
-
-/** The edition's programme items and, for a member with `program=write`, the creation form. */
+/**
+ * The edition's programme items and, for a member with `program=write`, the link to the page of a
+ * new one.
+ */
 export function ProgramPage() {
   const { t } = useLingui()
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
   const time = useTenantTime()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
   usePageTitle(t`Programme`, edition?.name ?? tenant.name)
   const level = edition ? access.edition(edition.id).program : 'none'
@@ -41,28 +39,25 @@ export function ProgramPage() {
     enabled: atLeast(level, 'read'),
   })
   const base = `/${tenant.slug}/editions/${editionSlug ?? ''}/program`
-  const create = useMutation({
-    ...createProgramItemOptions(api),
-    meta: {
-      success: (item: ProgramItem) => {
-        const title = item.title
-        return msg`The programme item ${title} is added.`
-      },
-    },
-    onSuccess: async (item) => {
-      await queryClient.invalidateQueries({ queryKey: programKey(api) })
-      void navigate(`${base}/${item.id}`)
-    },
-  })
 
   if (isPending) return <LoadingView />
   if (isError) return <ErrorMessage error={error} />
   if (!edition || !atLeast(level, 'read')) return <NoPermissionView />
 
-  const editionId = edition.id
   return (
     <>
-      <PageHeader title={<Trans>Programme</Trans>} description={edition.name} />
+      <PageHeader
+        title={<Trans>Programme</Trans>}
+        description={edition.name}
+        actions={
+          atLeast(level, 'write') && (
+            <Link to={`${base}/new`} className={buttonVariants()}>
+              <PlusIcon data-icon="inline-start" />
+              <Trans>New programme item</Trans>
+            </Link>
+          )
+        }
+      />
       <Section title={<Trans>Programme items</Trans>}>
         {items.isPending ? (
           <LoadingView />
@@ -103,17 +98,6 @@ export function ProgramPage() {
           </p>
         )}
       </Section>
-      {atLeast(level, 'write') && (
-        <Section title={<Trans>New programme item</Trans>}>
-          <ProgramItemForm
-            defaultValues={EMPTY}
-            pending={create.isPending}
-
-            submitLabel={<Trans>Add the item</Trans>}
-            onSubmit={(body) => create.mutate({ params: { editionId }, body })}
-          />
-        </Section>
-      )}
     </>
   )
 }

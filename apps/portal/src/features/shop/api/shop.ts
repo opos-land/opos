@@ -112,3 +112,20 @@ export const openOrderLink = (token: string) => accountApi.orderLinks.open.call(
 /** Asks for a fresh link to the order's email; the answer is the same for any token. */
 export const renewOrderLink = (token: string) =>
   accountApi.orderLinks.renew.call({ body: { token } })
+
+/** The signed-in account's own orders in the convention, the newest first. */
+export const myOrdersOptions = (slug: string) => tenantApi(slug).myOrders.list.queryOptions()
+
+/** "Resend QR code": the confirmation of the account's own paid order again. */
+export const resendConfirmation = (slug: string, orderId: string) =>
+  tenantApi(slug).myOrders.resendConfirmation.call({ params: { orderId } })
+
+/**
+ * "Pay now": a new payment attempt for the account's own unpaid order. No result token travels
+ * with it, so the provider sends the buyer back to the convention's page.
+ */
+export const payNow = (slug: string, editionId: string, orderId: string) =>
+  tenantApi(slug).checkout.startPaymentAttempt.call({
+    params: { editionId, orderId },
+    headers: {},
+  })

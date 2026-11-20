@@ -1,3 +1,4 @@
+export { MyOrders } from './components/my-orders'
 export { forgetDraftsAtSignOut } from './model/checkout'
 export { CheckoutPage } from './pages/checkout-page'
 export { OrderLinkPage } from './pages/order-link-page'

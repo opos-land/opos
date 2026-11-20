@@ -28,6 +28,10 @@ msgstr "{0} (wymagane)"
 msgid "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
 msgstr "{count, plural, one {Prelegent: {names}} few {Prelegenci: {names}} many {Prelegenci: {names}} other {Prelegenci: {names}}}"
 
+#: src/features/shop/components/my-orders.tsx
+msgid "{editionName}, placed {placed}, for {holderName}"
+msgstr "{editionName}, złożone {placed}, dla: {holderName}"
+
 #: src/features/shop/components/merch-step.tsx
 msgid "{label} (unavailable)"
 msgstr "{label} (niedostępny)"
@@ -163,6 +167,10 @@ msgstr "Wróć do sklepu"
 #: src/features/shop/pages/shop-page.tsx
 msgid "bank transfer"
 msgstr "przelew bankowy"
+
+#: src/features/shop/components/my-orders.tsx
+msgid "Buy more"
+msgstr "Dokup"
 
 #: src/features/shop/components/steps-nav.tsx
 msgid "Buyer"
@@ -689,6 +697,7 @@ msgctxt "the button that places an order with nothing to pay"
 msgid "Order"
 msgstr "Zamawiam"
 
+#: src/features/shop/components/my-orders.tsx
 #: src/features/shop/pages/order-link-page.tsx
 msgid "Order {number}"
 msgstr "Zamówienie {number}"
@@ -741,6 +750,10 @@ msgstr "Hasło"
 #: src/features/conventions/components/edition-directory.tsx
 msgid "Past editions"
 msgstr "Minione edycje"
+
+#: src/features/shop/components/my-orders.tsx
+msgid "Pay now"
+msgstr "Zapłać teraz"
 
 #: src/features/shop/pages/shop-page.tsx
 msgid "payment card"
@@ -861,6 +874,10 @@ msgstr "Powtórz adres e-mail"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
 msgstr "Powtórz hasło"
+
+#: src/features/shop/components/my-orders.tsx
+msgid "Resend QR code"
+msgstr "Wyślij kod QR ponownie"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -1101,6 +1118,10 @@ msgstr "Tabela rozmiarów: {0}, {1}"
 msgid "The system's theme"
 msgstr "Motyw systemu"
 
+#: src/features/shop/components/my-orders.tsx
+msgid "The time to pay for this order has ended. Nothing was charged: start a new order in the shop."
+msgstr "Czas na opłacenie tego zamówienia minął. Nic nie zostało pobrane: złóż nowe zamówienie w sklepie."
+
 #: src/features/shop/pages/result-page.tsx
 msgid "The time to pay for this order has ended. Nothing was charged."
 msgstr "Czas na opłacenie tego zamówienia minął. Nie pobrano żadnych pieniędzy."
@@ -1312,6 +1333,10 @@ msgstr "Wysłaliśmy nowy link na adres {sentTo}."
 msgid "We sent the QR code of your order to your email address."
 msgstr "Kod QR zamówienia wysłaliśmy na twój adres e-mail."
 
+#: src/features/shop/components/my-orders.tsx
+msgid "We sent the QR code to the email address of the order."
+msgstr "Wysłaliśmy kod QR na adres e-mail zamówienia."
+
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."
 msgstr "Wyślemy ci link do ustawienia nowego hasła."
@@ -1418,6 +1443,10 @@ msgstr "Twoje imię i nazwisko albo pseudonim"
 #: src/features/shop/pages/result-page.tsx
 msgid "Your order"
 msgstr "Twoje zamówienie"
+
+#: src/features/shop/components/my-orders.tsx
+msgid "Your orders"
+msgstr "Twoje zamówienia"
 
 #: src/features/account/components/delete-account.tsx
 #: src/features/account/components/reauthenticate-form.tsx

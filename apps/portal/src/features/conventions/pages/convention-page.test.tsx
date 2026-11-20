@@ -19,6 +19,15 @@ vi.mock('../api/conventions', () => ({
   editionsOptions: () => ({ queryKey: ['editions'], queryFn: api.editions }),
 }))
 
+// The account's own orders are the shop's: this page only gives them their place.
+vi.mock('../../shop', () => ({
+  MyOrders: ({ tenantSlug, timeZone }: { tenantSlug: string; timeZone: string }) => (
+    <section aria-label="Your orders">
+      {tenantSlug} in {timeZone}
+    </section>
+  ),
+}))
+
 const notFound = () => new ORPCError('request.not-found', { status: 404 })
 
 const logo = { fileId: '0e0d8f7e-8a3c-4b5e-9f60-1b2c3d4e5f60', width: 400, height: 200 }
@@ -82,6 +91,17 @@ describe('ConventionPage', () => {
     expect(document.querySelector('img')!.getAttribute('src')).toMatch(
       /\/public\/tenants\/convention-a\/logo-files\/0e0d8f7e-8a3c-4b5e-9f60-1b2c3d4e5f60\/large$/,
     )
+  })
+
+  // docs/specs/0009-buyer-self-service.md, U1: a signed-in account sees its orders in the
+  // convention on the convention's page, in the convention's time zone.
+  it('gives the account’s orders in the convention their place, before its editions', async () => {
+    view()
+
+    const orders = await screen.findByRole('region', { name: 'Your orders' })
+    expect(orders.textContent).toBe('convention-a in Europe/Warsaw')
+    const active = await screen.findByRole('region', { name: 'Edition 2027' })
+    expect(orders.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('shows its active edition as the page of that edition does, and leads to it', async () => {

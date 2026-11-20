@@ -28,6 +28,10 @@ msgstr "{0} (required)"
 msgid "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
 msgstr "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
 
+#: src/features/shop/components/my-orders.tsx
+msgid "{editionName}, placed {placed}, for {holderName}"
+msgstr "{editionName}, placed {placed}, for {holderName}"
+
 #: src/features/shop/components/merch-step.tsx
 msgid "{label} (unavailable)"
 msgstr "{label} (unavailable)"
@@ -163,6 +167,10 @@ msgstr "Back to the shop"
 #: src/features/shop/pages/shop-page.tsx
 msgid "bank transfer"
 msgstr "bank transfer"
+
+#: src/features/shop/components/my-orders.tsx
+msgid "Buy more"
+msgstr "Buy more"
 
 #: src/features/shop/components/steps-nav.tsx
 msgid "Buyer"
@@ -689,6 +697,7 @@ msgctxt "the button that places an order with nothing to pay"
 msgid "Order"
 msgstr "Order"
 
+#: src/features/shop/components/my-orders.tsx
 #: src/features/shop/pages/order-link-page.tsx
 msgid "Order {number}"
 msgstr "Order {number}"
@@ -741,6 +750,10 @@ msgstr "Password"
 #: src/features/conventions/components/edition-directory.tsx
 msgid "Past editions"
 msgstr "Past editions"
+
+#: src/features/shop/components/my-orders.tsx
+msgid "Pay now"
+msgstr "Pay now"
 
 #: src/features/shop/pages/shop-page.tsx
 msgid "payment card"
@@ -861,6 +874,10 @@ msgstr "Repeat the email address"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
 msgstr "Repeat the password"
+
+#: src/features/shop/components/my-orders.tsx
+msgid "Resend QR code"
+msgstr "Resend QR code"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
@@ -1101,6 +1118,10 @@ msgstr "The size chart of {0}, {1}"
 msgid "The system's theme"
 msgstr "The system's theme"
 
+#: src/features/shop/components/my-orders.tsx
+msgid "The time to pay for this order has ended. Nothing was charged: start a new order in the shop."
+msgstr "The time to pay for this order has ended. Nothing was charged: start a new order in the shop."
+
 #: src/features/shop/pages/result-page.tsx
 msgid "The time to pay for this order has ended. Nothing was charged."
 msgstr "The time to pay for this order has ended. Nothing was charged."
@@ -1312,6 +1333,10 @@ msgstr "We sent a new link to {sentTo}."
 msgid "We sent the QR code of your order to your email address."
 msgstr "We sent the QR code of your order to your email address."
 
+#: src/features/shop/components/my-orders.tsx
+msgid "We sent the QR code to the email address of the order."
+msgstr "We sent the QR code to the email address of the order."
+
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."
 msgstr "We will send you a link to set a new password."
@@ -1418,6 +1443,10 @@ msgstr "Your name or nickname"
 #: src/features/shop/pages/result-page.tsx
 msgid "Your order"
 msgstr "Your order"
+
+#: src/features/shop/components/my-orders.tsx
+msgid "Your orders"
+msgstr "Your orders"
 
 #: src/features/account/components/delete-account.tsx
 #: src/features/account/components/reauthenticate-form.tsx

@@ -11,6 +11,7 @@ import {
   Page,
   Section,
 } from '../../../shared/ui'
+import { MyOrders } from '../../shop'
 import { activeEditionOptions, conventionOptions, editionsOptions } from '../api/conventions'
 import { ConventionLogo } from '../components/convention-logo'
 import { EditionSummary } from '../components/edition-summary'
@@ -18,8 +19,9 @@ import { useConventionTime } from '../hooks/use-convention-time'
 import { otherEditions } from '../model/edition-order'
 
 /**
- * A convention's page: its name and logo, its active edition as that edition's own page shows it,
- * and its other published editions, the coming ones first.
+ * A convention's page: its name and logo, for a signed-in account its orders in the convention,
+ * its active edition as that edition's own page shows it, and its other published editions, the
+ * coming ones first.
  */
 export function ConventionPage() {
   const { tenantSlug = '' } = useParams()
@@ -50,6 +52,7 @@ export function ConventionPage() {
         </span>
       }
     >
+      <MyOrders tenantSlug={tenantSlug} timeZone={timezone} />
       {active.isPending ? (
         <LoadingView />
       ) : active.isError ? (

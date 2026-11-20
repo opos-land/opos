@@ -88,6 +88,10 @@ msgstr "Strona z odpowiedziami dla kupujących, do której odsyła stopka sklepu
 msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 msgstr "Plik PDF o rozmiarze do 10 MB. Opublikowanej wersji nie można zmienić ani usunąć: poprawka to nowa wersja."
 
+#: src/features/shop/model/providers.ts
+msgid "A sandbox account takes no real money, and connects only where none is taken."
+msgstr "Konto sandbox nie pobiera prawdziwych pieniędzy i da się je podłączyć tylko tam, gdzie nie pobiera się żadnych."
+
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
 msgstr "Tabela rozmiarów należy do wartości, na przykład do kroju. Dodaj tabele do wartości jednej osi: sklep pokazuje tabelę tej wartości, którą wybrał kupujący."
@@ -317,6 +321,10 @@ msgstr "Dowolny tekst podłącza gotowe konto. Testowy dostawca odrzuca „refus
 msgid "Anyone younger is a child."
 msgstr "Każdy młodszy jest dzieckiem."
 
+#: src/features/shop/model/providers.ts
+msgid "API key"
+msgstr "Klucz API"
+
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "Ask for nothing sensitive"
 msgstr "Nie pytaj o nic wrażliwego"
@@ -510,6 +518,10 @@ msgstr "Ustawienia konwentu"
 #: src/features/tenants/components/area-switcher.tsx
 msgid "Conventions"
 msgstr "Konwenty"
+
+#: src/features/shop/model/providers.ts
+msgid "CRC key"
+msgstr "Klucz CRC"
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Create an account"
@@ -1052,6 +1064,14 @@ msgstr "Zaproś"
 msgid "Invite to the team"
 msgstr "Zaproś do zespołu"
 
+#: src/features/shop/model/providers.ts
+msgid "It is not confirmed that Przelewy24’s own email for an abandoned payment is off. Give the credentials again once it is."
+msgstr "Nie potwierdzono, że własny e-mail Przelewy24 o porzuconej płatności jest wyłączony. Podaj dane dostępowe ponownie, gdy będzie wyłączony."
+
+#: src/features/shop/model/providers.ts
+msgid "It is off unless Przelewy24’s account manager turned it on. With it on, a buyer could pay for an order after its time ran out, so the account is ready to sell only once you confirm it is off."
+msgstr "Jest wyłączony, chyba że opiekun konta w Przelewy24 go włączył. Gdy jest włączony, kupujący mógłby opłacić zamówienie po upływie czasu na płatność, więc konto jest gotowe do sprzedaży dopiero, gdy potwierdzisz, że jest wyłączony."
+
 #: src/features/catalog/pages/merchandise-item-page.tsx
 msgctxt "a merchandise item"
 msgid "Item data"
@@ -1169,6 +1189,10 @@ msgstr "Gadżety odbiera się podczas edycji: sklep nie obiecuje wysyłki. Rodza
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Merchandise offered with it"
 msgstr "Gadżety oferowane razem z nim"
+
+#: src/features/shop/model/providers.ts
+msgid "Merchant ID"
+msgstr "ID sprzedawcy"
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Message of a closed shop"
@@ -1483,6 +1507,10 @@ msgstr "Zdjęcia"
 msgid "Pictures in their order"
 msgstr "Zdjęcia w kolejności wyświetlania"
 
+#: src/features/shop/model/providers.ts
+msgid "Point of sale ID"
+msgstr "ID sklepu"
+
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Pre-order deadline"
 msgstr "Termin przedsprzedaży"
@@ -1559,6 +1587,14 @@ msgstr "Dostawca"
 #: src/features/shop/model/providers.ts
 msgid "Przelewy24"
 msgstr "Przelewy24"
+
+#: src/features/shop/model/providers.ts
+msgid "Przelewy24’s own email with a link to finish an abandoned payment is off for this account"
+msgstr "Własny e-mail Przelewy24 z linkiem do dokończenia porzuconej płatności jest dla tego konta wyłączony"
+
+#: src/features/shop/model/providers.ts
+msgid "Przelewy24’s panel calls it the reports key."
+msgstr "W panelu Przelewy24 nazywa się kluczem do raportów."
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Publish"
@@ -2272,6 +2308,10 @@ msgstr "Nazwa miejsca, w którym odbywa się edycja. Portal pokazuje miejsce na 
 msgid "The new version of “{documentTitle}” is published."
 msgstr "Nowa wersja dokumentu „{documentTitle}” została opublikowana."
 
+#: src/features/shop/model/providers.ts
+msgid "The number of the account, as Przelewy24’s panel shows it."
+msgstr "Numer konta, tak jak pokazuje go panel Przelewy24."
+
 #: src/features/shop/components/seller-section.tsx
 msgid "The number the seller is registered under, such as KRS or NIP."
 msgstr "Numer, pod którym sprzedawca jest zarejestrowany, na przykład KRS lub NIP."
@@ -2339,6 +2379,10 @@ msgstr "Punkt programu musi kończyć się po swoim początku."
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The provider reports a condition this panel cannot describe yet (code: {code})."
 msgstr "Dostawca zgłasza warunek, którego ten panel nie potrafi jeszcze opisać (kod: {code})."
+
+#: src/features/shop/model/providers.ts
+msgid "The same number as the merchant ID, unless Przelewy24 gave the shop one of its own."
+msgstr "Ten sam numer co ID sprzedawcy, chyba że Przelewy24 nadało sklepowi własny."
 
 #: src/features/shop/components/seller-section.tsx
 msgid "The seller’s details are saved."
@@ -2412,6 +2456,10 @@ msgstr "Lista prelegentów została zapisana."
 msgid "The stored credentials can no longer be read. Give them again."
 msgstr "Zapisanych danych dostępowych nie da się już odczytać. Podaj je ponownie."
 
+#: src/features/shop/model/providers.ts
+msgid "The stored credentials do not name a Przelewy24 account. Give them again."
+msgstr "Zapisane dane dostępowe nie wskazują konta Przelewy24. Podaj je ponownie."
+
 #: src/features/account/pages/account-page.tsx
 msgid "The system's theme"
 msgstr "Motyw systemu"
@@ -2466,6 +2514,10 @@ msgstr "To nie jest aktywna edycja konwentu."
 msgid "This environment cannot reach the provider of this account."
 msgstr "To środowisko nie ma dostępu do dostawcy tego konta."
 
+#: src/features/shop/model/providers.ts
+msgid "This is a sandbox account"
+msgstr "To konto sandbox"
+
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "This is the convention's active edition."
@@ -2474,6 +2526,14 @@ msgstr "To jest aktywna edycja konwentu."
 #: src/features/program/components/speakers-editor.tsx
 msgid "This item has no speakers yet."
 msgstr "Ten punkt programu nie ma jeszcze prelegentów."
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "This provider answers only to the addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
+msgstr "Ten dostawca odpowiada tylko na adresy wpisane w jego panelu. Zanim podłączysz konto, zapytaj administratorów OPOS o adres, który trzeba tam wpisać."
+
+#: src/features/shop/components/provider-account-section.tsx
+msgid "This provider answers only to the addresses entered in its panel. Enter this one there before you connect the account: <0>{callsFrom}</0>"
+msgstr "Ten dostawca odpowiada tylko na adresy wpisane w jego panelu. Zanim podłączysz konto, wpisz tam ten adres: <0>{callsFrom}</0>"
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 #: src/features/editions/components/edition-layout.tsx

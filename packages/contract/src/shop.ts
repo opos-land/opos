@@ -74,12 +74,14 @@ export const providerAccountSchema = z.object({
 export type ProviderAccount = z.infer<typeof providerAccountSchema>
 
 /**
- * The convention's account, or none while it has connected none, and the providers this
- * environment has a module of: those an account may be connected to here.
+ * The convention's account, or none while it has connected none; the providers this environment
+ * has a module of, those an account may be connected to here; and the address the API calls a
+ * provider from, for a provider that answers only to the addresses entered in its panel.
  */
 export const providerAccountStateSchema = z.object({
   account: providerAccountSchema.nullable(),
   providers: z.array(z.enum(PAYMENT_PROVIDERS)),
+  callsFrom: z.string().nullable(),
 })
 
 export type ProviderAccountState = z.infer<typeof providerAccountStateSchema>

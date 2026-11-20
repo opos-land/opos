@@ -85,8 +85,8 @@ beforeEach(() => {
     .mockImplementation(({ body }: { body: object }) =>
       Promise.resolve({ ...body, currency: 'PLN', complete: true }),
     )
-  readAccount.mockReset().mockResolvedValue({ account: null, providers: ['fake'] })
-  connect.mockReset().mockResolvedValue({ account, providers: ['fake'] })
+  readAccount.mockReset().mockResolvedValue({ account: null, providers: ['fake'], callsFrom: null })
+  connect.mockReset().mockResolvedValue({ account, providers: ['fake'], callsFrom: null })
   disconnect.mockReset().mockResolvedValue(undefined)
 })
 
@@ -150,7 +150,7 @@ describe('ShopSettingsPage', () => {
   it('shows everything to a member who reads the shop, with nothing to change it', async () => {
     state.shop = 'read'
     readSeller.mockResolvedValue(seller)
-    readAccount.mockResolvedValue({ account, providers: ['fake'] })
+    readAccount.mockResolvedValue({ account, providers: ['fake'], callsFrom: null })
     view()
 
     await screen.findByDisplayValue('Convention A Foundation')
@@ -163,8 +163,8 @@ describe('ShopSettingsPage', () => {
   it('connects an account with the credentials its provider asks for', async () => {
     state.shop = 'write'
     readAccount
-      .mockResolvedValueOnce({ account: null, providers: ['fake'] })
-      .mockResolvedValue({ account, providers: ['fake'] })
+      .mockResolvedValueOnce({ account: null, providers: ['fake'], callsFrom: null })
+      .mockResolvedValue({ account, providers: ['fake'], callsFrom: null })
     view()
     const provider = section('Payment provider account')
     expect(await provider.findByText('No payment provider account is connected.')).toBeDefined()
@@ -181,6 +181,56 @@ describe('ShopSettingsPage', () => {
     // The credentials are given and never shown: the field is empty again.
     expect(screen.getByLabelText<HTMLInputElement>('Account').value).toBe('')
     expect(provider.getByText('at 2027-06-01T08:00:00.000Z')).toBeDefined()
+  })
+
+  it('asks Przelewy24 for its identifiers and keys, and the org for its two answers', async () => {
+    state.shop = 'write'
+    const around = { providers: ['fake', 'przelewy24'], callsFrom: '203.0.113.7' }
+    readAccount
+      .mockResolvedValueOnce({ account: null, ...around })
+      .mockResolvedValue({ account, ...around })
+    connect.mockResolvedValue({ account, ...around })
+    view()
+    const provider = section('Payment provider account')
+    fireEvent.change(await provider.findByLabelText('Provider'), {
+      target: { value: 'przelewy24' },
+    })
+
+    // Przelewy24 answers only to the addresses entered in its panel: the org reads which.
+    expect(provider.getByText(/203\.0\.113\.7/)).toBeDefined()
+    // The identifiers are shown as typed, the keys are not.
+    expect(screen.getByLabelText<HTMLInputElement>('Merchant ID').type).toBe('text')
+    expect(screen.getByLabelText<HTMLInputElement>('CRC key').type).toBe('password')
+    type('Merchant ID', '123456')
+    type('Point of sale ID', '123456')
+    type('CRC key', 'crc-key')
+    type('API key', 'api-key')
+    fireEvent.click(provider.getByRole('checkbox', { name: /abandoned payment is off/ }))
+    fireEvent.click(provider.getByRole('button', { name: 'Connect the account' }))
+
+    await provider.findByText('Ready to sell')
+    expect(connect.mock.calls[0]?.[0]).toEqual({
+      body: {
+        provider: 'przelewy24',
+        credentials: {
+          merchantId: '123456',
+          posId: '123456',
+          crc: 'crc-key',
+          apiKey: 'api-key',
+          sandbox: 'false',
+          abandonedPaymentEmailOff: 'true',
+        },
+      },
+    })
+  })
+
+  it('tells where the address to enter comes from when the environment has none set', async () => {
+    state.shop = 'write'
+    readAccount.mockResolvedValue({ account: null, providers: ['przelewy24'], callsFrom: null })
+    view()
+    const provider = section('Payment provider account')
+
+    expect(await provider.findByText(/Ask the OPOS administrators/)).toBeDefined()
   })
 
   it('says what an account that is not ready misses', async () => {
@@ -216,7 +266,7 @@ describe('ShopSettingsPage', () => {
 
   it('asks in a modal before new credentials take the place of the stored ones', async () => {
     state.shop = 'write'
-    readAccount.mockResolvedValue({ account, providers: ['fake'] })
+    readAccount.mockResolvedValue({ account, providers: ['fake'], callsFrom: null })
     view()
     const provider = section('Payment provider account')
     await provider.findByText('Ready to sell')
@@ -239,8 +289,8 @@ describe('ShopSettingsPage', () => {
   it('disconnects the account once its modal is confirmed', async () => {
     state.shop = 'write'
     readAccount
-      .mockResolvedValueOnce({ account, providers: ['fake'] })
-      .mockResolvedValue({ account: null, providers: ['fake'] })
+      .mockResolvedValueOnce({ account, providers: ['fake'], callsFrom: null })
+      .mockResolvedValue({ account: null, providers: ['fake'], callsFrom: null })
     view()
     const provider = section('Payment provider account')
     await provider.findByText('Ready to sell')

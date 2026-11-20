@@ -111,13 +111,24 @@ describe('the provider account', () => {
 
 describe('the state of the provider account', () => {
   it('names the providers the environment has a module of, beside the account or none', () => {
-    expect(Object.keys(providerAccountStateSchema.shape).sort()).toEqual(['account', 'providers'])
-    expect(providerAccountStateSchema.parse({ account: null, providers: ['fake'] })).toEqual({
-      account: null,
-      providers: ['fake'],
-    })
-    refused(providerAccountStateSchema.safeParse({ account: null, providers: ['cash'] }))
-    refused(providerAccountStateSchema.safeParse({ account: null }))
+    expect(Object.keys(providerAccountStateSchema.shape).sort()).toEqual([
+      'account',
+      'callsFrom',
+      'providers',
+    ])
+    const state = { account: null, providers: ['fake'], callsFrom: null }
+    expect(providerAccountStateSchema.parse(state)).toEqual(state)
+    refused(providerAccountStateSchema.safeParse({ ...state, providers: ['cash'] }))
+    refused(providerAccountStateSchema.safeParse({ account: null, callsFrom: null }))
+  })
+
+  // A provider that answers only to the addresses entered in its panel: the org reads here which
+  // one to enter, where the environment has one.
+  it('tells the address the API calls a provider from, or none', () => {
+    const state = { account: null, providers: ['przelewy24'], callsFrom: '203.0.113.7' }
+
+    expect(providerAccountStateSchema.parse(state)).toEqual(state)
+    refused(providerAccountStateSchema.safeParse({ account: null, providers: [] }))
   })
 })
 

@@ -6,6 +6,7 @@ import { useState } from 'react'
 import {
   Badge,
   Button,
+  CheckboxField,
   ErrorMessage,
   FormField,
   Input,
@@ -115,7 +116,11 @@ function Account({ state: { account } }: { state: ProviderAccountState }) {
 }
 
 /** Connecting an account, giving its credentials again, and disconnecting it. */
-function Credentials({ state: { account, providers } }: { state: ProviderAccountState }) {
+function Credentials({
+  state: { account, providers, callsFrom },
+}: {
+  state: ProviderAccountState
+}) {
   const { t, i18n } = useLingui()
   const { tenant, api } = useCurrentTenant()
   const queryClient = useQueryClient()
@@ -177,26 +182,56 @@ function Credentials({ state: { account, providers } }: { state: ProviderAccount
           )}
         </FormField>
       )}
-      {PROVIDERS[provider].fields.map((field) => (
-        <FormField
-          key={field.name}
-          label={i18n._(field.label)}
-          hint={field.hint && i18n._(field.hint)}
-        >
-          {(control) => (
-            <Input
-              {...control}
-              type="password"
-              autoComplete="off"
-              value={values[field.name] ?? ''}
-              disabled={connect.isPending}
-              onChange={(event) =>
-                setValues((held) => ({ ...held, [field.name]: event.target.value }))
-              }
-            />
+      {PROVIDERS[provider].needsAddress && (
+        <p className="text-sm">
+          {callsFrom ? (
+            <Trans>
+              This provider answers only to the addresses entered in its panel. Enter this one there
+              before you connect the account: <strong>{callsFrom}</strong>
+            </Trans>
+          ) : (
+            <Trans>
+              This provider answers only to the addresses entered in its panel. Ask the OPOS
+              administrators for the address to enter there before you connect the account.
+            </Trans>
           )}
-        </FormField>
-      ))}
+        </p>
+      )}
+      {PROVIDERS[provider].fields.map((field) =>
+        field.kind === 'choice' ? (
+          <CheckboxField
+            key={field.name}
+            label={i18n._(field.label)}
+            hint={field.hint && i18n._(field.hint)}
+            checked={values[field.name] === 'true'}
+            disabled={connect.isPending}
+            onChange={(ticked) =>
+              setValues((held) => ({ ...held, [field.name]: ticked ? 'true' : 'false' }))
+            }
+          />
+        ) : (
+          <FormField
+            key={field.name}
+            label={i18n._(field.label)}
+            hint={field.hint && i18n._(field.hint)}
+          >
+            {(control) => (
+              <Input
+                {...control}
+                // A key is typed blind; an identifier is shown as it is typed.
+                type={field.kind === 'text' ? 'text' : 'password'}
+                inputMode={field.kind === 'text' ? 'numeric' : undefined}
+                autoComplete="off"
+                value={values[field.name] ?? ''}
+                disabled={connect.isPending}
+                onChange={(event) =>
+                  setValues((held) => ({ ...held, [field.name]: event.target.value }))
+                }
+              />
+            )}
+          </FormField>
+        ),
+      )}
       <p className="text-muted-foreground text-sm">
         <Trans>
           The credentials are checked with the provider, stored encrypted and never shown again.

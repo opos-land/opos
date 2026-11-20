@@ -1,7 +1,8 @@
-import { Controller } from '@nestjs/common'
+import { Controller, Inject } from '@nestjs/common'
 import { contract, type ProviderAccount } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
+import { ENV, type Env } from '../../config/env'
 import { Prepares } from '../../common/decorators/prepares.decorator'
 import { RequireTenant } from '../../common/decorators/require-tenant.decorator'
 import { CredentialsVault, PaymentProviders } from '../payments/payment-providers'
@@ -27,7 +28,17 @@ export class ShopController {
     private readonly providers: PaymentProviders,
     private readonly vault: CredentialsVault,
     private readonly context: TenantContextService,
+    @Inject(ENV) private readonly env: Pick<Env, 'API_EGRESS_ADDRESS'>,
   ) {}
+
+  /** What the provider account's screen shows beside the account itself. */
+  private around() {
+    return {
+      providers: this.providers.names(),
+      // For a provider that answers only to the addresses entered in its panel.
+      callsFrom: this.env.API_EGRESS_ADDRESS ?? null,
+    }
+  }
 
   @Implement(contract.shop.seller.get)
   @RequireTenant('shop', 'read')
@@ -50,7 +61,7 @@ export class ShopController {
   providerAccount() {
     return implement(contract.shop.providerAccount.get).handler(async () => {
       const account = await this.accounts.find()
-      return { account: account ? this.shown(account) : null, providers: this.providers.names() }
+      return { account: account ? this.shown(account) : null, ...this.around() }
     })
   }
 
@@ -78,7 +89,7 @@ export class ShopController {
         credentials: this.vault.seal({ tenantId: this.context.tenant().id, provider }, credentials),
         readyAt: answer.outcome === 'ready' ? new Date() : null,
       })
-      return { account: this.shown(account), providers: this.providers.names() }
+      return { account: this.shown(account), ...this.around() }
     })
   }
 

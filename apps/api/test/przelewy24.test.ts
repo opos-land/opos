@@ -42,7 +42,11 @@ const addresses: string[] = []
 
 beforeAll(async () => {
   p24 = await Przelewy24StandIn.start()
-  app = await createApp({ PRZELEWY24_URL: p24.url, PRZELEWY24_SANDBOX_URL: p24.url })
+  app = await createApp({
+    PRZELEWY24_URL: p24.url,
+    PRZELEWY24_SANDBOX_URL: p24.url,
+    API_EGRESS_ADDRESS: '203.0.113.7',
+  })
   await app.listen(0, '127.0.0.1')
 })
 
@@ -181,6 +185,23 @@ describe('connecting a Przelewy24 account', () => {
       expect(JSON.stringify(res.body)).not.toContain(secret)
       expect(JSON.stringify(row)).not.toContain(secret)
     }
+  })
+
+  // Przelewy24 answers its API only to the addresses its panel lists for the account.
+  it('shows the org the address the API calls Przelewy24 from', async () => {
+    const t = await tenantWithHead()
+
+    const res = await request(app.getHttpServer())
+      .get('/shop/provider-account')
+      .use(session(t.head.token))
+      .set('X-Tenant-Slug', t.slug)
+      .expect(200)
+
+    expect(res.body).toEqual({
+      account: null,
+      providers: ['fake', 'przelewy24'],
+      callsFrom: '203.0.113.7',
+    })
   })
 
   it('is not ready until the org confirms Przelewy24’s own email for an abandoned payment is off', async () => {

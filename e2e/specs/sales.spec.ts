@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { expect, test } from '../fixtures'
 import { buy, pay, selling } from '../fixtures/buying'
-import { panelUrl, signInToPanel } from '../fixtures/ui'
+import { followFolderLink, panelUrl, signInToPanel } from '../fixtures/ui'
 
 // The reports of an edition's sales (docs/specs/0010-sales-reports.md, e2e): the dashboard as the
 // orders are, and a list taken away as a file.
@@ -18,10 +18,7 @@ test('an org opens the sales after two orders and downloads the ticket holder li
   await buy(request, s, { email: waiting })
 
   await signInToPanel(page, s.head.email, s.head.password)
-  await page
-    .getByRole('navigation', { name: s.edition.name })
-    .getByRole('link', { name: 'Sales', exact: true })
-    .click()
+  await followFolderLink(page.getByRole('navigation', { name: s.edition.name }), 'Shop', 'Sales')
   await expect(page.getByRole('heading', { name: 'Sales', level: 1 })).toBeVisible()
 
   // One order is paid, a ticket with a T-shirt; the other still awaits its payment.
@@ -69,7 +66,10 @@ test('an org without the tickets permission of the edition sees neither the sale
   await expect(
     page.getByRole('navigation', { name: s.edition.name }).getByRole('link', { name: 'Programme' }),
   ).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Sales', exact: true })).toBeHidden()
+  // The folder of the shop, which holds the sales, is not in the menu at all.
+  await expect(
+    page.getByRole('navigation', { name: s.edition.name }).getByRole('button', { name: 'Shop' }),
+  ).toHaveCount(0)
 
   // Around the menu, the page shows nothing and offers no list.
   await page.goto(panelUrl(`/${s.tenant.slug}/editions/${s.edition.slug}/sales`))

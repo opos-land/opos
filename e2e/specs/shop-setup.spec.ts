@@ -32,7 +32,7 @@ test('a head connects the provider, sets the seller, publishes the documents and
   await signInToPanel(page, head.email, head.password)
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
   const editionMenu = page.getByRole('navigation', { name: edition.name })
-  await followFolderLink(editionMenu, 'Shop setup', 'Shop')
+  await followFolderLink(editionMenu, 'Shop', 'Settings')
   await expect(page.getByText('The shop is closed: nothing can be ordered.')).toBeVisible()
   await expect(needs(page).getByText('Missing')).toHaveCount(4)
 
@@ -66,7 +66,7 @@ test('a head connects the provider, sets the seller, publishes the documents and
 
   // What belongs to the edition: its documents, each published as a PDF, and a consent.
   await switchPanelArea(page, edition.name)
-  await followFolderLink(editionMenu, 'Shop setup', 'Documents and consents')
+  await followFolderLink(editionMenu, 'Shop', 'Documents and consents')
   await expect(page.getByText('The edition has no documents yet.')).toBeVisible()
   for (const [kind, title] of [
     ['Shop terms', 'Shop terms 2027'],
@@ -104,7 +104,7 @@ test('a head connects the provider, sets the seller, publishes the documents and
   await expect(listed).toContainText('Links the document: Shop terms 2027')
 
   // Every condition holds now, and the shop opens.
-  await followFolderLink(editionMenu, 'Shop setup', 'Shop')
+  await followFolderLink(editionMenu, 'Shop', 'Settings')
   await expect(needs(page).getByText('Met')).toHaveCount(4)
   await page.getByRole('button', { name: 'Open the shop' }).click()
   await expect(notification(page, 'success', 'The shop is open.')).toBeVisible()
@@ -131,7 +131,7 @@ test('an org with the tickets of an edition alone sees each condition as met or 
 
   await signInToPanel(page, org.email, org.password)
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
-  await followFolderLink(page.getByRole('navigation', { name: edition.name }), 'Shop setup', 'Shop')
+  await followFolderLink(page.getByRole('navigation', { name: edition.name }), 'Shop', 'Settings')
 
   const rows = needs(page).getByRole('listitem')
   await expect(rows).toHaveCount(4)
@@ -163,7 +163,7 @@ test('opening a shop with a condition missing is refused, and the page says whic
   await tenants.addDocument(tenant.id, edition.id, 'shop-terms')
 
   await signInToPanel(page, head.email, head.password)
-  await followFolderLink(page.getByRole('navigation', { name: edition.name }), 'Shop setup', 'Shop')
+  await followFolderLink(page.getByRole('navigation', { name: edition.name }), 'Shop', 'Settings')
   await expect(needs(page).getByText('Met')).toHaveCount(3)
   await page.getByRole('button', { name: 'Open the shop' }).click()
 

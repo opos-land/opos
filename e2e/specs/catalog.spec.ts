@@ -45,7 +45,7 @@ test('an org builds the catalog of an edition from nothing', async ({
   const editionMenu = menu(page, edition.name)
 
   // Two add-ons: one limited by a capacity, one that only counts interest.
-  await followFolderLink(editionMenu, 'Offer', 'Add-ons')
+  await followFolderLink(editionMenu, 'Shop', 'Add-ons')
   await expect(page.getByText('The edition has no add-ons yet.')).toBeVisible()
   await page.getByLabel('Name', { exact: true }).fill('Miniature painting workshop')
   await page.getByLabel(/^Price/).fill('40')
@@ -65,7 +65,7 @@ test('an org builds the catalog of an edition from nothing', async ({
   await expect(addOns.nth(1)).toContainText('Free')
 
   // A T-shirt with two cuts and two sizes: three variants exist, one of them out of stock.
-  await followFolderLink(editionMenu, 'Offer', 'Merchandise')
+  await followFolderLink(editionMenu, 'Shop', 'Merchandise')
   await page.getByRole('link', { name: 'New item' }).click()
   await page.getByLabel('Name', { exact: true }).fill('T-shirt')
   await page.getByLabel(/^Price/).fill('80')
@@ -150,7 +150,7 @@ test('an org builds the catalog of an edition from nothing', async ({
   await expect(notification(page, 'success', 'The way merchandise sells is saved.')).toBeVisible()
 
   // What the edition asks of a ticket holder.
-  await followFolderLink(editionMenu, 'Shop setup', 'Ticket holders’ data')
+  await followFolderLink(editionMenu, 'Shop', 'Ticket holders’ data')
   await page.getByLabel('A teen from the age of').fill('13')
   await page.getByLabel('An adult from the age of').fill('18')
   await page.getByLabel('Address of the guardian consent form').fill('https://c.test/consent.pdf')
@@ -170,7 +170,7 @@ test('an org builds the catalog of an edition from nothing', async ({
   }
 
   // Two ticket types: one with two price tiers and supporter prices, one for adults alone.
-  await followFolderLink(editionMenu, 'Offer', 'Ticket types')
+  await followFolderLink(editionMenu, 'Shop', 'Ticket types')
   await page.getByRole('link', { name: 'New ticket type' }).click()
   await page.getByLabel('Name', { exact: true }).fill('Standard')
   await page.getByLabel('Short description').fill('All three days of the convention.')
@@ -217,7 +217,7 @@ test('an org builds the catalog of an edition from nothing', async ({
   await expect(row(page, 'Supporter')).toContainText('Excluded from discounts')
 
   // The edition is published and the T-shirt is shown: its picture is for everyone.
-  await followFolderLink(editionMenu, 'Offer', 'Merchandise')
+  await followFolderLink(editionMenu, 'Shop', 'Merchandise')
   await page.getByRole('link', { name: 'T-shirt', exact: true }).click()
   const shown = page.waitForResponse((response) => response.url().includes('/merchandise-files/'))
   await page.reload()
@@ -237,7 +237,7 @@ test('tiers that overlap are refused where they are typed, and by the API too', 
   const tenant = await tenants.create({ headEmail: head.email })
   const edition = await tenants.addEdition(tenant.id, { isActive: true })
   await signInToPanel(page, head.email, head.password)
-  await followFolderLink(menu(page, edition.name), 'Offer', 'Ticket types')
+  await followFolderLink(menu(page, edition.name), 'Shop', 'Ticket types')
   await page.getByRole('link', { name: 'New ticket type' }).click()
 
   await page.getByLabel('Name', { exact: true }).fill('Standard')
@@ -284,7 +284,7 @@ test('a price changed and an item hidden while the shop is open show in the shop
 
   await signInToPanel(page, head.email, head.password)
   const editionMenu = menu(page, edition.name)
-  await followFolderLink(editionMenu, 'Offer', 'Ticket types')
+  await followFolderLink(editionMenu, 'Shop', 'Ticket types')
   await page.getByRole('link', { name: 'Standard', exact: true }).click()
   await page
     .getByRole('group', { name: 'Price tier 1', exact: true })
@@ -292,7 +292,7 @@ test('a price changed and an item hidden while the shop is open show in the shop
     .fill('135')
   await page.getByRole('button', { name: 'Save the ticket type' }).click()
   await expect(notification(page, 'success', /saved/)).toBeVisible()
-  await followFolderLink(editionMenu, 'Offer', 'Merchandise')
+  await followFolderLink(editionMenu, 'Shop', 'Merchandise')
   await row(page, 'Enamel pin').getByRole('button', { name: 'Hide from the shop' }).click()
   await expect(
     row(page, 'Enamel pin').getByRole('button', { name: 'Show in the shop' }),
@@ -341,7 +341,7 @@ test('an org with tickets read access sees the catalog and can change nothing', 
   })
   const base = `/${tenant.slug}/editions/${edition.slug}`
 
-  await followFolderLink(editionMenu, 'Offer', 'Ticket types')
+  await followFolderLink(editionMenu, 'Shop', 'Ticket types')
   await expect(row(page, 'Standard')).toContainText('120.00')
   await expect(page.getByRole('link', { name: 'New ticket type' })).toHaveCount(0)
   await expect(writes).toHaveCount(0)
@@ -353,14 +353,14 @@ test('an org with tickets read access sees the catalog and can change nothing', 
   await page.goto(panelUrl(`${base}/ticket-types/new`))
   await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
 
-  await followFolderLink(editionMenu, 'Offer', 'Add-ons')
+  await followFolderLink(editionMenu, 'Shop', 'Add-ons')
   await expect(page.getByRole('listitem').filter({ hasText: 'Workshop' })).toContainText(
     'Limited places: 30',
   )
   await expect(writes).toHaveCount(0)
   await expect(page.getByLabel('Name', { exact: true })).toHaveCount(0)
 
-  await followFolderLink(editionMenu, 'Offer', 'Merchandise')
+  await followFolderLink(editionMenu, 'Shop', 'Merchandise')
   await expect(row(page, 'Enamel pin')).toContainText('15.00')
   await expect(page.getByLabel('Pre-order deadline')).toBeDisabled()
   await expect(page.getByRole('link', { name: 'New item' })).toHaveCount(0)
@@ -370,7 +370,7 @@ test('an org with tickets read access sees the catalog and can change nothing', 
   await expect(page.getByLabel('The item itself: stock')).toBeDisabled()
   await expect(writes).toHaveCount(0)
 
-  await followFolderLink(editionMenu, 'Shop setup', 'Ticket holders’ data')
+  await followFolderLink(editionMenu, 'Shop', 'Ticket holders’ data')
   await expect(page.getByText('City you travel from')).toBeVisible()
   await expect(page.getByLabel('A teen from the age of')).toBeDisabled()
   await expect(writes).toHaveCount(0)

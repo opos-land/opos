@@ -2,7 +2,7 @@ import { type Page } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import { buy, pay, type Selling, selling, shirtM } from '../fixtures/buying'
 import { mailTo, waitForMail } from '../fixtures/mailpit'
-import { notification, portalUrl, signInToPanel } from '../fixtures/ui'
+import { followFolderLink, notification, portalUrl, signInToPanel } from '../fixtures/ui'
 
 // What an org does with an edition's orders in the panel
 // (docs/specs/0006-order-management.md): find and read them, correct them, record a sale made
@@ -11,10 +11,7 @@ import { notification, portalUrl, signInToPanel } from '../fixtures/ui'
 /** Signs the head in and opens the orders of the edition. */
 async function openOrders(page: Page, s: Selling) {
   await signInToPanel(page, s.head.email, s.head.password)
-  await page
-    .getByRole('navigation', { name: s.edition.name })
-    .getByRole('link', { name: 'Orders', exact: true })
-    .click()
+  await followFolderLink(page.getByRole('navigation', { name: s.edition.name }), 'Shop', 'Orders')
   await expect(page.getByRole('heading', { name: 'Orders', level: 1 })).toBeVisible()
 }
 

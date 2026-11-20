@@ -41,15 +41,12 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
   await expect(menu.getByRole('link')).toHaveText([
     'Dashboard',
     'Programme',
-    'Orders',
-    'Sales',
-    'Scanners',
     'Access',
     'Edition settings',
   ])
-  // What the shop is set up with is folded away, each folder opening to its own sections.
-  await expect(menu.getByRole('button')).toHaveText(['Offer', 'Shop setup'])
-  await menu.getByRole('button', { name: 'Offer' }).click()
+  // Everything of the shop is folded into one folder, which opens to its sections.
+  await expect(menu.getByRole('button')).toHaveText(['Shop'])
+  await menu.getByRole('button', { name: 'Shop' }).click()
   await expect(menu.getByRole('link')).toHaveText([
     'Dashboard',
     'Programme',
@@ -60,6 +57,9 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
     'Add-ons',
     'Merchandise',
     'Discount codes',
+    'Ticket holders’ data',
+    'Documents and consents',
+    'Settings',
     'Access',
     'Edition settings',
   ])

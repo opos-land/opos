@@ -129,65 +129,65 @@ describe('EditionLayout', () => {
     expect(screen.queryByRole('navigation', { name: 'Convention A' })).toBeNull()
   })
 
-  it('shows an org who reads the tickets of the edition what was sold, and folds away what the shop sells and asks', () => {
+  it('folds everything of the shop into one folder for an org who reads the tickets of the edition', () => {
     state.tickets = 'read'
     view('/convention-a/editions/2026')
+
+    expect(links('Edition 2026')).toEqual([['Dashboard', '/convention-a/editions/2026']])
+    expect(folders('Edition 2026')).toEqual([['Shop', false]])
+  })
+
+  it('holds what was sold, what is sold and what the shop is set up with in the folder of the shop', async () => {
+    state.tickets = 'read'
+    view('/convention-a/editions/2026')
+
+    await openFolder('Edition 2026', 'Shop')
 
     expect(links('Edition 2026')).toEqual([
       ['Dashboard', '/convention-a/editions/2026'],
       ['Orders', '/convention-a/editions/2026/orders'],
       ['Sales', '/convention-a/editions/2026/sales'],
       ['Scanners', '/convention-a/editions/2026/scanners'],
-    ])
-    expect(folders('Edition 2026')).toEqual([
-      ['Offer', false],
-      ['Shop setup', false],
-    ])
-  })
-
-  it('holds what the edition sells in the folder of the offer', async () => {
-    state.tickets = 'read'
-    view('/convention-a/editions/2026')
-
-    await openFolder('Edition 2026', 'Offer')
-
-    expect(links('Edition 2026').slice(4)).toEqual([
       ['Ticket types', '/convention-a/editions/2026/ticket-types'],
       ['Add-ons', '/convention-a/editions/2026/add-ons'],
       ['Merchandise', '/convention-a/editions/2026/merchandise'],
       ['Discount codes', '/convention-a/editions/2026/discount-codes'],
-    ])
-  })
-
-  it('holds the shop, what it asks of a ticket holder and its documents in the folder of the shop setup', async () => {
-    state.tickets = 'read'
-    view('/convention-a/editions/2026')
-
-    await openFolder('Edition 2026', 'Shop setup')
-
-    expect(links('Edition 2026').slice(4)).toEqual([
-      ['Shop', '/convention-a/editions/2026/shop'],
       ['Ticket holders’ data', '/convention-a/editions/2026/ticket-holders'],
       ['Documents and consents', '/convention-a/editions/2026/documents'],
+      ['Settings', '/convention-a/editions/2026/shop'],
     ])
   })
 
-  it('opens the folder of the page the member is on, and marks the page in it', () => {
+  it('keeps the folder of the shop between the programme and what belongs to the edition itself', () => {
+    state.settings = 'write'
+    state.program = 'write'
+    state.tickets = 'write'
+    view('/convention-a/editions/2026')
+
+    const menu = screen.getByRole('navigation', { name: 'Edition 2026' })
+    expect(
+      within(menu)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Dashboard', 'Programme', 'Shop', 'Access', 'Edition settings'])
+  })
+
+  it('opens the folder of the shop on a page of the shop, and marks the page in it', () => {
     state.tickets = 'read'
     view('/convention-a/editions/2026/merchandise/shirt')
 
     expect(screen.getByText('another page of the edition')).toBeDefined()
-    expect(folders('Edition 2026')).toEqual([
-      ['Offer', true],
-      ['Shop setup', false],
-    ])
+    expect(folders('Edition 2026')).toEqual([['Shop', true]])
     const menu = screen.getByRole('navigation', { name: 'Edition 2026' })
     expect(
       within(menu).getByRole('link', { name: 'Merchandise' }).getAttribute('aria-current'),
     ).toBe('page')
+    expect(
+      within(menu).getByRole('link', { name: 'Orders' }).getAttribute('aria-current'),
+    ).toBeNull()
   })
 
-  it('keeps the folders of the tickets from an org without them', () => {
+  it('keeps the folder of the shop from an org without the tickets of the edition', () => {
     state.settings = 'write'
     state.program = 'write'
     view('/convention-a/editions/2026')

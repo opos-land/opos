@@ -1963,10 +1963,6 @@ msgstr "Number of places"
 msgid "Off: merchandise is bought with a ticket"
 msgstr "Off: merchandise is bought with a ticket"
 
-#: src/features/editions/components/edition-layout.tsx
-msgid "Offer"
-msgstr "Offer"
-
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "On: the shop also takes an order with no ticket"
 msgstr "On: the shop also takes an order with no ticket"
@@ -2750,6 +2746,7 @@ msgstr "Sentence the buyer accepts"
 msgid "Set the size chart"
 msgstr "Set the size chart"
 
+#: src/features/editions/components/edition-layout.tsx
 #: src/features/team/components/permission-labels.tsx
 msgid "Settings"
 msgstr "Settings"
@@ -2765,10 +2762,6 @@ msgstr "Shop"
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Shop settings of the convention"
 msgstr "Shop settings of the convention"
-
-#: src/features/editions/components/edition-layout.tsx
-msgid "Shop setup"
-msgstr "Shop setup"
 
 #: src/features/shop/model/documents.ts
 msgid "Shop terms"

@@ -52,7 +52,7 @@ test('an org makes a code, and a buyer who enters it sees the discount’s line 
   await signInToPanel(page, s.head.email, s.head.password)
   await followFolderLink(
     page.getByRole('navigation', { name: s.edition.name }),
-    'Offer',
+    'Shop',
     'Discount codes',
   )
   await expect(page.getByRole('heading', { name: 'Discount codes', level: 1 })).toBeVisible()

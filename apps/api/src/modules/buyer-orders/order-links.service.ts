@@ -41,6 +41,7 @@ export class OrderLinks {
     token: string,
     then: (order: OrderOfLink, expired: boolean) => Promise<T>,
     now: Date,
+    lock = false,
   ): Promise<T | undefined> {
     const tokenHash = hashOf(token)
     const tenantId = await this.global.orderLinkTenant(tokenHash)
@@ -48,7 +49,7 @@ export class OrderLinks {
     return this.context.withTenant(tenantId, async () => {
       const link = await this.links.byHash(tenantId, tokenHash)
       if (!link || link.endedAt) return undefined
-      const order = await this.links.order(tenantId, link.orderId)
+      const order = await this.links.order(tenantId, link.orderId, lock)
       if (!order) return undefined
       return then(order, link.expiresAt.getTime() <= now.getTime())
     })
@@ -104,6 +105,8 @@ export class OrderLinks {
         )
       },
       now,
+      // Under the lock of the order's row: one fresh link an hour, however many ask at once.
+      true,
     )
       .catch(suspendedAsNotFound('order link'))
       // A suspended convention answers as any token does.

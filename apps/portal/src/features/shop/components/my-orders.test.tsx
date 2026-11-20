@@ -146,6 +146,16 @@ describe('the orders of an account on a convention’s page', () => {
     await waitFor(() => expect(api.resend).toHaveBeenCalledWith('convention-a', 'order-PAD2222222'))
   })
 
+  // An order an org moved to another email passed to another person: nothing is added to it.
+  it('offer no "Buy more" for a paid order nothing can be added to', async () => {
+    api.list.mockResolvedValue([order('MQVED22222', { bought: null })])
+    view()
+    const moved = await item('MQVED22222')
+
+    expect(within(moved).getByRole('button', { name: 'Resend QR code' })).toBeDefined()
+    expect(within(moved).queryByRole('link', { name: 'Buy more' })).toBeNull()
+  })
+
   // U3: an unpaid order within its hold offers "Pay now"; after the hold nothing starts.
   it('offer "Pay now" within the hold alone, and send the buyer to the provider', async () => {
     api.list.mockResolvedValue([awaiting('HELD222222', 20), awaiting('LATE222222', -5)])

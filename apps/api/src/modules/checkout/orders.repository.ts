@@ -360,8 +360,11 @@ export class OrdersRepository {
 
   /**
    * The QR code a "Buy more" order joins once it is paid: the one the order it extends carries,
-   * while that order is paid and its code was not replaced. Undefined for any other order, which
-   * gets a code of its own.
+   * while that order is paid, is under the same email and its code was not replaced. Undefined
+   * for any other order, which gets a code of its own: an order whose email an org changed has
+   * passed to another person, and what its old address bought stays apart from it. The row of
+   * the order extended is locked, so a change of its email at the same moment waits and then
+   * leaves this order on the code it joined, or finds it already there.
    */
   async codeToJoin(order: { tenantId: string; orderId: string }): Promise<string | undefined> {
     const first = alias(orders, 'first')
@@ -377,9 +380,11 @@ export class OrdersRepository {
           eq(orders.tenantId, order.tenantId),
           eq(orders.id, order.orderId),
           eq(first.status, 'paid'),
+          eq(first.email, orders.email),
           isNull(orderQrCodes.replacedAt),
         ),
       )
+      .for('update', { of: first })
     return row?.qrCodeId
   }
 

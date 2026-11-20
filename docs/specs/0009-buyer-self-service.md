@@ -111,6 +111,9 @@ valid link and one an expired link.
   the order to extend.
 - A "Buy more" order shares a QR code only with an order of the same account, tenant and edition,
   by a composite foreign key and the check of the route.
+- An order an org moved to another email is no longer added to, and shares its QR code with no
+  order of its old address: a changed email is the one way a ticket passes to another person
+  ([order management](0006-order-management.md)).
 ## Tests
 
 Integration, in `packages/db/test`: `verify` fails on the new cross-tenant read broken once; an

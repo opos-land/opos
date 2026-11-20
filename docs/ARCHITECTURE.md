@@ -646,7 +646,9 @@ steps of [adding a feature](#adding-a-feature).
   account's order is not there. A "Buy more" order names the account's own paid order of the
   same edition, whose row is locked before any limit; it is priced by the contract's one
   function against what that order's ticket type offers and what was bought on its QR code, and
-  once paid joins the QR code that order then carries
+  once paid joins the QR code that order then carries, while the two are under one email: an
+  order an org moved to another address is added to no longer, and shares its code with nothing
+  its old address bought
   ([0064](adr/0064-add-to-a-paid-order-with-an-order-of-its-own-on-the-same-qr-code.md)).
 - **The scanner.** A phone becomes a scanner by spending a pairing code, which travels in a
   request's body and after the `#` of a link, never in a path or a query; it is then known by its

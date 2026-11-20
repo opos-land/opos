@@ -119,12 +119,15 @@ function OrderRow({
           <Button variant="outline" onClick={() => resend.mutate()} disabled={resend.isPending}>
             <Trans>Resend QR code</Trans>
           </Button>
-          <Link
-            to={`${shop}/checkout?extends=${order.id}`}
-            className={buttonVariants({ variant: 'outline' })}
-          >
-            <Trans>Buy more</Trans>
-          </Link>
+          {/* Nothing is added to an order an org moved to another address. */}
+          {order.bought && (
+            <Link
+              to={`${shop}/checkout?extends=${order.id}`}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              <Trans>Buy more</Trans>
+            </Link>
+          )}
         </div>
       )}
       {payable && (

@@ -30,7 +30,9 @@ export class MyOrdersController {
   list() {
     return implement(contract.myOrders.list).handler(async () => {
       const tenantId = this.context.tenant().id
-      const listed = await this.mine.list(tenantId, this.context.account().id)
+      const account = this.context.account()
+      const email = account.email.trim().toLowerCase()
+      const listed = await this.mine.list(tenantId, account.id)
       const shown: MyOrder[] = []
       for (const order of listed) {
         shown.push({
@@ -44,8 +46,12 @@ export class MyOrdersController {
           lines: await this.read.lines(tenantId, order.id),
           totalMinor: order.totalMinor,
           currency: order.currency,
-          // "Buy more" adds to a paid order alone.
-          bought: order.status === 'paid' ? await this.orders.boughtWith(tenantId, order.id) : null,
+          // "Buy more" adds to a paid order alone, and to none an org moved to another address:
+          // that order passed to another person.
+          bought:
+            order.status === 'paid' && order.email === email
+              ? await this.orders.boughtWith(tenantId, order.id)
+              : null,
         })
       }
       return shown
@@ -59,7 +65,10 @@ export class MyOrdersController {
     return implement(contract.myOrders.resendConfirmation).handler(async ({ input }) => {
       const tenantId = this.context.tenant().id
       const order = await this.orders.own(tenantId, this.context.account().id, input.params.orderId)
-      if (!order) throw notFound('order')
+      // An edition taken back answers as an unknown address, as the list of orders does.
+      if (!order || !(await this.orders.publishedEdition(tenantId, order.editionId))) {
+        throw notFound('order')
+      }
       if (order.status !== 'paid' || order.email === null) throw notPaid()
       await this.limiter.consume('confirmationResends', `order:${order.id}`)
       await this.orders.queueEmail(

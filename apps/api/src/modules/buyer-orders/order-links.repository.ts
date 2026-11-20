@@ -61,10 +61,11 @@ export class OrderLinksRepository {
 
   /**
    * The order of the tenant with its edition and its convention, while the edition is
-   * published: a link of an edition taken back opens nothing, as its shop does.
+   * published: a link of an edition taken back opens nothing, as its shop does. With `lock` its
+   * row is locked until the transaction ends.
    */
-  async order(tenantId: string, orderId: string): Promise<OrderOfLink | undefined> {
-    const [row] = await this.context
+  async order(tenantId: string, orderId: string, lock = false): Promise<OrderOfLink | undefined> {
+    const query = this.context
       .tx()
       .select({
         id: orders.id,
@@ -90,6 +91,9 @@ export class OrderLinksRepository {
       .where(
         and(eq(orders.tenantId, tenantId), eq(orders.id, orderId), eq(editions.isPublished, true)),
       )
+    // Locked for a renewal: of several asked for at the same moment, one finds no fresh link
+    // queued and queues it, and the others then find it.
+    const [row] = await (lock ? query.for('update', { of: orders }) : query)
     if (!row) return undefined
     return {
       id: row.id,

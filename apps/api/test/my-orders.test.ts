@@ -187,6 +187,10 @@ describe('"Resend QR code"', () => {
       expect(res.body).toMatchObject({ code: 'request.not-found' })
     }
     expect(await d.emails(paid.orderId)).toHaveLength(2)
+    // An edition taken back answers as an unknown address, as the list of orders does.
+    await setPublished(d.edition, false)
+    await resend(buyer, paid.orderId).expect(404)
+    expect(await d.emails(paid.orderId)).toHaveLength(2)
   })
 })
 
@@ -387,6 +391,44 @@ describe('"Buy more"', () => {
     const canceled = await more(d, buyer, paid, cart, 0).expect(409)
     expect(canceled.body).toMatchObject({ code: 'order.not-extendable' })
     expect(await storedRows('orders', d.t.id)).toHaveLength(2)
+  })
+
+  // A changed email is the one way a ticket passes to another person
+  // (docs/specs/0006-order-management.md, C2): the account the order stays on adds nothing to
+  // it from then on, and never gets the QR code its new holder was sent.
+  it('adds nothing to an order whose email an org changed, and joins no code of it', async () => {
+    const { d, room } = await deskWithExtras()
+    const buyer = await member()
+    const first = await bought(d, buyer)
+    await d
+      .head('put', `/orders/${first.orderId}/email`, { email: 'new-holder@example.test' })
+      .expect(200)
+
+    const refused = await more(d, buyer, first, { addOnIds: [room] }, 0).expect(409)
+
+    expect(refused.body).toMatchObject({ code: 'order.not-extendable' })
+    // The list no longer offers it either: nothing is added to an order that left the account's
+    // address.
+    const listed = (await mine(d, buyer)).find((order) => order.id === first.orderId)!
+    expect(listed.bought).toBeNull()
+  })
+
+  it('gives an order paid after its first order passed on a QR code of its own', async () => {
+    const { d, pin } = await deskWithExtras()
+    const buyer = await member()
+    const first = await bought(d, buyer)
+    const added = (
+      await more(d, buyer, first, { items: [{ variantId: pin.variantId, quantity: 1 }] }, 5000)
+    ).body as PlacedOrder
+    await d
+      .head('put', `/orders/${first.orderId}/email`, { email: 'new-holder@example.test' })
+      .expect(200)
+
+    await d.pay(added)
+
+    const carried = await storedRows('order_qr_code_orders', d.t.id)
+    const codeOf = (orderId: string) => carried.find((row) => row.order_id === orderId)!.qr_code_id
+    expect(codeOf(added.orderId)).not.toBe(codeOf(first.orderId))
   })
 
   // B6: a visitor has no "Buy more": buying again is a new order with a QR code of its own.

@@ -26,6 +26,9 @@ a row of its own, so several orders of an edition may carry one code.
   still awaiting its payment among them, is refused. Merchandise is ordered again.
 - Once paid, the new order joins the QR code the first one carries at that moment. Where the
   first order no longer carries a code that works, the new order gets one of its own.
+- An order whose email an org changed has passed to another person: nothing is added to it, and
+  an order started for it before the change gets a QR code of its own once paid. The account the
+  order stays on never comes by the code its new holder was sent.
 - The row of the order added to is locked before any limit, as every change of an order locks
   it ([0053](0053-lock-the-rows-that-carry-a-limit-in-one-fixed-order.md)).
 - A visitor has no "Buy more": buying again is an order with a QR code of its own.

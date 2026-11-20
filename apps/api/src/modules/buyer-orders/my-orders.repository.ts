@@ -12,6 +12,8 @@ export interface ListedOrder {
   placedAt: Date
   holdEndsAt: Date | null
   holderName: string
+  /** The order's email: an org may have moved the order to another address than the account's. */
+  email: string | null
   totalMinor: number
   currency: string
   editionId: string
@@ -40,6 +42,7 @@ export class MyOrdersRepository {
         placedAt: orders.placedAt,
         holdEndsAt: orders.holdEndsAt,
         holderName: orders.holderName,
+        email: orders.email,
         totalMinor: orders.totalMinor,
         currency: orders.currency,
         editionId: editions.id,

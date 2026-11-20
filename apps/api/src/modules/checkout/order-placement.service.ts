@@ -68,7 +68,11 @@ export class OrderPlacement {
       if (!buyer.accountId) throw notExtendable()
       const own = await this.orders.own(tenantId, buyer.accountId, input.extendsOrderId, true)
       if (!own) throw notFound('order')
-      if (own.editionId !== editionId || own.status !== 'paid') throw notExtendable()
+      // An order whose email an org changed passed to another person: the account it stays on
+      // adds nothing to it, and so never comes by the QR code its new holder was sent.
+      if (own.editionId !== editionId || own.status !== 'paid' || own.email !== email) {
+        throw notExtendable()
+      }
       first = own
       extending = await this.orders.boughtWith(tenantId, own.id)
     }

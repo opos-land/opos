@@ -276,6 +276,17 @@ describe('a fresh order link', () => {
     expect(await linkEmails(d, placed.orderId)).toHaveLength(2)
   })
 
+  it('is sent once however many ask for it at the same moment', async () => {
+    const d = await orderDesk(app)
+    const placed = await d.paid()
+    const expired = await addOrderLinkWithToken(d.t.id, d.edition, placed.orderId, 'expired')
+
+    const answers = await Promise.all(Array.from({ length: 5 }, () => renew(expired)))
+
+    expect(answers.map((res) => res.status)).toEqual([204, 204, 204, 204, 204])
+    expect(await linkEmails(d, placed.orderId)).toHaveLength(1)
+  })
+
   it('sends nothing for a suspended convention, and answers the same', async () => {
     const d = await orderDesk(app)
     const placed = await d.paid()

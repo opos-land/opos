@@ -805,18 +805,35 @@ describe('db:seed shop', () => {
       expect(attempts.some((attempt) => attempt.order_status === 'paid-manual')).toBe(false)
 
       // The ticket holder's answers and consents are kept with the order, and its emails are
-      // listed as sent: the seed sends nothing.
-      const [kept] = await migrator<{ answers: number; consents: number; unsent: number }[]>`
+      // listed as sent, each with what it said: the seed sends nothing.
+      const [kept] = await migrator<
+        { answers: number; consents: number; unsent: number; silent: number }[]
+      >`
         select
           (select count(*)::int from order_custom_field_answers where edition_id = ${edition})
             as answers,
           (select count(*)::int from order_consents where edition_id = ${edition}) as consents,
           (select count(*)::int from order_emails where edition_id = ${edition} and sent_at is null)
-            as unsent
+            as unsent,
+          (select count(*)::int from order_emails where edition_id = ${edition} and body is null)
+            as silent
       `
       expect(kept!.answers).toBeGreaterThan(0)
       expect(kept!.consents).toBeGreaterThan(0)
       expect(kept!.unsent).toBe(0)
+      expect(kept!.silent).toBe(0)
+      // A confirmation is kept without its QR code and the token of its order link.
+      const confirmations = await migrator<{ subject: string; body: string }[]>`
+        select subject, body from order_emails
+        where edition_id = ${edition} and kind = 'order-confirmation'
+      `
+      expect(confirmations.length).toBeGreaterThan(0)
+      for (const said of confirmations) {
+        expect(said.subject).toMatch(/^Your order \S+ for .+ is paid$/)
+        expect(said.body).toContain('The QR code of the order')
+        expect(said.body).toMatch(/\/order#\[…\]/)
+        expect(said.body).not.toMatch(/[A-Z2-7]{32}/)
+      }
     },
   )
 

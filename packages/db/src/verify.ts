@@ -315,6 +315,8 @@ const appUpdates = [
   'order_emails.failed_attempts',
   'order_emails.next_attempt_at',
   'order_emails.withdrawn_at',
+  'order_emails.subject',
+  'order_emails.body',
 ]
 
 /**

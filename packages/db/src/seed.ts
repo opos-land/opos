@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { DeleteObjectsCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { and, eq, notInArray, sql } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull, notInArray, sql } from 'drizzle-orm'
 import { grantAdmin } from './admins'
 import { migrationDb } from './client'
 import { demoChart } from './demo-chart'
@@ -1147,7 +1147,7 @@ async function seedTenant(spec: SeedTenant) {
         await seedDiscountCode(tx, tenantId, editionId, code)
       }
       for (const order of edition.shop.orders ?? []) {
-        await seedOrder(tx, tenantId, editionId, order)
+        await seedOrder(tx, { tenantId, editionId, conventionName: spec.name }, order)
       }
     }
 
@@ -1678,15 +1678,85 @@ async function seedOrderLink(
     .onConflictDoNothing({ target: orderLinks.tokenHash })
 }
 
-async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: SeedOrder) {
+/**
+ * What a demo email said, as the outbox keeps the text of one it sent: without the QR code and
+ * the token of the order link, which only its recipient sees. The seed sends nothing, so the text
+ * is a short one of its own, after the wording of the real email.
+ */
+function demoEmailText(
+  kind: (typeof orderEmails.kind.enumValues)[number],
+  { number, conventionName }: { number: string; conventionName: string },
+): { subject: string; body: string } {
+  const handedOver = [
+    'YOUR QR CODE',
+    `The QR code of the order ${number}: […]`,
+    'See your order: https://portal.example/order#[…]',
+  ]
+  const said = (subject: string, ...paragraphs: string[]) => ({
+    subject,
+    body: [...paragraphs, 'OPOS'].join('\n\n'),
+  })
+  switch (kind) {
+    case 'order-confirmation':
+      return said(
+        `Your order ${number} for ${conventionName} is paid`,
+        `Thank you. Your order ${number} for ${conventionName} is paid.`,
+        ...handedOver,
+      )
+    case 'order-email-changed':
+      return said(
+        `Your order ${number} for ${conventionName} is now under this email address`,
+        `An organizer of ${conventionName} moved the order ${number} to this email address.`,
+        ...handedOver,
+      )
+    case 'order-expired':
+      return said(
+        `Your order ${number} for ${conventionName} has expired`,
+        `Your order ${number} for ${conventionName} was not paid in time and has expired. Nothing was charged.`,
+      )
+    case 'payment-under-review':
+      return said(
+        `Your payment for the order ${number} is under review`,
+        `Your payment for the order ${number} for ${conventionName} arrived, but it could not confirm the order, so an organizer has to look at it.`,
+        `An organizer of ${conventionName} will get in touch with you. You do not need to pay again.`,
+      )
+    case 'payment-not-needed':
+      return said(
+        `A payment arrived that your order ${number} does not need`,
+        `A payment arrived for your order ${number} for ${conventionName}, which was not waiting for one any more. It changes nothing of the order.`,
+      )
+    default:
+      throw new Error(`No demo text for the email ${kind}`)
+  }
+}
+
+async function seedOrder(
+  tx: Tx,
+  { conventionName, ...at }: { tenantId: string; editionId: string; conventionName: string },
+  order: SeedOrder,
+) {
+  const { tenantId, editionId } = at
   const [existing] = await tx
     .select({ id: orders.id })
     .from(orders)
     .where(and(eq(orders.tenantId, tenantId), eq(orders.number, order.number)))
-  const at = { tenantId, editionId }
   if (existing) {
     // The order stays as the demo left it; its link is one the demo can always open.
     await seedOrderLink(tx, { ...at, orderId: existing.id }, order)
+    // An email seeded before texts were kept says now what one of its kind says.
+    for (const kind of order.emails ?? []) {
+      await tx
+        .update(orderEmails)
+        .set(demoEmailText(kind, { number: order.number, conventionName }))
+        .where(
+          and(
+            eq(orderEmails.orderId, existing.id),
+            eq(orderEmails.kind, kind),
+            isNotNull(orderEmails.sentAt),
+            isNull(orderEmails.body),
+          ),
+        )
+    }
     return
   }
   const placedAt = new Date(Date.now() - order.placedDaysAgo * DAY - HOUR)
@@ -1951,6 +2021,7 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
         queuedAt: settledAt,
         sentAt: settledAt,
         nextAttemptAt: settledAt,
+        ...demoEmailText(kind, { number: order.number, conventionName }),
       })),
     )
   }

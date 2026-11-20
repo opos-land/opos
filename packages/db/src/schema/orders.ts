@@ -537,9 +537,18 @@ export const orderEmails = pgTable(
      * link, to an address the order has left since it was queued.
      */
     withdrawnAt: timestamp({ withTimezone: true }),
+    /**
+     * What it said, kept as it is sent: its subject and its text, in the language it went out
+     * in, without the QR code and the token of the order link, which only its recipient sees
+     * (docs/specs/0006-order-management.md, F4). Empty for one sent before texts were kept.
+     */
+    subject: text(),
+    body: text(),
   },
   (t) => [
     index('order_emails_tenant_order_idx').on(t.tenantId, t.orderId),
+    // The list of an edition's emails, the newest first.
+    index('order_emails_edition_queued_idx').on(t.tenantId, t.editionId, t.queuedAt),
     // What the outbox reads: the emails not sent yet, by when they are due.
     index('order_emails_due_idx')
       .on(t.nextAttemptAt)
@@ -551,6 +560,8 @@ export const orderEmails = pgTable(
     }).onDelete('cascade'),
     check('order_emails_recipient', sql`${t.recipient} <> ''`),
     check('order_emails_failed_attempts', sql`${t.failedAttempts} >= 0`),
+    check('order_emails_said', sql`(${t.subject} is null) = (${t.body} is null)`),
+    check('order_emails_said_once_sent', sql`${t.body} is null or ${t.sentAt} is not null`),
   ],
 )
 

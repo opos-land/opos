@@ -502,6 +502,39 @@ describe('order_emails and order_links', () => {
     )
   })
 
+  // Order management (docs/specs/0006-order-management.md, F4): what a sent email said.
+  it('keeps what an email said once it is sent: its subject and its text together', async () => {
+    const at = await place()
+    const mine = await order(at)
+    const queued = await email(at, mine)
+    const said = { subject: 'Your order is paid', body: 'Thank you.' }
+
+    // The application role writes them as it marks the email sent, in its own tenant alone.
+    await inTenant(
+      at.tenant,
+      (sql) =>
+        sql`update order_emails set ${sql({ sent_at: new Date(), ...said })} where id = ${queued}`,
+    )
+    expect(await migrator`select subject, body from order_emails where id = ${queued}`).toEqual([
+      said,
+    ])
+    const other = await place()
+    await inTenant(other.tenant, (sql) => sql`update order_emails set body = 'Changed'`)
+    expect(await migrator`select body from order_emails where id = ${queued}`).toEqual([
+      { body: 'Thank you.' },
+    ])
+
+    // An email not sent yet said nothing, and a subject comes with its text.
+    await expect(email(at, mine, said)).rejects.toThrow(/order_emails_said_once_sent/)
+    for (const half of [{ subject: 'Your order is paid' }, { body: 'Thank you.' }]) {
+      await expect(email(at, mine, { sent_at: new Date(), ...half })).rejects.toThrow(
+        /"order_emails_said"/,
+      )
+    }
+    // One sent before its text was kept stays listed without it.
+    await email(at, mine, { sent_at: new Date() })
+  })
+
   it('opens an order by the hash of a token, which no two links share', async () => {
     const [a, b] = await Promise.all([place(), place()])
     const hash = 'e'.repeat(64)

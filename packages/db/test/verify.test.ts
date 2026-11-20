@@ -495,6 +495,9 @@ describe('verifyDatabase', () => {
       ['payment_attempts', 'information'],
       ['order_emails', 'recipient'],
       ['order_emails', 'kind'],
+      // What an email said names its buyer: no read across tenants reaches it.
+      ['order_emails', 'subject'],
+      ['order_emails', 'body'],
       // An order link is found across tenants by a hash, and nothing of its order is read there.
       ['order_links', 'order_id'],
       ['order_links', 'expires_at'],

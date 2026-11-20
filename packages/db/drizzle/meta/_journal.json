@@ -435,6 +435,20 @@
       "when": 1795199949532,
       "tag": "0061_add_on_pictures_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1795203111437,
+      "tag": "0062_order_email_text",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1795203112297,
+      "tag": "0063_order_email_text_privileges",
+      "breakpoints": true
     }
   ]
 }

@@ -151,6 +151,24 @@ describe('discount_codes', () => {
   })
 })
 
+describe('the tables of what a code applies to', () => {
+  // The names of the schema's other composite keys, which a refusal is told by.
+  it('name their primary keys as the rest of the schema does', async () => {
+    const keys = await migrator<{ name: string }[]>`
+      select conname as name from pg_constraint
+      where contype = 'p' and conrelid::regclass::text in
+        ('discount_code_add_ons', 'discount_code_merchandise_items', 'discount_code_ticket_types')
+      order by conname
+    `
+
+    expect(keys.map((key) => key.name)).toEqual([
+      'discount_code_add_ons_pkey',
+      'discount_code_merchandise_items_pkey',
+      'discount_code_ticket_types_pkey',
+    ])
+  })
+})
+
 describe('an order with a discount code', () => {
   it('names a code of its own edition, which is never deleted from under it', async () => {
     const at = await place()

@@ -74,7 +74,7 @@ export const discountCodeTicketTypes = pgTable(
   { ...link, discountCodeId: uuid().notNull(), ticketTypeId: uuid().notNull() },
   (t) => [
     primaryKey({
-      name: 'discount_code_ticket_types_pk',
+      name: 'discount_code_ticket_types_pkey',
       columns: [t.discountCodeId, t.ticketTypeId],
     }),
     index('discount_code_ticket_types_tenant_idx').on(t.tenantId, t.discountCodeId),
@@ -96,7 +96,7 @@ export const discountCodeAddOns = pgTable(
   'discount_code_add_ons',
   { ...link, discountCodeId: uuid().notNull(), addOnId: uuid().notNull() },
   (t) => [
-    primaryKey({ name: 'discount_code_add_ons_pk', columns: [t.discountCodeId, t.addOnId] }),
+    primaryKey({ name: 'discount_code_add_ons_pkey', columns: [t.discountCodeId, t.addOnId] }),
     index('discount_code_add_ons_tenant_idx').on(t.tenantId, t.discountCodeId),
     foreignKey({
       name: 'discount_code_add_ons_code_fk',
@@ -117,7 +117,7 @@ export const discountCodeMerchandiseItems = pgTable(
   { ...link, discountCodeId: uuid().notNull(), merchandiseItemId: uuid().notNull() },
   (t) => [
     primaryKey({
-      name: 'discount_code_merchandise_items_pk',
+      name: 'discount_code_merchandise_items_pkey',
       columns: [t.discountCodeId, t.merchandiseItemId],
     }),
     index('discount_code_merchandise_items_tenant_idx').on(t.tenantId, t.discountCodeId),

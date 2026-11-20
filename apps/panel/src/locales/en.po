@@ -81,7 +81,7 @@ msgstr "A combination that is not ticked does not exist and cannot be bought. A 
 msgid "A consent links its document for good. To link another one, add a new consent."
 msgstr "A consent links its document for good. To link another one, add a new consent."
 
-#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/catalog/components/sensitive-data-notice.tsx
 msgid "A custom field must not ask about health, beliefs, an identity document number or anything else a convention does not need to let a person in."
 msgstr "A custom field must not ask about health, beliefs, an identity document number or anything else a convention does not need to let a person in."
 
@@ -278,7 +278,7 @@ msgstr "Add the code"
 msgid "Add the consent"
 msgstr "Add the consent"
 
-#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/catalog/pages/new-custom-field-page.tsx
 msgid "Add the custom field"
 msgstr "Add the custom field"
 
@@ -476,7 +476,7 @@ msgstr "API key"
 msgid "Applies to: {applies}"
 msgstr "Applies to: {applies}"
 
-#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/catalog/components/sensitive-data-notice.tsx
 msgid "Ask for nothing sensitive"
 msgstr "Ask for nothing sensitive"
 
@@ -761,6 +761,10 @@ msgstr "Create the edition"
 #: src/features/shop/components/seller-section.tsx
 msgid "Currency"
 msgstr "Currency"
+
+#: src/features/catalog/pages/new-custom-field-page.tsx
+msgid "Custom field data"
+msgstr "Custom field data"
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "Custom fields"
@@ -1790,6 +1794,7 @@ msgstr "New add-on"
 msgid "New consent"
 msgstr "New consent"
 
+#: src/features/catalog/pages/new-custom-field-page.tsx
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "New custom field"
 msgstr "New custom field"
@@ -3082,7 +3087,7 @@ msgstr "The credentials stored now go. Once the provider accepts the new ones, p
 msgid "The custom field “{label}” is deleted."
 msgstr "The custom field “{label}” is deleted."
 
-#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/catalog/pages/new-custom-field-page.tsx
 msgid "The custom field is added."
 msgstr "The custom field is added."
 
@@ -3746,6 +3751,7 @@ msgstr "Ticket holders by age band"
 msgid "Ticket holders of the sold tickets"
 msgstr "Ticket holders of the sold tickets"
 
+#: src/features/catalog/pages/new-custom-field-page.tsx
 #: src/features/catalog/pages/ticket-holders-page.tsx
 #: src/features/editions/components/edition-layout.tsx
 msgid "Ticket holders’ data"

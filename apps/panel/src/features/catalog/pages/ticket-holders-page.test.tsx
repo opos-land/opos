@@ -212,20 +212,6 @@ describe("the ticket holders' data page", () => {
     expect(within(fandom).getByText('Hidden from the shop')).toBeDefined()
   })
 
-  it('adds a custom field, optional unless told otherwise', async () => {
-    view()
-    await screen.findByText('The edition has no custom fields yet.')
-
-    fireEvent.change(field('Question'), { target: { value: ' City you travel from ' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add the custom field' }))
-
-    await waitFor(() => expect(createField).toHaveBeenCalledTimes(1))
-    expect(createField.mock.calls[0]![0]).toEqual({
-      params: { editionId: 'edition-2026' },
-      body: { label: 'City you travel from', isRequired: false },
-    })
-  })
-
   it('changes, moves and hides a field, and deletes it once the modal is confirmed', async () => {
     readFields.mockResolvedValue([customField(1), customField(2)])
     view()
@@ -264,6 +250,17 @@ describe("the ticket holders' data page", () => {
 
     await screen.findByRole('listitem', { name: 'Field 1' })
     expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'New custom field' })).toBeNull()
     expect(field(TEEN).matches(':disabled')).toBe(true)
+  })
+
+  it('links a member who may add to the page of a new custom field, and holds no form of one', async () => {
+    view()
+    await screen.findByText('The edition has no custom fields yet.')
+
+    expect(screen.getByRole('link', { name: 'New custom field' }).getAttribute('href')).toBe(
+      '/convention-a/editions/2026/ticket-holders/custom-fields/new',
+    )
+    expect(screen.queryByLabelText('Question')).toBeNull()
   })
 })

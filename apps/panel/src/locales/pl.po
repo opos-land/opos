@@ -81,7 +81,7 @@ msgstr "Kombinacja, która nie jest zaznaczona, nie istnieje i nie można jej ku
 msgid "A consent links its document for good. To link another one, add a new consent."
 msgstr "Zgoda odsyła do swojego dokumentu na stałe. Aby odesłać do innego, dodaj nową zgodę."
 
-#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/catalog/components/sensitive-data-notice.tsx
 msgid "A custom field must not ask about health, beliefs, an identity document number or anything else a convention does not need to let a person in."
 msgstr "Pole dodatkowe nie może pytać o zdrowie, przekonania, numer dokumentu tożsamości ani o nic innego, czego konwent nie potrzebuje, żeby wpuścić daną osobę."
 
@@ -278,7 +278,7 @@ msgstr "Dodaj kod"
 msgid "Add the consent"
 msgstr "Dodaj zgodę"
 
-#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/catalog/pages/new-custom-field-page.tsx
 msgid "Add the custom field"
 msgstr "Dodaj pole dodatkowe"
 
@@ -476,7 +476,7 @@ msgstr "Klucz API"
 msgid "Applies to: {applies}"
 msgstr "Dotyczy: {applies}"
 
-#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/catalog/components/sensitive-data-notice.tsx
 msgid "Ask for nothing sensitive"
 msgstr "Nie pytaj o nic wrażliwego"
 
@@ -761,6 +761,10 @@ msgstr "Utwórz edycję"
 #: src/features/shop/components/seller-section.tsx
 msgid "Currency"
 msgstr "Waluta"
+
+#: src/features/catalog/pages/new-custom-field-page.tsx
+msgid "Custom field data"
+msgstr "Dane pola dodatkowego"
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "Custom fields"
@@ -1790,6 +1794,7 @@ msgstr "Nowy dodatek"
 msgid "New consent"
 msgstr "Nowa zgoda"
 
+#: src/features/catalog/pages/new-custom-field-page.tsx
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "New custom field"
 msgstr "Nowe pole dodatkowe"
@@ -3082,7 +3087,7 @@ msgstr "Obecne dane dostępowe zostaną usunięte. Gdy dostawca przyjmie nowe, p
 msgid "The custom field “{label}” is deleted."
 msgstr "Pole dodatkowe „{label}” zostało usunięte."
 
-#: src/features/catalog/pages/ticket-holders-page.tsx
+#: src/features/catalog/pages/new-custom-field-page.tsx
 msgid "The custom field is added."
 msgstr "Pole dodatkowe zostało dodane."
 
@@ -3746,6 +3751,7 @@ msgstr "Posiadacze akredytacji według przedziałów wiekowych"
 msgid "Ticket holders of the sold tickets"
 msgstr "Posiadacze sprzedanych akredytacji"
 
+#: src/features/catalog/pages/new-custom-field-page.tsx
 #: src/features/catalog/pages/ticket-holders-page.tsx
 #: src/features/editions/components/edition-layout.tsx
 msgid "Ticket holders’ data"

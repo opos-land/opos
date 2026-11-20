@@ -166,6 +166,8 @@ test('an org builds the catalog of an edition from nothing', async ({
     ['City you travel from', 'required'],
     ['Favourite fandom', 'optional'],
   ] as const) {
+    // Each field is added on a page of its own, which leads back to the fields.
+    await page.getByRole('link', { name: 'New custom field' }).click()
     await page.getByLabel('Question').fill(label)
     await page.getByLabel('Answer').selectOption(answer)
     await page.getByRole('button', { name: 'Add the custom field' }).click()

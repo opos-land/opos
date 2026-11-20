@@ -1,5 +1,6 @@
 export { AddOnsPage } from './pages/add-ons-page'
 export { NewAddOnPage } from './pages/new-add-on-page'
+export { NewCustomFieldPage } from './pages/new-custom-field-page'
 export { TicketHoldersPage } from './pages/ticket-holders-page'
 export { TicketTypePage } from './pages/ticket-type-page'
 export { TicketTypesPage } from './pages/ticket-types-page'

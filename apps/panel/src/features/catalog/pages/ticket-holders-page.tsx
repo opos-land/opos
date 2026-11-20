@@ -2,14 +2,13 @@ import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type CustomField, type EditionShop, updateEditionShopSchema } from '@opos/contract'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PlusIcon } from 'lucide-react'
 import { useId, useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Button,
+  buttonVariants,
   ErrorMessage,
   FieldSet,
   FormField,
@@ -22,17 +21,16 @@ import {
 import { useEditionBySlug } from '../../editions'
 import { editionShopOptions, updateEditionShopOptions } from '../../shop'
 import { atLeast, useCurrentTenant } from '../../tenants'
-import { catalogKey, createCustomFieldOptions, customFieldsOptions } from '../api/catalog'
-import { CustomFieldForm } from '../components/custom-field-form'
+import { customFieldsOptions } from '../api/catalog'
 import { CustomFieldRow } from '../components/custom-field-row'
+import { SensitiveDataNotice } from '../components/sensitive-data-notice'
 import { ageBandsBody } from '../model/age-bands'
-
-const NEW_FIELD = { label: '', isRequired: false }
 
 /**
  * What an edition asks of a ticket holder (`/editions/:editionSlug/ticket-holders`): the ages that
  * divide its three age bands, the guardian consent form a teen's guardian prints, and its custom
- * fields. Reading needs tickets>=read in the edition, changing tickets=write.
+ * fields, with the link to the page of a new one for a member who may add. Reading needs
+ * tickets>=read in the edition, changing tickets=write.
  */
 export function TicketHoldersPage() {
   const { t } = useLingui()
@@ -69,23 +67,17 @@ export function TicketHoldersPage() {
             the order below. The answers stay with the order, in your convention.
           </Trans>
         </p>
-        <Alert>
-          <AlertTitle>
-            <Trans>Ask for nothing sensitive</Trans>
-          </AlertTitle>
-          <AlertDescription>
-            <Trans>
-              A custom field must not ask about health, beliefs, an identity document number or
-              anything else a convention does not need to let a person in.
-            </Trans>
-          </AlertDescription>
-        </Alert>
+        <SensitiveDataNotice />
         {fields.isPending ? (
           <LoadingView />
         ) : fields.isError ? (
           <ErrorMessage error={fields.error} />
         ) : (
-          <CustomFields editionId={edition.id} fields={fields.data} canWrite={canWrite} />
+          <CustomFields
+            fields={fields.data}
+            canWrite={canWrite}
+            adding={`/${tenant.slug}/editions/${edition.slug}/ticket-holders/custom-fields/new`}
+          />
         )}
       </Section>
     </>
@@ -197,28 +189,16 @@ function AgeBands({
 }
 
 function CustomFields({
-  editionId,
   fields,
   canWrite,
+  adding,
 }: {
-  editionId: string
   fields: CustomField[]
   canWrite: boolean
+  /** The address of the page that adds a field. */
+  adding: string
 }) {
-  const { t } = useLingui()
-  const { api } = useCurrentTenant()
-  const queryClient = useQueryClient()
   const listId = useId()
-  // A new key empties the form once its field is added.
-  const [form, setForm] = useState(0)
-  const create = useMutation({
-    ...createCustomFieldOptions(api),
-    meta: { success: msg`The custom field is added.` },
-    onSuccess: async () => {
-      setForm((key) => key + 1)
-      await queryClient.invalidateQueries({ queryKey: catalogKey(api) })
-    },
-  })
 
   return (
     <>
@@ -244,17 +224,11 @@ function CustomFields({
         </>
       )}
       {canWrite && (
-        <div className="flex flex-col gap-4 border-t pt-4">
-          <h3 className="text-sm font-medium">
+        <div>
+          <Link to={adding} className={buttonVariants({ variant: 'outline' })}>
+            <PlusIcon data-icon="inline-start" />
             <Trans>New custom field</Trans>
-          </h3>
-          <CustomFieldForm
-            key={form}
-            initial={NEW_FIELD}
-            pending={create.isPending}
-            submitLabel={t`Add the custom field`}
-            onSubmit={(body) => create.mutate({ params: { editionId }, body })}
-          />
+          </Link>
         </div>
       )}
     </>

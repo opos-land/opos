@@ -3947,6 +3947,10 @@ msgstr "Motyw systemu"
 msgid "The team has no organizers besides its head organizers."
 msgstr "Zespół nie ma organizatorów poza głównymi organizatorami."
 
+#: src/features/orders/pages/email-page.tsx
+msgid "The text is shown in the convention’s language, whichever language the email went out in."
+msgstr "Treść jest pokazana w języku konwentu, niezależnie od tego, w jakim języku wyszedł e-mail."
+
 #: src/features/orders/model/labels.ts
 msgid "The ticket holder was changed"
 msgstr "Zmieniono posiadacza akredytacji"

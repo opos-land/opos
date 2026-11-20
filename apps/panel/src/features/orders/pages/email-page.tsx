@@ -29,8 +29,8 @@ const Fact = ({ label, children }: { label: ReactNode; children: ReactNode }) =>
 /**
  * One email of an order (`/editions/:editionSlug/emails/:emailId`,
  * docs/specs/0006-order-management.md, F4): to whom it went, of which order and when, and what
- * it said, as it went out and in the language it went out in. The QR code and the order link are
- * not there to show: they are left out of what is kept, since only the recipient sees them.
+ * it said as it went out, written in the convention's language. The QR code and the order link
+ * are not there to show: they are left out of what is kept, since only the recipient sees them.
  * Needs tickets>=read in the edition.
  */
 export function EmailPage() {
@@ -101,14 +101,22 @@ export function EmailPage() {
             <p className="bg-muted/50 max-w-2xl rounded-lg border p-4 text-sm whitespace-pre-wrap">
               {email.body}
             </p>
-            {HANDING_OVER_EMAIL_KINDS.includes(email.kind) && (
-              <p className="text-muted-foreground max-w-2xl text-sm">
+            <div className="text-muted-foreground flex max-w-2xl flex-col gap-1 text-sm">
+              <p>
                 <Trans>
-                  The QR code and the order link are left out: only the recipient sees them.{' '}
-                  {LEFT_OUT} stands where the email had them.
+                  The text is shown in the convention’s language, whichever language the email went
+                  out in.
                 </Trans>
               </p>
-            )}
+              {HANDING_OVER_EMAIL_KINDS.includes(email.kind) && (
+                <p>
+                  <Trans>
+                    The QR code and the order link are left out: only the recipient sees them.{' '}
+                    {LEFT_OUT} stands where the email had them.
+                  </Trans>
+                </p>
+              )}
+            </div>
           </>
         )}
       </Section>

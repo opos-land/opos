@@ -161,6 +161,12 @@ describe('the page of an email', () => {
 
     expect(said.getByText(/^Nothing was charged\./)).toBeDefined()
     expect(said.queryByText(/left out/)).toBeNull()
+    // Every text is the convention's: the email itself may have gone out in another language.
+    expect(
+      said.getByText(
+        'The text is shown in the convention’s language, whichever language the email went out in.',
+      ),
+    ).toBeDefined()
   })
 
   it('names an alert to the orgs without their addresses', async () => {

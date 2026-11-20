@@ -3947,6 +3947,10 @@ msgstr "The system's theme"
 msgid "The team has no organizers besides its head organizers."
 msgstr "The team has no organizers besides its head organizers."
 
+#: src/features/orders/pages/email-page.tsx
+msgid "The text is shown in the convention’s language, whichever language the email went out in."
+msgstr "The text is shown in the convention’s language, whichever language the email went out in."
+
 #: src/features/orders/model/labels.ts
 msgid "The ticket holder was changed"
 msgstr "The ticket holder was changed"

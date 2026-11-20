@@ -98,6 +98,11 @@ export const tenantRequirements: Record<string, Need> = {
   'orders.takeBackHandOut': tickets('write'),
   'orders.productionNumbers': tickets('read'),
   'orders.productionNumbersExport': tickets('read'),
+  // The reports of an edition's sales (docs/specs/0010-sales-reports.md).
+  'sales.get': tickets('read'),
+  'sales.ticketHolders': tickets('read'),
+  'sales.merchandisePickList': tickets('read'),
+  'sales.payments': tickets('read'),
   'discountCodes.list': tickets('read'),
   'discountCodes.create': tickets('write'),
   'discountCodes.update': tickets('write'),

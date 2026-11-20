@@ -712,6 +712,52 @@ export async function addOrderLinkWithToken(
   return token
 }
 
+/** What a ticket holder answered to a custom field of the edition, as its row alone. */
+export const addOrderAnswer = (
+  tenantId: string,
+  editionId: string,
+  orderId: string,
+  customFieldId: string,
+  answer: string,
+) =>
+  db.execute(sql`
+    insert into order_custom_field_answers (tenant_id, edition_id, order_id, custom_field_id, answer)
+    values (${tenantId}, ${editionId}, ${orderId}, ${customFieldId}, ${answer})
+  `)
+
+/** A payment attempt of an order as its row alone: paid at the fake provider unless said otherwise. */
+export async function addPaymentAttempt(
+  tenantId: string,
+  editionId: string,
+  orderId: string,
+  values: {
+    status?: 'started' | 'paid' | 'failed' | 'ended' | 'refused'
+    amountMinor?: number
+    paidAmountMinor?: number | null
+    paidAt?: string | null
+    moneyWith?: 'convention' | 'buyer' | null
+    providerReference?: string | null
+    information?: Record<string, string> | null
+  } = {},
+) {
+  const status = values.status ?? 'paid'
+  const settled = status === 'paid' || status === 'refused'
+  const paidAt =
+    values.paidAt === undefined ? (settled ? '2027-05-01T10:05:00Z' : null) : values.paidAt
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into payment_attempts (tenant_id, edition_id, order_id, provider, status, amount_minor,
+      paid_amount_minor, paid_at, confirmed_at, money_with, provider_reference, information)
+    values (${tenantId}, ${editionId}, ${orderId}, 'fake', ${status}, ${values.amountMinor ?? 10000},
+      ${values.paidAmountMinor === undefined ? (settled ? (values.amountMinor ?? 10000) : null) : values.paidAmountMinor},
+      ${paidAt}, ${paidAt},
+      ${values.moneyWith === undefined ? (status === 'paid' ? 'convention' : status === 'refused' ? 'buyer' : null) : values.moneyWith},
+      ${values.providerReference ?? null},
+      ${values.information === undefined || values.information === null ? null : sql`${JSON.stringify(values.information)}::jsonb`})
+    returning id
+  `)
+  return row!.id
+}
+
 /** An email of an order as its row alone, due at once: what a route queues for the outbox. */
 export const queueOrderEmail = (
   tenantId: string,

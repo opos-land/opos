@@ -13,6 +13,7 @@ import { meContract } from './me'
 import { ordersContract } from './orders'
 import { programContract } from './program'
 import { publicContract } from './public'
+import { salesContract } from './sales'
 import { scannerContract, scannersContract } from './scanner'
 import { shopContract } from './shop'
 import { tenantsContract } from './tenants'
@@ -35,6 +36,7 @@ export const contract = {
   orderLinks: orderLinksContract,
   myOrders: myOrdersContract,
   discountCodes: discountCodesContract,
+  sales: salesContract,
   scanners: scannersContract,
   scanner: scannerContract,
   payments: paymentsContract,
@@ -64,6 +66,7 @@ export * from './me'
 export * from './orders'
 export * from './program'
 export * from './public'
+export * from './sales'
 export * from './scanner'
 export * from './shop'
 export * from './tenants'

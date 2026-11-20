@@ -61,17 +61,37 @@ msgctxt "glossary"
 msgid "add-on"
 msgstr "add-on"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Add-ons"
+msgstr "Add-ons"
+
 #. Glossary term: admin
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "administrator"
 msgstr "administrator"
 
+#: src/exports.ts
+msgctxt "export value"
+msgid "Adult"
+msgstr "Adult"
+
 #. Glossary term: age band (child, teen or adult)
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "age band"
 msgstr "age band"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Age band"
+msgstr "Age band"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Amount"
+msgstr "Amount"
 
 #: src/errors.ts
 msgid "An account with this email address already exists."
@@ -129,11 +149,21 @@ msgstr "Another discount code of this edition already has this text. Choose anot
 msgid "Another scanner of this edition already has this name. Choose another."
 msgstr "Another scanner of this edition already has this name. Choose another."
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Attempt"
+msgstr "Attempt"
+
 #. Glossary term: attendee
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "attendee"
 msgstr "attendee"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Awaiting payment"
+msgstr "Awaiting payment"
 
 #: src/exports.ts
 msgctxt "production numbers"
@@ -152,13 +182,28 @@ msgctxt "glossary"
 msgid "buyer"
 msgstr "buyer"
 
+#: src/exports.ts
+msgctxt "export value"
+msgid "Canceled"
+msgstr "Canceled"
+
 #: src/errors.ts
 msgid "Check the data you entered."
 msgstr "Check the data you entered."
 
+#: src/exports.ts
+msgctxt "export value"
+msgid "Child"
+msgstr "Child"
+
 #: src/errors.ts
 msgid "Choose a time zone from the list."
 msgstr "Choose a time zone from the list."
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Commission"
+msgstr "Commission"
 
 #: src/emails.ts
 msgid "Confirm email address"
@@ -218,11 +263,21 @@ msgctxt "glossary"
 msgid "core"
 msgstr "core"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Currency"
+msgstr "Currency"
+
 #. Glossary term: custom field (a short text an edition asks a ticket holder for)
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "custom field"
 msgstr "custom field"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Declined"
+msgstr "Declined"
 
 #: src/order-emails.ts
 msgid "Discount"
@@ -248,6 +303,16 @@ msgctxt "glossary"
 msgid "edition"
 msgstr "edition"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Email"
+msgstr "Email"
+
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Ended"
+msgstr "Ended"
+
 #: src/errors.ts
 msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
@@ -255,6 +320,16 @@ msgstr "Enter a valid email address."
 #: src/errors.ts
 msgid "Enter the convention name."
 msgstr "Enter the convention name."
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Expired"
+msgstr "Expired"
+
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Failed"
+msgstr "Failed"
 
 #: src/errors.ts
 msgid "Files are temporarily unavailable. Try again in a moment."
@@ -269,6 +344,11 @@ msgstr "guardian consent"
 #: src/order-emails.ts
 msgid "Guardian consent"
 msgstr "Guardian consent"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Handed out"
+msgstr "Handed out"
 
 #. Glossary term: head
 #: src/glossary.ts
@@ -374,11 +454,31 @@ msgstr "merchandise item"
 msgid "Merchandise item"
 msgstr "Merchandise item"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Merchandise item"
+msgstr "Merchandise item"
+
 #. Glossary term: module
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "module"
 msgstr "module"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Money"
+msgstr "Money"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Name"
+msgstr "Name"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Needs review"
+msgstr "Needs review"
 
 #: src/exports.ts
 msgctxt "production numbers"
@@ -433,6 +533,11 @@ msgctxt "glossary"
 msgid "order link"
 msgstr "order link"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Order number"
+msgstr "Order number"
+
 #: src/errors.ts
 msgid "Orders already hold more than this limit: {held}. Set the limit to at least that number."
 msgstr "Orders already hold more than this limit: {held}. Set the limit to at least that number."
@@ -444,9 +549,39 @@ msgid "organizer"
 msgstr "organizer"
 
 #: src/exports.ts
+msgctxt "export column"
+msgid "Other details"
+msgstr "Other details"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Paid"
+msgstr "Paid"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Paid"
+msgstr "Paid"
+
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Paid"
+msgstr "Paid"
+
+#: src/exports.ts
 msgctxt "production numbers"
 msgid "Paid"
 msgstr "Paid"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Paid - manual"
+msgstr "Paid - manual"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Paid amount"
+msgstr "Paid amount"
 
 #. Glossary term: payment (money a payment provider reports for an order)
 #: src/glossary.ts
@@ -460,11 +595,21 @@ msgctxt "glossary"
 msgid "payment attempt"
 msgstr "payment attempt"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Payout batch"
+msgstr "Payout batch"
+
 #. Glossary term: perk (something a ticket type includes, never sold separately)
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "perk"
 msgstr "perk"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Placed"
+msgstr "Placed"
 
 #. Glossary term: pre-order deadline (until it merchandise sells without a stock limit)
 #: src/glossary.ts
@@ -484,11 +629,26 @@ msgctxt "glossary"
 msgid "programme item"
 msgstr "programme item"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Provider"
+msgstr "Provider"
+
 #. Glossary term: QR code (what a paid order is found by at the edition)
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "QR code"
 msgstr "QR code"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Quantity"
+msgstr "Quantity"
+
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Refused"
+msgstr "Refused"
 
 #: src/emails.ts
 msgid "Reset your password"
@@ -568,6 +728,16 @@ msgstr "speaker"
 msgid "Start a new order"
 msgstr "Start a new order"
 
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Started"
+msgstr "Started"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Status"
+msgstr "Status"
+
 #. Glossary term: supporter price (a higher price a buyer may choose)
 #: src/glossary.ts
 msgctxt "glossary"
@@ -579,6 +749,11 @@ msgstr "supporter price"
 msgctxt "glossary"
 msgid "suspended"
 msgstr "suspended"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Teen"
+msgstr "Teen"
 
 #: src/order-emails.ts
 msgid "Thank you. Your order {number} for {conventionName} is paid."
@@ -888,11 +1063,21 @@ msgstr "ticket holder"
 msgid "Ticket holder"
 msgstr "Ticket holder"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Ticket holder"
+msgstr "Ticket holder"
+
 #. Glossary term: ticket type
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "ticket type"
 msgstr "ticket type"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Ticket type"
+msgstr "Ticket type"
 
 #: src/order-emails.ts
 msgid "To settle the return of the money, write to {contactEmail}."
@@ -913,6 +1098,11 @@ msgstr "Too many emails sent. Try again in a few minutes."
 #: src/order-emails.ts
 msgid "Total"
 msgstr "Total"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Transaction number"
+msgstr "Transaction number"
 
 #: src/errors.ts
 msgid "Two price tiers cover the same time. A ticket type has one price at a time: change the dates so that the tiers do not overlap."
@@ -956,6 +1146,11 @@ msgstr "variant"
 msgid "Variant"
 msgstr "Variant"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Variant"
+msgstr "Variant"
+
 #. Glossary term: venue (where an edition takes place)
 #: src/glossary.ts
 msgctxt "glossary"
@@ -981,6 +1176,16 @@ msgstr "We received a request to change the email address of your OPOS account f
 #: src/emails.ts
 msgid "We received a request to reset the password of your OPOS account. Set a new password with the link below."
 msgstr "We received a request to reset the password of your OPOS account. Set a new password with the link below."
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "With the buyer"
+msgstr "With the buyer"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "With the convention"
+msgstr "With the convention"
 
 #: src/errors.ts
 msgid "Wrong email or password."

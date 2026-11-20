@@ -67,7 +67,7 @@ export const addOns = pgTable(
 )
 
 /**
- * The picture of an add-on (docs/specs/0003-catalog.md, A9): an uploaded image, one an add-on. A
+ * The picture of an add-on (docs/specs/0003-catalog.md, A4): an uploaded image, one an add-on. A
  * row of its own and no column of the add-on, so that a picture is put and taken away by adding
  * and deleting a row: the application role updates no column that points at another row.
  */

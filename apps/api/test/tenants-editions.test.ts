@@ -8,6 +8,7 @@ import { upload } from './files'
 import { pdf, png } from './pictures'
 import {
   addAddOn,
+  addAddOnPicture,
   addConsent,
   addDiscountCode,
   addCustomField,
@@ -741,6 +742,15 @@ describe('concurrency', () => {
         method: 'delete',
         path: `/editions/${s.edition}/add-ons/${s.addOn}`,
       }),
+      'catalog.addOns.putPicture': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/add-ons/${s.addOn}/picture`,
+        body: { file: upload(png(40, 20), 'image/png', 'late.png') },
+      }),
+      'catalog.addOns.removePicture': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/add-ons/${s.addOn}/picture`,
+      }),
       'catalog.customFields.create': (s) => ({
         method: 'post',
         path: `/editions/${s.edition}/custom-fields`,
@@ -928,6 +938,7 @@ describe('concurrency', () => {
       const { id: document } = await addDocument(t.id, edition)
       const consent = await addConsent(t.id, edition)
       const addOn = await addAddOn(t.id, edition)
+      await addAddOnPicture(t.id, edition, addOn)
       const customField = await addCustomField(t.id, edition)
       const merch = await addMerchandiseItem(t.id, edition, { sized: true, pictures: 1 })
       const ticketType = await addTicketType(t.id, edition)

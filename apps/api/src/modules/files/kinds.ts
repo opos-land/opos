@@ -12,6 +12,7 @@ import {
   type MerchandiseImageVariant,
 } from '@opos/contract'
 import {
+  addOnPictures,
   editionDocumentVersions,
   merchandiseItemPictures,
   merchandiseSizeCharts,
@@ -150,6 +151,16 @@ export const FILE_KINDS: readonly FileKind[] = [
     pointer: merchandiseSizeCharts.fileId,
     variants: merchandiseVariants,
   },
+  // The picture of an add-on (docs/specs/0003-catalog.md, A4): an edition's image in the sizes of
+  // a merchandise picture, for everyone once its add-on is shown in the shop.
+  {
+    name: 'add-on-picture',
+    owner: 'edition',
+    types: MERCHANDISE_IMAGE_TYPES,
+    maxSize: MAX_MERCHANDISE_IMAGE_SIZE,
+    pointer: addOnPictures.fileId,
+    variants: merchandiseVariants,
+  },
 ]
 
 /** The kind of a convention's logo. */
@@ -161,3 +172,6 @@ export const DOCUMENT_KIND = 'edition-document'
 /** The kinds of a picture of a merchandise item and of the size chart of one of its values. */
 export const PICTURE_KIND = 'merchandise-picture'
 export const SIZE_CHART_KIND = 'merchandise-size-chart'
+
+/** The kind of the picture of an add-on. */
+export const ADD_ON_PICTURE_KIND = 'add-on-picture'

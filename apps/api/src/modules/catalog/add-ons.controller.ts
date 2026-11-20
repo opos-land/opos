@@ -1,7 +1,13 @@
 import { Controller } from '@nestjs/common'
 import { type AddOn, addOnLimitIssue, contract, type UpdateAddOn } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
+import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
+import { notFound } from '../../common/errors/api-error'
+import { isUuid } from '../../common/uuid'
+import { FilesService } from '../files/files.service'
+import { ADD_ON_PICTURE_KIND } from '../files/kinds'
+import { ServesFile, TakesFile } from '../files/takes-file.decorator'
 import { AddOnsRepository } from './add-ons.repository'
 import { HoldsRepository } from './holds.repository'
 import { invalidField } from './catalog.errors'
@@ -38,13 +44,16 @@ export function limitAfter(stored: AddOn, changes: UpdateAddOn): UpdateAddOn {
 
 /**
  * The add-ons of an edition, behind the tickets permission of the edition
- * (docs/specs/0003-catalog.md).
+ * (docs/specs/0003-catalog.md). An add-on has one picture, put and taken away with its file in the
+ * transaction of its route.
  */
 @Controller()
 export class AddOnsController {
   constructor(
     private readonly addOns: AddOnsRepository,
     private readonly holds: HoldsRepository,
+    private readonly files: FilesService,
+    private readonly context: TenantContextService,
   ) {}
 
   @Implement(contract.catalog.addOns.list)
@@ -84,6 +93,65 @@ export class AddOnsController {
       const { editionId, addOnId } = input.params
       const stored = await this.addOns.get(editionId, addOnId)
       await this.addOns.remove(editionId, stored.id)
+      // Its picture went with it: the file nothing points at any more goes in the same transaction.
+      if (stored.picture) {
+        await this.files.release(ADD_ON_PICTURE_KIND, stored.picture.fileId, editionId)
+      }
+    })
+  }
+
+  /**
+   * The new picture takes the place of the old in one transaction: the old row and its file go,
+   * the file just received is kept and pointed at. A rollback keeps the picture the add-on had.
+   * The file was received before this transaction: when the add-on is not there nothing is kept,
+   * and the sweep removes the bytes.
+   */
+  @Implement(contract.catalog.addOns.putPicture)
+  @RequireEdition('tickets', 'write')
+  @TakesFile(ADD_ON_PICTURE_KIND)
+  putPicture() {
+    return implement(contract.catalog.addOns.putPicture).handler(async ({ input }) => {
+      const { editionId, addOnId } = input.params
+      const stored = await this.addOns.get(editionId, addOnId)
+      const old = await this.addOns.clearPicture(editionId, stored.id)
+      if (old) await this.files.release(ADD_ON_PICTURE_KIND, old, editionId)
+      const kept = await this.files.keep(this.files.received(), editionId)
+      await this.addOns.setPicture(editionId, stored.id, kept.id)
+      return this.addOns.get(editionId, stored.id)
+    })
+  }
+
+  @Implement(contract.catalog.addOns.removePicture)
+  @RequireEdition('tickets', 'write')
+  removePicture() {
+    return implement(contract.catalog.addOns.removePicture).handler(async ({ input }) => {
+      const { editionId, addOnId } = input.params
+      const stored = await this.addOns.get(editionId, addOnId)
+      const fileId = await this.addOns.clearPicture(editionId, stored.id)
+      if (!fileId) throw notFound('picture')
+      await this.files.release(ADD_ON_PICTURE_KIND, fileId, editionId)
+    })
+  }
+
+  /**
+   * The picture of an add-on for the edition's orgs, of a hidden add-on and of an unpublished
+   * edition too: what they are setting up before anyone else sees it. Only a file an add-on of
+   * this edition points at is read; the check runs in a short transaction of the tenant, and the
+   * storage is then read outside every transaction. No cache keeps the answer.
+   */
+  @Implement(contract.catalog.addOns.file)
+  @RequireEdition('tickets', 'read')
+  @ServesFile()
+  file() {
+    return implement(contract.catalog.addOns.file).handler(async ({ input }) => {
+      const { editionId, fileId, variant } = input.params
+      if (!isUuid(fileId)) throw notFound('file')
+      const found = await this.context.withTenant(this.context.tenant().id, () =>
+        this.addOns.pictureFile(editionId, fileId),
+      )
+      if (!found) throw notFound('file')
+      const file = await this.files.open(ADD_ON_PICTURE_KIND, found, { variant, editionId })
+      return this.files.answer(file, { forEveryone: false })
     })
   }
 }

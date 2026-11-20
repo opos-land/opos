@@ -1,4 +1,4 @@
--- The picture of an add-on (docs/specs/0003-catalog.md, A9): a tenant table under RLS, an
+-- The picture of an add-on (docs/specs/0003-catalog.md, A4): a tenant table under RLS, an
 -- edition's.
 revoke all on add_on_pictures
   from anon, authenticated, service_role, opos_app, opos_app_global, opos_admin;

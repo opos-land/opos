@@ -271,6 +271,16 @@ async function addImage(tenantId: string, editionId: string, kind: string) {
   return file!.id
 }
 
+/** A picture of an add-on as its rows alone: the file's row, and the row that points at it. */
+export async function addAddOnPicture(tenantId: string, editionId: string, addOnId: string) {
+  const fileId = await addImage(tenantId, editionId, 'add-on-picture')
+  await db.execute(sql`
+    insert into add_on_pictures (tenant_id, edition_id, add_on_id, file_id)
+    values (${tenantId}, ${editionId}, ${addOnId}, ${fileId})
+  `)
+  return fileId
+}
+
 /**
  * A merchandise item of an edition as its rows alone, last in the list, with nothing in the
  * bucket. Without axes it has its one variant; `sized` gives it an axis with one value, the

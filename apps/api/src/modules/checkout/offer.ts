@@ -65,6 +65,7 @@ export function offeredAddOn(addOn: AddOn, held: number): Offer['addOns'][number
       left !== null && addOn.placesLeftThreshold !== null && left < addOn.placesLeftThreshold
         ? left
         : null,
+    picture: addOn.picture,
   }
 }
 

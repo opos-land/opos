@@ -37,11 +37,12 @@ domain owner to confirm. Every price is a gross amount in the convention's curre
 
 ### Add-ons
 
-| #   | Rule                                                                                                                                                     | Brief       |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| A1  | An add-on has a name, a description and a price, which may be zero. It is one of three kinds: without a limit, limited by a capacity, or headcount only. | BR-10       |
-| A2  | A headcount-only add-on records interest and reserves nothing: it takes no capacity, and the shop says so.                                               | BR-10, F3.1 |
-| A3  | A capacity-limited add-on has a threshold: the shop shows the places left only below it.                                                                 | F3.2        |
+| #   | Rule                                                                                                                                                                                                                                                               | Brief       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| A1  | An add-on has a name, a description and a price, which may be zero. It is one of three kinds: without a limit, limited by a capacity, or headcount only.                                                                                                           | BR-10       |
+| A2  | A headcount-only add-on records interest and reserves nothing: it takes no capacity, and the shop says so.                                                                                                                                                         | BR-10, F3.1 |
+| A3  | A capacity-limited add-on has a threshold: the shop shows the places left only below it.                                                                                                                                                                           | F3.2        |
+| A4  | An add-on may have one picture: an uploaded image of the types and the size a merchandise picture has (M8), shown with the add-on in the shop. It is public once its add-on is not hidden and its edition is published, and readable by the edition's orgs before. | new         |
 
 ### Merchandise
 
@@ -136,22 +137,25 @@ so the portal loads nothing from another origin
 
 Tenant routes, each under `/editions/{editionId}`:
 
-| Route                                                                                                | Needs                        | Refuses with                                                                                                |
-| ---------------------------------------------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `GET /ticket-types`, `GET /add-ons`, `GET /merchandise-items`, `GET /custom-fields`                  | tickets>=read                |                                                                                                             |
-| `POST /ticket-types`                                                                                 | tickets=write                | `catalog.limit-reached`, `ticket-type.tiers-overlap`                                                        |
-| `PATCH /ticket-types/{ticketTypeId}`                                                                 | tickets=write                | `ticket-type.tiers-overlap`, `catalog.below-held`                                                           |
-| `DELETE /ticket-types/{ticketTypeId}`                                                                | tickets=write                | `catalog.in-use`                                                                                            |
-| `POST /add-ons`, `PATCH /add-ons/{addOnId}`, `DELETE /add-ons/{addOnId}`                             | tickets=write                | `catalog.limit-reached`, `catalog.below-held`, `catalog.in-use`                                             |
-| `POST /merchandise-items`, `PATCH /merchandise-items/{itemId}`, `DELETE /merchandise-items/{itemId}` | tickets=write                | `catalog.limit-reached`, `catalog.in-use`                                                                   |
-| `PUT /merchandise-items/{itemId}/variants`                                                           | tickets=write                | `catalog.limit-reached`, `catalog.in-use` for a variant an order holds                                      |
-| `PUT /merchandise-items/{itemId}/variants/{variantId}/stock`                                         | tickets=write                | `catalog.below-held`                                                                                        |
-| `POST /merchandise-items/{itemId}/pictures`                                                          | tickets=write; takes a file  | `catalog.limit-reached`, `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable` |
-| `DELETE /merchandise-items/{itemId}/pictures/{pictureId}`                                            | tickets=write                |                                                                                                             |
-| `PUT /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                                 | tickets=write; takes a file  | `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable`                          |
-| `DELETE /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                              | tickets=write                |                                                                                                             |
-| `GET /merchandise-files/{fileId}/{variant}`                                                          | tickets>=read; serves a file |                                                                                                             |
-| `POST /custom-fields`, `PATCH /custom-fields/{fieldId}`, `DELETE /custom-fields/{fieldId}`           | tickets=write                | `catalog.limit-reached`, `catalog.in-use`                                                                   |
+| Route                                                                                                | Needs                                                                | Refuses with                                                                                                |
+| ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `GET /ticket-types`, `GET /add-ons`, `GET /merchandise-items`, `GET /custom-fields`                  | tickets>=read                                                        |                                                                                                             |
+| `POST /ticket-types`                                                                                 | tickets=write                                                        | `catalog.limit-reached`, `ticket-type.tiers-overlap`                                                        |
+| `PATCH /ticket-types/{ticketTypeId}`                                                                 | tickets=write                                                        | `ticket-type.tiers-overlap`, `catalog.below-held`                                                           |
+| `DELETE /ticket-types/{ticketTypeId}`                                                                | tickets=write                                                        | `catalog.in-use`                                                                                            |
+| `POST /add-ons`, `PATCH /add-ons/{addOnId}`, `DELETE /add-ons/{addOnId}`                             | tickets=write                                                        | `catalog.limit-reached`, `catalog.below-held`, `catalog.in-use`                                             |
+| `PUT /add-ons/{addOnId}/picture`                                                                     | tickets=write; takes a file                                          | `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable`                          |
+| `DELETE /add-ons/{addOnId}/picture`                                                                  | tickets=write                                                        |                                                                                                             |
+| `GET /add-on-files/{fileId}/{variant}`                                                               | tickets>=read; answers the picture of an add-on, of a hidden one too |                                                                                                             |
+| `POST /merchandise-items`, `PATCH /merchandise-items/{itemId}`, `DELETE /merchandise-items/{itemId}` | tickets=write                                                        | `catalog.limit-reached`, `catalog.in-use`                                                                   |
+| `PUT /merchandise-items/{itemId}/variants`                                                           | tickets=write                                                        | `catalog.limit-reached`, `catalog.in-use` for a variant an order holds                                      |
+| `PUT /merchandise-items/{itemId}/variants/{variantId}/stock`                                         | tickets=write                                                        | `catalog.below-held`                                                                                        |
+| `POST /merchandise-items/{itemId}/pictures`                                                          | tickets=write; takes a file                                          | `catalog.limit-reached`, `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable` |
+| `DELETE /merchandise-items/{itemId}/pictures/{pictureId}`                                            | tickets=write                                                        |                                                                                                             |
+| `PUT /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                                 | tickets=write; takes a file                                          | `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable`                          |
+| `DELETE /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                              | tickets=write                                                        |                                                                                                             |
+| `GET /merchandise-files/{fileId}/{variant}`                                                          | tickets>=read; serves a file                                         |                                                                                                             |
+| `POST /custom-fields`, `PATCH /custom-fields/{fieldId}`, `DELETE /custom-fields/{fieldId}`           | tickets=write                                                        | `catalog.limit-reached`, `catalog.in-use`                                                                   |
 
 A ticket type's tiers, supporter prices, perks, add-ons and merchandise items travel with it as
 whole lists, as an item's axes and the order of its pictures do with the item. An axis or a value
@@ -160,11 +164,12 @@ out goes. A row of another parent that a body names is `404`, as one in a path i
 size chart are added and removed one at a time, each with its file. The edition settings of this
 spec are changed through `PATCH /editions/{editionId}/shop`.
 
-One public route, without sign-in:
+Two public routes, without sign-in:
 
 | Route                                                             | Answers                                                                                                                  |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `GET /public/tenants/{slug}/merchandise-files/{fileId}/{variant}` | a variant of a picture or a size chart of an item that is not hidden, of a published edition; anything else as not found |
+| `GET /public/tenants/{slug}/add-on-files/{fileId}/{variant}`      | a variant of the picture of an add-on that is not hidden, of a published edition; anything else as not found             |
 
 ### Screens
 
@@ -173,7 +178,7 @@ The panel, inside an edition:
 | Screen               | Holds                                                                                                                           |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | ticket types         | the list in its order; a ticket type's form with its tiers, supporter prices, perks and what is offered with it                 |
-| add-ons              | the list and the form                                                                                                           |
+| add-ons              | the list; an add-on's form, with its picture                                                                                    |
 | merchandise          | the list; an item's form with its axes, variants, stock, pictures and size charts; the pre-order deadline and merch-only orders |
 | ticket holders' data | the age bands with the guardian consent form's address; the custom fields, with the notice of E3                                |
 
@@ -254,6 +259,8 @@ e2e:
 
 ## Open questions
 
+- **The picture of an add-on (A4):** not in the brief. It is one image an add-on, in the two sizes
+  of a merchandise picture, public on the terms of M9: the domain owner's to confirm.
 - **A closed shop (M9):** a shown item's pictures are for everyone while its edition is published,
   whether or not its shop is open, as the route above says. Whether a closed shop should keep them
   to the edition's orgs is the domain owner's to say.

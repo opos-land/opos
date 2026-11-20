@@ -103,12 +103,20 @@ describe('an add-on as the shop offers it', () => {
     placesLeftThreshold: 3,
     position: 1,
     hidden: false,
+    picture: null,
     ...values,
   })
   const places = (held: number, values: Partial<AddOn> = {}) => {
     const { soldOut, placesLeft } = offeredAddOn(addOn(values), held)
     return [soldOut, placesLeft]
   }
+
+  it('carries the picture the add-on has, and none when it has none', () => {
+    const picture = { fileId: 'f', width: 800, height: 600 }
+
+    expect(offeredAddOn(addOn({ picture }), 0).picture).toEqual(picture)
+    expect(offeredAddOn(addOn(), 0).picture).toBeNull()
+  })
 
   it('says how many places are left only below its threshold', () => {
     expect(places(0)).toEqual([false, null])

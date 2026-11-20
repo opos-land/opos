@@ -205,9 +205,34 @@ describe('an add-on', () => {
       'id',
       'kind',
       'name',
+      'picture',
       'placesLeftThreshold',
       'position',
     ])
+  })
+
+  // A4: one picture an add-on, an image with the width and height every size keeps.
+  it('has a picture or none', () => {
+    const shown = {
+      id: '0198c1a0-0000-7000-8000-000000000001',
+      editionId: '0198c1a0-0000-7000-8000-000000000002',
+      name: 'Sleeping room',
+      description: '',
+      amountMinor: 0,
+      kind: 'headcount',
+      capacity: null,
+      placesLeftThreshold: null,
+      position: 1,
+      hidden: false,
+    }
+    const picture = { fileId: '0198c1a0-0000-7000-8000-000000000003', width: 800, height: 600 }
+
+    expect(addOnSchema.parse({ ...shown, picture: null }).picture).toBeNull()
+    expect(addOnSchema.parse({ ...shown, picture }).picture).toEqual(picture)
+    expect(addOnSchema.safeParse(shown).success).toBe(false)
+    expect(addOnSchema.safeParse({ ...shown, picture: { ...picture, width: 0 } }).success).toBe(
+      false,
+    )
   })
 })
 

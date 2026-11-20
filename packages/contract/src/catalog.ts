@@ -193,6 +193,19 @@ export type UpdateTicketType = z.infer<typeof updateTicketTypeSchema>
  * What limits an add-on: nothing, a capacity, or nothing at all because it only counts interest
  * and reserves no place.
  */
+/**
+ * An image of the catalog as a page shows it, a picture of an item, a size chart or the picture of
+ * an add-on: the file its address names, and the width and height of the picture, whose
+ * proportions every size keeps.
+ */
+const imageSchema = z.object({
+  fileId: z.uuid(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+})
+
+export type MerchandiseImage = z.infer<typeof imageSchema>
+
 export const ADD_ON_KINDS = ['unlimited', 'limited', 'headcount'] as const
 
 export type AddOnKind = (typeof ADD_ON_KINDS)[number]
@@ -212,6 +225,8 @@ export const addOnSchema = z.object({
   position,
   /** Hidden from the shop; the orders that hold it keep it. */
   hidden: z.boolean(),
+  /** Its picture, one an add-on, or null; an image as a merchandise picture is (A4). */
+  picture: imageSchema.nullable(),
 })
 
 export type AddOn = z.infer<typeof addOnSchema>
@@ -296,7 +311,10 @@ export const updateCustomFieldSchema = z
 
 export type UpdateCustomField = z.infer<typeof updateCustomFieldSchema>
 
-/** A picture and a size chart are images alone, among the types the storage keeps. */
+/**
+ * A picture and a size chart are images alone, among the types the storage keeps. The picture of
+ * an add-on is one of the same types, sizes and limit.
+ */
 export const MERCHANDISE_IMAGE_TYPES = [
   'image/jpeg',
   'image/png',
@@ -316,18 +334,6 @@ export type MerchandiseImageVariant = (typeof MERCHANDISE_IMAGE_VARIANTS)[number
 
 /** The most a variant's stock holds. */
 export const MAX_STOCK = 1_000_000
-
-/**
- * An image of an item as a page shows it: the file its address names, and the width and height of
- * the picture, whose proportions every size keeps.
- */
-const imageSchema = z.object({
-  fileId: z.uuid(),
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
-})
-
-export type MerchandiseImage = z.infer<typeof imageSchema>
 
 /** A variant of an item: one value of each of its axes, with its own stock. */
 export const merchandiseVariantSchema = z.object({
@@ -495,9 +501,42 @@ export const addOnRoutes = {
       method: 'DELETE',
       path: '/editions/{editionId}/add-ons/{addOnId}',
       successStatus: 204,
-      summary: 'Delete an add-on; needs tickets=write',
+      summary: 'Delete an add-on, its picture and the file of it with it; needs tickets=write',
     })
     .input(addOn),
+  putPicture: tenantRoute
+    .meta({ takesFile: true })
+    .route({
+      method: 'PUT',
+      path: '/editions/{editionId}/add-ons/{addOnId}/picture',
+      summary:
+        'Set an image as the picture of an add-on, in place of the one it had; needs tickets=write',
+    })
+    .input(addOn.extend({ body: merchandiseImageBodySchema }))
+    .output(addOnSchema),
+  removePicture: tenantRoute
+    .route({
+      method: 'DELETE',
+      path: '/editions/{editionId}/add-ons/{addOnId}/picture',
+      successStatus: 204,
+      summary: 'Remove the picture of an add-on, its file with it; needs tickets=write',
+    })
+    .input(addOn),
+  file: tenantRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/add-on-files/{fileId}/{variant}',
+      outputStructure: 'detailed',
+      summary:
+        "The picture of one of the edition's add-ons in one of its sizes, of a hidden add-on too; needs tickets>=read",
+    })
+    .input(
+      z.object({
+        params: z.object({ editionId: z.string(), fileId: z.string(), variant: z.string() }),
+      }),
+    )
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
 }
 
 export const customFieldRoutes = {

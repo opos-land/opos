@@ -115,6 +115,8 @@ export const offerSchema = z.object({
       soldOut: z.boolean(),
       /** The places left of a limited add-on, once they are below its threshold; else null. */
       placesLeft: z.number().int().nullable(),
+      /** Its picture, or null. */
+      picture: image.nullable(),
     }),
   ),
   items: z.array(

@@ -6,9 +6,10 @@ import { GlobalDbService } from '../../common/database/global-db.service'
 import { notFound, suspendedAsNotFound } from '../../common/errors/api-error'
 import { isUuid } from '../../common/uuid'
 import { LogoRepository } from '../branding/logo.repository'
+import { AddOnsRepository } from '../catalog/add-ons.repository'
 import { MerchandiseRepository } from '../catalog/merchandise.repository'
 import { FilesService } from '../files/files.service'
-import { DOCUMENT_KIND, LOGO_KIND } from '../files/kinds'
+import { ADD_ON_PICTURE_KIND, DOCUMENT_KIND, LOGO_KIND } from '../files/kinds'
 import { DocumentsRepository } from '../shop/documents.repository'
 import { PublicConvention } from './public-convention'
 import { PublicRepository } from './public.repository'
@@ -26,6 +27,7 @@ export class PublicController {
     private readonly files: FilesService,
     private readonly documents: DocumentsRepository,
     private readonly merchandise: MerchandiseRepository,
+    private readonly addOns: AddOnsRepository,
   ) {}
 
   private tenant(slug: string) {
@@ -145,6 +147,33 @@ export class PublicController {
       if (!shown) throw notFound('file')
       const file = await this.files
         .open(shown.kind, shown.fileId, {
+          variant,
+          editionId: shown.editionId,
+          tenantId: tenant.id,
+        })
+        .catch(suspendedAsNotFound('convention'))
+      return this.files.answer(file, { forEveryone: true })
+    })
+  }
+
+  /**
+   * The picture of an add-on, for anyone, once the add-on is shown in the shop of a published
+   * edition (docs/specs/0003-catalog.md, A4): a hidden add-on's, an unpublished edition's and
+   * another convention's file are unknown addresses. Checked and read as a merchandise picture
+   * is: in a short transaction of the tenant the address named, then outside every transaction.
+   */
+  @Implement(contract.public.addOnFile)
+  addOnFile() {
+    return implement(contract.public.addOnFile).handler(async ({ input }) => {
+      const { slug, fileId, variant } = input.params
+      const tenant = await this.tenant(slug)
+      if (!isUuid(fileId)) throw notFound('file')
+      const shown = await this.context
+        .withTenant(tenant.id, () => this.addOns.shownPictureFile(tenant.id, fileId))
+        .catch(suspendedAsNotFound('convention'))
+      if (!shown) throw notFound('file')
+      const file = await this.files
+        .open(ADD_ON_PICTURE_KIND, shown.fileId, {
           variant,
           editionId: shown.editionId,
           tenantId: tenant.id,

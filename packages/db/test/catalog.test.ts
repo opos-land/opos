@@ -593,7 +593,7 @@ describe('the pictures and size charts of an item', () => {
   })
 })
 
-// docs/specs/0003-catalog.md, A9: an add-on may have one picture, an uploaded image.
+// docs/specs/0003-catalog.md, A4: an add-on may have one picture, an uploaded image.
 describe('the picture of an add-on', () => {
   const shot = (at: Place) => image(at, 'add-on-picture')
 

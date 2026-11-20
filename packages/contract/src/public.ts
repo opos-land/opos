@@ -189,6 +189,17 @@ export const publicContract = {
     })
     .input(merchandiseFile)
     .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+  addOnFile: publicRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/public/tenants/{slug}/add-on-files/{fileId}/{variant}',
+      outputStructure: 'detailed',
+      summary:
+        'The picture of an add-on that is not hidden, of a published edition, in one of its sizes; no sign-in',
+    })
+    .input(merchandiseFile)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
   shop: publicRoute
     .route({
       method: 'GET',

@@ -80,6 +80,7 @@ const offer = (changes: Partial<Offer> = {}): Offer => ({
       kind: 'headcount',
       soldOut: false,
       placesLeft: null,
+      picture: null,
     },
     {
       id: WORKSHOP,
@@ -89,6 +90,7 @@ const offer = (changes: Partial<Offer> = {}): Offer => ({
       kind: 'limited',
       soldOut: false,
       placesLeft: 3,
+      picture: null,
     },
   ],
   items: [

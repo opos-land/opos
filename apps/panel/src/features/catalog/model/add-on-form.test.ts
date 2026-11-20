@@ -77,6 +77,7 @@ describe('the form of an add-on', () => {
           placesLeftThreshold: null,
           position: 1,
           hidden: false,
+          picture: null,
         },
         (amount) => (amount / 100).toFixed(2),
       ),

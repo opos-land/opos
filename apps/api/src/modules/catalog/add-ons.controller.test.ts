@@ -13,6 +13,7 @@ const addOn = (values: Partial<AddOn> = {}): AddOn => ({
   placesLeftThreshold: null,
   position: 1,
   hidden: false,
+  picture: null,
   ...values,
 })
 

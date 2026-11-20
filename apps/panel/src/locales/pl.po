@@ -85,6 +85,10 @@ msgstr "Zgoda odsyła do swojego dokumentu na stałe. Aby odesłać do innego, d
 msgid "A custom field must not ask about health, beliefs, an identity document number or anything else a convention does not need to let a person in."
 msgstr "Pole dodatkowe nie może pytać o zdrowie, przekonania, numer dokumentu tożsamości ani o nic innego, czego konwent nie potrzebuje, żeby wpuścić daną osobę."
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "A few days before the edition every buyer gets one email with the QR code, the opening hours and where to pick up merchandise. It goes out at 9:00 in the convention’s time zone."
+msgstr "Kilka dni przed edycją każdy kupujący dostaje jedną wiadomość z kodem QR, godzinami otwarcia i miejscem odbioru gadżetów. Wychodzi o 9:00 w strefie czasowej konwentu."
+
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "A form for a teen’s guardian to print and sign, linked from the checkout. Leave it empty for none."
 msgstr "Formularz, który opiekun nastolatka drukuje i podpisuje; link do niego pokazuje się przy składaniu zamówienia. Zostaw pole puste, jeśli go nie ma."
@@ -770,6 +774,10 @@ msgstr "Pulpit"
 msgid "Dates"
 msgstr "Daty"
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Days before the edition"
+msgstr "Liczba dni przed edycją"
+
 #: src/features/orders/components/order-changes.tsx
 msgid "Decline the payment"
 msgstr "Odrzuć płatność"
@@ -1098,6 +1106,10 @@ msgstr "Podaj prawidłowy adres e-mail."
 msgid "Enter a whole number from 1 to 100."
 msgstr "Podaj liczbę całkowitą od 1 do 100."
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Enter a whole number from 1 to 60, or leave it empty."
+msgstr "Podaj liczbę całkowitą od 1 do 60 albo zostaw pole puste."
+
 #: src/features/catalog/components/add-on-form.tsx
 #: src/features/discounts/components/discount-code-form.tsx
 msgid "Enter a whole number from 1, or leave it empty."
@@ -1391,6 +1403,10 @@ msgstr "Wyższe kwoty, które kupujący może wybrać zamiast ceny z progu. Skle
 #: src/features/orders/pages/orders-page.tsx
 msgid "Holds"
 msgstr "Zawiera"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "How many days before the first day of the edition the reminder goes out, from 1 to 60. Leave it empty to send none."
+msgstr "Na ile dni przed pierwszym dniem edycji wychodzi przypomnienie, od 1 do 60. Zostaw pole puste, aby go nie wysyłać."
 
 #: src/features/orders/pages/production-numbers-page.tsx
 msgid "How many of each variant the orders hold. “Paid” counts the paid orders, manual ones among them; the orders awaiting payment and those needing review are counted apart, since they may still fall away."
@@ -1868,6 +1884,10 @@ msgstr "Brak uprawnień"
 msgid "No price in force"
 msgstr "Brak obowiązującej ceny"
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "No reminder is sent while no number of days is set."
+msgstr "Dopóki nie ustawisz liczby dni, przypomnienie nie jest wysyłane."
+
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "No size chart."
 msgstr "Brak tabeli rozmiarów."
@@ -1970,6 +1990,10 @@ msgstr "Otwórz sklep"
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Opening"
 msgstr "Otwarcie"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Opening hours"
+msgstr "Godziny otwarcia"
 
 #: src/features/auth/components/auth-layout.tsx
 #: src/features/tenants/components/area-switcher.tsx
@@ -2382,6 +2406,7 @@ msgid "Register or tax number"
 msgstr "Numer rejestrowy lub podatkowy"
 
 #: src/features/orders/model/labels.ts
+#: src/features/shop/pages/edition-shop-page.tsx
 msgid "Reminder before the edition"
 msgstr "Przypomnienie przed edycją"
 
@@ -2633,6 +2658,10 @@ msgstr "Zapisz hasło"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password and join the team"
 msgstr "Zapisz hasło i dołącz do zespołu"
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "Save the reminder"
+msgstr "Zapisz przypomnienie"
 
 #: src/features/catalog/pages/ticket-type-page.tsx
 msgid "Save the ticket type"
@@ -3458,6 +3487,18 @@ msgstr "Dostawca zgłasza warunek, którego ten panel nie potrafi jeszcze opisa�
 msgid "The QR code that pairs a phone with {name}"
 msgstr "Kod QR, który paruje telefon ze skanerem {name}"
 
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The reminder is saved."
+msgstr "Przypomnienie zostało zapisane."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The reminder went out on {sent}. It goes out once: a change now sends nothing again."
+msgstr "Przypomnienie wyszło: {sent}. Wychodzi tylko raz: zmiana teraz niczego ponownie nie wyśle."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "The reminder will go out on {due}."
+msgstr "Przypomnienie wyjdzie: {due}."
+
 #: src/features/orders/pages/manual-order-page.tsx
 msgid "The sale"
 msgstr "Sprzedaż"
@@ -4017,6 +4058,10 @@ msgstr "Suma opłaconych zamówień. Zamówienia zapisane ręcznie przez organiz
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
 msgstr "Co zawiera akredytacja, na przykład przypinkę albo identyfikator: widoczne dla kupującego, nigdy niesprzedawane osobno."
+
+#: src/features/shop/pages/edition-shop-page.tsx
+msgid "When the edition is open, as the reminder tells it. Up to 1000 characters."
+msgstr "Kiedy edycja jest otwarta, tak jak powie to przypomnienie. Do 1000 znaków."
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Where and when merchandise is handed over. A buyer reads it on the page of their order. Up to 1000 characters."

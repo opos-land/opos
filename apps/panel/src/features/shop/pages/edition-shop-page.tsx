@@ -73,6 +73,7 @@ export function EditionShopPage() {
           />
           <ClosedMessage shop={shop.data} editionId={edition.id} canWrite={canWrite} />
           <Faq shop={shop.data} editionId={edition.id} canWrite={canWrite} />
+          <Reminder shop={shop.data} editionId={edition.id} canWrite={canWrite} />
         </>
       )}
     </>
@@ -318,6 +319,120 @@ function Faq({
           <div>
             <Button type="submit" disabled={update.isPending}>
               <Trans>Save the address</Trans>
+            </Button>
+          </div>
+        )}
+      </form>
+    </Section>
+  )
+}
+
+/**
+ * The reminder a buyer gets before the edition (docs/specs/0011-pre-edition-reminder.md): how
+ * many days before the first day it goes out, and the opening hours it tells, with the day it
+ * will go out and, once it did, when.
+ */
+function Reminder({
+  shop,
+  editionId,
+  canWrite,
+}: {
+  shop: EditionShop
+  editionId: string
+  canWrite: boolean
+}) {
+  const { t } = useLingui()
+  const { api } = useCurrentTenant()
+  const time = useTenantTime()
+  const queryClient = useQueryClient()
+  const [days, setDays] = useState(
+    shop.reminderDaysBefore === null ? '' : String(shop.reminderDaysBefore),
+  )
+  const [hours, setHours] = useState(shop.openingHours ?? '')
+  const [invalid, setInvalid] = useState(false)
+  const update = useMutation({
+    ...updateEditionShopOptions(api),
+    meta: { success: msg`The reminder is saved.` },
+    onSuccess: (saved) =>
+      queryClient.setQueryData(editionShopOptions(api, editionId).queryKey, saved),
+  })
+  const due = shop.reminderDueAt ? time.format(shop.reminderDueAt) : null
+  const sent = shop.reminderSentAt ? time.format(shop.reminderSentAt) : null
+
+  const save = () => {
+    const typed = days.trim()
+    const reminderDaysBefore = typed === '' ? null : /^\d{1,2}$/.test(typed) ? Number(typed) : NaN
+    const wrong =
+      reminderDaysBefore !== null && !(reminderDaysBefore >= 1 && reminderDaysBefore <= 60)
+    setInvalid(wrong)
+    if (wrong) return
+    update.mutate({
+      params: { editionId },
+      body: { reminderDaysBefore, openingHours: hours.trim() || null },
+    })
+  }
+
+  return (
+    <Section title={<Trans>Reminder before the edition</Trans>}>
+      <p className="max-w-2xl text-sm">
+        <Trans>
+          A few days before the edition every buyer gets one email with the QR code, the opening
+          hours and where to pick up merchandise. It goes out at 9:00 in the convention’s time zone.
+        </Trans>
+      </p>
+      <p className="text-sm">
+        {sent ? (
+          <Trans>
+            The reminder went out on {sent}. It goes out once: a change now sends nothing again.
+          </Trans>
+        ) : due ? (
+          <Trans>The reminder will go out on {due}.</Trans>
+        ) : (
+          <Trans>No reminder is sent while no number of days is set.</Trans>
+        )}
+      </p>
+      <form
+        noValidate
+        className="flex max-w-lg flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault()
+          save()
+        }}
+      >
+        <FieldSet disabled={!canWrite}>
+          <FormField
+            label={t`Days before the edition`}
+            hint={t`How many days before the first day of the edition the reminder goes out, from 1 to 60. Leave it empty to send none.`}
+            error={invalid && t`Enter a whole number from 1 to 60, or leave it empty.`}
+          >
+            {(control) => (
+              <Input
+                {...control}
+                inputMode="numeric"
+                value={days}
+                onChange={(event) => setDays(event.target.value)}
+              />
+            )}
+          </FormField>
+          <FormField
+            label={t`Opening hours`}
+            hint={t`When the edition is open, as the reminder tells it. Up to 1000 characters.`}
+          >
+            {(control) => (
+              <Textarea
+                {...control}
+                rows={3}
+                maxLength={1000}
+                value={hours}
+                onChange={(event) => setHours(event.target.value)}
+              />
+            )}
+          </FormField>
+        </FieldSet>
+        {canWrite && (
+          <div>
+            <Button type="submit" disabled={update.isPending}>
+              <Trans>Save the reminder</Trans>
             </Button>
           </div>
         )}

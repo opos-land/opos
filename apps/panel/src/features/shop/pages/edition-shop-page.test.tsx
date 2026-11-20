@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EditionShopPage } from './edition-shop-page'
@@ -57,6 +57,10 @@ const closed = {
   openedAt: null,
   faqUrl: null,
   salesClosedMessage: null,
+  openingHours: null,
+  reminderDaysBefore: null,
+  reminderDueAt: null,
+  reminderSentAt: null,
   conditions: met,
 }
 const opened = { ...closed, open: true, openedAt: '2027-06-01T08:00:00.000Z' }
@@ -255,6 +259,82 @@ describe('EditionShopPage', () => {
       await screen.findByText('Enter an address that starts with https:// or http://.'),
     ).toBeDefined()
     expect(update).not.toHaveBeenCalled()
+  })
+
+  // docs/specs/0011-pre-edition-reminder.md, R1, R5 and R7: the days before the edition, the
+  // opening hours, the day the reminder will go out and, once it did, when.
+  it('sets the reminder: the days before the edition and the opening hours, and none with no number', async () => {
+    state.tickets = 'write'
+    read.mockResolvedValue(closed)
+    update.mockResolvedValue(closed)
+    view()
+
+    expect(
+      await screen.findByText('No reminder is sent while no number of days is set.'),
+    ).toBeDefined()
+    fireEvent.change(screen.getByLabelText('Days before the edition'), { target: { value: ' 3 ' } })
+    fireEvent.change(screen.getByLabelText('Opening hours'), {
+      target: { value: ' Daily from 10 to 20. ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save the reminder' }))
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1))
+    expect(update.mock.calls[0]![0]).toEqual({
+      params: { editionId: 'edition-2026' },
+      body: { reminderDaysBefore: 3, openingHours: 'Daily from 10 to 20.' },
+    })
+
+    fireEvent.change(screen.getByLabelText('Days before the edition'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Opening hours'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save the reminder' }))
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(2))
+    expect(update.mock.calls[1]![0]).toMatchObject({
+      body: { reminderDaysBefore: null, openingHours: null },
+    })
+  })
+
+  it('names a number of days that is none beside its field, and sends nothing', async () => {
+    state.tickets = 'write'
+    read.mockResolvedValue(closed)
+    view()
+
+    fireEvent.change(await screen.findByLabelText('Days before the edition'), {
+      target: { value: '90' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save the reminder' }))
+
+    expect(
+      await screen.findByText('Enter a whole number from 1 to 60, or leave it empty.'),
+    ).toBeDefined()
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('says when the reminder will go out, and once it did, when', async () => {
+    state.tickets = 'write'
+    read.mockResolvedValue({
+      ...closed,
+      reminderDaysBefore: 3,
+      reminderDueAt: '2027-06-01T07:00:00.000Z',
+    })
+    view()
+
+    expect(
+      await screen.findByText('The reminder will go out on at 2027-06-01T07:00:00.000Z.'),
+    ).toBeDefined()
+    cleanup()
+
+    read.mockResolvedValue({
+      ...closed,
+      reminderDaysBefore: 3,
+      reminderDueAt: '2027-06-01T07:00:00.000Z',
+      reminderSentAt: '2027-06-01T07:00:04.000Z',
+    })
+    view()
+
+    expect(
+      await screen.findByText(
+        'The reminder went out on at 2027-06-01T07:00:04.000Z. It goes out once: a change now sends nothing again.',
+      ),
+    ).toBeDefined()
   })
 
   it('shows the shop to a member who reads the tickets, with nothing to change it', async () => {

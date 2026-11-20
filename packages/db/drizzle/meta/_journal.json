@@ -379,6 +379,13 @@
       "when": 1795144668092,
       "tag": "0053_buyer_self_service_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795145287775,
+      "tag": "0054_order_link_email",
+      "breakpoints": true
     }
   ]
 }

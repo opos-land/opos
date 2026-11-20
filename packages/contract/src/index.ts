@@ -1,6 +1,7 @@
 import { adminContract } from './admin'
 import { authContract } from './auth'
 import { brandingContract } from './branding'
+import { orderLinksContract } from './buyer-orders'
 import { catalogContract } from './catalog'
 import { checkoutContract, paymentsContract } from './checkout'
 import { discountCodesContract } from './discount-codes'
@@ -31,6 +32,7 @@ export const contract = {
   catalog: catalogContract,
   checkout: checkoutContract,
   orders: ordersContract,
+  orderLinks: orderLinksContract,
   discountCodes: discountCodesContract,
   scanners: scannersContract,
   scanner: scannerContract,
@@ -45,6 +47,7 @@ export * from './admin'
 export * from './auth'
 export * from './auth-mfa'
 export * from './branding'
+export * from './buyer-orders'
 export * from './catalog'
 export * from './checkout'
 export * from './common'

@@ -13,6 +13,7 @@ import {
   orderEmailReplacedEmail,
   orderExpiredEmail,
   orderHolderChangedEmail,
+  orderLinkEmail,
   orderVariantChangedEmail,
   paymentNotNeededEmail,
   paymentNotNeededOrgsEmail,
@@ -62,7 +63,7 @@ const confirmation: ConfirmationData = {
   picksUp: true,
   qrCode: 'QRCODEQRCODE',
   qrCodeCid: 'qr@opos',
-  orderLink: 'https://portal.test/orders/token',
+  orderLink: 'https://portal.test/order#token',
   signInLink: null,
   seller: {
     name: 'Seller Ltd',
@@ -86,7 +87,7 @@ describe('the confirmation of a paid order', () => {
         'Room: 25,00\u00a0zł',
         'Total: 375,00\u00a0zł',
         'The QR code of the order ABCDEFGHJK [QRCODEQRCODE]',
-        'See your order <https://portal.test/orders/token>',
+        'See your order <https://portal.test/order#token>',
         'Shop terms <https://api.test/terms>',
         'Seller Ltd',
         '1 Main St',
@@ -109,7 +110,7 @@ describe('the confirmation of a paid order', () => {
       expect.arrayContaining([
         'Razem: 375,00\u00a0zł',
         'Kod QR zamówienia ABCDEFGHJK [QRCODEQRCODE]',
-        'Zobacz zamówienie <https://portal.test/orders/token>',
+        'Zobacz zamówienie <https://portal.test/order#token>',
       ]),
     )
   })
@@ -340,7 +341,7 @@ describe('the emails of order management', () => {
       ...contact,
       qrCode: 'NEWCODE',
       qrCodeCid: 'qr@opos',
-      orderLink: 'https://portal.test/orders/new-token',
+      orderLink: 'https://portal.test/order#new-token',
     })
     const left = orderEmailReplacedEmail({ ...order, ...contact })
 
@@ -351,7 +352,7 @@ describe('the emails of order management', () => {
       'Your QR code',
       'This is the new QR code of the order. The one sent before no longer works.',
       'The QR code of the order ABCDEFGHJK [NEWCODE]',
-      'See your order <https://portal.test/orders/new-token>',
+      'See your order <https://portal.test/order#new-token>',
       'If you did not ask for this change, write to shop@seller.test.',
     ])
     const old = await read(left, 'en')
@@ -363,6 +364,34 @@ describe('the emails of order management', () => {
     expect((await read(left, 'pl')).parts[0]).toBe(
       'Organizator konwentu Pyrkon przeniósł zamówienie ABCDEFGHJK na inny adres e-mail. Kod QR i link do zamówienia wysłane na ten adres już nie działają.',
     )
+  })
+
+  // docs/specs/0009-buyer-self-service.md, K4: a fresh link for one that expired.
+  it('send a buyer a fresh order link, and say what to do when nobody asked for it', async () => {
+    const email = orderLinkEmail({
+      ...order,
+      ...contact,
+      orderLink: 'https://portal.test/order#fresh-token',
+    })
+
+    const told = await read(email, 'en')
+    expect(told.subject).toBe('A new link to your order ABCDEFGHJK for Pyrkon')
+    expect(told.parts).toEqual([
+      'Someone asked for a new link to the order ABCDEFGHJK for Pyrkon. It opens the order without a sign-in, so keep it to yourself.',
+      'See your order <https://portal.test/order#fresh-token>',
+      'If you did not ask for it, you can ignore this email: the order is as it was. With questions, write to shop@seller.test.',
+    ])
+    const polish = await read(email, 'pl')
+    expect(polish.subject).toBe('Nowy link do zamówienia ABCDEFGHJK w sklepie konwentu Pyrkon')
+    expect(polish.parts[1]).toBe('Zobacz zamówienie <https://portal.test/order#fresh-token>')
+    expect(
+      (
+        await read(
+          orderLinkEmail({ ...order, contactEmail: null, orderLink: 'https://p.test/order#t' }),
+          'en',
+        )
+      ).parts[2],
+    ).toBe('If you did not ask for it, you can ignore this email: the order is as it was.')
   })
 
   it('tell a buyer a payment was declined, where the money is and whom to write to', async () => {

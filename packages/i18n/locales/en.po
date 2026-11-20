@@ -20,6 +20,10 @@ msgid "A head organizer already has access to every edition."
 msgstr "A head organizer already has access to every edition."
 
 #: src/order-emails.ts
+msgid "A new link to your order {number} for {conventionName}"
+msgstr "A new link to your order {number} for {conventionName}"
+
+#: src/order-emails.ts
 msgid "A payment arrived for the order {number} of {conventionName} and could not confirm it."
 msgstr "A payment arrived for the order {number} of {conventionName} and could not confirm it."
 
@@ -286,6 +290,14 @@ msgstr "If the button does not work, copy this address into your browser:"
 msgid "If you did not ask for it, ignore this message. Your password stays the same."
 msgstr "If you did not ask for it, ignore this message. Your password stays the same."
 
+#: src/order-emails.ts
+msgid "If you did not ask for it, you can ignore this email: the order is as it was."
+msgstr "If you did not ask for it, you can ignore this email: the order is as it was."
+
+#: src/order-emails.ts
+msgid "If you did not ask for it, you can ignore this email: the order is as it was. With questions, write to {contactEmail}."
+msgstr "If you did not ask for it, you can ignore this email: the order is as it was. With questions, write to {contactEmail}."
+
 #: src/emails.ts
 msgid "If you did not ask for this change, do not confirm it and change your password."
 msgstr "If you did not ask for this change, do not confirm it and change your password."
@@ -529,6 +541,10 @@ msgstr "Signing in with Google failed. Try again."
 msgctxt "glossary"
 msgid "size chart"
 msgstr "size chart"
+
+#: src/order-emails.ts
+msgid "Someone asked for a new link to the order {number} for {conventionName}. It opens the order without a sign-in, so keep it to yourself."
+msgstr "Someone asked for a new link to the order {number} for {conventionName}. It opens the order without a sign-in, so keep it to yourself."
 
 #: src/errors.ts
 msgid "Something in your order is no longer available. Check your order and try again."

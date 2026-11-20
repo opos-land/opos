@@ -57,6 +57,9 @@ const publicRoutes = [
   'public.edition',
   'public.programItems',
   'public.programItem',
+  // An order link opens with its token alone (docs/specs/0009-buyer-self-service.md).
+  'orderLinks.open',
+  'orderLinks.renew',
 ]
 
 const procedures = (router: AnyContractRouter, prefix = ''): [string, AnyContractProcedure][] =>

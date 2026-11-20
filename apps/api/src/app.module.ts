@@ -33,6 +33,7 @@ import { AdminModule } from './modules/admin/admin.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { BrandingModule } from './modules/branding/branding.module'
 import { CatalogModule } from './modules/catalog/catalog.module'
+import { BuyerOrdersModule } from './modules/buyer-orders/buyer-orders.module'
 import { CheckoutModule } from './modules/checkout/checkout.module'
 import { DiscountCodesModule } from './modules/discount-codes/discount-codes.module'
 import { OrderManagementModule } from './modules/order-management/order-management.module'
@@ -90,6 +91,7 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
         CheckoutModule,
         OrderManagementModule,
         DiscountCodesModule,
+        BuyerOrdersModule,
         ScannerModule,
         // Only a process that holds the connection of opos_admin serves the admin routes.
         ...(env.DATABASE_ADMIN_URL ? [AdminModule] : []),

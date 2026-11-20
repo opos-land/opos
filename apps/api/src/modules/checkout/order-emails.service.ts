@@ -17,6 +17,7 @@ import {
   orderEmailReplacedEmail,
   orderExpiredEmail,
   orderHolderChangedEmail,
+  orderLinkEmail,
   orderVariantChangedEmail,
   paymentNotNeededEmail,
   paymentNotNeededOrgsEmail,
@@ -43,14 +44,22 @@ const LEASE_MS = 5 * 60_000
 const MINUTE = 60_000
 const DAY = 24 * 60 * MINUTE
 
-/** An order link is valid until this long after its edition ends (buyer self-service, K3). */
+/**
+ * An order link is valid until this long after its edition ends (buyer self-service, K3). One
+ * sent later than that, a fresh link for an expired one among them, opens this long from its
+ * sending.
+ */
 export const ORDER_LINK_DAYS = 30
 
 /** The content id the picture of a QR code travels under. */
 const QR_CODE_CID = 'qr-code@opos'
 
-/** The emails that carry an order's QR code and an order link. */
-const HANDS_OVER: readonly ClaimedEmail['kind'][] = ['order-confirmation', 'order-email-changed']
+/** The emails that hand an order over: with its QR code and an order link, or the link alone. */
+const HANDS_OVER: readonly ClaimedEmail['kind'][] = [
+  'order-confirmation',
+  'order-email-changed',
+  'order-link',
+]
 
 /** What writing an email answers when the email is not to be sent. */
 const WITHDRAWN = 'withdrawn'
@@ -196,7 +205,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
 
     switch (email.kind) {
       case 'order-confirmation': {
-        const { qrCode, orderLink, pictures } = await this.codeAndLink(order)
+        const { qrCode, orderLink, pictures } = await this.codeAndLink(order, now)
         const lines = await this.emails.lines(order.id)
         const documents = await this.emails.documents(order.id)
         return {
@@ -296,7 +305,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
         }
       }
       case 'order-email-changed': {
-        const { qrCode, orderLink, pictures } = await this.codeAndLink(order)
+        const { qrCode, orderLink, pictures } = await this.codeAndLink(order, now)
         return {
           to,
           locale,
@@ -320,32 +329,55 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
         }
       case 'order-canceled':
         return { to, locale, content: orderCanceledEmail({ ...of, contactEmail }) }
+      // A fresh link for one that expired (docs/specs/0009-buyer-self-service.md, K4): the link
+      // alone, since the order's page shows the rest.
+      case 'order-link':
+        return {
+          to,
+          locale,
+          content: orderLinkEmail({
+            ...of,
+            orderLink: await this.link(order, now),
+            contactEmail,
+          }),
+        }
     }
+  }
+
+  /**
+   * An order link of its own for an email, of which only the hash is kept. Its token comes after
+   * the `#` of the portal's address, which no browser sends to a server.
+   */
+  private async link(
+    order: { id: string; tenantId: string; editionId: string; editionEndsAt: Date },
+    now: Date,
+  ): Promise<string> {
+    const token = secretToken()
+    const from = Math.max(order.editionEndsAt.getTime(), now.getTime())
+    await this.emails.addLink(order, hashOf(token), new Date(from + ORDER_LINK_DAYS * DAY))
+    return `${this.portalUrl}/order#${token}`
   }
 
   /**
    * What an email that hands an order over carries: the QR code the order carries now, opened,
    * with its picture, and an order link of its own, of which only the hash is kept.
    */
-  private async codeAndLink(order: {
-    id: string
-    tenantId: string
-    editionId: string
-    number: string
-    editionEndsAt: Date
-  }) {
+  private async codeAndLink(
+    order: {
+      id: string
+      tenantId: string
+      editionId: string
+      number: string
+      editionEndsAt: Date
+    },
+    now: Date,
+  ) {
     const sealed = await this.emails.qrCode(order.id)
     if (!sealed) throw new Error('A paid order has a QR code')
     const qrCode = open(this.key, sealed.code, orderQrCodeOf(order.tenantId, sealed.id))
-    const token = secretToken()
-    await this.emails.addLink(
-      order,
-      hashOf(token),
-      new Date(order.editionEndsAt.getTime() + ORDER_LINK_DAYS * DAY),
-    )
     return {
       qrCode,
-      orderLink: `${this.portalUrl}/orders/${token}`,
+      orderLink: await this.link(order, now),
       pictures: [
         {
           cid: QR_CODE_CID,

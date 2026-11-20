@@ -20,6 +20,10 @@ msgid "A head organizer already has access to every edition."
 msgstr "Główny organizator ma już dostęp do każdej edycji."
 
 #: src/order-emails.ts
+msgid "A new link to your order {number} for {conventionName}"
+msgstr "Nowy link do zamówienia {number} w sklepie konwentu {conventionName}"
+
+#: src/order-emails.ts
 msgid "A payment arrived for the order {number} of {conventionName} and could not confirm it."
 msgstr "Do zamówienia {number} konwentu {conventionName} wpłynęła płatność, ale nie udało się nią potwierdzić zamówienia."
 
@@ -286,6 +290,14 @@ msgstr "Jeśli przycisk nie działa, skopiuj ten adres do przeglądarki:"
 msgid "If you did not ask for it, ignore this message. Your password stays the same."
 msgstr "Jeśli to nie ty o to prosisz, zignoruj tę wiadomość. Twoje hasło się nie zmieni."
 
+#: src/order-emails.ts
+msgid "If you did not ask for it, you can ignore this email: the order is as it was."
+msgstr "Jeśli to nie twoja prośba, możesz zignorować tę wiadomość: zamówienie pozostaje bez zmian."
+
+#: src/order-emails.ts
+msgid "If you did not ask for it, you can ignore this email: the order is as it was. With questions, write to {contactEmail}."
+msgstr "Jeśli to nie twoja prośba, możesz zignorować tę wiadomość: zamówienie pozostaje bez zmian. W razie pytań napisz na adres {contactEmail}."
+
 #: src/emails.ts
 msgid "If you did not ask for this change, do not confirm it and change your password."
 msgstr "Jeśli to nie ty prosisz o tę zmianę, nie potwierdzaj jej i zmień hasło."
@@ -529,6 +541,10 @@ msgstr "Logowanie przez Google nie powiodło się. Spróbuj ponownie."
 msgctxt "glossary"
 msgid "size chart"
 msgstr "tabela rozmiarów"
+
+#: src/order-emails.ts
+msgid "Someone asked for a new link to the order {number} for {conventionName}. It opens the order without a sign-in, so keep it to yourself."
+msgstr "Ktoś poprosił o nowy link do zamówienia {number} w sklepie konwentu {conventionName}. Link otwiera zamówienie bez logowania, więc nie udostępniaj go nikomu."
 
 #: src/errors.ts
 msgid "Something in your order is no longer available. Check your order and try again."

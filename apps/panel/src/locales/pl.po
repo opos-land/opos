@@ -109,6 +109,10 @@ msgstr "Obraz JPEG, PNG lub WebP o rozmiarze do 5 MB."
 msgid "A new edition starts inactive and unpublished."
 msgstr "Nowa edycja jest na początku nieaktywna i nieopublikowana."
 
+#: src/features/orders/model/labels.ts
+msgid "A new order link"
+msgstr "Nowy link do zamówienia"
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "A page with answers for buyers, linked from the shop’s footer. Leave it empty for none."
 msgstr "Strona z odpowiedziami dla kupujących, do której odsyła stopka sklepu. Zostaw pole puste, jeśli jej nie ma."

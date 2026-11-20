@@ -5,6 +5,7 @@ import {
   editionMemberships,
   editions,
   orderEmails,
+  orderLinks,
   orders,
   paymentAttempts,
   scannerDevices,
@@ -352,6 +353,19 @@ export class GlobalDbService {
       .from(scannerDevices)
       .where(eq(scannerDevices.tokenHash, hash))
     return row
+  }
+
+  /**
+   * The tenant of an order link, by the hash of its token: a link's address names nothing else.
+   * It answers the tenant alone; the link, its order and whether it still opens are read in that
+   * tenant's own transaction.
+   */
+  async orderLinkTenant(tokenHash: string): Promise<string | undefined> {
+    const [row] = await this.db
+      .select({ tenantId: orderLinks.tenantId })
+      .from(orderLinks)
+      .where(eq(orderLinks.tokenHash, tokenHash))
+    return row?.tenantId
   }
 
   /**

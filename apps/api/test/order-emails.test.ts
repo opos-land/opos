@@ -175,7 +175,7 @@ describe('the confirmation of a paid order', () => {
     expect(mail!.HTML).toContain('<img src="cid:qr-code@opos"')
     // The order link carries a secret of which only the hash is kept, valid until 30 days after
     // the edition ends.
-    const token = /\/orders\/([A-Za-z0-9_-]{43})/.exec(mail!.Text)?.[1]
+    const token = /\/order#([A-Za-z0-9_-]{43})/.exec(mail!.Text)?.[1]
     expect(token).toBeDefined()
     const [link] = await storedRows('order_links', s.t.id)
     expect(link).toMatchObject({
@@ -353,7 +353,7 @@ describe('the emails of order management', () => {
     // The code the order carries when the email is written, as text and as a picture.
     expect(toNew!.Text).toMatch(/The QR code of the order \S+: [A-Z2-7]{32}/)
     expect(toNew!.HTML).toContain('<img src="cid:qr-code@opos"')
-    const token = /\/orders\/([A-Za-z0-9_-]{43})/.exec(toNew!.Text)?.[1]
+    const token = /\/order#([A-Za-z0-9_-]{43})/.exec(toNew!.Text)?.[1]
     expect(token).toBeDefined()
     const links = await storedRows('order_links', s.t.id)
     expect(links.map((link) => link.token_hash)).toContain(

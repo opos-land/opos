@@ -274,6 +274,8 @@ describe('the page of an order', () => {
         emails: [
           email({ id: 'alert', kind: 'needs-review', recipient: null }),
           email({ id: 'stale', withdrawnAt: '2026-05-02T08:00:00.000Z' }),
+          // A fresh order link the buyer asked for once the first one expired.
+          email({ id: 'link', kind: 'order-link' }),
         ],
       }),
     )
@@ -281,6 +283,7 @@ describe('the page of an order', () => {
     const emails = await section('Emails')
 
     expect(await emails.findByText('The organizers')).toBeDefined()
+    expect(emails.getByText('A new order link')).toBeDefined()
     expect(emails.getByText(/Not sent: the order moved to another address/)).toBeDefined()
   })
 

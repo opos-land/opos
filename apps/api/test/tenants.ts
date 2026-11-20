@@ -444,6 +444,7 @@ export async function setCatalogSettings(
     teenFromAge?: number
     adultFromAge?: number
     guardianConsentFormUrl?: string
+    pickupInformation?: string
   },
 ) {
   await db.execute(sql`
@@ -458,7 +459,8 @@ export async function setCatalogSettings(
       faq_url = ${values.faqUrl ?? null},
       teen_from_age = ${values.teenFromAge ?? null},
       adult_from_age = ${values.adultFromAge ?? null},
-      guardian_consent_form_url = ${values.guardianConsentFormUrl ?? null}
+      guardian_consent_form_url = ${values.guardianConsentFormUrl ?? null},
+      pickup_information = ${values.pickupInformation ?? null}
     where edition_id = ${editionId}
   `)
 }
@@ -687,6 +689,27 @@ export async function addOrderLink(tenantId: string, editionId: string, orderId:
     returning id
   `)
   return row!.id
+}
+
+/**
+ * An order link under a token the test holds, as its row alone: one that opens, one that expired
+ * a day ago, or one that a changed email ended.
+ */
+export async function addOrderLinkWithToken(
+  tenantId: string,
+  editionId: string,
+  orderId: string,
+  state: 'valid' | 'expired' | 'ended' = 'valid',
+) {
+  const token = randomBytes(32).toString('base64url')
+  await db.execute(sql`
+    insert into order_links (tenant_id, edition_id, order_id, token_hash, expires_at, ended_at)
+    values (${tenantId}, ${editionId}, ${orderId},
+      ${createHash('sha256').update(token).digest('hex')},
+      now() + ${state === 'expired' ? sql`interval '-1 day'` : sql`interval '30 days'`},
+      ${state === 'ended' ? sql`now()` : null})
+  `)
+  return token
 }
 
 /** An email of an order as its row alone, due at once: what a route queues for the outbox. */

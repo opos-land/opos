@@ -52,6 +52,7 @@ export const EMAIL_KIND_LABELS: Record<EmailKind, MessageDescriptor> = {
   'order-email-replaced': msg`Notice to the old email`,
   'order-declined': msg`The payment was declined`,
   'order-canceled': msg`The order was canceled`,
+  'order-link': msg`A new order link`,
 }
 
 type AttemptStatus = OrderDetail['attempts'][number]['status']

@@ -696,6 +696,8 @@ describe('what the application role changes of an order', () => {
     'order-email-replaced',
     'order-declined',
     'order-canceled',
+    // A fresh order link for one that expired (docs/specs/0009-buyer-self-service.md, K4).
+    'order-link',
   ])('queues the email %s of an order', async (kind) => {
     const at = await place()
     const mine = await order(at)

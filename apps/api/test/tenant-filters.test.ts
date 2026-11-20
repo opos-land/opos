@@ -4,6 +4,7 @@ import { AccessRepository } from '../src/common/permissions/access.repository'
 import { LogoRepository } from '../src/modules/branding/logo.repository'
 import { MerchandiseRepository } from '../src/modules/catalog/merchandise.repository'
 import { DiscountsRepository } from '../src/modules/checkout/discounts.repository'
+import { OrderLinksRepository } from '../src/modules/buyer-orders/order-links.repository'
 import { OfferRepository } from '../src/modules/checkout/offer.repository'
 import { OrdersRepository } from '../src/modules/checkout/orders.repository'
 import { PaymentsRepository } from '../src/modules/checkout/payments.repository'
@@ -20,14 +21,18 @@ import {
   addLogo,
   addMerchandiseItem,
   addOrder,
+  addOrderLinkWithToken,
   addOrg,
   addQrCode,
   addScanner,
+  addTicketType,
   aQrCode,
   closeTenantDb,
   deleteCreatedTenants,
   member,
   type Member,
+  queueOrderEmail,
+  setCatalogSettings,
   setPublished,
   storedMembership,
   tenantWithHead,
@@ -161,6 +166,50 @@ describe('what a scanner opens', () => {
       orders: [{ id: order.id }],
     })
     expect(scanned.id).toBe(order.id)
+  })
+})
+
+// What an order link opens (docs/specs/0009-buyer-self-service.md): its routes name no tenant,
+// so every read of the link and its order names the tenant the link's hash answered.
+describe('an order link', () => {
+  it("reads no link, order, line or QR code of another tenant in this tenant's transaction", async () => {
+    await setPublished(editionOfB, true)
+    const ticketTypeId = await addTicketType(b.id, editionOfB)
+    const order = await addOrder(b.id, editionOfB, { status: 'paid', ticketTypeId })
+    await addQrCode(b.id, editionOfB, order.id, aQrCode())
+    const token = await addOrderLinkWithToken(b.id, editionOfB, order.id)
+    const hash = createHash('sha256').update(token).digest('hex')
+    await queueOrderEmail(b.id, editionOfB, order.id, 'order-link', 'buyer@example.test')
+    await setCatalogSettings(b.id, editionOfB, { pickupInformation: 'At the desk.' })
+    const read = (tenantId: string) =>
+      withoutRls(a.id, async (tx) => {
+        const links = new OrderLinksRepository(contextOf(tx))
+        return {
+          link: await links.byHash(tenantId, hash),
+          order: await links.order(tenantId, order.id),
+          lines: await links.lines(tenantId, order.id),
+          qrCode: await links.qrCode(tenantId, order.id),
+          pickUp: await links.pickupInformation(tenantId, editionOfB),
+          queued: await links.linkQueuedSince(tenantId, order.id, new Date(0)),
+        }
+      })
+
+    expect(await read(a.id)).toEqual({
+      link: undefined,
+      order: undefined,
+      lines: [],
+      qrCode: undefined,
+      pickUp: null,
+      queued: false,
+    })
+    expect(await read(b.id)).toMatchObject({
+      link: { orderId: order.id },
+      order: { id: order.id, tenantId: b.id },
+      lines: [{ kind: 'ticket' }],
+      qrCode: { code: 'sealed' },
+      pickUp: 'At the desk.',
+      queued: true,
+    })
   })
 })
 

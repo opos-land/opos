@@ -35,6 +35,7 @@ export const ORDER_EMAIL_KINDS = [
   'order-email-replaced',
   'order-declined',
   'order-canceled',
+  'order-link',
 ] as const
 
 /** The emails that go to the orgs who settle an order, not to its buyer. */

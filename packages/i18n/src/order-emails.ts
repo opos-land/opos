@@ -423,6 +423,32 @@ export const orderEmailReplacedEmail = ({
   ],
 })
 
+/**
+ * A fresh order link for one that expired (docs/specs/0009-buyer-self-service.md, K4), sent to
+ * the order's email whoever asked: it carries the link alone, never the QR code.
+ */
+export const orderLinkEmail = ({
+  conventionName,
+  number,
+  orderLink,
+  contactEmail,
+}: OrderOf & Contact & { orderLink: string }): OrderEmailContent => ({
+  subject: msg`A new link to your order ${number} for ${conventionName}`,
+  parts: [
+    {
+      kind: 'paragraph',
+      text: msg`Someone asked for a new link to the order ${number} for ${conventionName}. It opens the order without a sign-in, so keep it to yourself.`,
+    },
+    { kind: 'link', label: msg`See your order`, url: orderLink },
+    {
+      kind: 'paragraph',
+      text: contactEmail
+        ? msg`If you did not ask for it, you can ignore this email: the order is as it was. With questions, write to ${contactEmail}.`
+        : msg`If you did not ask for it, you can ignore this email: the order is as it was.`,
+    },
+  ],
+})
+
 /** An org declined an order that needed review: where the money is, and whom to write to. */
 export const orderDeclinedEmail = ({
   conventionName,

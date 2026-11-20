@@ -507,6 +507,8 @@ export const orderEmailKind = pgEnum('order_email_kind', [
   'order-email-replaced',
   'order-declined',
   'order-canceled',
+  // A fresh order link for one that expired, to the order's email.
+  'order-link',
 ])
 
 /**

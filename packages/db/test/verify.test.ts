@@ -453,6 +453,10 @@ describe('verifyDatabase', () => {
       ['the item of a line', 'merchandise_item_id', 'order_lines'],
       ['the code of a QR code', 'code', 'order_qr_codes'],
       ['when an order link expires', 'expires_at', 'order_links'],
+      // A scanner's name, its end and the org behind it are set once, when it is enabled.
+      ['the name of a scanner', 'name', 'scanner_devices'],
+      ['when a scanner ends', 'expires_at', 'scanner_devices'],
+      ['the org behind a scanner', 'enabled_by_membership_id', 'scanner_devices'],
       ['the edition of an order', 'edition_id', 'orders'],
       ['the price of a line', 'amount_minor', 'order_lines'],
       ['what a line sells', 'ticket_type_id', 'order_lines'],
@@ -490,6 +494,10 @@ describe('verifyDatabase', () => {
       ['order_emails', 'recipient'],
       ['order_links', 'token_hash'],
       ['order_qr_codes', 'code'],
+      // A scanner is found across tenants by a hash, and nothing of it is read there.
+      ['scanner_devices', 'name'],
+      ['scanner_devices', 'edition_id'],
+      ['scanner_devices', 'expires_at'],
     ])(
       'reports opos_app_global reading %s.%s, which no job of the API needs',
       async (table, column) => {

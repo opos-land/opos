@@ -39,6 +39,7 @@ import {
   programItemSpeakers,
   retiredTenantSlugs,
   shopSellers,
+  scannerDevices,
   tenantMemberships,
   tenants,
   ticketTypeAddOns,
@@ -205,6 +206,8 @@ interface SeedEditionShop {
   catalog?: SeedCatalog
   /** The orders placed of the catalog. */
   orders?: SeedOrder[]
+  /** The scanners the edition's head enabled; a phone was paired with each, so none opens. */
+  scanners?: { name: string; revoked?: boolean }[]
 }
 
 interface SeedEdition {
@@ -641,6 +644,7 @@ const TENANTS: SeedTenant[] = [
           ],
           catalog: DEMO_CATALOG,
           orders: DEMO_ORDERS,
+          scanners: [{ name: 'Main gate' }, { name: 'Merchandise desk', revoked: true }],
         },
       },
     ],
@@ -1069,6 +1073,7 @@ async function seedTenant(spec: SeedTenant) {
       tenant: {} as NonNullable<SeedMember['tenant']>,
       editions: {} as NonNullable<SeedMember['editions']>,
     })
+    let headMembershipId: string | undefined
     const members = [
       asHead(headId),
       ...team.map((member) =>
@@ -1099,6 +1104,7 @@ async function seedTenant(spec: SeedTenant) {
           set: access,
         })
         .returning({ id: tenantMemberships.id })
+      if (member.id === headId) headMembershipId = membership!.id
 
       for (const [slug, permissions] of Object.entries(member.editions)) {
         const editionAccess = {
@@ -1118,6 +1124,36 @@ async function seedTenant(spec: SeedTenant) {
             target: [editionMemberships.tenantMembershipId, editionMemberships.editionId],
             set: editionAccess,
           })
+      }
+    }
+
+    // The scanners of an edition (docs/specs/0007-scanner.md, Seed), enabled by the head. A
+    // phone was paired with each long ago, under a code and a token nobody holds: the seed opens
+    // no device.
+    for (const edition of spec.editions) {
+      const editionId = editionIds.get(edition.slug)!
+      for (const scanner of edition.shop?.scanners ?? []) {
+        const [existing] = await tx
+          .select({ id: scannerDevices.id })
+          .from(scannerDevices)
+          .where(
+            and(eq(scannerDevices.editionId, editionId), eq(scannerDevices.name, scanner.name)),
+          )
+        if (existing) continue
+        const secret = () => createHash('sha256').update(randomBytes(32)).digest('hex')
+        const pairedAt = new Date(Date.now() - 7 * DAY)
+        await tx.insert(scannerDevices).values({
+          tenantId,
+          editionId,
+          name: scanner.name,
+          enabledByMembershipId: headMembershipId ?? null,
+          pairingCodeHash: secret(),
+          pairingExpiresAt: new Date(pairedAt.getTime() + 15 * 60 * 1000),
+          pairedAt,
+          tokenHash: secret(),
+          expiresAt: new Date(edition.endsAt.getTime() + DAY),
+          revokedAt: scanner.revoked ? new Date(Date.now() - DAY) : null,
+        })
       }
     }
   })

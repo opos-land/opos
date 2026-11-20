@@ -57,6 +57,7 @@ const covered = [
   ['payment_attempts', 'tenant_id'],
   ['order_emails', 'tenant_id'],
   ['order_links', 'tenant_id'],
+  ['scanner_devices', 'tenant_id'],
 ] as const
 
 class Rollback extends Error {}
@@ -283,6 +284,12 @@ async function order(
     token_hash: `${id}-token`,
     expires_at: '2099-01-01',
   })
+  await add('scanner_devices', {
+    name: 'Gate',
+    pairing_code_hash: `${id}-pairing`,
+    pairing_expires_at: '2099-01-01',
+    expires_at: '2099-01-01',
+  })
 }
 
 beforeAll(async () => {
@@ -399,6 +406,9 @@ async function foreignOrderRows(tenantId: string, edition: string) {
      values (${at}, '${order}', 'order-expired', 'foreign@example.test')`,
     `insert into order_links (tenant_id, edition_id, order_id, token_hash, expires_at)
      values (${at}, '${order}', 'foreign-token', '2099-01-01')`,
+    `insert into scanner_devices (tenant_id, edition_id, name, pairing_code_hash,
+       pairing_expires_at, expires_at)
+     values (${at}, 'Foreign gate', 'foreign-pairing', '2099-01-01', '2099-01-01')`,
     `insert into order_custom_field_answers (tenant_id, edition_id, order_id, custom_field_id,
        answer)
      values (${at}, '${bare!.id}', '${await held('edition_custom_fields')}', 'Foreign')`,

@@ -330,6 +330,20 @@
       "when": 1795136310547,
       "tag": "0046_manual_order_holder_name",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1795139269124,
+      "tag": "0047_scanner_devices",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1795139288659,
+      "tag": "0048_scanner_devices_privileges",
+      "breakpoints": true
     }
   ]
 }

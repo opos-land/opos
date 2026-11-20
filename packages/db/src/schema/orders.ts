@@ -23,6 +23,7 @@ import { editionConsents, editionDocumentVersions } from './edition-documents'
 import { editions } from './editions'
 import { merchandiseItems, merchandiseVariants } from './merchandise'
 import { type PaymentProvider } from './payment-provider-accounts'
+import { scannerDevices } from './scanner-devices'
 import { ticketTypes } from './ticket-types'
 
 /**
@@ -166,6 +167,8 @@ export const orderLines = pgTable(
     amountMinor: integer().notNull(),
     /** Empty until the scanner or an org marks the line as handed over. */
     handedOutAt: timestamp({ withTimezone: true }),
+    /** The scanner that marked it; empty for a mark an org made in the panel. */
+    handedOutBy: uuid(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -208,6 +211,16 @@ export const orderLines = pgTable(
         merchandiseVariants.merchandiseItemId,
       ],
     }),
+    foreignKey({
+      name: 'order_lines_handed_out_by_fk',
+      columns: [t.handedOutBy, t.tenantId, t.editionId],
+      foreignColumns: [scannerDevices.id, scannerDevices.tenantId, scannerDevices.editionId],
+    }),
+    // Only a line handed out names who handed it out.
+    check(
+      'order_lines_handed_out_by',
+      sql`${t.handedOutBy} is null or ${t.handedOutAt} is not null`,
+    ),
     // A line names what its kind sells, and nothing else.
     check(
       'order_lines_sells',

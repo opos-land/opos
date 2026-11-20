@@ -222,21 +222,25 @@ and that it cannot be undone: `IrreversibleAction` of `shared/ui`, or its `alert
 the same way when the action needs more than one press. A change the same screen reverses asks
 nothing ([0023](docs/adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
 
-**A new entity is always added on a page of its own**, at `new` under the address of its list: a
-programme item, a ticket type, a discount code, a document, a scanner and anything else a list
-holds. The list shows a link to that page to a member who may add, never the form of a new entity;
-the page links back to the list, and after adding leads to the entity's own page or, where it has
-none, to the list. A part saved with its entity (a price tier, a variant, a speaker) stays in that
-entity's form. `src/app/pages.test.ts` of the panel and of the admin application refuses a
-`create…Options` mutation in a file that is not a page routed at `new`
-([0066](docs/adr/0066-add-a-new-entity-on-a-page-of-its-own.md)).
+**An entity is always added and changed on pages of its own**: a new one at `new` under the
+address of its list, an existing one at its id there. That holds for a programme item, a ticket
+type, an add-on, a discount code, a custom field, a document, a consent, a scanner and anything
+else a list holds. The list shows the links to those pages, never a form and never a row that turns
+into one; a page links back to the list, and after adding or deleting leads to the entity's own page
+or to the list. What the list reverses by itself stays in the row: moving it, hiding it, ending a
+discount code. A part saved with its entity (a price tier, a variant, a speaker) stays in that
+entity's form. `src/app/pages.test.ts` of the panel refuses a `create…Options` mutation in a file
+that is not a page routed at `new`, and an entity's form anywhere but on such a page and on the
+entity's own; that of the admin application refuses the first
+([0066](docs/adr/0066-add-and-change-an-entity-on-a-page-of-its-own.md)).
 
-**A table row opens its entity's page from anywhere in it** when the entity has a page of its own:
-the row is `LinkRow` of `shared/ui` and the entity's name in it a `RowLink` to the same page, never
-a plain link in one cell. The link stays for the keyboard and the screen reader, and a button or
-another link inside the row keeps its own press. `src/app/tables.test.ts` of the panel and of the
-admin application refuses a plain link in a table cell
-([0067](docs/adr/0067-open-an-entitys-page-from-anywhere-in-its-table-row.md)).
+**A list of entities is a table, and its row opens the entity's page from anywhere in it**: a row
+an entity, a column each thing the list tells, never cards under each other. Where the entity has a
+page of its own the row is `LinkRow` of `shared/ui` and the entity's name in it a `RowLink` to the
+same page, never a plain link in one cell. The link stays for the keyboard and the screen reader,
+and a button or another link inside the row keeps its own press. `src/app/tables.test.ts` of the
+panel and of the admin application refuses a plain link in a table cell
+([0067](docs/adr/0067-list-entities-in-a-table-whose-row-opens-the-entitys-page.md)).
 
 **A tracker runs only through the consent banner.** Anything the portal does not strictly need for
 what the visitor asked is a tracker: analytics, an advertising pixel, a screen recorder, a

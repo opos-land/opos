@@ -56,3 +56,39 @@ describe('adding an entity', () => {
     expect(elsewhere).toEqual([])
   })
 })
+
+// An entity is changed on a page of its own too (docs/ARCHITECTURE.md, Frontends): the form an
+// adding page renders is rendered again only by the page of the entity itself, routed at its id,
+// and never by a list or a row of one.
+const entityPages = new Set(
+  [...router.matchAll(/path: '[^']*(?:\/|^|')(?:new|:\w+)',\s*element: <(\w+) /g)].map(
+    (route) => route[1],
+  ),
+)
+// An edition's own area stands under its address: its settings page is the page of the edition.
+entityPages.add('EditionSettingsPage')
+
+describe('changing an entity', () => {
+  const rendering = (source: string) =>
+    [...source.matchAll(/<(\w+Form)\b/g)].map((rendered) => rendered[1])
+  const made = (source: string) =>
+    [...source.matchAll(/export function (\w+)/g)].map((component) => component[1])
+  const entityForms = new Set(
+    modules(FEATURES)
+      .filter(({ source }) => made(source).some((component) => addingPages.has(component)))
+      .flatMap(({ source }) => rendering(source)),
+  )
+
+  it('has forms that adding pages render', () => {
+    expect(entityForms.size).toBeGreaterThan(0)
+  })
+
+  it('happens on the page of the entity alone', () => {
+    const elsewhere = modules(FEATURES)
+      .filter(({ source }) => rendering(source).some((form) => entityForms.has(form)))
+      .filter(({ source }) => !made(source).some((component) => entityPages.has(component)))
+      .map(({ file }) => file)
+
+    expect(elsewhere).toEqual([])
+  })
+})

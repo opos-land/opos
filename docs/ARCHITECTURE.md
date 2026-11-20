@@ -368,19 +368,21 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   authentication off, asks first in a modal that names what goes, says what goes with it and that
   it cannot be undone; only the modal's own button acts. A change the same screen reverses asks
   nothing ([0023](adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
-- A new entity, anything a list holds with an identity of its own, is added on a page of its own,
-  at `new` under the address of its list: the list holds the link to that page and never the form.
-  The page links back, and after adding leads to the entity's own page or, where it has none, to
-  the list. A part saved with its entity, such as a price tier, a variant or a speaker, stays in
-  that entity's form; `src/app/pages.test.ts` of the panel and of the admin application refuses a
-  mutation that creates an entity outside a page routed at `new`
-  ([0066](adr/0066-add-a-new-entity-on-a-page-of-its-own.md)).
-- A table row whose entity has a page of its own opens that page from anywhere in it: the row is
-  the `LinkRow` of `shared/ui` and the entity's name in it a `RowLink`, which stays the way a
-  keyboard and a screen reader reach the page. A control inside the row keeps its own press;
-  `src/app/tables.test.ts` of the panel and of the admin application refuses a plain link in a
-  table cell
-  ([0067](adr/0067-open-an-entitys-page-from-anywhere-in-its-table-row.md)).
+- An entity, anything a list holds with an identity of its own, is added and changed on pages of
+  its own: a new one at `new` under the address of its list, an existing one at its id there. The
+  list holds the links to those pages and never a form; a page links back, and after adding or
+  deleting leads to the entity's own page or to the list. What the list reverses by itself stays in
+  the row: moving it, hiding it, ending a discount code. A part saved with its entity, such as a
+  price tier, a variant or a speaker, stays in that entity's form; `src/app/pages.test.ts` of the
+  panel refuses a mutation that creates an entity outside a page routed at `new` and an entity's
+  form outside such a page and the entity's own, and that of the admin application the first
+  ([0066](adr/0066-add-and-change-an-entity-on-a-page-of-its-own.md)).
+- A list of entities is a table, a row an entity, and a row whose entity has a page of its own
+  opens that page from anywhere in it: the row is the `LinkRow` of `shared/ui` and the entity's
+  name in it a `RowLink`, which stays the way a keyboard and a screen reader reach the page. A
+  control inside the row keeps its own press; `src/app/tables.test.ts` of the panel and of the
+  admin application refuses a plain link in a table cell
+  ([0067](adr/0067-list-entities-in-a-table-whose-row-opens-the-entitys-page.md)).
 - A tracker, anything the portal does not strictly need (analytics, a pixel, an embed, a script,
   stylesheet or font from another origin, its cookies), is an entry of the consent feature's
   `TRACKERS`, started by that feature alone after the visitor allowed its category. Only it creates

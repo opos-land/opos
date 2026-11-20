@@ -13,7 +13,7 @@ msgstr "{editionName} już wkrótce: twój kod QR"
 
 #: src/order-emails.ts
 msgid "{editionName} starts soon. Here is what you need at the entrance for the order {number}."
-msgstr "{editionName} już wkrótce. Oto wszystko, czego potrzebujesz przy wejściu dla zamówienia {number}."
+msgstr "{editionName} już wkrótce. Oto wszystko, czego potrzebujesz przy wejściu. Numer zamówienia: {number}."
 
 #: src/errors.ts
 msgid "A consent links this document. Change or delete the consent first."
@@ -99,7 +99,7 @@ msgstr "Przedział wiekowy"
 #: src/exports.ts
 msgctxt "export column"
 msgid "Amount"
-msgstr "Kwota"
+msgstr "Do zapłaty"
 
 #: src/errors.ts
 msgid "An account with this email address already exists."
@@ -119,7 +119,7 @@ msgstr "Zamówienie w tym konwencie oczekuje na płatność. Dane dostępowe zmi
 
 #: src/errors.ts
 msgid "An order used this discount code, so it cannot be deleted. End it instead: buyers can no longer use it, and it stays on its orders."
-msgstr "Zamówienie użyło tego kodu rabatowego, więc nie można go usunąć. Zakończ go: kupujący nie użyją go więcej, a na swoich zamówieniach pozostanie."
+msgstr "Ten kod rabatowy został już użyty w zamówieniu, więc nie można go usunąć. Zamiast usuwać, zakończ go: kupujący nie użyją go więcej, a w zamówieniach pozostanie."
 
 #: src/order-emails.ts
 msgid "An organizer of {conventionName} canceled your order {number}. Its QR code is no longer valid."
@@ -476,12 +476,12 @@ msgstr "moduł"
 #: src/exports.ts
 msgctxt "export column"
 msgid "Money"
-msgstr "Pieniądze"
+msgstr "Gdzie są pieniądze"
 
 #: src/exports.ts
 msgctxt "export column"
 msgid "Name"
-msgstr "Imię lub pseudonim"
+msgstr "Imię i nazwisko albo pseudonim"
 
 #: src/exports.ts
 msgctxt "export value"
@@ -568,7 +568,7 @@ msgstr "Inne szczegóły"
 #: src/exports.ts
 msgctxt "export column"
 msgid "Paid"
-msgstr "Zapłacono"
+msgstr "Data płatności"
 
 #: src/exports.ts
 msgctxt "export value"
@@ -1065,7 +1065,7 @@ msgstr "Tego żądania nie można wykonać z tego adresu. Odśwież stronę i sp
 
 #: src/errors.ts
 msgid "This scanner no longer works: its access was revoked or expired. Pair the phone again."
-msgstr "Ten skaner już nie działa: jego dostęp cofnięto albo wygasł. Sparuj telefon ponownie."
+msgstr "Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Sparuj telefon ponownie."
 
 #: src/errors.ts
 msgid "This shop is not selling right now."

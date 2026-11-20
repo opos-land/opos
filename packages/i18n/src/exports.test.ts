@@ -99,7 +99,7 @@ describe('the columns of the lists of an edition’s sales', () => {
     ])
     expect(await said(pickListColumns, 'pl')).toEqual([
       'Numer zamówienia',
-      'Imię lub pseudonim',
+      'Imię i nazwisko albo pseudonim',
       'Gadżet',
       'Wariant',
       'Liczba',
@@ -123,11 +123,11 @@ describe('the columns of the lists of an edition’s sales', () => {
       'Numer zamówienia',
       'Dostawca',
       'Próba płatności',
-      'Kwota',
+      'Do zapłaty',
       'Zapłacona kwota',
       'Waluta',
-      'Zapłacono',
-      'Pieniądze',
+      'Data płatności',
+      'Gdzie są pieniądze',
       'Numer transakcji',
       'Numer paczki wypłat',
       'Prowizja',

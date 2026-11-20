@@ -89,7 +89,7 @@ describe('errorMessage', () => {
     ],
     [
       'discount-code.in-use',
-      'Zamówienie użyło tego kodu rabatowego, więc nie można go usunąć. Zakończ go: kupujący nie użyją go więcej, a na swoich zamówieniach pozostanie.',
+      'Ten kod rabatowy został już użyty w zamówieniu, więc nie można go usunąć. Zamiast usuwać, zakończ go: kupujący nie użyją go więcej, a w zamówieniach pozostanie.',
     ],
     ['scan.not-valid', 'Ten kod QR jest nieważny.'],
     ['scanner.name-taken', 'Inny skaner tej edycji ma już tę nazwę. Wybierz inną.'],
@@ -103,7 +103,7 @@ describe('errorMessage', () => {
     ],
     [
       'scanner.revoked',
-      'Ten skaner już nie działa: jego dostęp cofnięto albo wygasł. Sparuj telefon ponownie.',
+      'Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Sparuj telefon ponownie.',
     ],
     [
       'production.before-deadline',

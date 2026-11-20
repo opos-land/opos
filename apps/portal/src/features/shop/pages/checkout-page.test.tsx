@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
@@ -794,6 +796,20 @@ describe('CheckoutPage, adding to a paid order', () => {
 
     expect(await screen.findByText('Choose at least one add-on or item to order.')).toBeDefined()
     expect(api.place).not.toHaveBeenCalled()
+  })
+
+  // One English wording, two Polish ones: the button is an imperative, the page's title a noun
+  // phrase like the portal's other titles, so the title carries a context of its own.
+  it('titles the page in Polish as a page, not as the button that leads to it', async () => {
+    more()
+    expect(await screen.findByRole('heading', { name: 'Buy more', level: 1 })).toBeDefined()
+
+    // The tests run from the application's own directory.
+    const catalog = readFileSync(resolve(process.cwd(), 'src/locales/pl.po'), 'utf8')
+    expect(catalog).toContain(
+      'msgctxt "page title"\nmsgid "Buy more"\nmsgstr "Dokupowanie do zamówienia"',
+    )
+    expect(catalog).toMatch(/\.tsx\nmsgid "Buy more"\nmsgstr "Dokup"/)
   })
 
   // B6: a visitor has no "Buy more".

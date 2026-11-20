@@ -9,7 +9,7 @@ msgstr ""
 
 #: src/features/sales/pages/sales-page.tsx
 msgid "“Sold” counts what paid orders hold, manual ones among them. “Pending” counts the orders awaiting payment and those needing review, which may still fall away. An expired, declined or canceled order counts nowhere."
-msgstr "„Sprzedane” to to, co zawierają opłacone zamówienia, także ręczne. „Oczekujące” to zamówienia oczekujące na płatność i zamówienia do wyjaśnienia, które mogą jeszcze odpaść. Zamówienie wygasłe, odrzucone lub anulowane nie jest liczone nigdzie."
+msgstr "„Sprzedane” liczy to, co zawierają opłacone zamówienia, w tym ręczne. „Oczekujące” liczy zamówienia oczekujące na płatność i te do wyjaśnienia, które mogą jeszcze odpaść. Zamówienie wygasłe, odrzucone lub anulowane nie jest liczone nigdzie."
 
 #. placeholder {0}: item.name
 #: src/features/orders/pages/orders-page.tsx
@@ -67,7 +67,7 @@ msgstr "100 sprawia, że to, czego dotyczy kod, jest bezpłatne: zamówienie, w 
 
 #: src/features/discounts/pages/discount-codes-page.tsx
 msgid "A buyer enters a code at the Summary of the checkout, and it lowers the price of what you chose for it. A code of 100% gives free entry: give one to a guest, who then checks out like any buyer and gets a QR code."
-msgstr "Kupujący wpisuje kod w podsumowaniu zamówienia, a kod obniża cenę tego, co dla niego wybierzesz. Kod 100% daje bezpłatny wstęp: przekaż go gościowi, który składa zamówienie jak każdy kupujący i dostaje kod QR."
+msgstr "Kupujący wpisuje kod w podsumowaniu zamówienia, a kod obniża cenę tego, czego dotyczy. Kod 100% daje bezpłatny wstęp: przekaż go gościowi, który składa zamówienie jak każdy kupujący i dostaje kod QR."
 
 #: src/features/scanner/model/labels.ts
 msgid "A child enters only with a guardian present."
@@ -151,7 +151,7 @@ msgstr "Konto sandbox nie pobiera prawdziwych pieniędzy i da się je podłączy
 
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "A scanner is a phone that reads buyers’ QR codes at the gate and at the desk, with no account signed in. It reads the orders of this edition alone."
-msgstr "Skaner to telefon, który odczytuje kody QR kupujących przy wejściu i na stanowisku, bez zalogowanego konta. Odczytuje tylko zamówienia tej edycji."
+msgstr "Skaner to telefon, który odczytuje kody QR kupujących przy wejściu i w punkcie wydawania gadżetów, bez zalogowanego konta. Odczytuje tylko zamówienia tej edycji."
 
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
@@ -523,11 +523,11 @@ msgstr "Ścieżka nawigacji"
 
 #: src/features/orders/pages/order-page.tsx
 msgid "Brought on paper to the convention"
-msgstr "Przyniesiona na papierze na konwent"
+msgstr "Zostanie przyniesiona na papierze na konwent"
 
 #: src/features/discounts/components/discount-code-row.tsx
 msgid "Buyers can no longer use it. A code an order used cannot be deleted: end it instead, and it stays on its orders."
-msgstr "Kupujący nie użyją go więcej. Kodu, którego użyło zamówienie, nie można usunąć: zakończ go, a pozostanie na swoich zamówieniach."
+msgstr "Kupujący nie użyją go więcej. Kodu użytego w zamówieniu nie można usunąć: zakończ go, a w zamówieniach pozostanie."
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Buyers pay straight into the convention’s own account with a payment provider. OPOS holds no money."
@@ -955,7 +955,7 @@ msgstr "Pobierz jako plik"
 
 #: src/features/sales/pages/sales-page.tsx
 msgid "Each list is a file a spreadsheet opens, with the orders as they are now. The files hold names and email addresses: keep them as carefully as the convention’s other personal data."
-msgstr "Każda lista to plik, który otworzy arkusz kalkulacyjny, z zamówieniami w ich obecnym stanie. Pliki zawierają imiona i adresy e-mail: chroń je tak starannie jak pozostałe dane osobowe konwentu."
+msgstr "Każda lista to plik do otwarcia w arkuszu kalkulacyjnym, z zamówieniami w ich obecnym stanie. Pliki zawierają imiona i nazwiska oraz adresy e-mail: chroń je tak starannie jak pozostałe dane osobowe konwentu."
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
@@ -1032,7 +1032,7 @@ msgstr "Zakończ kod"
 
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "Ended"
-msgstr "Zakończony"
+msgstr "Dostęp wygasł"
 
 #: src/features/discounts/components/discount-code-row.tsx
 msgctxt "a discount code"
@@ -1055,7 +1055,7 @@ msgstr "Kończy się wcześniej (nieobowiązkowe)"
 
 #: src/features/discounts/components/discount-code-form.tsx
 msgid "Enter 4 to 40 letters, digits and hyphens."
-msgstr "Podaj od 4 do 40 liter, cyfr i łączników."
+msgstr "Podaj od 4 do 40 liter, cyfr i myślników."
 
 #: src/features/editions/components/edition-form.tsx
 msgid "Enter a city of up to 100 characters."
@@ -1206,7 +1206,7 @@ msgstr "Podaj hasło."
 
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "Entry"
-msgstr "Wejście"
+msgstr "Akredytacja"
 
 #: src/features/orders/pages/orders-page.tsx
 msgid "Every status"
@@ -3700,7 +3700,7 @@ msgstr "Ten dostawca odpowiada tylko na wywołania z adresów IP wpisanych w jeg
 
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "This scanner no longer works: its access was revoked or has ended. Ask an organizer to pair this phone again."
-msgstr "Ten skaner już nie działa: jego dostęp cofnięto albo się skończył. Poproś organizatora o ponowne sparowanie tego telefonu."
+msgstr "Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Poproś organizatora o ponowne sparowanie tego telefonu."
 
 #: src/features/orders/pages/manual-order-page.tsx
 #: src/features/orders/pages/order-page.tsx
@@ -4061,7 +4061,7 @@ msgstr "Co zawiera akredytacja, na przykład przypinkę albo identyfikator: wido
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "When the edition is open, as the reminder tells it. Up to 1000 characters."
-msgstr "Kiedy edycja jest otwarta, tak jak powie to przypomnienie. Do 1000 znaków."
+msgstr "Kiedy edycja jest otwarta, w brzmieniu, w jakim poda to przypomnienie. Do 1000 znaków."
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Where and when merchandise is handed over. A buyer reads it on the page of their order. Up to 1000 characters."

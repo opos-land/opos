@@ -393,7 +393,12 @@ function Checkout({
   }
 
   return (
-    <Page title={draft.extending ? <Trans>Buy more</Trans> : <Trans>Checkout</Trans>}>
+    <Page
+      title={
+        // The button that leads here says the same in English, and another form in Polish.
+        draft.extending ? <Trans context="page title">Buy more</Trans> : <Trans>Checkout</Trans>
+      }
+    >
       <p>
         <Link to={shop} className={linkClass}>
           <Trans>Back to the shop</Trans>

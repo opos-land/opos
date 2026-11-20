@@ -177,9 +177,13 @@ msgid "bank transfer"
 msgstr "przelew bankowy"
 
 #: src/features/shop/components/my-orders.tsx
-#: src/features/shop/pages/checkout-page.tsx
 msgid "Buy more"
 msgstr "Dokup"
+
+#: src/features/shop/pages/checkout-page.tsx
+msgctxt "page title"
+msgid "Buy more"
+msgstr "Dokupowanie do zamówienia"
 
 #: src/features/shop/components/steps-nav.tsx
 msgid "Buyer"
@@ -612,7 +616,7 @@ msgstr "Gadżety odbiera się na konwencie. Nie są wysyłane."
 
 #: src/features/shop/pages/checkout-page.tsx
 msgid "More for the order {firstNumber}"
-msgstr "Dokupienie do zamówienia {firstNumber}"
+msgstr "Dokupujesz do zamówienia {firstNumber}"
 
 #: src/app/layout.tsx
 #: src/features/schedule/pages/schedule-page.tsx
@@ -788,7 +792,7 @@ msgstr "Metody płatności: {methods}"
 #: src/features/shop/model/order-status.ts
 msgctxt "the status of an order"
 msgid "Payment under review"
-msgstr "Płatność w trakcie weryfikacji"
+msgstr "Płatność jest wyjaśniana"
 
 #: src/features/shop/pages/shop-page.tsx
 msgid "Payments are handled by {provider}."
@@ -1137,7 +1141,7 @@ msgstr "Motyw systemu"
 
 #: src/features/shop/components/my-orders.tsx
 msgid "The time to pay for this order has ended. Nothing was charged: start a new order in the shop."
-msgstr "Czas na opłacenie tego zamówienia minął. Nic nie zostało pobrane: złóż nowe zamówienie w sklepie."
+msgstr "Czas na opłacenie tego zamówienia minął. Nie pobrano żadnych pieniędzy: złóż nowe zamówienie w sklepie."
 
 #: src/features/shop/pages/result-page.tsx
 msgid "The time to pay for this order has ended. Nothing was charged."

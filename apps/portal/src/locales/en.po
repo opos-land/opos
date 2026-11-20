@@ -177,7 +177,11 @@ msgid "bank transfer"
 msgstr "bank transfer"
 
 #: src/features/shop/components/my-orders.tsx
+msgid "Buy more"
+msgstr "Buy more"
+
 #: src/features/shop/pages/checkout-page.tsx
+msgctxt "page title"
 msgid "Buy more"
 msgstr "Buy more"
 

@@ -424,6 +424,9 @@ describe('the emails of order management', () => {
     ])
     const polish = await read(preEditionReminderEmail(reminder), 'pl')
     expect(polish.subject).toBe('Pyrkon 2027 już wkrótce: twój kod QR')
+    expect(polish.parts[0]).toBe(
+      'Pyrkon 2027 już wkrótce. Oto wszystko, czego potrzebujesz przy wejściu. Numer zamówienia: ABCDEFGHJK.',
+    )
     expect(polish.parts[4]).toBe('Godziny otwarcia')
   })
 

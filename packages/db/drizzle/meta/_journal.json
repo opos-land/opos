@@ -414,6 +414,13 @@
       "when": 1795150710912,
       "tag": "0058_discount_code_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1795198336529,
+      "tag": "0059_scanner_pairing_again_privileges",
+      "breakpoints": true
     }
   ]
 }

@@ -120,6 +120,31 @@ describe('scanner_devices', () => {
   })
 })
 
+// D14: a scanner is given a new pairing code, and the phone that held it holds its token no more.
+describe('a new pairing code', () => {
+  it('is written by the application role, which empties the pairing with it', async () => {
+    const at = await place()
+    const [code, token] = [hash(), hash()]
+    const id = await device(at, { paired_at: '2027-01-01T10:00:00Z', token_hash: token })
+
+    await inTenant(
+      at.tenant,
+      (sql) => sql`
+        update scanner_devices
+        set pairing_code_hash = ${code}, pairing_expires_at = now() + interval '15 minutes',
+          paired_at = null, token_hash = null
+        where id = ${id}
+      `,
+    )
+
+    const [row] = await migrator`
+      select pairing_code_hash, paired_at, token_hash, pairing_expires_at > now() as open
+      from scanner_devices where id = ${id}
+    `
+    expect(row).toEqual({ pairing_code_hash: code, paired_at: null, token_hash: null, open: true })
+  })
+})
+
 describe('a hand-out', () => {
   it('names the scanner of its own edition that marked it, and has a time', async () => {
     const at = await place()
@@ -207,7 +232,7 @@ describe('a hand-out', () => {
 })
 
 describe('what the application role changes of a scanner', () => {
-  it('pairs it, records its use and revokes it, and changes nothing else of it', async () => {
+  it('pairs it, records its use and revokes it, and changes nothing it was enabled with', async () => {
     const at = await place()
     const id = await device(at)
 
@@ -221,8 +246,6 @@ describe('what the application role changes of a scanner', () => {
       `update scanner_devices set edition_id = '${at.edition}'`,
       `update scanner_devices set enabled_by_membership_id = null`,
       `update scanner_devices set expires_at = now() + interval '10 years'`,
-      `update scanner_devices set pairing_code_hash = '${hash()}'`,
-      `update scanner_devices set pairing_expires_at = now() + interval '10 years'`,
       `delete from scanner_devices`,
     ]) {
       await expect(inTenant(at.tenant, (sql) => sql.unsafe(statement))).rejects.toThrow(

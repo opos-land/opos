@@ -294,6 +294,8 @@ const appUpdates = [
   'discount_codes.valid_from',
   'discount_codes.valid_until',
   'discount_codes.ended_at',
+  'scanner_devices.pairing_code_hash',
+  'scanner_devices.pairing_expires_at',
   'scanner_devices.paired_at',
   'scanner_devices.token_hash',
   'scanner_devices.last_used_at',

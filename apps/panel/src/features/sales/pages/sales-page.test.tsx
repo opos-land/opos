@@ -32,7 +32,10 @@ vi.mock('../../editions', () => ({
   }),
 }))
 vi.mock('../../catalog', () => ({
-  useMoney: () => ({ format: (minor: number) => `${(minor / 100).toFixed(2)} PLN` }),
+  useMoney: () => ({
+    format: (minor: number) => `${(minor / 100).toFixed(2)} PLN`,
+    short: (minor: number) => `${Math.round(minor / 100)} PLN`,
+  }),
 }))
 vi.mock('../api/sales', () => ({
   salesOptions: () => ({ queryKey: ['sales'], queryFn: readSales }),

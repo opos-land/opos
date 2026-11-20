@@ -153,6 +153,7 @@ export function SalesPage() {
           // Today as the convention counts its days, which is how the API tells them apart.
           today={toZonedWallTime(new Date(), tenant.timezone).slice(0, 10)}
           money={money.format}
+          shortMoney={money.short}
           number={(n) => i18n.number(n)}
         />
       )}
@@ -185,11 +186,13 @@ function Dashboard({
   sales,
   today,
   money,
+  shortMoney,
   number,
 }: {
   sales: Sales
   today: string
   money: (amountMinor: number) => string
+  shortMoney: (amountMinor: number) => string
   number: (value: number) => string
 }) {
   const { revenue, orders, ageBands } = sales
@@ -239,8 +242,8 @@ function Dashboard({
           <SalesOverTime
             days={sales.days}
             today={today}
-            currency={sales.currency}
             money={money}
+            shortMoney={shortMoney}
             number={number}
           />
         </Section>

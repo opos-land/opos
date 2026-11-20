@@ -126,15 +126,16 @@ function SoFarChart({
 export function SalesOverTime({
   days,
   today,
-  currency,
   money,
+  shortMoney,
   number,
 }: {
   days: Sales['days']
   /** Today in the convention's time zone, as `YYYY-MM-DD`: the charts run up to it. */
   today: string
-  currency: string
   money: (amountMinor: number) => string
+  /** An amount as the axis writes it: short. */
+  shortMoney: (amountMinor: number) => string
   number: (value: number) => string
 }) {
   const { i18n } = useLingui()
@@ -146,16 +147,6 @@ export function SalesOverTime({
     )
   const date = (day: string) => written(day, { dateStyle: 'medium' })
   const tick = (day: string) => written(day, { day: 'numeric', month: 'short' })
-  // The axis writes an amount short, in whole units of the currency.
-  const fraction =
-    new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions()
-      .maximumFractionDigits ?? 2
-  const short = new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  })
   const over = salesOverTime(days, today)
 
   return (
@@ -168,7 +159,7 @@ export function SalesOverTime({
           date={date}
           tick={tick}
           value={money}
-          axis={(amountMinor) => short.format(amountMinor / 10 ** fraction)}
+          axis={shortMoney}
         />
         <SoFarChart
           title={<Trans>Tickets sold so far</Trans>}

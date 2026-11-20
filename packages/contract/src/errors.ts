@@ -90,6 +90,7 @@ export const errorCodes = [
   'order.not-in-review',
   'order.not-paid',
   'scan.already-handed-out',
+  'production.before-deadline',
   'bot-check.failed',
 ] as const
 

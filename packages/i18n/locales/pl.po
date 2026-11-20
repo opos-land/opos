@@ -115,6 +115,10 @@ msgctxt "glossary"
 msgid "attendee"
 msgstr "uczestnik"
 
+#: src/exports.ts
+msgid "Awaiting payment"
+msgstr "Oczekujące na płatność"
+
 #. Glossary term: booth
 #: src/glossary.ts
 msgctxt "glossary"
@@ -321,11 +325,19 @@ msgctxt "glossary"
 msgid "merchandise item"
 msgstr "gadżet"
 
+#: src/exports.ts
+msgid "Merchandise item"
+msgstr "Gadżet"
+
 #. Glossary term: module
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "module"
 msgstr "moduł"
+
+#: src/exports.ts
+msgid "Needs review"
+msgstr "Do wyjaśnienia"
 
 #: src/errors.ts
 msgid "No account uses this email address."
@@ -380,6 +392,10 @@ msgstr "Zamówienia zajmują już więcej, niż wynosi ten limit: {held}. Ustaw 
 msgctxt "glossary"
 msgid "organizer"
 msgstr "organizator"
+
+#: src/exports.ts
+msgid "Paid"
+msgstr "Opłacone"
 
 #. Glossary term: payment (money a payment provider reports for an order)
 #: src/glossary.ts
@@ -592,6 +608,10 @@ msgstr "Dostawca płatności odrzucił te dane dostępowe. Sprawdź je i spróbu
 #: src/order-emails.ts
 msgid "The payment provider's number of the transaction: {reference}"
 msgstr "Numer transakcji u dostawcy płatności: {reference}"
+
+#: src/errors.ts
+msgid "The production numbers are ready once the pre-order deadline has passed."
+msgstr "Liczby do produkcji będą gotowe po upływie terminu przedsprzedaży."
 
 #: src/order-emails.ts
 msgid "The QR code of the order {number}"
@@ -856,6 +876,10 @@ msgstr "użytkownik"
 msgctxt "glossary"
 msgid "variant"
 msgstr "wariant"
+
+#: src/exports.ts
+msgid "Variant"
+msgstr "Wariant"
 
 #. Glossary term: venue (where an edition takes place)
 #: src/glossary.ts

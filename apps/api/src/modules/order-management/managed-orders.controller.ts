@@ -8,6 +8,7 @@ import { OrderCorrections } from './order-corrections.service'
 import { OrderHandOuts } from './order-hand-outs.service'
 import { OrderReadsRepository } from './order-reads.repository'
 import { OrderSettling } from './order-settling.service'
+import { ProductionNumbersService } from './production-numbers.service'
 
 /**
  * An edition's orders as its orgs manage them, behind the tickets permission of the edition
@@ -21,6 +22,7 @@ export class ManagedOrdersController {
     private readonly settling: OrderSettling,
     private readonly manual: ManualOrders,
     private readonly handOuts: OrderHandOuts,
+    private readonly production: ProductionNumbersService,
     private readonly context: TenantContextService,
   ) {}
 
@@ -138,5 +140,21 @@ export class ManagedOrdersController {
       await this.handOuts.takeBack(editionId, orderId, lineId)
       return this.reads.get(editionId, orderId)
     })
+  }
+
+  @Implement(contract.orders.productionNumbers)
+  @RequireEdition('tickets', 'read')
+  productionNumbers() {
+    return implement(contract.orders.productionNumbers).handler(({ input }) =>
+      this.production.of(input.params.editionId),
+    )
+  }
+
+  @Implement(contract.orders.productionNumbersExport)
+  @RequireEdition('tickets', 'read')
+  productionNumbersExport() {
+    return implement(contract.orders.productionNumbersExport).handler(({ input }) =>
+      this.production.file(input.params.editionId),
+    )
   }
 }

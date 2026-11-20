@@ -24,3 +24,9 @@ export const alreadyHandedOut = (lineId: string, handedOutAt: Date) =>
     lineId,
     handedOutAt: handedOutAt.toISOString(),
   })
+
+/** The production numbers are read once the pre-order deadline has passed (S2). */
+export const beforeDeadline = (deadline: Date) =>
+  new ApiError(409, 'production.before-deadline', 'The pre-order deadline has not passed', {
+    deadline: deadline.toISOString(),
+  })

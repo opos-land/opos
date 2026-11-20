@@ -96,6 +96,8 @@ export const tenantRequirements: Record<string, Need> = {
   'orders.resendConfirmation': tickets('write'),
   'orders.handOut': tickets('write'),
   'orders.takeBackHandOut': tickets('write'),
+  'orders.productionNumbers': tickets('read'),
+  'orders.productionNumbersExport': tickets('read'),
   'checkout.placeOrder': anyAccount,
   'checkout.startPaymentAttempt': anyAccount,
   'engagement.like': anyAccount,

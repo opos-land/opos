@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import {
   createTenant,
   migrationDb,
@@ -533,6 +533,10 @@ export async function addOrder(
   }
   return { id: order!.id, number }
 }
+
+/** A QR code's text no other test holds: a code is found by its hash, which no two share. */
+export const aQrCode = () =>
+  Array.from(randomBytes(32), (byte) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'[byte % 32]).join('')
 
 /**
  * The QR code an order carries, as its rows alone: stored by its hash, with nothing sealed. A

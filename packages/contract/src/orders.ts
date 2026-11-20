@@ -258,6 +258,35 @@ export const handOutSchema = z.strictObject({
 
 export type HandOut = z.infer<typeof handOutSchema>
 
+/**
+ * The production numbers of an edition's merchandise, to send to the manufacturer once the
+ * pre-order deadline has passed: for every variant of every item, what the paid orders hold of
+ * it, manual ones among them, and apart from that what the orders awaiting payment and those
+ * needing review hold.
+ */
+export const productionNumbersSchema = z.object({
+  /** The pre-order deadline that has passed; null for an edition that set none. */
+  deadline: timestamp.nullable(),
+  items: z.array(
+    z.object({
+      itemId: z.uuid(),
+      name: z.string(),
+      variants: z.array(
+        z.object({
+          variantId: z.uuid(),
+          /** The labels of the variant's values, in the order of its item's axes. */
+          labels: z.array(z.string()),
+          paid: z.number().int().min(0),
+          awaitingPayment: z.number().int().min(0),
+          needsReview: z.number().int().min(0),
+        }),
+      ),
+    }),
+  ),
+})
+
+export type ProductionNumbers = z.infer<typeof productionNumbersSchema>
+
 const reason = z.string().trim().min(1).max(500)
 
 /**
@@ -388,4 +417,23 @@ export const ordersContract = {
     })
     .input(line)
     .output(orderDetailSchema),
+  productionNumbers: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/production-numbers',
+      summary:
+        "The count of every variant of the edition's merchandise, once the pre-order deadline has passed; needs tickets>=read",
+    })
+    .input(edition)
+    .output(productionNumbersSchema),
+  productionNumbersExport: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/production-numbers/export',
+      outputStructure: 'detailed',
+      summary:
+        'The production numbers as a CSV file, its columns in the language of the account that asks; needs tickets>=read',
+    })
+    .input(edition)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
 }

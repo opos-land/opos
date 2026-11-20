@@ -10,6 +10,7 @@ import {
   addOrder,
   addOrderLink,
   addQrCode,
+  aQrCode,
   addVariant,
   closeTenantDb,
   deleteCreatedTenants,
@@ -194,7 +195,7 @@ describe('the email of an order', () => {
       await addOrder(d.t.id, d.edition, { status: 'paid' }),
       await addOrder(d.t.id, d.edition, { status: 'paid' }),
     ]
-    const shared = await addQrCode(d.t.id, d.edition, mine.id, 'S'.repeat(32))
+    const shared = await addQrCode(d.t.id, d.edition, mine.id, aQrCode())
     const adding = await openTransaction()
     await adding.sql`
       insert into order_qr_code_orders (tenant_id, edition_id, order_id, qr_code_id)

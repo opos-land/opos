@@ -80,6 +80,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'order.not-in-review': msg`This order does not need review any more. Check its status.`,
   'order.not-paid': msg`This can be done only with a paid order.`,
   'scan.already-handed-out': msg`This was already handed out.`,
+  'production.before-deadline': msg`The production numbers are ready once the pre-order deadline has passed.`,
   'bot-check.failed': msg`We could not confirm that you are not a robot. Try again.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 

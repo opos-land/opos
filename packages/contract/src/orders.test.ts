@@ -10,6 +10,7 @@ import {
   orderDetailSchema,
   orderListQuerySchema,
   orderSummarySchema,
+  productionNumbersSchema,
   QR_CODE_PATTERN,
   REVIEW_CAUSES,
   swapVariantSchema,
@@ -227,5 +228,35 @@ describe('a hand-out', () => {
       expect(handOutSchema.safeParse({ lineIds }).success).toBe(false)
     }
     expect(handOutSchema.safeParse({}).success).toBe(false)
+  })
+})
+
+// The production numbers of an edition's merchandise (S2, S3).
+describe('the production numbers', () => {
+  it('count each variant of each item three ways', () => {
+    const numbers = {
+      deadline: '2026-05-01T00:00:00.000Z',
+      items: [
+        {
+          itemId: '00000000-0000-4000-8000-000000000001',
+          name: 'Shirt',
+          variants: [
+            {
+              variantId: '00000000-0000-4000-8000-000000000002',
+              labels: ['L'],
+              paid: 3,
+              awaitingPayment: 1,
+              needsReview: 0,
+            },
+          ],
+        },
+      ],
+    }
+
+    expect(productionNumbersSchema.parse(numbers)).toEqual(numbers)
+    expect(productionNumbersSchema.parse({ deadline: null, items: [] })).toEqual({
+      deadline: null,
+      items: [],
+    })
   })
 })

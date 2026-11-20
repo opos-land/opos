@@ -16,6 +16,7 @@ import {
   addOrder,
   addOrg,
   addQrCode,
+  aQrCode,
   closeTenantDb,
   deleteCreatedTenants,
   member,
@@ -136,17 +137,18 @@ describe('the list of an edition’s orders', () => {
     const d = await orderDesk(app)
     const mine = await addOrder(d.t.id, d.edition, { status: 'paid' })
     await addOrder(d.t.id, d.edition, { status: 'paid' })
-    await addQrCode(d.t.id, d.edition, mine.id, 'A'.repeat(32))
-    await addQrCode(d.t.id, d.edition, mine.id, 'B'.repeat(32), true)
+    const [carried, replaced, unknown] = [aQrCode(), aQrCode(), aQrCode()]
+    await addQrCode(d.t.id, d.edition, mine.id, carried)
+    await addQrCode(d.t.id, d.edition, mine.id, replaced, true)
     const find = async (code: string) =>
       numbers(await d.head('get', `/orders?qrCodeHash=${hashOf(code)}`).expect(200))
 
-    expect(await find('A'.repeat(32))).toEqual([mine.number])
-    expect(await find('B'.repeat(32))).toEqual([])
-    expect(await find('C'.repeat(32))).toEqual([])
-    await d.head('get', `/orders?qrCodeHash=${'A'.repeat(32)}`).expect(400)
+    expect(await find(carried)).toEqual([mine.number])
+    expect(await find(replaced)).toEqual([])
+    expect(await find(unknown)).toEqual([])
+    await d.head('get', `/orders?qrCodeHash=${carried}`).expect(400)
     // The code typed into the search of names and numbers finds nothing.
-    expect(numbers(await d.head('get', `/orders?q=${'A'.repeat(32)}`).expect(200))).toEqual([])
+    expect(numbers(await d.head('get', `/orders?q=${carried}`).expect(200))).toEqual([])
   })
 
   it('filters by status, by what an order holds and by when it was placed', async () => {
@@ -221,12 +223,13 @@ describe('the list of an edition’s orders', () => {
     const mine = await addOrder(d.t.id, d.edition, { holderName: 'Shared Name' })
     const elsewhere = await addOrder(d.t.id, sibling, { holderName: 'Shared Name' })
     const foreign = await addOrder(other.t.id, other.edition, { holderName: 'Shared Name' })
-    await addQrCode(other.t.id, other.edition, foreign.id, 'F'.repeat(32))
-    await addQrCode(d.t.id, sibling, elsewhere.id, 'S'.repeat(32))
+    const codes = [aQrCode(), aQrCode()]
+    await addQrCode(other.t.id, other.edition, foreign.id, codes[0]!)
+    await addQrCode(d.t.id, sibling, elsewhere.id, codes[1]!)
 
     expect(numbers(await d.head('get', '/orders?q=shared').expect(200))).toEqual([mine.number])
-    for (const code of ['F', 'S']) {
-      const res = await d.head('get', `/orders?qrCodeHash=${hashOf(code.repeat(32))}`).expect(200)
+    for (const code of codes) {
+      const res = await d.head('get', `/orders?qrCodeHash=${hashOf(code)}`).expect(200)
       expect(list(res).orders).toEqual([])
     }
     // The edition of the path is the one whose orders are read, whoever asks.

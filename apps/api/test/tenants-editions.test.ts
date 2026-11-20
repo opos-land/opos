@@ -16,9 +16,11 @@ import {
   addHead,
   addLogo,
   addMerchandiseItem,
+  addOrder,
   addOrg,
   addProgramItem,
   addTicketType,
+  addVariant,
   closeTenantDb,
   countHeads,
   deleteCreatedTenants,
@@ -28,7 +30,9 @@ import {
   type Member,
   member,
   openTransaction,
+  setColumn,
   sleep,
+  storedRows,
   tenantState,
   tenantWithHead,
 } from './tenants'
@@ -577,6 +581,19 @@ describe('concurrency', () => {
       customField: string
       merch: Awaited<ReturnType<typeof addMerchandiseItem>>
       ticketType: string
+      /**
+       * An edition of its own for the orders, which keep their edition and their catalog in
+       * place: a paid order of a ticket, handed out, and of a shirt, and an order in review.
+       */
+      desk: {
+        edition: string
+        ticketType: string
+        paid: string
+        review: string
+        ticketLine: string
+        shirtLine: string
+        otherVariant: string
+      }
     }
     type Request = { method: Method; path: string; body?: object }
     const noEdition = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
@@ -753,6 +770,57 @@ describe('concurrency', () => {
         method: 'delete',
         path: `/editions/${s.edition}/ticket-types/${s.ticketType}`,
       }),
+      'orders.createManual': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/manual`,
+        body: {
+          reason: 'desk',
+          cart: { ticket: { ticketTypeId: s.desk.ticketType } },
+          ageBand: 'adult',
+        },
+      }),
+      'orders.updateHolder': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/holder`,
+        body: { holderName: 'Late' },
+      }),
+      'orders.changeEmail': (s) => ({
+        method: 'put',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/email`,
+        body: { email: 'late@example.test' },
+      }),
+      'orders.swapVariant': (s) => ({
+        method: 'put',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/lines/${s.desk.shirtLine}/variant`,
+        body: { variantId: s.desk.otherVariant },
+      }),
+      'orders.cancel': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/cancel`,
+        body: { reason: 'Late' },
+      }),
+      'orders.markPaid': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.review}/mark-paid`,
+      }),
+      'orders.decline': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.review}/decline`,
+        body: { reason: 'Late' },
+      }),
+      'orders.resendConfirmation': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/resend-confirmation`,
+      }),
+      'orders.handOut': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/hand-outs`,
+        body: { lineIds: [s.desk.shirtLine] },
+      }),
+      'orders.takeBackHandOut': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/lines/${s.desk.ticketLine}/hand-out`,
+      }),
       'catalog.merchandise.create': (s) => ({
         method: 'post',
         path: `/editions/${s.edition}/merchandise-items`,
@@ -825,6 +893,22 @@ describe('concurrency', () => {
       const customField = await addCustomField(t.id, edition)
       const merch = await addMerchandiseItem(t.id, edition, { sized: true, pictures: 1 })
       const ticketType = await addTicketType(t.id, edition)
+      const desk = await addEdition(t.id)
+      await addEditionAccess(t.id, orgId, desk, { tickets: 'write' })
+      const deskType = await addTicketType(t.id, desk)
+      const shirt = await addMerchandiseItem(t.id, desk, { stock: 5 })
+      const otherVariant = await addVariant(t.id, desk, shirt.id, 5)
+      const paid = await addOrder(t.id, desk, {
+        status: 'paid',
+        ticketTypeId: deskType,
+        variants: [{ itemId: shirt.id, variantId: shirt.variantId, quantity: 1 }],
+      })
+      const review = await addOrder(t.id, desk, { status: 'needs-review', ticketTypeId: deskType })
+      const lines = (await storedRows('order_lines', t.id)).filter(
+        (line) => line.order_id === paid.id,
+      )
+      const ticketLine = String(lines.find((line) => line.kind === 'ticket')!.id)
+      await setColumn('order_lines', ticketLine, 'handed_out_at', new Date().toISOString())
       return {
         t,
         edition,
@@ -839,6 +923,15 @@ describe('concurrency', () => {
         customField,
         merch,
         ticketType,
+        desk: {
+          edition: desk,
+          ticketType: deskType,
+          paid: paid.id,
+          review: review.id,
+          ticketLine,
+          shirtLine: String(lines.find((line) => line.kind === 'merchandise')!.id),
+          otherVariant,
+        },
       }
     }
 

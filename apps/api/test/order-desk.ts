@@ -119,10 +119,18 @@ export async function orderDesk(app: NestExpressApplication) {
 
   const stored = (table: string) => storedRows(table, t.id)
   const order = async (id: string) => (await stored('orders')).find((row) => row.id === id)!
-  /** The emails queued of an order, by their kind and whom each is for. */
+  /**
+   * The emails queued of an order, by their kind and whom each is for, in the order they were
+   * queued; those one change queued at the same moment come by their kind.
+   */
   const emails = async (orderId: string) =>
     (await stored('order_emails'))
       .filter((row) => row.order_id === orderId)
+      .sort(
+        (a, b) =>
+          new Date(String(a.queued_at)).getTime() - new Date(String(b.queued_at)).getTime() ||
+          String(a.kind).localeCompare(String(b.kind)),
+      )
       .map((row) => [row.kind, row.recipient])
 
   return {

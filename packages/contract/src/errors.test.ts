@@ -73,6 +73,7 @@ describe('errorCodes', () => {
     'order.not-in-review',
     'order.not-paid',
     'scan.already-handed-out',
+    'production.before-deadline',
   ])('lists %s of order management', (code) => {
     expect(errorCodes).toContain(code)
   })

@@ -375,6 +375,12 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   that entity's form; `src/app/pages.test.ts` of the panel and of the admin application refuses a
   mutation that creates an entity outside a page routed at `new`
   ([0066](adr/0066-add-a-new-entity-on-a-page-of-its-own.md)).
+- A table row whose entity has a page of its own opens that page from anywhere in it: the row is
+  the `LinkRow` of `shared/ui` and the entity's name in it a `RowLink`, which stays the way a
+  keyboard and a screen reader reach the page. A control inside the row keeps its own press;
+  `src/app/tables.test.ts` of the panel and of the admin application refuses a plain link in a
+  table cell
+  ([0067](adr/0067-open-an-entitys-page-from-anywhere-in-its-table-row.md)).
 - A tracker, anything the portal does not strictly need (analytics, a pixel, an embed, a script,
   stylesheet or font from another origin, its cookies), is an entry of the consent feature's
   `TRACKERS`, started by that feature alone after the visitor allowed its category. Only it creates

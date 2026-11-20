@@ -81,6 +81,8 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'order.not-paid': msg`This can be done only with a paid order.`,
   'scan.already-handed-out': msg`This was already handed out.`,
   'production.before-deadline': msg`The production numbers are ready once the pre-order deadline has passed.`,
+  'discount-code.taken': msg`Another discount code of this edition already has this text. Choose another.`,
+  'discount-code.refused': msg`This code cannot be used for this order.`,
   'scan.not-valid': msg`This QR code is not valid.`,
   'scanner.limit-reached': msg`This edition has reached its limit of enabled scanners: {limit}.`,
   'scanner.name-taken': msg`Another scanner of this edition already has this name. Choose another.`,

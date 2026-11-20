@@ -8,6 +8,7 @@ import {
 } from '@opos/contract'
 import {
   addOns,
+  discountCodes,
   editionConsents,
   editionCustomFields,
   editionDocuments,
@@ -227,6 +228,13 @@ export class OrderReadsRepository {
       .where(of(orderEmails))
       .orderBy(asc(orderEmails.queuedAt), asc(orderEmails.id))
 
+    const [discount] =
+      order.discountCodeId === null
+        ? []
+        : await tx
+            .select({ code: discountCodes.code })
+            .from(discountCodes)
+            .where(eq(discountCodes.id, order.discountCodeId))
     const [code] = await tx
       .select({ id: orderQrCodeOrders.qrCodeId })
       .from(orderQrCodeOrders)
@@ -256,10 +264,12 @@ export class OrderReadsRepository {
       cancelReason: order.cancelReason,
       declinedAt: iso(order.declinedAt),
       declineReason: order.declineReason,
+      discountCode: discount?.code ?? null,
       hasQrCode: code !== undefined,
       lines: lines.map(({ ticketType, addOn, item, handedOutAt, ...line }) => ({
         ...line,
-        name: ticketType ?? addOn ?? item ?? '',
+        // A discount's line is told by the code that took it off.
+        name: ticketType ?? addOn ?? item ?? discount?.code ?? '',
         variant: line.variantId ? (labels.get(line.variantId) ?? []) : [],
         handedOutAt: iso(handedOutAt),
       })),

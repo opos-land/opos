@@ -22,6 +22,7 @@ import {
 import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
+import { DiscountsRepository } from './discounts.repository'
 import { OfferRepository } from './offer.repository'
 
 /** An order, as paying for it reads it. */
@@ -39,17 +40,20 @@ export interface PayableOrder {
   holdEndsAt: Date | null
   placedAt: Date
   resultTokenHash: string
+  /** The discount code the order used, whose use it holds while it holds its stock. */
+  discountCodeId: string | null
   editionSlug: string
   editionPublished: boolean
 }
 
 export type StoredAttempt = typeof paymentAttempts.$inferSelect
 
-/** What of a cart is no longer there: the row whose capacity or stock is used up, or gone. */
-export interface Gone {
-  kind: 'ticket-type' | 'add-on' | 'variant'
-  id: string
-}
+/**
+ * What of an order is no longer there: the row whose capacity or stock is used up, or gone, or
+ * the last use of its discount code.
+ */
+export type Gone =
+  { kind: 'ticket-type' | 'add-on' | 'variant'; id: string } | { kind: 'discount-code' }
 
 /** What a provider's module said of an attempt, as the attempt keeps it. */
 export type AttemptChanges = Partial<
@@ -78,6 +82,7 @@ export class PaymentsRepository {
   constructor(
     private readonly context: TenantContextService,
     private readonly offers: OfferRepository,
+    private readonly discounts: DiscountsRepository,
   ) {}
 
   /**
@@ -102,6 +107,7 @@ export class PaymentsRepository {
         holdEndsAt: orders.holdEndsAt,
         placedAt: orders.placedAt,
         resultTokenHash: orders.resultTokenHash,
+        discountCodeId: orders.discountCodeId,
         editionSlug: editions.slug,
         editionPublished: editions.isPublished,
       })
@@ -241,12 +247,24 @@ export class PaymentsRepository {
    * the capacity of its ticket type and of its add-ons, and the stock of its variants. The
    * caller locked those rows first (docs/ARCHITECTURE.md, invariant 9).
    */
-  async stillThere(editionId: string, cart: Cart): Promise<boolean> {
-    return (await this.gone(editionId, cart)) === undefined
+  async stillThere(
+    editionId: string,
+    cart: Cart,
+    discountCodeId: string | null = null,
+  ): Promise<boolean> {
+    return (await this.gone(editionId, cart, discountCodeId)) === undefined
   }
 
-  /** The first thing of a cart that is no longer there, or undefined while all of it is. */
-  async gone(editionId: string, cart: Cart): Promise<Gone | undefined> {
+  /**
+   * The first thing of a cart that is no longer there, or undefined while all of it is. A
+   * discount code is counted last, under the lock of its row: the order that asks holds no use
+   * of it now, and takes one when it is paid.
+   */
+  async gone(
+    editionId: string,
+    cart: Cart,
+    discountCodeId: string | null = null,
+  ): Promise<Gone | undefined> {
     const tx = this.context.tx()
     const held = await this.offers.held(editionId)
     if (cart.ticket) {
@@ -294,6 +312,13 @@ export class PaymentsRepository {
         if (left === undefined || (left !== null && taken + item.quantity > left)) {
           return { kind: 'variant', id: item.variantId }
         }
+      }
+    }
+    if (discountCodeId !== null) {
+      const code = await this.discounts.lock(editionId, discountCodeId)
+      const uses = code ? await this.discounts.uses(discountCodeId) : 0
+      if (!code || (code.usageLimit !== null && uses + 1 > code.usageLimit)) {
+        return { kind: 'discount-code' }
       }
     }
     return undefined

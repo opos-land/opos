@@ -3,6 +3,7 @@ import { type TenantContextService } from '../src/common/als/tenant-context.serv
 import { AccessRepository } from '../src/common/permissions/access.repository'
 import { LogoRepository } from '../src/modules/branding/logo.repository'
 import { MerchandiseRepository } from '../src/modules/catalog/merchandise.repository'
+import { DiscountsRepository } from '../src/modules/checkout/discounts.repository'
 import { OfferRepository } from '../src/modules/checkout/offer.repository'
 import { OrdersRepository } from '../src/modules/checkout/orders.repository'
 import { PaymentsRepository } from '../src/modules/checkout/payments.repository'
@@ -166,7 +167,11 @@ describe('what a scanner opens', () => {
 // The reads that decide which order a buyer opens, and in which edition an account buys.
 describe('an order a buyer opens', () => {
   const payments = (tx: unknown) =>
-    new PaymentsRepository(contextOf(tx), new OfferRepository(contextOf(tx)))
+    new PaymentsRepository(
+      contextOf(tx),
+      new OfferRepository(contextOf(tx)),
+      new DiscountsRepository(contextOf(tx)),
+    )
 
   it("finds no order of another tenant in this tenant's transaction", async () => {
     await setPublished(editionOfB, true)

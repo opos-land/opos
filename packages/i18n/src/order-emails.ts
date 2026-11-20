@@ -38,6 +38,8 @@ export interface ConfirmationData extends OrderOf {
   currency: string
   totalMinor: number
   lines: readonly { name: string; quantity: number; amountMinor: number }[]
+  /** What a discount code took off, below zero; null for an order that used none. */
+  discountMinor: number | null
   /** Whether the order holds merchandise, which is picked up at the edition. */
   picksUp: boolean
   /** The QR code as text; its picture travels with the email under `qrCodeCid`. */
@@ -78,6 +80,9 @@ export function orderConfirmationEmail(data: ConfirmationData): OrderEmailConten
             label: line.quantity > 1 ? `${line.quantity} × ${line.name}` : line.name,
             value: money(line.amountMinor),
           })),
+          ...(data.discountMinor !== null && data.discountMinor !== 0
+            ? [{ label: msg`Discount`, value: money(data.discountMinor) }]
+            : []),
           { label: msg`Total`, value: money(data.totalMinor), strong: true },
         ],
       },

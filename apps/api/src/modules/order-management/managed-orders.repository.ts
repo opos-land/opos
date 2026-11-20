@@ -26,6 +26,8 @@ export interface ManagedOrder {
   holds: boolean
   totalMinor: number
   manualReason: ManualReason | null
+  /** The discount code the order used; an order that holds nothing holds no use of it. */
+  discountCodeId: string | null
 }
 
 /** What an org's change makes of an order's own row. */
@@ -75,6 +77,7 @@ export class ManagedOrdersRepository {
         holds: orders.holds,
         totalMinor: orders.totalMinor,
         manualReason: orders.manualReason,
+        discountCodeId: orders.discountCodeId,
       })
       .from(orders)
       .where(and(eq(orders.editionId, editionId), eq(orders.id, orderId)))

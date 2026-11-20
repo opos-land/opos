@@ -114,6 +114,10 @@ msgid "An organizer of {conventionName} will get in touch with you. You do not n
 msgstr "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 
 #: src/errors.ts
+msgid "Another discount code of this edition already has this text. Choose another."
+msgstr "Another discount code of this edition already has this text. Choose another."
+
+#: src/errors.ts
 msgid "Another scanner of this edition already has this name. Choose another."
 msgstr "Another scanner of this edition already has this name. Choose another."
 
@@ -211,6 +215,10 @@ msgstr "core"
 msgctxt "glossary"
 msgid "custom field"
 msgstr "custom field"
+
+#: src/order-emails.ts
+msgid "Discount"
+msgstr "Discount"
 
 #: src/order-emails.ts
 msgid "Documents you accepted"
@@ -697,6 +705,10 @@ msgstr "This can be done only with a paid order."
 #: src/errors.ts
 msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
 msgstr "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
+
+#: src/errors.ts
+msgid "This code cannot be used for this order."
+msgstr "This code cannot be used for this order."
 
 #: src/errors.ts
 msgid "This convention already has an edition with this address."

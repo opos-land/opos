@@ -207,7 +207,9 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
             locale,
             currency: order.currency,
             totalMinor: order.totalMinor,
-            lines,
+            // What a discount code took off is a row of its own, not something sold.
+            lines: lines.filter((line) => line.kind !== 'discount'),
+            discountMinor: lines.find((line) => line.kind === 'discount')?.amountMinor ?? null,
             picksUp: lines.some((line) => line.kind === 'merchandise'),
             qrCode,
             qrCodeCid: QR_CODE_CID,

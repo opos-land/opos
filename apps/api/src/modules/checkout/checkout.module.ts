@@ -7,6 +7,8 @@ import { ShopModule } from '../shop/shop.module'
 import { ENV, type Env } from '../../config/env'
 import { BOT_CHECK, botCheckOf } from './bot-check'
 import { BotCheckPreparation } from './bot-check.preparation'
+import { DiscountsRepository } from './discounts.repository'
+import { Discounts } from './discounts.service'
 import { OfferRepository } from './offer.repository'
 import { OfferService } from './offer.service'
 import { OrderEmailsRepository } from './order-emails.repository'
@@ -29,6 +31,8 @@ import { ShopPublicController } from './shop.controller'
   providers: [
     OfferRepository,
     OfferService,
+    DiscountsRepository,
+    Discounts,
     OrdersRepository,
     OrderPlacement,
     OrderSettlement,

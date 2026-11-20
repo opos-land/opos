@@ -109,6 +109,7 @@ describe('an order as its page shows it', () => {
       'currency',
       'declineReason',
       'declinedAt',
+      'discountCode',
       'email',
       'emails',
       'guardianConsentAcknowledgedAt',

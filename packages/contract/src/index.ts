@@ -3,6 +3,7 @@ import { authContract } from './auth'
 import { brandingContract } from './branding'
 import { catalogContract } from './catalog'
 import { checkoutContract, paymentsContract } from './checkout'
+import { discountCodesContract } from './discount-codes'
 import { editionsContract } from './editions'
 import { engagementContract } from './engagement'
 import { healthContract } from './health'
@@ -30,6 +31,7 @@ export const contract = {
   catalog: catalogContract,
   checkout: checkoutContract,
   orders: ordersContract,
+  discountCodes: discountCodesContract,
   scanners: scannersContract,
   scanner: scannerContract,
   payments: paymentsContract,
@@ -46,6 +48,7 @@ export * from './branding'
 export * from './catalog'
 export * from './checkout'
 export * from './common'
+export * from './discount-codes'
 export * from './edition-shop'
 export * from './editions'
 export * from './engagement'

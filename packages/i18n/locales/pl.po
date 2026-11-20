@@ -114,6 +114,10 @@ msgid "An organizer of {conventionName} will get in touch with you. You do not n
 msgstr "Organizator konwentu {conventionName} skontaktuje się z tobą. Nie musisz płacić ponownie."
 
 #: src/errors.ts
+msgid "Another discount code of this edition already has this text. Choose another."
+msgstr "Inny kod rabatowy tej edycji ma już tę treść. Wybierz inną."
+
+#: src/errors.ts
 msgid "Another scanner of this edition already has this name. Choose another."
 msgstr "Inny skaner tej edycji ma już tę nazwę. Wybierz inną."
 
@@ -211,6 +215,10 @@ msgstr "rdzeń"
 msgctxt "glossary"
 msgid "custom field"
 msgstr "pole dodatkowe"
+
+#: src/order-emails.ts
+msgid "Discount"
+msgstr "Rabat"
 
 #: src/order-emails.ts
 msgid "Documents you accepted"
@@ -697,6 +705,10 @@ msgstr "To można zrobić tylko z opłaconym zamówieniem."
 #: src/errors.ts
 msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
 msgstr "Ta zmiana usunęłaby coś, co jest już w zamówieniu. Zamiast usuwać, ukryj tę pozycję: zniknie z oferty, a w zamówieniach pozostanie."
+
+#: src/errors.ts
+msgid "This code cannot be used for this order."
+msgstr "Tego kodu nie można użyć w tym zamówieniu."
 
 #: src/errors.ts
 msgid "This convention already has an edition with this address."

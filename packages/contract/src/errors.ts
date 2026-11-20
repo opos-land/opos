@@ -91,6 +91,8 @@ export const errorCodes = [
   'order.not-paid',
   'scan.already-handed-out',
   'production.before-deadline',
+  'discount-code.taken',
+  'discount-code.refused',
   'scan.not-valid',
   'scanner.limit-reached',
   'scanner.name-taken',

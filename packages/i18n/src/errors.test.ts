@@ -81,6 +81,8 @@ describe('errorMessage', () => {
     ['order.not-cancelable', 'Anulować można tylko opłacone zamówienie.'],
     ['order.not-paid', 'To można zrobić tylko z opłaconym zamówieniem.'],
     ['scan.already-handed-out', 'To zostało już wydane.'],
+    ['discount-code.taken', 'Inny kod rabatowy tej edycji ma już tę treść. Wybierz inną.'],
+    ['discount-code.refused', 'Tego kodu nie można użyć w tym zamówieniu.'],
     ['scan.not-valid', 'Ten kod QR jest nieważny.'],
     ['scanner.name-taken', 'Inny skaner tej edycji ma już tę nazwę. Wybierz inną.'],
     [

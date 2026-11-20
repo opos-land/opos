@@ -58,6 +58,7 @@ const confirmation: ConfirmationData = {
     { name: 'Pin', quantity: 2, amountMinor: 10000 },
     { name: 'Room', quantity: 1, amountMinor: 2500 },
   ],
+  discountMinor: null,
   picksUp: true,
   qrCode: 'QRCODEQRCODE',
   qrCodeCid: 'qr@opos',
@@ -147,6 +148,29 @@ describe('the confirmation of a paid order', () => {
     )
 
     expect(email.parts.join(' ')).not.toMatch(/picked up|Documents/)
+  })
+})
+
+// docs/specs/0008-discount-codes.md, K1: what a discount code took off is a line of its own.
+describe('the confirmation of an order that used a discount code', () => {
+  it('shows what the code took off before the total', async () => {
+    const email = orderConfirmationEmail({
+      ...confirmation,
+      discountMinor: -2500,
+      totalMinor: 35000,
+    })
+
+    const told = await read(email, 'pl')
+    const discount = told.parts.findIndex((part) => part.startsWith('Rabat: '))
+    expect(told.parts[discount]).toMatch(/^Rabat: [-−]25,00\u00a0zł$/)
+    expect(told.parts[discount + 1]).toBe('Razem: 350,00\u00a0zł')
+    expect((await read(email, 'en')).parts[discount]).toMatch(/^Discount: /)
+  })
+
+  it('shows no discount for an order that used no code', async () => {
+    const told = await read(orderConfirmationEmail(confirmation), 'en')
+
+    expect(told.parts.join(' ')).not.toMatch(/Discount/)
   })
 })
 

@@ -15,10 +15,13 @@ import {
   consentMissing,
   emailRefused,
   invalidOrder,
+  orderUnavailable,
   tooManyUnpaid,
   totalChanged,
 } from './checkout.errors'
 import { hashOf, secretToken } from './codes'
+import { type StoredDiscount } from './discounts.repository'
+import { Discounts } from './discounts.service'
 import { OfferService } from './offer.service'
 import { OrderSettlement } from './order-settlement.service'
 import { OrdersRepository } from './orders.repository'
@@ -43,6 +46,7 @@ export class OrderPlacement {
     private readonly offers: OfferService,
     private readonly ticketTypes: TicketTypesRepository,
     private readonly settlement: OrderSettlement,
+    private readonly discounts: Discounts,
   ) {}
 
   async place(
@@ -59,7 +63,24 @@ export class OrderPlacement {
     // Also for an order with nothing to pay: one address serves every order of a buyer.
     if (offer.provider && email.length > offer.provider.maxEmailLength) throw emailRefused()
 
-    const { lines, totalMinor, rests } = await this.priced(tenantId, editionId, offer, input, at)
+    // The discount code, last of the order's locks: its use is counted under the lock of its
+    // row. One used up, ended or gone since the buyer entered it places no order, and the buyer
+    // returns to the Summary with the code marked.
+    let discount: StoredDiscount | undefined
+    if (input.discountCode !== undefined) {
+      discount = await this.discounts.usable(editionId, input.discountCode, at)
+      if (!discount || !(await this.discounts.hasUse(editionId, discount.id, true))) {
+        throw orderUnavailable({ kind: 'discount-code' })
+      }
+    }
+    const { lines, totalMinor, rests } = await this.priced(
+      tenantId,
+      editionId,
+      offer,
+      input,
+      at,
+      discount,
+    )
     // The ticket type as the offer the price rests on shows it: one whose sale just ended is in
     // no offer of this moment.
     this.checkHolder(rests, input)
@@ -90,6 +111,7 @@ export class OrderPlacement {
         guardianConsentAcknowledgedAt: input.ageBand === 'teen' ? at : null,
         providerConsentAcceptedAt: !paid && offer.provider?.consent ? at : null,
         resultTokenHash: hashOf(resultToken),
+        discountCodeId: discount?.id ?? null,
       },
       lines,
     )
@@ -127,15 +149,16 @@ export class OrderPlacement {
     offer: Offer,
     input: PlaceOrder,
     at: Date,
+    discount: StoredDiscount | undefined,
   ) {
-    const now = priceCart(offer, input.cart)
+    const now = priceCart(offer, input.cart, discount)
     if (!('problem' in now) && now.totalMinor === input.expectedTotalMinor) {
       return { ...now, rests: offer }
     }
     if (offer.open && input.cart.ticket) {
       for (const moment of await this.endedLately(editionId, input.cart.ticket.ticketTypeId, at)) {
         const earlier = await this.offers.of(tenantId, editionId, at, moment)
-        const then = priceCart(earlier, input.cart)
+        const then = priceCart(earlier, input.cart, discount)
         if (!('problem' in then) && then.totalMinor === input.expectedTotalMinor) {
           return { ...then, rests: earlier }
         }

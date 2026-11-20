@@ -182,7 +182,8 @@ export type Cart = z.infer<typeof cartSchema>
 
 /** A line of a priced cart, and of an order: what it sells, how many and at which price. */
 export const pricedLineSchema = z.object({
-  kind: z.enum(['ticket', 'add_on', 'merchandise']),
+  /** A discount is a line of its own: what a code took off, below zero, under the code's text. */
+  kind: z.enum(['ticket', 'add_on', 'merchandise', 'discount']),
   ticketTypeId: z.uuid().optional(),
   addOnId: z.uuid().optional(),
   merchandiseItemId: z.uuid().optional(),
@@ -196,6 +197,28 @@ export const pricedLineSchema = z.object({
 })
 
 export type PricedLine = z.infer<typeof pricedLineSchema>
+
+/**
+ * A discount code as a buyer types it at the Summary: read without regard to case, and looked up
+ * by the API, which alone knows its terms. A text that is no code is refused as an unknown one.
+ */
+export const discountCodeEntry = z.string().trim().min(1).max(60)
+
+/** A cart to price, with the discount code the buyer entered. */
+export const quoteRequestSchema = cartSchema.extend({ discountCode: discountCodeEntry.optional() })
+
+export type QuoteRequest = z.infer<typeof quoteRequestSchema>
+
+/** The terms of a discount code, as pricing a cart needs them. Only the API holds them. */
+export interface DiscountTerms {
+  code: string
+  kind: 'percent' | 'amount'
+  percent: number | null
+  amountMinor: number | null
+  ticketTypeIds: readonly string[]
+  addOnIds: readonly string[]
+  itemIds: readonly string[]
+}
 
 /** What a cart costs: its lines and their total, gross, in the convention's currency. */
 export const quoteSchema = z.object({
@@ -217,6 +240,8 @@ export type CartProblem =
   | { kind: 'merch-only' }
   | { kind: 'supporter-price' }
   | { kind: 'ticket-type' | 'add-on' | 'variant'; id: string }
+  /** The discount code applies to nothing in the cart, or its last use is taken. */
+  | { kind: 'discount-code' }
 
 /**
  * Prices a cart against an offer, or says what of it cannot be had. The lines come in the order
@@ -225,6 +250,7 @@ export type CartProblem =
 export function priceCart(
   offer: Offer,
   cart: Cart,
+  discount?: DiscountTerms,
 ): { lines: PricedLine[]; totalMinor: number } | { problem: CartProblem } {
   // A closed shop sells nothing. In an open one, what ran out is named, also when it was the last
   // thing on sale: the buyer returns to its step.
@@ -324,7 +350,48 @@ export function priceCart(
     }
   }
 
+  if (discount) {
+    const off = discountOf(offer, lines, discount)
+    if (off === null) return { problem: { kind: 'discount-code' } }
+    lines.push({
+      kind: 'discount',
+      name: discount.code,
+      variant: [],
+      quantity: 1,
+      unitAmountMinor: -off,
+      amountMinor: -off,
+    })
+  }
   return { lines, totalMinor: lines.reduce((total, line) => total + line.amountMinor, 0) }
+}
+
+/**
+ * What a discount code takes off priced lines, or null where it applies to none of them. It
+ * lowers the lines it applies to together: a percent code by that percent of their sum, rounded
+ * to the grosz, half up; an amount code by its amount, at most their sum. A ticket type excluded
+ * from discounts is never lowered, whatever the code names.
+ */
+export function discountOf(
+  offer: Offer,
+  lines: readonly PricedLine[],
+  discount: DiscountTerms,
+): number | null {
+  const lowered = lines.filter((line) => {
+    if (line.kind === 'ticket') {
+      const type = offer.ticketTypes.find((offered) => offered.id === line.ticketTypeId)
+      return (
+        type !== undefined && !type.discountsExcluded && discount.ticketTypeIds.includes(type.id)
+      )
+    }
+    if (line.kind === 'add_on') return discount.addOnIds.includes(line.addOnId ?? '')
+    if (line.kind === 'merchandise') return discount.itemIds.includes(line.merchandiseItemId ?? '')
+    return false
+  })
+  if (lowered.length === 0) return null
+  const sum = lowered.reduce((total, line) => total + line.amountMinor, 0)
+  return discount.kind === 'percent'
+    ? Math.floor((sum * (discount.percent ?? 0) + 50) / 100)
+    : Math.min(discount.amountMinor ?? 0, sum)
 }
 
 /** How long an unpaid order holds its stock and capacity, and how long a price outlasts its tier. */
@@ -370,6 +437,8 @@ const placeOrderFields = {
     .default([]),
   /** The consents of the edition the buyer accepted. */
   consentIds: z.array(z.uuid()).max(MAX_EDITION_CONSENTS).default([]),
+  /** The discount code the buyer entered at the Summary. */
+  discountCode: discountCodeEntry.optional(),
   /** The provider's own consent, where its module requires one and there is something to pay. */
   providerConsentAccepted: z.boolean().default(false),
   /** A teen's buyer acknowledges that the guardian's consent is brought on paper. */

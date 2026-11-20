@@ -51,7 +51,7 @@ export class OrderSettling {
     if (order.status !== 'needs-review') throw notInReview()
     const cart = await this.lockLimits(order)
     if (!order.holds) {
-      const gone = await this.payments.gone(order.editionId, cart)
+      const gone = await this.payments.gone(order.editionId, cart, order.discountCodeId)
       if (gone) throw orderUnavailable(gone)
     }
     await this.managed.change(order, {

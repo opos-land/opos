@@ -33,6 +33,8 @@ export const ROUTE_RATE_LIMITS = {
   paymentAttempts: { limit: 300, ttl: 3_600_000 },
   /** Resending an order's confirmation, per order: each one is an email to its buyer. */
   confirmationResends: { limit: 5, ttl: 3_600_000 },
+  /** A quote that tries a discount code, per client address: a code is guessed by nobody. */
+  discountCodeTries: { limit: 30, ttl: 3_600_000 },
   /** `POST /scanner/pair`, per client address: a pairing code is guessed by nobody. */
   scannerPairings: { limit: 30, ttl: 3_600_000 },
   /** `POST /scanner/scans`, per scanner: a busy gate reads a code every few seconds. */

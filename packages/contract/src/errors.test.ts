@@ -90,6 +90,14 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain(code)
   })
 
+  // docs/specs/0008-discount-codes.md, Routes.
+  it.each(['discount-code.taken', 'discount-code.refused'])(
+    'lists %s of the discount codes',
+    (code) => {
+      expect(errorCodes).toContain(code)
+    },
+  )
+
   it.each(errorCodes)('%s has a message in @opos/i18n/errors', (code) => {
     expect(errorMessages[code]).toBeDefined()
   })

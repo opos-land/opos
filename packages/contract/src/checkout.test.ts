@@ -15,7 +15,9 @@ import {
   resultTokenHeaders,
   startedAttemptSchema,
   type Cart,
+  type DiscountTerms,
   type Offer,
+  quoteRequestSchema,
 } from './checkout'
 import { contract } from './index'
 
@@ -324,6 +326,113 @@ describe('the price of a cart', () => {
     emptied.ticketTypes[0]!.state = 'sold-out'
 
     expect(priceCart(emptied, cart())).toEqual({ problem: { kind: 'ticket-type', id: STANDARD } })
+  })
+})
+
+// A discount code lowers the lines it applies to together, as one line of the order
+// (docs/specs/0008-discount-codes.md, K1-K4).
+describe('the price of a cart with a discount code', () => {
+  const terms = (changes: Partial<DiscountTerms> = {}): DiscountTerms => ({
+    code: 'early10',
+    kind: 'percent',
+    percent: 10,
+    amountMinor: null,
+    ticketTypeIds: [STANDARD],
+    addOnIds: [],
+    itemIds: [],
+    ...changes,
+  })
+  const full = cart({ addOnIds: [WORKSHOP], items: [{ variantId: WOMENS_S, quantity: 2 }] })
+  const discounted = (code: DiscountTerms, of: Cart = full) => {
+    const priced = priceCart(offer(), of, code)
+    if ('problem' in priced) throw new Error(`refused: ${priced.problem.kind}`)
+    return priced
+  }
+
+  it('takes a percent off the sum of the lines the code applies to, as a line of its own', () => {
+    const priced = discounted(terms())
+
+    // 10% of the ticket alone: the workshop and the T-shirts are not the code's.
+    expect(priced.lines.at(-1)).toEqual({
+      kind: 'discount',
+      name: 'early10',
+      variant: [],
+      quantity: 1,
+      unitAmountMinor: -1200,
+      amountMinor: -1200,
+    })
+    expect(priced.totalMinor).toBe(12000 + 4000 + 2 * 8000 - 1200)
+  })
+
+  it('applies to the ticket types, the add-ons and the merchandise items the code names', () => {
+    const everything = terms({ percent: 50, addOnIds: [WORKSHOP], itemIds: [SHIRT] })
+
+    expect(discounted(everything).lines.at(-1)!.amountMinor).toBe(-(12000 + 4000 + 16000) / 2)
+  })
+
+  it('rounds a percent to the grosz, half up', () => {
+    const odd = offer()
+    odd.ticketTypes[0]!.priceMinor = 3335
+    const priced = priceCart(odd, cart(), terms({ percent: 10 }))
+
+    // 333.5 grosz comes to 334.
+    expect(priced).toMatchObject({ totalMinor: 3335 - 334 })
+    const third = priceCart(odd, cart(), terms({ percent: 33 }))
+    // 1100.55 grosz comes to 1101.
+    expect(third).toMatchObject({ totalMinor: 3335 - 1101 })
+  })
+
+  it('takes an amount off, at most the sum of what the code applies to', () => {
+    const twenty = terms({ kind: 'amount', percent: null, amountMinor: 2000 })
+    const more = terms({ kind: 'amount', percent: null, amountMinor: 50000 })
+
+    expect(discounted(twenty).totalMinor).toBe(32000 - 2000)
+    // The ticket is paid for in full, and nothing else is lowered: no total goes below zero.
+    expect(discounted(more).lines.at(-1)!.amountMinor).toBe(-12000)
+    expect(discounted(more).totalMinor).toBe(4000 + 16000)
+  })
+
+  it('gives free entry at 100%, and leaves merchandise at its price', () => {
+    const guest = terms({ percent: 100 })
+
+    expect(discounted(guest, cart()).totalMinor).toBe(0)
+    expect(
+      discounted(guest, cart({ items: [{ variantId: WOMENS_S, quantity: 1 }] })).totalMinor,
+    ).toBe(8000)
+  })
+
+  it('never lowers a ticket type excluded from discounts, whatever the code names', () => {
+    const excluded = offer()
+    excluded.ticketTypes[0]!.discountsExcluded = true
+
+    expect(priceCart(excluded, cart(), terms())).toEqual({ problem: { kind: 'discount-code' } })
+  })
+
+  it('is refused for a cart it applies to nothing in', () => {
+    const merchandise = terms({ ticketTypeIds: [], itemIds: [PIN] })
+
+    expect(priceCart(offer(), full, merchandise)).toEqual({ problem: { kind: 'discount-code' } })
+  })
+
+  it('changes nothing of a cart that cannot be had', () => {
+    expect(priceCart(offer({ open: false }), cart(), terms())).toEqual({
+      problem: { kind: 'closed' },
+    })
+  })
+})
+
+describe('a quote', () => {
+  it('takes a cart, and a discount code as the buyer typed it', () => {
+    expect(quoteRequestSchema.parse({ ticket: null, discountCode: '  Early10 ' })).toEqual({
+      ticket: null,
+      addOnIds: [],
+      items: [],
+      discountCode: 'Early10',
+    })
+    expect(quoteRequestSchema.parse({ ticket: null })).not.toHaveProperty('discountCode')
+    expect(
+      quoteRequestSchema.safeParse({ ticket: null, discountCode: 'x'.repeat(61) }).success,
+    ).toBe(false)
   })
 })
 

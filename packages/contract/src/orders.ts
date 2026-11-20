@@ -160,6 +160,8 @@ export const orderDetailSchema = z.object({
   cancelReason: z.string().nullable(),
   declinedAt: timestamp.nullable(),
   declineReason: z.string().nullable(),
+  /** The discount code the order used, as the org wrote it; its discount line says what it took off. */
+  discountCode: z.string().nullable(),
   /** Whether the order carries a QR code; the code itself is shown to its buyer alone. */
   hasQrCode: z.boolean(),
   lines: z.array(lineSchema),

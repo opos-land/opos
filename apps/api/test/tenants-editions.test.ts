@@ -9,6 +9,7 @@ import { pdf, png } from './pictures'
 import {
   addAddOn,
   addConsent,
+  addDiscountCode,
   addCustomField,
   addDocument,
   addEdition,
@@ -595,6 +596,7 @@ describe('concurrency', () => {
         shirtLine: string
         otherVariant: string
         scanner: string
+        discountCode: string
       }
     }
     type Request = { method: Method; path: string; body?: object }
@@ -823,6 +825,27 @@ describe('concurrency', () => {
         method: 'delete',
         path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/lines/${s.desk.ticketLine}/hand-out`,
       }),
+      'discountCodes.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/discount-codes`,
+        body: {
+          code: 'late-code',
+          kind: 'percent',
+          percent: 10,
+          validFrom: '2026-01-01T00:00:00.000Z',
+          validUntil: '2099-01-01T00:00:00.000Z',
+          ticketTypeIds: [s.desk.ticketType],
+        },
+      }),
+      'discountCodes.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.desk.edition}/discount-codes/${s.desk.discountCode}`,
+        body: { usageLimit: 5 },
+      }),
+      'discountCodes.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.desk.edition}/discount-codes/${s.desk.discountCode}`,
+      }),
       'scanners.create': (s) => ({
         method: 'post',
         path: `/editions/${s.desk.edition}/scanners`,
@@ -921,6 +944,7 @@ describe('concurrency', () => {
       const ticketLine = String(lines.find((line) => line.kind === 'ticket')!.id)
       await setColumn('order_lines', ticketLine, 'handed_out_at', new Date().toISOString())
       const scanner = await addScanner(t.id, desk)
+      const discountCode = await addDiscountCode(t.id, desk, { ticketTypeIds: [deskType] })
       return {
         t,
         edition,
@@ -944,6 +968,7 @@ describe('concurrency', () => {
           shirtLine: String(lines.find((line) => line.kind === 'merchandise')!.id),
           otherVariant,
           scanner: scanner.id,
+          discountCode: discountCode.id,
         },
       }
     }

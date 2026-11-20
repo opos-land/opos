@@ -62,6 +62,13 @@ const constraintErrors: Record<
     code: 'ticket-type.tiers-overlap',
     message: 'Two price tiers overlap',
   },
+  // A discount code an order used is ended, never deleted.
+  orders_discount_code_fk: catalogInUse,
+  discount_codes_edition_code_unique: {
+    status: 409,
+    code: 'discount-code.taken',
+    message: 'Another discount code of the edition has the code',
+  },
   order_lines_ticket_type_fk: catalogInUse,
   order_lines_add_on_fk: catalogInUse,
   order_lines_item_fk: catalogInUse,

@@ -160,6 +160,8 @@ export class PaymentConfirmations {
     if (order.status === 'awaiting-payment') return 'paid'
     const cart = await this.payments.cart(order.id)
     await this.orders.lockLimits(order.editionId, cart)
-    return (await this.payments.stillThere(order.editionId, cart)) ? 'paid' : 'review'
+    return (await this.payments.stillThere(order.editionId, cart, order.discountCodeId))
+      ? 'paid'
+      : 'review'
   }
 }

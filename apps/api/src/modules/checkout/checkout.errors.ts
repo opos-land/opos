@@ -50,3 +50,10 @@ export const holdEnded = () =>
 /** The order does not await a payment any more: it was paid, or a payment for it is being settled. */
 export const alreadyPaid = () =>
   new ApiError(409, 'order.already-paid', 'The order does not await a payment')
+
+/**
+ * A discount code that cannot be used for the order: unknown, outside its window, ended, used up
+ * or applying to nothing in the cart. One answer for all, so trying codes tells nothing of them.
+ */
+export const discountCodeRefused = () =>
+  new ApiError(409, 'discount-code.refused', 'The discount code cannot be used for this order')

@@ -2,11 +2,11 @@ import { z } from 'zod'
 import { logoSchema } from './branding'
 import {
   attemptHeaders,
-  cartSchema,
   offerSchema,
   orderResultSchema,
   placedOrderSchema,
   placeVisitorOrderSchema,
+  quoteRequestSchema,
   quoteSchema,
   resultTokenHeaders,
   startedAttemptSchema,
@@ -203,9 +203,9 @@ export const publicContract = {
       method: 'POST',
       path: '/public/tenants/{slug}/editions/{editionSlug}/shop/quote',
       summary:
-        'The lines and the total of a cart; refused with shop.closed, or with order.unavailable naming what cannot be had; no sign-in',
+        'The lines and the total of a cart, with the line of a discount code where one is given; refused with shop.closed, with order.unavailable naming what cannot be had, or with discount-code.refused; no sign-in',
     })
-    .input(edition.extend({ body: cartSchema }))
+    .input(edition.extend({ body: quoteRequestSchema }))
     .output(quoteSchema),
   placeOrder: publicRoute
     .route({

@@ -41,6 +41,8 @@ export interface NewOrder {
   /** Why an org recorded it in the panel, and what it noted of it. */
   manualReason?: ManualReason
   note?: string | null
+  /** The discount code the order used; its discount line carries what the code took off. */
+  discountCodeId?: string | null
 }
 
 /** What kinds of email an order sends. */

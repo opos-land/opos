@@ -608,6 +608,61 @@ export async function addQrCode(
   return row!.id
 }
 
+/**
+ * A discount code of an edition as its rows alone: ten percent, valid from 2020 until 2099 and
+ * with no limit unless told, applying to what is named.
+ */
+export async function addDiscountCode(
+  tenantId: string,
+  editionId: string,
+  values: {
+    code?: string
+    percent?: number
+    /** An amount code instead of a percent one. */
+    amountMinor?: number
+    usageLimit?: number
+    validFrom?: string
+    validUntil?: string
+    ended?: boolean
+    ticketTypeIds?: string[]
+    addOnIds?: string[]
+    itemIds?: string[]
+  } = {},
+) {
+  const code = values.code ?? `code-${randomUUID().slice(0, 8)}`
+  const amount = values.amountMinor !== undefined
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into discount_codes (tenant_id, edition_id, code, kind, percent, amount_minor,
+      usage_limit, valid_from, valid_until, ended_at)
+    values (${tenantId}, ${editionId}, ${code}, ${amount ? 'amount' : 'percent'},
+      ${amount ? null : (values.percent ?? 10)}, ${values.amountMinor ?? null},
+      ${values.usageLimit ?? null}, ${values.validFrom ?? '2020-01-01T00:00:00Z'},
+      ${values.validUntil ?? '2099-01-01T00:00:00Z'}, ${values.ended ? sql`now()` : null})
+    returning id
+  `)
+  const at = sql`${tenantId}, ${editionId}, ${row!.id}`
+  for (const id of values.ticketTypeIds ?? []) {
+    await db.execute(sql`
+      insert into discount_code_ticket_types (tenant_id, edition_id, discount_code_id, ticket_type_id)
+      values (${at}, ${id})
+    `)
+  }
+  for (const id of values.addOnIds ?? []) {
+    await db.execute(sql`
+      insert into discount_code_add_ons (tenant_id, edition_id, discount_code_id, add_on_id)
+      values (${at}, ${id})
+    `)
+  }
+  for (const id of values.itemIds ?? []) {
+    await db.execute(sql`
+      insert into discount_code_merchandise_items
+        (tenant_id, edition_id, discount_code_id, merchandise_item_id)
+      values (${at}, ${id})
+    `)
+  }
+  return { id: row!.id, code }
+}
+
 /** One more variant of a merchandise item, as its row alone. */
 export async function addVariant(
   tenantId: string,

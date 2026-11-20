@@ -6,7 +6,8 @@ import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { PublicConvention } from '../public/public-convention'
 import { PublicRepository } from '../public/public.repository'
 import { BOT_CHECK, type BotCheck } from './bot-check'
-import { botCheckFailed, cartRefusal } from './checkout.errors'
+import { botCheckFailed, cartRefusal, discountCodeRefused } from './checkout.errors'
+import { Discounts } from './discounts.service'
 import { OfferService } from './offer.service'
 import { OrderPlacement } from './order-placement.service'
 
@@ -22,6 +23,7 @@ export class ShopPublicController {
     private readonly editions: PublicRepository,
     private readonly offers: OfferService,
     private readonly placement: OrderPlacement,
+    private readonly discounts: Discounts,
     @Inject(BOT_CHECK) private readonly botCheck: BotCheck,
     private readonly limiter: RouteRateLimiter,
     private readonly context: TenantContextService,
@@ -42,14 +44,38 @@ export class ShopPublicController {
     )
   }
 
-  /** A cart is priced against the offer as it stands now, by the function the portal runs too. */
+  /**
+   * A cart is priced against the offer as it stands now, by the function the portal runs too. A
+   * discount code is looked up here alone: its terms never leave the API, and the quote carries
+   * what it takes off as a line. Every code that cannot be used is refused alike.
+   */
   @Implement(contract.public.shopQuote)
   quote() {
     return implement(contract.public.shopQuote).handler(async ({ input }) => {
-      await this.limiter.consume('shopQuotes', `ip:${this.context.clientAddress()}`)
-      const offer = await this.offer(input.params.slug, input.params.editionSlug)
-      const priced = priceCart(offer, input.body)
-      if ('problem' in priced) throw cartRefusal(priced.problem)
+      const address = this.context.clientAddress()
+      await this.limiter.consume('shopQuotes', `ip:${address}`)
+      const { discountCode, ...cart } = input.body
+      if (discountCode !== undefined) {
+        await this.limiter.consume('discountCodeTries', `ip:${address}`)
+      }
+      const priced = await this.convention.within(input.params.slug, async (tenant) => {
+        const edition = await this.editions.edition(input.params.editionSlug)
+        const offer = await this.offers.of(tenant.id, edition.id)
+        if (discountCode === undefined) return priceCart(offer, cart)
+        const code = await this.discounts.usable(edition.id, discountCode, new Date())
+        // What cannot be had of the cart is told first, as it is without a code.
+        const plain = priceCart(offer, cart)
+        if ('problem' in plain) return plain
+        if (!code || !(await this.discounts.hasUse(edition.id, code.id, false))) {
+          throw discountCodeRefused()
+        }
+        return priceCart(offer, cart, code)
+      })
+      if ('problem' in priced) {
+        throw priced.problem.kind === 'discount-code'
+          ? discountCodeRefused()
+          : cartRefusal(priced.problem)
+      }
       return { currency: SHOP_CURRENCY, ...priced }
     })
   }

@@ -620,10 +620,11 @@ describe('db:seed shop', () => {
           attached_to: string | null
           guardian: boolean
           hold_ends_at: Date | null
+          manual_reason: string | null
         }[]
       >`
         select o.id, o.number, o.status, o.holds, o.age_band, o.email, o.total_minor,
-          o.hold_ends_at, o.guardian_consent_acknowledged_at is not null as guardian,
+          o.hold_ends_at, o.manual_reason, o.guardian_consent_acknowledged_at is not null as guardian,
           (select coalesce(sum(l.amount_minor), 0)::int from order_lines l where l.order_id = o.id)
             as lines_total,
           (select count(*)::int from order_lines l where l.order_id = o.id and l.kind = 'ticket')
@@ -642,6 +643,9 @@ describe('db:seed shop', () => {
         'paid',
         'paid',
         'paid',
+        'paid',
+        'paid-manual',
+        'paid-manual',
         'paid-manual',
       ])
       for (const order of orders) {
@@ -662,17 +666,29 @@ describe('db:seed shop', () => {
       expect(paid.map((order) => order.attached_to).filter(Boolean)).toEqual([
         'attendee@example.com',
       ])
-      // A manual order was placed by an org: nobody's email.
-      expect(orders.find((order) => order.status === 'paid-manual')!.email).toBeNull()
+      // A manual order was recorded by an org: nobody's email, and one of each reason. A
+      // complimentary one costs nothing.
+      const manual = orders.filter((order) => order.status === 'paid-manual')
+      expect(manual.map((order) => order.email)).toEqual([null, null, null])
+      expect(manual.map((order) => order.manual_reason).sort()).toEqual([
+        'complimentary',
+        'desk',
+        'invoice',
+      ])
+      expect(manual.find((order) => order.manual_reason === 'complimentary')!.total_minor).toBe(0)
       // The one awaiting payment keeps doing so while the demo stands.
       const awaiting = orders.find((order) => order.status === 'awaiting-payment')!
       expect(awaiting.hold_ends_at!.getTime()).toBeGreaterThan(Date.now() + 365 * 24 * 3_600_000)
 
       // The QR code opens with the key the API holds, sealed for its own row.
-      const codes = await migrator<{ id: string; code: string; code_hash: string }[]>`
-        select id, code, code_hash from order_qr_codes where edition_id = ${edition}
+      const codes = await migrator<
+        { id: string; code: string; code_hash: string; replaced_at: Date | null }[]
+      >`
+        select id, code, code_hash, replaced_at from order_qr_codes where edition_id = ${edition}
       `
-      expect(codes).toHaveLength(3)
+      expect(codes.filter((code) => code.replaced_at !== null)).toHaveLength(1)
+      // One a paid order of the shop, and one more that a changed email replaced.
+      expect(codes).toHaveLength(5)
       const key = sealingKey(env('PAYMENT_CREDENTIALS_KEY'))
       for (const code of codes) {
         const text = open(key, code.code, orderQrCodeOf(a, code.id))

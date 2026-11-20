@@ -302,6 +302,20 @@
       "when": 1795125286591,
       "tag": "0042_orders_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1795134382907,
+      "tag": "0043_order_management",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1795134399390,
+      "tag": "0044_order_management_privileges",
+      "breakpoints": true
     }
   ]
 }

@@ -159,7 +159,13 @@ describe('orders', () => {
     // A merch-only order has no ticket holder to place in a band; a manual one has no buyer's
     // address.
     await order(at, { age_band: null })
-    await order(at, { email: null, status: 'paid-manual', holds: true, hold_ends_at: null })
+    await order(at, {
+      email: null,
+      status: 'paid-manual',
+      manual_reason: 'desk',
+      holds: true,
+      hold_ends_at: null,
+    })
   })
 
   it('keeps its edition: an edition that has an order is not deleted', async () => {
@@ -520,20 +526,31 @@ describe('what the application role changes of an order', () => {
     for (const statement of [
       `update orders set number = 'ZZZZZZZZZZ'`,
       `update orders set total_minor = 1`,
-      `update orders set email = 'other@example.test'`,
       `update orders set edition_id = '${at.edition}'`,
+      // What a manual order is recorded with is written once.
+      `update orders set manual_reason = 'desk'`,
+      `update orders set note = 'changed'`,
+      `update orders set placed_at = now()`,
       `update orders set result_token_hash = '${HASH}'`,
       `update order_lines set amount_minor = 1`,
       `update order_lines set unit_amount_minor = 1`,
       `update order_lines set quantity = 5`,
       `update order_lines set ticket_type_id = '${standard}'`,
-      // No route hands a line over yet: the scanner and order management bring the grant.
-      `update order_lines set handed_out_at = now()`,
+      `update order_lines set merchandise_item_id = '${standard}'`,
+      `update order_lines set order_id = '${mine}'`,
+      `update order_qr_codes set code = 'other'`,
+      `update order_qr_codes set code_hash = '${HASH}'`,
+      `update order_qr_code_orders set qr_code_id = '${mine}'`,
+      `update order_links set expires_at = now()`,
+      `update order_links set token_hash = '${HASH}'`,
       `update payment_attempts set amount_minor = 1`,
       `update payment_attempts set order_id = '${mine}'`,
       `delete from orders`,
       `delete from order_lines`,
       `delete from payment_attempts`,
+      `delete from order_qr_codes`,
+      `delete from order_links`,
+      `delete from order_emails`,
     ]) {
       await expect(inTenant(at.tenant, (sql) => sql.unsafe(statement))).rejects.toThrow(
         /permission denied/,
@@ -544,5 +561,107 @@ describe('what the application role changes of an order', () => {
       await sql`update orders set status = 'paid', paid_at = now(), holds = true, hold_ends_at = null`
       await sql`update payment_attempts set status = 'paid', paid_amount_minor = 10000, paid_at = now()`
     })
+  })
+
+  // Order management (docs/specs/0006-order-management.md): what an org corrects, cancels,
+  // settles and hands out.
+  it('changes what an org corrects, settles and hands out', async () => {
+    const at = await place()
+    const mine = await order(at)
+    const pin = await item(at)
+    await line(at, mine, {
+      kind: 'merchandise',
+      merchandise_item_id: pin.id,
+      merchandise_variant_id: pin.variant,
+    })
+    const [code] = await migrator<{ id: string }[]>`
+      insert into order_qr_codes (tenant_id, edition_id, code_hash, code)
+      values (${at.tenant}, ${at.edition}, ${'a'.repeat(64)}, 'sealed') returning id
+    `
+    await migrator`
+      insert into order_qr_code_orders (tenant_id, edition_id, order_id, qr_code_id)
+      values (${at.tenant}, ${at.edition}, ${mine}, ${code!.id})
+    `
+    await migrator`
+      insert into order_links (tenant_id, edition_id, order_id, token_hash, expires_at)
+      values (${at.tenant}, ${at.edition}, ${mine}, ${'b'.repeat(64)}, now() + interval '1 day')
+    `
+
+    await inTenant(at.tenant, async (sql) => {
+      await sql`update orders set holder_name = 'Corrected', email = 'new@example.test'`
+      await sql`update orders set status = 'needs-review', review_cause = 'amount'`
+      await sql`update orders set status = 'declined', declined_at = now(), decline_reason = 'A reason', holds = false`
+      await sql`update orders set status = 'canceled', canceled_at = now(), cancel_reason = 'A reason'`
+      await sql`update order_lines set handed_out_at = now()`
+      await sql`update order_lines set handed_out_at = null`
+      // A changed email: the old code is marked replaced and let go of, the old link ended.
+      await sql`update order_qr_codes set replaced_at = now()`
+      await sql`delete from order_qr_code_orders`
+      await sql`update order_links set ended_at = now()`
+    })
+
+    const [stored] = await migrator`
+      select holder_name, email, status, review_cause, cancel_reason, decline_reason
+      from orders where id = ${mine}
+    `
+    expect(stored).toEqual({
+      holder_name: 'Corrected',
+      email: 'new@example.test',
+      status: 'canceled',
+      review_cause: 'amount',
+      cancel_reason: 'A reason',
+      decline_reason: 'A reason',
+    })
+  })
+
+  // A swap moves a line to another variant of the item it names: its foreign key keeps it there.
+  it('swaps the variant of a line within its item alone', async () => {
+    const at = await place()
+    const mine = await order(at)
+    const [pin, other] = [await item(at), await item(at)]
+    const [second] = await migrator<{ id: string }[]>`
+      insert into merchandise_variants (tenant_id, edition_id, merchandise_item_id, stock)
+      values (${at.tenant}, ${at.edition}, ${pin.id}, 5) returning id
+    `
+    await line(at, mine, {
+      kind: 'merchandise',
+      merchandise_item_id: pin.id,
+      merchandise_variant_id: pin.variant,
+    })
+
+    await inTenant(
+      at.tenant,
+      (sql) => sql`update order_lines set merchandise_variant_id = ${second!.id}`,
+    )
+    await expect(
+      inTenant(
+        at.tenant,
+        (sql) => sql`update order_lines set merchandise_variant_id = ${other.variant}`,
+      ),
+    ).rejects.toThrow(/order_lines_variant_fk/)
+  })
+
+  it('records a manual order with its reason and a note, and nobody\u2019s email', async () => {
+    const at = await place()
+
+    const manual = await order(at, {
+      status: 'paid-manual',
+      email: null,
+      manual_reason: 'desk',
+      note: 'Paid in cash',
+      hold_ends_at: null,
+    })
+    expect(manual).toBeDefined()
+    // A manual order is recorded by an org at the desk: it has a reason, and no email.
+    await expect(
+      order(at, { status: 'paid-manual', email: null, hold_ends_at: null }),
+    ).rejects.toThrow(/orders_manual_reason/)
+    await expect(order(at, { manual_reason: 'invoice' })).rejects.toThrow(/orders_manual_no_email/)
+    await expect(order(at, { manual_reason: 'gift', email: null })).rejects.toThrow(
+      /manual_order_reason/,
+    )
+    await expect(order(at, { note: 'n'.repeat(501) })).rejects.toThrow(/orders_note/)
+    await expect(order(at, { cancel_reason: ' ' })).rejects.toThrow(/orders_cancel_reason/)
+    await expect(order(at, { decline_reason: '' })).rejects.toThrow(/orders_decline_reason/)
   })
 })

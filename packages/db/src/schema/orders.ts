@@ -39,6 +39,18 @@ export const orderStatus = pgEnum('order_status', [
   'canceled',
 ])
 
+/**
+ * Why an org recorded an order in the panel: a sale at the desk, one paid by invoice, or a
+ * complimentary one.
+ */
+export const manualOrderReason = pgEnum('manual_order_reason', ['desk', 'invoice', 'complimentary'])
+
+/**
+ * Why an order needs review: its payment was of another amount than its total, or it came once
+ * what the order had held was no longer available.
+ */
+export const orderReviewCause = pgEnum('order_review_cause', ['amount', 'unavailable'])
+
 /** The age band of a ticket holder, by their age on the edition's first day. */
 export const ageBand = pgEnum('age_band', ['child', 'teen', 'adult'])
 
@@ -82,6 +94,16 @@ export const orders = pgTable(
     providerConsentAcceptedAt: timestamp({ withTimezone: true }),
     /** The hash of the token that opens the order's result page, for a day from its placing. */
     resultTokenHash: text().notNull(),
+    /** Set for an order an org recorded in the panel, which nobody placed in the shop. */
+    manualReason: manualOrderReason(),
+    /** What the org noted of a manual order. */
+    note: text(),
+    /** Why the order needed review; it stays once the order is settled. */
+    reviewCause: orderReviewCause(),
+    canceledAt: timestamp({ withTimezone: true }),
+    cancelReason: text(),
+    declinedAt: timestamp({ withTimezone: true }),
+    declineReason: text(),
     ...timestamps,
   },
   (t) => [
@@ -102,6 +124,15 @@ export const orders = pgTable(
     check('orders_total', sql`${t.totalMinor} >= 0`),
     check('orders_currency', sql`${t.currency} = 'PLN'`),
     check('orders_holder_name', sql`char_length(btrim(${t.holderName})) between 1 and 200`),
+    // A manual order has a reason and nobody's email: an org recorded it at the desk.
+    check(
+      'orders_manual_reason',
+      sql`${t.status} <> 'paid-manual' or ${t.manualReason} is not null`,
+    ),
+    check('orders_manual_no_email', sql`${t.manualReason} is null or ${t.email} is null`),
+    check('orders_note', sql`char_length(${t.note}) <= 500`),
+    check('orders_cancel_reason', sql`char_length(btrim(${t.cancelReason})) between 1 and 500`),
+    check('orders_decline_reason', sql`char_length(btrim(${t.declineReason})) between 1 and 500`),
     check(
       'orders_email',
       sql`${t.email} = lower(${t.email}) and ${t.email} ~ '^[^@[:space:]]+@[^@[:space:]]+$' and char_length(${t.email}) <= 254`,

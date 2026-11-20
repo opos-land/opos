@@ -446,7 +446,13 @@ describe('verifyDatabase', () => {
     it.each([
       ['the number of an order', 'number', 'orders'],
       ['the total of an order', 'total_minor', 'orders'],
-      ['the address of its buyer', 'email', 'orders'],
+      // What a manual order was recorded with, the item a line names and the code a QR code
+      // holds: order management changes none of them.
+      ['the reason of a manual order', 'manual_reason', 'orders'],
+      ['the note of a manual order', 'note', 'orders'],
+      ['the item of a line', 'merchandise_item_id', 'order_lines'],
+      ['the code of a QR code', 'code', 'order_qr_codes'],
+      ['when an order link expires', 'expires_at', 'order_links'],
       ['the edition of an order', 'edition_id', 'orders'],
       ['the price of a line', 'amount_minor', 'order_lines'],
       ['what a line sells', 'ticket_type_id', 'order_lines'],

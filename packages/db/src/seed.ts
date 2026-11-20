@@ -187,6 +187,11 @@ interface SeedOrder {
   attempts?: SeedAttempt[]
   /** The emails it sent, listed as sent: the seed sends nothing. */
   emails?: (typeof orderEmails.kind.enumValues)[number][]
+  /** Why an org recorded it in the panel; a complimentary one costs nothing. */
+  manualReason?: (typeof orders.manualReason.enumValues)[number]
+  note?: string
+  /** An org changed its email: the QR code it had before is replaced by the one it has. */
+  emailChanged?: boolean
   placedDaysAgo: number
 }
 
@@ -446,13 +451,50 @@ const DEMO_ORDERS: SeedOrder[] = [
     emails: ['order-confirmation'],
     placedDaysAgo: 4,
   },
+  // A manual order of each reason (docs/specs/0006-order-management.md, Seed).
   {
     number: 'DEMMANUA22',
     status: 'paid-manual',
     holderName: 'Demo Guest',
     ageBand: 'adult',
     ticketType: 'Standard',
+    manualReason: 'desk',
+    note: 'Paid in cash at the desk.',
     placedDaysAgo: 3,
+  },
+  {
+    number: 'DEMNVCE222',
+    status: 'paid-manual',
+    holderName: 'Demo Company',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    items: [{ name: 'Enamel pin', quantity: 5 }],
+    manualReason: 'invoice',
+    note: 'Invoice 7/2026.',
+    placedDaysAgo: 2,
+  },
+  {
+    number: 'DEMCMPMT22',
+    status: 'paid-manual',
+    holderName: 'Demo Volunteer',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    manualReason: 'complimentary',
+    placedDaysAgo: 2,
+  },
+  // A paid order whose email an org changed: it carries a new QR code, and the old one is kept
+  // as replaced.
+  {
+    number: 'DEMCHANGE2',
+    status: 'paid',
+    email: 'new-address@example.com',
+    holderName: 'Demo Changed',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    attempts: [{ status: 'paid' }],
+    emails: ['order-confirmation'],
+    emailChanged: true,
+    placedDaysAgo: 7,
   },
   {
     number: 'DEMEXPRD22',
@@ -1450,7 +1492,9 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
   const settledAt = new Date(placedAt.getTime() + 5 * 60 * 1000)
 
   const lines: (typeof orderLines.$inferInsert)[] = []
-  const line = (values: Partial<typeof orderLines.$inferInsert> & { unitAmountMinor: number }) => {
+  const line = (given: Partial<typeof orderLines.$inferInsert> & { unitAmountMinor: number }) => {
+    // A complimentary order sells the same catalog for nothing.
+    const values = order.manualReason === 'complimentary' ? { ...given, unitAmountMinor: 0 } : given
     const quantity = values.quantity ?? 1
     lines.push({
       ...at,
@@ -1544,6 +1588,8 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
       providerConsentAcceptedAt: order.email ? placedAt : null,
       // Nobody holds the token of a demo order: its result page opens for no one.
       resultTokenHash: createHash('sha256').update(randomBytes(32)).digest('hex'),
+      manualReason: order.manualReason ?? null,
+      note: order.note ?? null,
     })
     .returning({ id: orders.id })
   const orderId = placed!.id
@@ -1603,17 +1649,23 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
     await tx.insert(orderAccounts).values({ ...of, accountId: account.id })
   }
 
-  // A paid order of the shop has one QR code, sealed for its own row.
+  // A paid order of the shop has one QR code, sealed for its own row. One whose email changed
+  // had another before, kept as replaced.
   if (order.status === 'paid') {
-    const id = randomUUID()
-    const code = demoQrCode()
-    await tx.insert(orderQrCodes).values({
-      ...at,
-      id,
-      codeHash: createHash('sha256').update(code).digest('hex'),
-      code: seal(credentialsKey, code, orderQrCodeOf(tenantId, id)),
-    })
-    await tx.insert(orderQrCodeOrders).values({ ...of, qrCodeId: id })
+    const code = async (replacedAt: Date | null) => {
+      const id = randomUUID()
+      const text = demoQrCode()
+      await tx.insert(orderQrCodes).values({
+        ...at,
+        id,
+        codeHash: createHash('sha256').update(text).digest('hex'),
+        code: seal(credentialsKey, text, orderQrCodeOf(tenantId, id)),
+        replacedAt,
+      })
+      return id
+    }
+    if (order.emailChanged) await code(settledAt)
+    await tx.insert(orderQrCodeOrders).values({ ...of, qrCodeId: await code(null) })
   }
 
   for (const [index, attempt] of (order.attempts ?? []).entries()) {

@@ -379,14 +379,15 @@ async function foreignOrderRows(tenantId: string, edition: string) {
   // An order of the tenant's own that holds none of the rows the inserts below add.
   const [bare] = await migrator<{ id: string }[]>`
     insert into orders (tenant_id, edition_id, number, status, holder_name, total_minor, holds,
-      result_token_hash)
-    values (${tenantId}, ${edition}, 'ZZZZZZZZZZ', 'paid-manual', 'Ada', 0, true, ${'0'.repeat(64)})
+      result_token_hash, manual_reason)
+    values (${tenantId}, ${edition}, 'ZZZZZZZZZZ', 'paid-manual', 'Ada', 0, true, ${'0'.repeat(64)},
+      'desk')
     returning id
   `
   return [
     `insert into orders (tenant_id, edition_id, number, status, holder_name, total_minor, holds,
-       result_token_hash)
-     values (${at}, 'YYYYYYYYYY', 'paid-manual', 'Foreign', 0, true, repeat('0', 64))`,
+       result_token_hash, manual_reason)
+     values (${at}, 'YYYYYYYYYY', 'paid-manual', 'Foreign', 0, true, repeat('0', 64), 'desk')`,
     `insert into order_lines (tenant_id, edition_id, order_id, kind, add_on_id, quantity,
        unit_amount_minor, amount_minor)
      values (${at}, '${order}', 'add_on', '${addOn}', 1, 0, 0)`,

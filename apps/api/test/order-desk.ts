@@ -12,8 +12,10 @@ import {
   makeShopReady,
   type Member,
   openShop,
+  openTransaction,
   setColumn,
   setPublished,
+  sleep,
   storedRows,
   tenantWithHead,
 } from './tenants'
@@ -143,3 +145,31 @@ export async function orderDesk(app: NestExpressApplication) {
 }
 
 export type OrderDesk = Awaited<ReturnType<typeof orderDesk>>
+
+type Placing = Awaited<ReturnType<typeof openTransaction>>['sql']
+
+/**
+ * An order in the middle of being placed: a transaction that takes the locks placing takes, lets
+ * the request start and wait for them, then writes its order and commits. Answers what the
+ * request answered once it could go on.
+ */
+export async function whilePlacing(
+  locks: (sql: Placing) => Promise<unknown>,
+  send: () => PromiseLike<request.Response>,
+  writes: (sql: Placing) => Promise<unknown>,
+) {
+  const placing = await openTransaction()
+  try {
+    await locks(placing.sql)
+    let answered = false
+    const answer = Promise.resolve(send()).then((res) => ((answered = true), res))
+    await sleep(300)
+    if (answered) throw new Error('The request did not wait for the locks of the order')
+    await writes(placing.sql)
+    await placing.commit()
+    return await answer
+  } catch (error) {
+    await placing.rollback().catch(() => undefined)
+    throw error
+  }
+}

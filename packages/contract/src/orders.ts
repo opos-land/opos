@@ -188,8 +188,33 @@ export type OrderDetail = z.infer<typeof orderDetailSchema>
 export type OrderLine = z.infer<typeof lineSchema>
 export type OrderAttempt = z.infer<typeof attemptSchema>
 
+/** A correction of the ticket holder's name: only an edit, nothing else changes with it. */
+export const updateOrderHolderSchema = z.strictObject({
+  holderName: z.string().trim().min(1).max(200),
+})
+
+export type UpdateOrderHolder = z.infer<typeof updateOrderHolderSchema>
+
+/**
+ * A new email of an order: the order gets a new QR code and a new order link, and the old ones
+ * stop working. It is the only way a ticket passes to another person.
+ */
+export const changeOrderEmailSchema = z.strictObject({
+  email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
+})
+
+export type ChangeOrderEmail = z.infer<typeof changeOrderEmailSchema>
+
+/** Another variant of the same item for a merchandise line. */
+export const swapVariantSchema = z.strictObject({ variantId: z.uuid() })
+
+export type SwapVariant = z.infer<typeof swapVariantSchema>
+
 const edition = z.object({ params: z.object({ editionId: z.string() }) })
 const order = z.object({ params: z.object({ editionId: z.string(), orderId: z.string() }) })
+const line = z.object({
+  params: z.object({ editionId: z.string(), orderId: z.string(), lineId: z.string() }),
+})
 
 export const ordersContract = {
   list: tenantRoute
@@ -209,5 +234,32 @@ export const ordersContract = {
         'An order with its lines, the data of its ticket holder, its payment attempts and its emails; needs tickets>=read',
     })
     .input(order)
+    .output(orderDetailSchema),
+  updateHolder: tenantRoute
+    .route({
+      method: 'PATCH',
+      path: '/editions/{editionId}/orders/{orderId}/holder',
+      summary:
+        "Corrects the ticket holder's name of a paid order and tells the buyer; needs tickets=write",
+    })
+    .input(order.extend({ body: updateOrderHolderSchema }))
+    .output(orderDetailSchema),
+  changeEmail: tenantRoute
+    .route({
+      method: 'PUT',
+      path: '/editions/{editionId}/orders/{orderId}/email',
+      summary:
+        'Moves a paid order to another email: a new QR code and order link, the old ones stop working, both addresses are told; needs tickets=write',
+    })
+    .input(order.extend({ body: changeOrderEmailSchema }))
+    .output(orderDetailSchema),
+  swapVariant: tenantRoute
+    .route({
+      method: 'PUT',
+      path: '/editions/{editionId}/orders/{orderId}/lines/{lineId}/variant',
+      summary:
+        "Swaps a merchandise line's variant for another of the same item, while that one has stock; needs tickets=write",
+    })
+    .input(line.extend({ body: swapVariantSchema }))
     .output(orderDetailSchema),
 }

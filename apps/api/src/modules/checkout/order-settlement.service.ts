@@ -24,17 +24,25 @@ export class OrderSettlement {
 
   async paid(order: { tenantId: string; editionId: string; orderId: string; email: string }) {
     const { email, ...of } = order
-    const id = randomUUID()
-    const code = qrCode()
-    await this.orders.addQrCode(of, {
-      id,
-      codeHash: hashOf(code),
-      code: seal(this.key, code, orderQrCodeOf(order.tenantId, id)),
-    })
+    await this.issueQrCode(of)
     // A visitor's order under the confirmed email of an account is that account's from now on;
     // one placed signed in is attached already.
     const owner = await this.orders.accountOf(email)
     if (owner) await this.orders.attach(of, owner)
     await this.orders.queueEmail(of, 'order-confirmation', email)
+  }
+
+  /**
+   * A new QR code for the order to carry, stored by its hash and sealed for its own row: the one
+   * a paid order gets, and the one that replaces it when an org changes the order's email.
+   */
+  async issueQrCode(of: { tenantId: string; editionId: string; orderId: string }) {
+    const id = randomUUID()
+    const code = qrCode()
+    await this.orders.addQrCode(of, {
+      id,
+      codeHash: hashOf(code),
+      code: seal(this.key, code, orderQrCodeOf(of.tenantId, id)),
+    })
   }
 }

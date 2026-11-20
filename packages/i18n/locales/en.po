@@ -742,6 +742,10 @@ msgid "This list has reached its limit of entries: {limit}."
 msgstr "This list has reached its limit of entries: {limit}."
 
 #: src/errors.ts
+msgid "This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address."
+msgstr "This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address."
+
+#: src/errors.ts
 msgid "This order does not wait for a payment any more. Check its status."
 msgstr "This order does not wait for a payment any more. Check its status."
 

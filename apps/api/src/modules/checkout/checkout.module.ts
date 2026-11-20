@@ -41,5 +41,8 @@ import { ShopPublicController } from './shop.controller'
     BotCheckPreparation,
     { provide: BOT_CHECK, inject: [ENV], useFactory: (env: Env) => botCheckOf(env) },
   ],
+  // What an org does with an order goes through the same doors as a buyer's order: the locks of
+  // the limits, the count of what is still there, and what follows from an order being paid.
+  exports: [OrdersRepository, PaymentsRepository, OrderSettlement, OfferService],
 })
 export class CheckoutModule {}

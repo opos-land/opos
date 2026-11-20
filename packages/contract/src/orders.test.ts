@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  changeOrderEmailSchema,
   MANUAL_REASONS,
   MAX_ORDER_PAGE,
   orderDetailSchema,
@@ -7,6 +8,8 @@ import {
   orderSummarySchema,
   QR_CODE_PATTERN,
   REVIEW_CAUSES,
+  swapVariantSchema,
+  updateOrderHolderSchema,
 } from './orders'
 
 // What an org reads of an edition's orders in the panel (docs/specs/0006-order-management.md,
@@ -124,5 +127,36 @@ describe('an order as its page shows it', () => {
   it('names the reasons of a manual order and the causes of a review', () => {
     expect(MANUAL_REASONS).toEqual(['desk', 'invoice', 'complimentary'])
     expect(REVIEW_CAUSES).toEqual(['amount', 'unavailable'])
+  })
+})
+
+// What an org corrects of a paid order (C1-C4).
+describe('a correction of an order', () => {
+  it('takes a ticket holder’s name as placing an order takes it', () => {
+    expect(updateOrderHolderSchema.parse({ holderName: '  Grace Hopper ' })).toEqual({
+      holderName: 'Grace Hopper',
+    })
+    for (const body of [{ holderName: '   ' }, { holderName: 'x'.repeat(201) }, {}]) {
+      expect(updateOrderHolderSchema.safeParse(body).success).toBe(false)
+    }
+    expect(updateOrderHolderSchema.safeParse({ holderName: 'Ada', ageBand: 'teen' }).success).toBe(
+      false,
+    )
+  })
+
+  it('takes an email as orders hold one: trimmed, in lower case', () => {
+    expect(changeOrderEmailSchema.parse({ email: ' Moved@Example.TEST ' })).toEqual({
+      email: 'moved@example.test',
+    })
+    for (const body of [{ email: 'nobody' }, { email: '' }, {}]) {
+      expect(changeOrderEmailSchema.safeParse(body).success).toBe(false)
+    }
+  })
+
+  it('swaps a line’s variant for one named by its identifier', () => {
+    const variantId = '00000000-0000-4000-8000-000000000001'
+    expect(swapVariantSchema.parse({ variantId })).toEqual({ variantId })
+    expect(swapVariantSchema.safeParse({ variantId: 'large' }).success).toBe(false)
+    expect(swapVariantSchema.safeParse({ variantId, quantity: 2 }).success).toBe(false)
   })
 })

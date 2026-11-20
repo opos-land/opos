@@ -560,6 +560,32 @@ export async function addQrCode(
   return row!.id
 }
 
+/** One more variant of a merchandise item, as its row alone. */
+export async function addVariant(
+  tenantId: string,
+  editionId: string,
+  itemId: string,
+  stock: number | null,
+) {
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into merchandise_variants (tenant_id, edition_id, merchandise_item_id, stock)
+    values (${tenantId}, ${editionId}, ${itemId}, ${stock})
+    returning id
+  `)
+  return row!.id
+}
+
+/** An order link as its row alone, of a token nobody holds: one sent with an earlier email. */
+export async function addOrderLink(tenantId: string, editionId: string, orderId: string) {
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into order_links (tenant_id, edition_id, order_id, token_hash, expires_at)
+    values (${tenantId}, ${editionId}, ${orderId},
+      ${createHash('sha256').update(randomUUID()).digest('hex')}, now() + interval '30 days')
+    returning id
+  `)
+  return row!.id
+}
+
 /** An email of an order as its row alone, due at once: what a route queues for the outbox. */
 export const queueOrderEmail = (
   tenantId: string,

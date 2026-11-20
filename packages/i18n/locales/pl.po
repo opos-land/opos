@@ -7,6 +7,14 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: pl\n"
 
+#: src/order-emails.ts
+msgid "{editionName} starts soon: your QR code"
+msgstr "{editionName} już wkrótce: twój kod QR"
+
+#: src/order-emails.ts
+msgid "{editionName} starts soon. Here is what you need at the entrance for the order {number}."
+msgstr "{editionName} już wkrótce. Oto wszystko, czego potrzebujesz przy wejściu dla zamówienia {number}."
+
 #: src/errors.ts
 msgid "A consent links this document. Change or delete the consent first."
 msgstr "Do tego dokumentu odsyła zgoda. Najpierw zmień lub usuń tę zgodę."
@@ -521,6 +529,10 @@ msgstr "Otwórz link w przeglądarce, w której o niego poproszono, albo poproś
 msgid "Open the panel"
 msgstr "Otwórz panel"
 
+#: src/order-emails.ts
+msgid "Opening hours"
+msgstr "Godziny otwarcia"
+
 #. Glossary term: order
 #: src/glossary.ts
 msgctxt "glossary"
@@ -606,6 +618,10 @@ msgctxt "glossary"
 msgid "perk"
 msgstr "bonus"
 
+#: src/order-emails.ts
+msgid "Picking up merchandise"
+msgstr "Odbiór gadżetów"
+
 #: src/exports.ts
 msgctxt "export column"
 msgid "Placed"
@@ -683,6 +699,10 @@ msgstr "Ustaw nowe hasło"
 msgctxt "glossary"
 msgid "shop"
 msgstr "sklep"
+
+#: src/order-emails.ts
+msgid "Show this code at the entrance and when you pick up your merchandise."
+msgstr "Pokaż ten kod przy wejściu i przy odbiorze gadżetów."
 
 #: src/order-emails.ts
 msgid "Show this QR code at the convention: it is how your order is found there."
@@ -854,6 +874,14 @@ msgstr "Usługa jest chwilowo niedostępna. Spróbuj ponownie za chwilę."
 #: src/errors.ts
 msgid "The shop cannot be opened yet: something it needs is missing."
 msgstr "Sklepu nie można jeszcze otworzyć: brakuje czegoś, czego potrzebuje."
+
+#: src/order-emails.ts
+msgid "The ticket holder is a child: they enter only with a guardian, who must be present."
+msgstr "Posiadacz akredytacji jest dzieckiem: wejdzie tylko z opiekunem, który musi być obecny."
+
+#: src/order-emails.ts
+msgid "The ticket holder is a teen: bring the written consent of a guardian, on paper."
+msgstr "Posiadacz akredytacji jest nastolatkiem: przynieś pisemną zgodę opiekuna, na papierze."
 
 #: src/order-emails.ts
 msgid "The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention."
@@ -1176,6 +1204,10 @@ msgstr "Otrzymaliśmy prośbę o zmianę adresu e-mail twojego konta w OPOS z {o
 #: src/emails.ts
 msgid "We received a request to reset the password of your OPOS account. Set a new password with the link below."
 msgstr "Otrzymaliśmy prośbę o zresetowanie hasła do twojego konta w OPOS. Ustaw nowe hasło, korzystając z poniższego linku."
+
+#: src/order-emails.ts
+msgid "With questions, write to {contactEmail}."
+msgstr "W razie pytań napisz na adres {contactEmail}."
 
 #: src/exports.ts
 msgctxt "export value"

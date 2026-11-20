@@ -2381,6 +2381,10 @@ msgstr "Refused: the order did not need it"
 msgid "Register or tax number"
 msgstr "Register or tax number"
 
+#: src/features/orders/model/labels.ts
+msgid "Reminder before the edition"
+msgstr "Reminder before the edition"
+
 #: src/features/program/components/speakers-editor.tsx
 msgid "Remove"
 msgstr "Remove"

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { editionShops } from '@opos/db'
+import { editions, editionShops } from '@opos/db'
 import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 
@@ -13,10 +13,13 @@ export interface StoredEditionShop {
   merchOnlyEnabled: boolean
   salesClosedMessage: string | null
   pickupInformation: string | null
+  openingHours: string | null
+  reminderDaysBefore: number | null
+  reminderSentAt: Date | null
 }
 
-/** What an org sets of a shop: everything but whether it is open. */
-export type EditionShopSettings = Partial<Omit<StoredEditionShop, 'openedAt'>>
+/** What an org sets of a shop: everything but whether it is open and when its reminder went out. */
+export type EditionShopSettings = Partial<Omit<StoredEditionShop, 'openedAt' | 'reminderSentAt'>>
 
 const columns = {
   openedAt: editionShops.openedAt,
@@ -28,6 +31,9 @@ const columns = {
   merchOnlyEnabled: editionShops.merchOnlyEnabled,
   salesClosedMessage: editionShops.salesClosedMessage,
   pickupInformation: editionShops.pickupInformation,
+  openingHours: editionShops.openingHours,
+  reminderDaysBefore: editionShops.reminderDaysBefore,
+  reminderSentAt: editionShops.reminderSentAt,
 }
 
 /** A shop nothing was set for: closed, with no setting of its own. */
@@ -41,6 +47,9 @@ const UNSET: StoredEditionShop = {
   merchOnlyEnabled: false,
   salesClosedMessage: null,
   pickupInformation: null,
+  openingHours: null,
+  reminderDaysBefore: null,
+  reminderSentAt: null,
 }
 
 /**
@@ -82,6 +91,16 @@ export class EditionShopsRepository {
       .from(editionShops)
       .where(this.own(editionId))
     return row ?? UNSET
+  }
+
+  /** When the edition of the tenant starts: what the day of its reminder is counted from. */
+  async startsAt(editionId: string): Promise<Date | undefined> {
+    const [row] = await this.context
+      .tx()
+      .select({ startsAt: editions.startsAt })
+      .from(editions)
+      .where(and(eq(editions.tenantId, this.tenantId()), eq(editions.id, editionId)))
+    return row?.startsAt
   }
 
   /** Sets what the change names and leaves the rest; the first setting makes the edition's row. */

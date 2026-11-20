@@ -449,6 +449,93 @@ export const orderLinkEmail = ({
   ],
 })
 
+/**
+ * The reminder before the edition (docs/specs/0011-pre-edition-reminder.md, R4): the QR code, the
+ * edition's opening hours and its pick-up information as the org wrote them, and for a child or
+ * a teen as the ticket holder what the guardian has to do.
+ */
+export const preEditionReminderEmail = ({
+  number,
+  editionName,
+  qrCode,
+  qrCodeCid,
+  openingHours,
+  pickupInformation,
+  guardian,
+  guardianFormUrl,
+  contactEmail,
+}: OrderOf &
+  Contact & {
+    editionName: string
+    /** The QR code as text; its picture travels with the email under `qrCodeCid`. */
+    qrCode: string
+    qrCodeCid: string
+    openingHours: string | null
+    pickupInformation: string | null
+    /** The age band of a ticket holder who is no adult; null for an adult and for no ticket. */
+    guardian: 'child' | 'teen' | null
+    guardianFormUrl: string | null
+  }): OrderEmailContent => ({
+  subject: msg`${editionName} starts soon: your QR code`,
+  parts: [
+    {
+      kind: 'paragraph',
+      text: msg`${editionName} starts soon. Here is what you need at the entrance for the order ${number}.`,
+    },
+    { kind: 'heading', text: msg`Your QR code` },
+    {
+      kind: 'paragraph',
+      text: msg`Show this code at the entrance and when you pick up your merchandise.`,
+    },
+    {
+      kind: 'image',
+      cid: qrCodeCid,
+      alt: msg`The QR code of the order ${number}`,
+      caption: qrCode,
+    },
+    ...(openingHours
+      ? [
+          { kind: 'heading' as const, text: msg`Opening hours` },
+          { kind: 'quote' as const, lines: openingHours.split('\n') },
+        ]
+      : []),
+    ...(pickupInformation
+      ? [
+          { kind: 'heading' as const, text: msg`Picking up merchandise` },
+          { kind: 'quote' as const, lines: pickupInformation.split('\n') },
+        ]
+      : []),
+    ...(guardian === 'teen'
+      ? [
+          {
+            kind: 'paragraph' as const,
+            text: msg`The ticket holder is a teen: bring the written consent of a guardian, on paper.`,
+          },
+          ...(guardianFormUrl
+            ? [
+                {
+                  kind: 'link' as const,
+                  label: msg`Download the guardian consent form`,
+                  url: guardianFormUrl,
+                },
+              ]
+            : []),
+        ]
+      : []),
+    ...(guardian === 'child'
+      ? [
+          {
+            kind: 'paragraph' as const,
+            text: msg`The ticket holder is a child: they enter only with a guardian, who must be present.`,
+          },
+        ]
+      : []),
+    ...(contactEmail
+      ? [{ kind: 'paragraph' as const, text: msg`With questions, write to ${contactEmail}.` }]
+      : []),
+  ],
+})
+
 /** An org declined an order that needed review: where the money is, and whom to write to. */
 export const orderDeclinedEmail = ({
   conventionName,

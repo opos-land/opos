@@ -4,6 +4,7 @@ import {
   accountFiles,
   editionMemberships,
   editions,
+  editionShops,
   orderEmails,
   orderLinks,
   orders,
@@ -24,6 +25,7 @@ import {
   eq,
   gt,
   inArray,
+  isNotNull,
   isNull,
   lt,
   lte,
@@ -353,6 +355,42 @@ export class GlobalDbService {
       .from(scannerDevices)
       .where(eq(scannerDevices.tokenHash, hash))
     return row
+  }
+
+  /**
+   * The editions whose reminder may be due around `now`: those that set a number of days, whose
+   * reminder has not gone out, published, of tenants not suspended, and starting within the
+   * days a reminder may be set to. It answers the identifiers and the tenant's time zone alone;
+   * whether the reminder is due at this hour, and whom it goes to, the tenant's own transaction
+   * reads.
+   */
+  remindersPending(
+    now: Date,
+    { limit = 100, tenantId }: JobScope = {},
+  ): Promise<{ tenantId: string; editionId: string; timezone: string }[]> {
+    const DAY = 24 * 60 * 60_000
+    return this.db
+      .select({
+        tenantId: editionShops.tenantId,
+        editionId: editionShops.editionId,
+        timezone: tenants.timezone,
+      })
+      .from(editionShops)
+      .innerJoin(editions, eq(editions.id, editionShops.editionId))
+      .innerJoin(tenants, eq(tenants.id, editionShops.tenantId))
+      .where(
+        and(
+          isNotNull(editionShops.reminderDaysBefore),
+          isNull(editionShops.reminderSentAt),
+          isNull(tenants.suspendedAt),
+          eq(editions.isPublished, true),
+          gt(editions.startsAt, now),
+          lte(editions.startsAt, new Date(now.getTime() + 62 * DAY)),
+          tenantId === undefined ? undefined : eq(editionShops.tenantId, tenantId),
+        ),
+      )
+      .orderBy(asc(editions.startsAt), asc(editionShops.editionId))
+      .limit(limit)
   }
 
   /**

@@ -18,6 +18,7 @@ import {
   paymentNotNeededEmail,
   paymentNotNeededOrgsEmail,
   paymentUnderReviewEmail,
+  preEditionReminderEmail,
 } from './order-emails'
 
 const order = { conventionName: 'Pyrkon', number: 'ABCDEFGHJK' }
@@ -392,6 +393,73 @@ describe('the emails of order management', () => {
         )
       ).parts[2],
     ).toBe('If you did not ask for it, you can ignore this email: the order is as it was.')
+  })
+
+  // docs/specs/0011-pre-edition-reminder.md, R4.
+  it('remind a buyer before the edition: the QR code, the opening hours and where to pick up', async () => {
+    const reminder = {
+      ...order,
+      ...contact,
+      editionName: 'Pyrkon 2027',
+      qrCode: 'QRCODEQRCODE',
+      qrCodeCid: 'qr@opos',
+      openingHours: 'Daily, 10 to 20.',
+      pickupInformation: 'At the desk in hall A.',
+      guardian: null,
+      guardianFormUrl: null,
+    }
+
+    const told = await read(preEditionReminderEmail(reminder), 'en')
+    expect(told.subject).toBe('Pyrkon 2027 starts soon: your QR code')
+    expect(told.parts).toEqual([
+      'Pyrkon 2027 starts soon. Here is what you need at the entrance for the order ABCDEFGHJK.',
+      'Your QR code',
+      'Show this code at the entrance and when you pick up your merchandise.',
+      'The QR code of the order ABCDEFGHJK [QRCODEQRCODE]',
+      'Opening hours',
+      'Daily, 10 to 20.',
+      'Picking up merchandise',
+      'At the desk in hall A.',
+      'With questions, write to shop@seller.test.',
+    ])
+    const polish = await read(preEditionReminderEmail(reminder), 'pl')
+    expect(polish.subject).toBe('Pyrkon 2027 już wkrótce: twój kod QR')
+    expect(polish.parts[4]).toBe('Godziny otwarcia')
+  })
+
+  it('remind the buyer of a teen’s or a child’s ticket of the guardian, and leave out what the edition did not say', async () => {
+    const bare = {
+      ...order,
+      contactEmail: null,
+      editionName: 'Pyrkon 2027',
+      qrCode: 'QRCODEQRCODE',
+      qrCodeCid: 'qr@opos',
+      openingHours: null,
+      pickupInformation: null,
+    }
+    const teen = await read(
+      preEditionReminderEmail({
+        ...bare,
+        guardian: 'teen',
+        guardianFormUrl: 'https://convention.test/consent.pdf',
+      }),
+      'en',
+    )
+    const child = await read(
+      preEditionReminderEmail({ ...bare, guardian: 'child', guardianFormUrl: null }),
+      'pl',
+    )
+
+    expect(teen.parts.join(' ')).not.toMatch(/Opening hours|Picking up|write to/)
+    expect(teen.parts).toContain(
+      'The ticket holder is a teen: bring the written consent of a guardian, on paper.',
+    )
+    expect(teen.parts).toContain(
+      'Download the guardian consent form <https://convention.test/consent.pdf>',
+    )
+    expect(child.parts).toContain(
+      'Posiadacz akredytacji jest dzieckiem: wejdzie tylko z opiekunem, który musi być obecny.',
+    )
   })
 
   it('tell a buyer a payment was declined, where the money is and whom to write to', async () => {

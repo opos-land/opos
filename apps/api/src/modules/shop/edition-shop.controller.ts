@@ -1,7 +1,9 @@
 import { Controller } from '@nestjs/common'
 import { contract, type EditionShop, type UpdateEditionShop } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
+import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
+import { reminderWindow } from '../reminders/reminder-window'
 import { type EditionShopSettings, EditionShopsRepository } from './edition-shops.repository'
 import { missingOf, ShopConditions } from './shop-conditions'
 import { shopNotReady } from './shop.errors'
@@ -33,7 +35,15 @@ export class EditionShopController {
   constructor(
     private readonly shops: EditionShopsRepository,
     private readonly conditions: ShopConditions,
+    private readonly context: TenantContextService,
   ) {}
+
+  /** When the reminder goes out: 9:00 on its day in the convention's time zone; null for none. */
+  private async reminderDueAt(editionId: string, daysBefore: number | null) {
+    const startsAt = daysBefore === null ? undefined : await this.shops.startsAt(editionId)
+    if (daysBefore === null || !startsAt) return null
+    return reminderWindow(startsAt, daysBefore, this.context.tenant().timezone).from.toISOString()
+  }
 
   private async shown(editionId: string): Promise<EditionShop> {
     const shop = await this.shops.find(editionId)
@@ -50,6 +60,10 @@ export class EditionShopController {
       merchOnlyEnabled: shop.merchOnlyEnabled,
       salesClosedMessage: shop.salesClosedMessage,
       pickupInformation: shop.pickupInformation,
+      openingHours: shop.openingHours,
+      reminderDaysBefore: shop.reminderDaysBefore,
+      reminderDueAt: await this.reminderDueAt(editionId, shop.reminderDaysBefore),
+      reminderSentAt: shop.reminderSentAt?.toISOString() ?? null,
       conditions: await this.conditions.of(editionId),
     }
   }

@@ -111,12 +111,14 @@ export class OrderEmailsRepository {
         tenantId: orders.tenantId,
         editionId: orders.editionId,
         number: orders.number,
+        status: orders.status,
         email: orders.email,
         holderName: orders.holderName,
         ageBand: orders.ageBand,
         totalMinor: orders.totalMinor,
         currency: orders.currency,
         editionSlug: editions.slug,
+        editionName: editions.name,
         editionEndsAt: editions.endsAt,
         conventionName: tenants.name,
         conventionSlug: tenants.slug,
@@ -209,6 +211,20 @@ export class OrderEmailsRepository {
       .from(editionShops)
       .where(eq(editionShops.editionId, editionId))
     return row?.url ?? null
+  }
+
+  /** What the edition's reminder tells: its opening hours, its pick-up and its consent form. */
+  async reminderOf(editionId: string) {
+    const [row] = await this.context
+      .tx()
+      .select({
+        openingHours: editionShops.openingHours,
+        pickupInformation: editionShops.pickupInformation,
+        guardianFormUrl: editionShops.guardianConsentFormUrl,
+      })
+      .from(editionShops)
+      .where(eq(editionShops.editionId, editionId))
+    return row ?? { openingHours: null, pickupInformation: null, guardianFormUrl: null }
   }
 
   /** The QR code of the order, sealed, with the identifier it is sealed for. */

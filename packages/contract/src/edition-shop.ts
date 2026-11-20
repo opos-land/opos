@@ -53,6 +53,14 @@ export const editionShopSchema = z.object({
   salesClosedMessage: z.string().nullable(),
   /** Where and when merchandise is handed over, as the page of an order tells its buyer. */
   pickupInformation: z.string().nullable(),
+  /** When the edition is open, as its reminder tells a buyer. */
+  openingHours: z.string().nullable(),
+  /** How many days before the edition's first day its reminder goes out; null for none. */
+  reminderDaysBefore: z.number().int().nullable(),
+  /** When the reminder goes out: 9:00 on its day in the convention's time zone. */
+  reminderDueAt: timestamp.nullable(),
+  /** When it went out; it goes out once an edition. */
+  reminderSentAt: timestamp.nullable(),
   conditions: z.object({
     'provider-account': z.boolean(),
     'seller-details': z.boolean(),
@@ -88,6 +96,8 @@ export const updateEditionShopSchema = z
     merchOnlyEnabled: z.boolean(),
     salesClosedMessage: z.string().trim().min(1).max(1000).nullable(),
     pickupInformation: z.string().trim().min(1).max(1000).nullable(),
+    openingHours: z.string().trim().min(1).max(1000).nullable(),
+    reminderDaysBefore: z.number().int().min(1).max(60).nullable(),
   })
   .partial()
 

@@ -509,6 +509,8 @@ export const orderEmailKind = pgEnum('order_email_kind', [
   'order-canceled',
   // A fresh order link for one that expired, to the order's email.
   'order-link',
+  // The reminder a few days before the edition, with the QR code.
+  'pre-edition-reminder',
 ])
 
 /**

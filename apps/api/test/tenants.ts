@@ -445,6 +445,7 @@ export async function setCatalogSettings(
     adultFromAge?: number
     guardianConsentFormUrl?: string
     pickupInformation?: string
+    reminderDaysBefore?: number
   },
 ) {
   await db.execute(sql`
@@ -460,7 +461,8 @@ export async function setCatalogSettings(
       teen_from_age = ${values.teenFromAge ?? null},
       adult_from_age = ${values.adultFromAge ?? null},
       guardian_consent_form_url = ${values.guardianConsentFormUrl ?? null},
-      pickup_information = ${values.pickupInformation ?? null}
+      pickup_information = ${values.pickupInformation ?? null},
+      reminder_days_before = ${values.reminderDaysBefore ?? null}
     where edition_id = ${editionId}
   `)
 }

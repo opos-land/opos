@@ -73,6 +73,9 @@ describe('the email with a fresh order link', () => {
   it('is an email of an order, for its buyer', () => {
     expect(ORDER_EMAIL_KINDS).toContain('order-link')
     expect(ORG_EMAIL_KINDS).not.toContain('order-link')
+    // And so is the reminder before the edition (docs/specs/0011-pre-edition-reminder.md).
+    expect(ORDER_EMAIL_KINDS).toContain('pre-edition-reminder')
+    expect(ORG_EMAIL_KINDS).not.toContain('pre-edition-reminder')
   })
 })
 

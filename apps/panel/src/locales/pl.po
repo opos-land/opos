@@ -2381,6 +2381,10 @@ msgstr "Odrzucona: zamówienie jej nie potrzebowało"
 msgid "Register or tax number"
 msgstr "Numer rejestrowy lub podatkowy"
 
+#: src/features/orders/model/labels.ts
+msgid "Reminder before the edition"
+msgstr "Przypomnienie przed edycją"
+
 #: src/features/program/components/speakers-editor.tsx
 msgid "Remove"
 msgstr "Usuń"

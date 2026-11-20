@@ -9,6 +9,7 @@ import { OrderLinksRepository } from '../src/modules/buyer-orders/order-links.re
 import { OfferRepository } from '../src/modules/checkout/offer.repository'
 import { OrdersRepository } from '../src/modules/checkout/orders.repository'
 import { PaymentsRepository } from '../src/modules/checkout/payments.repository'
+import { RemindersRepository } from '../src/modules/reminders/reminders.repository'
 import { ScannersRepository } from '../src/modules/scanner/scanners.repository'
 import { ScansRepository } from '../src/modules/scanner/scans.repository'
 import { DocumentsRepository } from '../src/modules/shop/documents.repository'
@@ -212,6 +213,31 @@ describe('an order link', () => {
       pickUp: 'At the desk.',
       queued: true,
     })
+  })
+})
+
+// The job of the pre-edition reminder has no tenant in context: its reads name the tenant its
+// cross-tenant lookup answered (docs/specs/0011-pre-edition-reminder.md).
+describe('the reminder of an edition', () => {
+  it("reads no edition and no recipient of another tenant in this tenant's transaction", async () => {
+    await setPublished(editionOfB, true)
+    await setCatalogSettings(b.id, editionOfB, { reminderDaysBefore: 3 })
+    const order = await addOrder(b.id, editionOfB, { status: 'paid' })
+    await addQrCode(b.id, editionOfB, order.id, aQrCode())
+    const read = (tenantId: string) =>
+      withoutRls(a.id, async (tx) => {
+        const reminders = new RemindersRepository(contextOf(tx))
+        return {
+          pending: await reminders.pending(tenantId, editionOfB),
+          recipients: await reminders.recipients(tenantId, editionOfB),
+        }
+      })
+
+    expect(await read(a.id)).toEqual({ pending: undefined, recipients: [] })
+    const own = await read(b.id)
+    expect(own.pending).toMatchObject({ daysBefore: 3 })
+    // Among the paid orders of the edition the other tests of this file left there.
+    expect(own.recipients).toContainEqual({ orderId: order.id, email: 'buyer@example.test' })
   })
 })
 

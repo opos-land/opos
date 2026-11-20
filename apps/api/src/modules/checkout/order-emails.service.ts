@@ -22,6 +22,7 @@ import {
   paymentNotNeededEmail,
   paymentNotNeededOrgsEmail,
   paymentUnderReviewEmail,
+  preEditionReminderEmail,
 } from '@opos/i18n/order-emails'
 import { toBuffer } from 'qrcode'
 import { TenantContextService } from '../../common/als/tenant-context.service'
@@ -59,6 +60,7 @@ const HANDS_OVER: readonly ClaimedEmail['kind'][] = [
   'order-confirmation',
   'order-email-changed',
   'order-link',
+  'pre-edition-reminder',
 ]
 
 /** What writing an email answers when the email is not to be sent. */
@@ -329,6 +331,35 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
         }
       case 'order-canceled':
         return { to, locale, content: orderCanceledEmail({ ...of, contactEmail }) }
+      // The reminder before the edition (docs/specs/0011-pre-edition-reminder.md, R4): the QR
+      // code the order carries now, with what the edition says of its hours and its pick-up.
+      case 'pre-edition-reminder': {
+        // Queued for a paid order: one canceled since has no code to show at the gate.
+        if (order.status !== 'paid') {
+          await this.emails.withdraw(email.id, now)
+          return WITHDRAWN
+        }
+        const { qrCode, pictures } = await this.code(order)
+        const told = await this.emails.reminderOf(order.editionId)
+        const guardian =
+          order.ageBand === 'child' || order.ageBand === 'teen' ? order.ageBand : null
+        return {
+          to,
+          locale,
+          content: preEditionReminderEmail({
+            ...of,
+            editionName: order.editionName,
+            qrCode,
+            qrCodeCid: QR_CODE_CID,
+            openingHours: told.openingHours,
+            pickupInformation: told.pickupInformation,
+            guardian,
+            guardianFormUrl: guardian === 'teen' ? told.guardianFormUrl : null,
+            contactEmail,
+          }),
+          pictures,
+        }
+      }
       // A fresh link for one that expired (docs/specs/0009-buyer-self-service.md, K4): the link
       // alone, since the order's page shows the rest.
       case 'order-link':
@@ -372,12 +403,16 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     },
     now: Date,
   ) {
+    return { ...(await this.code(order)), orderLink: await this.link(order, now) }
+  }
+
+  /** The QR code the order carries now, opened, with its picture. */
+  private async code(order: { id: string; tenantId: string; number: string }) {
     const sealed = await this.emails.qrCode(order.id)
     if (!sealed) throw new Error('A paid order has a QR code')
     const qrCode = open(this.key, sealed.code, orderQrCodeOf(order.tenantId, sealed.id))
     return {
       qrCode,
-      orderLink: await this.link(order, now),
       pictures: [
         {
           cid: QR_CODE_CID,

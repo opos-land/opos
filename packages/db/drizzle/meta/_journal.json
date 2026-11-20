@@ -400,6 +400,13 @@
       "when": 1795148745290,
       "tag": "0056_pre_edition_reminder_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1795148987244,
+      "tag": "0057_pre_edition_reminder_email",
+      "breakpoints": true
     }
   ]
 }

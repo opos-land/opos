@@ -43,7 +43,11 @@ describe('the shop of an edition', () => {
       'merchPreorderDeadline',
       'open',
       'openedAt',
+      'openingHours',
       'pickupInformation',
+      'reminderDaysBefore',
+      'reminderDueAt',
+      'reminderSentAt',
       'salesClosedMessage',
     ])
     refused(
@@ -57,6 +61,10 @@ describe('the shop of an edition', () => {
         merchOnlyEnabled: false,
         salesClosedMessage: null,
         pickupInformation: null,
+        openingHours: null,
+        reminderDaysBefore: null,
+        reminderDueAt: null,
+        reminderSentAt: null,
         conditions: {
           'provider-account': 'fake',
           'seller-details': true,
@@ -102,6 +110,28 @@ describe('the shop of an edition', () => {
     refused(updateEditionShopSchema.safeParse({ merchPreorderDeadline: 'May' }))
     refused(updateEditionShopSchema.safeParse({ salesClosedMessage: ' ' }))
     refused(updateEditionShopSchema.safeParse({ salesClosedMessage: 'm'.repeat(1001) }))
+  })
+
+  // docs/specs/0011-pre-edition-reminder.md, R1 and R5: the days before the edition its reminder
+  // goes out, and the opening hours it tells. When it went out is nobody's to set.
+  it('takes the days of the reminder, from 1 to 60 or none, and the opening hours as a text', () => {
+    expect(
+      updateEditionShopSchema.parse({ reminderDaysBefore: 3, openingHours: ' Daily, 10 to 20. ' }),
+    ).toEqual({ reminderDaysBefore: 3, openingHours: 'Daily, 10 to 20.' })
+    expect(updateEditionShopSchema.parse({ reminderDaysBefore: null, openingHours: null })).toEqual(
+      { reminderDaysBefore: null, openingHours: null },
+    )
+    for (const body of [
+      { reminderDaysBefore: 0 },
+      { reminderDaysBefore: 61 },
+      { reminderDaysBefore: 2.5 },
+      { openingHours: ' ' },
+      { openingHours: 'h'.repeat(1001) },
+      { reminderSentAt: '2027-01-01T00:00:00.000Z' },
+      { reminderDueAt: '2027-01-01T00:00:00.000Z' },
+    ]) {
+      refused(updateEditionShopSchema.safeParse(body))
+    }
   })
 
   // docs/specs/0009-buyer-self-service.md, K7: where and when merchandise is handed over.

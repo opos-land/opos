@@ -66,7 +66,6 @@ interface SeedAccount {
   email: string
   firstName: string
   lastName: string
-  locale?: string
   theme?: 'light' | 'dark'
 }
 
@@ -282,6 +281,8 @@ interface SeedTenant {
 }
 
 const DEV_PASSWORD = 'password123'
+/** The language every demo account reads the applications in, whatever its browser asks for. */
+const DEMO_LOCALE = 'pl'
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
 
@@ -309,7 +310,6 @@ const ACCOUNTS: SeedAccount[] = [
     email: 'viewer@convention-a.test',
     firstName: 'Tom',
     lastName: 'Baker',
-    locale: 'en',
     theme: 'dark',
   },
   { email: 'expired@convention-a.test', firstName: 'Marek', lastName: 'Sowa' },
@@ -935,7 +935,7 @@ async function ensureAccount(account: SeedAccount) {
     .set({
       firstName: account.firstName,
       lastName: account.lastName,
-      locale: account.locale ?? null,
+      locale: DEMO_LOCALE,
       theme: account.theme ?? null,
     })
     .where(eq(accounts.email, account.email))

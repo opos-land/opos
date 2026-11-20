@@ -6,15 +6,6 @@ import { stack } from './stack'
 // Signing in through the UI, the way a person does, to the panel, the portal or the admin
 // application.
 
-/** The demo accounts of the seed; a scenario only reads them and never signs them out. */
-export const seeded = {
-  password: 'password123',
-  headA: 'head@convention-a.test',
-  programA: 'program@convention-a.test',
-  viewerA: 'viewer@convention-a.test',
-  expiredA: 'expired@convention-a.test',
-} as const
-
 async function signIn(page: Page, url: string, email: string, password: string) {
   await page.goto(url)
   await page.getByLabel('Email', { exact: true }).fill(email)

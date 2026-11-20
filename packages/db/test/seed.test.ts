@@ -278,6 +278,29 @@ describe('db:seed run twice', () => {
   })
 })
 
+// A demo account reads the applications in Polish whatever language its browser asks for, and
+// a run of the seed sets that again for an account whose language somebody changed.
+describe('db:seed accounts', () => {
+  const DEMO = /@(convention-[abc]\.test|example\.com)$/
+  const languages = async () =>
+    (
+      await migrator<{ email: string; locale: string | null }[]>`select email, locale from accounts`
+    ).filter((account) => DEMO.test(account.email))
+
+  it('gives every demo account Polish as its language', { timeout: 120_000 }, async () => {
+    expect(runSeed('local').status).toBe(0)
+    const seeded = await languages()
+
+    expect(seeded.length).toBeGreaterThanOrEqual(12)
+    expect(seeded.filter((account) => account.locale !== 'pl')).toEqual([])
+
+    // Changed by its owner in the panel, it is Polish again after the next run.
+    await migrator`update accounts set locale = 'en' where email = 'head@convention-a.test'`
+    expect(runSeed('local').status).toBe(0)
+    expect((await languages()).filter((account) => account.locale !== 'pl')).toEqual([])
+  })
+})
+
 // The shop's setup of the demo conventions (docs/specs/0002-shop-setup.md): one convention ready
 // to sell, with an edition whose shop is open and another whose shop misses a condition, and one
 // that has set nothing.

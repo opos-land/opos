@@ -119,6 +119,14 @@ msgstr "Allow all"
 msgid "Already have an account? <0>Sign in</0>"
 msgstr "Already have an account? <0>Sign in</0>"
 
+#: src/features/shop/components/add-ons-step.tsx
+msgid "Already ordered."
+msgstr "Already ordered."
+
+#: src/features/shop/components/merch-step.tsx
+msgid "Already ordered. You can order it again."
+msgstr "Already ordered. You can order it again."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
 msgstr "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
@@ -169,6 +177,7 @@ msgid "bank transfer"
 msgstr "bank transfer"
 
 #: src/features/shop/components/my-orders.tsx
+#: src/features/shop/pages/checkout-page.tsx
 msgid "Buy more"
 msgstr "Buy more"
 
@@ -229,6 +238,10 @@ msgstr "Choose {0}"
 #: src/features/shop/components/merch-step.tsx
 msgid "Choose a variant first."
 msgstr "Choose a variant first."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Choose at least one add-on or item to order."
+msgstr "Choose at least one add-on or item to order."
 
 #: src/features/consent/components/consent-settings.tsx
 msgid "Choose which optional tools OPOS may use in this browser. OPOS works the same without them."
@@ -596,6 +609,10 @@ msgstr "Merch only"
 #: src/features/shop/components/summary-step.tsx
 msgid "Merchandise is picked up at the convention. It is not shipped."
 msgstr "Merchandise is picked up at the convention. It is not shipped."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "More for the order {firstNumber}"
+msgstr "More for the order {firstNumber}"
 
 #: src/app/layout.tsx
 #: src/features/schedule/pages/schedule-page.tsx
@@ -1353,6 +1370,10 @@ msgstr "What we store"
 #: src/features/landing/pages/privacy-page.tsx
 msgid "What you do on the platform: the editions you sign up for, the programme items you like and the reviews you write."
 msgstr "What you do on the platform: the editions you sign up for, the programme items you like and the reviews you write."
+
+#: src/features/shop/components/summary-step.tsx
+msgid "What you order now joins the QR code of the order {joins}: you show the same code. Its confirmation will be sent to <0>{email}</0>."
+msgstr "What you order now joins the QR code of the order {joins}: you show the same code. Its confirmation will be sent to <0>{email}</0>."
 
 #: src/features/conventions/components/edition-summary.tsx
 msgid "When"

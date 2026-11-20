@@ -38,6 +38,7 @@ function ItemCard({
   tenantSlug,
   lines,
   ranOut,
+  ordered,
   money,
   setLines,
 }: {
@@ -46,6 +47,8 @@ function ItemCard({
   /** The lines of the whole order. */
   lines: Draft['items']
   ranOut: string | null
+  /** Whether the order "Buy more" adds to holds the item already: it may be ordered again. */
+  ordered: boolean
   money: (amountMinor: number) => string
   setLines: (lines: Draft['items']) => void
 }) {
@@ -87,6 +90,11 @@ function ItemCard({
     <li className="flex flex-col gap-3 border-b pb-4 last:border-b-0">
       <h3 className="text-lg font-semibold">{item.name}</h3>
       <p className="font-medium">{money(item.amountMinor)}</p>
+      {ordered && (
+        <p className="text-sm font-medium">
+          <Trans>Already ordered. You can order it again.</Trans>
+        </p>
+      )}
       {item.description && <p>{item.description}</p>}
       {item.pictures.length > 0 && (
         <ul className="flex flex-wrap gap-2">
@@ -301,6 +309,7 @@ export function MerchStep({
             tenantSlug={tenantSlug}
             lines={draft.items}
             ranOut={ranOut}
+            ordered={draft.extending?.itemIds.includes(item.id) ?? false}
             money={money}
             setLines={(items) => change({ items })}
           />

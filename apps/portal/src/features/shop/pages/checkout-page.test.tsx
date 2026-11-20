@@ -13,6 +13,7 @@ import { ids, offer } from './offer.fixture'
 const api = vi.hoisted(() => ({
   offer: vi.fn(),
   place: vi.fn(),
+  mine: vi.fn(),
   quote: vi.fn(),
   start: vi.fn(),
   leave: vi.fn(),
@@ -31,6 +32,10 @@ vi.mock('../api/shop', () => ({
   offerOptions: () => ({ queryKey: ['offer'], queryFn: api.offer }),
   offerKey: () => ['offer'],
   placeOrder: api.place,
+  myOrdersOptions: (slug: string) => ({
+    queryKey: ['my-orders', slug],
+    queryFn: () => api.mine(slug) as unknown,
+  }),
   discountQuoteOptions: (_: string, __: string, cart: object, discountCode: string) => ({
     queryKey: ['quote', cart, discountCode],
     queryFn: () => api.quote(cart, discountCode) as unknown,
@@ -51,6 +56,7 @@ const view = (search = `?ticketType=${ids.standard}`) =>
         <MemoryRouter initialEntries={[`${shop}/checkout${search}`]}>
           <Routes>
             <Route path="/conventions/:tenantSlug/:editionSlug/shop" element={<p>The shop</p>} />
+            <Route path="/login" element={<p>The sign-in</p>} />
             <Route
               path="/conventions/:tenantSlug/:editionSlug/shop/checkout"
               element={<CheckoutPage />}
@@ -117,6 +123,7 @@ beforeEach(() => {
     resultToken: 'token-1',
   })
   api.quote.mockReset()
+  api.mine.mockReset().mockResolvedValue([])
   api.start.mockReset().mockResolvedValue({ redirectUrl: 'https://provider.test/pay/1' })
   api.leave.mockReset()
   api.notify.mockReset()
@@ -671,6 +678,140 @@ describe('CheckoutPage', () => {
     cleanup()
     api.offer.mockResolvedValue(offer({ open: false, onSale: false }))
     view()
+    expect(await screen.findByText('The shop')).toBeDefined()
+  })
+})
+
+// docs/specs/0009-buyer-self-service.md, B1-B3 and B6: "Buy more" on a paid order of the account.
+describe('CheckoutPage, adding to a paid order', () => {
+  const paid = (changes: object = {}) => ({
+    id: 'order-first',
+    number: 'ABCDEFGHJK',
+    status: 'paid',
+    placedAt: '2027-05-01T10:00:00.000Z',
+    holdEndsAt: null,
+    holderName: 'Ada Lovelace',
+    edition: { id: 'edition-1', slug: '2027', name: 'Convention A 2027' },
+    lines: [],
+    totalMinor: 12000,
+    currency: 'PLN',
+    bought: { ticketTypeId: ids.standard, addOnIds: [ids.room], itemIds: [ids.pin] },
+    ...changes,
+  })
+  const more = () => view('?extends=order-first')
+
+  beforeEach(() => {
+    useSession.setState({ status: 'ready', account: account as never })
+    api.mine.mockResolvedValue([paid()])
+  })
+
+  it('asks nothing of the ticket holder again, and names the order it adds to', async () => {
+    more()
+
+    expect(await stepHeading('Add-ons')).toBeDefined()
+    const steps = within(screen.getByRole('navigation', { name: 'Steps of the order' }))
+    expect(steps.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      '1. Add-ons',
+      '2. Merch',
+      '3. Summary',
+    ])
+    expect(screen.getByText('More for the order ABCDEFGHJK')).toBeDefined()
+    expect(screen.getByText(/Total: .*0[.,]00/)).toBeDefined()
+    expect(screen.queryByLabelText(/name or nickname/)).toBeNull()
+  })
+
+  // B3: merchandise already bought is marked and can be ordered again; an add-on cannot.
+  it('marks what was already ordered: an add-on cannot be taken again, merchandise can', async () => {
+    more()
+    await stepHeading('Add-ons')
+
+    const room = screen.getByRole('checkbox', { name: /Sleeping room/ })
+    expect(room.getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByText('Already ordered.')).toBeDefined()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Painting workshop/ }))
+    expect(screen.getByText(/Total: .*40[.,]00/)).toBeDefined()
+    press('Next')
+
+    await stepHeading('Merch')
+    const pin = screen
+      .getAllByRole('listitem')
+      .find((row) => within(row).queryByRole('heading', { name: 'Enamel pin' }))!
+    expect(within(pin).getByText('Already ordered. You can order it again.')).toBeDefined()
+    fireEvent.click(within(pin).getByRole('button', { name: 'Add to the order' }))
+    expect(screen.getByText(/Total: .*55[.,]00/)).toBeDefined()
+  })
+
+  it('places an order that names the first one, with no ticket and the same ticket holder', async () => {
+    saveDraft('convention-a', '2027', {
+      ...kept({ step: 'summary', asVisitor: false }),
+      ticketTypeId: null,
+      ageBand: null,
+      answers: {},
+      addOnIds: [ids.workshop],
+      extending: {
+        orderId: 'order-first',
+        number: 'ABCDEFGHJK',
+        holderName: 'Ada Lovelace',
+        ticketTypeId: ids.standard,
+        addOnIds: [ids.room],
+        itemIds: [ids.pin],
+      },
+    })
+    more()
+    await stepHeading('Summary')
+
+    expect(screen.getByText(/joins the QR code of the order ABCDEFGHJK/)).toBeDefined()
+    press('Select all required')
+    fireEvent.click(screen.getByRole('checkbox', { name: /terms of the provider/ }))
+    press('Order and pay')
+
+    await waitFor(() => expect(api.place).toHaveBeenCalled())
+    const [, body, signedIn] = api.place.mock.calls[0] as [object, Record<string, unknown>, boolean]
+    expect(signedIn).toBe(true)
+    expect(body).toMatchObject({
+      extendsOrderId: 'order-first',
+      cart: { ticket: null, addOnIds: [ids.workshop], items: [] },
+      holderName: 'Ada Lovelace',
+      ageBand: null,
+      customFieldAnswers: [],
+      expectedTotalMinor: 4000,
+    })
+    expect(body).not.toHaveProperty('email')
+    // Its own checkout is forgotten; the edition's other one is not touched.
+    await waitFor(() => expect(loadDraft('convention-a', '2027', 'order-first')).toBeNull())
+  })
+
+  it('places nothing with nothing chosen, and says so at the Summary', async () => {
+    more()
+    await stepHeading('Add-ons')
+    press('Next')
+    await stepHeading('Merch')
+    press('Next')
+    await stepHeading('Summary')
+
+    press('Select all required')
+    press('Order')
+
+    expect(await screen.findByText('Choose at least one add-on or item to order.')).toBeDefined()
+    expect(api.place).not.toHaveBeenCalled()
+  })
+
+  // B6: a visitor has no "Buy more".
+  it('asks a visitor to sign in, and leads back to the shop for an order that cannot be added to', async () => {
+    useSession.setState({ status: 'ready', account: null })
+    more()
+    expect(await screen.findByText('The sign-in')).toBeDefined()
+    expect(api.mine).not.toHaveBeenCalled()
+    cleanup()
+
+    useSession.setState({ status: 'ready', account: account as never })
+    api.mine.mockResolvedValue([paid({ status: 'awaiting-payment', bought: null })])
+    more()
+    expect(await screen.findByText('The shop')).toBeDefined()
+    cleanup()
+
+    api.mine.mockResolvedValue([paid({ edition: { id: 'edition-2', slug: '2026', name: 'Old' } })])
+    more()
     expect(await screen.findByText('The shop')).toBeDefined()
   })
 })

@@ -7,7 +7,9 @@ import { type Draft, offeredAddOns } from '../model/checkout'
 /**
  * The add-ons step (docs/specs/0004-checkout-and-orders.md, C10): each add-on offered with the
  * ticket type and its price. A headcount-only one says no place is reserved; a limited one cannot
- * be ticked once no place is left, and shows how many are left only below its threshold.
+ * be ticked once no place is left, and shows how many are left only below its threshold. In "Buy
+ * more" an add-on bought already is marked and cannot be taken again
+ * (docs/specs/0009-buyer-self-service.md, B3).
  */
 export function AddOnsStep({
   offer,
@@ -27,6 +29,8 @@ export function AddOnsStep({
       addOnIds: ticked ? [...draft.addOnIds, id] : draft.addOnIds.filter((own) => own !== id),
     })
 
+  const ordered = new Set(draft.extending?.addOnIds)
+
   return (
     <ul className="flex flex-col gap-4">
       {offeredAddOns(offer, draft).map((addOn) => (
@@ -40,6 +44,11 @@ export function AddOnsStep({
             hint={
               <>
                 {addOn.description}{' '}
+                {ordered.has(addOn.id) && (
+                  <strong>
+                    <Trans>Already ordered.</Trans>{' '}
+                  </strong>
+                )}
                 {addOn.kind === 'headcount' && (
                   <Trans>
                     This only tells the convention how many to expect: no place is reserved.
@@ -58,7 +67,9 @@ export function AddOnsStep({
               </>
             }
             checked={draft.addOnIds.includes(addOn.id)}
-            disabled={addOn.soldOut && !draft.addOnIds.includes(addOn.id)}
+            disabled={
+              ordered.has(addOn.id) || (addOn.soldOut && !draft.addOnIds.includes(addOn.id))
+            }
             onChange={(ticked) => toggle(addOn.id, ticked)}
           />
         </li>

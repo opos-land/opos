@@ -3,6 +3,7 @@ import {
   type Account,
   BOT_CHECK_STAND_IN,
   type Cart,
+  type MyOrder,
   type Offer,
   type PlacedOrder,
 } from '@opos/contract'
@@ -39,6 +40,7 @@ import {
   conventionOptions,
   discountQuoteOptions,
   editionOptions,
+  myOrdersOptions,
   offerKey,
   offerOptions,
   placeOrder,
@@ -55,10 +57,12 @@ import {
   cartOf,
   clearDraft,
   type Draft,
+  extensionDraft,
   holderIssues,
   loadDraft,
   orderBody,
   quoteOf,
+  resumeExtension,
   saveDraft,
   type StepId,
   stepsOf,
@@ -79,7 +83,9 @@ const asked = (value: string | null) =>
 /**
  * The checkout of an edition's shop (docs/specs/0004-checkout-and-orders.md, C1-C19, O1-O10).
  * This part reads what the checkout stands on: the convention, the edition, the offer and who is
- * signed in. The checkout itself begins once all of them are known.
+ * signed in. The checkout itself begins once all of them are known. With `extends` in its
+ * address it is "Buy more" (docs/specs/0009-buyer-self-service.md, B1-B6): a signed-in account
+ * adds to its own paid order of this edition, and a visitor is asked to sign in.
  */
 export function CheckoutPage() {
   const { t } = useLingui()
@@ -91,8 +97,15 @@ export function CheckoutPage() {
   const convention = useQuery(conventionOptions(tenantSlug))
   const edition = useQuery(editionOptions(tenantSlug, editionSlug))
   const offer = useQuery(offerOptions(tenantSlug, editionSlug))
+  const location = useLocation()
   const shop = `/conventions/${tenantSlug}/${editionSlug}/shop`
   const ticketType = params.get('ticketType')
+  const extendsId = params.get('extends')
+  // The account's own orders, among which "Buy more" finds the one it adds to.
+  const mine = useQuery({
+    ...myOrdersOptions(tenantSlug),
+    enabled: extendsId !== null && account !== null,
+  })
 
   if (convention.isError || edition.isError || offer.isError) {
     const failed = convention.error ?? edition.error ?? offer.error
@@ -104,11 +117,27 @@ export function CheckoutPage() {
   // A closed shop sells nothing: its page says so.
   if (!offer.data.open) return <Navigate to={shop} replace />
 
+  let extending: MyOrder | undefined
+  if (extendsId !== null) {
+    // A visitor has no "Buy more": it is the account's own order that is added to.
+    if (!account) {
+      return <Navigate to={loginPath(`${location.pathname}${location.search}`)} replace />
+    }
+    if (mine.isError) return <ErrorMessage error={mine.error} />
+    if (mine.isPending) return <LoadingView />
+    extending = mine.data.find(
+      (order) =>
+        order.id === extendsId && order.edition.id === edition.data.id && order.bought !== null,
+    )
+    // Not the account's, not of this edition or not paid: nothing is added to it.
+    if (!extending) return <Navigate to={shop} replace />
+  }
+
   return (
     <Checkout
-      // Another ticket type asked for, or another account, begins the checkout anew from what
-      // the tab kept.
-      key={`${ticketType ?? ''}:${account?.id ?? ''}`}
+      // Another ticket type asked for, another order added to, or another account, begins the
+      // checkout anew from what the tab kept.
+      key={`${ticketType ?? ''}:${extendsId ?? ''}:${account?.id ?? ''}`}
       tenantSlug={tenantSlug}
       editionSlug={editionSlug}
       editionId={edition.data.id}
@@ -116,6 +145,7 @@ export function CheckoutPage() {
       offer={offer.data}
       account={account}
       wanted={asked(ticketType)}
+      extending={extending}
     />
   )
 }
@@ -133,6 +163,7 @@ function Checkout({
   offer,
   account,
   wanted,
+  extending,
 }: {
   tenantSlug: string
   editionSlug: string
@@ -141,6 +172,8 @@ function Checkout({
   offer: Offer
   account: Account | null
   wanted: string | null | undefined
+  /** The account's paid order "Buy more" adds to. */
+  extending?: MyOrder
 }) {
   const { i18n } = useLingui()
   const location = useLocation()
@@ -150,15 +183,24 @@ function Checkout({
   const shop = `/conventions/${tenantSlug}/${editionSlug}/shop`
   const signedIn = account !== null
 
-  const [begun] = useState(() =>
-    beginCheckout(
+  const [begun] = useState(() => {
+    if (extending) {
+      // "Buy more" has a checkout of its own, kept apart from the edition's.
+      const kept = loadDraft(tenantSlug, editionSlug, extending.id)
+      return {
+        draft: kept ? resumeExtension(offer, kept, extending) : extensionDraft(offer, extending),
+        removedAddOns: [],
+        ask: false,
+      }
+    }
+    return beginCheckout(
       offer,
       loadDraft(tenantSlug, editionSlug),
       wanted,
       // A signed-in buyer's name is filled in from the account.
       account ? [account.firstName, account.lastName].filter(Boolean).join(' ') : '',
-    ),
-  )
+    )
+  })
   const [draft, setDraft] = useState(begun.draft)
   /** Whether the buyer still has to say what becomes of the merchandise chosen before. */
   const [asking, setAsking] = useState(begun.ask)
@@ -204,7 +246,7 @@ function Checkout({
       )
       // The order is placed: the checkout is over, and its result page opens with the token.
       keepResultToken(placed.orderId, placed.resultToken)
-      clearDraft(tenantSlug, editionSlug)
+      clearDraft(tenantSlug, editionSlug, order.draft.extending?.orderId)
       if (placed.status === 'paid') return { placed, redirectUrl: null }
       try {
         const started = await startPaymentAttempt(at, placed.orderId, placed.resultToken, signedIn)
@@ -311,7 +353,11 @@ function Checkout({
   const issues = holderIssues(offer, draft, account?.email ?? null)
   const locale = isLocale(i18n.locale) ? i18n.locale : activeLocale()
   const here = `${location.pathname}${location.search}`
-  const emptyMerchOnly = merchOnly && draft.items.length === 0
+  const emptyMerchOnly = merchOnly && !draft.extending && draft.items.length === 0
+  /** "Buy more" with nothing chosen: there is nothing to order. */
+  const nothingMore =
+    draft.extending !== null && draft.addOnIds.length === 0 && draft.items.length === 0
+  const firstNumber = draft.extending?.number
 
   // A buyer who is not signed in is offered, before the email is asked, to go on without an
   // account or to sign in or create one.
@@ -347,7 +393,7 @@ function Checkout({
   }
 
   return (
-    <Page title={<Trans>Checkout</Trans>}>
+    <Page title={draft.extending ? <Trans>Buy more</Trans> : <Trans>Checkout</Trans>}>
       <p>
         <Link to={shop} className={linkClass}>
           <Trans>Back to the shop</Trans>
@@ -355,7 +401,15 @@ function Checkout({
       </p>
       <StepsNav steps={steps} current={current} merchOnly={merchOnly} />
       <p aria-live="polite" className="flex flex-wrap justify-between gap-2 font-medium">
-        <span>{type ? type.name : <Trans>Merch only</Trans>}</span>
+        <span>
+          {type ? (
+            type.name
+          ) : draft.extending ? (
+            <Trans>More for the order {firstNumber}</Trans>
+          ) : (
+            <Trans>Merch only</Trans>
+          )}
+        </span>
         <span>
           <Trans>Total: {money(totalMinor)}</Trans>
         </span>
@@ -441,8 +495,14 @@ function Checkout({
                 email={account?.email ?? draft.email.trim().toLowerCase()}
                 marked={tried.has('summary')}
                 discount={discount}
+                joins={draft.extending?.number}
                 change={change}
               />
+              {nothingMore && tried.has('summary') && (
+                <p className="text-destructive" role="alert">
+                  <Trans>Choose at least one add-on or item to order.</Trans>
+                </p>
+              )}
             </>
           )}
           {current === 'merch' && emptyMerchOnly && tried.has('merch') && (

@@ -46,6 +46,7 @@ export function SummaryStep({
   email,
   marked,
   discount,
+  joins,
   change,
 }: {
   offer: Offer
@@ -59,6 +60,8 @@ export function SummaryStep({
   marked: boolean
   /** What the shop made of the discount code the draft holds. */
   discount: DiscountState
+  /** The number of the paid order "Buy more" adds to, whose QR code this order joins. */
+  joins?: string
   change: (changes: Partial<Draft>) => void
 }) {
   const { t } = useLingui()
@@ -85,9 +88,16 @@ export function SummaryStep({
   return (
     <div className="flex flex-col gap-4">
       <p>
-        <Trans>
-          The QR code of your order will be sent to <strong>{email}</strong>.
-        </Trans>
+        {joins ? (
+          <Trans>
+            What you order now joins the QR code of the order {joins}: you show the same code. Its
+            confirmation will be sent to <strong>{email}</strong>.
+          </Trans>
+        ) : (
+          <Trans>
+            The QR code of your order will be sent to <strong>{email}</strong>.
+          </Trans>
+        )}
       </p>
       <table className="w-full text-left">
         <caption className="sr-only">

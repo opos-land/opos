@@ -1,6 +1,7 @@
 import {
   AGE_BANDS,
   type Cart,
+  type MyOrder,
   type Offer,
   type PlaceOrder,
   type PlaceVisitorOrder,
@@ -39,6 +40,22 @@ const draftSchema = z.object({
    * knows a code's terms: whether this one is applied is what its quote answers.
    */
   discountCode: z.string().default(''),
+  /**
+   * The paid order a "Buy more" checkout adds to (docs/specs/0009-buyer-self-service.md, B1-B3):
+   * its ticket holder, the ticket type of its ticket and what was bought on its QR code already.
+   * Null for a checkout of its own.
+   */
+  extending: z
+    .object({
+      orderId: z.string(),
+      number: z.string(),
+      holderName: z.string(),
+      ticketTypeId: z.string().nullable(),
+      addOnIds: z.array(z.string()),
+      itemIds: z.array(z.string()),
+    })
+    .nullable()
+    .default(null),
   step: z.enum(STEPS),
 })
 
@@ -59,28 +76,44 @@ export const emptyDraft = (ticketTypeId: string | null): Draft => ({
   guardianAcknowledged: false,
   asVisitor: false,
   discountCode: '',
+  extending: null,
   step: 'holder',
 })
 
 export const ticketTypeOf = (offer: Offer, draft: Pick<Draft, 'ticketTypeId'>) =>
   offer.ticketTypes.find((type) => type.id === draft.ticketTypeId)
 
+/** What decides the offer of a checkout: its ticket type, or the order it adds to. */
+type Offered = Pick<Draft, 'ticketTypeId'> & Partial<Pick<Draft, 'extending'>>
+
+/**
+ * The ticket type whose add-ons and merchandise the checkout is offered: the one being bought,
+ * or the one of the order "Buy more" adds to. Null for merchandise alone.
+ */
+const offeringTypeId = (draft: Offered) =>
+  draft.extending ? draft.extending.ticketTypeId : draft.ticketTypeId
+
 /** The add-ons offered with the ticket type; an order of merchandise alone has none. */
-export function offeredAddOns(offer: Offer, draft: Pick<Draft, 'ticketTypeId'>) {
-  const type = ticketTypeOf(offer, draft)
+export function offeredAddOns(offer: Offer, draft: Offered) {
+  const type = ticketTypeOf(offer, { ticketTypeId: offeringTypeId(draft) })
   return offer.addOns.filter((addOn) => type?.addOnIds.includes(addOn.id))
 }
 
 /** The items offered with the ticket type, or every item to an order of merchandise alone. */
-export function offeredItems(offer: Offer, draft: Pick<Draft, 'ticketTypeId'>) {
-  if (draft.ticketTypeId === null) return offer.items
-  const type = ticketTypeOf(offer, draft)
+export function offeredItems(offer: Offer, draft: Offered) {
+  const ticketTypeId = offeringTypeId(draft)
+  if (ticketTypeId === null) return offer.items
+  const type = ticketTypeOf(offer, { ticketTypeId })
   return offer.items.filter((item) => type?.merchandiseItemIds.includes(item.id))
 }
 
-/** The steps the buyer goes through: one with nothing to offer is skipped and hidden. */
-export function stepsOf(offer: Offer, draft: Pick<Draft, 'ticketTypeId'>): StepId[] {
+/**
+ * The steps the buyer goes through: one with nothing to offer is skipped and hidden. "Buy more"
+ * asks nothing of the ticket holder again.
+ */
+export function stepsOf(offer: Offer, draft: Offered): StepId[] {
   return STEPS.filter((step) => {
+    if (step === 'holder') return !draft.extending
     if (step === 'add-ons') return offeredAddOns(offer, draft).length > 0
     if (step === 'merch') return offeredItems(offer, draft).length > 0
     return true
@@ -102,7 +135,48 @@ export const cartOf = (draft: Draft): Cart => ({
 })
 
 /** The lines and the running total, by the function the API prices an order with. */
-export const quoteOf = (offer: Offer, draft: Draft) => priceCart(offer, cartOf(draft))
+export const quoteOf = (offer: Offer, draft: Draft) =>
+  priceCart(offer, cartOf(draft), undefined, draft.extending ?? undefined)
+
+/** What a checkout keeps of the order it adds to. */
+const extendingOf = (order: MyOrder): NonNullable<Draft['extending']> => ({
+  orderId: order.id,
+  number: order.number,
+  holderName: order.holderName,
+  ticketTypeId: order.bought?.ticketTypeId ?? null,
+  addOnIds: order.bought?.addOnIds ?? [],
+  itemIds: order.bought?.itemIds ?? [],
+})
+
+/**
+ * A "Buy more" checkout for a paid order, on its first step: no ticket, the same ticket holder,
+ * and nothing chosen yet.
+ */
+export function extensionDraft(offer: Offer, order: MyOrder): Draft {
+  const draft = {
+    ...emptyDraft(null),
+    holderName: order.holderName,
+    extending: extendingOf(order),
+  }
+  return { ...draft, step: stepsOf(offer, draft)[0] ?? 'summary' }
+}
+
+/**
+ * A kept "Buy more" checkout taken up again: with what was bought on the order's QR code since,
+ * and without an add-on bought meanwhile, which is taken once.
+ */
+export function resumeExtension(offer: Offer, kept: Draft, order: MyOrder): Draft {
+  const extending = extendingOf(order)
+  const draft = {
+    ...kept,
+    ticketTypeId: null,
+    holderName: order.holderName,
+    extending,
+    addOnIds: kept.addOnIds.filter((id) => !extending.addOnIds.includes(id)),
+  }
+  const steps = stepsOf(offer, draft)
+  return steps.includes(draft.step) ? draft : { ...draft, step: steps[0] ?? 'summary' }
+}
 
 /** What is wrong with a field of the first step. */
 export type FieldIssue = 'required' | 'invalid' | 'mismatch' | 'too-long' | 'not-allowed'
@@ -247,7 +321,8 @@ export function orderBody(
   const merchOnly = draft.ticketTypeId === null
   const order: PlaceOrder = {
     cart: cartOf(draft),
-    holderName: draft.holderName.trim(),
+    // What is bought later is for the ticket holder of the order it adds to.
+    holderName: draft.extending?.holderName ?? draft.holderName.trim(),
     ageBand: merchOnly ? null : draft.ageBand,
     customFieldAnswers: merchOnly
       ? []
@@ -261,6 +336,7 @@ export function orderBody(
     botCheckToken,
     ...(discountApplied &&
       draft.discountCode.trim() !== '' && { discountCode: draft.discountCode.trim() }),
+    ...(draft.extending && { extendsOrderId: draft.extending.orderId }),
   }
   if (signedIn) return order
   return {
@@ -271,7 +347,9 @@ export function orderBody(
 }
 
 const PREFIX = 'opos-checkout:'
-const keyOf = (tenantSlug: string, editionSlug: string) => `${PREFIX}${tenantSlug}:${editionSlug}`
+/** A "Buy more" checkout is kept apart, under the order it adds to. */
+const keyOf = (tenantSlug: string, editionSlug: string, extendsOrderId?: string | null) =>
+  `${PREFIX}${tenantSlug}:${editionSlug}${extendsOrderId ? `:more:${extendsOrderId}` : ''}`
 
 /**
  * The tab's own storage: it can be missing or throw (private mode, blocked site data), and the
@@ -286,8 +364,12 @@ function tab<T>(act: (storage: Storage) => T): T | null {
 }
 
 /** The checkout of the edition this tab holds, or null: anything that is not one is ignored. */
-export function loadDraft(tenantSlug: string, editionSlug: string): Draft | null {
-  const stored = tab((storage) => storage.getItem(keyOf(tenantSlug, editionSlug)))
+export function loadDraft(
+  tenantSlug: string,
+  editionSlug: string,
+  extendsOrderId?: string,
+): Draft | null {
+  const stored = tab((storage) => storage.getItem(keyOf(tenantSlug, editionSlug, extendsOrderId)))
   if (!stored) return null
   try {
     const draft = draftSchema.safeParse(JSON.parse(stored))
@@ -298,12 +380,17 @@ export function loadDraft(tenantSlug: string, editionSlug: string): Draft | null
 }
 
 export function saveDraft(tenantSlug: string, editionSlug: string, draft: Draft) {
-  tab((storage) => storage.setItem(keyOf(tenantSlug, editionSlug), JSON.stringify(draft)))
+  tab((storage) =>
+    storage.setItem(
+      keyOf(tenantSlug, editionSlug, draft.extending?.orderId),
+      JSON.stringify(draft),
+    ),
+  )
 }
 
 /** Forgets the checkout of the edition: its order is placed, or the buyer gave it up. */
-export function clearDraft(tenantSlug: string, editionSlug: string) {
-  tab((storage) => storage.removeItem(keyOf(tenantSlug, editionSlug)))
+export function clearDraft(tenantSlug: string, editionSlug: string, extendsOrderId?: string) {
+  tab((storage) => storage.removeItem(keyOf(tenantSlug, editionSlug, extendsOrderId)))
 }
 
 /** Forgets every checkout of the tab, as a sign-out does. */

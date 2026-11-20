@@ -1,4 +1,4 @@
-import { type Offer } from '@opos/contract'
+import { type MyOrder, type Offer } from '@opos/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   beginCheckout,
@@ -7,6 +7,7 @@ import {
   clearDrafts,
   type Draft,
   emptyDraft,
+  extensionDraft,
   forgetDraftsAtSignOut,
   holderIssues,
   loadDraft,
@@ -14,6 +15,7 @@ import {
   offeredItems,
   orderBody,
   quoteOf,
+  resumeExtension,
   saveDraft,
   stepsOf,
   summaryIssues,
@@ -426,6 +428,125 @@ describe('the order a checkout places with a discount code', () => {
     window.sessionStorage.setItem('opos-checkout:convention-a:2026', JSON.stringify(older))
 
     expect(loadDraft('convention-a', '2026')).toMatchObject({ step: 'summary', discountCode: '' })
+  })
+})
+
+// docs/specs/0009-buyer-self-service.md, B1-B3: "Buy more" on a paid order.
+describe('a checkout that adds to a paid order', () => {
+  const paid = (changes: Partial<MyOrder> = {}): MyOrder => ({
+    id: id(40),
+    number: 'ABCDEFGHJK',
+    status: 'paid',
+    placedAt: '2027-05-01T10:00:00.000Z',
+    holdEndsAt: null,
+    holderName: 'Ada Lovelace',
+    edition: { id: id(41), slug: '2027', name: 'Convention A 2027' },
+    lines: [],
+    totalMinor: 12000,
+    currency: 'PLN',
+    bought: { ticketTypeId: standard!, addOnIds: [room!], itemIds: [pin!] },
+    ...changes,
+  })
+  const merchAlone = { ticketTypeId: null, addOnIds: [], itemIds: [pin!] }
+
+  it('asks nothing of the ticket holder again: its steps are add-ons, merch and summary', () => {
+    const draft = extensionDraft(offer(), paid())
+
+    expect(stepsOf(offer(), draft)).toEqual(['add-ons', 'merch', 'summary'])
+    expect(draft).toMatchObject({
+      step: 'add-ons',
+      ticketTypeId: null,
+      holderName: 'Ada Lovelace',
+      extending: { orderId: id(40), number: 'ABCDEFGHJK', addOnIds: [room], itemIds: [pin] },
+    })
+    // An order of merchandise alone is offered the merchandise alone.
+    const alone = extensionDraft(offer(), paid({ bought: merchAlone }))
+    expect(stepsOf(offer(), alone)).toEqual(['merch', 'summary'])
+    expect(alone.step).toBe('merch')
+  })
+
+  it('is offered the add-ons and the merchandise of the order’s ticket type', () => {
+    const ofSupporter = extensionDraft(
+      offer(),
+      paid({ bought: { ticketTypeId: supporter!, addOnIds: [], itemIds: [] } }),
+    )
+
+    expect(offeredAddOns(offer(), ofSupporter).map((addOn) => addOn.name)).toEqual(['Room'])
+    expect(offeredItems(offer(), ofSupporter)).toEqual([])
+    expect(stepsOf(offer(), ofSupporter)).toEqual(['add-ons', 'summary'])
+    const alone = extensionDraft(offer({ merchOnly: false }), paid({ bought: merchAlone }))
+    expect(offeredItems(offer(), alone).map((item) => item.name)).toEqual(['Pin', 'T-shirt'])
+  })
+
+  it('sells no ticket, and is priced by the function the API prices it with', () => {
+    const draft = {
+      ...extensionDraft(offer(), paid()),
+      addOnIds: [workshop!],
+      items: [{ variantId: small!, quantity: 2 }],
+    }
+
+    expect(cartOf(draft)).toMatchObject({ ticket: null, addOnIds: [workshop] })
+    expect(quoteOf(offer(), draft)).toMatchObject({ totalMinor: 4000 + 2 * 1500 })
+    // An add-on already bought is not taken again; nothing chosen is nothing to order.
+    expect(quoteOf(offer(), { ...draft, addOnIds: [room!] })).toEqual({
+      problem: { kind: 'add-on', id: room },
+    })
+    expect(quoteOf(offer(), extensionDraft(offer(), paid()))).toEqual({
+      problem: { kind: 'empty' },
+    })
+  })
+
+  it('places an order that names the one it adds to, for the same ticket holder', () => {
+    const draft = {
+      ...extensionDraft(offer(), paid()),
+      items: [{ variantId: small!, quantity: 1 }],
+      consentIds: [terms!],
+    }
+
+    expect(orderBody(draft, 1500, 'token', true)).toEqual({
+      cart: { ticket: null, addOnIds: [], items: [{ variantId: small, quantity: 1 }] },
+      holderName: 'Ada Lovelace',
+      ageBand: null,
+      customFieldAnswers: [],
+      consentIds: [terms],
+      providerConsentAccepted: false,
+      guardianConsentAcknowledged: false,
+      expectedTotalMinor: 1500,
+      botCheckToken: 'token',
+      extendsOrderId: id(40),
+    })
+    expect(orderBody(filled(), 10000, 'token', true)).not.toHaveProperty('extendsOrderId')
+  })
+
+  it('is kept in the tab apart from the edition’s own checkout, and from another order’s', () => {
+    window.sessionStorage.clear()
+    const more = extensionDraft(offer(), paid())
+    const other = extensionDraft(offer(), paid({ id: id(42) }))
+
+    saveDraft('convention-a', '2027', more)
+    saveDraft('convention-a', '2027', filled())
+
+    expect(loadDraft('convention-a', '2027')).toMatchObject({ extending: null })
+    expect(loadDraft('convention-a', '2027', id(40))).toEqual(more)
+    expect(loadDraft('convention-a', '2027', other.extending!.orderId)).toBeNull()
+    clearDraft('convention-a', '2027', id(40))
+    expect(loadDraft('convention-a', '2027', id(40))).toBeNull()
+    expect(loadDraft('convention-a', '2027')).not.toBeNull()
+  })
+
+  it('takes up a kept one with what was bought since, and drops an add-on bought meanwhile', () => {
+    const kept = {
+      ...extensionDraft(offer(), paid({ bought: { ...paid().bought!, addOnIds: [] } })),
+    }
+    const chosen = { ...kept, addOnIds: [room!, workshop!], step: 'summary' as const }
+
+    const resumed = resumeExtension(offer(), chosen, paid())
+
+    expect(resumed).toMatchObject({
+      addOnIds: [workshop],
+      step: 'summary',
+      extending: { addOnIds: [room] },
+    })
   })
 })
 

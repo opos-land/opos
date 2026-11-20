@@ -287,7 +287,7 @@ export class PaymentsRepository {
   async changeOrder(
     orderId: string,
     changes: Partial<
-      Pick<typeof orders.$inferInsert, 'status' | 'holds' | 'holdEndsAt' | 'paidAt'>
+      Pick<typeof orders.$inferInsert, 'status' | 'holds' | 'holdEndsAt' | 'paidAt' | 'reviewCause'>
     >,
   ) {
     await this.context.tx().update(orders).set(changes).where(eq(orders.id, orderId))

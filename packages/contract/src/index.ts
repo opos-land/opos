@@ -8,6 +8,7 @@ import { engagementContract } from './engagement'
 import { healthContract } from './health'
 import { invitationsContract } from './invitations'
 import { meContract } from './me'
+import { ordersContract } from './orders'
 import { programContract } from './program'
 import { publicContract } from './public'
 import { shopContract } from './shop'
@@ -27,6 +28,7 @@ export const contract = {
   shop: shopContract,
   catalog: catalogContract,
   checkout: checkoutContract,
+  orders: ordersContract,
   payments: paymentsContract,
   engagement: engagementContract,
   admin: adminContract,
@@ -49,6 +51,7 @@ export * from './files'
 export * from './health'
 export * from './invitations'
 export * from './me'
+export * from './orders'
 export * from './program'
 export * from './public'
 export * from './shop'

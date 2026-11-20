@@ -112,7 +112,11 @@ export class PaymentConfirmations {
       const orgs = await this.payments.orgs(tenantId, order.editionId)
       if (decision === 'review') {
         // It keeps what it still holds until an org settles it, and takes nothing it let go.
-        await this.payments.changeOrder(order.id, { status: 'needs-review' })
+        await this.payments.changeOrder(order.id, {
+          status: 'needs-review',
+          // Another amount than the total, or the right one for what is no longer there.
+          reviewCause: payment.paidAmountMinor === order.totalMinor ? 'unavailable' : 'amount',
+        })
         if (order.email) await this.orders.queueEmail(of, 'payment-under-review', order.email)
         for (const org of orgs) await this.orders.queueEmail(of, 'needs-review', org)
         return 'review'

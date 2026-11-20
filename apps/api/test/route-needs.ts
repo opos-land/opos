@@ -84,6 +84,8 @@ export const tenantRequirements: Record<string, Need> = {
   'program.update': program('write'),
   'program.remove': program('write'),
   'program.speakers.put': program('write'),
+  'orders.list': tickets('read'),
+  'orders.get': tickets('read'),
   'checkout.placeOrder': anyAccount,
   'checkout.startPaymentAttempt': anyAccount,
   'engagement.like': anyAccount,

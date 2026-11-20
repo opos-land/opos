@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import {
   createTenant,
   migrationDb,
@@ -480,7 +480,13 @@ export async function addOrder(
   values: {
     status?: string
     holds?: boolean
-    email?: string
+    /** Null for a manual order, which nobody placed in the shop. */
+    email?: string | null
+    holderName?: string
+    placedAt?: string
+    totalMinor?: number
+    manualReason?: 'desk' | 'invoice' | 'complimentary'
+    reviewCause?: 'amount' | 'unavailable'
     ticketTypeId?: string
     addOnIds?: string[]
     variants?: { itemId: string; variantId: string; quantity: number }[]
@@ -493,10 +499,13 @@ export async function addOrder(
   ).join('')
   const [order] = await db.execute<{ id: string }>(sql`
     insert into orders (tenant_id, edition_id, number, status, email, holder_name, age_band,
-      total_minor, holds, hold_ends_at, result_token_hash)
+      total_minor, holds, hold_ends_at, result_token_hash, placed_at, manual_reason, review_cause)
     values (${tenantId}, ${editionId}, ${number}, ${values.status ?? 'awaiting-payment'},
-      ${values.email ?? 'buyer@example.test'}, 'Ada', 'adult', 10000, ${values.holds ?? true},
-      ${values.holdEndsAt ?? '2099-01-01T00:00:00Z'}, repeat('0', 64))
+      ${values.email === undefined ? 'buyer@example.test' : values.email},
+      ${values.holderName ?? 'Ada'}, 'adult', ${values.totalMinor ?? 10000},
+      ${values.holds ?? true}, ${values.holdEndsAt ?? '2099-01-01T00:00:00Z'}, repeat('0', 64),
+      ${values.placedAt ?? sql`now()`}, ${values.manualReason ?? null},
+      ${values.reviewCause ?? null})
     returning id
   `)
   const at = sql`${tenantId}, ${editionId}, ${order!.id}`
@@ -523,6 +532,32 @@ export async function addOrder(
     `)
   }
   return { id: order!.id, number }
+}
+
+/**
+ * The QR code an order carries, as its rows alone: stored by its hash, with nothing sealed. A
+ * code given as replaced is one the order had before, and carries no longer.
+ */
+export async function addQrCode(
+  tenantId: string,
+  editionId: string,
+  orderId: string,
+  code: string,
+  replaced = false,
+) {
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into order_qr_codes (tenant_id, edition_id, code_hash, code, replaced_at)
+    values (${tenantId}, ${editionId}, ${createHash('sha256').update(code).digest('hex')},
+      'sealed', ${replaced ? sql`now()` : null})
+    returning id
+  `)
+  if (!replaced) {
+    await db.execute(sql`
+      insert into order_qr_code_orders (tenant_id, edition_id, order_id, qr_code_id)
+      values (${tenantId}, ${editionId}, ${orderId}, ${row!.id})
+    `)
+  }
+  return row!.id
 }
 
 /** A custom field of an edition as its row alone, last in the list. */

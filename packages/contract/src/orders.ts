@@ -1,0 +1,212 @@
+import { z } from 'zod'
+import { AGE_BANDS } from './catalog'
+import { FAILURE_REASONS, ORDER_STATUSES } from './checkout'
+import { tenantRoute, timestamp } from './common'
+import { PAYMENT_PROVIDERS } from './shop'
+
+// What an org does with an edition's orders in the panel
+// (docs/specs/0006-order-management.md). Reading needs tickets read access to the edition,
+// every change write access.
+
+/** Why an org recorded an order in the panel. */
+export const MANUAL_REASONS = ['desk', 'invoice', 'complimentary'] as const
+
+export type ManualReason = (typeof MANUAL_REASONS)[number]
+
+/** Why an order needs review. */
+export const REVIEW_CAUSES = ['amount', 'unavailable'] as const
+
+export type ReviewCause = (typeof REVIEW_CAUSES)[number]
+
+/** The most orders one page of the list holds. */
+export const MAX_ORDER_PAGE = 100
+
+/** The emails an order sends, by their cause. */
+export const ORDER_EMAIL_KINDS = [
+  'order-confirmation',
+  'order-expired',
+  'payment-under-review',
+  'needs-review',
+  'payment-not-needed',
+  'payment-not-needed-orgs',
+  'order-changed',
+  'order-email-changed',
+  'order-email-replaced',
+  'order-declined',
+  'order-canceled',
+] as const
+
+export const PAYMENT_ATTEMPT_STATUSES = ['started', 'paid', 'failed', 'ended', 'refused'] as const
+
+/** A QR code's text, as the panel tells one from a name or a number typed into the search. */
+export const QR_CODE_PATTERN = /^[A-Z2-7]{32}$/
+
+/**
+ * What an org searches and filters an edition's orders by: a part of a number, a name or an
+ * email; the QR code an order carries; a status; what the order holds; and when it was placed.
+ * A QR code is searched by its SHA-256 hash, which the panel makes: the code itself never
+ * travels in an address, where a log would keep it.
+ */
+export const orderListQuerySchema = z.strictObject({
+  q: z.string().trim().min(1).max(200).optional(),
+  qrCodeHash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+  status: z.enum(ORDER_STATUSES).optional(),
+  ticketTypeId: z.uuid().optional(),
+  addOnId: z.uuid().optional(),
+  itemId: z.uuid().optional(),
+  variantId: z.uuid().optional(),
+  from: timestamp.optional(),
+  to: timestamp.optional(),
+  offset: z.coerce.number().int().min(0).default(0),
+  limit: z.coerce.number().int().min(1).max(MAX_ORDER_PAGE).default(MAX_ORDER_PAGE),
+})
+
+export type OrderListQuery = z.infer<typeof orderListQuerySchema>
+
+/** An order as the list shows it. */
+export const orderSummarySchema = z.object({
+  id: z.uuid(),
+  number: z.string(),
+  status: z.enum(ORDER_STATUSES),
+  /** Empty for a manual order, which nobody placed in the shop. */
+  email: z.string().nullable(),
+  holderName: z.string(),
+  totalMinor: z.number().int(),
+  placedAt: timestamp,
+  manualReason: z.enum(MANUAL_REASONS).nullable(),
+  /** The name of the ticket type it holds a ticket of; null for merchandise alone. */
+  ticketType: z.string().nullable(),
+})
+
+export type OrderSummary = z.infer<typeof orderSummarySchema>
+
+/**
+ * A page of an edition's orders, those needing review first and then the newest, with how many
+ * the search found and how many of the edition need review, whatever the search.
+ */
+export const orderListSchema = z.object({
+  orders: z.array(orderSummarySchema),
+  total: z.number().int().min(0),
+  needsReview: z.number().int().min(0),
+})
+
+export type OrderList = z.infer<typeof orderListSchema>
+
+const lineSchema = z.object({
+  id: z.uuid(),
+  /** A discount is a line of its own, with an amount below zero. */
+  kind: z.enum(['ticket', 'add_on', 'merchandise', 'discount']),
+  /** What the line sells, by its name in the catalog; empty for a discount. */
+  name: z.string(),
+  /** The labels of a variant's values, in the order of its item's axes. */
+  variant: z.array(z.string()),
+  /** For a merchandise line: its item and its variant, which a swap changes. */
+  merchandiseItemId: z.uuid().nullable(),
+  variantId: z.uuid().nullable(),
+  quantity: z.number().int(),
+  unitAmountMinor: z.number().int(),
+  amountMinor: z.number().int(),
+  handedOutAt: timestamp.nullable(),
+})
+
+const attemptSchema = z.object({
+  id: z.uuid(),
+  provider: z.enum(PAYMENT_PROVIDERS),
+  status: z.enum(PAYMENT_ATTEMPT_STATUSES),
+  amountMinor: z.number().int(),
+  paidAmountMinor: z.number().int().nullable(),
+  startedAt: timestamp,
+  paidAt: timestamp.nullable(),
+  confirmedAt: timestamp.nullable(),
+  moneyWith: z.enum(['convention', 'buyer']).nullable(),
+  failureReason: z.enum(FAILURE_REASONS).nullable(),
+  /** The provider's own code and words of a failure, for the orgs alone. */
+  failureCode: z.string().nullable(),
+  failureMessage: z.string().nullable(),
+  /** What the provider's module keeps of the payment, such as the transaction's number. */
+  information: z.record(z.string(), z.string()),
+})
+
+/** An order as its page shows it: everything the order keeps. */
+export const orderDetailSchema = z.object({
+  id: z.uuid(),
+  number: z.string(),
+  status: z.enum(ORDER_STATUSES),
+  email: z.string().nullable(),
+  holderName: z.string(),
+  ageBand: z.enum(AGE_BANDS).nullable(),
+  guardianConsentAcknowledgedAt: timestamp.nullable(),
+  totalMinor: z.number().int(),
+  /** What the payments the convention holds add up to: beside the total, it tells a difference. */
+  paidMinor: z.number().int(),
+  currency: z.string(),
+  holds: z.boolean(),
+  placedAt: timestamp,
+  paidAt: timestamp.nullable(),
+  manualReason: z.enum(MANUAL_REASONS).nullable(),
+  note: z.string().nullable(),
+  reviewCause: z.enum(REVIEW_CAUSES).nullable(),
+  canceledAt: timestamp.nullable(),
+  cancelReason: z.string().nullable(),
+  declinedAt: timestamp.nullable(),
+  declineReason: z.string().nullable(),
+  /** Whether the order carries a QR code; the code itself is shown to its buyer alone. */
+  hasQrCode: z.boolean(),
+  /** The account the order is attached to, by its email; null for a visitor's. */
+  account: z.string().nullable(),
+  lines: z.array(lineSchema),
+  answers: z.array(z.object({ fieldId: z.uuid(), label: z.string(), answer: z.string() })),
+  consents: z.array(
+    z.object({
+      consentId: z.uuid(),
+      text: z.string(),
+      acceptedAt: timestamp,
+      /** The version of the document accepted with it, when the consent linked one. */
+      document: z
+        .object({ title: z.string(), versionId: z.uuid(), number: z.number().int() })
+        .nullable(),
+    }),
+  ),
+  attempts: z.array(attemptSchema),
+  emails: z.array(
+    z.object({
+      id: z.uuid(),
+      kind: z.enum(ORDER_EMAIL_KINDS),
+      recipient: z.string(),
+      queuedAt: timestamp,
+      sentAt: timestamp.nullable(),
+      failedAttempts: z.number().int(),
+    }),
+  ),
+})
+
+export type OrderDetail = z.infer<typeof orderDetailSchema>
+export type OrderLine = z.infer<typeof lineSchema>
+export type OrderAttempt = z.infer<typeof attemptSchema>
+
+const edition = z.object({ params: z.object({ editionId: z.string() }) })
+const order = z.object({ params: z.object({ editionId: z.string(), orderId: z.string() }) })
+
+export const ordersContract = {
+  list: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/orders',
+      summary:
+        "A page of the edition's orders, those needing review first: searched by number, name, email or the hash of a QR code, filtered by status, product, variant and date; needs tickets>=read",
+    })
+    .input(edition.extend({ query: orderListQuerySchema }))
+    .output(orderListSchema),
+  get: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/orders/{orderId}',
+      summary:
+        'An order with its lines, the data of its ticket holder, its payment attempts and its emails; needs tickets>=read',
+    })
+    .input(order)
+    .output(orderDetailSchema),
+}

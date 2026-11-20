@@ -317,6 +317,7 @@ describe("the settings of an edition's catalog", () => {
     merchPreorderDeadline: null,
     merchOnlyEnabled: false,
     salesClosedMessage: null,
+    pickupInformation: null,
   }
 
   it('start with nothing set and merch-only orders off', async () => {
@@ -333,6 +334,7 @@ describe("the settings of an edition's catalog", () => {
       merchPreorderDeadline: '2027-05-01T21:59:59.000Z',
       merchOnlyEnabled: true,
       salesClosedMessage: 'Tickets return in spring.',
+      pickupInformation: 'At the merchandise desk in hall A, every day from 10 to 18.',
     }
 
     const res = await c.as('patch', '/shop', set).expect(200)
@@ -375,6 +377,8 @@ describe("the settings of an edition's catalog", () => {
     ['a deadline that is no moment', { merchPreorderDeadline: 'in May' }],
     ['a blank message', { salesClosedMessage: ' ' }],
     ['a message over 1000 characters', { salesClosedMessage: 'm'.repeat(1001) }],
+    ['blank pick-up information', { pickupInformation: ' ' }],
+    ['pick-up information over 1000 characters', { pickupInformation: 'p'.repeat(1001) }],
     ['merch-only orders set to a word', { merchOnlyEnabled: 'yes' }],
   ])('refuse %s', async (_, body) => {
     const c = await convention()

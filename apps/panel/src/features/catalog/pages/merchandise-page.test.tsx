@@ -56,6 +56,7 @@ const shop = (fields: object = {}) => ({
   merchPreorderDeadline: null,
   merchOnlyEnabled: false,
   salesClosedMessage: null,
+  pickupInformation: null,
   conditions: {},
   ...fields,
 })
@@ -148,13 +149,38 @@ describe('the merchandise page', () => {
     await waitFor(() => expect(updateShop).toHaveBeenCalledTimes(1))
     expect(updateShop.mock.calls[0]![0]).toEqual({
       params: { editionId: 'edition-2026' },
-      body: { merchPreorderDeadline: '2027-05-01T22:00:00.000Z', merchOnlyEnabled: true },
+      body: {
+        merchPreorderDeadline: '2027-05-01T22:00:00.000Z',
+        merchOnlyEnabled: true,
+        pickupInformation: null,
+      },
     })
 
     fireEvent.change(field(DEADLINE), { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save how merchandise sells' }))
     await waitFor(() => expect(updateShop).toHaveBeenCalledTimes(2))
     expect(updateShop.mock.calls[1]![0]).toMatchObject({ body: { merchPreorderDeadline: null } })
+  })
+
+  // docs/specs/0009-buyer-self-service.md, K7: the edition tells where and when merchandise is
+  // handed over, and the page of an order shows it to the buyer.
+  it('shows the pick-up information, saves what the org writes and clears it when emptied', async () => {
+    readShop.mockResolvedValue(shop({ pickupInformation: 'At the desk in hall A.' }))
+    view()
+    const pickUp = await screen.findByLabelText<HTMLTextAreaElement>('Pick-up information')
+    expect(pickUp.value).toBe('At the desk in hall A.')
+
+    fireEvent.change(pickUp, { target: { value: ' At the desk in hall B, from 10 to 18. ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save how merchandise sells' }))
+    await waitFor(() => expect(updateShop).toHaveBeenCalledTimes(1))
+    expect(updateShop.mock.calls[0]![0]).toMatchObject({
+      body: { pickupInformation: 'At the desk in hall B, from 10 to 18.' },
+    })
+
+    fireEvent.change(pickUp, { target: { value: '  ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save how merchandise sells' }))
+    await waitFor(() => expect(updateShop).toHaveBeenCalledTimes(2))
+    expect(updateShop.mock.calls[1]![0]).toMatchObject({ body: { pickupInformation: null } })
   })
 
   it('lists each item with its price and how many of its variants are out of stock', async () => {

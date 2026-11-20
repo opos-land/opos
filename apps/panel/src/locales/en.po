@@ -2102,6 +2102,10 @@ msgstr "Perks"
 msgid "Permissions in each edition are set on the edition's access page."
 msgstr "Permissions in each edition are set on the edition's access page."
 
+#: src/features/catalog/pages/merchandise-page.tsx
+msgid "Pick-up information"
+msgstr "Pick-up information"
+
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "Picture {number} of {name}"
 msgstr "Picture {number} of {name}"
@@ -3896,6 +3900,10 @@ msgstr "What the order holds"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
 msgstr "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
+
+#: src/features/catalog/pages/merchandise-page.tsx
+msgid "Where and when merchandise is handed over. A buyer reads it on the page of their order. Up to 1000 characters."
+msgstr "Where and when merchandise is handed over. A buyer reads it on the page of their order. Up to 1000 characters."
 
 #: src/features/orders/pages/order-page.tsx
 msgid "Where the money is"

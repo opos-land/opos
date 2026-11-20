@@ -124,6 +124,7 @@ const noSettings = {
   merchPreorderDeadline: null,
   merchOnlyEnabled: false,
   salesClosedMessage: null,
+  pickupInformation: null,
 }
 const nothingMet = {
   'provider-account': false,
@@ -352,6 +353,7 @@ describe('the shop of an edition', () => {
       'merchPreorderDeadline',
       'open',
       'openedAt',
+      'pickupInformation',
       'salesClosedMessage',
     ])
     expect(read.body).toMatchObject({ conditions: everythingMet })

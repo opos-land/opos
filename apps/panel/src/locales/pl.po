@@ -2102,6 +2102,10 @@ msgstr "Bonusy"
 msgid "Permissions in each edition are set on the edition's access page."
 msgstr "Uprawnienia w poszczególnych edycjach ustawia się na stronie dostępu danej edycji."
 
+#: src/features/catalog/pages/merchandise-page.tsx
+msgid "Pick-up information"
+msgstr "Informacja o odbiorze"
+
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "Picture {number} of {name}"
 msgstr "Zdjęcie {number}: {name}"
@@ -3896,6 +3900,10 @@ msgstr "Co zawiera zamówienie"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
 msgstr "Co zawiera akredytacja, na przykład przypinkę albo identyfikator: widoczne dla kupującego, nigdy niesprzedawane osobno."
+
+#: src/features/catalog/pages/merchandise-page.tsx
+msgid "Where and when merchandise is handed over. A buyer reads it on the page of their order. Up to 1000 characters."
+msgstr "Gdzie i kiedy wydawane są gadżety. Kupujący czyta ją na stronie swojego zamówienia. Do 1000 znaków."
 
 #: src/features/orders/pages/order-page.tsx
 msgid "Where the money is"

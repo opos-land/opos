@@ -26,6 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Textarea,
 } from '../../../shared/ui'
 import { useEditionBySlug } from '../../editions'
 import { editionShopOptions, updateEditionShopOptions } from '../../shop'
@@ -132,7 +133,10 @@ export function MerchandisePage() {
   )
 }
 
-/** The pre-order deadline of the edition's merchandise, and whether it takes merch-only orders. */
+/**
+ * The pre-order deadline of the edition's merchandise, whether it takes merch-only orders, and
+ * where and when merchandise is handed over.
+ */
 function Selling({
   shop,
   editionId,
@@ -150,6 +154,7 @@ function Selling({
     shop.merchPreorderDeadline ? time.toInput(shop.merchPreorderDeadline) : '',
   )
   const [merchOnly, setMerchOnly] = useState(shop.merchOnlyEnabled)
+  const [pickUp, setPickUp] = useState(shop.pickupInformation ?? '')
   const [invalid, setInvalid] = useState(false)
   const zone = time.timeZone
   const update = useMutation({
@@ -165,7 +170,11 @@ function Selling({
     if (deadline === '' || merchPreorderDeadline !== null) {
       update.mutate({
         params: { editionId },
-        body: { merchPreorderDeadline, merchOnlyEnabled: merchOnly },
+        body: {
+          merchPreorderDeadline,
+          merchOnlyEnabled: merchOnly,
+          pickupInformation: pickUp.trim() || null,
+        },
       })
     }
   }
@@ -208,6 +217,20 @@ function Selling({
                 {t`On: the shop also takes an order with no ticket`}
               </NativeSelectOption>
             </NativeSelect>
+          )}
+        </FormField>
+        <FormField
+          label={t`Pick-up information`}
+          hint={t`Where and when merchandise is handed over. A buyer reads it on the page of their order. Up to 1000 characters.`}
+        >
+          {(control) => (
+            <Textarea
+              {...control}
+              rows={3}
+              maxLength={1000}
+              value={pickUp}
+              onChange={(event) => setPickUp(event.target.value)}
+            />
           )}
         </FormField>
       </FieldSet>

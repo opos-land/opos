@@ -51,6 +51,8 @@ export const editionShopSchema = z.object({
   merchOnlyEnabled: z.boolean(),
   /** What the shop shows while nothing is on sale. */
   salesClosedMessage: z.string().nullable(),
+  /** Where and when merchandise is handed over, as the page of an order tells its buyer. */
+  pickupInformation: z.string().nullable(),
   conditions: z.object({
     'provider-account': z.boolean(),
     'seller-details': z.boolean(),
@@ -85,6 +87,7 @@ export const updateEditionShopSchema = z
     merchPreorderDeadline: timestamp.nullable(),
     merchOnlyEnabled: z.boolean(),
     salesClosedMessage: z.string().trim().min(1).max(1000).nullable(),
+    pickupInformation: z.string().trim().min(1).max(1000).nullable(),
   })
   .partial()
 

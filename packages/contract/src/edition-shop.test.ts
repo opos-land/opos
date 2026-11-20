@@ -43,6 +43,7 @@ describe('the shop of an edition', () => {
       'merchPreorderDeadline',
       'open',
       'openedAt',
+      'pickupInformation',
       'salesClosedMessage',
     ])
     refused(
@@ -55,6 +56,7 @@ describe('the shop of an edition', () => {
         merchPreorderDeadline: null,
         merchOnlyEnabled: false,
         salesClosedMessage: null,
+        pickupInformation: null,
         conditions: {
           'provider-account': 'fake',
           'seller-details': true,
@@ -100,6 +102,18 @@ describe('the shop of an edition', () => {
     refused(updateEditionShopSchema.safeParse({ merchPreorderDeadline: 'May' }))
     refused(updateEditionShopSchema.safeParse({ salesClosedMessage: ' ' }))
     refused(updateEditionShopSchema.safeParse({ salesClosedMessage: 'm'.repeat(1001) }))
+  })
+
+  // docs/specs/0009-buyer-self-service.md, K7: where and when merchandise is handed over.
+  it('takes the pick-up information as a text of up to 1000 characters, or none', () => {
+    expect(
+      updateEditionShopSchema.parse({ pickupInformation: ' At the desk in hall A. ' }),
+    ).toEqual({ pickupInformation: 'At the desk in hall A.' })
+    expect(updateEditionShopSchema.parse({ pickupInformation: null })).toEqual({
+      pickupInformation: null,
+    })
+    refused(updateEditionShopSchema.safeParse({ pickupInformation: ' ' }))
+    refused(updateEditionShopSchema.safeParse({ pickupInformation: 'p'.repeat(1001) }))
   })
 
   it.each([

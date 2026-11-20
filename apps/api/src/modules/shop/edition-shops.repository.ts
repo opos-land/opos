@@ -12,6 +12,7 @@ export interface StoredEditionShop {
   merchPreorderDeadline: Date | null
   merchOnlyEnabled: boolean
   salesClosedMessage: string | null
+  pickupInformation: string | null
 }
 
 /** What an org sets of a shop: everything but whether it is open. */
@@ -26,6 +27,7 @@ const columns = {
   merchPreorderDeadline: editionShops.merchPreorderDeadline,
   merchOnlyEnabled: editionShops.merchOnlyEnabled,
   salesClosedMessage: editionShops.salesClosedMessage,
+  pickupInformation: editionShops.pickupInformation,
 }
 
 /** A shop nothing was set for: closed, with no setting of its own. */
@@ -38,6 +40,7 @@ const UNSET: StoredEditionShop = {
   merchPreorderDeadline: null,
   merchOnlyEnabled: false,
   salesClosedMessage: null,
+  pickupInformation: null,
 }
 
 /**

@@ -49,6 +49,7 @@ export class EditionShopController {
       merchPreorderDeadline: shop.merchPreorderDeadline?.toISOString() ?? null,
       merchOnlyEnabled: shop.merchOnlyEnabled,
       salesClosedMessage: shop.salesClosedMessage,
+      pickupInformation: shop.pickupInformation,
       conditions: await this.conditions.of(editionId),
     }
   }

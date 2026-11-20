@@ -123,6 +123,10 @@ msgstr "An organizer will get in touch with you. You do not need to pay again."
 msgid "Analytics"
 msgstr "Analytics"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Apply the code"
+msgstr "Apply the code"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
 msgstr "At least 8 characters."
@@ -221,6 +225,10 @@ msgstr "Close"
 msgid "Code"
 msgstr "Code"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Code {appliedCode} is applied."
+msgstr "Code {appliedCode} is applied."
+
 #: src/features/account/components/two-factor-card.tsx
 msgid "Code from the app"
 msgstr "Code from the app"
@@ -314,6 +322,14 @@ msgstr "Deleting your account"
 #: src/features/account/components/delete-account.tsx
 msgid "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
 msgstr "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Discount code"
+msgstr "Discount code"
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Discount code {appliedCode}"
+msgstr "Discount code {appliedCode}"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Dismiss"
@@ -768,6 +784,10 @@ msgstr "Remove"
 msgid "Remove {name}"
 msgstr "Remove {name}"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Remove the code"
+msgstr "Remove the code"
+
 #: src/features/conventions/components/like-button.tsx
 msgid "Remove the like"
 msgstr "Remove the like"
@@ -1043,6 +1063,10 @@ msgstr "There was not enough money to pay."
 #: src/shared/ui/irreversible-action.tsx
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
+
+#: src/features/shop/components/summary-step.tsx
+msgid "This code cannot be used for this order."
+msgstr "This code cannot be used for this order."
 
 #: src/features/shop/components/add-ons-step.tsx
 msgid "This only tells the convention how many to expect: no place is reserved."

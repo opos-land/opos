@@ -123,6 +123,10 @@ msgstr "Organizator skontaktuje się z tobą. Nie musisz płacić ponownie."
 msgid "Analytics"
 msgstr "Analityka"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Apply the code"
+msgstr "Zastosuj kod"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
 msgstr "Co najmniej 8 znaków."
@@ -221,6 +225,10 @@ msgstr "Zamknij"
 msgid "Code"
 msgstr "Kod"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Code {appliedCode} is applied."
+msgstr "Kod {appliedCode} został zastosowany."
+
 #: src/features/account/components/two-factor-card.tsx
 msgid "Code from the app"
 msgstr "Kod z aplikacji"
@@ -314,6 +322,14 @@ msgstr "Usunięcie konta"
 #: src/features/account/components/delete-account.tsx
 msgid "Deleting your account cannot be undone. Your likes, reviews, edition sign-ups and memberships in convention teams go with it. Orders placed with your address stay with the conventions as their sales records."
 msgstr "Usunięcia konta nie można cofnąć. Razem z nim znikają twoje polubienia, opinie, zapisy na edycje i członkostwa w zespołach konwentów. Zamówienia złożone z twoim adresem zostają w konwentach jako ich dokumentacja sprzedaży."
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Discount code"
+msgstr "Kod rabatowy"
+
+#: src/features/shop/components/summary-step.tsx
+msgid "Discount code {appliedCode}"
+msgstr "Kod rabatowy {appliedCode}"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "Dismiss"
@@ -768,6 +784,10 @@ msgstr "Usuń"
 msgid "Remove {name}"
 msgstr "Usuń: {name}"
 
+#: src/features/shop/components/summary-step.tsx
+msgid "Remove the code"
+msgstr "Usuń kod"
+
 #: src/features/conventions/components/like-button.tsx
 msgid "Remove the like"
 msgstr "Usuń polubienie"
@@ -1043,6 +1063,10 @@ msgstr "Zabrakło środków na płatność."
 #: src/shared/ui/irreversible-action.tsx
 msgid "This action cannot be undone."
 msgstr "Tej operacji nie można cofnąć."
+
+#: src/features/shop/components/summary-step.tsx
+msgid "This code cannot be used for this order."
+msgstr "Tego kodu nie można użyć w tym zamówieniu."
 
 #: src/features/shop/components/add-ons-step.tsx
 msgid "This only tells the convention how many to expect: no place is reserved."

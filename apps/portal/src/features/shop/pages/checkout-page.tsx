@@ -1,5 +1,11 @@
 import { Trans, useLingui } from '@lingui/react/macro'
-import { type Account, BOT_CHECK_STAND_IN, type Offer, type PlacedOrder } from '@opos/contract'
+import {
+  type Account,
+  BOT_CHECK_STAND_IN,
+  type Cart,
+  type Offer,
+  type PlacedOrder,
+} from '@opos/contract'
 import { formatDateTime, isLocale } from '@opos/i18n'
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -31,6 +37,7 @@ import {
 import { loginPath, registerPath } from '../../auth'
 import {
   conventionOptions,
+  discountQuoteOptions,
   editionOptions,
   offerKey,
   offerOptions,
@@ -41,10 +48,11 @@ import { AddOnsStep } from '../components/add-ons-step'
 import { HolderStep } from '../components/holder-step'
 import { MerchStep } from '../components/merch-step'
 import { stepName, StepsNav } from '../components/steps-nav'
-import { SummaryStep } from '../components/summary-step'
+import { type DiscountState, SummaryStep } from '../components/summary-step'
 import { useMoney } from '../hooks/use-money'
 import {
   beginCheckout,
+  cartOf,
   clearDraft,
   type Draft,
   holderIssues,
@@ -60,6 +68,9 @@ import {
 } from '../model/checkout'
 import { leaveTo } from '../model/leave'
 import { keepResultToken } from '../model/result-token'
+
+/** The cart of a checkout that holds nothing: never priced, it only shapes a query that is off. */
+const NO_CART: Cart = { ticket: null, addOnIds: [], items: [] }
 
 /** The ticket type the address asks for: an identifier, `none` for merchandise alone, or nothing. */
 const asked = (value: string | null) =>
@@ -174,12 +185,21 @@ function Checkout({
     heading.current?.focus()
   }, [step])
 
+  // A discount code is priced by the shop, which alone knows its terms: the Summary asks for
+  // the cart's price with the code, again whenever the cart or the code changes.
+  const entered = draft?.discountCode.trim() ?? ''
+  const coded = useQuery({
+    ...discountQuoteOptions(tenantSlug, editionSlug, draft ? cartOf(draft) : NO_CART, entered),
+    enabled: draft !== null && entered !== '',
+    retry: false,
+  })
+
   const place = useMutation({
-    mutationFn: async (order: { draft: Draft; totalMinor: number }) => {
+    mutationFn: async (order: { draft: Draft; totalMinor: number; withCode: boolean }) => {
       const at = { slug: tenantSlug, editionSlug, editionId }
       const placed: PlacedOrder = await placeOrder(
         at,
-        orderBody(order.draft, order.totalMinor, BOT_CHECK_STAND_IN, signedIn),
+        orderBody(order.draft, order.totalMinor, BOT_CHECK_STAND_IN, signedIn, order.withCode),
         signedIn,
       )
       // The order is placed: the checkout is over, and its result page opens with the token.
@@ -207,6 +227,12 @@ function Checkout({
       const named = (data ?? {}) as { kind?: unknown; id?: unknown; totalMinor?: unknown }
       // What the shop offers changed: it is read again, and the buyer sees it as it is now.
       void queryClient.invalidateQueries({ queryKey: offerKey(tenantSlug, editionSlug) })
+      if (code === 'order.unavailable' && named.kind === 'discount-code') {
+        // The code was used up or ended since it was applied: asked again, the shop refuses
+        // it, and the Summary says so beside the code.
+        void coded.refetch()
+        return
+      }
       if (code === 'order.unavailable' && typeof named.id === 'string') {
         // Back to the step of what ran out, with it marked.
         setRanOut(named.id)
@@ -269,9 +295,19 @@ function Checkout({
   const steps = stepsOf(offer, draft)
   const current: StepId = steps.includes(draft.step) ? draft.step : steps[0]!
   const index = steps.indexOf(current)
-  const quote = quoteOf(offer, draft)
+  const local = quoteOf(offer, draft)
+  // The shop's own price of the cart with the code, while it takes the code.
+  const applied = entered !== '' && coded.isSuccess && !('problem' in local)
+  const quote = applied ? coded.data : local
   const lines = 'problem' in quote ? [] : quote.lines
   const totalMinor = 'problem' in quote ? 0 : quote.totalMinor
+  const refused = coded.isError && errorCode(coded.error) === 'discount-code.refused'
+  const discount: DiscountState = {
+    applied,
+    refused: entered !== '' && refused,
+    pending: entered !== '' && coded.isFetching,
+    failure: entered !== '' && coded.isError && !refused ? coded.error : null,
+  }
   const issues = holderIssues(offer, draft, account?.email ?? null)
   const locale = isLocale(i18n.locale) ? i18n.locale : activeLocale()
   const here = `${location.pathname}${location.search}`
@@ -301,8 +337,10 @@ function Checkout({
       const missing = summaryIssues(offer, draft, totalMinor)
       if (missing.consents.length > 0 || missing.provider || missing.guardian) return
       if ('problem' in quote) return
+      // Never at a price the buyer has not seen: the code's is still being asked.
+      if (discount.pending) return
       setNewTotal(null)
-      place.mutate({ draft, totalMinor })
+      place.mutate({ draft, totalMinor, withCode: applied })
       return
     }
     go(steps[index + 1]!)
@@ -402,6 +440,7 @@ function Checkout({
                 totalMinor={totalMinor}
                 email={account?.email ?? draft.email.trim().toLowerCase()}
                 marked={tried.has('summary')}
+                discount={discount}
                 change={change}
               />
             </>
@@ -420,7 +459,7 @@ function Checkout({
               <span />
             )}
             {current === 'summary' ? (
-              <Button type="submit" disabled={place.isPending}>
+              <Button type="submit" disabled={place.isPending || discount.pending}>
                 {totalMinor > 0 ? (
                   <Trans>Order and pay</Trans>
                 ) : (

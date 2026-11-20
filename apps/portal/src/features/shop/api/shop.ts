@@ -1,4 +1,5 @@
 import {
+  type Cart,
   type PlacedOrder,
   type PlaceOrder,
   type PlaceVisitorOrder,
@@ -25,6 +26,20 @@ export const offerOptions = (slug: string, editionSlug: string) =>
 
 export const offerKey = (slug: string, editionSlug: string) =>
   accountApi.public.shop.queryKey({ input: { params: { slug, editionSlug } } })
+
+/**
+ * The price of a cart with a discount code: only the API knows a code's terms, so the Summary
+ * asks it. A code that cannot be used is refused with one answer, whatever is wrong with it.
+ */
+export const discountQuoteOptions = (
+  slug: string,
+  editionSlug: string,
+  cart: Cart,
+  discountCode: string,
+) =>
+  accountApi.public.shopQuote.queryOptions({
+    input: { params: { slug, editionSlug }, body: { ...cart, discountCode } },
+  })
 
 /** Where the order of a checkout is placed: its edition, by both of its names. */
 export interface PlacedIn {

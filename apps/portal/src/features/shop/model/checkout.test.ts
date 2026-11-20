@@ -406,6 +406,29 @@ describe('the order a checkout places', () => {
   })
 })
 
+// docs/specs/0008-discount-codes.md, K1 and K2: an order takes one code, the one applied.
+describe('the order a checkout places with a discount code', () => {
+  it('names the code that was applied, and none otherwise', () => {
+    const draft = filled({ discountCode: ' EARLY10 ' })
+
+    expect(orderBody(draft, 9000, 'token', false, true)).toMatchObject({
+      discountCode: 'EARLY10',
+      expectedTotalMinor: 9000,
+    })
+    // Entered, and refused by the shop: the order is placed without it.
+    expect(orderBody(draft, 10000, 'token', false, false)).not.toHaveProperty('discountCode')
+    expect(orderBody(filled(), 10000, 'token', false, true)).not.toHaveProperty('discountCode')
+  })
+
+  it('reads a checkout kept before the shop took codes as one with no code', () => {
+    const older: Partial<Draft> = filled({ step: 'summary' })
+    delete older.discountCode
+    window.sessionStorage.setItem('opos-checkout:convention-a:2026', JSON.stringify(older))
+
+    expect(loadDraft('convention-a', '2026')).toMatchObject({ step: 'summary', discountCode: '' })
+  })
+})
+
 describe('an unfinished checkout', () => {
   beforeEach(() => window.sessionStorage.clear())
 

@@ -13,6 +13,7 @@ import { ids, offer } from './offer.fixture'
 const api = vi.hoisted(() => ({
   offer: vi.fn(),
   place: vi.fn(),
+  quote: vi.fn(),
   start: vi.fn(),
   leave: vi.fn(),
   notify: vi.fn(),
@@ -30,6 +31,10 @@ vi.mock('../api/shop', () => ({
   offerOptions: () => ({ queryKey: ['offer'], queryFn: api.offer }),
   offerKey: () => ['offer'],
   placeOrder: api.place,
+  discountQuoteOptions: (_: string, __: string, cart: object, discountCode: string) => ({
+    queryKey: ['quote', cart, discountCode],
+    queryFn: () => api.quote(cart, discountCode) as unknown,
+  }),
   startPaymentAttempt: api.start,
 }))
 vi.mock('../model/leave', () => ({ leaveTo: api.leave }))
@@ -111,6 +116,7 @@ beforeEach(() => {
     totalMinor: 12000,
     resultToken: 'token-1',
   })
+  api.quote.mockReset()
   api.start.mockReset().mockResolvedValue({ redirectUrl: 'https://provider.test/pay/1' })
   api.leave.mockReset()
   api.notify.mockReset()
@@ -344,6 +350,146 @@ describe('CheckoutPage', () => {
     // The order is placed: the checkout is forgotten, and its result page opens with the token.
     expect(loadDraft('convention-a', '2027')).toBeNull()
     expect(window.sessionStorage.getItem('opos-order-result:order-1')).toBe('token-1')
+  })
+
+  // docs/specs/0008-discount-codes.md, K1: a valid code appears as a line of its own, and the
+  // total updates. The API alone knows a code's terms, so the Summary asks it for the price.
+  it('takes a discount code at the Summary: its line, the new total, and the order placed with both', async () => {
+    api.quote.mockResolvedValue({
+      currency: 'PLN',
+      lines: [
+        {
+          kind: 'ticket',
+          ticketTypeId: ids.standard,
+          name: 'Standard',
+          variant: [],
+          quantity: 1,
+          unitAmountMinor: 12000,
+          amountMinor: 12000,
+        },
+        {
+          kind: 'discount',
+          name: 'early10',
+          variant: [],
+          quantity: 1,
+          unitAmountMinor: -1200,
+          amountMinor: -1200,
+        },
+      ],
+      totalMinor: 10800,
+    })
+    saveDraft('convention-a', '2027', kept({ step: 'summary' }))
+    view()
+    await stepHeading('Summary')
+
+    type('Discount code', ' EARLY10 ')
+    press('Apply the code')
+
+    expect(await screen.findByRole('rowheader', { name: 'Discount code EARLY10' })).toBeDefined()
+    expect(api.quote).toHaveBeenCalledWith(
+      { ticket: { ticketTypeId: ids.standard }, addOnIds: [], items: [] },
+      'EARLY10',
+    )
+    const total = screen.getByRole('rowheader', { name: 'Total due' }).closest('tr')!
+    expect(within(total).getByText(/108[.,]00/)).toBeDefined()
+    press('Select all required')
+    fireEvent.click(screen.getByRole('checkbox', { name: /terms of the provider/ }))
+    press('Order and pay')
+
+    await waitFor(() => expect(api.place).toHaveBeenCalled())
+    expect(api.place.mock.calls[0]![1]).toMatchObject({
+      discountCode: 'EARLY10',
+      expectedTotalMinor: 10800,
+    })
+  })
+
+  // K4: the buyer is told only that the code cannot be used for this order.
+  it('says one thing of a code that cannot be used, and places the order without it', async () => {
+    api.quote.mockRejectedValue(new ORPCError('discount-code.refused', { status: 409 }))
+    saveDraft('convention-a', '2027', kept({ step: 'summary' }))
+    view()
+    await stepHeading('Summary')
+
+    type('Discount code', 'nobody-knows')
+    press('Apply the code')
+
+    expect(await screen.findByText('This code cannot be used for this order.')).toBeDefined()
+    expect(screen.queryByRole('rowheader', { name: /Discount code/ })).toBeNull()
+    press('Select all required')
+    fireEvent.click(screen.getByRole('checkbox', { name: /terms of the provider/ }))
+    press('Order and pay')
+
+    await waitFor(() => expect(api.place).toHaveBeenCalled())
+    const body = api.place.mock.calls[0]![1] as Record<string, unknown>
+    expect(body).toMatchObject({ expectedTotalMinor: 12000 })
+    expect(body).not.toHaveProperty('discountCode')
+  })
+
+  it('lets the buyer remove a code that was applied', async () => {
+    api.quote.mockResolvedValue({ currency: 'PLN', lines: [], totalMinor: 10800 })
+    saveDraft('convention-a', '2027', kept({ step: 'summary', discountCode: 'EARLY10' }))
+    view()
+    await stepHeading('Summary')
+    await screen.findByText(/Code EARLY10 is applied/)
+
+    press('Remove the code')
+
+    await waitFor(() => expect(screen.queryByText(/Code EARLY10 is applied/)).toBeNull())
+    expect(loadDraft('convention-a', '2027')).toMatchObject({ discountCode: '' })
+  })
+
+  // An order is never placed at a price the buyer did not see: not while the code is priced.
+  it('places nothing while the shop still prices the code', async () => {
+    let answer: (quote: object) => void = () => undefined
+    api.quote.mockReturnValue(new Promise((resolve) => (answer = resolve)))
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        discountCode: 'EARLY10',
+        consentIds: [ids.terms],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    const order = screen.getByRole<HTMLButtonElement>('button', { name: 'Order and pay' })
+    expect(order.disabled).toBe(true)
+    fireEvent.submit(order.closest('form')!)
+    expect(api.place).not.toHaveBeenCalled()
+
+    answer({ currency: 'PLN', lines: [], totalMinor: 10800 })
+    await screen.findByText(/Code EARLY10 is applied/)
+    expect(order.disabled).toBe(false)
+  })
+
+  // K7: used up after the buyer entered it, the order is not placed, and the code is marked.
+  it('keeps the buyer at the Summary with the code marked when it was used up meanwhile', async () => {
+    api.quote.mockResolvedValueOnce({ currency: 'PLN', lines: [], totalMinor: 10800 })
+    api.quote.mockRejectedValue(new ORPCError('discount-code.refused', { status: 409 }))
+    api.place.mockRejectedValue(
+      new ORPCError('order.unavailable', { status: 409, data: { kind: 'discount-code' } }),
+    )
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        discountCode: 'LAST-USE',
+        consentIds: [ids.terms],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+    await screen.findByText(/Code LAST-USE is applied/)
+
+    press('Order and pay')
+
+    expect(await screen.findByText('This code cannot be used for this order.')).toBeDefined()
+    expect(await stepHeading('Summary')).toBeDefined()
   })
 
   it('asks a teen’s buyer to acknowledge the guardian consent before the order is placed', async () => {

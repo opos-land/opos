@@ -1,7 +1,15 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type Offer, type PricedLine } from '@opos/contract'
+import { useState } from 'react'
 import { env } from '../../../shared/config/env'
-import { Button, CheckboxField, linkClass } from '../../../shared/ui'
+import {
+  Button,
+  CheckboxField,
+  ErrorMessage,
+  FormField,
+  Input,
+  linkClass,
+} from '../../../shared/ui'
 import { useMoney, useSentence } from '../hooks/use-money'
 import { type Draft, summaryIssues } from '../model/checkout'
 import { documentVersionUrl } from '../model/files'
@@ -10,6 +18,17 @@ import { documentVersionUrl } from '../model/files'
 export const lineName = (line: PricedLine) => {
   const name = line.variant.length > 0 ? `${line.name} (${line.variant.join(', ')})` : line.name
   return line.quantity > 1 ? `${line.quantity} × ${name}` : name
+}
+
+/** What the shop made of the discount code a buyer entered at the Summary. */
+export interface DiscountState {
+  /** The shop took the code: its line is among the lines, and the total is lowered. */
+  applied: boolean
+  /** The shop refused it: the one thing a buyer is told of a code that cannot be used. */
+  refused: boolean
+  pending: boolean
+  /** Anything else that went wrong asking, such as too many tries. */
+  failure: unknown
 }
 
 /**
@@ -26,6 +45,7 @@ export function SummaryStep({
   totalMinor,
   email,
   marked,
+  discount,
   change,
 }: {
   offer: Offer
@@ -37,6 +57,8 @@ export function SummaryStep({
   email: string
   /** Whether the buyer tried to place the order: what is missing shows from then on. */
   marked: boolean
+  /** What the shop made of the discount code the draft holds. */
+  discount: DiscountState
   change: (changes: Partial<Draft>) => void
 }) {
   const { t } = useLingui()
@@ -50,6 +72,9 @@ export function SummaryStep({
       <Trans>Accept this to place the order.</Trans>
     </strong>
   )
+  // The field keeps what is typed; the draft holds a code only once the buyer applies it.
+  const [code, setCode] = useState(draft.discountCode)
+  const appliedCode = draft.discountCode.trim().toUpperCase()
   const tick = (id: string, ticked: boolean) =>
     change({
       consentIds: ticked
@@ -72,7 +97,11 @@ export function SummaryStep({
           {lines.map((line) => (
             <tr key={`${line.kind}:${line.variantId ?? line.addOnId ?? line.ticketTypeId}`}>
               <th scope="row" className="py-1 pr-2 font-normal">
-                {lineName(line)}
+                {line.kind === 'discount' ? (
+                  <Trans>Discount code {appliedCode}</Trans>
+                ) : (
+                  lineName(line)
+                )}
               </th>
               <td className="py-1 text-right whitespace-nowrap">{money(line.amountMinor)}</td>
             </tr>
@@ -91,6 +120,60 @@ export function SummaryStep({
         <p className="text-muted-foreground text-sm">
           <Trans>Merchandise is picked up at the convention. It is not shipped.</Trans>
         </p>
+      )}
+      {discount.applied ? (
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          <Trans>Code {appliedCode} is applied.</Trans>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setCode('')
+              change({ discountCode: '' })
+            }}
+          >
+            <Trans>Remove the code</Trans>
+          </Button>
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex max-w-md items-end gap-2">
+            <div className="flex-1">
+              <FormField
+                label={<Trans>Discount code</Trans>}
+                error={discount.refused && <Trans>This code cannot be used for this order.</Trans>}
+              >
+                {(control) => (
+                  <Input
+                    {...control}
+                    value={code}
+                    maxLength={60}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    onChange={(event) => setCode(event.target.value)}
+                    onKeyDown={(event) => {
+                      // Enter applies the code: it never places the order.
+                      if (event.key !== 'Enter') return
+                      event.preventDefault()
+                      change({ discountCode: code.trim() })
+                    }}
+                  />
+                )}
+              </FormField>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={discount.pending || code.trim() === ''}
+              onClick={() => change({ discountCode: code.trim() })}
+            >
+              <Trans>Apply the code</Trans>
+            </Button>
+          </div>
+          <ErrorMessage error={discount.failure} />
+        </div>
       )}
 
       <fieldset className="flex flex-col gap-3">

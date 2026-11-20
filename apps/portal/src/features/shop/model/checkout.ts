@@ -34,6 +34,11 @@ const draftSchema = z.object({
   guardianAcknowledged: z.boolean(),
   /** A buyer who is not signed in chose to go on without an account. */
   asVisitor: z.boolean(),
+  /**
+   * The discount code the buyer entered at the Summary, as typed; empty for none. The shop alone
+   * knows a code's terms: whether this one is applied is what its quote answers.
+   */
+  discountCode: z.string().default(''),
   step: z.enum(STEPS),
 })
 
@@ -53,6 +58,7 @@ export const emptyDraft = (ticketTypeId: string | null): Draft => ({
   providerConsent: false,
   guardianAcknowledged: false,
   asVisitor: false,
+  discountCode: '',
   step: 'holder',
 })
 
@@ -235,6 +241,8 @@ export function orderBody(
   expectedTotalMinor: number,
   botCheckToken: string,
   signedIn: boolean,
+  /** Whether the shop applied the code the draft holds: one it refused is not sent. */
+  discountApplied = false,
 ): PlaceOrder | PlaceVisitorOrder {
   const merchOnly = draft.ticketTypeId === null
   const order: PlaceOrder = {
@@ -251,6 +259,8 @@ export function orderBody(
     guardianConsentAcknowledged: draft.guardianAcknowledged,
     expectedTotalMinor,
     botCheckToken,
+    ...(discountApplied &&
+      draft.discountCode.trim() !== '' && { discountCode: draft.discountCode.trim() }),
   }
   if (signedIn) return order
   return {

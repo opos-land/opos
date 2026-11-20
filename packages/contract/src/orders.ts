@@ -45,6 +45,23 @@ export const ORG_EMAIL_KINDS: readonly (typeof ORDER_EMAIL_KINDS)[number][] = [
   'payment-not-needed-orgs',
 ]
 
+/**
+ * The emails that hand an order over: with its QR code, with an order link, or with both. What
+ * is kept of one leaves those out.
+ */
+export const HANDING_OVER_EMAIL_KINDS: readonly (typeof ORDER_EMAIL_KINDS)[number][] = [
+  'order-confirmation',
+  'order-email-changed',
+  'order-link',
+  'pre-edition-reminder',
+]
+
+/** What stands, in the kept text of an email, where it had what only its recipient sees. */
+export const LEFT_OUT = '[…]'
+
+/** The most emails one page of the list holds. */
+export const MAX_EMAIL_PAGE = 100
+
 export const PAYMENT_ATTEMPT_STATUSES = ['started', 'paid', 'failed', 'ended', 'refused'] as const
 
 /** A QR code's text, as the panel tells one from a name or a number typed into the search. */
@@ -103,6 +120,58 @@ export const orderListSchema = z.object({
 })
 
 export type OrderList = z.infer<typeof orderListSchema>
+
+/** An email of an order, as its order's page lists it. */
+const emailSchema = z.object({
+  id: z.uuid(),
+  kind: z.enum(ORDER_EMAIL_KINDS),
+  /** Null for an alert to the orgs: their addresses stay behind the team's own permission. */
+  recipient: z.string().nullable(),
+  queuedAt: timestamp,
+  sentAt: timestamp.nullable(),
+  /** Set for an email not sent because the order left its address before it went out. */
+  withdrawnAt: timestamp.nullable(),
+  failedAttempts: z.number().int(),
+})
+
+/**
+ * What an org searches an edition's emails by: a part of the address one went to or of the
+ * number of its order.
+ */
+export const orderEmailListQuerySchema = z.strictObject({
+  q: z.string().trim().min(1).max(200).optional(),
+  offset: z.coerce.number().int().min(0).default(0),
+  limit: z.coerce.number().int().min(1).max(MAX_EMAIL_PAGE).default(MAX_EMAIL_PAGE),
+})
+
+export type OrderEmailListQuery = z.infer<typeof orderEmailListQuerySchema>
+
+/** An email as the list of an edition's emails shows it: with the order it is of. */
+export const orderEmailSummarySchema = emailSchema.extend({
+  order: z.object({ id: z.uuid(), number: z.string() }),
+})
+
+export type OrderEmailSummary = z.infer<typeof orderEmailSummarySchema>
+
+/** A page of the emails of an edition's orders, the newest first, with how many the search found. */
+export const orderEmailListSchema = z.object({
+  emails: z.array(orderEmailSummarySchema),
+  total: z.number().int().min(0),
+})
+
+export type OrderEmailList = z.infer<typeof orderEmailListSchema>
+
+/**
+ * An email with what it said: its subject and its text as they went out, in the language they
+ * went out in, with `LEFT_OUT` where the QR code and the token of the order link were. Both are
+ * null for an email not sent, and for one sent before texts were kept.
+ */
+export const orderEmailDetailSchema = orderEmailSummarySchema.extend({
+  subject: z.string().nullable(),
+  body: z.string().nullable(),
+})
+
+export type OrderEmailDetail = z.infer<typeof orderEmailDetailSchema>
 
 const lineSchema = z.object({
   id: z.uuid(),
@@ -180,19 +249,7 @@ export const orderDetailSchema = z.object({
     }),
   ),
   attempts: z.array(attemptSchema),
-  emails: z.array(
-    z.object({
-      id: z.uuid(),
-      kind: z.enum(ORDER_EMAIL_KINDS),
-      /** Null for an alert to the orgs: their addresses stay behind the team's own permission. */
-      recipient: z.string().nullable(),
-      queuedAt: timestamp,
-      sentAt: timestamp.nullable(),
-      /** Set for an email not sent because the order left its address before it went out. */
-      withdrawnAt: timestamp.nullable(),
-      failedAttempts: z.number().int(),
-    }),
-  ),
+  emails: z.array(emailSchema),
 })
 
 export type OrderDetail = z.infer<typeof orderDetailSchema>
@@ -318,6 +375,7 @@ const order = z.object({ params: z.object({ editionId: z.string(), orderId: z.st
 const line = z.object({
   params: z.object({ editionId: z.string(), orderId: z.string(), lineId: z.string() }),
 })
+const email = z.object({ params: z.object({ editionId: z.string(), emailId: z.string() }) })
 
 export const ordersContract = {
   list: tenantRoute
@@ -338,6 +396,24 @@ export const ordersContract = {
     })
     .input(order)
     .output(orderDetailSchema),
+  emails: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/order-emails',
+      summary:
+        "A page of the emails of the edition's orders, the newest first: searched by the address one went to or by its order's number; needs tickets>=read",
+    })
+    .input(edition.extend({ query: orderEmailListQuerySchema }))
+    .output(orderEmailListSchema),
+  email: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/order-emails/{emailId}',
+      summary:
+        'An email of an order with what it said: its subject and its text as they went out, without the QR code and the order link; needs tickets>=read',
+    })
+    .input(email)
+    .output(orderEmailDetailSchema),
   createManual: tenantRoute
     .route({
       method: 'POST',

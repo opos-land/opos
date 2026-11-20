@@ -23,6 +23,7 @@ import {
 } from '@opos/db'
 import { and, asc, desc, eq, isNotNull, isNull, lte, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
+import { type KeptEmail } from './kept-email'
 import { type OrderEmailKind } from './orders.repository'
 
 /** An email the outbox took to send. */
@@ -72,11 +73,12 @@ export class OrderEmailsRepository {
     return email
   }
 
-  async sent(emailId: string, at: Date) {
+  /** An email that went out, with what is kept of what it said. */
+  async sent(emailId: string, at: Date, said: KeptEmail) {
     await this.context
       .tx()
       .update(orderEmails)
-      .set({ sentAt: at })
+      .set({ sentAt: at, subject: said.subject, body: said.body })
       .where(eq(orderEmails.id, emailId))
   }
 

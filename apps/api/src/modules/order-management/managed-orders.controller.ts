@@ -42,6 +42,22 @@ export class ManagedOrdersController {
     )
   }
 
+  @Implement(contract.orders.emails)
+  @RequireEdition('tickets', 'read')
+  emails() {
+    return implement(contract.orders.emails).handler(({ input }) =>
+      this.reads.emails(input.params.editionId, input.query),
+    )
+  }
+
+  @Implement(contract.orders.email)
+  @RequireEdition('tickets', 'read')
+  email() {
+    return implement(contract.orders.email).handler(({ input }) =>
+      this.reads.email(input.params.editionId, input.params.emailId),
+    )
+  }
+
   @Implement(contract.orders.createManual)
   @RequireEdition('tickets', 'write')
   createManual() {

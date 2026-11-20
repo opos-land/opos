@@ -783,6 +783,37 @@ export const queueOrderEmail = (
     values (${tenantId}, ${editionId}, ${orderId}, ${kind}, ${recipient})
   `)
 
+/**
+ * An email of an order as its row alone, in the state given: queued a while ago, sent with what
+ * it said, withdrawn or failed. For a test of what an org reads of the emails.
+ */
+export async function addOrderEmail(
+  tenantId: string,
+  editionId: string,
+  orderId: string,
+  values: {
+    kind?: string
+    recipient?: string
+    queuedAt?: string
+    sentAt?: string | null
+    withdrawnAt?: string | null
+    failedAttempts?: number
+    subject?: string | null
+    body?: string | null
+  } = {},
+) {
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into order_emails (tenant_id, edition_id, order_id, kind, recipient, queued_at, sent_at,
+      withdrawn_at, failed_attempts, subject, body)
+    values (${tenantId}, ${editionId}, ${orderId}, ${values.kind ?? 'order-confirmation'},
+      ${values.recipient ?? 'buyer@example.test'}, ${values.queuedAt ?? new Date().toISOString()},
+      ${values.sentAt ?? null}, ${values.withdrawnAt ?? null}, ${values.failedAttempts ?? 0},
+      ${values.subject ?? null}, ${values.body ?? null})
+    returning id
+  `)
+  return row!.id
+}
+
 /** A custom field of an edition as its row alone, last in the list. */
 export async function addCustomField(
   tenantId: string,

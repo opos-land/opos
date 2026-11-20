@@ -52,13 +52,14 @@ export class MailService {
   /**
    * Renders an email of an order in `locale` and sends it to `to`. Its pictures travel with it,
    * each under the content id a part names: an email client loads nothing from another address.
+   * Answers the subject and the text that went out.
    */
   async sendOrderEmail(message: {
     to: string
     locale: Locale
     content: OrderEmailContent
     pictures?: readonly { cid: string; filename: string; content: Buffer }[]
-  }) {
+  }): Promise<{ subject: string; text: string }> {
     const i18n = setupI18n()
     await activateLocale(i18n, message.locale)
     const { subject, text, html } = renderOrderEmail(i18n, message.content)
@@ -73,5 +74,6 @@ export class MailService {
         contentDisposition: 'inline' as const,
       })),
     })
+    return { subject, text }
   }
 }

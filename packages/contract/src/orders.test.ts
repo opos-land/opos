@@ -3,12 +3,20 @@ import {
   cancelOrderSchema,
   changeOrderEmailSchema,
   declineOrderSchema,
+  HANDING_OVER_EMAIL_KINDS,
   handOutSchema,
+  LEFT_OUT,
   manualOrderSchema,
   MANUAL_REASONS,
+  MAX_EMAIL_PAGE,
   MAX_ORDER_PAGE,
+  ORDER_EMAIL_KINDS,
   orderDetailSchema,
+  orderEmailDetailSchema,
+  orderEmailListQuerySchema,
+  orderEmailListSchema,
   orderListQuerySchema,
+  ORG_EMAIL_KINDS,
   orderSummarySchema,
   productionNumbersSchema,
   QR_CODE_PATTERN,
@@ -259,5 +267,76 @@ describe('the production numbers', () => {
       deadline: null,
       items: [],
     })
+  })
+})
+
+// The emails of an edition's orders, and what each said (F4).
+describe('the emails of an edition’s orders', () => {
+  const email = {
+    id: '00000000-0000-4000-8000-000000000001',
+    kind: 'order-confirmation',
+    recipient: 'buyer@example.test',
+    queuedAt: '2026-05-01T10:00:00.000Z',
+    sentAt: '2026-05-01T10:00:05.000Z',
+    withdrawnAt: null,
+    failedAttempts: 0,
+    order: { id: '00000000-0000-4000-8000-000000000002', number: 'ABCDEFGH23' },
+  }
+
+  it('are searched by a text, and read a page of at most a hundred at a time', () => {
+    expect(orderEmailListQuerySchema.parse({})).toEqual({ offset: 0, limit: MAX_EMAIL_PAGE })
+    expect(orderEmailListQuerySchema.parse({ q: ' ada@ ', offset: '100', limit: '50' })).toEqual({
+      q: 'ada@',
+      offset: 100,
+      limit: 50,
+    })
+    expect(MAX_EMAIL_PAGE).toBe(100)
+    for (const query of [
+      { limit: MAX_EMAIL_PAGE + 1 },
+      { offset: -1 },
+      { q: ' ' },
+      { kind: 'x' },
+    ]) {
+      expect(orderEmailListQuerySchema.safeParse(query).success).toBe(false)
+    }
+  })
+
+  it('are listed with their orders, and without what they said', () => {
+    const list = { emails: [email, { ...email, recipient: null, sentAt: null }], total: 2 }
+
+    expect(orderEmailListSchema.parse(list)).toEqual(list)
+    // What an email said is read on its own page.
+    expect(
+      orderEmailListSchema.parse({
+        emails: [{ ...email, subject: 'Paid', body: 'Thank you.' }],
+        total: 1,
+      }).emails[0],
+    ).toEqual(email)
+    expect(
+      orderEmailListSchema.safeParse({ emails: [{ ...email, order: undefined }], total: 1 })
+        .success,
+    ).toBe(false)
+  })
+
+  it('say what they said once sent, and nothing before', () => {
+    const said = { ...email, subject: 'Your order is paid', body: `The QR code: ${LEFT_OUT}` }
+
+    expect(orderEmailDetailSchema.parse(said)).toEqual(said)
+    const silent = { ...email, sentAt: null, subject: null, body: null }
+    expect(orderEmailDetailSchema.parse(silent)).toEqual(silent)
+    expect(orderEmailDetailSchema.safeParse(email).success).toBe(false)
+  })
+
+  it('name the emails that hand an order over, none of them an alert to the orgs', () => {
+    expect(HANDING_OVER_EMAIL_KINDS).toEqual([
+      'order-confirmation',
+      'order-email-changed',
+      'order-link',
+      'pre-edition-reminder',
+    ])
+    for (const kind of HANDING_OVER_EMAIL_KINDS) {
+      expect(ORDER_EMAIL_KINDS).toContain(kind)
+      expect(ORG_EMAIL_KINDS).not.toContain(kind)
+    }
   })
 })

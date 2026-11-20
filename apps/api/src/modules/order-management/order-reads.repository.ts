@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common'
 import {
   ORG_EMAIL_KINDS,
   type OrderDetail,
+  type OrderEmailDetail,
+  type OrderEmailList,
+  type OrderEmailListQuery,
   type OrderList,
   type OrderListQuery,
   type OrderSummary,
@@ -38,6 +41,7 @@ import {
   ilike,
   inArray,
   lte,
+  notInArray,
   or,
   type SQL,
   sql,
@@ -51,6 +55,44 @@ import { isUuid } from '../../common/uuid'
 const part = (text: string) => `%${text.replace(/[\\%_]/g, '\\$&')}%`
 
 const iso = (moment: Date | null) => moment?.toISOString() ?? null
+
+/** What a list and a page tell of an email, with the order it is of. */
+const EMAIL = {
+  id: orderEmails.id,
+  kind: orderEmails.kind,
+  recipient: orderEmails.recipient,
+  queuedAt: orderEmails.queuedAt,
+  sentAt: orderEmails.sentAt,
+  withdrawnAt: orderEmails.withdrawnAt,
+  failedAttempts: orderEmails.failedAttempts,
+  orderId: orders.id,
+  orderNumber: orders.number,
+}
+
+interface EmailRow {
+  id: string
+  kind: (typeof orderEmails.kind.enumValues)[number]
+  recipient: string
+  queuedAt: Date
+  sentAt: Date | null
+  withdrawnAt: Date | null
+  failedAttempts: number
+  orderId: string
+  orderNumber: string
+}
+
+/**
+ * An email as an org reads it. An alert to the orgs is shown without its address: who is in the
+ * team, and under which address, is behind the team's own permission.
+ */
+const emailOf = ({ orderId, orderNumber, ...email }: EmailRow) => ({
+  ...email,
+  recipient: ORG_EMAIL_KINDS.includes(email.kind) ? null : email.recipient,
+  queuedAt: email.queuedAt.toISOString(),
+  sentAt: iso(email.sentAt),
+  withdrawnAt: iso(email.withdrawnAt),
+  order: { id: orderId, number: orderNumber },
+})
 
 /**
  * What an org reads of the orders of an edition of the tenant in context
@@ -307,6 +349,58 @@ export class OrderReadsRepository {
         withdrawnAt: iso(email.withdrawnAt),
       })),
     }
+  }
+
+  /**
+   * A page of the emails of the edition's orders, the newest first (F4). An alert to the orgs is
+   * found by its order's number alone: a search by an address would tell who is in the team.
+   */
+  async emails(editionId: string, query: OrderEmailListQuery): Promise<OrderEmailList> {
+    const tx = this.context.tx()
+    const text = query.q === undefined ? undefined : part(query.q)
+    const found = and(
+      eq(orderEmails.editionId, editionId),
+      text === undefined
+        ? undefined
+        : or(
+            ilike(orders.number, text),
+            and(
+              notInArray(orderEmails.kind, [...ORG_EMAIL_KINDS]),
+              ilike(orderEmails.recipient, text),
+            ),
+          ),
+    )
+    const rows = await tx
+      .select(EMAIL)
+      .from(orderEmails)
+      .innerJoin(orders, eq(orders.id, orderEmails.orderId))
+      .where(found)
+      .orderBy(desc(orderEmails.queuedAt), desc(orderEmails.id))
+      .limit(query.limit)
+      .offset(query.offset)
+    const [all] = await tx
+      .select({ total: count() })
+      .from(orderEmails)
+      .innerJoin(orders, eq(orders.id, orderEmails.orderId))
+      .where(found)
+    return { emails: rows.map(emailOf), total: all!.total }
+  }
+
+  /**
+   * An email with what it said, or 404; one of another edition is no email of this path. What is
+   * kept of it has neither its QR code nor the token of its order link.
+   */
+  async email(editionId: string, emailId: string): Promise<OrderEmailDetail> {
+    if (!isUuid(emailId)) throw notFound('email')
+    const [row] = await this.context
+      .tx()
+      .select({ ...EMAIL, subject: orderEmails.subject, body: orderEmails.body })
+      .from(orderEmails)
+      .innerJoin(orders, eq(orders.id, orderEmails.orderId))
+      .where(and(eq(orderEmails.editionId, editionId), eq(orderEmails.id, emailId)))
+    if (!row) throw notFound('email')
+    const { subject, body, ...email } = row
+    return { ...emailOf(email), subject, body }
   }
 
   /** The labels of each variant's values, in the order of its item's axes. */

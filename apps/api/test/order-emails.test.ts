@@ -423,6 +423,98 @@ describe('the emails of order management', () => {
   })
 })
 
+// docs/specs/0006-order-management.md, F4: an org reads what an email said, and never what
+// hands the order over.
+describe('what a sent email said', () => {
+  /** A text by its lines, however a mail server ends them. */
+  const lines = (text: unknown) => String(text).trim().split(/\r?\n/)
+
+  it('is kept as it went out, without the QR code and the token of the order link', async () => {
+    const s = await shop('en')
+    const to = buyer()
+    const placed = await s.place(to)
+    await s.pay(placed)
+
+    await send(s)
+
+    const [mail] = await mailTo(to)
+    const code = /The QR code of the order \S+: ([A-Z2-7]{32})/.exec(mail!.Text)![1]!
+    const token = /\/order#([A-Za-z0-9_-]{43})/.exec(mail!.Text)![1]!
+    const [kept] = await s.emails()
+    expect(kept!.subject).toBe(mail!.Subject)
+    expect(lines(kept!.body)).toEqual(
+      lines(mail!.Text.replaceAll(code, '[…]').replaceAll(token, '[…]')),
+    )
+    expect(kept!.body).toContain(`The QR code of the order ${placed.number}: […]`)
+    expect(kept!.body).toMatch(/See your order: \S+\/order#\[…\]/)
+    // Neither is anywhere in what is kept of the email.
+    expect(JSON.stringify(kept)).not.toContain(code)
+    expect(JSON.stringify(kept)).not.toContain(token)
+  })
+
+  it('is kept whole for an email that hands nothing over', async () => {
+    const s = await shop('en')
+    const to = buyer()
+    const placed = await s.place(to)
+    await setColumn(
+      'orders',
+      placed.orderId,
+      'hold_ends_at',
+      new Date(Date.now() - MINUTE).toISOString(),
+    )
+    await app.get(OrderExpiry).run(new Date(), { tenantId: s.t.id })
+
+    await send(s)
+
+    const [mail] = await mailTo(to)
+    const [kept] = await s.emails()
+    expect(kept!.subject).toBe(`Your order ${placed.number} for ${s.name} has expired`)
+    expect(lines(kept!.body)).toEqual(lines(mail!.Text))
+  })
+
+  it('is kept of no email that did not go out', async () => {
+    const s = await shop('en')
+    await s.pay(await s.place(buyer()))
+    vi.spyOn(app.get(MailService), 'sendOrderEmail').mockRejectedValueOnce(
+      new Error('the SMTP server is down'),
+    )
+
+    expect(await send(s)).toMatchObject({ sent: 0, failed: 1 })
+
+    expect(await s.emails()).toMatchObject([{ sent_at: null, subject: null, body: null }])
+  })
+
+  it('leaves out the new QR code and link of a changed email, and the code of a reminder', async () => {
+    const s = await shop('en')
+    const [to, moved] = [buyer(), buyer()]
+    const placed = await s.place(to)
+    await s.pay(placed)
+    await send(s)
+    // The order is under its new address when the emails are written.
+    await setColumn('orders', placed.orderId, 'email', moved)
+    for (const kind of ['order-email-changed', 'pre-edition-reminder', 'order-link']) {
+      await queueOrderEmail(s.t.id, s.edition, placed.orderId, kind, moved)
+    }
+
+    await send(s)
+
+    const mails = await mailTo(moved, 3)
+    const secrets = mails.flatMap((mail) => [
+      ...mail.Text.matchAll(/\b[A-Z2-7]{32}\b/g),
+      ...mail.Text.matchAll(/\/order#([A-Za-z0-9_-]{43})/g),
+    ])
+    // The code went out twice and a link of its own twice, to the new address.
+    expect(secrets).toHaveLength(4)
+    const kept = JSON.stringify(await s.emails())
+    for (const secret of secrets) expect(kept).not.toContain(secret[1] ?? secret[0])
+    expect(
+      (await s.emails())
+        .filter((email) => email.recipient === moved)
+        .every((email) => String(email.body).includes('[…]')),
+    ).toBe(true)
+  })
+})
+
 describe('the outbox', () => {
   it('tries a failed send again after a growing delay, and loses no email to it', async () => {
     const s = await shop('en')

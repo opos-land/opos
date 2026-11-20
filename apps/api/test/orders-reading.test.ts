@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto'
 import { type NestExpressApplication } from '@nestjs/platform-express'
-import { type OrderDetail, type OrderList } from '@opos/contract'
+import {
+  type OrderDetail,
+  type OrderEmailDetail,
+  type OrderEmailList,
+  type OrderList,
+} from '@opos/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
 import { deleteCreatedAccounts } from './auth'
@@ -14,6 +19,7 @@ import {
   addEditionAccess,
   addMerchandiseItem,
   addOrder,
+  addOrderEmail,
   addOrg,
   addQrCode,
   aQrCode,
@@ -440,6 +446,154 @@ describe('the page of an order', () => {
   })
 })
 
+// docs/specs/0006-order-management.md, F4: every email of the edition's orders in one list, and
+// what each said.
+describe('the emails of an edition’s orders', () => {
+  const emails = (res: { body: unknown }) => res.body as OrderEmailList
+  const SAID = { subject: 'Your order is paid', body: 'Thank you.\n\nThe QR code: […]\n\nOPOS' }
+
+  it('lists every email with its order, the newest first, a page at a time', async () => {
+    const d = await orderDesk(app)
+    const ada = await addOrder(d.t.id, d.edition, { status: 'paid', email: 'ada@example.test' })
+    const grace = await addOrder(d.t.id, d.edition, { email: 'grace@example.test' })
+    const sent = await addOrderEmail(d.t.id, d.edition, ada.id, {
+      recipient: 'ada@example.test',
+      queuedAt: days(3),
+      sentAt: days(3),
+      ...SAID,
+    })
+    const failing = await addOrderEmail(d.t.id, d.edition, grace.id, {
+      kind: 'order-expired',
+      recipient: 'grace@example.test',
+      queuedAt: days(2),
+      failedAttempts: 2,
+    })
+    const withdrawn = await addOrderEmail(d.t.id, d.edition, ada.id, {
+      kind: 'order-link',
+      recipient: 'old@example.test',
+      queuedAt: days(1),
+      withdrawnAt: days(1),
+    })
+
+    const res = await d.head('get', '/order-emails').expect(200)
+
+    expect(emails(res).total).toBe(3)
+    expect(emails(res).emails.map((email) => email.id)).toEqual([withdrawn, failing, sent])
+    expect(emails(res).emails[2]).toEqual({
+      id: sent,
+      kind: 'order-confirmation',
+      recipient: 'ada@example.test',
+      queuedAt: expect.any(String) as string,
+      sentAt: expect.any(String) as string,
+      withdrawnAt: null,
+      failedAttempts: 0,
+      order: { id: ada.id, number: ada.number },
+    })
+    expect(emails(res).emails[1]).toMatchObject({ sentAt: null, failedAttempts: 2 })
+    expect(emails(res).emails[0]).toMatchObject({
+      sentAt: null,
+      withdrawnAt: expect.any(String) as string,
+    })
+    // The list says that an email went out, not what it said.
+    expect(JSON.stringify(res.body)).not.toMatch(/Thank you|subject|body/)
+
+    const page = await d.head('get', '/order-emails?limit=1&offset=1').expect(200)
+    expect(emails(page).emails.map((email) => email.id)).toEqual([failing])
+    expect(emails(page).total).toBe(3)
+    await d.head('get', '/order-emails?limit=101').expect(400)
+  })
+
+  it('finds an email by a part of its address or of its order’s number', async () => {
+    const d = await orderDesk(app)
+    const ada = await addOrder(d.t.id, d.edition)
+    const grace = await addOrder(d.t.id, d.edition)
+    const toAda = await addOrderEmail(d.t.id, d.edition, ada.id, {
+      recipient: 'countess@example.test',
+    })
+    const toGrace = await addOrderEmail(d.t.id, d.edition, grace.id, {
+      recipient: 'admiral@navy.example.test',
+    })
+    // An alert to an org: who is in the team, and under which address, is not the list's to say.
+    const alert = await addOrderEmail(d.t.id, d.edition, grace.id, {
+      kind: 'needs-review',
+      recipient: 'org-of-the-team@example.test',
+    })
+    const find = async (q: string) =>
+      emails(await d.head('get', `/order-emails?q=${encodeURIComponent(q)}`).expect(200))
+        .emails.map((email) => email.id)
+        .sort()
+
+    expect(await find('COUNTESS')).toEqual([toAda])
+    expect(await find('navy.example')).toEqual([toGrace])
+    expect(await find(grace.number.slice(2, 8).toLowerCase())).toEqual([toGrace, alert].sort())
+    expect(await find('org-of-the-team')).toEqual([])
+    // What a pattern reads as "anything" is searched as it is written.
+    expect(await find('%')).toEqual([])
+    const all = emails(await d.head('get', '/order-emails').expect(200))
+    expect(all.emails.find((email) => email.id === alert)).toMatchObject({ recipient: null })
+    expect(JSON.stringify(all)).not.toContain('org-of-the-team')
+  })
+
+  it('shows what an email said, and nothing for one that did not go out', async () => {
+    const d = await orderDesk(app)
+    const mine = await addOrder(d.t.id, d.edition, { status: 'paid' })
+    const sent = await addOrderEmail(d.t.id, d.edition, mine.id, { sentAt: days(1), ...SAID })
+    const before = await addOrderEmail(d.t.id, d.edition, mine.id, { sentAt: days(2) })
+    const queued = await addOrderEmail(d.t.id, d.edition, mine.id, { kind: 'order-link' })
+    const alert = await addOrderEmail(d.t.id, d.edition, mine.id, {
+      kind: 'payment-not-needed-orgs',
+      recipient: 'org-of-the-team@example.test',
+      sentAt: days(1),
+      subject: 'A payment to return',
+      body: 'The money is with the convention.',
+    })
+    const one = async (id: string) =>
+      (await d.head('get', `/order-emails/${id}`).expect(200)).body as OrderEmailDetail
+
+    expect(await one(sent)).toEqual({
+      id: sent,
+      kind: 'order-confirmation',
+      recipient: 'buyer@example.test',
+      queuedAt: expect.any(String) as string,
+      sentAt: expect.any(String) as string,
+      withdrawnAt: null,
+      failedAttempts: 0,
+      order: { id: mine.id, number: mine.number },
+      ...SAID,
+    })
+    // Sent before texts were kept, and not sent yet.
+    expect(await one(before)).toMatchObject({ sentAt: expect.any(String) as string, body: null })
+    expect(await one(queued)).toMatchObject({ sentAt: null, subject: null, body: null })
+    expect(await one(alert)).toMatchObject({
+      recipient: null,
+      body: 'The money is with the convention.',
+    })
+  })
+
+  it('holds no email of another edition or of another convention', async () => {
+    const d = await orderDesk(app)
+    const other = await orderDesk(app)
+    const sibling = await addEdition(d.t.id)
+    const mine = await addOrderEmail(d.t.id, d.edition, (await addOrder(d.t.id, d.edition)).id)
+    const elsewhere = await addOrderEmail(d.t.id, sibling, (await addOrder(d.t.id, sibling)).id)
+    const foreign = await addOrderEmail(
+      other.t.id,
+      other.edition,
+      (await addOrder(other.t.id, other.edition)).id,
+    )
+
+    const res = await d.head('get', '/order-emails').expect(200)
+
+    expect(emails(res).emails.map((email) => email.id)).toEqual([mine])
+    expect(emails(res).total).toBe(1)
+    await d.head('get', `/order-emails/${mine}`).expect(200)
+    for (const id of [elsewhere, foreign, 'no-identifier']) {
+      const missing = await d.head('get', `/order-emails/${id}`).expect(404)
+      expect(missing.body).toMatchObject({ code: 'request.not-found' })
+    }
+  })
+})
+
 describe('who reads an edition’s orders', () => {
   it('an org with tickets read access reads them, and one without reads none', async () => {
     const d = await orderDesk(app)
@@ -453,5 +607,11 @@ describe('who reads an edition’s orders', () => {
     await d.as(reader, 'get', `/orders/${mine.id}`).expect(200)
     await d.as(elsewhere, 'get', '/orders').expect(403)
     await d.as(elsewhere, 'get', `/orders/${mine.id}`).expect(403)
+    // The emails of the orders are read with the orders.
+    const email = await addOrderEmail(d.t.id, d.edition, mine.id)
+    await d.as(reader, 'get', '/order-emails').expect(200)
+    await d.as(reader, 'get', `/order-emails/${email}`).expect(200)
+    await d.as(elsewhere, 'get', '/order-emails').expect(403)
+    await d.as(elsewhere, 'get', `/order-emails/${email}`).expect(403)
   })
 })

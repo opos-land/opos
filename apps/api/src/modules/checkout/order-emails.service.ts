@@ -6,6 +6,7 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common'
 import { open, orderQrCodeOf, sealingKey } from '@opos/db/sealed'
+import { HANDING_OVER_EMAIL_KINDS } from '@opos/contract'
 import { type Locale } from '@opos/i18n'
 import {
   needsReviewEmail,
@@ -33,6 +34,7 @@ import { MailService } from '../mail/mail.service'
 import { recipientLocale } from '../mail/recipient-locale'
 import { PaymentProviders } from '../payments/payment-providers'
 import { hashOf, secretToken } from './codes'
+import { keptOf } from './kept-email'
 import { OfferRepository } from './offer.repository'
 import { type ClaimedEmail, OrderEmailsRepository } from './order-emails.repository'
 
@@ -54,14 +56,6 @@ export const ORDER_LINK_DAYS = 30
 
 /** The content id the picture of a QR code travels under. */
 const QR_CODE_CID = 'qr-code@opos'
-
-/** The emails that hand an order over: with its QR code and an order link, or the link alone. */
-const HANDS_OVER: readonly ClaimedEmail['kind'][] = [
-  'order-confirmation',
-  'order-email-changed',
-  'order-link',
-  'pre-edition-reminder',
-]
 
 /** What writing an email answers when the email is not to be sent. */
 const WITHDRAWN = 'withdrawn'
@@ -86,7 +80,8 @@ interface Composed {
  * language or the convention's for an address with no account, marks it sent, and tries a failed
  * send again after a growing delay, so no email is lost to one. Sending is outbound I/O and runs
  * outside every transaction: an email is claimed first, for this process alone, under a lock
- * another process skips.
+ * another process skips. What a sent email said is kept on its row, without what hands the order
+ * over (docs/specs/0006-order-management.md, F4).
  */
 @Injectable()
 export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationShutdown {
@@ -146,11 +141,14 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     emailId: string,
     now: Date,
   ): Promise<'sent' | 'failed' | undefined> {
+    // What the email hands the order over with: a QR code, the token of an order link. Each is
+    // noted as it is made, so that nothing of it is kept with what the email said.
+    const handedOver: string[] = []
     const claimed = await this.context.withTenant(tenantId, async () => {
       const email = await this.emails.claim(emailId, now, new Date(now.getTime() + LEASE_MS))
       if (!email) return undefined
       // An email that cannot be written is tried again later, as one that could not be sent.
-      const composed = await this.compose(email, now).catch((error: unknown) => {
+      const composed = await this.compose(email, now, handedOver).catch((error: unknown) => {
         // Only the error's name: the message of a failed query quotes its parameters, an
         // address among them.
         const name = error instanceof Error ? error.name : 'unknown failure'
@@ -164,16 +162,18 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     const { email, composed } = claimed
     // Withdrawn while it was written: it goes nowhere, and is not tried again.
     if (composed === WITHDRAWN) return undefined
+    let sent: { subject: string; text: string }
     try {
       if (!composed) throw new Error('The email could not be written')
-      await this.mail.sendOrderEmail(composed)
+      sent = await this.mail.sendOrderEmail(composed)
     } catch (error) {
       const next = new Date(Date.now() + retryDelayMs(email.failedAttempts + 1))
       await this.context.withTenant(tenantId, () => this.emails.failed(emailId, next))
       this.logger.warn(`The email ${emailId} was not sent: ${mailFailure(error)}`)
       return 'failed'
     }
-    await this.context.withTenant(tenantId, () => this.emails.sent(emailId, new Date()))
+    const said = keptOf(sent, handedOver)
+    await this.context.withTenant(tenantId, () => this.emails.sent(emailId, new Date(), said))
     return 'sent'
   }
 
@@ -181,12 +181,16 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
    * The email as it is sent: to whom, in what language, saying what. It is written from the
    * order as it stands now, so one that hands the order over, with its QR code and a link, goes
    * only to the address the order has: queued for an address the order has left since, it is
-   * withdrawn instead.
+   * withdrawn instead. What it hands the order over with is added to `handedOver`.
    */
-  private async compose(email: ClaimedEmail, now: Date): Promise<Composed | typeof WITHDRAWN> {
+  private async compose(
+    email: ClaimedEmail,
+    now: Date,
+    handedOver: string[],
+  ): Promise<Composed | typeof WITHDRAWN> {
     const order = await this.emails.order(email.orderId)
     if (!order) throw new Error('The order of the email is not there')
-    if (HANDS_OVER.includes(email.kind) && email.recipient !== order.email) {
+    if (HANDING_OVER_EMAIL_KINDS.includes(email.kind) && email.recipient !== order.email) {
       await this.emails.withdraw(email.id, now)
       return WITHDRAWN
     }
@@ -207,7 +211,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
 
     switch (email.kind) {
       case 'order-confirmation': {
-        const { qrCode, orderLink, pictures } = await this.codeAndLink(order, now)
+        const { qrCode, orderLink, pictures } = await this.codeAndLink(order, now, handedOver)
         const lines = await this.emails.lines(order.id)
         const documents = await this.emails.documents(order.id)
         return {
@@ -307,7 +311,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
         }
       }
       case 'order-email-changed': {
-        const { qrCode, orderLink, pictures } = await this.codeAndLink(order, now)
+        const { qrCode, orderLink, pictures } = await this.codeAndLink(order, now, handedOver)
         return {
           to,
           locale,
@@ -339,7 +343,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
           await this.emails.withdraw(email.id, now)
           return WITHDRAWN
         }
-        const { qrCode, pictures } = await this.code(order)
+        const { qrCode, pictures } = await this.code(order, handedOver)
         const told = await this.emails.reminderOf(order.editionId)
         const guardian =
           order.ageBand === 'child' || order.ageBand === 'teen' ? order.ageBand : null
@@ -368,7 +372,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
           locale,
           content: orderLinkEmail({
             ...of,
-            orderLink: await this.link(order, now),
+            orderLink: await this.link(order, now, handedOver),
             contactEmail,
           }),
         }
@@ -382,8 +386,10 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
   private async link(
     order: { id: string; tenantId: string; editionId: string; editionEndsAt: Date },
     now: Date,
+    handedOver: string[],
   ): Promise<string> {
     const token = secretToken()
+    handedOver.push(token)
     const from = Math.max(order.editionEndsAt.getTime(), now.getTime())
     await this.emails.addLink(order, hashOf(token), new Date(from + ORDER_LINK_DAYS * DAY))
     return `${this.portalUrl}/order#${token}`
@@ -402,15 +408,23 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
       editionEndsAt: Date
     },
     now: Date,
+    handedOver: string[],
   ) {
-    return { ...(await this.code(order)), orderLink: await this.link(order, now) }
+    return {
+      ...(await this.code(order, handedOver)),
+      orderLink: await this.link(order, now, handedOver),
+    }
   }
 
   /** The QR code the order carries now, opened, with its picture. */
-  private async code(order: { id: string; tenantId: string; number: string }) {
+  private async code(
+    order: { id: string; tenantId: string; number: string },
+    handedOver: string[],
+  ) {
     const sealed = await this.emails.qrCode(order.id)
     if (!sealed) throw new Error('A paid order has a QR code')
     const qrCode = open(this.key, sealed.code, orderQrCodeOf(order.tenantId, sealed.id))
+    handedOver.push(qrCode)
     return {
       qrCode,
       pictures: [

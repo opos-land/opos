@@ -23,10 +23,6 @@ msgstr "{0} (optional)"
 msgid "{0} (required)"
 msgstr "{0} (required)"
 
-#: src/features/shop/components/holder-step.tsx
-msgid "{adultFromAge} and over"
-msgstr "{adultFromAge} and over"
-
 #: src/features/conventions/components/program-list.tsx
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
@@ -40,11 +36,6 @@ msgstr "{label} (unavailable)"
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "{likes, plural, one {# like} other {# likes}}"
 msgstr "{likes, plural, one {# like} other {# likes}}"
-
-#. placeholder {0}: adultFromAge - 1
-#: src/features/shop/components/holder-step.tsx
-msgid "{teenFromAge} to {0}"
-msgstr "{teenFromAge} to {0}"
 
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "{tenantName}, {editionName}"
@@ -104,6 +95,10 @@ msgid "Adult"
 msgstr "Adult"
 
 #: src/features/shop/components/holder-step.tsx
+msgid "Adult ({adultFromAge} and over)"
+msgstr "Adult ({adultFromAge} and over)"
+
+#: src/features/shop/components/holder-step.tsx
 msgid "Age band"
 msgstr "Age band"
 
@@ -153,8 +148,8 @@ msgid "Back to the shop"
 msgstr "Back to the shop"
 
 #: src/features/shop/pages/shop-page.tsx
-msgid "Bank transfer"
-msgstr "Bank transfer"
+msgid "bank transfer"
+msgstr "bank transfer"
 
 #: src/features/shop/components/steps-nav.tsx
 msgid "Buyer"
@@ -189,6 +184,10 @@ msgstr "Checkout"
 #: src/features/shop/components/holder-step.tsx
 msgid "Child"
 msgstr "Child"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Child (under {teenFromAge})"
+msgstr "Child (under {teenFromAge})"
 
 #: src/features/shop/components/holder-step.tsx
 #: src/features/shop/components/merch-step.tsx
@@ -643,6 +642,7 @@ msgid "or"
 msgstr "or"
 
 #: src/features/shop/pages/checkout-page.tsx
+msgctxt "the button that places an order with nothing to pay"
 msgid "Order"
 msgstr "Order"
 
@@ -691,12 +691,12 @@ msgid "Past editions"
 msgstr "Past editions"
 
 #: src/features/shop/pages/shop-page.tsx
-msgid "Payment card"
-msgstr "Payment card"
+msgid "payment card"
+msgstr "payment card"
 
 #: src/features/shop/pages/shop-page.tsx
-msgid "Payment methods:"
-msgstr "Payment methods:"
+msgid "Payment methods: {methods}"
+msgstr "Payment methods: {methods}"
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
@@ -915,6 +915,10 @@ msgstr "Supporter price: {0}"
 msgid "Teen"
 msgstr "Teen"
 
+#: src/features/shop/components/holder-step.tsx
+msgid "Teen ({teenFromAge} to {teenUntil})"
+msgstr "Teen ({teenFromAge} to {teenUntil})"
+
 #: src/features/account/components/language-form.tsx
 msgid "The browser's language"
 msgstr "The browser's language"
@@ -955,6 +959,10 @@ msgstr "The passwords differ."
 #: src/features/shop/pages/result-page.tsx
 msgid "The payment failed."
 msgstr "The payment failed."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "The payment provider cannot take an email address as long as your account’s, so this account cannot pay here. Sign out and order with a shorter address."
+msgstr "The payment provider cannot take an email address as long as your account’s, so this account cannot pay here. Sign out and order with a shorter address."
 
 #: src/features/shop/components/holder-step.tsx
 msgid "The payment provider cannot take an email address this long. Use a shorter one."
@@ -1045,10 +1053,9 @@ msgstr "This ticket type does not offer what you had chosen, so it was removed: 
 msgid "This ticket type is not sold for this age band."
 msgstr "This ticket type is not sold for this age band."
 
-#. placeholder {0}: allowing.join(', ')
 #: src/features/shop/components/holder-step.tsx
-msgid "This ticket type is not sold for this age band. It is sold with: {0}."
-msgstr "This ticket type is not sold for this age band. It is sold with: {0}."
+msgid "This ticket type is not sold for this age band. Ticket types sold for it: {allowing}."
+msgstr "This ticket type is not sold for this age band. Ticket types sold for it: {allowing}."
 
 #: src/features/shop/components/holder-step.tsx
 msgid "This value is not valid."
@@ -1128,10 +1135,6 @@ msgstr "Two-factor authentication is on."
 #: src/features/account/components/two-factor-card.tsx
 msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 msgstr "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
-
-#: src/features/shop/components/holder-step.tsx
-msgid "under {teenFromAge}"
-msgstr "under {teenFromAge}"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."

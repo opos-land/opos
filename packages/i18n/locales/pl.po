@@ -21,11 +21,11 @@ msgstr "Główny organizator ma już dostęp do każdej edycji."
 
 #: src/order-emails.ts
 msgid "A payment arrived for the order {number} of {conventionName} and could not confirm it."
-msgstr "Do zamówienia {number} konwentu {conventionName} wpłynęła płatność, która nie mogła go potwierdzić."
+msgstr "Do zamówienia {number} konwentu {conventionName} wpłynęła płatność, ale nie udało się nią potwierdzić zamówienia."
 
 #: src/order-emails.ts
 msgid "A payment arrived for your order {number} for {conventionName}, which was not waiting for one any more. It changes nothing of the order."
-msgstr "Do twojego zamówienia {number} na {conventionName} wpłynęła płatność, na którą zamówienie już nie czekało. Niczego w zamówieniu to nie zmienia."
+msgstr "Do twojego zamówienia {number} w sklepie konwentu {conventionName} wpłynęła płatność, na którą zamówienie już nie czekało. Niczego w zamówieniu to nie zmienia."
 
 #: src/order-emails.ts
 msgid "A payment arrived that your order {number} does not need"
@@ -75,15 +75,15 @@ msgstr "Administrator musi mieć włączone uwierzytelnianie dwuskładnikowe. W�
 
 #: src/errors.ts
 msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
-msgstr "To zostało już zaakceptowane w zamówieniu, więc nie można tego usunąć. Zamiast usuwać, ukryj: zniknie ze sklepu, a w zamówieniach pozostanie."
+msgstr "To zostało już zaakceptowane w zamówieniu, więc nie można tego usunąć. Zamiast usuwać, ukryj to: zniknie ze sklepu, a w zamówieniach pozostanie."
 
 #: src/errors.ts
 msgid "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
 msgstr "Zamówienie w tym konwencie oczekuje na płatność. Dane dostępowe zmienisz, gdy zostanie opłacone albo wygaśnie."
 
 #: src/order-emails.ts
-msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again. You can also write to {contactEmail}."
-msgstr "Organizator konwentu {conventionName} skontaktuje się z tobą. Nie musisz płacić ponownie. Możesz też napisać na adres {contactEmail}."
+msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
+msgstr "Organizator konwentu {conventionName} skontaktuje się z tobą. Nie musisz płacić ponownie."
 
 #. Glossary term: attendee
 #: src/glossary.ts
@@ -471,7 +471,7 @@ msgstr "zawieszony"
 
 #: src/order-emails.ts
 msgid "Thank you. Your order {number} for {conventionName} is paid."
-msgstr "Dziękujemy. Twoje zamówienie {number} na {conventionName} jest opłacone."
+msgstr "Dziękujemy. Twoje zamówienie {number} w sklepie konwentu {conventionName} jest opłacone."
 
 #: src/errors.ts
 msgid "The account with this email address has not been confirmed yet."
@@ -507,7 +507,7 @@ msgstr "Pieniądze są u konwentu. Zwróć je kupującemu u dostawcy płatności
 
 #: src/order-emails.ts
 msgid "The money is with the convention. The order waits for an organizer to settle it."
-msgstr "Pieniądze są u konwentu. Zamówienie czeka, aż organizator je rozstrzygnie."
+msgstr "Pieniądze trafiły do konwentu. Zamówienie czeka na decyzję organizatora."
 
 #: src/errors.ts
 msgid "The new password must differ from the current one."
@@ -519,7 +519,7 @@ msgstr "Zamówienie {number} konwentu {conventionName} otrzymało płatność, k
 
 #: src/order-emails.ts
 msgid "The order {number} of {conventionName} needs review"
-msgstr "Zamówienie {number} konwentu {conventionName} wymaga sprawdzenia"
+msgstr "Zamówienie {number} konwentu {conventionName} jest do wyjaśnienia"
 
 #: src/order-emails.ts
 msgid "The order had expired, and what it held is no longer available."
@@ -558,8 +558,8 @@ msgid "The shop cannot be opened yet: something it needs is missing."
 msgstr "Sklepu nie można jeszcze otworzyć: brakuje czegoś, czego potrzebuje."
 
 #: src/order-emails.ts
-msgid "The ticket holder is under 18 and over the age of a child: bring the guardian's consent on paper to the convention."
-msgstr "Posiadacz akredytacji jest niepełnoletni i starszy niż dziecko: przynieś na konwent zgodę opiekuna na papierze."
+msgid "The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention."
+msgstr "Posiadacz akredytacji jest nastolatkiem: na konwent trzeba przynieść zgodę opiekuna na papierze."
 
 #: src/errors.ts
 msgid "The time to pay for this order has ended. Start a new order."
@@ -815,6 +815,10 @@ msgstr "Już należysz do zespołu tego konwentu."
 msgid "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."
 msgstr "Należysz teraz do zespołu organizatorów konwentu {tenantName} w OPOS. Otwórz panel, aby zobaczyć, nad czym możesz pracować."
 
+#: src/order-emails.ts
+msgid "You can also write to {contactEmail}."
+msgstr "Możesz też napisać na adres {contactEmail}."
+
 #: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
 msgstr "Nie możesz zmienić własnej roli ani uprawnień, ani usunąć siebie z zespołu."
@@ -853,23 +857,23 @@ msgstr "Twoje zamówienie"
 
 #: src/order-emails.ts
 msgid "Your order {number} for {conventionName} has expired"
-msgstr "Twoje zamówienie {number} na {conventionName} wygasło"
+msgstr "Twoje zamówienie {number} w sklepie konwentu {conventionName} wygasło"
 
 #: src/order-emails.ts
 msgid "Your order {number} for {conventionName} is paid"
-msgstr "Twoje zamówienie {number} na {conventionName} jest opłacone"
+msgstr "Twoje zamówienie {number} w sklepie konwentu {conventionName} jest opłacone"
 
 #: src/order-emails.ts
 msgid "Your order {number} for {conventionName} was not paid in time and has expired. Nothing was charged."
-msgstr "Twoje zamówienie {number} na {conventionName} nie zostało opłacone na czas i wygasło. Nic nie zostało pobrane."
+msgstr "Twoje zamówienie {number} w sklepie konwentu {conventionName} nie zostało opłacone na czas i wygasło. Nie pobrano żadnych pieniędzy."
 
 #: src/order-emails.ts
 msgid "Your payment for the order {number} for {conventionName} arrived, but it could not confirm the order, so an organizer has to look at it."
-msgstr "Twoja płatność za zamówienie {number} na {conventionName} dotarła, ale nie mogła potwierdzić zamówienia, więc musi je sprawdzić organizator."
+msgstr "Twoja płatność za zamówienie {number} w sklepie konwentu {conventionName} dotarła, ale nie udało się nią potwierdzić zamówienia, więc musi je sprawdzić organizator."
 
 #: src/order-emails.ts
 msgid "Your payment for the order {number} is under review"
-msgstr "Twoja płatność za zamówienie {number} jest sprawdzana"
+msgstr "Twoja płatność za zamówienie {number} jest wyjaśniana"
 
 #: src/order-emails.ts
 msgid "Your QR code"

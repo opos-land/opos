@@ -168,7 +168,7 @@ describe('renderOrderEmail', () => {
 
     const email = await render('pl', expired)
 
-    expect(email.subject).toBe('Twoje zamówienie ABCDEFGHJK na Pyrkon wygasło')
+    expect(email.subject).toBe('Twoje zamówienie ABCDEFGHJK w sklepie konwentu Pyrkon wygasło')
     expect(email.text).toContain('Złóż nowe zamówienie: https://portal.test/shop')
     expect(email.html).toContain('lang="pl"')
   })

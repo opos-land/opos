@@ -107,21 +107,26 @@ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 export const answerField = (fieldId: string) => `answer:${fieldId}`
 
 /**
- * The fields of the first step that do not hold, each with what is wrong. A signed-in buyer's
- * email is the account's and is not asked; an order of merchandise alone asks no age band and no
- * custom field.
+ * The fields of the first step that do not hold, each with what is wrong. `accountEmail` is the
+ * signed-in buyer's, null for a visitor: an account's email is not asked, but one the provider's
+ * module cannot take cannot pay through it, and the buyer is stopped before the order is placed.
+ * An order of merchandise alone asks no age band and no custom field.
  */
 export function holderIssues(
   offer: Offer,
   draft: Draft,
-  signedIn: boolean,
+  accountEmail: string | null,
 ): Record<string, FieldIssue> {
+  const signedIn = accountEmail !== null
   const issues: Record<string, FieldIssue> = {}
   if (draft.holderName.trim() === '') issues.holderName = 'required'
   const type = ticketTypeOf(offer, draft)
   if (draft.ticketTypeId !== null) {
     if (draft.ageBand === null) issues.ageBand = 'required'
     else if (type && !type.ageBands.includes(draft.ageBand)) issues.ageBand = 'not-allowed'
+  }
+  if (signedIn && offer.provider && accountEmail.length > offer.provider.maxEmailLength) {
+    issues.accountEmail = 'too-long'
   }
   if (!signedIn) {
     const email = draft.email.trim().toLowerCase()

@@ -272,7 +272,7 @@ function Checkout({
   const quote = quoteOf(offer, draft)
   const lines = 'problem' in quote ? [] : quote.lines
   const totalMinor = 'problem' in quote ? 0 : quote.totalMinor
-  const issues = holderIssues(offer, draft, signedIn)
+  const issues = holderIssues(offer, draft, account?.email ?? null)
   const locale = isLocale(i18n.locale) ? i18n.locale : activeLocale()
   const here = `${location.pathname}${location.search}`
   const emptyMerchOnly = merchOnly && draft.items.length === 0
@@ -376,7 +376,10 @@ function Checkout({
               ranOut={ranOut}
               preorderDeadline={
                 offer.merchPreorderDeadline &&
-                formatDateTime(new Date(offer.merchPreorderDeadline), locale, timeZone)
+                formatDateTime(new Date(offer.merchPreorderDeadline), locale, timeZone, {
+                  dateStyle: 'long',
+                  timeStyle: 'short',
+                })
               }
               change={change}
             />
@@ -418,7 +421,11 @@ function Checkout({
             )}
             {current === 'summary' ? (
               <Button type="submit" disabled={place.isPending}>
-                {totalMinor > 0 ? <Trans>Order and pay</Trans> : <Trans>Order</Trans>}
+                {totalMinor > 0 ? (
+                  <Trans>Order and pay</Trans>
+                ) : (
+                  <Trans context="the button that places an order with nothing to pay">Order</Trans>
+                )}
               </Button>
             ) : (
               <Button type="submit">

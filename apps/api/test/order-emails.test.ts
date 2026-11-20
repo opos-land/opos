@@ -155,7 +155,9 @@ describe('the confirmation of a paid order', () => {
 
     const [mail] = await mailTo(to)
     // No account under the address: the convention's language, Polish by default.
-    expect(mail!.Subject).toBe(`Twoje zamówienie ${placed.number} na ${s.name} jest opłacone`)
+    expect(mail!.Subject).toBe(
+      `Twoje zamówienie ${placed.number} w sklepie konwentu ${s.name} jest opłacone`,
+    )
     expect(mail!.Text).toContain('Standard: 100,00 zł')
     expect(mail!.Text).toContain('2 × Pin: 100,00 zł')
     expect(mail!.Text).toContain('Razem: 200,00 zł')
@@ -226,7 +228,7 @@ describe('the confirmation of a paid order', () => {
     await send(s)
 
     const [mail] = await mailTo(to)
-    expect(mail!.Text).toContain('consent on paper')
+    expect(mail!.Text).toContain('The ticket holder is a teen')
     expect(mail!.Text).toContain(
       'Download the guardian consent form: https://convention.test/consent.pdf',
     )

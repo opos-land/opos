@@ -94,7 +94,7 @@ export function renderOrderEmail(i18n: I18n, content: OrderEmailContent): Render
         case 'paragraph':
           return i18n._(part.text)
         case 'heading':
-          return i18n._(part.text).toUpperCase()
+          return i18n._(part.text).toLocaleUpperCase(i18n.locale)
         case 'rows':
           return part.rows.map((row) => `${said(row.label)}: ${row.value}`).join('\n')
         case 'link':

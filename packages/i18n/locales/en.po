@@ -82,8 +82,8 @@ msgid "An order of this convention is waiting for payment. You can replace the c
 msgstr "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
 
 #: src/order-emails.ts
-msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again. You can also write to {contactEmail}."
-msgstr "An organizer of {conventionName} will get in touch with you. You do not need to pay again. You can also write to {contactEmail}."
+msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
+msgstr "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 
 #. Glossary term: attendee
 #: src/glossary.ts
@@ -558,8 +558,8 @@ msgid "The shop cannot be opened yet: something it needs is missing."
 msgstr "The shop cannot be opened yet: something it needs is missing."
 
 #: src/order-emails.ts
-msgid "The ticket holder is under 18 and over the age of a child: bring the guardian's consent on paper to the convention."
-msgstr "The ticket holder is under 18 and over the age of a child: bring the guardian's consent on paper to the convention."
+msgid "The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention."
+msgstr "The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention."
 
 #: src/errors.ts
 msgid "The time to pay for this order has ended. Start a new order."
@@ -814,6 +814,10 @@ msgstr "You are already in this convention's team."
 #: src/emails.ts
 msgid "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."
 msgstr "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."
+
+#: src/order-emails.ts
+msgid "You can also write to {contactEmail}."
+msgstr "You can also write to {contactEmail}."
 
 #: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."

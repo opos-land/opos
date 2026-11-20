@@ -51,7 +51,7 @@ describe('errorMessage', () => {
     ],
     [
       'consent.in-use',
-      'To zostało już zaakceptowane w zamówieniu, więc nie można tego usunąć. Zamiast usuwać, ukryj: zniknie ze sklepu, a w zamówieniach pozostanie.',
+      'To zostało już zaakceptowane w zamówieniu, więc nie można tego usunąć. Zamiast usuwać, ukryj to: zniknie ze sklepu, a w zamówieniach pozostanie.',
     ],
     [
       'shop.payments-under-way',

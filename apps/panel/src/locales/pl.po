@@ -98,7 +98,7 @@ msgstr "Nastolatek: od ilu lat"
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "A ticket holder is a child, a teen or an adult by their age on the first day of the edition. A child enters with a guardian present, a teen with a guardian’s written consent brought on paper."
-msgstr "Posiadacz akredytacji jest dzieckiem, nastolatkiem albo dorosłym według wieku w pierwszym dniu edycji. Dziecko wchodzi z obecnym opiekunem, nastolatek z pisemną zgodą opiekuna przyniesioną na papierze."
+msgstr "Posiadacz akredytacji jest dzieckiem, nastolatkiem albo dorosłym według wieku w pierwszym dniu edycji. Dziecko wchodzi w towarzystwie opiekuna, nastolatek z pisemną zgodą opiekuna przyniesioną na papierze."
 
 #: src/features/shop/components/consent-form.tsx
 msgid "Acceptance"

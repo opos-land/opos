@@ -372,7 +372,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   [glossary.ts](../packages/i18n/src/glossary.ts) declares it with the context `glossary`, the `pl`
   catalog of `packages/i18n` holds its Polish rendering, and every message reuses it. A new term
   enters glossary.ts before its first use in the interface.
-- The API returns codes, never sentences, and renders emails in the recipient's language.
+- The API returns codes, never sentences, and renders emails in the recipient's language. The one
+  sentence it passes on is a payment provider's own, as its module gives it in each language it
+  has: the wording of the provider's consent, and where the money of a payment is.
 - Dates go through `Intl` with an explicit time zone: a tenant's dates, programme times included,
   in the tenant's `timezone`, never the browser's; a date with no tenant, such as an invitation's
   expiry, in the browser's. Numbers go through `Intl.NumberFormat`, money in minor units with its

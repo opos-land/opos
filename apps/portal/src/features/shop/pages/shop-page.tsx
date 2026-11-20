@@ -26,7 +26,7 @@ type TicketType = Offer['ticketTypes'][number]
 function useMethodName() {
   const { t } = useLingui()
   return (method: string) =>
-    ({ blik: 'BLIK', transfer: t`Bank transfer`, card: t`Payment card` })[method] ?? method
+    ({ blik: 'BLIK', transfer: t`bank transfer`, card: t`payment card` })[method] ?? method
 }
 
 /** Why a ticket type cannot be chosen now, or nothing while it is on sale. */
@@ -58,6 +58,7 @@ export function ShopPage() {
   if (offer.isPending) return <LoadingView />
   const { data } = offer
   const selling = data.open && data.onSale
+  const methods = data.provider?.methods.map(methodName).join(', ') ?? ''
   const checkout = (ticketType: string) => `${base}/shop/checkout?ticketType=${ticketType}`
 
   return (
@@ -123,7 +124,7 @@ export function ShopPage() {
       <footer className="flex flex-col gap-4 border-t pt-4 text-sm">
         {data.provider && data.provider.methods.length > 0 && (
           <p>
-            <Trans>Payment methods:</Trans> {data.provider.methods.map(methodName).join(', ')}
+            <Trans>Payment methods: {methods}</Trans>
           </p>
         )}
         {data.provider?.consent && data.provider.consent.links.length > 0 && (

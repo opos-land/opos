@@ -157,7 +157,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     const locale = recipientLocale({ account: account?.locale, tenant: order.conventionLocale })
     const of = { conventionName: order.conventionName, number: order.number }
     const seller = await this.offers.seller(order.tenantId)
-    const contactEmail = seller?.contactEmail ?? ''
+    const contactEmail = seller?.contactEmail ?? null
     const payment = await this.emails.lastPayment(order.id)
     /** Where the money of the last payment is, as its provider's module words it. */
     const moneyWith = () => {
@@ -196,7 +196,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
             qrCodeCid: QR_CODE_CID,
             orderLink: `${this.portalUrl}/orders/${token}`,
             signInLink: account ? `${this.portalUrl}/login` : null,
-            seller: seller ?? { name: '', address: '', registrationNumber: '', contactEmail: '' },
+            seller,
             documents: documents.map((document) => ({
               title: document.title,
               url: `${this.apiUrl}/public/tenants/${order.conventionSlug}/document-versions/${document.versionId}`,

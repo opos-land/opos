@@ -19,12 +19,14 @@ const AGE_BAND_NAMES: Record<AgeBand, MessageDescriptor> = {
   adult: msg`Adult`,
 }
 
-/** The years an age band covers, as the edition set them. */
-function ages(band: AgeBand, bands: NonNullable<Offer['ageBands']>): MessageDescriptor {
+/** An age band with the years it covers, as the edition set them: one whole message each. */
+function bandLabel(band: AgeBand, bands: Offer['ageBands']): MessageDescriptor {
+  if (!bands) return AGE_BAND_NAMES[band]
   const { teenFromAge, adultFromAge } = bands
-  if (band === 'child') return msg`under ${teenFromAge}`
-  if (band === 'teen') return msg`${teenFromAge} to ${adultFromAge - 1}`
-  return msg`${adultFromAge} and over`
+  const teenUntil = adultFromAge - 1
+  if (band === 'child') return msg`Child (under ${teenFromAge})`
+  if (band === 'teen') return msg`Teen (${teenFromAge} to ${teenUntil})`
+  return msg`Adult (${adultFromAge} and over)`
 }
 
 /** What is wrong with a field, as its own message. */
@@ -74,7 +76,8 @@ export function HolderStep({
       ? offer.ticketTypes
           .filter((other) => other.state === 'on-sale' && other.ageBands.includes(draft.ageBand!))
           .map((other) => other.name)
-      : []
+          .join(', ')
+      : ''
 
   return (
     <div className="flex flex-col gap-4">
@@ -155,8 +158,8 @@ export function HolderStep({
           label={<Trans>Age band</Trans>}
           hint={<Trans>By the ticket holder’s age on the first day of the edition.</Trans>}
           error={
-            issues.ageBand === 'not-allowed' && allowing.length > 0
-              ? t`This ticket type is not sold for this age band. It is sold with: ${allowing.join(', ')}.`
+            issues.ageBand === 'not-allowed' && allowing !== ''
+              ? t`This ticket type is not sold for this age band. Ticket types sold for it: ${allowing}.`
               : issueText(issues.ageBand, 'ageBand')
           }
         >
@@ -175,8 +178,7 @@ export function HolderStep({
               <NativeSelectOption value="">{t`Choose`}</NativeSelectOption>
               {(['child', 'teen', 'adult'] as const).map((band) => (
                 <NativeSelectOption key={band} value={band}>
-                  {i18n._(AGE_BAND_NAMES[band])}
-                  {offer.ageBands ? ` (${i18n._(ages(band, offer.ageBands))})` : ''}
+                  {i18n._(bandLabel(band, offer.ageBands))}
                 </NativeSelectOption>
               ))}
             </NativeSelect>
@@ -205,11 +207,21 @@ export function HolderStep({
       )}
 
       {accountEmail !== null ? (
-        <p>
-          <Trans>
-            The QR code will be sent to your account’s address: <strong>{accountEmail}</strong>
-          </Trans>
-        </p>
+        <>
+          <p>
+            <Trans>
+              The QR code will be sent to your account’s address: <strong>{accountEmail}</strong>
+            </Trans>
+          </p>
+          {offer.provider && accountEmail.length > offer.provider.maxEmailLength && (
+            <p className="text-destructive" role="alert">
+              <Trans>
+                The payment provider cannot take an email address as long as your account’s, so this
+                account cannot pay here. Sign out and order with a shorter address.
+              </Trans>
+            </p>
+          )}
+        </>
       ) : (
         <>
           <FormField

@@ -95,7 +95,9 @@ describe('the confirmation of a paid order', () => {
   it('is said in Polish with the glossary renderings', async () => {
     const email = await read(orderConfirmationEmail(confirmation), 'pl')
 
-    expect(email.subject).toBe('Twoje zamówienie ABCDEFGHJK na Pyrkon jest opłacone')
+    expect(email.subject).toBe(
+      'Twoje zamówienie ABCDEFGHJK w sklepie konwentu Pyrkon jest opłacone',
+    )
     expect(email.parts).toEqual(
       expect.arrayContaining([
         'Razem: 375,00\u00a0zł',
@@ -121,13 +123,14 @@ describe('the confirmation of a paid order', () => {
         'Download the guardian consent form <https://convention.test/form.pdf>',
       ]),
     )
-    expect(email.parts.join(' ')).toContain('consent on paper')
+    expect(email.parts.join(' ')).toContain('The ticket holder is a teen')
+    expect(email.parts.join(' ')).not.toMatch(/\b18\b/)
 
     const noForm = await read(
       orderConfirmationEmail({ ...confirmation, guardianConsent: { formUrl: null } }),
       'en',
     )
-    expect(noForm.parts.join(' ')).toContain('consent on paper')
+    expect(noForm.parts.join(' ')).toContain('consent has to be brought on paper')
     expect(noForm.parts.join(' ')).not.toContain('form')
   })
 
@@ -153,7 +156,7 @@ describe('the other emails of an order', () => {
       ],
     })
     expect((await read(content, 'pl')).subject).toBe(
-      'Twoje zamówienie ABCDEFGHJK na Pyrkon wygasło',
+      'Twoje zamówienie ABCDEFGHJK w sklepie konwentu Pyrkon wygasło',
     )
   })
 
@@ -170,7 +173,7 @@ describe('the other emails of an order', () => {
     expect(email.parts.join(' ')).toContain('will get in touch')
     expect(email.parts.join(' ')).toContain('shop@seller.test')
     expect((await read(content, 'pl')).subject).toBe(
-      'Twoja płatność za zamówienie ABCDEFGHJK jest sprawdzana',
+      'Twoja płatność za zamówienie ABCDEFGHJK jest wyjaśniana',
     )
   })
 
@@ -198,8 +201,26 @@ describe('the other emails of an order', () => {
     )
     expect((await read(gone, 'en')).parts.join(' ')).toContain('no longer available')
     expect((await read(gone, 'pl')).subject).toBe(
-      'Zamówienie ABCDEFGHJK konwentu Pyrkon wymaga sprawdzenia',
+      'Zamówienie ABCDEFGHJK konwentu Pyrkon jest do wyjaśnienia',
     )
+  })
+
+  // A convention whose seller's details hold no address leaves no hole in a sentence.
+  it('leave out the address to write to when the convention gave none', async () => {
+    const review = await read(
+      paymentUnderReviewEmail({ ...order, moneyWith: null, contactEmail: null }),
+      'en',
+    )
+    const notNeeded = await read(
+      paymentNotNeededEmail({ ...order, moneyWith: null, contactEmail: null }),
+      'en',
+    )
+    const confirmed = await read(orderConfirmationEmail({ ...confirmation, seller: null }), 'en')
+
+    expect(review.parts.join(' ')).not.toMatch(/write to/)
+    expect(review.parts.join(' ')).toContain('will get in touch')
+    expect(notNeeded.parts.join(' ')).not.toMatch(/write to/)
+    expect(confirmed.parts).not.toContain('Seller')
   })
 
   it('tell a buyer and the orgs of a payment the order did not need', async () => {

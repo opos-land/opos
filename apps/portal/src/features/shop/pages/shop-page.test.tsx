@@ -105,7 +105,9 @@ describe('ShopPage', () => {
   it('names the payment methods, the seller, the documents, the FAQ and the provider’s terms', async () => {
     view()
 
-    expect(await screen.findByText(/BLIK, Bank transfer, Payment card/)).toBeDefined()
+    expect(
+      await screen.findByText('Payment methods: BLIK, bank transfer, payment card'),
+    ).toBeDefined()
     expect(screen.getByText('Seller Ltd')).toBeDefined()
     expect(screen.getByText('KRS 0000000000')).toBeDefined()
     expect(screen.getByRole('link', { name: 'shop@seller.test' }).getAttribute('href')).toBe(

@@ -23,10 +23,6 @@ msgstr "{0} (opcjonalnie)"
 msgid "{0} (required)"
 msgstr "{0} (wymagane)"
 
-#: src/features/shop/components/holder-step.tsx
-msgid "{adultFromAge} and over"
-msgstr "od {adultFromAge} lat"
-
 #: src/features/conventions/components/program-list.tsx
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
@@ -34,17 +30,12 @@ msgstr "{count, plural, one {Prelegent: {names}} few {Prelegenci: {names}} many 
 
 #: src/features/shop/components/merch-step.tsx
 msgid "{label} (unavailable)"
-msgstr "{label} (niedostępne)"
+msgstr "{label} (niedostępny)"
 
 #: src/features/conventions/components/program-list.tsx
 #: src/features/conventions/pages/program-item-page.tsx
 msgid "{likes, plural, one {# like} other {# likes}}"
 msgstr "{likes, plural, one {# polubienie} few {# polubienia} many {# polubień} other {# polubienia}}"
-
-#. placeholder {0}: adultFromAge - 1
-#: src/features/shop/components/holder-step.tsx
-msgid "{teenFromAge} to {0}"
-msgstr "od {teenFromAge} do {0} lat"
 
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "{tenantName}, {editionName}"
@@ -57,7 +48,7 @@ msgstr "<0>{label}:</0> <1>{providers}</1>"
 
 #: src/features/shop/components/holder-step.tsx
 msgid "A child enters only with a guardian present."
-msgstr "Dziecko wchodzi tylko z obecnym opiekunem."
+msgstr "Dziecko wchodzi tylko w towarzystwie opiekuna."
 
 #: src/features/landing/pages/landing-page.tsx
 msgid "A convention runs its team, editions, programme and ticket sales in the organizer panel. Ticket payments go straight to the convention’s own payment provider account: OPOS never holds the money."
@@ -102,6 +93,10 @@ msgstr "Dodatki"
 #: src/features/shop/components/holder-step.tsx
 msgid "Adult"
 msgstr "Dorosły"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Adult ({adultFromAge} and over)"
+msgstr "Dorosły (od {adultFromAge} lat)"
 
 #: src/features/shop/components/holder-step.tsx
 msgid "Age band"
@@ -153,8 +148,8 @@ msgid "Back to the shop"
 msgstr "Wróć do sklepu"
 
 #: src/features/shop/pages/shop-page.tsx
-msgid "Bank transfer"
-msgstr "Przelew bankowy"
+msgid "bank transfer"
+msgstr "przelew bankowy"
 
 #: src/features/shop/components/steps-nav.tsx
 msgid "Buyer"
@@ -184,11 +179,15 @@ msgstr "Sprawdź skrzynkę pocztową"
 
 #: src/features/shop/pages/checkout-page.tsx
 msgid "Checkout"
-msgstr "Zamówienie"
+msgstr "Składanie zamówienia"
 
 #: src/features/shop/components/holder-step.tsx
 msgid "Child"
 msgstr "Dziecko"
+
+#: src/features/shop/components/holder-step.tsx
+msgid "Child (under {teenFromAge})"
+msgstr "Dziecko (poniżej {teenFromAge, plural, one {# roku} other {# lat}})"
 
 #: src/features/shop/components/holder-step.tsx
 #: src/features/shop/components/merch-step.tsx
@@ -643,6 +642,7 @@ msgid "or"
 msgstr "albo"
 
 #: src/features/shop/pages/checkout-page.tsx
+msgctxt "the button that places an order with nothing to pay"
 msgid "Order"
 msgstr "Zamawiam"
 
@@ -691,12 +691,12 @@ msgid "Past editions"
 msgstr "Minione edycje"
 
 #: src/features/shop/pages/shop-page.tsx
-msgid "Payment card"
-msgstr "Karta płatnicza"
+msgid "payment card"
+msgstr "karta płatnicza"
 
 #: src/features/shop/pages/shop-page.tsx
-msgid "Payment methods:"
-msgstr "Metody płatności:"
+msgid "Payment methods: {methods}"
+msgstr "Metody płatności: {methods}"
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
@@ -750,7 +750,7 @@ msgstr "Odrzuć wszystkie"
 #. placeholder {0}: money(type.priceMinor!)
 #: src/features/shop/components/holder-step.tsx
 msgid "Regular price: {0}"
-msgstr "Cena zwykła: {0}"
+msgstr "Cena podstawowa: {0}"
 
 #: src/features/shop/components/merch-step.tsx
 msgid "Remove"
@@ -915,6 +915,10 @@ msgstr "Cena wspierająca: {0}"
 msgid "Teen"
 msgstr "Nastolatek"
 
+#: src/features/shop/components/holder-step.tsx
+msgid "Teen ({teenFromAge} to {teenUntil})"
+msgstr "Nastolatek (od {teenFromAge} do {teenUntil} lat)"
+
 #: src/features/account/components/language-form.tsx
 msgid "The browser's language"
 msgstr "Język przeglądarki"
@@ -955,6 +959,10 @@ msgstr "Hasła się różnią."
 #: src/features/shop/pages/result-page.tsx
 msgid "The payment failed."
 msgstr "Płatność się nie powiodła."
+
+#: src/features/shop/components/holder-step.tsx
+msgid "The payment provider cannot take an email address as long as your account’s, so this account cannot pay here. Sign out and order with a shorter address."
+msgstr "Dostawca płatności nie przyjmuje tak długiego adresu e-mail jak adres twojego konta, więc z tego konta nie zapłacisz. Wyloguj się i zamów, podając krótszy adres."
 
 #: src/features/shop/components/holder-step.tsx
 msgid "The payment provider cannot take an email address this long. Use a shorter one."
@@ -1000,7 +1008,7 @@ msgstr "Motyw systemu"
 
 #: src/features/shop/pages/result-page.tsx
 msgid "The time to pay for this order has ended. Nothing was charged."
-msgstr "Czas na opłacenie tego zamówienia minął. Nic nie zostało pobrane."
+msgstr "Czas na opłacenie tego zamówienia minął. Nie pobrano żadnych pieniędzy."
 
 #. placeholder {0}: money(newTotal)
 #: src/features/shop/pages/checkout-page.tsx
@@ -1045,10 +1053,9 @@ msgstr "Ten rodzaj akredytacji nie obejmuje tego, co było wybrane, więc usunę
 msgid "This ticket type is not sold for this age band."
 msgstr "Tego rodzaju akredytacji nie sprzedajemy dla tego przedziału wiekowego."
 
-#. placeholder {0}: allowing.join(', ')
 #: src/features/shop/components/holder-step.tsx
-msgid "This ticket type is not sold for this age band. It is sold with: {0}."
-msgstr "Tego rodzaju akredytacji nie sprzedajemy dla tego przedziału wiekowego. Dla niego są: {0}."
+msgid "This ticket type is not sold for this age band. Ticket types sold for it: {allowing}."
+msgstr "Tego rodzaju akredytacji nie sprzedajemy dla tego przedziału wiekowego. Rodzaje akredytacji dostępne dla tego przedziału: {allowing}."
 
 #: src/features/shop/components/holder-step.tsx
 msgid "This value is not valid."
@@ -1128,10 +1135,6 @@ msgstr "Uwierzytelnianie dwuskładnikowe jest włączone."
 #: src/features/account/components/two-factor-card.tsx
 msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 msgstr "Uwierzytelnianie dwuskładnikowe jest włączone. Przy każdym logowaniu podajesz kod z aplikacji uwierzytelniającej."
-
-#: src/features/shop/components/holder-step.tsx
-msgid "under {teenFromAge}"
-msgstr "poniżej {teenFromAge} lat"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
@@ -1302,11 +1305,11 @@ msgstr "Twoje hasło"
 
 #: src/features/shop/pages/result-page.tsx
 msgid "Your payment arrived, but it could not confirm the order."
-msgstr "Twoja płatność dotarła, ale nie mogła potwierdzić zamówienia."
+msgstr "Twoja płatność dotarła, ale nie udało się nią potwierdzić zamówienia."
 
 #: src/features/shop/pages/result-page.tsx
 msgid "Your payment is under review"
-msgstr "Twoja płatność jest sprawdzana"
+msgstr "Twoja płatność jest wyjaśniana"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your rights"

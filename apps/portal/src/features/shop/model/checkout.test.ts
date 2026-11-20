@@ -207,11 +207,11 @@ describe('the running total', () => {
 
 describe('the ticket holder step', () => {
   it('passes a filled form', () => {
-    expect(holderIssues(offer(), filled(), false)).toEqual({})
+    expect(holderIssues(offer(), filled(), null)).toEqual({})
   })
 
   it('asks for the name, the age band, the email twice and each required field', () => {
-    expect(holderIssues(offer(), emptyDraft(standard!), false)).toEqual({
+    expect(holderIssues(offer(), emptyDraft(standard!), null)).toEqual({
       holderName: 'required',
       ageBand: 'required',
       email: 'required',
@@ -221,7 +221,7 @@ describe('the ticket holder step', () => {
   })
 
   it('refuses an email that is none, two that differ, and one the provider cannot take', () => {
-    const issue = (changes: Partial<Draft>) => holderIssues(offer(), filled(changes), false)
+    const issue = (changes: Partial<Draft>) => holderIssues(offer(), filled(changes), null)
 
     expect(issue({ email: 'ada', emailConfirmation: 'ada' })).toEqual({ email: 'invalid' })
     expect(issue({ emailConfirmation: 'Ada@Example.test ' })).toEqual({})
@@ -234,18 +234,29 @@ describe('the ticket holder step', () => {
 
   // A signed-in buyer's email is the account's: nothing is typed and nothing is checked of it.
   it('asks no email of a signed-in buyer', () => {
-    expect(holderIssues(offer(), filled({ email: '', emailConfirmation: '' }), true)).toEqual({})
+    expect(
+      holderIssues(offer(), filled({ email: '', emailConfirmation: '' }), 'jan@example.test'),
+    ).toEqual({})
+  })
+
+  // An account email the provider's module cannot take cannot pay through it: checkout says so
+  // before the order is placed.
+  it('stops a signed-in buyer whose account email the provider cannot take', () => {
+    const long = `${'a'.repeat(39)}@example.test`
+
+    expect(holderIssues(offer(), filled(), long)).toEqual({ accountEmail: 'too-long' })
+    expect(holderIssues(offer({ provider: null }), filled(), long)).toEqual({})
   })
 
   it('refuses an age band the ticket type does not allow', () => {
-    expect(holderIssues(offer(), filled({ ageBand: 'child' }), false)).toEqual({
+    expect(holderIssues(offer(), filled({ ageBand: 'child' }), null)).toEqual({
       ageBand: 'not-allowed',
     })
   })
 
   // A merch-only order asks for the buyer's name and email: never an age band or a field.
   it('asks an order of merchandise alone for the name and the email only', () => {
-    expect(holderIssues(offer(), emptyDraft(null), false)).toEqual({
+    expect(holderIssues(offer(), emptyDraft(null), null)).toEqual({
       holderName: 'required',
       email: 'required',
       emailConfirmation: 'required',

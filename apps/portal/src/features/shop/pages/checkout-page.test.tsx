@@ -204,6 +204,34 @@ describe('CheckoutPage', () => {
     expect(screen.getByLabelText<HTMLInputElement>(/name or nickname/).value).toBe('Jan Kowal')
   })
 
+  it('stops a signed-in buyer whose account email the provider cannot take, and says so', async () => {
+    const long = `${'a'.repeat(39)}@example.test`
+    useSession.setState({ status: 'ready', account: { ...account, email: long } as never })
+    view()
+    await stepHeading('Ticket holder')
+
+    expect(screen.getByRole('alert').textContent).toMatch(/cannot take an email address as long/)
+    type('Age band', 'adult')
+    type('City you travel from', 'Poznań')
+    press('Next')
+
+    expect(screen.getByRole('heading', { name: 'Ticket holder', level: 2 })).toBeDefined()
+  })
+
+  it('names an age band with the years it covers', async () => {
+    view()
+    await stepHeading('Ticket holder')
+    press('Continue without an account')
+
+    const options = within(screen.getByLabelText('Age band')).getAllByRole('option')
+    expect(options.map((option) => option.textContent)).toEqual([
+      'Choose',
+      'Child (under 13)',
+      'Teen (13 to 17)',
+      'Adult (18 and over)',
+    ])
+  })
+
   it('updates the total at once with a supporter price, an add-on and merchandise', async () => {
     view()
     await stepHeading('Ticket holder')

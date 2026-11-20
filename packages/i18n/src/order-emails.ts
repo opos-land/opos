@@ -46,7 +46,13 @@ export interface ConfirmationData extends OrderOf {
   orderLink: string
   /** For an email with an account: where its owner signs in to see the order. */
   signInLink: string | null
-  seller: { name: string; address: string; registrationNumber: string; contactEmail: string }
+  /** The seller's details; null while the convention's are not complete. */
+  seller: {
+    name: string
+    address: string
+    registrationNumber: string
+    contactEmail: string
+  } | null
   /** The versions of the documents the buyer accepted, each under its title. */
   documents: readonly { title: string; url: string }[]
   /** For a teen as the ticket holder: the guardian consent form, when the edition set one. */
@@ -109,7 +115,7 @@ export function orderConfirmationEmail(data: ConfirmationData): OrderEmailConten
             { kind: 'heading' as const, text: msg`Guardian consent` },
             {
               kind: 'paragraph' as const,
-              text: msg`The ticket holder is under 18 and over the age of a child: bring the guardian's consent on paper to the convention.`,
+              text: msg`The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention.`,
             },
             ...(data.guardianConsent.formUrl
               ? [
@@ -132,16 +138,20 @@ export function orderConfirmationEmail(data: ConfirmationData): OrderEmailConten
             })),
           ]
         : []),
-      { kind: 'heading', text: msg`Seller` },
-      {
-        kind: 'quote',
-        lines: [
-          data.seller.name,
-          data.seller.address,
-          data.seller.registrationNumber,
-          data.seller.contactEmail,
-        ].filter((line) => line !== ''),
-      },
+      ...(data.seller
+        ? [
+            { kind: 'heading' as const, text: msg`Seller` },
+            {
+              kind: 'quote' as const,
+              lines: [
+                data.seller.name,
+                data.seller.address,
+                data.seller.registrationNumber,
+                data.seller.contactEmail,
+              ],
+            },
+          ]
+        : []),
     ],
   }
 }
@@ -168,7 +178,7 @@ export const paymentUnderReviewEmail = ({
   number,
   moneyWith,
   contactEmail,
-}: OrderOf & { moneyWith: string | null; contactEmail: string }): OrderEmailContent => ({
+}: OrderOf & { moneyWith: string | null; contactEmail: string | null }): OrderEmailContent => ({
   subject: msg`Your payment for the order ${number} is under review`,
   parts: [
     {
@@ -178,8 +188,11 @@ export const paymentUnderReviewEmail = ({
     ...(moneyWith ? [{ kind: 'quote' as const, lines: [moneyWith] }] : []),
     {
       kind: 'paragraph',
-      text: msg`An organizer of ${conventionName} will get in touch with you. You do not need to pay again. You can also write to ${contactEmail}.`,
+      text: msg`An organizer of ${conventionName} will get in touch with you. You do not need to pay again.`,
     },
+    ...(contactEmail
+      ? [{ kind: 'paragraph' as const, text: msg`You can also write to ${contactEmail}.` }]
+      : []),
   ],
 })
 
@@ -225,7 +238,7 @@ export const paymentNotNeededEmail = ({
   number,
   moneyWith,
   contactEmail,
-}: OrderOf & { moneyWith: string | null; contactEmail: string }): OrderEmailContent => ({
+}: OrderOf & { moneyWith: string | null; contactEmail: string | null }): OrderEmailContent => ({
   subject: msg`A payment arrived that your order ${number} does not need`,
   parts: [
     {
@@ -233,7 +246,14 @@ export const paymentNotNeededEmail = ({
       text: msg`A payment arrived for your order ${number} for ${conventionName}, which was not waiting for one any more. It changes nothing of the order.`,
     },
     ...(moneyWith ? [{ kind: 'quote' as const, lines: [moneyWith] }] : []),
-    { kind: 'paragraph', text: msg`If you have questions, write to ${contactEmail}.` },
+    ...(contactEmail
+      ? [
+          {
+            kind: 'paragraph' as const,
+            text: msg`If you have questions, write to ${contactEmail}.`,
+          },
+        ]
+      : []),
   ],
 })
 

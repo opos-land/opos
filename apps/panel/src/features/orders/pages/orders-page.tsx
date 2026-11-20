@@ -31,7 +31,7 @@ import { useEditionBySlug } from '../../editions'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
 import { ordersOptions } from '../api/orders'
 import { OrderStatusBadge } from '../components/order-status'
-import { MANUAL_REASON_LABELS, STATUS_LABELS } from '../model/labels'
+import { MANUAL_REASON_LABELS, STATUS_HEADING, STATUS_LABELS } from '../model/labels'
 import { type OrderSearch, ORDERS_PAGE, pageOf, searchOf } from '../model/search'
 
 /** What the list is narrowed to, besides the search. */
@@ -59,7 +59,7 @@ const HOLDS = {
  * the edition; recording a manual order needs tickets=write.
  */
 export function OrdersPage() {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
   const time = useTenantTime()
@@ -190,7 +190,7 @@ export function OrdersPage() {
           </Button>
         </form>
         <div className="grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <FormField label={<Trans>Status</Trans>}>
+          <FormField label={t(STATUS_HEADING)}>
             {(control) => (
               <NativeSelect
                 {...control}
@@ -231,7 +231,7 @@ export function OrdersPage() {
                 {(items.data ?? []).map((item) => (
                   <NativeSelectOptGroup key={item.id} label={item.name}>
                     <NativeSelectOption value={`item:${item.id}`}>
-                      {t`${item.name}: every variant`}
+                      {t`${item.name}: any variant`}
                     </NativeSelectOption>
                     {item.variants.length > 1 || item.axes.length > 0
                       ? item.variants.map((variant) => {
@@ -292,9 +292,7 @@ export function OrdersPage() {
                 <TableHead scope="col">
                   <Trans>Number</Trans>
                 </TableHead>
-                <TableHead scope="col">
-                  <Trans>Status</Trans>
-                </TableHead>
+                <TableHead scope="col">{t(STATUS_HEADING)}</TableHead>
                 <TableHead scope="col">
                   <Trans>Name on the order</Trans>
                 </TableHead>
@@ -356,7 +354,8 @@ export function OrdersPage() {
             </Button>
             <p aria-live="polite">
               <Trans>
-                Orders {page.first}–{page.last} of {orders.data.total}
+                Orders {i18n.number(page.first)}–{i18n.number(page.last)} of{' '}
+                {i18n.number(orders.data.total)}
               </Trans>
             </p>
           </div>

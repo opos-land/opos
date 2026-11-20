@@ -186,13 +186,13 @@ function Credentials({
         <p className="text-sm">
           {callsFrom ? (
             <Trans>
-              This provider answers only to the addresses entered in its panel. Enter this one there
-              before you connect the account: <strong>{callsFrom}</strong>
+              This provider answers only calls from the IP addresses entered in its panel. Enter
+              this one there before you connect the account: <strong>{callsFrom}</strong>
             </Trans>
           ) : (
             <Trans>
-              This provider answers only to the addresses entered in its panel. Ask the OPOS
-              administrators for the address to enter there before you connect the account.
+              This provider answers only calls from the IP addresses entered in its panel. Ask the
+              OPOS administrators for the address to enter there before you connect the account.
             </Trans>
           )}
         </p>

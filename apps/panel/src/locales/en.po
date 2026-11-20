@@ -9,8 +9,8 @@ msgstr ""
 
 #. placeholder {0}: item.name
 #: src/features/orders/pages/orders-page.tsx
-msgid "{0}: every variant"
-msgstr "{0}: every variant"
+msgid "{0}: any variant"
+msgstr "{0}: any variant"
 
 #: src/features/orders/components/orders-in-review.tsx
 msgid "{count, plural, one {# order needs review: its payment arrived and could not confirm it. It waits for an organizer to mark it paid or decline it.} other {# orders need review: their payments arrived and could not confirm them. They wait for an organizer to mark them paid or decline them.}}"
@@ -387,10 +387,6 @@ msgstr "API key"
 msgid "Ask for nothing sensitive"
 msgstr "Ask for nothing sensitive"
 
-#: src/features/orders/pages/order-page.tsx
-msgid "Asked"
-msgstr "Asked"
-
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
 msgstr "At least 8 characters."
@@ -438,6 +434,10 @@ msgstr "Branding"
 #: src/shared/ui/breadcrumb.tsx
 msgid "breadcrumb"
 msgstr "breadcrumb"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Brought on paper to the convention"
+msgstr "Brought on paper to the convention"
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Buyers pay straight into the convention’s own account with a payment provider. OPOS holds no money."
@@ -552,6 +552,10 @@ msgstr "Code"
 #: src/features/account/components/two-factor-card.tsx
 msgid "Code from the app"
 msgstr "Code from the app"
+
+#: src/features/orders/model/labels.ts
+msgid "Commission"
+msgstr "Commission"
 
 #: src/features/orders/model/labels.ts
 msgid "Complimentary"
@@ -1090,6 +1094,10 @@ msgstr "From"
 msgid "From the payment provider"
 msgstr "From the payment provider"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "From the provider:"
+msgstr "From the provider:"
+
 #: src/features/team/components/members-table.tsx
 msgid "Full access"
 msgstr "Full access"
@@ -1115,6 +1123,10 @@ msgstr "Go to sign-in"
 #: src/features/auth/components/accept-invitation.tsx
 msgid "Go to your conventions"
 msgstr "Go to your conventions"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Guardian’s consent"
+msgstr "Guardian’s consent"
 
 #: src/features/orders/components/order-lines.tsx
 msgid "Handed out"
@@ -1761,9 +1773,9 @@ msgstr "Order {number}"
 msgid "Orders"
 msgstr "Orders"
 
-#. placeholder {0}: page.first
-#. placeholder {1}: page.last
-#. placeholder {2}: orders.data.total
+#. placeholder {0}: i18n.number(page.first)
+#. placeholder {1}: i18n.number(page.last)
+#. placeholder {2}: i18n.number(orders.data.total)
 #: src/features/orders/pages/orders-page.tsx
 msgid "Orders {0}–{1} of {2}"
 msgstr "Orders {0}–{1} of {2}"
@@ -1856,6 +1868,10 @@ msgstr "Payment attempts"
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Payment provider account"
 msgstr "Payment provider account"
+
+#: src/features/orders/model/labels.ts
+msgid "Payout batch number"
+msgstr "Payout batch number"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Perk {number}"
@@ -2468,9 +2484,12 @@ msgstr "Starts"
 
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/editions-page.tsx
-#: src/features/orders/pages/order-page.tsx
-#: src/features/orders/pages/orders-page.tsx
 #: src/features/shop/components/provider-account-section.tsx
+msgid "Status"
+msgstr "Status"
+
+#: src/features/orders/model/labels.ts
+msgctxt "order"
 msgid "Status"
 msgstr "Status"
 
@@ -2558,6 +2577,10 @@ msgstr "The browser's language"
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
 msgstr "The changes are saved."
+
+#: src/features/orders/model/labels.ts
+msgid "The code was wrong."
+msgstr "The code was wrong."
 
 #: src/features/orders/components/order-changes.tsx
 msgid "The confirmation is on its way to the order’s email."
@@ -2719,10 +2742,6 @@ msgstr "The gross amount, the same for every variant."
 msgid "The gross amount. Enter 0 for a free add-on."
 msgstr "The gross amount. Enter 0 for a free add-on."
 
-#: src/features/orders/pages/order-page.tsx
-msgid "the guardian’s consent is brought on paper"
-msgstr "the guardian’s consent is brought on paper"
-
 #: src/features/orders/components/order-lines.tsx
 msgid "The hand-out is marked."
 msgstr "The hand-out is marked."
@@ -2813,10 +2832,6 @@ msgstr "The membership is saved: {name}."
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "The message is saved."
 msgstr "The message is saved."
-
-#: src/features/orders/pages/order-page.tsx
-msgid "The money is"
-msgstr "The money is"
 
 #: src/features/orders/components/order-changes.tsx
 msgid "The money is with the convention. Marked paid, the order stays at its total and gets its QR code; a difference is settled with the buyer outside OPOS. An order that holds nothing takes again what it held, so raise the stock or the capacity first when that is gone."
@@ -2914,6 +2929,10 @@ msgstr "The passwords differ."
 msgid "The payment arrived after the order had expired, and what it held was no longer available."
 msgstr "The payment arrived after the order had expired, and what it held was no longer available."
 
+#: src/features/orders/model/labels.ts
+msgid "The payment failed."
+msgstr "The payment failed."
+
 #: src/features/orders/components/order-changes.tsx
 msgid "The payment is declined, and the buyer is told."
 msgstr "The payment is declined, and the buyer is told."
@@ -2931,8 +2950,20 @@ msgid "The payment provider account is disconnected."
 msgstr "The payment provider account is disconnected."
 
 #: src/features/orders/model/labels.ts
+msgid "The payment took too long."
+msgstr "The payment took too long."
+
+#: src/features/orders/model/labels.ts
+msgid "The payment was canceled."
+msgstr "The payment was canceled."
+
+#: src/features/orders/model/labels.ts
 msgid "The payment was declined"
 msgstr "The payment was declined"
+
+#: src/features/orders/model/labels.ts
+msgid "The payment was declined."
+msgstr "The payment was declined."
 
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "The picture is added."
@@ -3116,6 +3147,10 @@ msgstr "There are no editions yet."
 msgid "There are no programme items yet."
 msgstr "There are no programme items yet."
 
+#: src/features/orders/model/labels.ts
+msgid "There was not enough money to pay."
+msgstr "There was not enough money to pay."
+
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
 #: src/shared/ui/irreversible-action.tsx
 msgid "This action cannot be undone."
@@ -3155,12 +3190,12 @@ msgid "This order needs review"
 msgstr "This order needs review"
 
 #: src/features/shop/components/provider-account-section.tsx
-msgid "This provider answers only to the addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
-msgstr "This provider answers only to the addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
+msgid "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
+msgstr "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
 
 #: src/features/shop/components/provider-account-section.tsx
-msgid "This provider answers only to the addresses entered in its panel. Enter this one there before you connect the account: <0>{callsFrom}</0>"
-msgstr "This provider answers only to the addresses entered in its panel. Enter this one there before you connect the account: <0>{callsFrom}</0>"
+msgid "This provider answers only calls from the IP addresses entered in its panel. Enter this one there before you connect the account: <0>{callsFrom}</0>"
+msgstr "This provider answers only calls from the IP addresses entered in its panel. Enter this one there before you connect the account: <0>{callsFrom}</0>"
 
 #: src/features/orders/pages/manual-order-page.tsx
 #: src/features/orders/pages/order-page.tsx
@@ -3234,6 +3269,10 @@ msgstr "Title of the new document"
 msgid "To"
 msgstr "To"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "To pay"
+msgstr "To pay"
+
 #: src/shared/ui/sidebar.tsx
 msgid "Toggle Sidebar"
 msgstr "Toggle Sidebar"
@@ -3251,6 +3290,10 @@ msgstr "Total"
 #: src/features/orders/components/order-changes.tsx
 msgid "Total of the order"
 msgstr "Total of the order"
+
+#: src/features/orders/model/labels.ts
+msgid "Transaction number"
+msgstr "Transaction number"
 
 #: src/features/auth/components/accept-invitation.tsx
 #: src/shared/ui/messages.tsx
@@ -3444,17 +3487,21 @@ msgstr "What the order holds"
 msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
 msgstr "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
 
+#: src/features/orders/pages/order-page.tsx
+msgid "Where the money is"
+msgstr "Where the money is"
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "While nothing is on sale"
 msgstr "While nothing is on sale"
 
 #: src/features/orders/model/labels.ts
-msgid "with the buyer"
-msgstr "with the buyer"
+msgid "With the buyer"
+msgstr "With the buyer"
 
 #: src/features/orders/model/labels.ts
-msgid "with the convention"
-msgstr "with the convention"
+msgid "With the convention"
+msgstr "With the convention"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx

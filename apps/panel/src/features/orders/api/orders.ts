@@ -36,5 +36,8 @@ export const takeBackHandOutOptions = (api: Api) => api.orders.takeBackHandOut.m
 export const productionNumbersOptions = (api: Api, editionId: string) =>
   api.orders.productionNumbers.queryOptions(ofEdition(editionId))
 
+// The file comes in the language the panel shows: the client sends it with every request.
 export const productionNumbersExportOptions = (api: Api, editionId: string) =>
-  api.orders.productionNumbersExport.queryOptions(ofEdition(editionId))
+  api.orders.productionNumbersExport.queryOptions({
+    input: { params: { editionId }, headers: {} },
+  })

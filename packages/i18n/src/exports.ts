@@ -8,7 +8,7 @@ export const productionNumbersColumns = {
   item: msg`Merchandise item`,
   variant: msg`Variant`,
   /** What the paid orders hold, manual ones among them. */
-  paid: msg`Paid`,
-  awaitingPayment: msg`Awaiting payment`,
-  needsReview: msg`Needs review`,
+  paid: msg({ message: 'Paid', context: 'production numbers' }),
+  awaitingPayment: msg({ message: 'Awaiting payment', context: 'production numbers' }),
+  needsReview: msg({ message: 'Needs review', context: 'production numbers' }),
 }

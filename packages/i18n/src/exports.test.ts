@@ -1,4 +1,5 @@
 import { setupI18n } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
 import { describe, expect, it } from 'vitest'
 import { activateLocale } from './catalog'
 import { productionNumbersColumns } from './exports'
@@ -36,5 +37,16 @@ describe('the columns of the production numbers', () => {
       'Oczekujące na płatność',
       'Do wyjaśnienia',
     ])
+  })
+
+  // "Paid" alone is also the moment an order was paid, said another way in Polish: the counts
+  // carry a context, the one the panel's own table of the numbers uses.
+  it('name the three counts under the context of the production numbers', () => {
+    const { paid, awaitingPayment, needsReview } = productionNumbersColumns
+
+    expect(paid.id).toBe(msg({ message: 'Paid', context: 'production numbers' }).id)
+    expect(paid.id).not.toBe(msg`Paid`.id)
+    expect(awaitingPayment.id).not.toBe(msg`Awaiting payment`.id)
+    expect(needsReview.id).not.toBe(msg`Needs review`.id)
   })
 })

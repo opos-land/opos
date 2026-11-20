@@ -124,6 +124,7 @@ msgid "attendee"
 msgstr "uczestnik"
 
 #: src/exports.ts
+msgctxt "production numbers"
 msgid "Awaiting payment"
 msgstr "Oczekujące na płatność"
 
@@ -277,7 +278,7 @@ msgstr "Jeśli to nie ty prosisz o tę zmianę, zignoruj tę wiadomość."
 
 #: src/order-emails.ts
 msgid "If you did not ask for this change, write to {contactEmail}."
-msgstr "Jeśli ta zmiana nie była na twoją prośbę, napisz na adres {contactEmail}."
+msgstr "Jeśli ta zmiana nie została wprowadzona na twoją prośbę, napisz na adres {contactEmail}."
 
 #: src/emails.ts
 msgid "If you did not create an account, ignore this message."
@@ -350,6 +351,7 @@ msgid "module"
 msgstr "moduł"
 
 #: src/exports.ts
+msgctxt "production numbers"
 msgid "Needs review"
 msgstr "Do wyjaśnienia"
 
@@ -408,6 +410,7 @@ msgid "organizer"
 msgstr "organizator"
 
 #: src/exports.ts
+msgctxt "production numbers"
 msgid "Paid"
 msgstr "Opłacone"
 
@@ -851,7 +854,7 @@ msgstr "rodzaj akredytacji"
 
 #: src/order-emails.ts
 msgid "To settle the return of the money, write to {contactEmail}."
-msgstr "Aby ustalić zwrot pieniędzy, napisz na adres {contactEmail}."
+msgstr "Aby uzgodnić zwrot pieniędzy, napisz na adres {contactEmail}."
 
 #: src/errors.ts
 msgid "Too many attempts. Try again in a few minutes."

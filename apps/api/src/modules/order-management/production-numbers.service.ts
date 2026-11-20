@@ -2,14 +2,13 @@ import { setupI18n } from '@lingui/core'
 import { Injectable } from '@nestjs/common'
 import { type ProductionNumbers } from '@opos/contract'
 import { editions, editionShops, orderLines, orders } from '@opos/db'
-import { activateLocale } from '@opos/i18n'
+import { activateLocale, DEFAULT_LOCALE, isLocale, parseAcceptLanguage } from '@opos/i18n'
 import { productionNumbersColumns } from '@opos/i18n/exports'
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { csvFile } from '../../common/csv'
 import { notFound } from '../../common/errors/api-error'
 import { MerchandiseRepository } from '../catalog/merchandise.repository'
-import { recipientLocale } from '../mail/recipient-locale'
 import { beforeDeadline } from './order-management.errors'
 
 /** The statuses of the orders the numbers count: nobody picks up what the others held. */
@@ -83,10 +82,12 @@ export class ProductionNumbersService {
   }
 
   /**
-   * The numbers as a file named after the edition, a row a variant, its columns in the language
-   * of the account that asks: its own, or the convention's where it chose none.
+   * The numbers as a file named after the edition, a row a variant. Its columns are in the
+   * language the request asks for, which the panel sends as the one it shows, so the file reads
+   * as the table on the screen does; asked with none, in the account's own, then the
+   * convention's.
    */
-  async file(editionId: string, now = new Date()) {
+  async file(editionId: string, language: string | undefined, now = new Date()) {
     const numbers = await this.of(editionId, now)
     const [edition] = await this.context
       .tx()
@@ -95,12 +96,13 @@ export class ProductionNumbersService {
       .where(eq(editions.id, editionId))
     if (!edition) throw notFound('edition')
     const i18n = setupI18n()
+    const { locale } = this.context.account()
+    const convention = this.context.tenant().defaultLocale
     await activateLocale(
       i18n,
-      recipientLocale({
-        account: this.context.account().locale,
-        tenant: this.context.tenant().defaultLocale,
-      }),
+      parseAcceptLanguage(language)[0] ??
+        locale ??
+        (isLocale(convention) ? convention : DEFAULT_LOCALE),
     )
     const columns = productionNumbersColumns
     const rows = numbers.items.flatMap((item) =>

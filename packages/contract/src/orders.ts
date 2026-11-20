@@ -439,8 +439,12 @@ export const ordersContract = {
       path: '/editions/{editionId}/production-numbers/export',
       outputStructure: 'detailed',
       summary:
-        'The production numbers as a CSV file, its columns in the language of the account that asks; needs tickets>=read',
+        'The production numbers as a CSV file, its columns in the language asked for in Accept-Language, which the panel sends as the one it shows; needs tickets>=read',
     })
-    .input(edition)
+    .input(
+      edition.extend({
+        headers: z.object({ 'accept-language': z.string().max(200).optional() }),
+      }),
+    )
     .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
 }

@@ -591,7 +591,7 @@ steps of [adding a feature](#adding-a-feature).
   withdrawn, never sent. An order's page tells an org neither whether an email address has an
   account nor the addresses of the orgs an alert went to. A file an org exports is CSV in UTF-8
   with a byte order mark, its texts quoted and its fields separated by semicolons, its columns in
-  the language of the account that asks; a cell that begins like a formula is written with a
+  the language the panel shows and sends with its request; a cell that begins like a formula is written with a
   leading apostrophe.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their

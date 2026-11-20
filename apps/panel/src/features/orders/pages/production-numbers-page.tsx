@@ -30,7 +30,7 @@ import { fileNameOf, saveFile } from '../model/save-file'
  * (docs/specs/0006-order-management.md, S2 and S3). Needs tickets>=read in the edition.
  */
 export function ProductionNumbersPage() {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
   const time = useTenantTime()
@@ -129,11 +129,15 @@ export function ProductionNumbersPage() {
                   <TableRow key={variant.variantId}>
                     <TableCell>{item.name}</TableCell>
                     <TableCell>{variant.labels.join(', ') || '—'}</TableCell>
-                    <TableCell className="text-right tabular-nums">{variant.paid}</TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {variant.awaitingPayment}
+                      {i18n.number(variant.paid)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{variant.needsReview}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {i18n.number(variant.awaitingPayment)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {i18n.number(variant.needsReview)}
+                    </TableCell>
                   </TableRow>
                 )),
               )}

@@ -44,7 +44,7 @@ export function OrderLines({
   /** Whether the member may write and the order is one that is corrected and handed out. */
   canChange: boolean
 }) {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const { api } = useCurrentTenant()
   const time = useTenantTime()
   const money = useMoney()
@@ -92,7 +92,9 @@ export function OrderLines({
           return (
             <TableRow key={line.id}>
               <TableCell>{name}</TableCell>
-              <TableCell className="text-right tabular-nums">{line.quantity}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {i18n.number(line.quantity)}
+              </TableCell>
               <TableCell className="text-right tabular-nums">
                 {money.format(line.amountMinor)}
               </TableCell>

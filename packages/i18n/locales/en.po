@@ -124,6 +124,7 @@ msgid "attendee"
 msgstr "attendee"
 
 #: src/exports.ts
+msgctxt "production numbers"
 msgid "Awaiting payment"
 msgstr "Awaiting payment"
 
@@ -350,6 +351,7 @@ msgid "module"
 msgstr "module"
 
 #: src/exports.ts
+msgctxt "production numbers"
 msgid "Needs review"
 msgstr "Needs review"
 
@@ -408,6 +410,7 @@ msgid "organizer"
 msgstr "organizer"
 
 #: src/exports.ts
+msgctxt "production numbers"
 msgid "Paid"
 msgstr "Paid"
 

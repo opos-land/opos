@@ -33,8 +33,12 @@ import {
   AGE_BAND_LABELS,
   ATTEMPT_STATUS_LABELS,
   EMAIL_KIND_LABELS,
+  FAILURE_LABELS,
+  INFORMATION_AMOUNTS,
+  INFORMATION_LABELS,
   MANUAL_REASON_LABELS,
   MONEY_WITH_LABELS,
+  STATUS_HEADING,
 } from '../model/labels'
 
 const Fact = ({ label, children }: { label: ReactNode; children: ReactNode }) => (
@@ -109,14 +113,11 @@ export function OrderPage() {
           <Fact label={<Trans>Email</Trans>}>{order.email ?? '—'}</Fact>
           <Fact label={<Trans>Ticket holder</Trans>}>{order.holderName || '—'}</Fact>
           {order.ageBand && (
-            <Fact label={<Trans>Age band</Trans>}>
-              {t(AGE_BAND_LABELS[order.ageBand])}
-              {order.guardianConsentAcknowledgedAt && (
-                <>
-                  {' · '}
-                  <Trans>the guardian’s consent is brought on paper</Trans>
-                </>
-              )}
+            <Fact label={<Trans>Age band</Trans>}>{t(AGE_BAND_LABELS[order.ageBand])}</Fact>
+          )}
+          {order.guardianConsentAcknowledgedAt && (
+            <Fact label={<Trans>Guardian’s consent</Trans>}>
+              <Trans>Brought on paper to the convention</Trans>
             </Fact>
           )}
           {order.answers.map((answer) => (
@@ -189,17 +190,15 @@ export function OrderPage() {
                 <TableHead scope="col">
                   <Trans>Started</Trans>
                 </TableHead>
-                <TableHead scope="col">
-                  <Trans>Status</Trans>
-                </TableHead>
+                <TableHead scope="col">{t(STATUS_HEADING)}</TableHead>
                 <TableHead scope="col" className="text-right">
-                  <Trans>Asked</Trans>
+                  <Trans>To pay</Trans>
                 </TableHead>
                 <TableHead scope="col" className="text-right">
                   <Trans>Paid</Trans>
                 </TableHead>
                 <TableHead scope="col">
-                  <Trans>The money is</Trans>
+                  <Trans>Where the money is</Trans>
                 </TableHead>
                 <TableHead scope="col">
                   <Trans>From the payment provider</Trans>
@@ -224,13 +223,23 @@ export function OrderPage() {
                     <ul>
                       {Object.entries(attempt.information).map(([name, value]) => (
                         <li key={name}>
-                          {name}: <span className="font-mono">{value}</span>
+                          {INFORMATION_LABELS[name] ? t(INFORMATION_LABELS[name]) : name}:{' '}
+                          {INFORMATION_AMOUNTS.includes(name) ? (
+                            money.format(Number(value))
+                          ) : (
+                            <span className="font-mono">{value}</span>
+                          )}
                         </li>
                       ))}
+                      {attempt.failureReason && <li>{t(FAILURE_LABELS[attempt.failureReason])}</li>}
                       {attempt.failureCode && (
-                        <li>
-                          {attempt.failureCode}
-                          {attempt.failureMessage && `: ${attempt.failureMessage}`}
+                        // The provider's own code and words, as it sent them: for its support.
+                        <li className="text-muted-foreground">
+                          <Trans>From the provider:</Trans>{' '}
+                          <span className="font-mono">
+                            {attempt.failureCode}
+                            {attempt.failureMessage && `: ${attempt.failureMessage}`}
+                          </span>
                         </li>
                       )}
                     </ul>

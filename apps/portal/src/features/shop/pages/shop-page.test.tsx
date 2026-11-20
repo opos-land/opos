@@ -135,6 +135,18 @@ describe('ShopPage', () => {
     expect(document.querySelector('footer img')).toBeNull()
   })
 
+  // The fake provider has a sentence of its own: no name is put into another sentence.
+  it('says that the fake provider takes no money', async () => {
+    const shown = offer()
+    shown.provider!.name = 'fake'
+    api.offer.mockResolvedValue(shown)
+    view()
+
+    expect(
+      await screen.findByText('Payments are handled by a fake provider that takes no money.'),
+    ).toBeDefined()
+  })
+
   // The shop never shows how much stock or capacity is left.
   it('shows no count of what is left', async () => {
     view()

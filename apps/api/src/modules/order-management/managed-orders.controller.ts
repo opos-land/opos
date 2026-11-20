@@ -154,7 +154,7 @@ export class ManagedOrdersController {
   @RequireEdition('tickets', 'read')
   productionNumbersExport() {
     return implement(contract.orders.productionNumbersExport).handler(({ input }) =>
-      this.production.file(input.params.editionId),
+      this.production.file(input.params.editionId, input.headers['accept-language']),
     )
   }
 }

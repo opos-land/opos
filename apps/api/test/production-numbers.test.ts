@@ -163,7 +163,7 @@ describe('the production numbers', () => {
     )
     expect(res.headers['cache-control']).toBe('private, no-store')
     const rows = res.text.split('\r\n')
-    // No account language is set: the convention's, Polish by default.
+    // No language is asked for and the account chose none: the convention's, Polish by default.
     expect(rows[0]).toBe(
       '\uFEFF"Gadżet";"Wariant";"Opłacone";"Oczekujące na płatność";"Do wyjaśnienia"',
     )
@@ -173,11 +173,18 @@ describe('the production numbers', () => {
     ])
     expect(rows.slice(3)).toEqual(['"Pin";"";4;0;0', ''])
 
-    // In the language of the account that asked, once it chose one.
+    // In the language the panel shows, which it sends with every request: the file reads as
+    // the table on the screen does.
+    const english = '\uFEFF"Merchandise item";"Variant";"Paid";"Awaiting payment";"Needs review"'
+    const asked = await d
+      .head('get', '/production-numbers/export')
+      .set('Accept-Language', 'en')
+      .buffer(true)
+      .expect(200)
+    expect(asked.text.split('\r\n')[0]).toBe(english)
+    // Asked with no language, it is in the one the account chose.
     await setColumn('accounts', d.t.head.id, 'locale', 'en')
-    const english = await d.head('get', '/production-numbers/export').buffer(true).expect(200)
-    expect(english.text.split('\r\n')[0]).toBe(
-      '\uFEFF"Merchandise item";"Variant";"Paid";"Awaiting payment";"Needs review"',
-    )
+    const chosen = await d.head('get', '/production-numbers/export').buffer(true).expect(200)
+    expect(chosen.text.split('\r\n')[0]).toBe(english)
   })
 })

@@ -221,6 +221,7 @@ describe('the page of an order', () => {
     expect(screen.getByText('Gdynia')).toBeDefined()
     expect(screen.getByText(/Rules, version 2/)).toBeDefined()
     expect(screen.getByText('TX-1')).toBeDefined()
+    expect(screen.getByText('With the convention')).toBeDefined()
     expect(screen.getByText('Confirmation with the QR code')).toBeDefined()
   })
 
@@ -248,6 +249,53 @@ describe('the page of an order', () => {
 
     expect(await emails.findByText('The organizers')).toBeDefined()
     expect(emails.getByText(/Not sent: the order moved to another address/)).toBeDefined()
+  })
+
+  // What a provider's module keeps of a payment is named in the member's language, and an
+  // amount among it is shown as money.
+  it('names what the provider keeps of a payment, and why an attempt failed', async () => {
+    const attempt = (order().attempts as object[])[0]!
+    readOrder.mockResolvedValue(
+      order({
+        attempts: [
+          {
+            ...attempt,
+            information: { transaction: 'TX-1', batch: '77', commissionMinor: '123', other: 'x' },
+          },
+          {
+            ...attempt,
+            id: 'attempt-2',
+            status: 'failed',
+            paidAmountMinor: null,
+            moneyWith: null,
+            failureReason: 'insufficient-funds',
+            failureCode: 'err49',
+            failureMessage: 'Brak środków',
+            information: {},
+          },
+        ],
+      }),
+    )
+    view()
+    const attempts = await section('Payment attempts')
+
+    expect(await attempts.findByText(/Transaction number/)).toBeDefined()
+    expect(attempts.getByText(/Payout batch number/)).toBeDefined()
+    expect(attempts.getByText(/Commission/).textContent).toContain('1.23 PLN')
+    // A key the panel does not know is shown as the module gave it.
+    expect(attempts.getByText(/other/)).toBeDefined()
+    expect(attempts.getByText('There was not enough money to pay.')).toBeDefined()
+    expect(attempts.getByText(/err49: Brak środków/)).toBeDefined()
+  })
+
+  it('says a teen’s guardian consent is brought on paper', async () => {
+    readOrder.mockResolvedValue(
+      order({ ageBand: 'teen', guardianConsentAcknowledgedAt: '2026-05-01T10:00:00.000Z' }),
+    )
+    view()
+
+    expect(await screen.findByText('Teen')).toBeDefined()
+    expect(screen.getByText('Brought on paper to the convention')).toBeDefined()
   })
 
   it('corrects the ticket holder’s name', async () => {

@@ -131,7 +131,7 @@ Tenant routes, each under `/editions/{editionId}`:
 A QR code is searched by its SHA-256 hash, which the panel makes and sends as `qrCodeHash`: the
 code never travels in an address, where a log would keep it. Resending has a rate limit of its
 own, an order. The export is a file as [sales reports](0010-sales-reports.md) writes its own,
-its columns in the language of the account that asks.
+its columns in the language the panel shows, which it sends with the request.
 
 A manual order is priced against the offer the shop would make at that moment were it open: it
 is recorded while the shop is closed, and sells merchandise alone whatever the shop lets a buyer

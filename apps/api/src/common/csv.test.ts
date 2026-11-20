@@ -24,6 +24,10 @@ describe('csvFile', () => {
       csvFile([[amountCell(12345, 'en'), amountCell(10000, 'en'), amountCell(150, 'pl')]]),
     ).toBe('\uFEFF123.45;100.00;1,50\r\n')
     expect(csvFile([[amountCell(-1200, 'pl'), amountCell(5, 'en')]])).toBe('\uFEFF-12,00;0.05\r\n')
+    // The mark is the language's own, whichever language a file is asked for in.
+    expect(csvFile([[amountCell(12345, 'de'), amountCell(12345, 'en-GB')]])).toBe(
+      '\uFEFF123,45;123.45\r\n',
+    )
   })
 
   it('doubles a quote inside a field, and keeps a semicolon and a line break inside it', () => {

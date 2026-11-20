@@ -9,7 +9,11 @@ export type CsvCell = string | number | null | { written: string }
 export const amountCell = (amountMinor: number, locale: string): CsvCell => {
   const whole = Math.trunc(Math.abs(amountMinor) / 100)
   const cents = String(Math.abs(amountMinor) % 100).padStart(2, '0')
-  return { written: `${amountMinor < 0 ? '-' : ''}${whole}${locale === 'pl' ? ',' : '.'}${cents}` }
+  // The mark the language itself writes, with no grouping: a file is read by a spreadsheet.
+  const mark =
+    new Intl.NumberFormat(locale).formatToParts(1.5).find((part) => part.type === 'decimal')
+      ?.value ?? '.'
+  return { written: `${amountMinor < 0 ? '-' : ''}${whole}${mark}${cents}` }
 }
 
 /** What a spreadsheet would run as a formula when a cell begins with it. */

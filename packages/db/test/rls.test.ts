@@ -46,6 +46,7 @@ const covered = [
   ['merchandise_variant_values', 'tenant_id'],
   ['merchandise_item_pictures', 'tenant_id'],
   ['merchandise_size_charts', 'tenant_id'],
+  ['add_on_pictures', 'tenant_id'],
   ['edition_custom_fields', 'tenant_id'],
   ['orders', 'tenant_id'],
   ['order_lines', 'tenant_id'],
@@ -210,6 +211,11 @@ async function catalog(tenantId: string, edition: string) {
     'merchandise_size_charts',
     { option_value_id: value, file_id: await image('merchandise-size-chart') },
     'option_value_id',
+  )
+  await add(
+    'add_on_pictures',
+    { add_on_id: addOn, file_id: await image('add-on-picture') },
+    'add_on_id',
   )
   const field = await add('edition_custom_fields', {
     label: 'Fandom',
@@ -395,6 +401,8 @@ async function foreignCatalogRows(tenantId: string, edition: string) {
      values (${at}, '${item}', '${variant}', '${axis}', '${value}')`,
     `insert into merchandise_size_charts (tenant_id, edition_id, option_value_id, file_id)
      values (${at}, '${value}', '${file!.id}')`,
+    `insert into add_on_pictures (tenant_id, edition_id, add_on_id, file_id)
+     values (${at}, '${addOn}', '${file!.id}')`,
   ]
 }
 

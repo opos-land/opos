@@ -421,6 +421,20 @@
       "when": 1795198336529,
       "tag": "0059_scanner_pairing_again_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1795199948679,
+      "tag": "0060_add_on_pictures",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1795199949532,
+      "tag": "0061_add_on_pictures_privileges",
+      "breakpoints": true
     }
   ]
 }

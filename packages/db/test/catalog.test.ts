@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createEdition, createTenant, inTenant, migrator } from './db'
+import { createEdition, createTenant, global, inTenant, migrator } from './db'
 
 // What an edition sells (docs/specs/0003-catalog.md): ticket types with their price tiers,
 // supporter prices and perks, add-ons, merchandise items with their axes, variants, pictures and
@@ -129,6 +129,12 @@ const sizeChart = (at: Place, valueId: string, fileId: string) =>
   migrator`
     insert into merchandise_size_charts (tenant_id, edition_id, option_value_id, file_id)
     values (${at.tenant}, ${at.edition}, ${valueId}, ${fileId})
+  `
+
+const addOnPicture = (at: Place, addOnId: string, fileId: string) =>
+  migrator`
+    insert into add_on_pictures (tenant_id, edition_id, add_on_id, file_id)
+    values (${at.tenant}, ${at.edition}, ${addOnId}, ${fileId})
   `
 
 const customField = (at: Place, values: Record<string, unknown> = {}) => {
@@ -584,6 +590,90 @@ describe('the pictures and size charts of an item', () => {
         await migrator.unsafe(`select 1 from ${table} where edition_id = '${at.edition}'`),
       ).toHaveLength(0)
     }
+  })
+})
+
+// docs/specs/0003-catalog.md, A9: an add-on may have one picture, an uploaded image.
+describe('the picture of an add-on', () => {
+  const shot = (at: Place) => image(at, 'add-on-picture')
+
+  it('points at a file of its own edition, a file once, and an add-on has one', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const elsewhere = await sibling(a)
+    const [room, workshop] = [await addOn(a), await addOn(a)]
+    const mine = await shot(a)
+    await addOnPicture(a, room, mine)
+
+    await expect(addOnPicture(a, room, await shot(a))).rejects.toThrow(/add_on_pictures_pkey/)
+    await expect(addOnPicture(a, workshop, mine)).rejects.toThrow(/add_on_pictures_file_unique/)
+    for (const foreign of [b, elsewhere]) {
+      await expect(addOnPicture(a, workshop, await shot(foreign))).rejects.toThrow(
+        /add_on_pictures_file_fk/,
+      )
+      await expect(addOnPicture(a, await addOn(foreign), await shot(a))).rejects.toThrow(
+        /add_on_pictures_add_on_fk/,
+      )
+    }
+  })
+
+  it('keeps the file it points at, and goes with its add-on', async () => {
+    const at = await place()
+    const room = await addOn(at)
+    const file = await shot(at)
+    await addOnPicture(at, room, file)
+
+    await expect(
+      inTenant(at.tenant, (sql) => sql`delete from uploaded_files where id = ${file}`),
+    ).rejects.toThrow(/add_on_pictures_file_fk/)
+    await inTenant(at.tenant, (sql) => sql`delete from add_ons where id = ${room}`)
+
+    expect(await migrator`select 1 from add_on_pictures where add_on_id = ${room}`).toHaveLength(0)
+    // The file is released by the API, which deletes its row once nothing points at it.
+    await inTenant(at.tenant, (sql) => sql`delete from uploaded_files where id = ${file}`)
+  })
+
+  it('goes with the edition, its file with it', async () => {
+    const at = await place()
+    await addOnPicture(at, await addOn(at), await shot(at))
+
+    await inTenant(at.tenant, (sql) => sql`delete from editions where id = ${at.edition}`)
+
+    for (const table of ['add_on_pictures', 'uploaded_files']) {
+      expect(
+        await migrator.unsafe(`select 1 from ${table} where edition_id = '${at.edition}'`),
+      ).toHaveLength(0)
+    }
+  })
+
+  it('is put and taken away by the application role, which changes none in place', async () => {
+    const at = await place()
+    const room = await addOn(at)
+    const file = await shot(at)
+
+    await inTenant(
+      at.tenant,
+      (sql) => sql`
+        insert into add_on_pictures (tenant_id, edition_id, add_on_id, file_id)
+        values (${at.tenant}, ${at.edition}, ${room}, ${file})
+      `,
+    )
+    await expect(
+      inTenant(at.tenant, (sql) => sql`update add_on_pictures set file_id = file_id`),
+    ).rejects.toThrow(/permission denied/)
+    await inTenant(at.tenant, (sql) => sql`delete from add_on_pictures where add_on_id = ${room}`)
+  })
+
+  it('is read by its own tenant alone, and across tenants by the file it points at alone', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const file = await shot(b)
+    await addOnPicture(b, await addOn(b), file)
+
+    expect(await inTenant(a.tenant, (sql) => sql`select 1 from add_on_pictures`)).toHaveLength(0)
+    // The sweep tells a picture's file from one nothing points at, and reads nothing else of it.
+    expect(await global`select file_id from add_on_pictures where file_id = ${file}`).toEqual([
+      { file_id: file },
+    ])
+    await expect(global`select add_on_id from add_on_pictures`).rejects.toThrow(/permission denied/)
   })
 })
 

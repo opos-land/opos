@@ -90,6 +90,11 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain(code)
   })
 
+  // docs/specs/0009-buyer-self-service.md, Routes.
+  it('lists order.not-extendable of "Buy more"', () => {
+    expect(errorCodes).toContain('order.not-extendable')
+  })
+
   // docs/specs/0008-discount-codes.md, Routes.
   it.each(['discount-code.taken', 'discount-code.refused', 'discount-code.in-use'])(
     'lists %s of the discount codes',

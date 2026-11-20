@@ -107,6 +107,9 @@ export const tenantRequirements: Record<string, Need> = {
   'scanners.revoke': tickets('write'),
   'checkout.placeOrder': anyAccount,
   'checkout.startPaymentAttempt': anyAccount,
+  // An account's own orders in the convention (docs/specs/0009-buyer-self-service.md).
+  'myOrders.list': anyAccount,
+  'myOrders.resendConfirmation': anyAccount,
   'engagement.like': anyAccount,
   'engagement.unlike': anyAccount,
 }

@@ -95,9 +95,11 @@ export class PaymentAttempts {
       description: `${tenant.name} ${order.number}`,
       email: order.email ?? '',
       locale: parseAcceptLanguage(language)[0] ?? tenant.defaultLocale,
-      returnUrl:
-        `${this.portalUrl}/conventions/${tenant.slug}/${order.editionSlug}/shop/result/${order.id}` +
-        (token ? `?token=${encodeURIComponent(token)}` : ''),
+      // The result page opens with the result token. An account that pays from the list of its
+      // orders holds none: it returns to the convention's page, where those orders are.
+      returnUrl: token
+        ? `${this.portalUrl}/conventions/${tenant.slug}/${order.editionSlug}/shop/result/${order.id}?token=${encodeURIComponent(token)}`
+        : `${this.portalUrl}/conventions/${tenant.slug}`,
       // Judged payable a moment ago, so its hold has an end.
       payableUntil: order.holdEndsAt ?? new Date(),
       notificationUrl: `${this.apiUrl}/payments/${first.provider}/notifications/${attemptId}`,

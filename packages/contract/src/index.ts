@@ -1,7 +1,7 @@
 import { adminContract } from './admin'
 import { authContract } from './auth'
 import { brandingContract } from './branding'
-import { orderLinksContract } from './buyer-orders'
+import { myOrdersContract, orderLinksContract } from './buyer-orders'
 import { catalogContract } from './catalog'
 import { checkoutContract, paymentsContract } from './checkout'
 import { discountCodesContract } from './discount-codes'
@@ -33,6 +33,7 @@ export const contract = {
   checkout: checkoutContract,
   orders: ordersContract,
   orderLinks: orderLinksContract,
+  myOrders: myOrdersContract,
   discountCodes: discountCodesContract,
   scanners: scannersContract,
   scanner: scannerContract,

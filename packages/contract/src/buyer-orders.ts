@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { ORDER_STATUSES } from './checkout'
-import { publicRoute, timestamp } from './common'
+import { publicRoute, tenantRoute, timestamp } from './common'
 
 // What a buyer does with an order once it is placed (docs/specs/0009-buyer-self-service.md).
 
@@ -76,4 +76,59 @@ export const orderLinksContract = {
         "Send a fresh order link to the order's email for an expired link, at most once an hour for an order; answers alike for any token; no sign-in",
     })
     .input(token),
+}
+
+/**
+ * What "Buy more" would add to (B1, B3): the ticket of the QR code the order carries, and what
+ * the orders on that code hold, an order of the same checkout still awaiting payment among them.
+ */
+export const boughtSchema = z.object({
+  /** The ticket type of the ticket on the code, or null for merchandise alone. */
+  ticketTypeId: z.uuid().nullable(),
+  /** The add-ons already bought: one is taken once. */
+  addOnIds: z.array(z.uuid()),
+  /** The merchandise items already ordered, which may be ordered again. */
+  itemIds: z.array(z.uuid()),
+})
+
+export type Bought = z.infer<typeof boughtSchema>
+
+/** An order of the signed-in account in a convention, as the convention's page lists it (U1-U3). */
+export const myOrderSchema = z.object({
+  id: z.uuid(),
+  number: z.string(),
+  status: z.enum(ORDER_STATUSES),
+  placedAt: timestamp,
+  /** When the hold of an order awaiting payment ends: "Pay now" starts only within it. */
+  holdEndsAt: timestamp.nullable(),
+  /** The ticket holder, by whom a buyer tells their orders apart. */
+  holderName: z.string(),
+  edition: z.object({ id: z.uuid(), slug: z.string(), name: z.string() }),
+  lines: z.array(linkedLineSchema),
+  totalMinor: z.number().int(),
+  currency: z.string(),
+  /** Null for an order that is not paid: nothing is added to it. */
+  bought: boughtSchema.nullable(),
+})
+
+export type MyOrder = z.infer<typeof myOrderSchema>
+
+export const myOrdersContract = {
+  list: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/orders/mine',
+      summary:
+        "The signed-in account's own orders in the convention, the newest first; any signed-in account",
+    })
+    .output(z.array(myOrderSchema)),
+  resendConfirmation: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/orders/mine/{orderId}/resend-confirmation',
+      successStatus: 204,
+      summary:
+        "Send the confirmation of the account's own paid order again, with its QR code, to the order's email; refused with order.not-paid; any signed-in account",
+    })
+    .input(z.object({ params: z.object({ orderId: z.string() }) })),
 }

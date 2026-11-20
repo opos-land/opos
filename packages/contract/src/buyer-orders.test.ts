@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { openedOrderLinkSchema, orderLinksContract, orderLinkTokenSchema } from './buyer-orders'
+import {
+  myOrderSchema,
+  myOrdersContract,
+  openedOrderLinkSchema,
+  orderLinksContract,
+  orderLinkTokenSchema,
+} from './buyer-orders'
 import { contract } from './index'
 import { ORDER_EMAIL_KINDS, ORG_EMAIL_KINDS } from './orders'
 
@@ -67,5 +73,55 @@ describe('the email with a fresh order link', () => {
   it('is an email of an order, for its buyer', () => {
     expect(ORDER_EMAIL_KINDS).toContain('order-link')
     expect(ORG_EMAIL_KINDS).not.toContain('order-link')
+  })
+})
+
+// docs/specs/0009-buyer-self-service.md, U1-U4.
+describe("an account's orders in a convention", () => {
+  const mine = {
+    id: '0198c1a0-0000-7000-8000-000000000001',
+    number: 'ABCDEFGHJK',
+    status: 'paid',
+    placedAt: '2027-05-01T10:00:00.000Z',
+    holdEndsAt: null,
+    holderName: 'Ada',
+    edition: { id: '0198c1a0-0000-7000-8000-000000000002', slug: '2027', name: 'Pyrkon 2027' },
+    lines: order.lines,
+    totalMinor: 12000,
+    currency: 'PLN',
+    bought: {
+      ticketTypeId: '0198c1a0-0000-7000-8000-000000000003',
+      addOnIds: [],
+      itemIds: [],
+    },
+  }
+
+  it('are listed with what each holds and what "Buy more" would add to', () => {
+    expect(myOrderSchema.parse(mine)).toEqual(mine)
+    // An order that is not paid adds to nothing.
+    const awaiting = {
+      ...mine,
+      status: 'awaiting-payment',
+      holdEndsAt: '2027-05-01T10:30:00.000Z',
+      bought: null,
+    }
+    expect(myOrderSchema.parse(awaiting)).toEqual(awaiting)
+    expect(JSON.stringify(myOrderSchema.parse({ ...mine, email: 'a@b.test' }))).not.toMatch(/a@b/)
+  })
+
+  it('are read and acted on under the tenant, by the account they belong to', () => {
+    expect(contract.myOrders).toBe(myOrdersContract)
+    expect(myOrdersContract.list['~orpc'].route).toMatchObject({
+      method: 'GET',
+      path: '/orders/mine',
+    })
+    expect(myOrdersContract.resendConfirmation['~orpc'].route).toMatchObject({
+      method: 'POST',
+      path: '/orders/mine/{orderId}/resend-confirmation',
+      successStatus: 204,
+    })
+    for (const route of Object.values(myOrdersContract)) {
+      expect(route['~orpc'].meta).toMatchObject({ tenant: true })
+    }
   })
 })

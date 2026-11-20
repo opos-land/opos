@@ -84,6 +84,10 @@ describe('errorMessage', () => {
     ['discount-code.taken', 'Inny kod rabatowy tej edycji ma już tę treść. Wybierz inną.'],
     ['discount-code.refused', 'Tego kodu nie można użyć w tym zamówieniu.'],
     [
+      'order.not-extendable',
+      'Do tego zamówienia nie można nic dokupić: dokupuje się tylko do własnego, opłaconego zamówienia.',
+    ],
+    [
       'discount-code.in-use',
       'Zamówienie użyło tego kodu rabatowego, więc nie można go usunąć. Zakończ go: kupujący nie użyją go więcej, a na swoich zamówieniach pozostanie.',
     ],

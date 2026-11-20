@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common'
-import { type AgeBand, type Cart, type ManualReason, type PricedLine } from '@opos/contract'
+import {
+  type AgeBand,
+  type Bought,
+  type Cart,
+  type ManualReason,
+  type OrderStatus,
+  type PricedLine,
+} from '@opos/contract'
 import {
   accounts,
   addOns,
@@ -15,7 +22,8 @@ import {
   orders,
   ticketTypes,
 } from '@opos/db'
-import { and, asc, count, eq, inArray, isNotNull, sql } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
 import { providerAccountLockKey } from '../shop/provider-account-lock'
@@ -43,6 +51,17 @@ export interface NewOrder {
   note?: string | null
   /** The discount code the order used; its discount line carries what the code took off. */
   discountCodeId?: string | null
+  /** The order a "Buy more" order adds to, whose QR code it joins once paid. */
+  extendsOrderId?: string | null
+}
+
+/** An account's own order, as "Buy more" and "Resend QR code" judge it. */
+export interface OwnOrder {
+  id: string
+  editionId: string
+  status: OrderStatus
+  email: string | null
+  holderName: string
 }
 
 /** What kinds of email an order sends. */
@@ -244,6 +263,135 @@ export class OrdersRepository {
       .from(accounts)
       .where(and(sql`lower(${accounts.email}) = ${email}`, isNotNull(accounts.emailConfirmedAt)))
     return row?.id
+  }
+
+  /**
+   * The account's own order in the tenant, or undefined: another account's is not there. With
+   * `lock` its row is locked first, before any limit, as every change of an order locks it.
+   */
+  async own(
+    tenantId: string,
+    accountId: string,
+    orderId: string,
+    lock = false,
+  ): Promise<OwnOrder | undefined> {
+    if (!isUuid(orderId)) return undefined
+    const query = this.context
+      .tx()
+      .select({
+        id: orders.id,
+        editionId: orders.editionId,
+        status: orders.status,
+        email: orders.email,
+        holderName: orders.holderName,
+      })
+      .from(orders)
+      .innerJoin(orderAccounts, eq(orderAccounts.orderId, orders.id))
+      .where(
+        and(
+          eq(orders.tenantId, tenantId),
+          eq(orders.id, orderId),
+          eq(orderAccounts.tenantId, tenantId),
+          eq(orderAccounts.accountId, accountId),
+        ),
+      )
+    const [row] = await (lock ? query.for('update', { of: orders }) : query)
+    return row
+  }
+
+  /**
+   * What was bought on the QR code the order carries (docs/specs/0009-buyer-self-service.md,
+   * B1 and B3): the ticket type of its ticket, its add-ons and its merchandise items, over the
+   * paid orders on the code and the "Buy more" orders of theirs that still hold what they took.
+   */
+  async boughtWith(tenantId: string, orderId: string): Promise<Bought> {
+    const tx = this.context.tx()
+    const [carried] = await tx
+      .select({ qrCodeId: orderQrCodeOrders.qrCodeId })
+      .from(orderQrCodeOrders)
+      .where(and(eq(orderQrCodeOrders.tenantId, tenantId), eq(orderQrCodeOrders.orderId, orderId)))
+    const onCode = carried
+      ? await tx
+          .select({ id: orders.id })
+          .from(orderQrCodeOrders)
+          .innerJoin(orders, eq(orders.id, orderQrCodeOrders.orderId))
+          .where(
+            and(
+              eq(orderQrCodeOrders.tenantId, tenantId),
+              eq(orderQrCodeOrders.qrCodeId, carried.qrCodeId),
+              eq(orders.status, 'paid'),
+            ),
+          )
+      : []
+    const paid = [...new Set([orderId, ...onCode.map((order) => order.id)])]
+    const pending = await tx
+      .select({ id: orders.id })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.tenantId, tenantId),
+          inArray(orders.extendsOrderId, paid),
+          eq(orders.holds, true),
+          inArray(orders.status, ['awaiting-payment', 'needs-review']),
+        ),
+      )
+    const lines = await tx
+      .select({
+        orderId: orderLines.orderId,
+        kind: orderLines.kind,
+        ticketTypeId: orderLines.ticketTypeId,
+        addOnId: orderLines.addOnId,
+        itemId: orderLines.merchandiseItemId,
+      })
+      .from(orderLines)
+      .where(
+        and(
+          eq(orderLines.tenantId, tenantId),
+          inArray(orderLines.orderId, [...paid, ...pending.map((order) => order.id)]),
+        ),
+      )
+    const ids = (values: (string | null)[]) => [...new Set(values.flatMap((id) => id ?? []))].sort()
+    return {
+      ticketTypeId: lines.find((line) => line.kind === 'ticket')?.ticketTypeId ?? null,
+      addOnIds: ids(lines.map((line) => line.addOnId)),
+      itemIds: ids(lines.map((line) => line.itemId)),
+    }
+  }
+
+  /**
+   * The QR code a "Buy more" order joins once it is paid: the one the order it extends carries,
+   * while that order is paid and its code was not replaced. Undefined for any other order, which
+   * gets a code of its own.
+   */
+  async codeToJoin(order: { tenantId: string; orderId: string }): Promise<string | undefined> {
+    const first = alias(orders, 'first')
+    const [row] = await this.context
+      .tx()
+      .select({ qrCodeId: orderQrCodeOrders.qrCodeId })
+      .from(orders)
+      .innerJoin(first, eq(first.id, orders.extendsOrderId))
+      .innerJoin(orderQrCodeOrders, eq(orderQrCodeOrders.orderId, first.id))
+      .innerJoin(orderQrCodes, eq(orderQrCodes.id, orderQrCodeOrders.qrCodeId))
+      .where(
+        and(
+          eq(orders.tenantId, order.tenantId),
+          eq(orders.id, order.orderId),
+          eq(first.status, 'paid'),
+          isNull(orderQrCodes.replacedAt),
+        ),
+      )
+    return row?.qrCodeId
+  }
+
+  /** The order carries a QR code another order has: what was bought later joins the first. */
+  async joinQrCode(
+    order: { tenantId: string; editionId: string; orderId: string },
+    qrCodeId: string,
+  ) {
+    await this.context
+      .tx()
+      .insert(orderQrCodeOrders)
+      .values({ ...order, qrCodeId })
   }
 
   /** A QR code of the edition, sealed, for the order to carry. */

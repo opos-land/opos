@@ -393,6 +393,10 @@ msgstr "Żadne konto nie używa tego adresu e-mail."
 msgid "No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address."
 msgstr "Żadne potwierdzone konto nie używa adresu e-mail {email}. Poproś prelegenta o założenie konta, jeśli jeszcze go nie ma, i potwierdzenie tego adresu."
 
+#: src/errors.ts
+msgid "Nothing can be added to this order: you buy more only for your own paid order."
+msgstr "Do tego zamówienia nie można nic dokupić: dokupuje się tylko do własnego, opłaconego zamówienia."
+
 #: src/order-emails.ts
 msgid "Nothing else of the order changed, and your QR code stays the same."
 msgstr "Nic poza tym w zamówieniu się nie zmieniło, a twój kod QR pozostaje ten sam."

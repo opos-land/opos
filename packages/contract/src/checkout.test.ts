@@ -421,6 +421,89 @@ describe('the price of a cart with a discount code', () => {
   })
 })
 
+// docs/specs/0009-buyer-self-service.md, B1-B3: what "Buy more" adds to a paid order.
+describe('the price of a cart that adds to a paid order', () => {
+  const more = (changes: Partial<Cart> = {}) => cart({ ticket: null, ...changes })
+  const toStandard = { ticketTypeId: STANDARD, addOnIds: [] }
+
+  it('sells no ticket, and offers the add-ons and the merchandise of the order’s ticket type', () => {
+    const priced = priceCart(
+      offer({ merchOnly: false }),
+      more({ addOnIds: [WORKSHOP], items: [{ variantId: WOMENS_S, quantity: 1 }] }),
+      undefined,
+      toStandard,
+    )
+
+    expect(priced).toMatchObject({
+      lines: [
+        { kind: 'add_on', addOnId: WORKSHOP, amountMinor: 4000 },
+        { kind: 'merchandise', variantId: WOMENS_S, amountMinor: 8000 },
+      ],
+      totalMinor: 12000,
+    })
+    // The item the ticket type does not offer stays out of reach, as in its first checkout.
+    expect(
+      priceCart(
+        offer(),
+        more({ items: [{ variantId: PIN_ONLY, quantity: 1 }] }),
+        undefined,
+        toStandard,
+      ),
+    ).toEqual({ problem: { kind: 'variant', id: PIN_ONLY } })
+    expect(priceCart(offer(), cart(), undefined, toStandard)).toEqual({
+      problem: { kind: 'ticket-type', id: STANDARD },
+    })
+  })
+
+  it('takes an add-on once: one already bought is refused, merchandise is ordered again', () => {
+    const bought = { ticketTypeId: STANDARD, addOnIds: [WORKSHOP] }
+
+    expect(priceCart(offer(), more({ addOnIds: [WORKSHOP] }), undefined, bought)).toEqual({
+      problem: { kind: 'add-on', id: WORKSHOP },
+    })
+    expect(
+      priceCart(
+        offer(),
+        more({ addOnIds: [ROOM], items: [{ variantId: WOMENS_S, quantity: 2 }] }),
+        undefined,
+        bought,
+      ),
+    ).toMatchObject({ totalMinor: 16000 })
+  })
+
+  it('offers the merchandise alone to an order of merchandise alone, also with merch-only orders off', () => {
+    const toMerch = { ticketTypeId: null, addOnIds: [] }
+    const closed = offer({ merchOnly: false })
+
+    expect(
+      priceCart(
+        closed,
+        more({ items: [{ variantId: PIN_ONLY, quantity: 2 }] }),
+        undefined,
+        toMerch,
+      ),
+    ).toMatchObject({ totalMinor: 3000 })
+    expect(priceCart(closed, more({ addOnIds: [ROOM] }), undefined, toMerch)).toEqual({
+      problem: { kind: 'add-on', id: ROOM },
+    })
+    expect(priceCart(closed, more(), undefined, toMerch)).toEqual({ problem: { kind: 'empty' } })
+  })
+
+  it('offers the add-ons of a ticket type that no longer sells, and nothing while the shop is closed', () => {
+    const soldOut = { ticketTypeId: SUPPORTER, addOnIds: [] }
+    const types = offer().ticketTypes.map((type) =>
+      type.id === SUPPORTER ? { ...type, addOnIds: [ROOM] } : type,
+    )
+
+    expect(
+      priceCart(offer({ ticketTypes: types }), more({ addOnIds: [ROOM] }), undefined, soldOut),
+    ).toMatchObject({ totalMinor: 0, lines: [{ kind: 'add_on', addOnId: ROOM }] })
+    expect(
+      priceCart(offer({ open: false }), more({ addOnIds: [ROOM] }), undefined, toStandard),
+    ).toEqual({ problem: { kind: 'closed' } })
+  })
+})
+
 describe('a quote', () => {
   it('takes a cart, and a discount code as the buyer typed it', () => {
     expect(quoteRequestSchema.parse({ ticket: null, discountCode: '  Early10 ' })).toEqual({
@@ -487,6 +570,16 @@ describe('placing an order', () => {
         emailConfirmation: 'other@example.test',
       }).success,
     ).toBe(false)
+  })
+
+  // "Buy more": an account names its own paid order; a visitor has no such thing (B6).
+  it('takes the order an account adds to, and none from a visitor', () => {
+    const more = { ...order, cart: { ticket: null }, ageBand: null, extendsOrderId: STANDARD }
+    const typed = { email: 'buyer@example.test', emailConfirmation: 'buyer@example.test' }
+
+    expect(placeOrderSchema.parse(more)).toMatchObject({ extendsOrderId: STANDARD })
+    expect(placeOrderSchema.safeParse({ ...more, extendsOrderId: 'first' }).success).toBe(false)
+    expect(placeVisitorOrderSchema.safeParse({ ...more, ...typed }).success).toBe(false)
   })
 
   it('numbers an order in characters that are not mistaken for one another', () => {

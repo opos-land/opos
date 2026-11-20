@@ -79,6 +79,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'order.not-cancelable': msg`Only a paid order can be canceled.`,
   'order.not-in-review': msg`This order does not need review any more. Check its status.`,
   'order.not-paid': msg`This can be done only with a paid order.`,
+  'order.not-extendable': msg`Nothing can be added to this order: you buy more only for your own paid order.`,
   'scan.already-handed-out': msg`This was already handed out.`,
   'production.before-deadline': msg`The production numbers are ready once the pre-order deadline has passed.`,
   'discount-code.taken': msg`Another discount code of this edition already has this text. Choose another.`,

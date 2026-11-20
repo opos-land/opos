@@ -4,6 +4,7 @@ import { AccessRepository } from '../src/common/permissions/access.repository'
 import { LogoRepository } from '../src/modules/branding/logo.repository'
 import { MerchandiseRepository } from '../src/modules/catalog/merchandise.repository'
 import { DiscountsRepository } from '../src/modules/checkout/discounts.repository'
+import { MyOrdersRepository } from '../src/modules/buyer-orders/my-orders.repository'
 import { OrderLinksRepository } from '../src/modules/buyer-orders/order-links.repository'
 import { OfferRepository } from '../src/modules/checkout/offer.repository'
 import { OrdersRepository } from '../src/modules/checkout/orders.repository'
@@ -33,6 +34,7 @@ import {
   type Member,
   queueOrderEmail,
   setCatalogSettings,
+  setColumn,
   setPublished,
   storedMembership,
   tenantWithHead,
@@ -209,6 +211,49 @@ describe('an order link', () => {
       qrCode: { code: 'sealed' },
       pickUp: 'At the desk.',
       queued: true,
+    })
+  })
+})
+
+// The routes of an account's own orders have no permission to check: their reads are the guard
+// (docs/specs/0009-buyer-self-service.md, U4).
+describe("an account's own orders", () => {
+  it("lists and finds no order of another tenant in this tenant's transaction", async () => {
+    await setPublished(editionOfB, true)
+    const ticketTypeId = await addTicketType(b.id, editionOfB)
+    const order = await addOrder(b.id, editionOfB, { status: 'paid', ticketTypeId })
+    await addQrCode(b.id, editionOfB, order.id, aQrCode())
+    const more = await addOrder(b.id, editionOfB, { status: 'paid' })
+    await setColumn('orders', more.id, 'extends_order_id', order.id)
+    const buyer = await member()
+    const of = { tenantId: b.id, editionId: editionOfB }
+    await withoutRls(b.id, async (tx) => {
+      const orders = new OrdersRepository(contextOf(tx))
+      await orders.attach({ ...of, orderId: order.id }, buyer.id)
+      await orders.attach({ ...of, orderId: more.id }, buyer.id)
+    })
+    const read = (tenantId: string) =>
+      withoutRls(a.id, async (tx) => {
+        const orders = new OrdersRepository(contextOf(tx))
+        return {
+          listed: (await new MyOrdersRepository(contextOf(tx)).list(tenantId, buyer.id)).length,
+          own: await orders.own(tenantId, buyer.id, order.id),
+          bought: await orders.boughtWith(tenantId, order.id),
+          code: await orders.codeToJoin({ tenantId, orderId: more.id }),
+        }
+      })
+
+    expect(await read(a.id)).toEqual({
+      listed: 0,
+      own: undefined,
+      bought: { ticketTypeId: null, addOnIds: [], itemIds: [] },
+      code: undefined,
+    })
+    expect(await read(b.id)).toMatchObject({
+      listed: 2,
+      own: { id: order.id, status: 'paid' },
+      bought: { ticketTypeId },
+      code: expect.any(String) as string,
     })
   })
 })

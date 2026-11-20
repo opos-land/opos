@@ -244,23 +244,41 @@ export type CartProblem =
   | { kind: 'discount-code' }
 
 /**
+ * What a "Buy more" order adds to (docs/specs/0009-buyer-self-service.md, B1-B3): the ticket of
+ * the QR code it joins, and the add-ons bought on that code already.
+ */
+export interface Extending {
+  /** The ticket type of the ticket on the QR code, or null for merchandise alone. */
+  ticketTypeId: string | null
+  /** The add-ons already bought: an add-on is taken once. */
+  addOnIds: readonly string[]
+}
+
+/**
  * Prices a cart against an offer, or says what of it cannot be had. The lines come in the order
- * of the offer: the ticket, then the add-ons, then the merchandise.
+ * of the offer: the ticket, then the add-ons, then the merchandise. A cart that adds to a paid
+ * order sells no ticket: it is offered the add-ons and the merchandise of that order's ticket
+ * type, whether the type still sells or not, or the merchandise alone.
  */
 export function priceCart(
   offer: Offer,
   cart: Cart,
   discount?: DiscountTerms,
+  extending?: Extending,
 ): { lines: PricedLine[]; totalMinor: number } | { problem: CartProblem } {
   // A closed shop sells nothing. In an open one, what ran out is named, also when it was the last
   // thing on sale: the buyer returns to its step.
   if (!offer.open) return { problem: { kind: 'closed' } }
   const lines: PricedLine[] = []
 
-  const ticketType = cart.ticket
-    ? offer.ticketTypes.find((type) => type.id === cart.ticket?.ticketTypeId)
-    : undefined
-  if (cart.ticket) {
+  const ticketType = offer.ticketTypes.find(
+    (type) => type.id === (extending ? extending.ticketTypeId : cart.ticket?.ticketTypeId),
+  )
+  if (extending) {
+    // The ticket holder has a ticket: another one is an order of its own.
+    if (cart.ticket) return { problem: { kind: 'ticket-type', id: cart.ticket.ticketTypeId } }
+    if (cart.addOnIds.length === 0 && cart.items.length === 0) return { problem: { kind: 'empty' } }
+  } else if (cart.ticket) {
     if (!ticketType || ticketType.state !== 'on-sale' || ticketType.priceMinor === null) {
       return { problem: { kind: 'ticket-type', id: cart.ticket.ticketTypeId } }
     }
@@ -290,7 +308,13 @@ export function priceCart(
   const wanted = new Set<string>()
   for (const addOnId of cart.addOnIds) {
     const addOn = offer.addOns.find((offered) => offered.id === addOnId)
-    if (wanted.has(addOnId) || !addOn || addOn.soldOut || !ticketType?.addOnIds.includes(addOnId)) {
+    if (
+      wanted.has(addOnId) ||
+      !addOn ||
+      addOn.soldOut ||
+      !ticketType?.addOnIds.includes(addOnId) ||
+      extending?.addOnIds.includes(addOnId)
+    ) {
       return { problem: { kind: 'add-on', id: addOnId } }
     }
     wanted.add(addOnId)
@@ -308,9 +332,11 @@ export function priceCart(
     })
   }
 
-  // A merch-only order is offered every item of the offer; a ticket, the items it offers.
+  // A merch-only order is offered every item of the offer; a ticket, the items it offers. An
+  // order that adds to a ticket whose type the offer no longer holds is offered none.
+  const withTicket = extending ? extending.ticketTypeId !== null : cart.ticket !== null
   const offered = offer.items.filter(
-    (item) => !ticketType || ticketType.merchandiseItemIds.includes(item.id),
+    (item) => !withTicket || ticketType?.merchandiseItemIds.includes(item.id),
   )
   const quantities = new Map<string, number>()
   const taken = new Map<string, number>()
@@ -449,7 +475,14 @@ const placeOrderFields = {
 }
 
 /** An order placed by an account: under the account's own email, which no body names. */
-export const placeOrderSchema = z.strictObject(placeOrderFields)
+/**
+ * An account's order. With "Buy more" it names the account's own paid order it adds to: it then
+ * sells no ticket, and its ticket holder is that order's, whatever this one says.
+ */
+export const placeOrderSchema = z.strictObject({
+  ...placeOrderFields,
+  extendsOrderId: z.uuid().optional(),
+})
 
 export type PlaceOrder = z.infer<typeof placeOrderSchema>
 

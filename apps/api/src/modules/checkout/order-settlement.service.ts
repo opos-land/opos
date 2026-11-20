@@ -7,7 +7,7 @@ import { OrdersRepository } from './orders.repository'
 
 /**
  * What follows from an order being paid (docs/specs/0004-checkout-and-orders.md, Y5, A2, A5): it
- * gets its one QR code, it is attached to the account whose confirmed email it was paid under,
+ * gets its one QR code, or joins the one of the order it adds to, it is attached to the account whose confirmed email it was paid under,
  * and its confirmation is queued. It runs in the transaction that made the order paid.
  */
 @Injectable()
@@ -24,7 +24,11 @@ export class OrderSettlement {
 
   async paid(order: { tenantId: string; editionId: string; orderId: string; email: string }) {
     const { email, ...of } = order
-    await this.issueQrCode(of)
+    // What was bought with "Buy more" joins the QR code of the order it adds to; any other
+    // order, and one whose first order was canceled meanwhile, gets a code of its own.
+    const shared = await this.orders.codeToJoin(of)
+    if (shared) await this.orders.joinQrCode(of, shared)
+    else await this.issueQrCode(of)
     // A visitor's order under the confirmed email of an account is that account's from now on;
     // one placed signed in is attached already.
     const owner = await this.orders.accountOf(email)

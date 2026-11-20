@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import {
+  type Extending,
   HOLD_MINUTES,
   MAX_UNPAID_ORDERS,
   type Offer,
@@ -8,6 +9,7 @@ import {
   PRICE_GRACE_MINUTES,
   priceCart,
 } from '@opos/contract'
+import { notFound } from '../../common/errors/api-error'
 import { TicketTypesRepository } from '../catalog/ticket-types.repository'
 import { providerUnavailable } from '../shop/shop.errors'
 import {
@@ -15,6 +17,7 @@ import {
   consentMissing,
   emailRefused,
   invalidOrder,
+  notExtendable,
   orderUnavailable,
   tooManyUnpaid,
   totalChanged,
@@ -57,7 +60,19 @@ export class OrderPlacement {
     at = new Date(),
   ): Promise<PlacedOrder> {
     const email = buyer.email.trim().toLowerCase()
-    // The limits first: what the offer then counts of them, no other order changes meanwhile.
+    // "Buy more" (docs/specs/0009-buyer-self-service.md, B1-B3): the account's own paid order
+    // of this edition, its row locked before any limit. Another account's order is not there.
+    let first: { id: string; holderName: string } | undefined
+    let extending: Extending | undefined
+    if (input.extendsOrderId !== undefined) {
+      if (!buyer.accountId) throw notExtendable()
+      const own = await this.orders.own(tenantId, buyer.accountId, input.extendsOrderId, true)
+      if (!own) throw notFound('order')
+      if (own.editionId !== editionId || own.status !== 'paid') throw notExtendable()
+      first = own
+      extending = await this.orders.boughtWith(tenantId, own.id)
+    }
+    // The limits next: what the offer then counts of them, no other order changes meanwhile.
     await this.orders.lockLimits(editionId, input.cart)
     const offer = await this.offers.of(tenantId, editionId, at)
     // Also for an order with nothing to pay: one address serves every order of a buyer.
@@ -80,6 +95,7 @@ export class OrderPlacement {
       input,
       at,
       discount,
+      extending,
     )
     // The ticket type as the offer the price rests on shows it: one whose sale just ended is in
     // no offer of this moment.
@@ -101,7 +117,8 @@ export class OrderPlacement {
         editionId,
         status: paid ? 'paid' : 'awaiting-payment',
         email,
-        holderName: input.holderName,
+        // What is bought later is for the ticket holder of the first order, whoever is named.
+        holderName: first?.holderName ?? input.holderName,
         ageBand: input.ageBand,
         totalMinor,
         // An order with nothing to pay has nothing to wait for; any other holds for thirty minutes.
@@ -112,6 +129,7 @@ export class OrderPlacement {
         providerConsentAcceptedAt: !paid && offer.provider?.consent ? at : null,
         resultTokenHash: hashOf(resultToken),
         discountCodeId: discount?.id ?? null,
+        extendsOrderId: first?.id ?? null,
       },
       lines,
     )
@@ -150,15 +168,16 @@ export class OrderPlacement {
     input: PlaceOrder,
     at: Date,
     discount: StoredDiscount | undefined,
+    extending: Extending | undefined,
   ) {
-    const now = priceCart(offer, input.cart, discount)
+    const now = priceCart(offer, input.cart, discount, extending)
     if (!('problem' in now) && now.totalMinor === input.expectedTotalMinor) {
       return { ...now, rests: offer }
     }
     if (offer.open && input.cart.ticket) {
       for (const moment of await this.endedLately(editionId, input.cart.ticket.ticketTypeId, at)) {
         const earlier = await this.offers.of(tenantId, editionId, at, moment)
-        const then = priceCart(earlier, input.cart, discount)
+        const then = priceCart(earlier, input.cart, discount, extending)
         if (!('problem' in then) && then.totalMinor === input.expectedTotalMinor) {
           return { ...then, rests: earlier }
         }

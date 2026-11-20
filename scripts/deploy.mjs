@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The deploy commands, `pnpm deploy:<command>` (docs/specs/0015-deployment.md,
-// docs/adr/0045-run-the-deploy-commands-as-node-scripts.md). An environment is a directory of
+// docs/adr/0070-run-the-deploy-commands-as-node-scripts.md). An environment is a directory of
 // infra/live, whose env.yaml holds its settings and whose terragrunt.stack.hcl its units. The
 // tools, OpenTofu, Terragrunt, scw and gh, come from mise.
 //
@@ -280,7 +280,7 @@ export async function deploy({
     // bucket that holds the state and the passphrase its key derives from, which the state of a unit
     // that made them would need; the project that holds the bucket of uploaded files alone, whose id
     // goes into env.yaml
-    // (docs/adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md); and
+    // (docs/adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md); and
     // the environment's domain, for which no resource exists. Safe to run again, also to print the
     // DNS records again.
     async bootstrap() {

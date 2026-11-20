@@ -80,7 +80,7 @@ resource "scaleway_iam_api_key" "smtp" {
 # Object Storage rights reach every bucket of the project they are granted in, and a bucket policy
 # names users and applications, never a group. So the bucket of uploaded files lies in a project
 # that holds it alone, and the API's key, granted there alone, opens that bucket and nothing else:
-# never the state's bucket (docs/adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md).
+# never the state's bucket (docs/adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md).
 resource "scaleway_iam_application" "files" {
   name        = "${var.project}-files"
   description = "Keeps, reads and removes the uploaded files of the ${var.project} project's API"

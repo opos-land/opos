@@ -8,8 +8,8 @@
   [0036](../adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md),
   [0037](../adr/0037-share-a-turborepo-remote-cache-that-only-develop-and-main-write.md),
   [0038](../adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md),
-  [0044](../adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md),
-  [0045](../adr/0045-run-the-deploy-commands-as-node-scripts.md)
+  [0069](../adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md),
+  [0070](../adr/0070-run-the-deploy-commands-as-node-scripts.md)
 
 ## Goal
 

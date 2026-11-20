@@ -137,7 +137,7 @@ run = "pnpm infra:reset"
 raw = true
 
 # The deploy commands: root scripts that run scripts/deploy.mjs, which takes the arguments and flags
-# itself (docs/adr/0045-run-the-deploy-commands-as-node-scripts.md). OpenTofu, Terragrunt and the
+# itself (docs/adr/0070-run-the-deploy-commands-as-node-scripts.md). OpenTofu, Terragrunt and the
 # CLIs of Scaleway and GitHub come from mise. <environment> is a directory of infra/live, whose
 # terragrunt.stack.hcl generates its units, and [unit] the name of one of them; without a unit a
 # command runs every unit of the environment, in the order of their dependencies, but shared, which

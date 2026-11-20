@@ -28,6 +28,8 @@ describe('glossary', () => {
     ['hold', 'hold', 'rezerwacja'],
     ['qrCode', 'QR code', 'kod QR'],
     ['orderLink', 'order link', 'link do zamówienia'],
+    // The term order management brings.
+    ['manualOrder', 'manual order', 'zamówienie ręczne'],
   ] as const)('renders %s as its one word in each language', async (term, en, pl) => {
     const i18n = setupI18n()
 

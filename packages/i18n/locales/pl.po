@@ -315,6 +315,12 @@ msgctxt "glossary"
 msgid "like"
 msgstr "polubienie"
 
+#. Glossary term: manual order (a sale made outside the shop, recorded by an org)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "manual order"
+msgstr "zamówienie ręczne"
+
 #: src/order-emails.ts
 msgid "Merchandise is picked up at the convention. Nothing is sent by post."
 msgstr "Gadżety odbiera się na konwencie. Niczego nie wysyłamy pocztą."

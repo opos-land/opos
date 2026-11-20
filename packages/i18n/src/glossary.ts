@@ -146,6 +146,11 @@ export const glossary = {
     context: 'glossary',
     comment: 'Glossary term: order link (an emailed link that opens one order without a sign-in)',
   }),
+  manualOrder: msg({
+    message: 'manual order',
+    context: 'glossary',
+    comment: 'Glossary term: manual order (a sale made outside the shop, recorded by an org)',
+  }),
 }
 
 export type GlossaryTerm = keyof typeof glossary

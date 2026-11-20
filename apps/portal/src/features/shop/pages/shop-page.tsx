@@ -29,6 +29,13 @@ function useMethodName() {
     ({ blik: 'BLIK', transfer: t`bank transfer`, card: t`payment card` })[method] ?? method
 }
 
+/** A payment provider as the shop's footer names it. */
+function useProviderName() {
+  const { t } = useLingui()
+  return (provider: NonNullable<Offer['provider']>['name']) =>
+    ({ przelewy24: 'Przelewy24', fake: t`a fake provider that takes no money` })[provider]
+}
+
 /** Why a ticket type cannot be chosen now, or nothing while it is on sale. */
 function StateOf({ state }: { state: TicketType['state'] }) {
   if (state === 'not-yet') return <Trans>Not yet on sale</Trans>
@@ -49,6 +56,7 @@ export function ShopPage() {
   usePageTitle(t`Shop`)
   const money = useMoney(offer.data?.currency ?? 'PLN')
   const methodName = useMethodName()
+  const providerName = useProviderName()
   const sentence = useSentence()
   const base = `/conventions/${tenantSlug}/${editionSlug}`
 
@@ -59,6 +67,7 @@ export function ShopPage() {
   const { data } = offer
   const selling = data.open && data.onSale
   const methods = data.provider?.methods.map(methodName).join(', ') ?? ''
+  const provider = data.provider ? providerName(data.provider.name) : ''
   const checkout = (ticketType: string) => `${base}/shop/checkout?ticketType=${ticketType}`
 
   return (
@@ -122,6 +131,11 @@ export function ShopPage() {
         </p>
       )}
       <footer className="flex flex-col gap-4 border-t pt-4 text-sm">
+        {data.provider && (
+          <p>
+            <Trans>Payments are handled by {provider}.</Trans>
+          </p>
+        )}
         {data.provider && data.provider.methods.length > 0 && (
           <p>
             <Trans>Payment methods: {methods}</Trans>

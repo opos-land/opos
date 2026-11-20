@@ -58,6 +58,10 @@ msgstr "Konwent prowadzi swój zespół, edycje, program i sprzedaż akredytacji
 msgid "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
 msgstr "Konwent widzi zapisy na swoje edycje i złożone na nie zamówienia. Konwenty są od siebie odizolowane: żaden nie widzi danych innego."
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "a fake provider that takes no money"
+msgstr "testowy dostawca, który nie pobiera pieniędzy"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
 msgstr "Opinia pokazuje twoje imię i nazwisko albo „anonimowo”, jeśli tak wybierzesz; anonimowość obowiązuje wobec wszystkich, także organizatorów. Komentarz do niej jest publiczny albo widoczny tylko dla prelegentów punktu programu, zależnie od twojego wyboru."
@@ -697,6 +701,10 @@ msgstr "karta płatnicza"
 #: src/features/shop/pages/shop-page.tsx
 msgid "Payment methods: {methods}"
 msgstr "Metody płatności: {methods}"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Payments are handled by {provider}."
+msgstr "Płatności obsługuje {provider}."
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."

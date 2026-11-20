@@ -124,6 +124,17 @@ describe('ShopPage', () => {
     )
   })
 
+  // The footer names the convention's payment provider; it shows no logo.
+  it('names the payment provider', async () => {
+    const shown = offer()
+    shown.provider!.name = 'przelewy24'
+    api.offer.mockResolvedValue(shown)
+    view()
+
+    expect(await screen.findByText('Payments are handled by Przelewy24.')).toBeDefined()
+    expect(document.querySelector('footer img')).toBeNull()
+  })
+
   // The shop never shows how much stock or capacity is left.
   it('shows no count of what is left', async () => {
     view()

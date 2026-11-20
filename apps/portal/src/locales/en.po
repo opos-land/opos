@@ -58,6 +58,10 @@ msgstr "A convention runs its team, editions, programme and ticket sales in the 
 msgid "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
 msgstr "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
 
+#: src/features/shop/pages/shop-page.tsx
+msgid "a fake provider that takes no money"
+msgstr "a fake provider that takes no money"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
 msgstr "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
@@ -697,6 +701,10 @@ msgstr "payment card"
 #: src/features/shop/pages/shop-page.tsx
 msgid "Payment methods: {methods}"
 msgstr "Payment methods: {methods}"
+
+#: src/features/shop/pages/shop-page.tsx
+msgid "Payments are handled by {provider}."
+msgstr "Payments are handled by {provider}."
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."

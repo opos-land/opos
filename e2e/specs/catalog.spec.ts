@@ -72,6 +72,17 @@ test('an org builds the catalog of an edition from nothing', async ({
   await expect(addOns.nth(0)).toContainText('Limited places: 40')
   await expect(addOns.nth(1)).toContainText('Headcount only')
   await expect(addOns.nth(1)).toContainText('Free')
+  // An add-on's row opens its own page, where its picture is set.
+  await addOns.nth(0).getByRole('link', { name: 'Miniature painting workshop' }).click()
+  const addOnPicture = page.getByRole('region', { name: 'Picture' })
+  await expect(addOnPicture.getByText('The add-on has no picture.')).toBeVisible()
+  await addOnPicture.getByLabel('New picture').setInputFiles(png('workshop.png', 120, 90))
+  await addOnPicture.getByRole('button', { name: 'Set the picture' }).click()
+  await expect(notification(page, 'success', 'The picture is saved.')).toBeVisible()
+  await expect(
+    addOnPicture.getByRole('img', { name: 'Picture of Miniature painting workshop' }),
+  ).toBeVisible()
+  await expect(addOnPicture.getByRole('button', { name: 'Replace the picture' })).toBeVisible()
 
   // A T-shirt with two cuts and two sizes: three variants exist, one of them out of stock.
   await followFolderLink(editionMenu, 'Shop', 'Merchandise')

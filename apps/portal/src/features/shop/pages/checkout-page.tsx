@@ -463,7 +463,13 @@ function Checkout({
             />
           )}
           {current === 'add-ons' && (
-            <AddOnsStep offer={offer} draft={draft} ranOut={ranOut} change={change} />
+            <AddOnsStep
+              tenantSlug={tenantSlug}
+              offer={offer}
+              draft={draft}
+              ranOut={ranOut}
+              change={change}
+            />
           )}
           {current === 'merch' && (
             <MerchStep

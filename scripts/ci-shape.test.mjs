@@ -101,6 +101,13 @@ test('secrets scans the tree and the whole history', () => {
   assert.match(ci, /pnpm audit --audit-level high/)
 })
 
+// The checkout fetches every branch; the history scan reads the commit being checked and its
+// ancestors alone, so another branch's commits never fail a run that does not carry them
+test("secrets scans the checked commit's history, not every branch the checkout fetched", () => {
+  const scans = [...ci.matchAll(/gitleaks git \. (.*)$/gm)].map((match) => match[1])
+  assert.deepEqual(scans, ['--redact --no-banner --log-opts="--full-history HEAD"'])
+})
+
 test('gitleaks is a pinned release binary, checked against its checksum', () => {
   assert.match(ci, /releases\/download\/v8\.30\.1\/gitleaks_8\.30\.1_linux_x64\.tar\.gz/)
   assert.match(ci, /[0-9a-f]{64} {2}gitleaks\.tar\.gz/)

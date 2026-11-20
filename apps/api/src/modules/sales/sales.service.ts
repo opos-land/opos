@@ -47,7 +47,7 @@ export class SalesService {
     private readonly context: TenantContextService,
   ) {}
 
-  /** The dashboard (D1-D5): sold apart from pending, and nothing of an order that holds nothing. */
+  /** The dashboard (D1-D6): sold apart from pending, and nothing of an order that holds nothing. */
   async of(editionId: string): Promise<Sales> {
     const totals = await this.sales.totals(editionId)
     const held = await this.sales.held(editionId)
@@ -65,6 +65,15 @@ export class SalesService {
     const band = (name: 'child' | 'teen' | 'adult') =>
       bands.find((row) => row.ageBand === name)?.holders ?? 0
     const answers = await this.sales.answers(editionId)
+    // A row is a day and a status: the two statuses of a day make one day of the dashboard.
+    const days = new Map<string, Sales['days'][number]>()
+    for (const row of await this.sales.days(editionId, this.context.tenant().timezone)) {
+      const day = days.get(row.day) ?? { day: row.day, paidMinor: 0, manualMinor: 0, tickets: 0 }
+      if (row.status === 'paid') day.paidMinor += row.totalMinor
+      else day.manualMinor += row.totalMinor
+      day.tickets += row.tickets
+      days.set(row.day, day)
+    }
 
     return {
       currency: 'PLN',
@@ -101,6 +110,7 @@ export class SalesService {
           ...count((row) => row.variantId === variant.id),
         })),
       })),
+      days: [...days.values()],
       ageBands: { child: band('child'), teen: band('teen'), adult: band('adult') },
       customFields: (await this.sales.fields(editionId))
         .map((field) => ({

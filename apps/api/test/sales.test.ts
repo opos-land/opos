@@ -144,6 +144,51 @@ describe('the dashboard of an edition’s sales', () => {
     ])
   })
 
+  // D6: the sold orders by the day they were paid, in the convention's time zone.
+  it('tells what was sold on each day, the day read in the time zone of the convention', async () => {
+    const { d, order, pins } = await desk()
+    await setColumn('tenants', d.t.id, 'timezone', 'Europe/Warsaw')
+    const paidOn = async (at: string, values: Order = {}) => {
+      const placed = await order(values)
+      await setColumn('orders', placed.id, 'paid_at', at)
+    }
+    // Half past eleven at night in UTC is already the next day in Warsaw.
+    await paidOn('2027-03-01T23:30:00Z', { totalMinor: 15000 })
+    await paidOn('2027-03-02T10:00:00Z', { totalMinor: 10000 })
+    await paidOn('2027-03-04T09:00:00Z', {
+      status: 'paid-manual',
+      manualReason: 'desk',
+      email: null,
+      totalMinor: 7000,
+    })
+    // An order of merchandise alone adds to the revenue of its day and to no ticket.
+    const merch = await addOrder(d.t.id, d.edition, {
+      status: 'paid',
+      ageBand: null,
+      totalMinor: 3000,
+      variants: pins(2),
+    })
+    await setColumn('orders', merch.id, 'paid_at', '2027-03-04T11:00:00Z')
+    // What is not sold is on no day, whenever it was placed or paid.
+    await paidOn('2027-03-03T10:00:00Z', { status: 'canceled', holds: false })
+    await order({ status: 'awaiting-payment', placedAt: '2027-03-03T10:00:00Z' })
+    await order({ status: 'needs-review', reviewCause: 'amount', placedAt: '2027-03-03T10:00:00Z' })
+
+    expect((await sales(d)).days).toEqual([
+      { day: '2027-03-02', paidMinor: 25000, manualMinor: 0, tickets: 2 },
+      { day: '2027-03-04', paidMinor: 3000, manualMinor: 7000, tickets: 1 },
+    ])
+  })
+
+  it('counts a sold order with no time of payment on the day it was placed', async () => {
+    const { d, order } = await desk()
+    await order({ totalMinor: 5000, placedAt: '2027-03-05T12:00:00Z' })
+
+    expect((await sales(d)).days).toEqual([
+      { day: '2027-03-05', paidMinor: 5000, manualMinor: 0, tickets: 1 },
+    ])
+  })
+
   it('is empty for an edition that sold nothing, and reads its own edition alone', async () => {
     const { d, order } = await desk()
     const sibling = await addEdition(d.t.id)
@@ -159,6 +204,7 @@ describe('the dashboard of an edition’s sales', () => {
       items: [],
       ageBands: { child: 0, teen: 0, adult: 0 },
       customFields: [],
+      days: [],
     })
   })
 })

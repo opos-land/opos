@@ -12,7 +12,7 @@ import { tenantRoute } from './common'
  */
 const held = { sold: z.number().int().min(0), pending: z.number().int().min(0) }
 
-/** The dashboard of an edition's sales, as the orders are when it is read (D1-D5). */
+/** The dashboard of an edition's sales, as the orders are when it is read (D1-D6). */
 export const salesSchema = z.object({
   currency: z.string(),
   /** The totals of the "Paid" orders, and apart from them of the "Paid - manual" ones (D4). */
@@ -48,6 +48,19 @@ export const salesSchema = z.object({
     teen: z.number().int().min(0),
     adult: z.number().int().min(0),
   }),
+  /**
+   * What was sold on each day (D6): the totals of the "Paid" orders paid that day, apart from
+   * them those of the "Paid - manual" ones, and the tickets both hold. A day is one of the
+   * convention's time zone; the earliest comes first, and a day nothing was sold on is left out.
+   */
+  days: z.array(
+    z.object({
+      day: z.iso.date(),
+      paidMinor: z.number().int().min(0),
+      manualMinor: z.number().int().min(0),
+      tickets: z.number().int().min(0),
+    }),
+  ),
   /** The answers the sold orders gave to each custom field, the most frequent first (D5). */
   customFields: z.array(
     z.object({
@@ -80,7 +93,7 @@ export const salesContract = {
       method: 'GET',
       path: '/editions/{editionId}/sales',
       summary:
-        "The dashboard of the edition's sales: revenue, what is sold and what is pending of each ticket type, add-on and variant, the ticket holders by age band and the answers to each custom field; needs tickets>=read",
+        "The dashboard of the edition's sales: revenue, what is sold and what is pending of each ticket type, add-on and variant, what was sold on each day, the ticket holders by age band and the answers to each custom field; needs tickets>=read",
     })
     .input(edition)
     .output(salesSchema),

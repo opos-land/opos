@@ -26,6 +26,7 @@ domain owner to confirm.
 | D3  | Sold means held by a "Paid" or a "Paid - manual" order. What orders awaiting payment and orders needing review hold is shown apart, and a canceled, declined or expired order counts nowhere.                                                              | new; B5.3 counts production numbers so |
 | D4  | Revenue is the sum of the totals of the "Paid" orders, and apart from it of the "Paid - manual" ones: the first went through the provider, the second did not.                                                                                             | new                                    |
 | D5  | The answers to a custom field are listed with how many orders gave each.                                                                                                                                                                                   | new; B7.1 names the answers alone      |
+| D6  | The dashboard shows what was sold over time: the revenue and the tickets of the sold orders, summed day by day up to today. An order counts on the day it was paid, a day being one of the convention's time zone.                                         | new                                    |
 
 ### The exports
 
@@ -52,7 +53,7 @@ Tenant routes, each under `/editions/{editionId}`:
 
 | Route                                | Needs         | Answers        |
 | ------------------------------------ | ------------- | -------------- |
-| `GET /sales`                         | tickets>=read | D1–D5          |
+| `GET /sales`                         | tickets>=read | D1–D6          |
 | `GET /exports/ticket-holders`        | tickets>=read | the file of E2 |
 | `GET /exports/merchandise-pick-list` | tickets>=read | the file of E3 |
 | `GET /exports/payments`              | tickets>=read | the file of E4 |
@@ -67,9 +68,9 @@ payments file is written from what each attempt keeps.
 
 The panel, inside an edition:
 
-| Screen | Holds                                |
-| ------ | ------------------------------------ |
-| sales  | the dashboard, and the three exports |
+| Screen | Holds                                                                                                  |
+| ------ | ------------------------------------------------------------------------------------------------------ |
+| sales  | the dashboard, with the revenue and the tickets sold so far drawn over the days, and the three exports |
 
 ## Tenant isolation and permissions
 
@@ -117,4 +118,6 @@ without the tickets permission of the edition sees neither.
   holds every order with a ticket but an expired and a declined one, a canceled one among them
   under its status; that the pick list holds the paid orders alone; that the ticket holders by
   age band and the answers count the sold orders alone; that an amount carries the decimal mark
-  of the file's language, a comma in Polish, so that a spreadsheet set to it reads a number.
+  of the file's language, a comma in Polish, so that a spreadsheet set to it reads a number; that
+  what was sold over time (D6) counts an order on the day it was paid, and one that carries no
+  time of payment on the day it was placed.

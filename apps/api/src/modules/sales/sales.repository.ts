@@ -87,6 +87,44 @@ export class SalesRepository {
     >
   }
 
+  /**
+   * The sold orders by the day they were paid and by status: the sum of their totals and the
+   * tickets they hold. The day is the one of `timeZone`; a sold order that carries no time of
+   * payment counts on the day it was placed.
+   */
+  days(editionId: string, timeZone: string) {
+    const tx = this.context.tx()
+    // The tickets of each order, counted before the orders are summed: a join on the lines
+    // themselves would add an order's total once for each of them.
+    const ticketsOf = tx
+      .select({
+        orderId: orderLines.orderId,
+        tickets: sql<number>`sum(${orderLines.quantity})`.as('tickets'),
+      })
+      .from(orderLines)
+      .where(isNotNull(orderLines.ticketTypeId))
+      .groupBy(orderLines.orderId)
+      .as('tickets_of')
+    return (
+      tx
+        .select({
+          day: sql<string>`to_char(coalesce(${orders.paidAt}, ${orders.placedAt}) at time zone ${timeZone}, 'YYYY-MM-DD')`,
+          status: orders.status,
+          totalMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::int`,
+          tickets: sql<number>`coalesce(sum(${ticketsOf.tickets}), 0)::int`,
+        })
+        .from(orders)
+        .leftJoin(ticketsOf, eq(ticketsOf.orderId, orders.id))
+        .where(and(eq(orders.editionId, editionId), inArray(orders.status, [...SOLD])))
+        // By its place in the list: the time zone is a parameter, and one written twice is two
+        // parameters, which the database does not take for the same expression.
+        .groupBy(sql`1`, orders.status)
+        .orderBy(sql`1`) as Promise<
+        { day: string; status: (typeof SOLD)[number]; totalMinor: number; tickets: number }[]
+      >
+    )
+  }
+
   /** The ticket holders of the sold orders, by age band. */
   ageBands(editionId: string) {
     return this.context

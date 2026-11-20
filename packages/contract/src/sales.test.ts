@@ -12,6 +12,7 @@ describe('the reports of an edition’s sales', () => {
     ticketTypes: [{ id, name: 'Standard', sold: 3, pending: 1 }],
     addOns: [{ id, name: 'Room', kind: 'headcount', sold: 2, pending: 0 }],
     items: [{ id, name: 'Pin', variants: [{ id, labels: [], sold: 2, pending: 3 }] }],
+    days: [{ day: '2027-03-02', paidMinor: 25000, manualMinor: 7000, tickets: 3 }],
     ageBands: { child: 0, teen: 1, adult: 2 },
     customFields: [{ id, label: 'City', answers: [{ answer: 'Poznań', orders: 2 }] }],
   }
@@ -20,6 +21,18 @@ describe('the reports of an edition’s sales', () => {
     expect(salesSchema.parse(sales)).toEqual(sales)
     const negative = { ...sales, ticketTypes: [{ id, name: 'Standard', sold: -1, pending: 0 }] }
     expect(salesSchema.safeParse(negative).success).toBe(false)
+  })
+
+  // D6: a day is a calendar date, with no time and no zone of its own.
+  it('tell what was sold on a day by its date alone', () => {
+    const on = (day: string) => ({
+      ...sales,
+      days: [{ day, paidMinor: 0, manualMinor: 0, tickets: 0 }],
+    })
+
+    expect(salesSchema.safeParse(on('2027-03-02')).success).toBe(true)
+    expect(salesSchema.safeParse(on('2027-03-02T10:00:00Z')).success).toBe(false)
+    expect(salesSchema.safeParse(on('02.03.2027')).success).toBe(false)
   })
 
   it('are a dashboard and three files of the edition, each under the tenant', () => {

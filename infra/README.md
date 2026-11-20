@@ -41,7 +41,7 @@ secret-get, which prints a secret.
 | `mise run deploy:secret-get <environment> <name>`       | prints a secret's current value, and only it, for a password manager or the clipboard                                                                                                                                                                                     |
 | `mise run deploy:destroy <environment> <unit>`          | destroys one unit, after showing its plan and asking                                                                                                                                                                                                                      |
 | **As an administrator of the Scaleway organisation**    |                                                                                                                                                                                                                                                                           |
-| `mise run deploy:bootstrap <environment>`               | makes the state's bucket and passphrase and registers the domain                                                                                                                                                                                                          |
+| `mise run deploy:bootstrap <environment>`               | makes the state's bucket and passphrase and the project of the bucket of uploaded files, and registers the domain                                                                                                                                                         |
 | `mise run deploy:apply <environment> shared`            | makes the group of the people who run the commands, with its rights                                                                                                                                                                                                       |
 | `mise run deploy:grant <environment> <email>...`        | puts people into that group                                                                                                                                                                                                                                               |
 | `mise run deploy:grant:revoke <environment> <email>...` | takes people out of it                                                                                                                                                                                                                                                    |
@@ -57,13 +57,16 @@ The steps for Dev; another environment follows them with its own names.
    the organisation. Write the project's name, id and region into the `scaleway` block of
    `live/dev/env.yaml`.
 
-2. Make the state's bucket and passphrase and register the domain:
+2. Make the state's bucket and passphrase and the project `dev-opos-land-files`, which holds the
+   bucket of uploaded files alone, and register the domain:
 
    ```sh
    mise run deploy:bootstrap dev
    ```
 
-   It prints the TXT record of the next step; run it again to print the record again.
+   It writes the files project's id into `files.project_id` of `live/dev/env.yaml`, to commit, and
+   prints the TXT record of the next step; run it again to print the record again
+   ([0044](../docs/adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md)).
 
 3. In the `opos.land` zone at Cloudflare, add the TXT record within 48 hours of the first bootstrap:
 
@@ -100,7 +103,9 @@ The steps for Dev; another environment follows them with its own names.
    someone out.
 
    The shared unit also makes the key the API sends mail with, straight into the secret
-   `smtp-password`.
+   `smtp-password`, and the API's key of the bucket of uploaded files, which may use its objects and
+   nothing else, straight into the secret `files-secret-key`; it gives the operators' group Object
+   Storage in the files project too.
 
 5. Make the secrets. The entered ones stay without a value until they are entered below.
 
@@ -125,8 +130,9 @@ The steps for Dev; another environment follows them with its own names.
    COOLIFY_TOKEN=<the owner's token> mise run deploy:apply dev --no-plan
    ```
 
-   The `deployment` unit stops if an administrator has not applied `shared` since step 4, which
-   writes `smtp-password`. From then on one `mise run deploy:apply dev` applies every unit.
+   The `files` and `deployment` units stop if an administrator has not applied `shared` since
+   step 4, which writes `smtp-password` and `files-secret-key` and lets the operators keep the
+   bucket. From then on one `mise run deploy:apply dev` applies every unit.
    `deploy:plan` alone mocks what is not applied yet, to preview the whole stack.
 
    The `deployment` unit deploys once and waits for it: Coolify reads the compose file, the tools
@@ -170,6 +176,11 @@ Coolify, built on the server from the head of `develop`
 | admin   | `https://admin.dev.opos.land` |
 | mail    | `https://mail.dev.opos.land`  |
 
+- **Files.** The API keeps uploaded files in the bucket of the `files` unit, `files.bucket` in
+  `env.yaml`, in a project of its own; its key may read, write and delete objects there and
+  nothing else. The bucket is private, encrypted at rest, and keeps a removed or replaced object's
+  earlier version for `files.noncurrent_days`, which an operator restores with an S3 client under
+  their own key. Images go through the deployment's own imgproxy, which no host routes to.
 - **Mail.** Dev's mail never leaves the server: the API sends it to Mailpit, the `mail` service
   (`deployment.catch_mail` in `env.yaml`), whose inbox is at its address. The `mail` unit still
   keeps the domain's records for a deployment that sends.
@@ -191,6 +202,7 @@ Coolify, built on the server from the head of `develop`
 | `https://api.dev.opos.land/health`              | `200`, without basic auth                             |
 | the portal, the panel and the admin application | basic auth, then the application                      |
 | a sign-up on the portal                         | the confirmation mail in `https://mail.dev.opos.land` |
+| the imgproxy container in Coolify               | healthy                                               |
 | the `release` job of a push to `develop`        | "Released", and the commit running in Coolify         |
 
 The API reaches the project over its direct connection, which on a Free project is IPv6 alone
@@ -219,8 +231,9 @@ secrets:
 - **Rotate a generated secret:** raise its number, then apply.
 
 An apply carries a new value to every place it is copied to: Coolify's variables and GitHub's
-secrets. The SMTP key is made by the shared unit: raise `mail.smtp_key_version` and have an
-administrator apply `shared`, then apply the rest. The API's Supabase key is made by the
+secrets. The SMTP key and the bucket's key are made by the shared unit: raise
+`mail.smtp_key_version` or `files.key_version` and have an administrator apply `shared`, then
+apply the rest. The API's Supabase key is made by the
 `supabase` unit ([SUPABASE.md](SUPABASE.md#changes)).
 
 ## Images

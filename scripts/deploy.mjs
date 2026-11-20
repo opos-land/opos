@@ -55,6 +55,15 @@ export function setting(text, block, key) {
   return ''
 }
 
+/** `text` with the key of a block given `value`, the rest of env.yaml as it was. */
+export function withSetting(text, block, key, value) {
+  const { lines, inside } = blockLines(text, block)
+  const index = inside.find((candidate) => KEY(key).test(lines[candidate]))
+  if (index === undefined) throw new Error(`env.yaml holds no ${block}.${key}`)
+  lines[index] = `  ${key}: ${value}`
+  return lines.join('\n')
+}
+
 export const nodeFs = {
   exists: (path) => existsSync(path),
   read: (path) => readFileSync(path, 'utf8'),
@@ -269,14 +278,20 @@ export async function deploy({
     // administrator of its Scaleway organisation, with their own profile
     // (docs/adr/0035-describe-the-infrastructure-in-opentofu-units-run-by-terragrunt.md): the
     // bucket that holds the state and the passphrase its key derives from, which the state of a unit
-    // that made them would need, and the environment's domain, for which no resource exists. Safe to
-    // run again, also to print the DNS records again.
+    // that made them would need; the project that holds the bucket of uploaded files alone, whose id
+    // goes into env.yaml
+    // (docs/adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md); and
+    // the environment's domain, for which no resource exists. Safe to run again, also to print the
+    // DNS records again.
     async bootstrap() {
       if (rest.length !== 1) throw usage('pnpm deploy:bootstrap <environment>')
       const settings = environment(rest[0])
       const { project, projectId, region } = settings
       const zone = settings.get('dns', 'zone')
-      if (!zone) throw failure(`${relative(root, settings.path)} names no dns zone`, 2)
+      const filesProject = settings.get('files', 'project')
+      if (!zone || !filesProject) {
+        throw failure(`${relative(root, settings.path)} names no dns zone or no files project`, 2)
+      }
       const { read, change } = scw(env)
       const inProject = [`project-id=${projectId}`, `region=${region}`]
 
@@ -331,6 +346,30 @@ export async function deploy({
         )
       }
       log(`state passphrase: ${passphrase}`)
+
+      // The project of the bucket of uploaded files, found by its name; the units read its id from
+      // env.yaml, which this writes once and checks after
+      const filesProjectId =
+        read(['account', 'project', 'list', `name=${filesProject}`]).find(
+          (candidate) => candidate.name === filesProject,
+        )?.id ??
+        change([
+          'account',
+          'project',
+          'create',
+          `name=${filesProject}`,
+          `description=The bucket of uploaded files of the ${project} project, alone`,
+        ]).id
+      const written = settings.get('files', 'project_id')
+      if (!written) {
+        fs.write(settings.path, withSetting(settings.text, 'files', 'project_id', filesProjectId))
+        log(`${relative(root, settings.path)}: files.project_id written; commit it`)
+      } else if (written !== filesProjectId) {
+        throw failure(
+          `${relative(root, settings.path)}: files.project_id is ${written}, but ${filesProject} is ${filesProjectId}`,
+        )
+      }
+      log(`files project: ${filesProject}, ${filesProjectId}`)
 
       // The environment's domain, held as an external domain: Scaleway makes its zone, which the
       // parent zone delegates, and removes the domain unless the TXT record proves it within 48

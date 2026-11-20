@@ -2,7 +2,8 @@
 
 - Status: Draft
 - Domain owner: the team: the file storage is part of the core
-- Decisions: [0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)
+- Decisions: [0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md),
+  [0044](../adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md)
 
 ## Goal
 
@@ -238,14 +239,10 @@ e2e: none of its own; the scenarios of the features that take files cover it.
 
 ## Open questions
 
-- **The provider:** Scaleway Object Storage, in the project and region of each environment, as
-  the deployment under way uses Scaleway. To confirm.
-- **The key of a deployed bucket, for the deployment:** Scaleway grants Object Storage to a
-  project as a whole, and a bucket policy only narrows what IAM granted. A key that may use the
-  bucket reaches every bucket of its project, Dev's OpenTofu state among them, unless the bucket
-  lies in a project of its own or every other bucket holds a policy that leaves the key out (W2).
-  Decided with the bucket of each environment, its versions kept three months, imgproxy beside the
-  API and the API's `S3_*` and `IMGPROXY_*` variables, which it needs to start.
+- **The provider and the key of a deployed bucket:** Scaleway Object Storage, in a project of its
+  own beside each environment's, so that the API's key opens the bucket and nothing else
+  ([0044](../adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
+  Dev's is described in [infra](../../infra/README.md). To confirm with the record.
 - **The domain owner:** the team, as written, or a named owner of the core.
 - **Proposed values to confirm:** 15 MB a file (K2), 5 GB a convention and 50 MB an account (K7),
   three months recoverable (X3).

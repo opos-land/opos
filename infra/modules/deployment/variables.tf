@@ -94,6 +94,16 @@ variable "mail_from" {
   type        = string
 }
 
+variable "files" {
+  description = "The environment's bucket of uploaded files, from the files unit, and the access key of the API's key of it, from the shared unit"
+  type = object({
+    endpoint   = string
+    region     = string
+    bucket     = string
+    access_key = string
+  })
+}
+
 variable "secrets" {
   description = "The name of the secret in Secret Manager that holds each value of the deployment"
   type = object({
@@ -106,6 +116,9 @@ variable "secrets" {
     invite_secret            = string
     smtp_password            = string
     basic_auth_password      = string
+    files_secret_key         = string
+    imgproxy_key             = string
+    imgproxy_salt            = string
   })
 }
 

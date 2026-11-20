@@ -4,13 +4,14 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { describe, it } from 'node:test'
-import { deploy, newPassphrase, nodeAsk, nodeFs, nodeRun, setting } from './deploy.mjs'
+import { deploy, newPassphrase, nodeAsk, nodeFs, nodeRun, setting, withSetting } from './deploy.mjs'
 
 const ROOT = '/repo'
 const LIVE = `${ROOT}/infra/live/dev`
 const SETTINGS = `${LIVE}/env.yaml`
 const PLANS = `${LIVE}/.terragrunt-plans`
 const PROJECT_ID = '11111111-1111-1111-1111-111111111111'
+const FILES_ID = '22222222-2222-2222-2222-222222222222'
 const PASSPHRASE = 'p'.repeat(64)
 const NOW = Date.parse('2026-11-20T12:00:00Z')
 
@@ -25,6 +26,12 @@ const ENV_YAML = [
   'dns:',
   '  zone: dev.opos.land',
   '',
+  'files:',
+  '  # made by the bootstrap',
+  '  project: dev-opos-land-files',
+  '  project_id:',
+  '  bucket: dev-opos-land-files',
+  '',
 ].join('\n')
 
 /**
@@ -38,6 +45,7 @@ function fakeTools(state = {}) {
     buckets: new Set(),
     secrets: [],
     versions: 0,
+    projects: [],
     domains: [],
     validated: false,
     groups: [{ id: 'group-id', name: 'opos-land-dev-operators', user_ids: ['user-a'] }],
@@ -94,6 +102,11 @@ function fakeTools(state = {}) {
         return ok({ data: Buffer.from(world.stored[value('secret-id')]).toString('base64') })
       case 'secret version access-by-path':
         return ok(world.passphrase ? { data: world.passphrase } : {})
+      case 'account project list':
+        return ok(world.projects)
+      case 'account project create':
+        world.projects.push({ id: FILES_ID, name: value('name') })
+        return ok({ id: FILES_ID })
       case 'domain domain list':
         return ok(world.domains.map((domain) => ({ domain })))
       case 'domain external-domain register':
@@ -185,13 +198,27 @@ const scwChanges = (calls) =>
 describe('setting', () => {
   it('reads a plain value one level inside a top-level block', () => {
     assert.equal(setting(ENV_YAML, 'scaleway', 'project'), 'opos-land-dev')
+    assert.equal(setting(ENV_YAML, 'files', 'project'), 'dev-opos-land-files')
     assert.equal(setting(ENV_YAML, 'dns', 'zone'), 'dev.opos.land')
   })
 
   it('reads nothing for an empty value, a missing key or a missing block', () => {
-    assert.equal(setting('dns:\n  zone:\n', 'dns', 'zone'), '')
+    assert.equal(setting(ENV_YAML, 'files', 'project_id'), '')
     assert.equal(setting(ENV_YAML, 'dns', 'project'), '')
     assert.equal(setting(ENV_YAML, 'cache', 'image'), '')
+  })
+})
+
+describe('withSetting', () => {
+  it('fills the value of a key in its block alone', () => {
+    const filled = withSetting(ENV_YAML, 'files', 'project_id', FILES_ID)
+    assert.equal(setting(filled, 'files', 'project_id'), FILES_ID)
+    assert.equal(setting(filled, 'scaleway', 'project_id'), PROJECT_ID)
+    assert.equal(filled.split('\n').length, ENV_YAML.split('\n').length)
+  })
+
+  it('refuses a key its block does not hold', () => {
+    assert.throws(() => withSetting(ENV_YAML, 'dns', 'project_id', FILES_ID), /dns\.project_id/)
   })
 })
 
@@ -318,14 +345,15 @@ describe('login', () => {
 })
 
 describe('bootstrap', () => {
-  it('makes everything a new environment needs', async () => {
-    const { tools, out, traced } = await call(['bootstrap', 'dev'])
+  it('makes everything a new environment needs and writes the files project into env.yaml', async () => {
+    const { tools, out, traced, files } = await call(['bootstrap', 'dev'])
     const { calls, world } = tools
 
     assert.deepEqual(scwChanges(calls), [
       'object bucket create',
       'secret secret create',
       'secret version create',
+      'account project create',
       'domain external-domain register',
     ])
     assert.ok(
@@ -340,11 +368,18 @@ describe('bootstrap', () => {
     const version = calls.find(({ args }) => args.slice(0, 3).join(' ') === 'secret version create')
     assert.equal(version.input, PASSPHRASE)
     assert.ok(calls.every(({ args }) => !args.some((arg) => arg.includes(PASSPHRASE))))
+    assert.ok(
+      lines(calls, 'scw').some((line) =>
+        line.startsWith('account project create name=dev-opos-land-files '),
+      ),
+    )
     // With the administrator's own profile, never the operators'
     assert.ok(calls.every(({ env }) => env.SCW_PROFILE === undefined))
 
+    assert.equal(setting(files[SETTINGS], 'files', 'project_id'), FILES_ID)
     assert.equal(world.versions, 1)
     assert.match(out, /_scaleway-challenge\.dev TXT the-token/)
+    assert.match(out, /files project: dev-opos-land-files, 2{8}-/)
     assert.equal(traced.length, scwChanges(calls).length)
     for (const line of traced) assert.match(line, /^\+ scw /)
   })
@@ -354,14 +389,37 @@ describe('bootstrap', () => {
       buckets: ['opos-land-dev-tofu-state'],
       secrets: [{ id: 'passphrase-id', name: 'tofu-state-passphrase' }],
       versions: 1,
+      projects: [
+        { id: 'other', name: 'dev-opos-land-files-old' },
+        { id: FILES_ID, name: 'dev-opos-land-files' },
+      ],
       domains: ['dev.opos.land'],
       validated: true,
     })
-    const { out } = await call(['bootstrap', 'dev'], { tools })
+    const filled = withSetting(ENV_YAML, 'files', 'project_id', FILES_ID)
+    const files = { [SETTINGS]: filled }
+    const { out } = await call(['bootstrap', 'dev'], { tools, files })
 
     assert.deepEqual(scwChanges(tools.calls), ['object bucket update'])
+    assert.equal(files[SETTINGS], filled)
     assert.match(out, /domain: dev\.opos\.land, active/)
     assert.match(out, /_scaleway-challenge\.dev TXT \n/)
+  })
+
+  it('writes the id of a files project made before into an env.yaml without it', async () => {
+    const tools = fakeTools({ projects: [{ id: FILES_ID, name: 'dev-opos-land-files' }] })
+    const { files } = await call(['bootstrap', 'dev'], { tools })
+    assert.ok(!scwChanges(tools.calls).includes('account project create'))
+    assert.equal(setting(files[SETTINGS], 'files', 'project_id'), FILES_ID)
+  })
+
+  it('stops when env.yaml names another files project than the one Scaleway holds', async () => {
+    const tools = fakeTools({ projects: [{ id: FILES_ID, name: 'dev-opos-land-files' }] })
+    const files = { [SETTINGS]: withSetting(ENV_YAML, 'files', 'project_id', 'another-id') }
+    await assert.rejects(
+      call(['bootstrap', 'dev'], { tools, files }),
+      /files\.project_id is another-id, but dev-opos-land-files is 2{8}-/,
+    )
   })
 
   it('stops on a failed listing instead of reading it as nothing', async () => {
@@ -370,11 +428,16 @@ describe('bootstrap', () => {
     assert.ok(!scwChanges(tools.calls).includes('secret secret create'))
   })
 
-  it('stops for settings that name no zone', async () => {
-    const tools = fakeTools()
-    const files = { [SETTINGS]: ENV_YAML.replace('  zone: dev.opos.land\n', '') }
-    await assert.rejects(call(['bootstrap', 'dev'], { tools, files }), /names no dns zone/)
-    assert.equal(tools.calls.length, 0)
+  it('stops for settings that name no zone or files project', async () => {
+    for (const line of ['  zone: dev.opos.land', '  project: dev-opos-land-files']) {
+      const tools = fakeTools()
+      const files = { [SETTINGS]: ENV_YAML.replace(`${line}\n`, '') }
+      await assert.rejects(
+        call(['bootstrap', 'dev'], { tools, files }),
+        /names no dns zone or no files project/,
+      )
+      assert.equal(tools.calls.length, 0)
+    }
   })
 
   it('asks for one environment', async () => {

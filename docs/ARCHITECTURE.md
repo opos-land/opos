@@ -56,8 +56,7 @@ Dev's deployment is described in [infra](../infra/README.md) but not running yet
 ([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)); a
 deployed environment reaches its database directly, with TLS verified against Supabase's CA
 ([0039](adr/0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md)). The backups are
-decided but not built ([0014](adr/0014-back-up-production-beyond-supabase.md)), nor is a deployed
-environment's bucket of uploaded files with its imgproxy, which the API needs to start; the modules
+decided but not built ([0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
 [waiting for their domain owner](#modules-waiting-for-their-domain-owner) have only their rules.
 
 ## Tenant isolation
@@ -373,8 +372,12 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 | Deployed by | the developer           | a push to `develop`                       | a push to `main`, after a reviewer |
 
 - `OPOS_ENV` is the one switch between environments; a fake payment provider serves `local` and
-  `dev`. Each environment has a bucket of its own, Dev's holding demo files; the local stack and
-  CI run Versity Gateway as the bucket and imgproxy in containers beside Supabase's, which
+  `dev`. Each environment has a bucket of its own, Dev's holding demo files, in a Scaleway project
+  that holds it alone, so that the API's key opens it and nothing else, and its deployment runs
+  imgproxy beside the API
+  ([0044](adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
+  the local stack and CI run Versity Gateway as the bucket and imgproxy in containers beside
+  Supabase's, which
   `pnpm infra:init` and `pnpm infra:up` start ([compose.yaml](../infra/local/compose.yaml)). Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
   through Scaleway's Transactional Email, from its own domain
   ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).

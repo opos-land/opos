@@ -1,5 +1,6 @@
 # What an environment needs from its Scaleway organisation, applied by an administrator of the
-# organisation. Values: project, smtp_secret, smtp_key_version.
+# organisation. Values: project, smtp_secret, smtp_key_version, files_project_id, files_key_secret,
+# files_key_version.
 
 include "root" {
   path = find_in_parent_folders("root.hcl")
@@ -15,4 +16,8 @@ inputs = {
   project          = values.project
   smtp_secret      = values.smtp_secret
   smtp_key_version = values.smtp_key_version
+
+  files_project_id  = values.files_project_id
+  files_key_secret  = values.files_key_secret
+  files_key_version = values.files_key_version
 }

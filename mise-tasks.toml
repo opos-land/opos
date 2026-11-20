@@ -151,7 +151,7 @@ run = "pnpm deploy:login"
 raw = true
 
 ["deploy:bootstrap"]
-description = "Once per environment, by an administrator of the Scaleway organisation, make the state bucket and its passphrase and register the environment's domain; never by an agent: <environment>"
+description = "Once per environment, by an administrator of the Scaleway organisation, make the state bucket and its passphrase and the project of the bucket of uploaded files, and register the environment's domain; never by an agent: <environment>"
 run = "pnpm deploy:bootstrap"
 raw = true
 

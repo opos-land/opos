@@ -23,3 +23,24 @@ variable "smtp_key_version" {
   type        = number
   default     = 1
 }
+
+variable "files_project_id" {
+  description = "The Scaleway project that holds the bucket of uploaded files alone, made by the bootstrap"
+  type        = string
+
+  validation {
+    condition     = can(regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", var.files_project_id))
+    error_message = "files.project_id of env.yaml is empty or no project's id: run mise run deploy:bootstrap first."
+  }
+}
+
+variable "files_key_secret" {
+  description = "The name of the secret that holds the secret key of the API's key of the bucket, made here"
+  type        = string
+}
+
+variable "files_key_version" {
+  description = "Raising it replaces the API's key of the bucket"
+  type        = number
+  default     = 1
+}

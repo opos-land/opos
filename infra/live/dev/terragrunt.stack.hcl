@@ -6,6 +6,7 @@ locals {
   env        = yamldecode(file("env.yaml"))
   cache      = local.env.cache
   mail       = local.env.mail
+  files      = local.env.files
   supabase   = local.env.supabase
   deployment = local.env.deployment
 
@@ -57,6 +58,19 @@ unit "mail" {
 
   values = {
     zone = local.env.dns.zone
+  }
+}
+
+# The bucket of uploaded files, in the project the bootstrap made for it alone
+unit "files" {
+  source = "../../units/files"
+  path   = "files"
+
+  values = {
+    environment      = "dev"
+    files_project_id = local.files.project_id
+    bucket           = local.files.bucket
+    noncurrent_days  = local.files.noncurrent_days
   }
 }
 
@@ -119,11 +133,14 @@ unit "deployment" {
           "send_email_hook_secret",
           "invite_secret",
           "basic_auth_password",
+          "imgproxy_key",
+          "imgproxy_salt",
         ] : key => replace(key, "_", "-")
       },
       {
         supabase_secret_key = local.supabase.secret_key_secret
         smtp_password       = local.mail.smtp_secret
+        files_secret_key    = local.files.key_secret
       },
     )
   }
@@ -133,13 +150,14 @@ unit "deployment" {
       paths = [unit.secrets.path]
     }
 
-    # The units that write smtp-password and the secret key, and a marker of each value. Mocked
+    # The units that write smtp-password, the bucket's key and the secret key, and a marker of each
+    # value. Mocked
     # while they have written nothing, so that a plan of the whole stack runs before them; the
     # deployment then reads those secrets at the apply, which runs after theirs.
     dependency "shared" {
       config_path = unit.shared.path
 
-      mock_outputs                            = { smtp_key = "mock" }
+      mock_outputs                            = { smtp_key = "mock", files_access_key = "mock" }
       mock_outputs_allowed_terraform_commands = get_env("DEPLOY_EXACT_PLAN", "") == "true" ? ["init", "validate"] : ["init", "validate", "plan"]
       mock_outputs_merge_strategy_with_state  = "shallow"
     }
@@ -150,6 +168,17 @@ unit "deployment" {
       mock_outputs                            = { secret_key_version = "mock" }
       mock_outputs_allowed_terraform_commands = get_env("DEPLOY_EXACT_PLAN", "") == "true" ? ["init", "validate"] : ["init", "validate", "plan"]
       mock_outputs_merge_strategy_with_state  = "shallow"
+    }
+
+    dependency "files" {
+      config_path = unit.files.path
+
+      mock_outputs = {
+        endpoint = "https://s3.example.invalid"
+        region   = "mock"
+        bucket   = "mock"
+      }
+      mock_outputs_allowed_terraform_commands = get_env("DEPLOY_EXACT_PLAN", "") == "true" ? ["init", "validate"] : ["init", "validate", "plan"]
     }
 
     dependency "mail" {
@@ -167,8 +196,15 @@ unit "deployment" {
       smtp_host = dependency.mail.outputs.smtp_host
       smtp_port = dependency.mail.outputs.smtp_port
       smtp_user = dependency.mail.outputs.smtp_user
+      files = {
+        endpoint   = dependency.files.outputs.endpoint
+        region     = dependency.files.outputs.region
+        bucket     = dependency.files.outputs.bucket
+        access_key = dependency.shared.outputs.files_access_key
+      }
       produced = {
         smtp_password       = dependency.shared.outputs.smtp_key
+        files_secret_key    = dependency.shared.outputs.files_access_key
         supabase_secret_key = dependency.supabase.outputs.secret_key_version
       }
     }
@@ -247,5 +283,9 @@ unit "shared" {
     project          = local.env.scaleway.project
     smtp_secret      = local.mail.smtp_secret
     smtp_key_version = local.mail.smtp_key_version
+
+    files_project_id  = local.files.project_id
+    files_key_secret  = local.files.key_secret
+    files_key_version = local.files.key_version
   }
 }

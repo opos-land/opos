@@ -97,10 +97,18 @@ describe('tenantAccess', () => {
     expect(access.settingsEntry).toBeNull()
   })
 
-  it('keeps the convention settings closed while the shop, the only section left, has no screen', () => {
-    expect(tenantAccess(membership({ shopConfigAccess: 'write' })).seesConventionSettings).toBe(
-      false,
-    )
+  it('opens the convention settings on the shop to an org who holds the shop alone', () => {
+    const access = tenantAccess(membership({ shopConfigAccess: 'read' }))
+
+    expect(access.shop).toBe('read')
+    expect(access.seesConventionSettings).toBe(true)
+    expect(access.settingsEntry).toBe('/shop')
+  })
+
+  it('opens them on the branding to an org who holds the branding and the shop', () => {
+    const access = tenantAccess(membership({ brandingAccess: 'read', shopConfigAccess: 'write' }))
+
+    expect(access.settingsEntry).toBe('/branding')
   })
 
   it("reads an org's tenant-level permissions from its membership", () => {

@@ -4,6 +4,7 @@ import { LOGO_TYPES } from '@opos/contract'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { env } from '../../../shared/config/env'
+import { toUpload } from '../../../shared/lib/file-upload'
 import { notifyFailure } from '../../../shared/lib/notify'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
@@ -19,7 +20,7 @@ import {
 } from '../../../shared/ui'
 import { atLeast, useCurrentTenant } from '../../tenants'
 import { brandingOptions, putLogoOptions, removeLogoOptions } from '../api/branding'
-import { logoBox, logoProblem, logoUrl, toUpload } from '../model/logo-file'
+import { logoBox, logoProblem, logoUrl } from '../model/logo-file'
 
 /** The side of the box the page shows the logo in, in pixels. */
 const PREVIEW = 160

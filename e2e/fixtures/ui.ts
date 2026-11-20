@@ -1,18 +1,10 @@
 import { totp } from '@opos/db/totp'
-import { expect, type Page } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { stack } from './stack'
 
 // Signing in through the UI, the way a person does, to the panel, the portal or the admin
 // application.
-
-/** The demo accounts of the seed; a scenario only reads them and never signs them out. */
-export const seeded = {
-  password: 'password123',
-  headA: 'head@convention-a.test',
-  programA: 'program@convention-a.test',
-  viewerA: 'viewer@convention-a.test',
-  expiredA: 'expired@convention-a.test',
-} as const
 
 async function signIn(page: Page, url: string, email: string, password: string) {
   await page.goto(url)
@@ -116,6 +108,17 @@ export async function switchPanelArea(page: Page, choice: string) {
 }
 
 /**
+ * Follows a link the panel's menu keeps in a folder, opening the folder first when it is closed.
+ * `menu` is the menu of the area, the navigation named after the edition or the convention.
+ */
+export async function followFolderLink(menu: Locator, folder: string, link: string) {
+  const opener = menu.getByRole('button', { name: folder, exact: true })
+  if ((await opener.getAttribute('aria-expanded')) !== 'true') await opener.click()
+  await expect(opener).toHaveAttribute('aria-expanded', 'true')
+  await menu.getByRole('link', { name: link, exact: true }).click()
+}
+
+/**
  * The notification of a write's outcome holding `text`: success, a warning for a refusal or an
  * error for a failure. Several can show at once, so the text picks one.
  */
@@ -128,3 +131,19 @@ export const notification = (
     .getByRole('region', { name: 'Notifications' })
     .locator(`[data-slot="toast"][data-type="${type}"]`)
     .filter({ hasText: text })
+
+/**
+ * The page as it stands meets WCAG 2.1 AA, as far as a machine can tell
+ * (docs/specs/0004-checkout-and-orders.md, Q2).
+ */
+export async function expectAccessible(page: Page) {
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(
+    violations.map(
+      (violation) =>
+        `${violation.id}: ${violation.nodes.map((node) => node.target.join(' ')).join(' | ')}`,
+    ),
+  ).toEqual([])
+}

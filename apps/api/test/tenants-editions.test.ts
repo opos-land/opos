@@ -5,23 +5,37 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session, testEmail } from './auth'
 import { upload } from './files'
-import { png } from './pictures'
+import { pdf, png } from './pictures'
 import {
+  addAddOn,
+  addAddOnPicture,
+  addConsent,
+  addDiscountCode,
+  addCustomField,
+  addDocument,
   addEdition,
   addEditionAccess,
   addHead,
   addLogo,
+  addMerchandiseItem,
+  addOrder,
   addOrg,
   addProgramItem,
+  addScanner,
+  addTicketType,
+  addVariant,
   closeTenantDb,
   countHeads,
   deleteCreatedTenants,
   expireIn,
   holdOpen,
+  makeShopReady,
+  type Member,
   member,
   openTransaction,
+  setColumn,
   sleep,
-  type Member,
+  storedRows,
   tenantState,
   tenantWithHead,
 } from './tenants'
@@ -564,6 +578,27 @@ describe('concurrency', () => {
       otherId: string
       newcomer: Member
       item: string
+      document: string
+      consent: string
+      addOn: string
+      customField: string
+      merch: Awaited<ReturnType<typeof addMerchandiseItem>>
+      ticketType: string
+      /**
+       * An edition of its own for the orders, which keep their edition and their catalog in
+       * place: a paid order of a ticket, handed out, and of a shirt, and an order in review.
+       */
+      desk: {
+        edition: string
+        ticketType: string
+        paid: string
+        review: string
+        ticketLine: string
+        shirtLine: string
+        otherVariant: string
+        scanner: string
+        discountCode: string
+      }
     }
     type Request = { method: Method; path: string; body?: object }
     const noEdition = { programAccess: 'none', websiteContentAccess: 'none', ticketsAccess: 'none' }
@@ -635,23 +670,322 @@ describe('concurrency', () => {
         body: { file: upload(png(40, 20), 'image/png', 'logo.png') },
       }),
       'branding.removeLogo': () => ({ method: 'delete', path: '/branding/logo' }),
+      'shop.seller.put': () => ({
+        method: 'put',
+        path: '/shop/seller',
+        body: {
+          sellerName: 'Late Ltd',
+          sellerAddress: '1 Main St',
+          sellerRegistrationNumber: '0000000000',
+          contactEmail: 'shop@late.test',
+        },
+      }),
+      'shop.providerAccount.put': () => ({
+        method: 'put',
+        path: '/shop/provider-account',
+        body: { provider: 'fake', credentials: { account: 'late' } },
+      }),
+      'shop.providerAccount.remove': () => ({ method: 'delete', path: '/shop/provider-account' }),
+      'shop.edition.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/shop`,
+        body: { faqUrl: 'https://late.test/faq' },
+      }),
+      'shop.edition.open': (s) => ({ method: 'post', path: `/editions/${s.edition}/shop/open` }),
+      // On a closed shop, which it leaves as it is: an open one would refuse the writes above that
+      // take away what it needs.
+      'shop.edition.close': (s) => ({ method: 'post', path: `/editions/${s.edition}/shop/close` }),
+      'shop.documents.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/documents`,
+        body: { kind: 'other', title: 'Late' },
+      }),
+      'shop.documents.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/documents/${s.document}`,
+        body: { title: 'Late' },
+      }),
+      'shop.documents.publishVersion': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/documents/${s.document}/versions`,
+        body: { file: upload(pdf(), 'application/pdf', 'late.pdf') },
+      }),
+      'shop.documents.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/documents/${s.document}`,
+      }),
+      'shop.consents.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/consents`,
+        body: { text: 'Late', isRequired: true },
+      }),
+      'shop.consents.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/consents/${s.consent}`,
+        body: { text: 'Late' },
+      }),
+      'shop.consents.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/consents/${s.consent}`,
+      }),
+      'catalog.addOns.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/add-ons`,
+        body: { name: 'Late', amountMinor: 0, kind: 'unlimited' },
+      }),
+      'catalog.addOns.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/add-ons/${s.addOn}`,
+        body: { name: 'Late' },
+      }),
+      'catalog.addOns.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/add-ons/${s.addOn}`,
+      }),
+      'catalog.addOns.putPicture': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/add-ons/${s.addOn}/picture`,
+        body: { file: upload(png(40, 20), 'image/png', 'late.png') },
+      }),
+      'catalog.addOns.removePicture': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/add-ons/${s.addOn}/picture`,
+      }),
+      'catalog.customFields.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/custom-fields`,
+        body: { label: 'Late', isRequired: false },
+      }),
+      'catalog.customFields.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/custom-fields/${s.customField}`,
+        body: { label: 'Late' },
+      }),
+      'catalog.customFields.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/custom-fields/${s.customField}`,
+      }),
+      'catalog.ticketTypes.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/ticket-types`,
+        body: {
+          name: 'Late',
+          saleStartsAt: '2027-01-01T00:00:00.000Z',
+          saleEndsAt: '2027-06-01T00:00:00.000Z',
+          ageBands: ['adult'],
+        },
+      }),
+      'catalog.ticketTypes.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/ticket-types/${s.ticketType}`,
+        body: { name: 'Late', tiers: [] },
+      }),
+      'catalog.ticketTypes.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/ticket-types/${s.ticketType}`,
+      }),
+      'orders.createManual': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/manual`,
+        body: {
+          reason: 'desk',
+          cart: { ticket: { ticketTypeId: s.desk.ticketType } },
+          ageBand: 'adult',
+        },
+      }),
+      'orders.updateHolder': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/holder`,
+        body: { holderName: 'Late' },
+      }),
+      'orders.changeEmail': (s) => ({
+        method: 'put',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/email`,
+        body: { email: 'late@example.test' },
+      }),
+      'orders.swapVariant': (s) => ({
+        method: 'put',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/lines/${s.desk.shirtLine}/variant`,
+        body: { variantId: s.desk.otherVariant },
+      }),
+      'orders.cancel': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/cancel`,
+        body: { reason: 'Late' },
+      }),
+      'orders.markPaid': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.review}/mark-paid`,
+      }),
+      'orders.decline': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.review}/decline`,
+        body: { reason: 'Late' },
+      }),
+      'orders.resendConfirmation': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/resend-confirmation`,
+      }),
+      'orders.handOut': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/hand-outs`,
+        body: { lineIds: [s.desk.shirtLine] },
+      }),
+      'orders.takeBackHandOut': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/lines/${s.desk.ticketLine}/hand-out`,
+      }),
+      'discountCodes.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/discount-codes`,
+        body: {
+          code: 'late-code',
+          kind: 'percent',
+          percent: 10,
+          validFrom: '2026-01-01T00:00:00.000Z',
+          validUntil: '2099-01-01T00:00:00.000Z',
+          ticketTypeIds: [s.desk.ticketType],
+        },
+      }),
+      'discountCodes.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.desk.edition}/discount-codes/${s.desk.discountCode}`,
+        body: { usageLimit: 5 },
+      }),
+      'discountCodes.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.desk.edition}/discount-codes/${s.desk.discountCode}`,
+      }),
+      'scanners.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/scanners`,
+        body: { name: 'Late gate' },
+      }),
+      'scanners.revoke': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.desk.edition}/scanners/${s.desk.scanner}`,
+      }),
+      'scanners.renewPairing': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/scanners/${s.desk.scanner}/pairing-code`,
+      }),
+      'catalog.merchandise.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/merchandise-items`,
+        body: { name: 'Late', amountMinor: 100, perOrderLimit: 1 },
+      }),
+      'catalog.merchandise.update': (s) => ({
+        method: 'patch',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}`,
+        body: { name: 'Late' },
+      }),
+      'catalog.merchandise.remove': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}`,
+      }),
+      'catalog.merchandise.putVariants': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/variants`,
+        body: { variants: [] },
+      }),
+      'catalog.merchandise.putStock': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/variants/${s.merch.variantId}/stock`,
+        body: { stock: 77 },
+      }),
+      'catalog.merchandise.addPicture': (s) => ({
+        method: 'post',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/pictures`,
+        body: { file: upload(png(40, 20), 'image/png', 'late.png') },
+      }),
+      'catalog.merchandise.removePicture': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/pictures/${s.merch.pictureIds[0]}`,
+      }),
+      'catalog.merchandise.putSizeChart': (s) => ({
+        method: 'put',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/option-values/${s.merch.valueId}/size-chart`,
+        body: { file: upload(png(40, 20), 'image/png', 'late.png') },
+      }),
+      'catalog.merchandise.removeSizeChart': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.edition}/merchandise-items/${s.merch.id}/option-values/${s.merch.valueId}/size-chart`,
+      }),
     }
 
     /**
-     * A tenant whose org holds settings=write, branding=write and program=write, another org to
-     * act on, a programme item and a logo.
+     * A tenant whose org holds settings=write, branding=write, shop=write, program=write and
+     * tickets=write, another org to act on, a programme item, a logo, everything opening the
+     * shop asks for, a document of the edition's own, a consent, an add-on, a custom field and
+     * a merchandise item with a value, its variant, its size chart and a picture, and a ticket
+     * type with a price tier.
      */
     async function setup(): Promise<Setup> {
       const t = await tenantWithHead()
       const edition = await addEdition(t.id)
       const [actor, other, newcomer] = await Promise.all([member(), member(), member()])
-      const orgId = await addOrg(t.id, actor, { settings: 'write', branding: 'write' })
-      await addEditionAccess(t.id, orgId, edition, { program: 'write' })
+      const orgId = await addOrg(t.id, actor, {
+        settings: 'write',
+        branding: 'write',
+        shop: 'write',
+      })
+      await addEditionAccess(t.id, orgId, edition, { program: 'write', tickets: 'write' })
       const otherId = await addOrg(t.id, other)
       await addEditionAccess(t.id, otherId, edition, {})
       const item = await addProgramItem(t.id, edition)
       await addLogo(t.id)
-      return { t, edition, org: actor, orgId, otherId, newcomer, item }
+      await makeShopReady(t.id, edition)
+      const { id: document } = await addDocument(t.id, edition)
+      const consent = await addConsent(t.id, edition)
+      const addOn = await addAddOn(t.id, edition)
+      await addAddOnPicture(t.id, edition, addOn)
+      const customField = await addCustomField(t.id, edition)
+      const merch = await addMerchandiseItem(t.id, edition, { sized: true, pictures: 1 })
+      const ticketType = await addTicketType(t.id, edition)
+      const desk = await addEdition(t.id)
+      await addEditionAccess(t.id, orgId, desk, { tickets: 'write' })
+      const deskType = await addTicketType(t.id, desk)
+      const shirt = await addMerchandiseItem(t.id, desk, { stock: 5 })
+      const otherVariant = await addVariant(t.id, desk, shirt.id, 5)
+      const paid = await addOrder(t.id, desk, {
+        status: 'paid',
+        ticketTypeId: deskType,
+        variants: [{ itemId: shirt.id, variantId: shirt.variantId, quantity: 1 }],
+      })
+      const review = await addOrder(t.id, desk, { status: 'needs-review', ticketTypeId: deskType })
+      const lines = (await storedRows('order_lines', t.id)).filter(
+        (line) => line.order_id === paid.id,
+      )
+      const ticketLine = String(lines.find((line) => line.kind === 'ticket')!.id)
+      await setColumn('order_lines', ticketLine, 'handed_out_at', new Date().toISOString())
+      const scanner = await addScanner(t.id, desk)
+      const discountCode = await addDiscountCode(t.id, desk, { ticketTypeIds: [deskType] })
+      return {
+        t,
+        edition,
+        org: actor,
+        orgId,
+        otherId,
+        newcomer,
+        item,
+        document,
+        consent,
+        addOn,
+        customField,
+        merch,
+        ticketType,
+        desk: {
+          edition: desk,
+          ticketType: deskType,
+          paid: paid.id,
+          review: review.id,
+          ticketLine,
+          shirtLine: String(lines.find((line) => line.kind === 'merchandise')!.id),
+          otherVariant,
+          scanner: scanner.id,
+          discountCode: discountCode.id,
+        },
+      }
     }
 
     const send = (s: Setup, { method, path, body }: Request) =>
@@ -680,15 +1014,24 @@ describe('concurrency', () => {
         const s = await setup()
         const expected = await tenantState(s.t.id)
         expected.memberships = expected.memberships.map((row) =>
-          row.id === s.orgId ? { ...row, settings_access: 'none', branding_access: 'none' } : row,
+          row.id === s.orgId
+            ? {
+                ...row,
+                settings_access: 'none',
+                branding_access: 'none',
+                shop_config_access: 'none',
+              }
+            : row,
         )
         expected.editionMemberships = expected.editionMemberships.map((row) =>
-          row.tenant_membership_id === s.orgId ? { ...row, program_access: 'none' } : row,
+          row.tenant_membership_id === s.orgId
+            ? { ...row, program_access: 'none', tickets_access: 'none' }
+            : row,
         )
         const demotion = await openTransaction()
         await lockTenantWrites(demotion.sql, s.t)
-        await demotion.sql`update tenant_memberships set settings_access = 'none', branding_access = 'none' where id = ${s.orgId}`
-        await demotion.sql`update edition_memberships set program_access = 'none' where tenant_membership_id = ${s.orgId}`
+        await demotion.sql`update tenant_memberships set settings_access = 'none', branding_access = 'none', shop_config_access = 'none' where id = ${s.orgId}`
+        await demotion.sql`update edition_memberships set program_access = 'none', tickets_access = 'none' where tenant_membership_id = ${s.orgId}`
 
         const pending = send(s, build(s))
         await sleep(300)
@@ -701,33 +1044,35 @@ describe('concurrency', () => {
       },
     )
 
-    // Anti-escalation already refuses an expiring org most member changes, so this covers the
-    // routes that check nothing but the permission.
-    it.each(Object.entries(writes).filter(([name]) => !name.includes('members')))(
-      '%s refuses once the access of its actor ends while it waits',
-      async (_, build) => {
-        // The same expiry with nothing holding the lock: the org is active when its write starts.
-        const control = await setup()
-        await expireIn(control.orgId, 2000)
-        expect((await send(control, build(control))).status, 'without the wait').toBeLessThan(300)
+    // Anti-escalation already refuses an expiring org most member changes, and a new pairing
+    // code for a scanner that works longer than the org's own access, so this covers the routes
+    // that check nothing but the permission.
+    it.each(
+      Object.entries(writes).filter(
+        ([name]) => !name.includes('members') && name !== 'scanners.renewPairing',
+      ),
+    )('%s refuses once the access of its actor ends while it waits', async (_, build) => {
+      // The same expiry with nothing holding the lock: the org is active when its write starts.
+      const control = await setup()
+      await expireIn(control.orgId, 2000)
+      expect((await send(control, build(control))).status, 'without the wait').toBeLessThan(300)
 
-        // The test helpers share one connection, which the open transaction keeps: everything
-        // they read or write comes before it.
-        const s = await setup()
-        await expireIn(s.orgId, 400)
-        const expected = await tenantState(s.t.id)
-        const holder = await openTransaction()
-        await lockTenantWrites(holder.sql, s.t)
+      // The test helpers share one connection, which the open transaction keeps: everything
+      // they read or write comes before it.
+      const s = await setup()
+      await expireIn(s.orgId, 400)
+      const expected = await tenantState(s.t.id)
+      const holder = await openTransaction()
+      await lockTenantWrites(holder.sql, s.t)
 
-        const pending = send(s, build(s))
-        await sleep(800)
-        await holder.commit()
+      const pending = send(s, build(s))
+      await sleep(800)
+      await holder.commit()
 
-        const res = await pending
-        expect(res.status).toBe(403)
-        expect(await tenantState(s.t.id)).toEqual(expected)
-      },
-    )
+      const res = await pending
+      expect(res.status).toBe(403)
+      expect(await tenantState(s.t.id)).toEqual(expected)
+    })
 
     // After the check under the write lock, a member change waits for rows and re-checks its actor
     // on the row it locked, so the access of an actor may end during that wait too.

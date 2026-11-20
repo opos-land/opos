@@ -60,6 +60,8 @@ function refusal(error: unknown): unknown {
       return new ApiError(409, error.code, 'The email address is not confirmed')
     case 'tenant.not-suspended':
       return new ApiError(409, error.code, 'Only a suspended tenant can be deleted')
+    case 'tenant.has-orders':
+      return new ApiError(409, error.code, 'A tenant that holds orders is not deleted')
     case 'tenant.slug-taken':
       return new ApiError(409, error.code, 'The slug is taken by another tenant')
     case 'tenant.slug-reserved':

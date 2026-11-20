@@ -3,7 +3,7 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), the "Pre-edition reminder" email
-- Decisions: none recorded yet; the records this spec needs are among its
+- Decisions: none of its own; what the owner still has to confirm is among its
   [open questions](#open-questions)
 
 ## Goal
@@ -81,3 +81,9 @@ e2e: none of its own; the settings are covered where the edition's shop screen i
 ## Open questions
 
 - **Records before acceptance:** none of its own.
+- **For the domain owner to confirm:** the rules marked "new" above; that the number of days is
+  from 1 to 60; that the reminder goes out on its day alone, so one missed for any reason, a
+  suspension or the API being down that whole day, is not sent on a later day; that a reminder
+  goes to the earliest paid order of a shared QR code; that an order canceled between the
+  queuing and the sending gets none; that the reminder is no reason for a new order link, and
+  carries none.

@@ -18,6 +18,17 @@ const codeByStatus = (status: number): ErrorCode => {
   return 'request.invalid'
 }
 
+/**
+ * What an order names is never deleted from under it: its foreign keys do not cascade, so the
+ * database refuses the deletion whichever route tried, and however late the order was placed.
+ */
+const catalogInUse = { status: 409, code: 'catalog.in-use', message: 'An order holds it' } as const
+const consentInUse = {
+  status: 409,
+  code: 'consent.in-use',
+  message: 'An order accepted it',
+} as const
+
 /** Database constraints whose violation is the client's business, by constraint name. */
 const constraintErrors: Record<
   string,
@@ -45,6 +56,30 @@ const constraintErrors: Record<
     message: 'endsAt must be after startsAt',
     params: { field: 'endsAt' },
   },
+  // Tiers of one ticket type that overlap, written past the check of their route.
+  ticket_type_price_tiers_no_overlap: {
+    status: 422,
+    code: 'ticket-type.tiers-overlap',
+    message: 'Two price tiers overlap',
+  },
+  // A discount code an order used is ended, never deleted.
+  orders_discount_code_fk: {
+    status: 409,
+    code: 'discount-code.in-use',
+    message: 'An order used the discount code',
+  },
+  discount_codes_edition_code_unique: {
+    status: 409,
+    code: 'discount-code.taken',
+    message: 'Another discount code of the edition has the code',
+  },
+  order_lines_ticket_type_fk: catalogInUse,
+  order_lines_add_on_fk: catalogInUse,
+  order_lines_item_fk: catalogInUse,
+  order_lines_variant_fk: catalogInUse,
+  order_custom_field_answers_field_fk: catalogInUse,
+  order_consents_consent_fk: consentInUse,
+  order_consents_version_fk: consentInUse,
   editions_slug_format: {
     status: 400,
     code: 'request.invalid',

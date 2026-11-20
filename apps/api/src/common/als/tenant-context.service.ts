@@ -29,6 +29,13 @@ export interface TenantMembership {
 export type TenantInContext = Tenant
 
 /** What one request knows about itself; the guards and the interceptor fill it. */
+/** A scanner as a request names it: found across tenants by the hash of its device's token. */
+export interface ScannerInContext {
+  id: string
+  tenantId: string
+  tokenHash: string
+}
+
 export interface RequestStore {
   /** The client address, an IPv6 one by its /64, as the rate limit counts it. */
   clientAddress?: string
@@ -43,12 +50,20 @@ export interface RequestStore {
   aal2?: boolean
   tenant?: TenantInContext
   membership?: TenantMembership | null
+  /**
+   * The scanner a device's token named, its tenant and the hash of that token: a caller with no
+   * account and no membership (modules/scanner). Whether it still stands, and still holds the
+   * token, is judged in its tenant's transaction.
+   */
+  scanner?: ScannerInContext
   tx?: Transaction
   /** A transaction on opos_app for the session's own global rows, outside every tenant. */
   accountTx?: Transaction
   afterCommit?: (() => unknown)[]
   /** The file a route that takes one received before its transaction (modules/files). */
   received?: unknown
+  /** What a route marked @Prepares did before its transaction (decorators/prepares.decorator). */
+  prepared?: unknown
   /** The response oRPC is ready to send, held until the tenant transaction ends. */
   deferredResponse?: { status: number; send: () => unknown }
 }
@@ -127,6 +142,17 @@ export class TenantContextService {
     return account
   }
 
+  setScanner(scanner: ScannerInContext) {
+    TenantContextService.store().scanner = scanner
+  }
+
+  /** The scanner the request's token named; only behind ScannerGuard. */
+  scanner(): ScannerInContext {
+    const { scanner } = TenantContextService.store()
+    if (!scanner) throw new Error('No scanner in the request store: ScannerGuard did not run')
+    return scanner
+  }
+
   /** The open tenant transaction; repositories never query a pool directly. */
   tx(): Transaction {
     const tx = storage.getStore()?.tx
@@ -143,6 +169,14 @@ export class TenantContextService {
 
   membership(): TenantMembership | null {
     return TenantContextService.store().membership ?? null
+  }
+
+  /** What the preparation of a route marked @Prepares answered, before the route's transaction. */
+  prepared<T>(): T {
+    const store = TenantContextService.store()
+    if (!('prepared' in store))
+      throw new Error('Nothing was prepared: the route is not marked @Prepares')
+    return store.prepared as T
   }
 
   /** Runs `fn` after the open tenant or account transaction commits; dropped when it rolls back. */

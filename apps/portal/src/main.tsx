@@ -3,8 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router/dom'
 import { Providers } from './app/providers'
 import { router } from './app/router'
+import { forgetDraftsAtSignOut } from './features/shop'
 import { loadLocale, pickLocale } from './shared/lib/i18n'
-import { startSession } from './shared/lib/session'
+import { startSession, useSession } from './shared/lib/session'
 import { applyTheme, signedOutTheme } from './shared/lib/theme'
 import './styles.css'
 
@@ -13,6 +14,8 @@ import './styles.css'
 applyTheme(signedOutTheme())
 // The browser's language until the account's is known; the session is restored
 // meanwhile, and a page that needs it shows a loading view until it is.
+// An unfinished checkout lives in the tab and is cleared when its account signs out.
+forgetDraftsAtSignOut((listener) => useSession.subscribe(listener))
 void startSession()
 void loadLocale(pickLocale()).then(() => {
   createRoot(document.getElementById('root')!).render(

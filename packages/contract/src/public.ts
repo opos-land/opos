@@ -1,5 +1,16 @@
 import { z } from 'zod'
 import { logoSchema } from './branding'
+import {
+  attemptHeaders,
+  offerSchema,
+  orderResultSchema,
+  placedOrderSchema,
+  placeVisitorOrderSchema,
+  quoteRequestSchema,
+  quoteSchema,
+  resultTokenHeaders,
+  startedAttemptSchema,
+} from './checkout'
 import { publicRoute, timestamp } from './common'
 
 // What a convention's page shows to anyone. A field added here is public at once.
@@ -115,6 +126,18 @@ const programItem = z.object({
 const logoFile = z.object({
   params: z.object({ slug: z.string(), fileId: z.string(), variant: z.string() }),
 })
+const documentVersion = z.object({
+  params: z.object({ slug: z.string(), versionId: z.string() }),
+})
+const merchandiseFile = z.object({
+  params: z.object({ slug: z.string(), fileId: z.string(), variant: z.string() }),
+})
+
+/** An order a public address names, opened by its result token alone. */
+const order = z.object({
+  params: z.object({ slug: z.string(), orderId: z.string() }),
+  headers: resultTokenHeaders,
+})
 
 export const publicContract = {
   tenant: publicRoute
@@ -144,6 +167,86 @@ export const publicContract = {
     })
     .input(logoFile)
     .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+  documentVersion: publicRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/public/tenants/{slug}/document-versions/{versionId}',
+      outputStructure: 'detailed',
+      summary:
+        "A published version of a legal document of one of the convention's editions, as a download; no sign-in",
+    })
+    .input(documentVersion)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+  merchandiseFile: publicRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/public/tenants/{slug}/merchandise-files/{fileId}/{variant}',
+      outputStructure: 'detailed',
+      summary:
+        'A picture or a size chart of a merchandise item that is not hidden, of a published edition, in one of its sizes; no sign-in',
+    })
+    .input(merchandiseFile)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+  addOnFile: publicRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/public/tenants/{slug}/add-on-files/{fileId}/{variant}',
+      outputStructure: 'detailed',
+      summary:
+        'The picture of an add-on that is not hidden, of a published edition, in one of its sizes; no sign-in',
+    })
+    .input(merchandiseFile)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+  shop: publicRoute
+    .route({
+      method: 'GET',
+      path: '/public/tenants/{slug}/editions/{editionSlug}/shop',
+      summary:
+        "The offer of a published edition's shop: what is on sale and at which price, what the checkout asks and links, the seller's details and what the payment provider's module requires; no sign-in",
+    })
+    .input(edition)
+    .output(offerSchema),
+  shopQuote: publicRoute
+    .route({
+      method: 'POST',
+      path: '/public/tenants/{slug}/editions/{editionSlug}/shop/quote',
+      summary:
+        'The lines and the total of a cart, with the line of a discount code where one is given; refused with shop.closed, with order.unavailable naming what cannot be had, or with discount-code.refused; no sign-in',
+    })
+    .input(edition.extend({ body: quoteRequestSchema }))
+    .output(quoteSchema),
+  placeOrder: publicRoute
+    .route({
+      method: 'POST',
+      path: '/public/tenants/{slug}/editions/{editionSlug}/shop/orders',
+      successStatus: 201,
+      summary:
+        "Place a visitor's order; refused with shop.closed, order.unavailable naming what ran out, order.total-changed with the new total, order.consent-missing, order.email-refused, order.too-many-unpaid or bot-check.failed; no sign-in",
+    })
+    .input(edition.extend({ body: placeVisitorOrderSchema }))
+    .output(placedOrderSchema),
+  orderResult: publicRoute
+    .route({
+      method: 'GET',
+      path: '/public/tenants/{slug}/orders/{orderId}/result',
+      summary:
+        "What the result page shows of an order: its status and number alone; by the order's result token, in a header; no sign-in",
+    })
+    .input(order)
+    .output(orderResultSchema),
+  startPaymentAttempt: publicRoute
+    .route({
+      method: 'POST',
+      path: '/public/tenants/{slug}/orders/{orderId}/payment-attempts',
+      successStatus: 201,
+      summary:
+        "Start a payment attempt for an order and answer where to send the buyer; by the order's result token, in a header; refused with order.hold-ended, order.already-paid or provider.unavailable; no sign-in",
+    })
+    .input(order.extend({ headers: attemptHeaders }))
+    .output(startedAttemptSchema),
   editions: publicRoute
     .route({
       method: 'GET',

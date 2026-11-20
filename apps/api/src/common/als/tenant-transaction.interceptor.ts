@@ -3,11 +3,14 @@ import {
   type ExecutionContext,
   Injectable,
   type NestInterceptor,
+  type Type,
 } from '@nestjs/common'
 import { ModuleRef, Reflector } from '@nestjs/core'
 import { uploadedFileSchema } from '@opos/contract'
 import { from, lastValueFrom, type Observable } from 'rxjs'
 import { GlobalDbService } from '../database/global-db.service'
+import { CALLS_OUT } from '../decorators/calls-out.decorator'
+import { PREPARES, type Preparation } from '../decorators/prepares.decorator'
 import { TENANT_REQUIREMENT } from '../decorators/require-tenant.decorator'
 import {
   ApiError,
@@ -64,7 +67,16 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     const response = http.getResponse<{ statusCode: number }>()
     const takesFile = this.reflector.get<TakesFileOptions | undefined>(TAKES_FILE, ctx.getHandler())
     const servesFile = this.reflector.get<boolean | undefined>(SERVES_FILE, ctx.getHandler())
-    return from(this.handle(requirement, request, response, next, { takesFile, servesFile }))
+    const prepares = this.reflector.get<Type<Preparation> | undefined>(PREPARES, ctx.getHandler())
+    const callsOut = this.reflector.get<boolean | undefined>(CALLS_OUT, ctx.getHandler())
+    return from(
+      this.handle(requirement, request, response, next, {
+        takesFile,
+        servesFile,
+        prepares,
+        callsOut,
+      }),
+    )
   }
 
   private async handle(
@@ -72,7 +84,12 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     request: HttpRequest,
     response: { statusCode: number },
     next: CallHandler,
-    files: { takesFile?: TakesFileOptions; servesFile?: boolean } = {},
+    files: {
+      takesFile?: TakesFileOptions
+      servesFile?: boolean
+      prepares?: Type<Preparation>
+      callsOut?: boolean
+    } = {},
   ) {
     const slug = request.headers['x-tenant-slug']
     if (typeof slug !== 'string' || !slug) {
@@ -120,10 +137,15 @@ export class TenantTransactionInterceptor implements NestInterceptor {
         () => (TenantContextService.store().deferredResponse?.status ?? response.statusCode) < 300,
         ended,
       )
-    if (files.servesFile) {
+    if (files.callsOut && requirement.kind !== 'account') {
+      // Its handler writes in transactions of its own, with no write lock: only a route that
+      // lowers nobody's access and asks no membership may.
+      throw new Error('A route that calls out between its transactions asks no membership')
+    }
+    if (files.servesFile || files.callsOut) {
       if (write) throw new Error('A route that serves a file is a read')
-      // Checked in a short transaction, then run outside every transaction, so the bucket and
-      // imgproxy are never waited for inside one (modules/files).
+      // Checked in a short transaction, then run outside every transaction, so the bucket,
+      // imgproxy and a payment provider are never waited for inside one (modules/files).
       const membership = await this.context.transaction(tenant.id, async () => {
         await admit()
         return this.context.membership()
@@ -133,6 +155,21 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
     }
     if (files.takesFile && !write) throw new Error('A route that takes a file is a write')
+    /** Runs the preparation outside every transaction, as the tenant whose requirement passed. */
+    const prepare = async (prepares: Type<Preparation>) => {
+      enter()
+      const preparation = this.modules.get<Preparation>(prepares, { strict: false })
+      TenantContextService.store().prepared = await preparation.prepare(request.body)
+    }
+    if (files.prepares && !write) {
+      // A read's requirement is judged inside its one transaction, after any call out. Only a
+      // route that asks no membership has nothing left to judge: its session passed already.
+      if (requirement.kind !== 'account') {
+        throw new Error('A route that prepares is a write, or one that asks no membership')
+      }
+      await prepare(files.prepares)
+      return run()
+    }
     if (!write) return run()
     // A write is checked once in a short transaction of its own, so a refused one never queues,
     // then waits in its tenant's queue without a connection, then runs and gives its turn back
@@ -143,6 +180,9 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       enter()
       await this.receive(files.takesFile, request)
     }
+    // The outbound call the route's transaction then acts on, such as a payment provider's check
+    // of credentials.
+    if (files.prepares) await prepare(files.prepares)
     return this.queue.run(tenant.id, (release) => run(release))
   }
 

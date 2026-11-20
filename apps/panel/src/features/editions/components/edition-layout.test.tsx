@@ -2,6 +2,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { type Edition } from '@opos/contract'
 import { cleanup, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SidebarProvider } from '../../../shared/ui'
@@ -12,6 +13,7 @@ const state = vi.hoisted(() => ({
   editions: [] as Edition[],
   settings: 'none',
   program: 'none',
+  tickets: 'none',
 }))
 
 vi.mock('../hooks/use-editions', () => ({
@@ -32,7 +34,11 @@ vi.mock('../../tenants', async (importOriginal) => ({
       isHead: false,
       settings: state.settings,
       shop: 'none',
-      edition: () => ({ program: state.program, websiteContent: 'none', tickets: 'none' }),
+      edition: () => ({
+        program: state.program,
+        websiteContent: 'none',
+        tickets: state.tickets,
+      }),
       seesEdition: () => true,
     },
     api: {},
@@ -65,6 +71,7 @@ const view = (path: string) =>
             <Route path="/:tenantSlug/editions/:editionSlug" element={<EditionLayout />}>
               <Route index element={<p>the edition dashboard</p>} />
               <Route path="program" element={<p>the programme</p>} />
+              <Route path="*" element={<p>another page of the edition</p>} />
             </Route>
           </Routes>
         </SidebarProvider>
@@ -72,12 +79,25 @@ const view = (path: string) =>
     </I18nProvider>,
   )
 
-/** The menu's links by name, each with its address. */
+/** The links the menu shows, by name, each with its address: a closed folder shows none of its own. */
 const links = (menuName: string) => {
   const menu = screen.getByRole('navigation', { name: menuName })
   return within(menu)
     .getAllByRole('link')
     .map((link) => [link.textContent, link.getAttribute('href')])
+}
+
+/** The folders of the menu, by name, each with whether it is open. */
+const folders = (menuName: string) => {
+  const menu = screen.getByRole('navigation', { name: menuName })
+  return within(menu)
+    .queryAllByRole('button')
+    .map((folder) => [folder.textContent, folder.getAttribute('aria-expanded') === 'true'])
+}
+
+const openFolder = (menuName: string, folder: string) => {
+  const menu = screen.getByRole('navigation', { name: menuName })
+  return userEvent.setup().click(within(menu).getByRole('button', { name: folder }))
 }
 
 beforeAll(() => {
@@ -88,6 +108,7 @@ beforeEach(() => {
   state.editions = [edition('2027', 'Edition 2027'), edition('2026', 'Edition 2026')]
   state.settings = 'none'
   state.program = 'none'
+  state.tickets = 'none'
 })
 
 afterEach(cleanup)
@@ -106,6 +127,73 @@ describe('EditionLayout', () => {
     ])
     expect(screen.getByText('the edition dashboard')).toBeDefined()
     expect(screen.queryByRole('navigation', { name: 'Convention A' })).toBeNull()
+  })
+
+  it('folds everything of the shop into one folder for an org who reads the tickets of the edition', () => {
+    state.tickets = 'read'
+    view('/convention-a/editions/2026')
+
+    expect(links('Edition 2026')).toEqual([['Dashboard', '/convention-a/editions/2026']])
+    expect(folders('Edition 2026')).toEqual([['Shop', false]])
+  })
+
+  it('holds what was sold, what is sold and what the shop is set up with in the folder of the shop', async () => {
+    state.tickets = 'read'
+    view('/convention-a/editions/2026')
+
+    await openFolder('Edition 2026', 'Shop')
+
+    expect(links('Edition 2026')).toEqual([
+      ['Dashboard', '/convention-a/editions/2026'],
+      ['Orders', '/convention-a/editions/2026/orders'],
+      ['Emails', '/convention-a/editions/2026/emails'],
+      ['Sales', '/convention-a/editions/2026/sales'],
+      ['Scanners', '/convention-a/editions/2026/scanners'],
+      ['Ticket types', '/convention-a/editions/2026/ticket-types'],
+      ['Add-ons', '/convention-a/editions/2026/add-ons'],
+      ['Merchandise', '/convention-a/editions/2026/merchandise'],
+      ['Discount codes', '/convention-a/editions/2026/discount-codes'],
+      ['Ticket holders’ data', '/convention-a/editions/2026/ticket-holders'],
+      ['Documents and consents', '/convention-a/editions/2026/documents'],
+      ['Settings', '/convention-a/editions/2026/shop'],
+    ])
+  })
+
+  it('keeps the folder of the shop between the programme and what belongs to the edition itself', () => {
+    state.settings = 'write'
+    state.program = 'write'
+    state.tickets = 'write'
+    view('/convention-a/editions/2026')
+
+    const menu = screen.getByRole('navigation', { name: 'Edition 2026' })
+    expect(
+      within(menu)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Dashboard', 'Programme', 'Shop', 'Access', 'Edition settings'])
+  })
+
+  it('opens the folder of the shop on a page of the shop, and marks the page in it', () => {
+    state.tickets = 'read'
+    view('/convention-a/editions/2026/merchandise/shirt')
+
+    expect(screen.getByText('another page of the edition')).toBeDefined()
+    expect(folders('Edition 2026')).toEqual([['Shop', true]])
+    const menu = screen.getByRole('navigation', { name: 'Edition 2026' })
+    expect(
+      within(menu).getByRole('link', { name: 'Merchandise' }).getAttribute('aria-current'),
+    ).toBe('page')
+    expect(
+      within(menu).getByRole('link', { name: 'Orders' }).getAttribute('aria-current'),
+    ).toBeNull()
+  })
+
+  it('keeps the folder of the shop from an org without the tickets of the edition', () => {
+    state.settings = 'write'
+    state.program = 'write'
+    view('/convention-a/editions/2026')
+
+    expect(folders('Edition 2026')).toEqual([])
   })
 
   it('shows an org with the programme alone only the dashboard and the programme', () => {

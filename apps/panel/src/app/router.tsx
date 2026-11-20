@@ -2,6 +2,18 @@ import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale, AccountPage } from '../features/account'
 import { BrandingPage } from '../features/branding'
 import {
+  AddOnPage,
+  AddOnsPage,
+  CustomFieldPage,
+  NewAddOnPage,
+  NewCustomFieldPage,
+  MerchandiseItemPage,
+  MerchandisePage,
+  TicketHoldersPage,
+  TicketTypePage,
+  TicketTypesPage,
+} from '../features/catalog'
+import {
   ConfirmPage,
   ForgotPasswordPage,
   InvitationPage,
@@ -18,7 +30,27 @@ import {
   EditionsPage,
   NewEditionPage,
 } from '../features/editions'
-import { ProgramItemPage, ProgramPage } from '../features/program'
+import {
+  EmailPage,
+  EmailsPage,
+  ManualOrderPage,
+  OrderPage,
+  OrdersPage,
+  ProductionNumbersPage,
+} from '../features/orders'
+import { DiscountCodePage, DiscountCodesPage, NewDiscountCodePage } from '../features/discounts'
+import { SalesPage } from '../features/sales'
+import { EditionScannerPage, NewScannerPage, ScannerPage, ScannersPage } from '../features/scanner'
+import { NewProgramItemPage, ProgramItemPage, ProgramPage } from '../features/program'
+import {
+  ConsentPage,
+  DocumentPage,
+  EditionDocumentsPage,
+  EditionShopPage,
+  NewConsentPage,
+  NewDocumentPage,
+  ShopSettingsPage,
+} from '../features/shop'
 import { EditionAccessPage, InvitePage, MemberPage, TeamPage } from '../features/team'
 import {
   AreaFrame,
@@ -78,6 +110,8 @@ export const router = createBrowserRouter([
       { path: '/auth/confirm', element: <ConfirmPage /> },
       { path: '/auth/mfa', element: <MfaPage /> },
       { path: '/invitation', element: <InvitationPage /> },
+      // The scanner: a phone with no account signed in; `scanner` is a reserved tenant slug.
+      { path: '/scanner', element: <ScannerPage /> },
       {
         element: <SignedIn />,
         children: [
@@ -113,6 +147,7 @@ export const router = createBrowserRouter([
                   { path: 'team/invite', element: <InvitePage /> },
                   { path: 'team/:membershipId', element: <MemberPage /> },
                   { path: 'branding', element: <BrandingPage /> },
+                  { path: 'shop', element: <ShopSettingsPage /> },
                   { path: '*', element: <NotFoundView /> },
                 ],
               },
@@ -123,7 +158,42 @@ export const router = createBrowserRouter([
                 children: [
                   { index: true, element: <EditionDashboardPage /> },
                   { path: 'program', element: <ProgramPage /> },
+                  { path: 'program/new', element: <NewProgramItemPage /> },
                   { path: 'program/:programItemId', element: <ProgramItemPage /> },
+                  { path: 'shop', element: <EditionShopPage /> },
+                  { path: 'documents', element: <EditionDocumentsPage /> },
+                  { path: 'documents/new', element: <NewDocumentPage /> },
+                  { path: 'documents/consents/new', element: <NewConsentPage /> },
+                  { path: 'documents/consents/:consentId', element: <ConsentPage /> },
+                  { path: 'documents/:documentId', element: <DocumentPage /> },
+                  { path: 'orders', element: <OrdersPage /> },
+                  { path: 'orders/new', element: <ManualOrderPage /> },
+                  { path: 'orders/:orderId', element: <OrderPage /> },
+                  { path: 'emails', element: <EmailsPage /> },
+                  { path: 'emails/:emailId', element: <EmailPage /> },
+                  { path: 'production-numbers', element: <ProductionNumbersPage /> },
+                  { path: 'sales', element: <SalesPage /> },
+                  { path: 'scanners', element: <ScannersPage /> },
+                  { path: 'scanners/new', element: <NewScannerPage /> },
+                  { path: 'scanners/:scannerId', element: <EditionScannerPage /> },
+                  { path: 'ticket-types', element: <TicketTypesPage /> },
+                  { path: 'ticket-types/new', element: <TicketTypePage /> },
+                  { path: 'ticket-types/:ticketTypeId', element: <TicketTypePage /> },
+                  { path: 'add-ons', element: <AddOnsPage /> },
+                  { path: 'add-ons/new', element: <NewAddOnPage /> },
+                  { path: 'add-ons/:addOnId', element: <AddOnPage /> },
+                  { path: 'merchandise', element: <MerchandisePage /> },
+                  { path: 'merchandise/new', element: <MerchandiseItemPage /> },
+                  { path: 'merchandise/:itemId', element: <MerchandiseItemPage /> },
+                  { path: 'discount-codes', element: <DiscountCodesPage /> },
+                  { path: 'discount-codes/new', element: <NewDiscountCodePage /> },
+                  { path: 'discount-codes/:codeId', element: <DiscountCodePage /> },
+                  { path: 'ticket-holders', element: <TicketHoldersPage /> },
+                  { path: 'ticket-holders/custom-fields/new', element: <NewCustomFieldPage /> },
+                  {
+                    path: 'ticket-holders/custom-fields/:fieldId',
+                    element: <CustomFieldPage />,
+                  },
                   { path: 'access', element: <EditionAccessPage /> },
                   { path: 'settings', element: <EditionSettingsPage /> },
                   { path: '*', element: <NotFoundView /> },

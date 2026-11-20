@@ -6,7 +6,7 @@ import { useConventionTime } from '../hooks/use-convention-time'
 
 /**
  * What a visitor needs first of an edition: when it takes place, in the convention's time zone,
- * where, and the way on to its programme. An edition with no venue set says nothing of a place.
+ * where, and the way on to its programme and its shop. An edition with no venue set says nothing of a place.
  */
 export function EditionSummary({
   edition,
@@ -49,6 +49,9 @@ export function EditionSummary({
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link to={`${editionPath}/program`} className={buttonVariants()}>
           <Trans>See the programme</Trans>
+        </Link>
+        <Link to={`${editionPath}/shop`} className={buttonVariants({ variant: 'outline' })}>
+          <Trans>Go to the shop</Trans>
         </Link>
       </div>
     </div>

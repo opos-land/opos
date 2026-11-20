@@ -57,14 +57,21 @@ describe('CORS', () => {
     expect(uploadRoutes(contract).length).toBeGreaterThan(0)
   })
 
-  it('allows the four request headers and no other', async () => {
+  // The fifth is the result token of an order, which travels in no path and no query.
+  it('allows the five request headers and no other', async () => {
     const res = await preflight(env.PANEL_URL)
 
     const allowed = String(res.headers['access-control-allow-headers'])
       .split(',')
       .map((header) => header.trim().toLowerCase())
       .sort()
-    expect(allowed).toEqual(['accept-language', 'authorization', 'content-type', 'x-tenant-slug'])
+    expect(allowed).toEqual([
+      'accept-language',
+      'authorization',
+      'content-type',
+      'x-result-token',
+      'x-tenant-slug',
+    ])
   })
 
   it('names no origin for another one, on a preflight and on a request', async () => {
@@ -112,9 +119,10 @@ describe('CORS', () => {
     expect(noOrigin.headers.vary).toMatch(/origin/i)
   })
 
-  it('exposes Retry-After, which a browser hides from a script otherwise', async () => {
+  it('exposes Retry-After and the name of a file, which a browser hides from a script otherwise', async () => {
     const res = await request(app.getHttpServer()).get('/health').set('Origin', env.PANEL_URL)
 
-    expect(res.headers['access-control-expose-headers']).toBe('Retry-After')
+    // And Content-Disposition, by which a file an org exports is saved under its own name.
+    expect(res.headers['access-control-expose-headers']).toBe('Retry-After,Content-Disposition')
   })
 })

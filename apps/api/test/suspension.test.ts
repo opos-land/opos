@@ -20,6 +20,7 @@ import {
   testEmail,
 } from './auth'
 import {
+  addDocument,
   addEdition,
   addLike,
   addOrg,
@@ -56,6 +57,7 @@ let both: Member
 let fan: Member
 let edition: { off: string; on: string }
 let item: { off: string; on: string }
+let version: string
 let invitation: string
 let invited: Member
 
@@ -84,6 +86,7 @@ beforeAll(async () => {
     addProgramItem(on.id, edition.on),
   ])
   item = { off: items[0], on: items[1] }
+  version = (await addDocument(off.id, edition.off, 'shop-terms')).versionIds[0]!
   await Promise.all([addLike(off.id, item.off, fan.id), addLike(on.id, item.on, fan.id)])
   const account = await createAccount({}, { email: testEmail('suspended') })
   invited = { ...account, token: await signIn(account.email) }
@@ -151,6 +154,10 @@ describe('a suspended tenant', () => {
     [
       'a programme item',
       () => `/public/tenants/${off.slug}/editions/2027/program-items/${item.off}`,
+    ],
+    [
+      'a published version of a document',
+      () => `/public/tenants/${off.slug}/document-versions/${version}`,
     ],
   ])('answers 404 for %s, as for an unknown address', async (_, path) => {
     const res = await api().get(path())

@@ -10,6 +10,8 @@
     "./glossary": "./src/glossary.ts",
     "./errors": "./src/errors.ts",
     "./emails": "./src/emails.ts",
+    "./order-emails": "./src/order-emails.ts",
+    "./exports": "./src/exports.ts",
     "./lingui.config.base": "./lingui.config.base.ts",
     "./lingui.config": "./lingui.config.ts"
   },

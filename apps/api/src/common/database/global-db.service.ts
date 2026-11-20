@@ -2,14 +2,20 @@ import { Inject, Injectable } from '@nestjs/common'
 import { type EditionListPeriod, type ListedEdition } from '@opos/contract'
 import {
   accountFiles,
-  type Database,
   editionMemberships,
   editions,
+  editionShops,
+  orderEmails,
+  orderLinks,
+  orders,
+  paymentAttempts,
+  scannerDevices,
   programItemLikes,
   programItems,
   tenantLogos,
   tenantMemberships,
   tenants,
+  type Database,
   uploadedFiles,
 } from '@opos/db'
 import {
@@ -19,6 +25,7 @@ import {
   eq,
   gt,
   inArray,
+  isNotNull,
   isNull,
   lt,
   lte,
@@ -29,6 +36,7 @@ import {
 } from 'drizzle-orm'
 import { type AnyPgColumn, alias } from 'drizzle-orm/pg-core'
 import { type TenantInContext, TenantContextService } from '../als/tenant-context.service'
+import { isUuid } from '../uuid'
 import { GLOBAL_DB } from './tokens'
 
 /**
@@ -44,6 +52,15 @@ const suspended = () => sql<boolean>`${tenants.suspendedAt} is not null`
  * The only code on the opos_app_global role, which bypasses RLS. Every method is one of the
  * documented cross-tenant queries; a new one is documented first.
  */
+/**
+ * What one run of a job of the API takes: at most `limit` rows, and with `tenantId` those of one
+ * tenant alone, as a test of the job runs it beside the tests of other tenants.
+ */
+export interface JobScope {
+  limit?: number
+  tenantId?: string
+}
+
 @Injectable()
 export class GlobalDbService {
   constructor(
@@ -312,6 +329,153 @@ export class GlobalDbService {
           unpointed(uploadedFiles.id),
         ),
       )
+  }
+
+  /**
+   * The scanner a pairing code belongs to, by the hash of the code: a phone that opens a pairing
+   * link names nothing else. It answers the scanner and its tenant alone; whether the code still
+   * works is judged in that tenant's transaction.
+   */
+  async scannerByPairingCode(hash: string): Promise<{ id: string; tenantId: string } | undefined> {
+    const [row] = await this.db
+      .select({ id: scannerDevices.id, tenantId: scannerDevices.tenantId })
+      .from(scannerDevices)
+      .where(eq(scannerDevices.pairingCodeHash, hash))
+    return row
+  }
+
+  /**
+   * The scanner a device's token names, by the hash of the token. It answers the scanner and its
+   * tenant alone: that the device was not revoked and has not ended, and everything it then
+   * reads, come from the tenant's own transaction.
+   */
+  async scannerByToken(hash: string): Promise<{ id: string; tenantId: string } | undefined> {
+    const [row] = await this.db
+      .select({ id: scannerDevices.id, tenantId: scannerDevices.tenantId })
+      .from(scannerDevices)
+      .where(eq(scannerDevices.tokenHash, hash))
+    return row
+  }
+
+  /**
+   * The editions whose reminder may be due around `now`: those that set a number of days, whose
+   * reminder has not gone out, published, of tenants not suspended, and starting within the
+   * days a reminder may be set to. It answers the identifiers and the tenant's time zone alone;
+   * whether the reminder is due at this hour, and whom it goes to, the tenant's own transaction
+   * reads.
+   */
+  remindersPending(
+    now: Date,
+    { limit = 100, tenantId }: JobScope = {},
+  ): Promise<{ tenantId: string; editionId: string; timezone: string }[]> {
+    const DAY = 24 * 60 * 60_000
+    return this.db
+      .select({
+        tenantId: editionShops.tenantId,
+        editionId: editionShops.editionId,
+        timezone: tenants.timezone,
+      })
+      .from(editionShops)
+      .innerJoin(editions, eq(editions.id, editionShops.editionId))
+      .innerJoin(tenants, eq(tenants.id, editionShops.tenantId))
+      .where(
+        and(
+          isNotNull(editionShops.reminderDaysBefore),
+          isNull(editionShops.reminderSentAt),
+          isNull(tenants.suspendedAt),
+          eq(editions.isPublished, true),
+          gt(editions.startsAt, now),
+          lte(editions.startsAt, new Date(now.getTime() + 62 * DAY)),
+          tenantId === undefined ? undefined : eq(editionShops.tenantId, tenantId),
+        ),
+      )
+      .orderBy(asc(editions.startsAt), asc(editionShops.editionId))
+      .limit(limit)
+  }
+
+  /**
+   * The tenant of an order link, by the hash of its token: a link's address names nothing else.
+   * It answers the tenant alone; the link, its order and whether it still opens are read in that
+   * tenant's own transaction.
+   */
+  async orderLinkTenant(tokenHash: string): Promise<string | undefined> {
+    const [row] = await this.db
+      .select({ tenantId: orderLinks.tenantId })
+      .from(orderLinks)
+      .where(eq(orderLinks.tokenHash, tokenHash))
+    return row?.tenantId
+  }
+
+  /**
+   * The tenant and the provider of a payment attempt, by its identifier: the address of a
+   * provider's notification names nothing else. It answers those two alone, and nothing of the
+   * attempt counts before the provider's signature holds, which its tenant's transaction judges.
+   */
+  async paymentAttempt(id: string): Promise<{ tenantId: string; provider: string } | undefined> {
+    if (!isUuid(id)) return undefined
+    const [row] = await this.db
+      .select({ tenantId: paymentAttempts.tenantId, provider: paymentAttempts.provider })
+      .from(paymentAttempts)
+      .where(eq(paymentAttempts.id, id))
+    return row
+  }
+
+  /**
+   * The expiry job: the orders awaiting payment whose hold ended, the longest ended first, of the
+   * tenants that are not suspended, a page at a time. Identifiers and the moment a page continues
+   * from alone: each order is judged again in its own tenant.
+   */
+  ordersPastHold(
+    now: Date,
+    { limit = 200, tenantId, after }: JobScope & { after?: { holdEndsAt: Date; id: string } } = {},
+  ): Promise<{ id: string; tenantId: string; holdEndsAt: Date }[]> {
+    return this.db
+      .select({
+        id: orders.id,
+        tenantId: orders.tenantId,
+        holdEndsAt: sql<Date>`${orders.holdEndsAt}`.mapWith(orders.holdEndsAt),
+      })
+      .from(orders)
+      .innerJoin(tenants, eq(tenants.id, orders.tenantId))
+      .where(
+        and(
+          eq(orders.status, 'awaiting-payment'),
+          lte(orders.holdEndsAt, now),
+          isNull(tenants.suspendedAt),
+          tenantId === undefined ? undefined : eq(orders.tenantId, tenantId),
+          // The page after the last order of the one before, in the order they are read in.
+          after === undefined
+            ? undefined
+            : sql`(${orders.holdEndsAt}, ${orders.id}) > (${after.holdEndsAt.toISOString()}::timestamptz, ${after.id}::uuid)`,
+        ),
+      )
+      .orderBy(asc(orders.holdEndsAt), asc(orders.id))
+      .limit(limit)
+  }
+
+  /**
+   * The outbox of the orders' emails: those not sent yet that are due, the longest due first, of
+   * the tenants that are not suspended. Identifiers alone: each is taken in its own tenant.
+   */
+  emailsDue(
+    now: Date,
+    { limit = 100, tenantId }: JobScope = {},
+  ): Promise<{ id: string; tenantId: string }[]> {
+    return this.db
+      .select({ id: orderEmails.id, tenantId: orderEmails.tenantId })
+      .from(orderEmails)
+      .innerJoin(tenants, eq(tenants.id, orderEmails.tenantId))
+      .where(
+        and(
+          isNull(orderEmails.sentAt),
+          isNull(orderEmails.withdrawnAt),
+          lte(orderEmails.nextAttemptAt, now),
+          isNull(tenants.suspendedAt),
+          tenantId === undefined ? undefined : eq(orderEmails.tenantId, tenantId),
+        ),
+      )
+      .orderBy(asc(orderEmails.nextAttemptAt), asc(orderEmails.id))
+      .limit(limit)
   }
 
   /** The sweep: which of these files have a row, and of what kind. Identifiers alone. */

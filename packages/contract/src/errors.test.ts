@@ -28,6 +28,7 @@ describe('errorCodes', () => {
 
   it.each([
     'tenant.not-suspended',
+    'tenant.has-orders',
     'tenant.slug-taken',
     'tenant.slug-reserved',
     'tenant.slug-retired',
@@ -46,6 +47,58 @@ describe('errorCodes', () => {
 
   it.each(['mfa.code-invalid', 'mfa.already-enabled', 'mfa.not-required', 'mfa.not-enabled'])(
     'lists %s of the two-factor routes',
+    (code) => {
+      expect(errorCodes).toContain(code)
+    },
+  )
+
+  // What an order keeps in place (docs/specs/0003-catalog.md, L2 and L3;
+  // docs/specs/0004-checkout-and-orders.md, A7).
+  it.each([
+    'catalog.in-use',
+    'catalog.below-held',
+    'consent.in-use',
+    'shop.payments-under-way',
+    'edition.has-orders',
+    'order.hold-ended',
+    'order.already-paid',
+  ])('lists %s of the refusals an order causes', (code) => {
+    expect(errorCodes).toContain(code)
+  })
+
+  // What an org does with an order (docs/specs/0006-order-management.md, Routes).
+  it.each([
+    'order.not-correctable',
+    'order.not-cancelable',
+    'order.not-in-review',
+    'order.not-paid',
+    'scan.already-handed-out',
+    'production.before-deadline',
+  ])('lists %s of order management', (code) => {
+    expect(errorCodes).toContain(code)
+  })
+
+  // The scanners of an edition and what a scan answers (docs/specs/0007-scanner.md, Routes).
+  it.each([
+    'scanner.limit-reached',
+    'scanner.name-taken',
+    'scanner.outlives-org',
+    'scanner.code-refused',
+    'scanner.revoked',
+    'scanner.ended',
+    'scan.not-valid',
+  ])('lists %s of the scanner', (code) => {
+    expect(errorCodes).toContain(code)
+  })
+
+  // docs/specs/0009-buyer-self-service.md, Routes.
+  it('lists order.not-extendable of "Buy more"', () => {
+    expect(errorCodes).toContain('order.not-extendable')
+  })
+
+  // docs/specs/0008-discount-codes.md, Routes.
+  it.each(['discount-code.taken', 'discount-code.refused', 'discount-code.in-use'])(
+    'lists %s of the discount codes',
     (code) => {
       expect(errorCodes).toContain(code)
     },

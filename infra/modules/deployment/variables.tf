@@ -114,6 +114,7 @@ variable "secrets" {
     opos_admin_password      = string
     send_email_hook_secret   = string
     invite_secret            = string
+    payment_credentials_key  = string
     smtp_password            = string
     basic_auth_password      = string
     files_secret_key         = string

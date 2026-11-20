@@ -8,7 +8,9 @@ import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Badge,
   buttonVariants,
+  LinkRow,
   PageHeader,
+  RowLink,
   Table,
   TableBody,
   TableCell,
@@ -64,11 +66,9 @@ export function ConventionsPage() {
           </TableHeader>
           <TableBody>
             {conventions.map((convention) => (
-              <TableRow key={convention.id}>
-                <TableCell className="font-medium">
-                  <Link to={`/conventions/${convention.id}`} className="underline">
-                    {convention.name}
-                  </Link>
+              <LinkRow key={convention.id} to={`/conventions/${convention.id}`}>
+                <TableCell>
+                  <RowLink to={`/conventions/${convention.id}`}>{convention.name}</RowLink>
                 </TableCell>
                 <TableCell>
                   <code>{convention.slug}</code>
@@ -95,7 +95,7 @@ export function ConventionsPage() {
                     convention.timezone,
                   )}
                 </TableCell>
-              </TableRow>
+              </LinkRow>
             ))}
           </TableBody>
         </Table>

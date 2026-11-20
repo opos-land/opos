@@ -7,7 +7,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./totp": "./src/totp.ts"
+    "./totp": "./src/totp.ts",
+    "./sealed": "./src/sealed.ts"
   },
   "scripts": {
     "typecheck": "tsc",
@@ -30,6 +31,7 @@
     "postgres": "catalog:"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1167.0",
     "@opos/eslint-config": "workspace:*",
     "@opos/tsconfig": "workspace:*",
     "@types/node": "catalog:",

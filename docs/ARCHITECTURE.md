@@ -20,18 +20,18 @@ graph LR
     imgproxy -->|signed address| s3
 ```
 
-| Part                | Role                                                                                                                                                                                                                                            |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/api`          | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key                                  |
-| `apps/panel`        | the organizers' SPA, desktop-first; later also the scanner under `/scanner`                                                                                                                                                                     |
-| `apps/portal`       | the attendees' SPA, mobile-first: home page with the list of editions, account, convention and edition pages, likes, schedule                                                                                                                   |
-| `apps/admin`        | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md))                                                              |
-| `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape                                                                                                                                                                        |
-| `packages/db`       | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away                                                                                                                                  |
-| `packages/i18n`     | locales, detection, formatters and the shared catalog                                                                                                                                                                                           |
-| Supabase            | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md))                                                                             |
-| S3 bucket           | the uploaded files, one private bucket per environment, in the EU and encrypted at rest; only the API holds its key, which opens it alone ([0041](adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md))                              |
-| imgproxy            | makes an image's master and its variants, reached by the API alone with signed requests, reading one object at an address the API signed for a minute ([0042](adr/0042-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md)) |
+| Part                | Role                                                                                                                                                                                                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api`          | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key                                                                                                                                      |
+| `apps/panel`        | the organizers' SPA, desktop-first; later also the scanner under `/scanner`                                                                                                                                                                                                                                                                         |
+| `apps/portal`       | the attendees' SPA, mobile-first: home page with the list of editions, account, convention and edition pages, likes, schedule                                                                                                                                                                                                                       |
+| `apps/admin`        | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md))                                                                                                                                                                  |
+| `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape                                                                                                                                                                                                                                                                            |
+| `packages/db`       | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away                                                                                                                                                                                                                                      |
+| `packages/i18n`     | locales, detection, formatters and the shared catalog                                                                                                                                                                                                                                                                                               |
+| Supabase            | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md))                                                                                                                                                                                 |
+| S3 bucket           | the uploaded files, one private bucket per environment, in the EU and encrypted at rest; the API holds its key, which opens it alone ([0041](adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)), and so does the seed, on `local` and `dev`, for its demo files ([0045](adr/0045-let-the-seed-put-its-demo-files-into-the-bucket.md)) |
+| imgproxy            | makes an image's master and its variants, reached by the API alone with signed requests, reading one object at an address the API signed for a minute ([0042](adr/0042-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md))                                                                                                     |
 
 - The packages have no build step; only the translation catalogs compile.
 - **The BFF boundary**
@@ -93,8 +93,10 @@ and after every restore.
 - **Global tables.** `accounts`, `account_recovery_codes` and `account_files` have no RLS: column
   privileges limit them, and the API reaches there only the account a verified token, a fresh
   session or a signed hook names; the sweep alone removes an account's file nothing points at.
-  Another account is read only in a tenant transaction, through a tenant table or by a confirmed
-  email behind a write permission and a rate limit of the tenant; or behind
+  Another account is read only in a tenant transaction, through a tenant table, by a confirmed
+  email behind a write permission and a rate limit of the tenant, or by the confirmed email of
+  an order as it is paid and of the recipient of an order's email as it is written, for its
+  language alone, which answers nothing to anyone; or behind
   `@RequireAdmin`, as a tenant's head, as an account an entry of the log names, or by its email
   address for a new tenant's first head and for a reset of two-factor authentication.
   The admin's tables are global too, and `opos_app` and `opos_app_global` hold nothing on them:
@@ -106,14 +108,20 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query                  | Bound                                                                                                                        |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| a tenant by slug       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                |
-| `GET /me/memberships`  | the session's account; expired memberships left out, and the editions of a suspended tenant                                  |
-| `GET /me/schedule`     | the session's own likes; published editions only, of tenants not suspended                                                   |
-| `GET /public/editions` | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time |
-| `DELETE /me`           | the session's account; answers only whether it is a tenant's last head                                                       |
-| the sweep of files     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                     |
+| Query                                  | Bound                                                                                                                                                          |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| a tenant by slug                       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                  |
+| `GET /me/memberships`                  | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                    |
+| `GET /me/schedule`                     | the session's own likes; published editions only, of tenants not suspended                                                                                     |
+| `GET /public/editions`                 | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                   |
+| `DELETE /me`                           | the session's account; answers only whether it is a tenant's last head                                                                                         |
+| the sweep of files                     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                       |
+| a payment attempt by its identifier    | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds               |
+| the orders whose hold ended            | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
+| the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
+| a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction |
+| an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                   |
+| the editions whose reminder may be due | the API's own job; identifiers and the tenant's time zone alone, of published editions of tenants not suspended                                                |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token), the API's own job, or publication, for what anyone
@@ -132,7 +140,11 @@ reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of ve
 
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
-account or another row. `tenants` rows are inserted, deleted, suspended and given a new slug only by
+account or another row, but for two pointers of an order's line that its constraints keep
+within its edition and its tenant: the variant a merchandise line names
+([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)) and the scanner that
+marked a line handed out
+([0065](adr/0065-let-the-api-name-the-scanner-that-marked-a-hand-out.md)). `tenants` rows are inserted, deleted, suspended and given a new slug only by
 `opos_admin`, behind the admin routes, and by the seed; `opos_app` updates `name`, `default_locale`
 and `timezone` alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and
 `auth.mfa_factors` are listed in verify.ts. A `security definer` function pins `search_path = ''`
@@ -143,24 +155,26 @@ case in [verify.test.ts](../packages/db/test/verify.test.ts);
 
 ## Invariants
 
-| #   | Invariant                                                                                                  | Enforced by                                                                                                                                                                     |
-| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | At most one active edition per tenant                                                                      | a partial unique index; activation locks the tenant row                                                                                                                         |
-| 2   | At least one `head` per tenant, also against deleting the last head's account                              | constraint triggers deferred to commit, locking the tenant row                                                                                                                  |
-| 3   | An edition membership stays in the tenant of its membership and edition                                    | composite foreign keys                                                                                                                                                          |
-| 4   | A tenant write carries the tenant of the context                                                           | `TenantContextService.tx()`; `WITH CHECK`                                                                                                                                       |
-| 5   | Every `auth.users` row has exactly one `accounts` row                                                      | an insert trigger, a cascading foreign key                                                                                                                                      |
-| 6   | A `head` never expires and holds no tenant-level permission                                                | check constraints                                                                                                                                                               |
-| 7   | An attendee registration stays in its edition's tenant and goes with its account                           | a composite foreign key, a cascade                                                                                                                                              |
-| 8   | Speakers, likes and reviews stay in the tenant of their programme item                                     | composite foreign keys                                                                                                                                                          |
-| 9   | A limit on what is sold holds under concurrent sales                                                       | a sale locks the rows carrying the limit before counting                                                                                                                        |
-| 10  | Two scans of one ticket never act on the same state                                                        | a conditional update or a row lock, never a read first                                                                                                                          |
-| 11  | A scanner works only inside its tenant and edition                                                         | its tenant's context; every query filters on its edition                                                                                                                        |
-| 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                      | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                      |
-| 13  | A tenant is deleted only while suspended                                                                   | the statement that deletes it judges the suspension itself                                                                                                                      |
-| 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since |
+| #   | Invariant                                                                                                                   | Enforced by                                                                                                                                                                                                                                   |
+| --- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | At most one active edition per tenant                                                                                       | a partial unique index; activation locks the tenant row                                                                                                                                                                                       |
+| 2   | At least one `head` per tenant, also against deleting the last head's account                                               | constraint triggers deferred to commit, locking the tenant row                                                                                                                                                                                |
+| 3   | An edition membership stays in the tenant of its membership and edition                                                     | composite foreign keys                                                                                                                                                                                                                        |
+| 4   | A tenant write carries the tenant of the context                                                                            | `TenantContextService.tx()`; `WITH CHECK`                                                                                                                                                                                                     |
+| 5   | Every `auth.users` row has exactly one `accounts` row                                                                       | an insert trigger, a cascading foreign key                                                                                                                                                                                                    |
+| 6   | A `head` never expires and holds no tenant-level permission                                                                 | check constraints                                                                                                                                                                                                                             |
+| 7   | An attendee registration stays in its edition's tenant and goes with its account                                            | a composite foreign key, a cascade                                                                                                                                                                                                            |
+| 8   | Speakers, likes and reviews stay in the tenant of their programme item                                                      | composite foreign keys                                                                                                                                                                                                                        |
+| 9   | A limit on what is sold holds under concurrent sales and changes of the limit                                               | a sale, and a change of a capacity, a stock or a discount code's limit, lock the rows carrying the limit in one fixed order before counting, a discount code's last ([0053](adr/0053-lock-the-rows-that-carry-a-limit-in-one-fixed-order.md)) |
+| 10  | Two scans of one ticket never act on the same state                                                                         | a hand-out is one update that matches only a line not yet handed out, by a scanner and in the panel alike                                                                                                                                     |
+| 11  | A scanner works only inside its tenant and edition                                                                          | the transaction of the tenant its token named; every query filters on that tenant, and a scan reads the orders of the scanner's edition alone                                                                                                 |
+| 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                                       | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                                                                                    |
+| 13  | A tenant is deleted only while suspended                                                                                    | the statement that deletes it judges the suspension itself                                                                                                                                                                                    |
+| 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants                  | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since                                                               |
+| 15  | An order holds at most one ticket                                                                                           | a partial unique index                                                                                                                                                                                                                        |
+| 16  | What an order names is never deleted from under it: its edition, what it sold, what its ticket holder answered and accepted | foreign keys that do not cascade ([0048](adr/0048-keep-what-an-order-names-with-foreign-keys-that-do-not-cascade.md))                                                                                                                         |
 
-Invariants 7 and 9–11 belong to [modules not built yet](#modules-waiting-for-their-domain-owner);
+Invariant 7 belongs to a [module not built yet](#modules-waiting-for-their-domain-owner);
 [invariants.test.ts](../packages/db/test/invariants.test.ts),
 [tenants.test.ts](../packages/db/test/tenants.test.ts) and
 [accounts.test.ts](../packages/db/test/accounts.test.ts) cover the database-side ones.
@@ -175,7 +189,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - Tenant-level permissions (`settings`, `branding`, `shop`) never grant edition-level ones
   (`program`, `websiteContent`, `tickets`).
 - A non-member gets `403` before any edition is looked up. For a member, a row of another tenant or
-  of another parent than the path names, and an identifier that is not a uuid, are `404`.
+  of another parent than the path names, and an identifier that is not a uuid, are `404`; so is a
+  row of another parent that a body names.
 - A tenant route takes exactly one of `@RequireTenant`, `@RequireEdition` or, as the exception,
   `@InTenant`: no membership, so the handler's filters are its only guard, and no write lock, so it
   lowers nobody's access. Each applies `JwtAuthGuard`.
@@ -240,8 +255,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 ## API conventions
 
 - The contract is the single source of the API: a route starts from `publicRoute`, `accountRoute`,
-  `tenantRoute` or `adminRoute` of [common.ts](../packages/contract/src/common.ts)
-  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)). An admin route lives under `/admin/`,
+  `tenantRoute`, `adminRoute` or `scannerRoute` of [common.ts](../packages/contract/src/common.ts)
+  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)). A scanner's route is called by a
+  device with no session and no membership, named by its token in `Authorization: Bearer`, the
+  one bearer credential the API takes
+  ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). An admin route lives under `/admin/`,
   and nothing else does.
 - An error is `{ code, params?, message }`, its code in
   [errors.ts](../packages/contract/src/errors.ts). The UI shows the code through the catalog, never
@@ -261,29 +279,41 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   everyone, after its own check in a short transaction of the tenant its address names, and never
   takes one. The routes that take a file share one rate limit per
   account. The bucket or imgproxy out of reach stops nothing else of the API.
-- **The API's own job**, the sweep of files, runs daily in each process behind an advisory lock, so
-  one process sweeps at a time: it removes, once older than 24 hours, a file's row nothing points
-  at and an object no row explains.
+- **A route that asks outside before it writes** (`@Prepares`), as connecting a payment provider
+  account does, is a write: its requirement is judged, then the call out runs outside every
+  transaction, then its one transaction judges the actor again and acts on the answer. An answer
+  for an actor refused meanwhile is stored nowhere. A route that asks no membership may prepare
+  too, as placing an account's order does for its bot check, and one that asks outside between
+  its writes (`@CallsOut`), as the start of a payment attempt does, runs its handler outside
+  every transaction and opens its tenant's own.
+- **The API's own jobs** run in each process, each safe with several: the sweep of files daily
+  behind an advisory lock, so one process sweeps at a time, removing, once older than 24 hours,
+  a file's row nothing points at and an object no row explains; the expiry of orders every
+  minute and the outbox of their emails every quarter of a minute, each claiming a row under a
+  lock another process skips; the reminders before an edition every five minutes, each queued
+  under a lock of its edition's shop row, so a second process finds it gone out. A job finds its
+  rows across tenants by identifiers alone, passes a suspended tenant's by, and acts on each in
+  its own tenant's transaction.
 - Every route has a default rate limit per account, or per address without a session; a route open
   to abuse adds its own in code
   ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)).
 - A log line written on purpose names no token, password or email address; an unexpected error is
   logged whole, never sent in the body.
 
-| Status | Meaning                                                                                  | Default code                               |
-| ------ | ---------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `400`  | validation; `params.field` names the field                                               | `request.invalid`                          |
-| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own    | `session.invalid`                          |
-| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own | `permission.denied`                        |
-| `404`  | absent or of another tenant                                                              | `request.not-found`                        |
-| `409`  | an invariant or unique constraint, by constraint name; an owner's files over its limit   | always specific                            |
-| `410`  | an invitation expired or revoked                                                         | `invitation.expired`, `invitation.revoked` |
-| `413`  | a file over its kind's limit, or an image over 50 megapixels                             | `file.too-large`                           |
-| `415`  | a body that is not JSON                                                                  | `request.invalid`                          |
-| `422`  | a file whose content is not what its type says, or not of its kind's types               | `file.type-refused`                        |
-| `429`  | rate limit, with `Retry-After`                                                           | `request.rate-limited`                     |
-| `500`  | unexpected; no details in the body                                                       | `server.error`                             |
-| `503`  | a write waiting too long; Supabase Auth, the bucket or imgproxy out of reach             | `request.busy`, `server.unavailable`       |
+| Status | Meaning                                                                                                            | Default code                                                 |
+| ------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `400`  | validation; `params.field` names the field                                                                         | `request.invalid`                                            |
+| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own                              | `session.invalid`                                            |
+| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own                           | `permission.denied`                                          |
+| `404`  | absent or of another tenant                                                                                        | `request.not-found`                                          |
+| `409`  | an invariant or unique constraint, by constraint name; an owner's files over its limit                             | always specific                                              |
+| `410`  | an invitation expired or revoked                                                                                   | `invitation.expired`, `invitation.revoked`                   |
+| `413`  | a file over its kind's limit, or an image over 50 megapixels                                                       | `file.too-large`                                             |
+| `415`  | a body that is not JSON                                                                                            | `request.invalid`                                            |
+| `422`  | a file whose content is not what its type says, or not of its kind's types; credentials a payment provider refuses | `file.type-refused`, `provider.credentials-refused`          |
+| `429`  | rate limit, with `Retry-After`                                                                                     | `request.rate-limited`                                       |
+| `500`  | unexpected; no details in the body                                                                                 | `server.error`                                               |
+| `503`  | a write waiting too long; Supabase Auth, the bucket, imgproxy or a payment provider out of reach                   | `request.busy`, `server.unavailable`, `provider.unavailable` |
 
 ## Frontends
 
@@ -307,7 +337,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   deployed application's content security policy allows pictures from the API alone beside its own.
 - The browser holds no session state: no token, no cookie read, the account from `GET /me`. A `401`
   brings one refresh shared by the tabs; only a refresh answered `401` signs out, `unavailable` never
-  does, and `mfa-required` shows no account data.
+  does, and `mfa-required` shows no account data. The one token a browser keeps is a scanner's, on
+  the panel's `/scanner`: it is no session of an account, is sent with no cookie, and opens the
+  scanner's routes alone.
 - Nothing of one account outlives it: a sign-out or another account clears caches and permissions in
   every tab, each tenant has its own API client, and a page to return to belongs to the account that
   left it.
@@ -335,6 +367,21 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   authentication off, asks first in a modal that names what goes, says what goes with it and that
   it cannot be undone; only the modal's own button acts. A change the same screen reverses asks
   nothing ([0023](adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
+- An entity, anything a list holds with an identity of its own, is added and changed on pages of
+  its own: a new one at `new` under the address of its list, an existing one at its id there. The
+  list holds the links to those pages and never a form; a page links back, and after adding or
+  deleting leads to the entity's own page or to the list. What the list reverses by itself stays in
+  the row: moving it, hiding it, ending a discount code. A part saved with its entity, such as a
+  price tier, a variant or a speaker, stays in that entity's form; `src/app/pages.test.ts` of the
+  panel refuses a mutation that creates an entity outside a page routed at `new` and an entity's
+  form outside such a page and the entity's own, and that of the admin application the first
+  ([0066](adr/0066-add-and-change-an-entity-on-a-page-of-its-own.md)).
+- A list of entities is a table, a row an entity, and a row whose entity has a page of its own
+  opens that page from anywhere in it: the row is the `LinkRow` of `shared/ui` and the entity's
+  name in it a `RowLink`, which stays the way a keyboard and a screen reader reach the page. A
+  control inside the row keeps its own press; `src/app/tables.test.ts` of the panel and of the
+  admin application refuses a plain link in a table cell
+  ([0067](adr/0067-list-entities-in-a-table-whose-row-opens-the-entitys-page.md)).
 - A tracker, anything the portal does not strictly need (analytics, a pixel, an embed, a script,
   stylesheet or font from another origin, its cookies), is an entry of the consent feature's
   `TRACKERS`, started by that feature alone after the visitor allowed its category. Only it creates
@@ -354,7 +401,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   [glossary.ts](../packages/i18n/src/glossary.ts) declares it with the context `glossary`, the `pl`
   catalog of `packages/i18n` holds its Polish rendering, and every message reuses it. A new term
   enters glossary.ts before its first use in the interface.
-- The API returns codes, never sentences, and renders emails in the recipient's language.
+- The API returns codes, never sentences, and renders emails in the recipient's language. The one
+  sentence it passes on is a payment provider's own, as its module gives it in each language it
+  has: the wording of the provider's consent, and where the money of a payment is.
 - Dates go through `Intl` with an explicit time zone: a tenant's dates, programme times included,
   in the tenant's `timezone`, never the browser's; a date with no tenant, such as an invitation's
   expiry, in the browser's. Numbers go through `Intl.NumberFormat`, money in minor units with its
@@ -486,29 +535,167 @@ on high advisories).
 
 ## Modules waiting for their domain owner
 
-Reviews, tickets with payments and the scanner, and attendee registrations get no code until their
-domain owner sets their rules in the module's [spec](specs/README.md)
+Reviews and attendee registrations get no code until their domain owner sets their rules in the
+module's [spec](specs/README.md)
 ([PRODUCT.md](PRODUCT.md#7-modules), [0019](adr/0019-documents-hold-rules-the-code-holds-the-rest.md));
-the lasting ones land here. Any shape keeps tenant tables under RLS, a read across tenants as a new
+the lasting ones land here. The tickets module has its owner's rules and is built one spec at a
+time, the [shop's setup](specs/0002-shop-setup.md), the [catalog](specs/0003-catalog.md),
+[checkout and orders](specs/0004-checkout-and-orders.md),
+[order management](specs/0006-order-management.md) and the [scanner](specs/0007-scanner.md) so
+far: what no spec has built yet keeps the
+rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
 [cross-tenant query](#tenant-isolation), organizer routes behind the module's permission and the
 steps of [adding a feature](#adding-a-feature).
 
-| Module                 | Rules any shape keeps                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------- |
-| reviews                | invariant 8; deleted with the item or the author's account; organizer routes need `program` |
-| tickets                | invariants 9 and 10; organizer routes need `tickets`, the provider configuration `shop`     |
-| scanner                | invariants 10 and 11                                                                        |
-| attendee registrations | invariant 7                                                                                 |
+| Module                 | Rules any shape keeps                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| reviews                | invariant 8; deleted with the item or the author's account; organizer routes need `program`     |
+| tickets                | invariants 9, 10, 15 and 16; organizer routes need `tickets`, the provider configuration `shop` |
+| scanner                | invariants 10 and 11                                                                            |
+| attendee registrations | invariant 7                                                                                     |
 
 - **Payments.** The money goes to the convention's own provider account
-  ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)); OPOS keeps only the
-  payment reference, and provider credentials encrypted with a key the API alone holds, never
-  returned. A notification counts once its signature or the provider confirms it; a repeat, or a
-  different amount, changes nothing. Only `local` and `dev` load a fake provider.
+  ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)). Of a payment OPOS
+  keeps what the provider's module gives for the orgs, the amount, the time and the provider's
+  number of the transaction, and nothing of a card or a bank account; provider credentials are
+  sealed with a key of the API's environment for their tenant and provider, never returned,
+  logged or read by a route outside the shop permission
+  ([0044](adr/0044-seal-payment-provider-credentials-with-a-key-of-the-apis-environment.md)). A
+  provider is asked through one port, [payments](../apps/api/src/modules/payments), outside every
+  transaction. A notification names its attempt alone and counts once its signature holds: one
+  whose signature does not hold answers as an unknown address. A confirmation is taken in three
+  steps, a transaction that locks the order and decides, the module's call, a transaction that
+  writes the outcome, and the order is paid only in the last
+  ([0047](adr/0047-take-a-payment-in-three-steps-around-the-providers-call.md)); a repeat changes
+  nothing, and another amount than the total never pays the order. Przelewy24 is the first real
+  provider, loaded everywhere
+  ([0054](adr/0054-take-the-first-payments-through-przelewy24.md)): its module holds no table,
+  finds a transaction by the attempt's identifier, and logs nothing of a request or an answer.
+  Only `local` and `dev` load a fake provider, and only there does a sandbox account connect.
+- **The shop's setup.** What opening a shop asks of the convention, an edition-level route answers
+  as a yes or a no alone: the provider account and the seller's details stay behind `shop`,
+  until an edition's shop is open and shows its buyers the seller and names the provider. The
+  conditions are read under the tenant's write lock, and every write that would take one away
+  from an open shop is refused under the same lock. A published version of a legal document is a
+  file for everyone, served by the version's own identifier and bound to the tenant its address
+  names; it is not bound by its edition's publication, since a buyer reads what they accepted.
+- **The catalog.** What an edition sells lies in edition tables behind `tickets`. A list a row
+  carries, such as a ticket type's price tiers or an item's option axes, travels with its row as
+  a whole. A ticket type has one price at a moment or none: an exclusion constraint keeps its
+  tiers apart, and the API refuses them first by a code of its own
+  ([0046](adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md)).
+  A statement by identifier names the parent it acts within, whoever calls it. A picture or a
+  size chart of a merchandise item, and the picture of an add-on, is a file for everyone once
+  what it shows is not hidden and its edition is published, served under the convention's address
+  by the identifier its row holds; before that the edition's orgs read it through a route of
+  their own.
+- **Checkout and orders.** A buyer needs no membership: a visitor's routes open the tenant from
+  its address and answer an unpublished edition and a suspended tenant as an unknown address; an
+  account's are tenant routes behind `@InTenant`, which answer an unpublished edition the same
+  way and a suspended tenant as every tenant route does. The reads that decide which order a
+  buyer opens filter on the tenant themselves. A cart is priced by one function of the
+  contract, which the portal runs for the running total and the API for the order
+  ([0050](adr/0050-price-a-cart-with-one-function-of-the-contract.md)); an order is placed at
+  the total the buyer saw or not at all. The routes that open an order without a sign-in take
+  its result token in a header, for 24 hours from its placing; the token and an order link are
+  stored as hashes, the QR code of a paid order sealed for its own row
+  ([0051](adr/0051-keep-an-orders-secrets-as-hashes-and-its-qr-code-sealed.md)). The bot check
+  is verified before the order's transaction, by a stand-in on `local` and `dev` and by nothing
+  that passes on production
+  ([0052](adr/0052-stand-in-for-the-bot-check-until-the-portal-has-one.md)). An email of an order
+  is queued in the transaction of its cause and sent by the outbox
+  ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). The
+  credentials of a provider account stay as they are while an order awaits payment: an order
+  being placed and a change of them share one lock of the tenant's account. `opos_app` never
+  updates an order's number, its prices or what a line sells, but for a merchandise line's
+  variant ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).
+- **Order management.** Every change an org makes of an order runs under the tenant's write lock
+  and locks the order's row first, then the rows that carry the limits its lines touch, in the
+  order placing takes them (invariant 9): the order a payment's confirmation takes too. A manual
+  order is priced by the contract's one function against the offer the shop would make at that
+  moment were it open, and takes the same locks
+  ([0055](adr/0055-record-a-sale-made-outside-the-shop-as-a-manual-order.md)). A cancellation and
+  a decline change the order alone and ask no provider for anything
+  ([0056](adr/0056-cancel-and-decline-an-order-without-returning-money.md)). A changed email
+  gives the order a new QR code: the old one is marked replaced once no order carries it, and
+  the links sent before are ended. A QR code is searched by its hash, which the panel makes, and
+  never travels in an address
+  ([0057](adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md)). An email of an order
+  is queued without a text: the outbox writes it from the order as it stands when it is sent,
+  under the lock of the order's row, so each thing an org changes is a kind of email of its own,
+  and an email that would hand the order over to an address the order has left since is
+  withdrawn, never sent. What a sent email said is kept on its row, a subject and a text written
+  apart from the email that goes out, as for an address with no account: in the convention's
+  language and with no way to sign in. It holds neither the QR code nor the token of the order
+  link: each is noted for leaving out where the outbox makes it, never by the kind of the email,
+  and no read across tenants reaches the text
+  ([0068](adr/0068-keep-what-a-sent-email-of-an-order-said-without-what-hands-the-order-over.md)).
+  An order's page, the list of an edition's emails and what is kept of an email tell an org
+  neither whether an email address has an account nor the addresses of the orgs an alert went
+  to, and no search finds an alert by an address.
+- **Discount codes.** A code's terms never leave the API. The offer names no code: the portal
+  asks the quote for the price of the cart with the code a buyer entered, and the API prices it
+  with the contract's one function. Every code that cannot be used answers the quote alike, and
+  a quote that tries a code counts against a rate limit of its own for the client's address
+  ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md)).
+  A code is looked up within the edition the request names. An order names its code, and what
+  the code took off is a line of the order below zero, the only one. A use is an order that
+  holds: it is counted under the lock of the code's row, the last lock an order takes
+  (invariant 9), when an order is placed, when a payment after the hold or an org settling a
+  review takes it again, and when an org changes the limit. A code an order names is never
+  deleted: the order's foreign key refuses it.
+- **Sales reports.** The dashboard of an edition and its lists are read from the orders as they
+  are, by queries that lock nothing: a report never slows a sale. What is sold is what "Paid"
+  and "Paid - manual" orders hold; what orders awaiting payment and needing review hold is
+  counted apart, and no other order counts. A file an org exports is CSV in UTF-8 with a byte
+  order mark, its texts quoted and its fields separated by semicolons, named after the edition
+  and the list; the API exposes that name to the panel's origin. Its columns are in the language
+  the panel shows and sends with its request, a moment in it is in the convention's time zone,
+  and an amount is a number to the cent with the decimal mark of that language. A cell that
+  begins like a formula is written with a leading apostrophe. A file holds names and email
+  addresses: it is written for the org who asked, kept nowhere, and no log holds any of it; the
+  lists share a rate limit an account.
+- **The pre-edition reminder.** It goes out at 9:00 by the clock of the convention's time zone,
+  so many days before the edition's first day in that zone, and on that day alone: a reminder
+  missed on its day is not sent late. Its job queues one email a QR code that a paid order still
+  carries and notes that the reminder went out in one transaction of the edition's tenant, so it
+  is queued whole or not at all, once an edition. The email is written when it is sent, from the
+  order as it then stands: it carries the QR code, so it is withdrawn like a confirmation when
+  the order has left its address, and an order canceled since gets none.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than
   that of the org who enabled it.
+- **Buyer self-service.** An order link's token travels after the `#` of the portal's address
+  and in the body of a request, never in a path or a query; its routes name no tenant, so every
+  read behind them filters on the tenant the link's hash answered
+  ([0063](adr/0063-open-an-order-link-by-a-token-after-the-hash-found-across-tenants.md)).
+  What a link opens carries no email address and nothing of the ticket holder. Asking for a
+  fresh link answers alike for any token, and queues one at most once an hour for an order; the
+  email that carries it hands the order over, and is withdrawn like a confirmation when the order
+  has left its address. The routes of an account's own orders are tenant routes that ask for no
+  membership: their reads filter on the tenant and on the session's account, and another
+  account's order is not there. A "Buy more" order names the account's own paid order of the
+  same edition, whose row is locked before any limit; it is priced by the contract's one
+  function against what that order's ticket type offers and what was bought on its QR code, and
+  once paid joins the QR code that order then carries, while the two are under one email: an
+  order an org moved to another address is added to no longer, and shares its code with nothing
+  its old address bought
+  ([0064](adr/0064-add-to-a-paid-order-with-an-order-of-its-own-on-the-same-qr-code.md)).
+- **The scanner.** A phone becomes a scanner by spending a pairing code, which travels in a
+  request's body and after the `#` of a link, never in a path or a query; it is then known by its
+  token alone ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). A guard
+  names the scanner before anything of a request is read, and the device is judged at every
+  request in its tenant's transaction: revoked, ended, or enabled by an org whose access has
+  ended, it opens nothing. It is judged there by the secret the phone sent, the token or the
+  pairing code, which the scanner must still hold: a new pairing code replaces both, and the hash
+  that found the scanner across tenants was read a moment before. An org gives a new pairing
+  code only to a scanner that ends no later than its own access. A scan reads the orders of the scanner's own edition that the code
+  carries, and no email address; a code of another edition is told as such, and nothing of its
+  order is read. A hand-out is marked only under the code the scanner read, and names the
+  scanner. The list of an edition's scanners tells who enabled each by an address only to a
+  member who may read the team; another org is told its own address alone. QR codes are drawn and read in the browser, and a camera frame never leaves the phone
+  ([0060](adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md)).
 
 ## Adding a feature
 

@@ -2,8 +2,8 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { type AdminTenant } from '@opos/contract'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { ConventionsPage } from './conventions-page'
 
@@ -30,7 +30,10 @@ function renderPage(conventions: AdminTenant[]) {
     <I18nProvider i18n={i18n}>
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <ConventionsPage />
+          <Routes>
+            <Route path="/" element={<ConventionsPage />} />
+            <Route path="/conventions/:conventionId" element={<p>the page of the convention</p>} />
+          </Routes>
         </MemoryRouter>
       </QueryClientProvider>
     </I18nProvider>,
@@ -86,6 +89,14 @@ describe('ConventionsPage', () => {
     expect(screen.getByRole('link', { name: 'New convention' }).getAttribute('href')).toBe(
       '/conventions/new',
     )
+  })
+
+  it('opens the page of a convention from anywhere in its row', async () => {
+    renderPage([convention({})])
+
+    fireEvent.click(screen.getByText('convention-a'))
+
+    expect(await screen.findByText('the page of the convention')).toBeDefined()
   })
 
   it('says that there is none yet instead of an empty table', () => {

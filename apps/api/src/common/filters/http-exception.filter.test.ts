@@ -92,6 +92,28 @@ describe('toErrorResponse', () => {
     expect(toErrorResponse(violated(constraint))).toMatchObject({ status: 409, body: { code } })
   })
 
+  it('maps price tiers that overlap, written past the check of their route, to their own code', () => {
+    expect(toErrorResponse(violated('ticket_type_price_tiers_no_overlap'))).toMatchObject({
+      status: 422,
+      body: { code: 'ticket-type.tiers-overlap' },
+    })
+  })
+
+  // An order's foreign keys do not cascade: the database refuses to delete what an order names,
+  // whichever route tried and however late the order was placed.
+  it.each([
+    ['order_lines_ticket_type_fk', 'catalog.in-use'],
+    ['order_lines_add_on_fk', 'catalog.in-use'],
+    ['order_lines_item_fk', 'catalog.in-use'],
+    ['order_lines_variant_fk', 'catalog.in-use'],
+    ['order_custom_field_answers_field_fk', 'catalog.in-use'],
+    ['order_consents_consent_fk', 'consent.in-use'],
+    ['order_consents_version_fk', 'consent.in-use'],
+    ['orders_discount_code_fk', 'discount-code.in-use'],
+  ])('maps a deletion %s refuses to %s', (constraint, code) => {
+    expect(toErrorResponse(violated(constraint))).toMatchObject({ status: 409, body: { code } })
+  })
+
   it('maps a like on an item deleted meanwhile to 404', () => {
     expect(toErrorResponse(violated('program_item_likes_program_item_fk'))).toMatchObject({
       status: 404,

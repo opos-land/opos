@@ -3,8 +3,9 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B1.4 and the requirements it leans on
-- Decisions: none recorded yet; the records this spec needs are among its
-  [open questions](#open-questions)
+- Decisions: [0044](../adr/0044-seal-payment-provider-credentials-with-a-key-of-the-apis-environment.md),
+  [0045](../adr/0045-let-the-seed-put-its-demo-files-into-the-bucket.md); the records it still
+  needs are among its [open questions](#open-questions)
 
 ## Goal
 
@@ -32,7 +33,10 @@ domain owner to confirm.
 | P3  | Connecting asks the provider's module to check the credentials with the provider. Refused credentials store nothing; a provider out of reach stores nothing and says so.                                                                                                        | the contract with a provider's module        |
 | P4  | An account is ready to sell once its credentials passed and the conditions its provider's module sets hold; the module says which are missing.                                                                                                                                  | B1.4                                         |
 | P5  | Giving credentials again replaces the stored ones, after the same check. It is refused while an order of the convention awaits payment: a payment under way is confirmed with the credentials it started with.                                                                  | new                                          |
-| P6  | An org with shop write access disconnects the account, which removes its credentials. Disconnecting is refused while a shop of the convention is open.                                                                                                                          | new                                          |
+| P6  | An org with shop write access disconnects the account, which removes its credentials. Disconnecting is refused while a shop of the convention is open, and while an order of the convention awaits payment, as P5 refuses new credentials.                                      | new                                          |
+| P7  | An account is connected only to a provider the environment has a module of; the panel offers those and no other.                                                                                                                                                                | new                                          |
+| P8  | Credentials that leave the account not ready are refused while a shop of the convention is open.                                                                                                                                                                                | new                                          |
+| P9  | A convention checks credentials with its provider up to 20 times an hour.                                                                                                                                                                                                       | new                                          |
 
 ### Seller's details
 
@@ -56,6 +60,8 @@ domain owner to confirm.
 | D6  | A consent an order has accepted, and a document with such a consent, is never deleted: it is hidden from the shop and stays on its orders.                                                     | NF-07                        |
 | D7  | An org with tickets write access to the edition sets its documents and consents.                                                                                                               | B1.4                         |
 | D8  | An edition may give the address of its FAQ, linked from the shop's footer.                                                                                                                     | F1.1; where it is set is new |
+| D9  | An edition holds up to 30 documents, a document up to 50 versions, an edition up to 20 consents.                                                                                               | new                          |
+| D10 | A consent links its document for good: another link is a new consent. A document a consent links is not deleted while that consent is there.                                                   | new                          |
 
 ### Opening the shop
 
@@ -65,7 +71,7 @@ domain owner to confirm.
 | O2  | Opening is refused unless the convention's provider account is ready (P4), its seller's details are complete (S5) and the edition has a published version of each document opening requires (O3). The refusal names every condition that is missing. | B1.4                                                                   |
 | O3  | Opening requires the shop terms and the privacy policy; the edition rules are optional.                                                                                                                                                              | new; B1.4 says "the edition's required legal documents" and names none |
 | O4  | An edition is published without an open shop, and a shop is opened on an edition not yet published. Buyers reach the shop only while the edition is published and its shop is open.                                                                  | B1.4                                                                   |
-| O5  | Hiding a required document is refused while the shop is open.                                                                                                                                                                                        | new                                                                    |
+| O5  | Hiding or deleting the last document that stands for a kind opening requires is refused while the shop is open.                                                                                                                                      | new                                                                    |
 | O6  | Closing the shop stops new orders only: an order already placed is paid, expires and is settled as before.                                                                                                                                           | new                                                                    |
 | O7  | The edition's shop screen shows each condition of O2 as met or missing. An org without the shop permission learns only that much of the convention's provider account and seller's details.                                                          | UR-10; the second sentence is new                                      |
 
@@ -85,7 +91,7 @@ domain owner to confirm.
 ### Files
 
 This spec declares one kind of file to [file storage](0012-file-storage.md): a legal document. It
-is an edition's, a PDF, and `edition_document_versions.file_id` points at it. The route that
+is an edition's, a PDF of up to 10 MB, and `edition_document_versions.file_id` points at it. The route that
 publishes a version takes the file and needs tickets write access; the public route below serves
 a published version to everyone, as a download.
 
@@ -110,36 +116,42 @@ The call to the provider runs outside the request's transaction.
 
 Tenant routes:
 
-| Route                                                        | Needs         | Refuses with                                                                       |
-| ------------------------------------------------------------ | ------------- | ---------------------------------------------------------------------------------- |
-| `GET /shop/seller`                                           | shop>=read    |                                                                                    |
-| `PUT /shop/seller`                                           | shop=write    | `shop.open` when the change makes the details incomplete                           |
-| `GET /shop/provider-account`                                 | shop>=read    |                                                                                    |
-| `PUT /shop/provider-account`                                 | shop=write    | `provider.credentials-refused`, `provider.unavailable`, `shop.payments-under-way`  |
-| `DELETE /shop/provider-account`                              | shop=write    | `shop.open`                                                                        |
-| `GET /editions/{editionId}/shop`                             | tickets>=read |                                                                                    |
-| `PATCH /editions/{editionId}/shop`                           | tickets=write |                                                                                    |
-| `POST /editions/{editionId}/shop/open`                       | tickets=write | `shop.not-ready`, its `params` naming the missing conditions                       |
-| `POST /editions/{editionId}/shop/close`                      | tickets=write |                                                                                    |
-| `GET /editions/{editionId}/documents`                        | tickets>=read |                                                                                    |
-| `POST /editions/{editionId}/documents`                       | tickets=write |                                                                                    |
-| `PATCH /editions/{editionId}/documents/{documentId}`         | tickets=write | `shop.open` when it hides a required document                                      |
-| `POST /editions/{editionId}/documents/{documentId}/versions` | tickets=write | `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable` |
-| `DELETE /editions/{editionId}/documents/{documentId}`        | tickets=write | `document.in-use`                                                                  |
-| `GET /editions/{editionId}/consents`                         | tickets>=read |                                                                                    |
-| `POST /editions/{editionId}/consents`                        | tickets=write |                                                                                    |
-| `PATCH /editions/{editionId}/consents/{consentId}`           | tickets=write |                                                                                    |
-| `DELETE /editions/{editionId}/consents/{consentId}`          | tickets=write | `consent.in-use`                                                                   |
+| Route                                                        | Needs         | Refuses with                                                                                                     |
+| ------------------------------------------------------------ | ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `GET /shop/seller`                                           | shop>=read    |                                                                                                                  |
+| `PUT /shop/seller`                                           | shop=write    | `shop.open` when the change makes the details incomplete                                                         |
+| `GET /shop/provider-account`                                 | shop>=read    |                                                                                                                  |
+| `PUT /shop/provider-account`                                 | shop=write    | `provider.credentials-refused`, `provider.unavailable`, `shop.payments-under-way`                                |
+| `DELETE /shop/provider-account`                              | shop=write    | `shop.open`, `shop.payments-under-way`                                                                           |
+| `GET /editions/{editionId}/shop`                             | tickets>=read |                                                                                                                  |
+| `PATCH /editions/{editionId}/shop`                           | tickets=write |                                                                                                                  |
+| `POST /editions/{editionId}/shop/open`                       | tickets=write | `shop.not-ready`, its `params` naming the missing conditions                                                     |
+| `POST /editions/{editionId}/shop/close`                      | tickets=write |                                                                                                                  |
+| `GET /editions/{editionId}/documents`                        | tickets>=read |                                                                                                                  |
+| `POST /editions/{editionId}/documents`                       | tickets=write | `document.too-many`                                                                                              |
+| `PATCH /editions/{editionId}/documents/{documentId}`         | tickets=write | `shop.open` when it hides a required document                                                                    |
+| `POST /editions/{editionId}/documents/{documentId}/versions` | tickets=write | `document.too-many-versions`, `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable` |
+| `DELETE /editions/{editionId}/documents/{documentId}`        | tickets=write | `document.in-use`, `shop.open` when it is a required document                                                    |
+| `GET /editions/{editionId}/consents`                         | tickets>=read |                                                                                                                  |
+| `POST /editions/{editionId}/consents`                        | tickets=write | `consent.too-many`                                                                                               |
+| `PATCH /editions/{editionId}/consents/{consentId}`           | tickets=write |                                                                                                                  |
+| `DELETE /editions/{editionId}/consents/{consentId}`          | tickets=write | `consent.in-use`                                                                                                 |
 
 `GET /shop/provider-account` answers the provider, `ready_at` and the conditions missing, never the
-credentials. `GET /editions/{editionId}/shop` answers whether the shop is open and each condition
-of O2 as a yes or a no.
+credentials, and the providers the environment can connect (P7). `GET /editions/{editionId}/shop`
+answers whether the shop is open and each condition of O2 as a yes or a no.
+
+`shop.payments-under-way` (P5, P6) and `consent.in-use` (D6) are refusals an order causes, built
+with [checkout and orders](0004-checkout-and-orders.md). `document.in-use` refuses the deletion
+of a document a consent links (D10). `PUT /shop/provider-account` also refuses with
+`shop.open` (P8) and `request.rate-limited` (P9). `PATCH …/consents/{consentId}` takes the
+sentence, whether it is required, the place and whether it is hidden, never the document (D10).
 
 One public route, without sign-in:
 
-| Route                                                      | Answers                                                          |
-| ---------------------------------------------------------- | ---------------------------------------------------------------- |
-| `GET /public/tenants/{slug}/document-versions/{versionId}` | the file of a published version (D3); anything else as not found |
+| Route                                                      | Answers                                                                            |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `GET /public/tenants/{slug}/document-versions/{versionId}` | the file of a published version (D3), kept by no cache; anything else as not found |
 
 ### Screens
 
@@ -158,16 +170,20 @@ Disconnecting the provider account asks first in a modal: no screen brings the c
 
 A demo tenant with complete seller's details, a ready account of the fake provider, and an edition
 with its documents, consents and an open shop; a second edition with a closed shop and one
-condition missing.
+condition missing. The seed puts the documents' files into the bucket itself
+([0045](../adr/0045-let-the-seed-put-its-demo-files-into-the-bucket.md)).
 
 ## Tenant isolation and permissions
 
 - The six tables are tenant tables under RLS, each with its own `tenant_id`, a composite foreign
   key to its parent and an index starting with `tenant_id`
   ([ARCHITECTURE.md, Tenant isolation](../ARCHITECTURE.md#tenant-isolation)). `opos_app_global`
-  gains nothing here.
+  gains one column, `edition_document_versions.file_id`: the sweep of files tells a version's file
+  from one nothing points at, as for every kind of file.
 - `opos_app` reads `payment_provider_accounts.credentials`, since the API decrypts them to call the
-  provider; no route's answer carries the column, and a test of the contract keeps it so.
+  provider; no route's answer carries the column, and a test of the contract keeps it so. The
+  credentials are sealed for their tenant and provider: copied into another row, they open nothing.
+- A version's file is its own edition's: the foreign key runs through the tenant and the edition.
 - A version's file belongs to its tenant: the public route opens the tenant from its slug and
   answers a version of another tenant, and any version of a suspended one, as not found.
 - The provider account and the seller's details need `shop`, the edition's shop, documents and
@@ -229,6 +245,8 @@ e2e, each scenario making its own tenant and accounts and checking the BFF bound
 ## Open questions
 
 - **Records before acceptance:** the documents saying convention and organizer (D10 of the brief),
-  which changes the terms this spec is written in; the module having its domain owner (D1), carried
-  here; Przelewy24 as the MVP's provider (D3), with [Przelewy24](0005-przelewy24.md); files in an
-  S3 bucket ([0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)).
+  which changes the terms this spec is written in; Przelewy24 as the MVP's provider (D3), with
+  [Przelewy24](0005-przelewy24.md). The module having its domain owner (D1) is carried into the
+  documents with this spec's code; the two records above are proposed with it.
+- **The rules marked "new"** wait for the domain owner: P5 to P9, S3, the second sentence of S5,
+  the file of D2, D3, D8's place, D9, D10, O3, O5, O6 and the second sentence of O7.

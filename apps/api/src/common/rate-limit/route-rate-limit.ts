@@ -23,6 +23,30 @@ export const ROUTE_RATE_LIMITS = {
   adminWrites: { limit: 60, ttl: 3_600_000 },
   /** Every route that takes a file: one counter, per account (modules/files). */
   uploads: { limit: 120, ttl: 3_600_000 },
+  /** `PUT /shop/provider-account`, per tenant: each one asks the payment provider from OPOS. */
+  providerConnects: { limit: 20, ttl: 3_600_000 },
+  /** `POST .../shop/quote`, per client address: a cart is priced on every change of it. */
+  shopQuotes: { limit: 600, ttl: 3_600_000 },
+  /** Placing an order, by a visitor or by an account: one counter, per client address. */
+  orderPlacements: { limit: 300, ttl: 3_600_000 },
+  /** Starting a payment attempt, by a visitor or by an account: one counter, per client address. */
+  paymentAttempts: { limit: 300, ttl: 3_600_000 },
+  /** Resending an order's confirmation, per order: each one is an email to its buyer. */
+  confirmationResends: { limit: 5, ttl: 3_600_000 },
+  /** A quote that tries a discount code, per client address: a code is guessed by nobody. */
+  discountCodeTries: { limit: 30, ttl: 3_600_000 },
+  /** The files of an edition's sales, per account: they hold names and email addresses. */
+  salesExports: { limit: 30, ttl: 3_600_000 },
+  /** `POST /public/order-links/open`, per client address: a token is guessed by nobody. */
+  orderLinkOpens: { limit: 60, ttl: 3_600_000 },
+  /** `POST /public/order-links/renew`, per client address. */
+  orderLinkRenewals: { limit: 10, ttl: 3_600_000 },
+  /** `POST /scanner/pair`, per client address: a pairing code is guessed by nobody. */
+  scannerPairings: { limit: 30, ttl: 3_600_000 },
+  /** `POST /scanner/scans`, per scanner: a busy gate reads a code every few seconds. */
+  scannerScans: { limit: 6000, ttl: 3_600_000 },
+  /** `POST /scanner/hand-outs`, per scanner. */
+  scannerHandOuts: { limit: 6000, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS

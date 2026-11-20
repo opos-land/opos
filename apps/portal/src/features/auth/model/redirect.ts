@@ -21,3 +21,5 @@ export const withRedirect = (path: '/login' | '/register', returnTo: string) =>
   returnTo === SIGNED_IN_HOME ? path : `${path}?redirect=${encodeURIComponent(returnTo)}`
 
 export const loginPath = (returnTo: string) => withRedirect('/login', returnTo)
+
+export const registerPath = (returnTo: string) => withRedirect('/register', returnTo)

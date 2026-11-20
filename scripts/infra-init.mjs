@@ -241,21 +241,32 @@ export async function initInfra({
     hex,
     passwordIn('DATABASE_ADMIN_URL'),
   )
+  // One key for the API, which seals a convention's payment credentials and opens them, and for
+  // the seed, which seals the demo account's.
+  const paymentKey = pick(['apps/api', 'packages/db'], 'PAYMENT_CREDENTIALS_KEY', hex)
   const dbPort = env.SUPABASE_DB_PORT ?? '54322'
   const local = (port) => `http://127.0.0.1:${port}`
   const databaseUrl = (role, password) =>
     `postgres://${role}:${password}@127.0.0.1:${dbPort}/postgres`
+  // The bucket's root key, which the gateway takes as its own: the API's, and the seed's, which
+  // puts the demo edition's legal documents where the API reads them.
+  const bucket = {
+    S3_ENDPOINT: local(env.OPOS_S3_PORT ?? '54330'),
+    S3_ACCESS_KEY_ID: pick(['apps/api', 'packages/db'], 'S3_ACCESS_KEY_ID', () =>
+      randomBytes(10).toString('hex'),
+    ),
+    S3_SECRET_ACCESS_KEY: pick(['apps/api', 'packages/db'], 'S3_SECRET_ACCESS_KEY', hex),
+  }
   fill('supabase', { SEND_EMAIL_HOOK_SECRET: hookSecret })
   fill('apps/api', {
     SEND_EMAIL_HOOK_SECRET: hookSecret,
     INVITE_SECRET: pick(['apps/api'], 'INVITE_SECRET', hex),
+    PAYMENT_CREDENTIALS_KEY: paymentKey,
     DATABASE_URL: databaseUrl('opos_app', appPassword),
     DATABASE_GLOBAL_URL: databaseUrl('opos_app_global', appGlobalPassword),
     DATABASE_ADMIN_URL: databaseUrl('opos_admin', adminPassword),
-    // The bucket's root key, which the gateway takes as its own, and the image server's
-    S3_ENDPOINT: local(env.OPOS_S3_PORT ?? '54330'),
-    S3_ACCESS_KEY_ID: pick(['apps/api'], 'S3_ACCESS_KEY_ID', () => randomBytes(10).toString('hex')),
-    S3_SECRET_ACCESS_KEY: pick(['apps/api'], 'S3_SECRET_ACCESS_KEY', hex),
+    ...bucket,
+    // The image server's address and keys
     IMGPROXY_URL: local(env.OPOS_IMGPROXY_PORT ?? '54331'),
     IMGPROXY_KEY: pick(['apps/api'], 'IMGPROXY_KEY', hex),
     IMGPROXY_SALT: pick(['apps/api'], 'IMGPROXY_SALT', hex),
@@ -264,6 +275,8 @@ export async function initInfra({
     OPOS_APP_PASSWORD: appPassword,
     OPOS_APP_GLOBAL_PASSWORD: appGlobalPassword,
     OPOS_ADMIN_PASSWORD: adminPassword,
+    PAYMENT_CREDENTIALS_KEY: paymentKey,
+    ...bucket,
   })
 
   // 3. the local signing key: config.toml names the file, and the CLI refuses when it is missing.

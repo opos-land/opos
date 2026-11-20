@@ -1,13 +1,17 @@
 import { Controller } from '@nestjs/common'
-import { contract, editionListPlace, editionSlug } from '@opos/contract'
+import { contract, editionListPlace } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { GlobalDbService } from '../../common/database/global-db.service'
 import { notFound, suspendedAsNotFound } from '../../common/errors/api-error'
 import { isUuid } from '../../common/uuid'
 import { LogoRepository } from '../branding/logo.repository'
+import { AddOnsRepository } from '../catalog/add-ons.repository'
+import { MerchandiseRepository } from '../catalog/merchandise.repository'
 import { FilesService } from '../files/files.service'
-import { LOGO_KIND } from '../files/kinds'
+import { ADD_ON_PICTURE_KIND, DOCUMENT_KIND, LOGO_KIND } from '../files/kinds'
+import { DocumentsRepository } from '../shop/documents.repository'
+import { PublicConvention } from './public-convention'
 import { PublicRepository } from './public.repository'
 
 // Without sign-in and without X-Tenant-Slug: the address names the tenant, and each request opens
@@ -17,26 +21,21 @@ export class PublicController {
   constructor(
     private readonly global: GlobalDbService,
     private readonly context: TenantContextService,
+    private readonly convention: PublicConvention,
     private readonly repository: PublicRepository,
     private readonly logos: LogoRepository,
     private readonly files: FilesService,
+    private readonly documents: DocumentsRepository,
+    private readonly merchandise: MerchandiseRepository,
+    private readonly addOns: AddOnsRepository,
   ) {}
 
-  /**
-   * An address outside the slugs' alphabet names nothing, and must not reach a query. A suspended
-   * convention is not found, as an unknown address is.
-   */
-  private async tenant(slug: string) {
-    if (!editionSlug.safeParse(slug).success) throw notFound('convention')
-    const found = await this.global.tenantBySlug(slug)
-    if (!found || found.suspended) throw notFound('convention')
-    return found.tenant
+  private tenant(slug: string) {
+    return this.convention.tenant(slug)
   }
 
-  private async inConvention<T>(slug: string, read: () => Promise<T>) {
-    return this.context
-      .withTenant((await this.tenant(slug)).id, read)
-      .catch(suspendedAsNotFound('convention'))
+  private inConvention<T>(slug: string, read: () => Promise<T>) {
+    return this.convention.within(slug, read)
   }
 
   @Implement(contract.public.tenant)
@@ -97,6 +96,88 @@ export class PublicController {
       if (logo?.fileId !== fileId) throw notFound('file')
       const file = await this.files
         .open(LOGO_KIND, fileId, { variant, tenantId: tenant.id })
+        .catch(suspendedAsNotFound('convention'))
+      return this.files.answer(file, { forEveryone: true })
+    })
+  }
+
+  /**
+   * A published version of a legal document, for anyone, as a download: a buyer reads what they
+   * accepted for as long as the convention is on the platform. The edition's publication does not
+   * bind it, in either direction: a version is readable by its address from the moment it is
+   * published, whether its edition is published, was, or never was, and also once its document
+   * is hidden. Only a file a version of this convention points at is read; the check runs in a
+   * short transaction of the tenant, and the storage is then read outside every transaction, as
+   * the tenant the address named. No cache keeps the answer, so a deleted document and a suspended
+   * convention stop answering at once.
+   */
+  @Implement(contract.public.documentVersion)
+  documentVersion() {
+    return implement(contract.public.documentVersion).handler(async ({ input }) => {
+      const { slug, versionId } = input.params
+      const tenant = await this.tenant(slug)
+      if (!isUuid(versionId)) throw notFound('document version')
+      const version = await this.context
+        .withTenant(tenant.id, () => this.documents.versionFile(tenant.id, versionId))
+        .catch(suspendedAsNotFound('convention'))
+      if (!version) throw notFound('document version')
+      const file = await this.files
+        .open(DOCUMENT_KIND, version.fileId, { editionId: version.editionId, tenantId: tenant.id })
+        .catch(suspendedAsNotFound('convention'))
+      return this.files.answer(file, { forEveryone: false })
+    })
+  }
+
+  /**
+   * A picture or a size chart of a merchandise item, for anyone, once the item is shown in the
+   * shop of a published edition (docs/specs/0003-catalog.md, M9): a hidden item's, an unpublished
+   * edition's and another convention's file are unknown addresses. The check runs in a short
+   * transaction of the tenant the address named, and the storage is then read outside every
+   * transaction, as that tenant. A file never changes, so the answer may be cached.
+   */
+  @Implement(contract.public.merchandiseFile)
+  merchandiseFile() {
+    return implement(contract.public.merchandiseFile).handler(async ({ input }) => {
+      const { slug, fileId, variant } = input.params
+      const tenant = await this.tenant(slug)
+      if (!isUuid(fileId)) throw notFound('file')
+      const shown = await this.context
+        .withTenant(tenant.id, () => this.merchandise.shownFile(tenant.id, fileId))
+        .catch(suspendedAsNotFound('convention'))
+      if (!shown) throw notFound('file')
+      const file = await this.files
+        .open(shown.kind, shown.fileId, {
+          variant,
+          editionId: shown.editionId,
+          tenantId: tenant.id,
+        })
+        .catch(suspendedAsNotFound('convention'))
+      return this.files.answer(file, { forEveryone: true })
+    })
+  }
+
+  /**
+   * The picture of an add-on, for anyone, once the add-on is shown in the shop of a published
+   * edition (docs/specs/0003-catalog.md, A4): a hidden add-on's, an unpublished edition's and
+   * another convention's file are unknown addresses. Checked and read as a merchandise picture
+   * is: in a short transaction of the tenant the address named, then outside every transaction.
+   */
+  @Implement(contract.public.addOnFile)
+  addOnFile() {
+    return implement(contract.public.addOnFile).handler(async ({ input }) => {
+      const { slug, fileId, variant } = input.params
+      const tenant = await this.tenant(slug)
+      if (!isUuid(fileId)) throw notFound('file')
+      const shown = await this.context
+        .withTenant(tenant.id, () => this.addOns.shownPictureFile(tenant.id, fileId))
+        .catch(suspendedAsNotFound('convention'))
+      if (!shown) throw notFound('file')
+      const file = await this.files
+        .open(ADD_ON_PICTURE_KIND, shown.fileId, {
+          variant,
+          editionId: shown.editionId,
+          tenantId: tenant.id,
+        })
         .catch(suspendedAsNotFound('convention'))
       return this.files.answer(file, { forEveryone: true })
     })

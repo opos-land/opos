@@ -218,10 +218,11 @@ function isPublicRoute(procedure: AnyContractProcedure) {
   return Array.isArray(operation?.security) && operation.security.length === 0
 }
 
-const accountRoutes = procedures(contract).filter(
-  ([, procedure]) =>
-    (procedure['~orpc'].meta as ContractMeta).tenant !== true && !isPublicRoute(procedure),
-)
+// A scanner's routes take a device's token and no session: no second factor is theirs to ask.
+const accountRoutes = procedures(contract).filter(([, procedure]) => {
+  const meta = procedure['~orpc'].meta as ContractMeta
+  return meta.tenant !== true && meta.scanner !== true && !isPublicRoute(procedure)
+})
 
 /** The routes that finish a sign-in: the only ones @AllowMfaPending may stand on. */
 const finishesSignIn = (procedure: AnyContractProcedure) => {

@@ -32,13 +32,23 @@ import { MeModule } from './modules/accounts/me.module'
 import { AdminModule } from './modules/admin/admin.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { BrandingModule } from './modules/branding/branding.module'
+import { CatalogModule } from './modules/catalog/catalog.module'
+import { BuyerOrdersModule } from './modules/buyer-orders/buyer-orders.module'
+import { CheckoutModule } from './modules/checkout/checkout.module'
+import { DiscountCodesModule } from './modules/discount-codes/discount-codes.module'
+import { OrderManagementModule } from './modules/order-management/order-management.module'
+import { RemindersModule } from './modules/reminders/reminders.module'
+import { SalesModule } from './modules/sales/sales.module'
+import { ScannerModule } from './modules/scanner/scanner.module'
 import { EditionsModule } from './modules/editions/editions.module'
 import { EngagementModule } from './modules/engagement/engagement.module'
 import { FilesModule } from './modules/files/files.module'
 import { FILE_KINDS, type FileKind } from './modules/files/kinds'
 import { HealthModule } from './modules/health/health.module'
+import { PaymentsModule } from './modules/payments/payments.module'
 import { ProgramModule } from './modules/program/program.module'
 import { PublicModule } from './modules/public/public.module'
+import { ShopModule } from './modules/shop/shop.module'
 import { TenantsModule } from './modules/tenants/tenants.module'
 
 @Module({})
@@ -68,6 +78,7 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
         rateLimitModule(verifier, rateLimit, env),
         DatabaseModule,
         FilesModule.register(fileKinds),
+        PaymentsModule,
         HealthModule,
         MeModule,
         AuthModule,
@@ -77,6 +88,15 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
         ProgramModule,
         PublicModule,
         EngagementModule,
+        ShopModule,
+        CatalogModule,
+        CheckoutModule,
+        OrderManagementModule,
+        DiscountCodesModule,
+        BuyerOrdersModule,
+        SalesModule,
+        RemindersModule,
+        ScannerModule,
         // Only a process that holds the connection of opos_admin serves the admin routes.
         ...(env.DATABASE_ADMIN_URL ? [AdminModule] : []),
       ],

@@ -1,4 +1,5 @@
 export { AreaFrame, SidebarLink } from './components/area-frame'
+export { type FolderLink, SidebarFolder } from './components/sidebar-folder'
 export { ConventionLayout } from './components/convention-layout'
 export { MembershipsGate } from './components/memberships-gate'
 export { PlatformLayout } from './components/platform-layout'

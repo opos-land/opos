@@ -3,8 +3,9 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B2 and the requirements it leans on
-- Decisions: none recorded yet; the records this spec needs are among its
-  [open questions](#open-questions)
+- Decisions:
+  [0046](../adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md);
+  the records this spec still needs are among its [open questions](#open-questions)
 
 ## Goal
 
@@ -36,25 +37,26 @@ domain owner to confirm. Every price is a gross amount in the convention's curre
 
 ### Add-ons
 
-| #   | Rule                                                                                                                                                     | Brief       |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| A1  | An add-on has a name, a description and a price, which may be zero. It is one of three kinds: without a limit, limited by a capacity, or headcount only. | BR-10       |
-| A2  | A headcount-only add-on records interest and reserves nothing: it takes no capacity, and the shop says so.                                               | BR-10, F3.1 |
-| A3  | A capacity-limited add-on has a threshold: the shop shows the places left only below it.                                                                 | F3.2        |
+| #   | Rule                                                                                                                                                                                                                                                               | Brief       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| A1  | An add-on has a name, a description and a price, which may be zero. It is one of three kinds: without a limit, limited by a capacity, or headcount only.                                                                                                           | BR-10       |
+| A2  | A headcount-only add-on records interest and reserves nothing: it takes no capacity, and the shop says so.                                                                                                                                                         | BR-10, F3.1 |
+| A3  | A capacity-limited add-on has a threshold: the shop shows the places left only below it.                                                                                                                                                                           | F3.2        |
+| A4  | An add-on may have one picture: an uploaded image of the types and the size a merchandise picture has (M8), shown with the add-on in the shop. It is public once its add-on is not hidden and its edition is published, and readable by the edition's orgs before. | new         |
 
 ### Merchandise
 
-| #   | Rule                                                                                                                                                                                                  | Brief                                          |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| M1  | A merchandise item has a name, a description, a price, pictures, a flag saying its pictures are illustrative and a limit a single order may take of it.                                               | F4.3, B2.2                                     |
-| M2  | An item may have option axes, such as cut and size, and the variants that exist: one value of each axis. A variant that does not exist cannot be bought. An item without axes is sold as one variant. | BR-07, B2.2                                    |
-| M3  | Stock is held per variant. A variant at zero stock cannot be bought.                                                                                                                                  | BR-07                                          |
-| M4  | An item may have a size chart for each value of one axis, such as each cut.                                                                                                                           | UR-03, B2.2                                    |
-| M5  | An edition may set a pre-order deadline. Until it, a variant's stock may be marked unlimited. After it, a variant sells only from a number an org entered: one still marked unlimited sells nothing.  | BR-08, B2.3                                    |
-| M6  | An edition turns merch-only orders on or off. A merch-only order is offered every merchandise item of the edition that is not hidden.                                                                 | BR-06, F1.1; the second sentence is new        |
-| M7  | Merchandise is picked up at the edition. The catalog has no field for shipping, and no text of the shop promises it.                                                                                  | BR-09                                          |
-| M8  | Pictures and size charts are uploaded files: JPEG, PNG or WebP images, up to ten pictures an item. No other type is taken, an SVG among them.                                                         | D16 of the brief; the types and limits are new |
-| M9  | A picture or a size chart is public once its item is shown in the shop, and readable by the edition's orgs alone before that.                                                                         | new                                            |
+| #   | Rule                                                                                                                                                                                                                                                                                                                                                                                   | Brief                                          |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| M1  | A merchandise item has a name, a description, a price, pictures, a flag saying its pictures are illustrative and a limit a single order may take of it.                                                                                                                                                                                                                                | F4.3, B2.2                                     |
+| M2  | An item may have option axes, such as cut and size, and the variants that exist: one value of each axis. A variant that does not exist cannot be bought. An item without axes is sold as one variant. Once an axis is added or taken away no variant fits the axes any more, so every variant of the item goes; a value taken away takes the variants that held it and its size chart. | BR-07, B2.2; the last sentence is new          |
+| M3  | Stock is held per variant. A variant at zero stock cannot be bought. A variant that newly exists is out of stock until an org enters a number.                                                                                                                                                                                                                                         | BR-07; the last sentence is new                |
+| M4  | An item may have a size chart for each value of one axis, such as each cut.                                                                                                                                                                                                                                                                                                            | UR-03, B2.2                                    |
+| M5  | An edition may set a pre-order deadline. Until it, a variant's stock may be marked unlimited. After it, a variant sells only from a number an org entered: one still marked unlimited sells nothing. An edition with no deadline has no pre-order, and a variant marked unlimited sells nothing there either.                                                                          | BR-08, B2.3; the last sentence is new          |
+| M6  | An edition turns merch-only orders on or off. A merch-only order is offered every merchandise item of the edition that is not hidden.                                                                                                                                                                                                                                                  | BR-06, F1.1; the second sentence is new        |
+| M7  | Merchandise is picked up at the edition. The catalog has no field for shipping, and no text of the shop promises it.                                                                                                                                                                                                                                                                   | BR-09                                          |
+| M8  | Pictures and size charts are uploaded files: JPEG, PNG or WebP images of up to 5 MB, up to ten pictures an item. No other type is taken, an SVG among them.                                                                                                                                                                                                                            | D16 of the brief; the types and limits are new |
+| M9  | A picture or a size chart is public once its item is not hidden and its edition is published, and readable by the edition's orgs alone before that.                                                                                                                                                                                                                                    | new                                            |
 
 ### Age bands and custom fields
 
@@ -92,10 +94,11 @@ All are edition tables.
 | `merchandise_items`             | `name`, `description`, `amount_minor`, `per_order_limit`, `pictures_illustrative`, `position`, `hidden_at`                                                                                                                          |
 | `ticket_type_merchandise_items` | `ticket_type_id`, `merchandise_item_id`                                                                                                                                                                                             |
 | `merchandise_option_axes`       | `merchandise_item_id`, `name`, `position`                                                                                                                                                                                           |
-| `merchandise_option_values`     | `axis_id`, `label`, `position`, `size_chart_file_id` (optional)                                                                                                                                                                     |
+| `merchandise_option_values`     | `merchandise_item_id`, `axis_id`, `label`, `position`: a value names its item beside its axis                                                                                                                                       |
 | `merchandise_variants`          | `merchandise_item_id`, `stock`, empty while unlimited; `hidden_at`                                                                                                                                                                  |
-| `merchandise_variant_values`    | `variant_id`, `option_value_id`: one value of each axis of the variant's item                                                                                                                                                       |
+| `merchandise_variant_values`    | `merchandise_item_id`, `variant_id`, `axis_id`, `option_value_id`: one value of each axis of the variant's own item, held by the keys alone                                                                                         |
 | `merchandise_item_pictures`     | `merchandise_item_id`, `file_id`, `position`                                                                                                                                                                                        |
+| `merchandise_size_charts`       | `option_value_id`, `file_id`: the size chart of a value, one a value; a row of its own, added and deleted, so that no role updates a column pointing at a file                                                                      |
 | `edition_custom_fields`         | `label`, `is_required`, `position`, `hidden_at`                                                                                                                                                                                     |
 
 `edition_shops` ([shop setup](0002-shop-setup.md)) gains `teen_from_age`, `adult_from_age`,
@@ -106,53 +109,67 @@ An amount is a whole number of minor units. A hidden row keeps its `hidden_at`; 
 soft delete beyond it.
 
 An edition holds up to 50 ticket types, 50 add-ons, 200 merchandise items, 100 variants an item
-and 20 custom fields: the shop's offer is one answer, sent to anyone who asks.
+and 20 custom fields: the shop's offer is one answer, sent to anyone who asks. A ticket type holds
+up to 20 price tiers, ten supporter prices and 20 perks; an item up to three axes of 30 values
+each.
+
+The windows of one ticket type's price tiers are kept apart by an exclusion constraint
+([0046](../adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md));
+a window holds its start and not its end, so one tier may end at the moment the next one starts.
 
 ### Files
 
 This spec declares two kinds of file to [file storage](0012-file-storage.md), both an edition's
-and both JPEG, PNG or WebP images: a merchandise picture, which
+and both JPEG, PNG or WebP images of up to 5 MB: a merchandise picture, which
 `merchandise_item_pictures.file_id` points at, and a size chart, which
-`merchandise_option_values.size_chart_file_id` points at. Both declare two
+`merchandise_size_charts.file_id` points at. Both declare two
 [variants](0013-image-variants.md): `small`, fitted inside 600 pixels and made with the upload,
 and `large`, fitted inside 2000. The shop's listing and the cart show the small one, an item's
 page and a size chart the large one.
 
-The routes that add a picture and a size chart take the file and need tickets write access. The
-public route below serves the variants of a shown item's files to everyone (M9), from the API's
-own origin, so the portal loads nothing from another origin
+The routes that add a picture and a size chart take the file and need tickets write access. A
+tenant route serves the variants of the edition's files to its orgs, a hidden item's too, and the
+public route below serves those of a shown item to everyone (M9), both from the API's own origin,
+so the portal loads nothing from another origin
 ([0026](../adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 ### Routes
 
 Tenant routes, each under `/editions/{editionId}`:
 
-| Route                                                                                                | Needs                       | Refuses with                                                                                                |
-| ---------------------------------------------------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `GET /ticket-types`, `GET /add-ons`, `GET /merchandise-items`, `GET /custom-fields`                  | tickets>=read               |                                                                                                             |
-| `POST /ticket-types`                                                                                 | tickets=write               | `catalog.limit-reached`, `ticket-type.tiers-overlap`                                                        |
-| `PATCH /ticket-types/{ticketTypeId}`                                                                 | tickets=write               | `ticket-type.tiers-overlap`, `catalog.below-held`                                                           |
-| `DELETE /ticket-types/{ticketTypeId}`                                                                | tickets=write               | `catalog.in-use`                                                                                            |
-| `POST /add-ons`, `PATCH /add-ons/{addOnId}`, `DELETE /add-ons/{addOnId}`                             | tickets=write               | `catalog.limit-reached`, `catalog.below-held`, `catalog.in-use`                                             |
-| `POST /merchandise-items`, `PATCH /merchandise-items/{itemId}`, `DELETE /merchandise-items/{itemId}` | tickets=write               | `catalog.limit-reached`, `catalog.in-use`                                                                   |
-| `PUT /merchandise-items/{itemId}/variants`                                                           | tickets=write               | `catalog.limit-reached`, `catalog.in-use` for a variant an order holds                                      |
-| `PUT /merchandise-items/{itemId}/variants/{variantId}/stock`                                         | tickets=write               | `catalog.below-held`                                                                                        |
-| `POST /merchandise-items/{itemId}/pictures`                                                          | tickets=write; takes a file | `catalog.limit-reached`, `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable` |
-| `DELETE /merchandise-items/{itemId}/pictures/{pictureId}`                                            | tickets=write               |                                                                                                             |
-| `PUT /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                                 | tickets=write; takes a file | `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable`                          |
-| `DELETE /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                              | tickets=write               |                                                                                                             |
-| `POST /custom-fields`, `PATCH /custom-fields/{fieldId}`, `DELETE /custom-fields/{fieldId}`           | tickets=write               | `catalog.limit-reached`, `catalog.in-use`                                                                   |
+| Route                                                                                                | Needs                                                                | Refuses with                                                                                                |
+| ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `GET /ticket-types`, `GET /add-ons`, `GET /merchandise-items`, `GET /custom-fields`                  | tickets>=read                                                        |                                                                                                             |
+| `POST /ticket-types`                                                                                 | tickets=write                                                        | `catalog.limit-reached`, `ticket-type.tiers-overlap`                                                        |
+| `PATCH /ticket-types/{ticketTypeId}`                                                                 | tickets=write                                                        | `ticket-type.tiers-overlap`, `catalog.below-held`                                                           |
+| `DELETE /ticket-types/{ticketTypeId}`                                                                | tickets=write                                                        | `catalog.in-use`                                                                                            |
+| `POST /add-ons`, `PATCH /add-ons/{addOnId}`, `DELETE /add-ons/{addOnId}`                             | tickets=write                                                        | `catalog.limit-reached`, `catalog.below-held`, `catalog.in-use`                                             |
+| `PUT /add-ons/{addOnId}/picture`                                                                     | tickets=write; takes a file                                          | `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable`                          |
+| `DELETE /add-ons/{addOnId}/picture`                                                                  | tickets=write                                                        |                                                                                                             |
+| `GET /add-on-files/{fileId}/{variant}`                                                               | tickets>=read; answers the picture of an add-on, of a hidden one too |                                                                                                             |
+| `POST /merchandise-items`, `PATCH /merchandise-items/{itemId}`, `DELETE /merchandise-items/{itemId}` | tickets=write                                                        | `catalog.limit-reached`, `catalog.in-use`                                                                   |
+| `PUT /merchandise-items/{itemId}/variants`                                                           | tickets=write                                                        | `catalog.limit-reached`, `catalog.in-use` for a variant an order holds                                      |
+| `PUT /merchandise-items/{itemId}/variants/{variantId}/stock`                                         | tickets=write                                                        | `catalog.below-held`                                                                                        |
+| `POST /merchandise-items/{itemId}/pictures`                                                          | tickets=write; takes a file                                          | `catalog.limit-reached`, `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable` |
+| `DELETE /merchandise-items/{itemId}/pictures/{pictureId}`                                            | tickets=write                                                        |                                                                                                             |
+| `PUT /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                                 | tickets=write; takes a file                                          | `file.type-refused`, `file.too-large`, `file.limit-reached`, `storage.unavailable`                          |
+| `DELETE /merchandise-items/{itemId}/option-values/{valueId}/size-chart`                              | tickets=write                                                        |                                                                                                             |
+| `GET /merchandise-files/{fileId}/{variant}`                                                          | tickets>=read; serves a file                                         |                                                                                                             |
+| `POST /custom-fields`, `PATCH /custom-fields/{fieldId}`, `DELETE /custom-fields/{fieldId}`           | tickets=write                                                        | `catalog.limit-reached`, `catalog.in-use`                                                                   |
 
 A ticket type's tiers, supporter prices, perks, add-ons and merchandise items travel with it as
-whole lists, as an item's axes and the order of its pictures do with the item. A picture and a
+whole lists, as an item's axes and the order of its pictures do with the item. An axis or a value
+that names its identifier is the one the item has, renamed or moved; one without is new; one left
+out goes. A row of another parent that a body names is `404`, as one in a path is. A picture and a
 size chart are added and removed one at a time, each with its file. The edition settings of this
 spec are changed through `PATCH /editions/{editionId}/shop`.
 
-One public route, without sign-in:
+Two public routes, without sign-in:
 
 | Route                                                             | Answers                                                                                                                  |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `GET /public/tenants/{slug}/merchandise-files/{fileId}/{variant}` | a variant of a picture or a size chart of an item that is not hidden, of a published edition; anything else as not found |
+| `GET /public/tenants/{slug}/add-on-files/{fileId}/{variant}`      | a variant of the picture of an add-on that is not hidden, of a published edition; anything else as not found             |
 
 ### Screens
 
@@ -161,7 +178,7 @@ The panel, inside an edition:
 | Screen               | Holds                                                                                                                           |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | ticket types         | the list in its order; a ticket type's form with its tiers, supporter prices, perks and what is offered with it                 |
-| add-ons              | the list and the form                                                                                                           |
+| add-ons              | the list; an add-on's form, with its picture                                                                                    |
 | merchandise          | the list; an item's form with its axes, variants, stock, pictures and size charts; the pre-order deadline and merch-only orders |
 | ticket holders' data | the age bands with the guardian consent form's address; the custom fields, with the notice of E3                                |
 
@@ -173,8 +190,10 @@ since the same screen shows the row again.
 
 The demo edition with an open shop gets two ticket types, one with two price tiers and supporter
 prices and one for adults only and excluded from discounts; a capacity-limited and a
-headcount-only add-on; a T-shirt with two cuts and their sizes, a size chart a cut, one variant
-out of stock and one that does not exist; an item without variants; age bands and two custom
+headcount-only add-on; a T-shirt with two cuts and their sizes, a size chart a cut drawn by the seed's
+own code and put into the bucket
+([0045](../adr/0045-let-the-seed-put-its-demo-files-into-the-bucket.md)), one variant out of
+stock and one that does not exist; an item without variants; age bands and two custom
 fields.
 
 ## Tenant isolation and permissions
@@ -225,6 +244,7 @@ e2e:
 
 1. An org builds the catalog of the seed from an empty edition.
 2. A price is changed and an item hidden while the shop is open; the shop shows both at once.
+   It runs with [checkout and orders](0004-checkout-and-orders.md), which brings the shop's page.
 3. An org with tickets read access sees the catalog and can change nothing.
 
 ## Out of scope
@@ -239,6 +259,11 @@ e2e:
 
 ## Open questions
 
+- **The picture of an add-on (A4):** not in the brief. It is one image an add-on, in the two sizes
+  of a merchandise picture, public on the terms of M9: the domain owner's to confirm.
+- **A closed shop (M9):** a shown item's pictures are for everyone while its edition is published,
+  whether or not its shop is open, as the route above says. Whether a closed shop should keep them
+  to the edition's orgs is the domain owner's to say.
 - **Records before acceptance:** merchandise and file uploads in the MVP (D2 and D16 of the brief,
   with PRODUCT.md 11), the uploads decided in
   [0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md); the age band, the

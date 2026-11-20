@@ -9,6 +9,7 @@ const valid = {
   SUPABASE_SECRET_KEY: 'sb_secret_local',
   SEND_EMAIL_HOOK_SECRET: `v1,whsec_${Buffer.alloc(32, 1).toString('base64')}`,
   INVITE_SECRET: 'c'.repeat(64),
+  PAYMENT_CREDENTIALS_KEY: 'e'.repeat(64),
   API_URL: 'http://api.opos.localhost:3001',
   PANEL_URL: 'http://panel.opos.localhost:5173',
   PORTAL_URL: 'http://opos.localhost:5174',
@@ -89,6 +90,46 @@ describe('loadEnv', () => {
     })
   })
 
+  // Przelewy24 answers at two addresses of its own. Another address stands in for them in the
+  // tests of its module alone: never where real money is taken or a real account is connected.
+  describe('PRZELEWY24_URL and PRZELEWY24_SANDBOX_URL', () => {
+    it('are unset by default, and take an address on local', () => {
+      expect(loadEnv(valid).PRZELEWY24_URL).toBeUndefined()
+      expect(loadEnv(valid).PRZELEWY24_SANDBOX_URL).toBeUndefined()
+      const replaced = loadEnv({
+        ...valid,
+        PRZELEWY24_URL: 'http://127.0.0.1:9001',
+        PRZELEWY24_SANDBOX_URL: 'http://127.0.0.1:9002',
+      })
+      expect(replaced).toMatchObject({
+        PRZELEWY24_URL: 'http://127.0.0.1:9001',
+        PRZELEWY24_SANDBOX_URL: 'http://127.0.0.1:9002',
+      })
+    })
+
+    it.each(['dev', 'production'])('are refused where OPOS_ENV is %s', (OPOS_ENV) => {
+      for (const name of ['PRZELEWY24_URL', 'PRZELEWY24_SANDBOX_URL']) {
+        expect(() => loadEnv({ ...valid, OPOS_ENV, [name]: 'http://127.0.0.1:9001' })).toThrow(
+          new RegExp(name),
+        )
+      }
+    })
+  })
+
+  // The address the API calls a payment provider from, which a convention enters in the
+  // provider's panel: shown on the provider account's screen where it is set.
+  describe('API_EGRESS_ADDRESS', () => {
+    it('is unset by default, and is an address when set', () => {
+      expect(loadEnv(valid).API_EGRESS_ADDRESS).toBeUndefined()
+      expect(loadEnv({ ...valid, API_EGRESS_ADDRESS: '203.0.113.7' }).API_EGRESS_ADDRESS).toBe(
+        '203.0.113.7',
+      )
+      expect(() => loadEnv({ ...valid, API_EGRESS_ADDRESS: 'not an address' })).toThrow(
+        /API_EGRESS_ADDRESS/,
+      )
+    })
+  })
+
   describe('RATE_LIMIT_DEFAULT', () => {
     it('is unset by default', () => {
       expect(loadEnv(valid).RATE_LIMIT_DEFAULT).toBeUndefined()
@@ -113,6 +154,7 @@ describe('loadEnv', () => {
     'SUPABASE_URL',
     'SUPABASE_SECRET_KEY',
     'INVITE_SECRET',
+    'PAYMENT_CREDENTIALS_KEY',
     'DATABASE_URL',
     'OPOS_ENV',
     'API_URL',
@@ -133,6 +175,29 @@ describe('loadEnv', () => {
   it('takes OPOS_ENV local', () => {
     expect(loadEnv(valid)).toMatchObject({ OPOS_ENV: 'local' })
   })
+
+  it('refuses a PAYMENT_CREDENTIALS_KEY shorter than 32 characters', () => {
+    expect(() => loadEnv({ ...valid, PAYMENT_CREDENTIALS_KEY: 'short' })).toThrow(
+      /PAYMENT_CREDENTIALS_KEY/,
+    )
+  })
+
+  it.each(['INVITE_SECRET', 'SUPABASE_SECRET_KEY'])(
+    'refuses a PAYMENT_CREDENTIALS_KEY equal to %s, naming no value',
+    (other) => {
+      const secret = 'f'.repeat(64)
+
+      let message = ''
+      try {
+        loadEnv({ ...valid, PAYMENT_CREDENTIALS_KEY: secret, [other]: secret })
+      } catch (error) {
+        message = (error as Error).message
+      }
+
+      expect(message).toMatch(new RegExp(`PAYMENT_CREDENTIALS_KEY must differ from ${other}`))
+      expect(message).not.toContain(secret)
+    },
+  )
 
   it('refuses an INVITE_SECRET equal to the secret key, naming no value', () => {
     const secret = 'd'.repeat(64)

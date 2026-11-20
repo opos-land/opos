@@ -16,6 +16,8 @@ export const uploadedFiles = pgTable(
   },
   (t) => [
     unique('uploaded_files_id_tenant_unique').on(t.id, t.tenantId),
+    // What a row of an edition's own table points at: the file within its tenant and its edition.
+    unique('uploaded_files_id_tenant_edition_unique').on(t.id, t.tenantId, t.editionId),
     index('uploaded_files_tenant_edition_idx').on(t.tenantId, t.editionId),
     foreignKey({
       name: 'uploaded_files_tenant_fk',

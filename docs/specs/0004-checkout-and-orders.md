@@ -4,8 +4,14 @@
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), F1–F8, Payments, P1 and the requirements they
   lean on
-- Decisions: none recorded yet; the records this spec needs are among its
-  [open questions](#open-questions)
+- Decisions: [0047](../adr/0047-take-a-payment-in-three-steps-around-the-providers-call.md),
+  [0048](../adr/0048-keep-what-an-order-names-with-foreign-keys-that-do-not-cascade.md),
+  [0049](../adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md),
+  [0050](../adr/0050-price-a-cart-with-one-function-of-the-contract.md),
+  [0051](../adr/0051-keep-an-orders-secrets-as-hashes-and-its-qr-code-sealed.md),
+  [0052](../adr/0052-stand-in-for-the-bot-check-until-the-portal-has-one.md),
+  [0053](../adr/0053-lock-the-rows-that-carry-a-limit-in-one-fixed-order.md), each proposed;
+  those the owner still has to make are among its [open questions](#open-questions)
 
 ## Goal
 
@@ -173,21 +179,24 @@ with no account ([PRODUCT.md 9](../PRODUCT.md#9-languages-markets-and-time-zones
 
 All are edition tables.
 
-| Table                        | Holds                                                                                                                                                                                                                                                                                                                                   |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `orders`                     | `number`, `status`, `email` (empty for a manual order), `account_id` (optional), `holder_name`, `age_band` (empty for a merch-only order), `total_minor`, `currency`, `holds`, `hold_ends_at`, `placed_at`, `paid_at`, `guardian_consent_acknowledged_at`, `provider_consent_accepted_at`, `result_token_hash`, `qr_code_id` (optional) |
-| `order_lines`                | `order_id`, `kind` (`ticket`, `add_on`, `merchandise`, `discount`), the catalog row it sells, `quantity`, `unit_amount_minor`, `amount_minor`, `handed_out_at`, `handed_out_by`                                                                                                                                                         |
-| `order_custom_field_answers` | `order_id`, `custom_field_id`, `answer`                                                                                                                                                                                                                                                                                                 |
-| `order_consents`             | `order_id`, `consent_id`, `document_version_id`, `accepted_at`                                                                                                                                                                                                                                                                          |
-| `order_qr_codes`             | `code_hash`, by which a code is found, and `code`, encrypted with a key the API alone holds, since the order's page and a resent email show it again; `replaced_at`                                                                                                                                                                     |
-| `payment_attempts`           | `order_id`, `provider`, `status` (`started`, `paid`, `failed`, `ended`, `refused`), `amount_minor`, `paid_amount_minor`, `paid_at`, `confirmed_at`, `money_with` (`convention`, `buyer`), `provider_reference`, `failure_reason` with the provider's own `failure_code` and `failure_message`, `information` (what Y12 keeps)           |
-| `order_emails`               | `order_id`, `kind`, `recipient`, `queued_at`, `sent_at`, `failed_attempts`: the list of an order's emails and the outbox they are sent from                                                                                                                                                                                             |
-| `order_links`                | `order_id`, the hash of the link's token, `expires_at`, `ended_at`                                                                                                                                                                                                                                                                      |
-| `attendee_registrations`     | `edition_id`, `account_id`, one a pair; it goes with its account (invariant 7)                                                                                                                                                                                                                                                          |
+| Table                        | Holds                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `orders`                     | `number`, `status`, `email` (empty for a manual order), `holder_name`, `age_band` (empty for a merch-only order), `total_minor`, `currency`, `holds`, `hold_ends_at`, `placed_at`, `paid_at`, `guardian_consent_acknowledged_at`, `provider_consent_accepted_at`, `result_token_hash`                                         |
+| `order_lines`                | `order_id`, `kind` (`ticket`, `add_on`, `merchandise`, `discount`), the catalog row it sells, `quantity`, `unit_amount_minor`, `amount_minor`, `handed_out_at`, `handed_out_by`                                                                                                                                               |
+| `order_custom_field_answers` | `order_id`, `custom_field_id`, `answer`                                                                                                                                                                                                                                                                                       |
+| `order_consents`             | `order_id`, `consent_id`, `document_version_id`, `accepted_at`                                                                                                                                                                                                                                                                |
+| `order_qr_codes`             | `code_hash`, by which a code is found, and `code`, encrypted with a key the API alone holds, since the order's page and a resent email show it again; `replaced_at`                                                                                                                                                           |
+| `order_qr_code_orders`       | `order_id`, `qr_code_id`: the QR code an order is found by, one an order; a row of its own, so that no column of an order points at another row                                                                                                                                                                               |
+| `order_accounts`             | `order_id`, `account_id`: the account an order is attached to, one an order; it goes with its account, and the order stays                                                                                                                                                                                                    |
+| `payment_attempts`           | `order_id`, `provider`, `status` (`started`, `paid`, `failed`, `ended`, `refused`), `amount_minor`, `paid_amount_minor`, `paid_at`, `confirmed_at`, `money_with` (`convention`, `buyer`), `provider_reference`, `failure_reason` with the provider's own `failure_code` and `failure_message`, `information` (what Y12 keeps) |
+| `order_emails`               | `order_id`, `kind`, `recipient`, `queued_at`, `sent_at`, `failed_attempts`: the list of an order's emails and the outbox they are sent from                                                                                                                                                                                   |
+| `order_links`                | `order_id`, the hash of the link's token, `expires_at`, `ended_at`                                                                                                                                                                                                                                                            |
 
 An order's line keeps the price it was sold at; the name comes from the catalog row, which is
 never deleted while an order holds it ([catalog](0003-catalog.md), L2). A partial unique index keeps
-an order to one `ticket` line. `orders.account_id` empties when its account is deleted.
+an order to one `ticket` line. An order's row in `order_accounts` goes when its account is
+deleted. The API's role inserts and deletes the rows that point at an account or at another row
+and never updates them.
 
 A QR code, a result token and an order link's token each carry at least 128 random bits; the two
 tokens are stored as hashes. The result token opens the result page alone, for 24 hours from the
@@ -282,7 +291,7 @@ first:
 ### Seed
 
 The demo edition gets an order in each status, among them one with a teen as its ticket holder, a
-merch-only one, one attached to a demo account with its registration, and a payment an order no
+merch-only one, one attached to a demo account, and a payment an order no
 longer needed.
 
 ## Tenant isolation and permissions
@@ -358,7 +367,7 @@ e2e, on a mobile viewport, each scenario making its own tenant and checking the 
 the accessibility of every page it opens:
 
 1. A visitor buys a ticket with an add-on and a T-shirt and sees "Paid".
-2. A signed-in account buys a ticket and is an attendee of the edition.
+2. A signed-in account buys a ticket under its own email, and the order is its own.
 3. A merch-only order.
 4. A teen: the notices, the checkbox, and the order refused without it.
 5. A payment canceled at the provider, then "Try again", then paid.
@@ -388,15 +397,32 @@ the accessibility of every page it opens:
 
 ## Open questions
 
-- **The owner of attendee registrations (A3):** this spec creates `attendee_registrations` with
-  only what a paid ticket needs. It needs the answer whether the domain owner of tickets owns
-  registrations that far ([CONTRIBUTORS.md](../../CONTRIBUTORS.md)).
+- **Attendee registrations (A3):** registrations wait for their domain owner
+  ([ARCHITECTURE.md](../ARCHITECTURE.md#modules-waiting-for-their-domain-owner)), so no
+  `attendee_registrations` table and no registration at the payment are built: a paid order is
+  attached to its account and makes nobody an attendee. A3 stands as the rule this module asks of
+  that owner, with the answer whether the domain owner of tickets owns registrations that far
+  ([CONTRIBUTORS.md](../../CONTRIBUTORS.md)).
 - **A deleted tenant's orders (A7):** [platform administration](0001-platform-administration.md)
   lets the admin delete a suspended tenant with everything it owns, and left the orders to this
-  module. Five years of retention and that deletion cannot both hold. This draft's proposal: the
-  deletion is refused while the tenant holds an order inside its retention.
-- **The bot check (Q3):** it is the portal's, and nothing specifies it yet. This spec needs only a
-  token the API can verify, and is built against a stand-in for it on `local` and `dev`.
+  module. Five years of retention and that deletion cannot both hold. As built, the deletion is
+  refused while the tenant holds an order, with `tenant.has-orders`
+  ([0048](../adr/0048-keep-what-an-order-names-with-foreign-keys-that-do-not-cascade.md)); what
+  becomes of a convention that leaves inside the five years is the owner's to say.
+- **The bot check (Q3):** it is the portal's, and nothing specifies it yet. The API verifies a
+  token through one interface, and a stand-in passes one fixed token on `local` and `dev`; on
+  production nothing passes, so a shop there places no order until a real check is specified and
+  built ([0052](../adr/0052-stand-in-for-the-bot-check-until-the-portal-has-one.md)).
+- **What this draft added while it was built**, each for the owner to confirm: a provider
+  account is not disconnected while an order awaits payment, as its credentials are not replaced
+  ([shop setup](0002-shop-setup.md), P5, P6); an attempt for an order under review, declined or
+  canceled is refused as one for a paid order is, with `order.already-paid`; an order whose
+  provider cannot be asked when its hold ends waits, and is not expired until the provider
+  answers; the confirmation's pick-up notice says only that merchandise is picked up at the
+  edition, until [buyer self-service](0009-buyer-self-service.md) gives the edition its pick-up
+  information; the page an order link opens comes with that spec too; the page of a closed shop
+  names neither the seller nor the provider, whose details stay with the orgs until a shop is
+  open.
 - **Records before acceptance:** an order holding at most one ticket (D5 of the brief, with
   PRODUCT.md 3); "Needs review", a payment after the hold and the information an attempt keeps
   (D8), a record superseding that part of

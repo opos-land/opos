@@ -1,5 +1,11 @@
 import { Trans } from '@lingui/react/macro'
-import { CalendarRangeIcon, PaletteIcon, SlidersHorizontalIcon, UsersIcon } from 'lucide-react'
+import {
+  CalendarRangeIcon,
+  PaletteIcon,
+  SlidersHorizontalIcon,
+  StoreIcon,
+  UsersIcon,
+} from 'lucide-react'
 import { atLeast } from '../model/permissions'
 import { AreaFrame, SidebarLink } from './area-frame'
 import { useCurrentTenant } from './tenant-context'
@@ -38,6 +44,11 @@ export function ConventionLayout() {
             {atLeast(access.branding, 'read') && (
               <SidebarLink to={`${base}/branding`} icon={<PaletteIcon />}>
                 <Trans>Branding</Trans>
+              </SidebarLink>
+            )}
+            {atLeast(access.shop, 'read') && (
+              <SidebarLink to={`${base}/shop`} icon={<StoreIcon />}>
+                <Trans>Shop</Trans>
               </SidebarLink>
             )}
           </>

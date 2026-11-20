@@ -3,8 +3,10 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B6.1–B6.4
-- Decisions: none recorded yet; the records this spec needs are among its
-  [open questions](#open-questions)
+- Decisions: [0059](../adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md),
+  [0060](../adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md) and
+  [0065](../adr/0065-let-the-api-name-the-scanner-that-marked-a-hand-out.md), proposed; what the owner
+  still has to confirm is among its [open questions](#open-questions)
 
 ## Goal
 
@@ -20,21 +22,23 @@ D7–D13 are this draft's proposal for it.
 
 ### The device
 
-| #   | Rule                                                                                                                                                                                                                        | From                 |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| D1  | A scanner is a device with no account signed in. It serves one edition and reads nothing of another.                                                                                                                        | PRODUCT.md 3 and 7   |
-| D2  | An org with tickets write access to the edition enables its scanners.                                                                                                                                                       | PRODUCT.md 5.1       |
-| D3  | A scanner's access ends no later than that of the org who enabled it, and an org whose access expires enables none past its own end.                                                                                        | PRODUCT.md 5.2 and 7 |
-| D4  | A scanner is revoked at any time, and a revoked one reads and records nothing from then on.                                                                                                                                 | PRODUCT.md 7         |
-| D5  | A scanner works online alone.                                                                                                                                                                                               | PRODUCT.md 11        |
-| D6  | The scanner runs in the panel, under its own address, on a phone.                                                                                                                                                           | PRODUCT.md 6         |
-| D7  | To enable a scanner the org names it in the panel and is shown a pairing code once, as a QR code to read with the phone and as a link. The code works once and for 15 minutes. The phone that opens it becomes the scanner. | new                  |
-| D8  | A scanner has a name, unique in its edition, such as the gate it stands at. Every hand-out records it.                                                                                                                      | new                  |
-| D9  | Unless the org sets an earlier end, a scanner's access ends a day after the edition's last day, within D3.                                                                                                                  | new                  |
-| D10 | An edition has up to 20 scanners enabled at a time.                                                                                                                                                                         | new                  |
-| D11 | Any org with tickets write access to the edition revokes any of its scanners. The panel lists each with its name, who enabled it, when it was last used and when its access ends.                                           | new                  |
-| D12 | A scanner reads QR codes alone: it searches no order by a name, an email or a number. A buyer whose code cannot be read is found by an org in the panel ([order management](0006-order-management.md)).                     | new                  |
-| D13 | A hand-out marked by mistake is taken back in the panel, not on the scanner.                                                                                                                                                | new                  |
+| #   | Rule                                                                                                                                                                                                                                                                                                                                                                                                        | From                 |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| D1  | A scanner is a device with no account signed in. It serves one edition and reads nothing of another.                                                                                                                                                                                                                                                                                                        | PRODUCT.md 3 and 7   |
+| D2  | An org with tickets write access to the edition enables its scanners.                                                                                                                                                                                                                                                                                                                                       | PRODUCT.md 5.1       |
+| D3  | A scanner's access ends no later than that of the org who enabled it, and an org whose access expires enables none past its own end.                                                                                                                                                                                                                                                                        | PRODUCT.md 5.2 and 7 |
+| D4  | A scanner is revoked at any time, and a revoked one reads and records nothing from then on.                                                                                                                                                                                                                                                                                                                 | PRODUCT.md 7         |
+| D5  | A scanner works online alone.                                                                                                                                                                                                                                                                                                                                                                               | PRODUCT.md 11        |
+| D6  | The scanner runs in the panel, under its own address, on a phone.                                                                                                                                                                                                                                                                                                                                           | PRODUCT.md 6         |
+| D7  | To enable a scanner the org names it in the panel and is shown a pairing code once, as a QR code to read with the phone and as a link. The code works once and for 15 minutes. The phone that opens it becomes the scanner.                                                                                                                                                                                 | new                  |
+| D8  | A scanner has a name, unique in its edition, such as the gate it stands at. Every hand-out records it.                                                                                                                                                                                                                                                                                                      | new                  |
+| D9  | Unless the org sets an earlier end, a scanner's access ends a day after the edition's last day, within D3.                                                                                                                                                                                                                                                                                                  | new                  |
+| D10 | An edition has up to 20 scanners enabled at a time.                                                                                                                                                                                                                                                                                                                                                         | new                  |
+| D11 | Any org with tickets write access to the edition revokes any of its scanners. The panel lists each with its name, who enabled it, when it was last used and when its access ends.                                                                                                                                                                                                                           | new                  |
+| D12 | A scanner reads QR codes alone: it searches no order by a name, an email or a number. A buyer whose code cannot be read is found by an org in the panel ([order management](0006-order-management.md)).                                                                                                                                                                                                     | new                  |
+| D13 | A hand-out marked by mistake is taken back in the panel, not on the scanner.                                                                                                                                                                                                                                                                                                                                | new                  |
+| D14 | An org with tickets write access gives a scanner that is neither revoked nor ended a new pairing code, shown once like the first (D7). From that moment the phone that held the scanner reads and records nothing: the scanner waits for the phone that opens the new code. An org whose own access ends before the scanner does gives it none (D3), and neither does a scanner whose org has left get one. | new                  |
+| D15 | Each scanner has a page of its own in the panel: what the list tells of it, and what it handed out, which is how many orders and lines it marked, when first and last, and the orders it marked last, each linked to its own page. A mark an org made in the panel, and one taken back, are not the scanner's.                                                                                              | new                  |
 
 ### A scan
 
@@ -78,11 +82,13 @@ handed to the paired phone once and shown on no screen.
 
 Tenant routes, each under `/editions/{editionId}`:
 
-| Route                          | Needs                                         | Refuses with                                                          |
-| ------------------------------ | --------------------------------------------- | --------------------------------------------------------------------- |
-| `GET /scanners`                | tickets>=read                                 |                                                                       |
-| `POST /scanners`               | tickets=write; answers the pairing code, once | `scanner.limit-reached`, `scanner.name-taken`, `scanner.outlives-org` |
-| `DELETE /scanners/{scannerId}` | tickets=write                                 |                                                                       |
+| Route                                     | Needs                                                      | Refuses with                                                                                 |
+| ----------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `GET /scanners`                           | tickets>=read                                              |                                                                                              |
+| `GET /scanners/{scannerId}`               | tickets>=read; answers the scanner with what it handed out |                                                                                              |
+| `POST /scanners`                          | tickets=write; answers the pairing code, once              | `scanner.limit-reached`, `scanner.name-taken`, `scanner.outlives-org`                        |
+| `POST /scanners/{scannerId}/pairing-code` | tickets=write; answers a new pairing code, once            | `scanner.ended` for a scanner revoked or ended or whose org has left, `scanner.outlives-org` |
+| `DELETE /scanners/{scannerId}`            | tickets=write                                              |                                                                                              |
 
 One public route pairs a phone, and a scanner route is a kind of its own in the contract: its
 caller is a device, named by its token in `Authorization: Bearer`, with no session and no
@@ -98,14 +104,25 @@ The pairing code travels in the request's body, never in a path or a query of th
 link of D7 carries it after the `#`, which no server sees. Pairing, scans and hand-outs each have
 a rate limit of their own.
 
+A hand-out names the QR code the scanner read beside the order and its lines: a scanner marks
+nothing of an order it did not scan. The add-ons of a ticket are shown with entry and have no
+mark of their own on the scanner. The pairing answers, with the token, the scanner's name, its
+edition and convention and the convention's time zone, in which the scanner shows every moment.
+`scan.not-valid` carries one of four reasons: an unknown code, another edition's, a replaced one,
+a canceled order's.
+
+The scanner reads a code with the phone's camera, in the browser, and takes one typed by hand
+when the camera cannot read it: the text under a QR picture is the code itself.
+
 ### Screens
 
-| Application              | Screen   | Holds                                                                                                 |
-| ------------------------ | -------- | ----------------------------------------------------------------------------------------------------- |
-| panel, inside an edition | scanners | the list of D11; enabling, with the pairing code shown once; revoking                                 |
-| panel, at `/scanner`     | pair     | opened by the pairing link or code; then the scanner's name and edition                               |
-| panel, at `/scanner`     | scan     | the camera's view; after a read, the order of S1 with the notices of S2, or the red "Not valid" of S3 |
-| panel, at `/scanner`     | hand out | entry and each item with its state; the button that marks the chosen ones                             |
+| Application              | Screen    | Holds                                                                                                 |
+| ------------------------ | --------- | ----------------------------------------------------------------------------------------------------- |
+| panel, inside an edition | scanners  | the list of D11, a row a scanner that opens its page; the link to the page that enables one           |
+| panel, inside an edition | a scanner | the page of D15; a new pairing code, shown once (D14); revoking                                       |
+| panel, at `/scanner`     | pair      | opened by the pairing link or code; then the scanner's name and edition                               |
+| panel, at `/scanner`     | scan      | the camera's view; after a read, the order of S1 with the notices of S2, or the red "Not valid" of S3 |
+| panel, at `/scanner`     | hand out  | entry and each item with its state; the button that marks the chosen ones                             |
 
 Revoking asks first in a modal: no screen brings a device's access back
 ([0023](../adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
@@ -159,7 +176,8 @@ Integration, in `apps/api/test`:
 
 e2e, on a mobile viewport: an org enables a scanner and a phone pairs with its code; the scanner
 reads a paid order's QR code, hands out entry and one item, and a second scan shows both as handed
-out; a canceled order's code shows "Not valid"; a revoked scanner reads nothing.
+out; a canceled order's code shows "Not valid"; a revoked scanner reads nothing. The scenario
+types each code, as a person reads it out: a browser under test has no camera to show a code to.
 
 ## Out of scope
 
@@ -171,7 +189,27 @@ out; a canceled order's code shows "Not valid"; a revoked scanner reads nothing.
 
 ## Open questions
 
-- **The device's rules (D7–D13):** they are this draft's proposal. The brief leaves enabling and
+- **The device's rules (D7–D15):** they are this draft's proposal. The brief leaves enabling and
   revoking a device to the domain owner, who has not set them yet.
-- **Records before acceptance:** none beyond those of
-  [checkout and orders](0004-checkout-and-orders.md).
+- **Records to accept:** how a phone is paired and known, proposed in 0059, and reading QR codes
+  in the browser, proposed in 0060.
+- **For the domain owner to confirm:** that the add-ons of a ticket have no mark of their own on
+  the scanner; that a code may be typed by hand on the scanner, which D12 does not name; that
+  the list of scanners names who enabled each by an address only to a member who may read the
+  team.
+- **What a scanner's page counts (D15):** a scan that hands nothing out leaves no trace but the
+  moment the scanner was last used, so the page counts hand-outs, not reads. A list of every read
+  would be a table of its own, and one more record of who was where and when: the owner's to
+  ask for.
+- **A new pairing code (D14):** it takes the scanner from its phone at once, not when another
+  phone opens the code. A code that stayed readable on the scanner's page was turned down with a
+  pairing code that stays valid ([0059](../adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)).
+  The scanner goes on answering to the org who enabled it, not to the one who gave it the new
+  code: whether a new code should make it that org's, so that it stops when that org leaves, is
+  the owner's to say.
+- **When the org behind a scanner loses access:** the scanner stops once that org's membership
+  expires or is removed, which is what the device's rules here ask. ARCHITECTURE.md says a
+  device's access ends no later than that of the org who enabled it, which may also be read as
+  that org's tickets permission of the edition: an org whose permission was lowered to none
+  keeps a working scanner until another org revokes it. Which reading holds is the owner's to
+  say; the stricter one would judge the permission at every request of the device.

@@ -2,7 +2,13 @@ import { type Page } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import { type Selling, selling } from '../fixtures/buying'
 import { waitForMail } from '../fixtures/mailpit'
-import { expectAccessible, notification, portalUrl, signInToPanel } from '../fixtures/ui'
+import {
+  expectAccessible,
+  followFolderLink,
+  notification,
+  portalUrl,
+  signInToPanel,
+} from '../fixtures/ui'
 
 // Discount codes (docs/specs/0008-discount-codes.md, e2e): an org sets a code in the panel, and a
 // buyer enters it at the Summary of the checkout. Each scenario makes its own convention, and the
@@ -44,10 +50,11 @@ test('an org makes a code, and a buyer who enters it sees the discount’s line 
   const s = await selling(tenants, accounts)
 
   await signInToPanel(page, s.head.email, s.head.password)
-  await page
-    .getByRole('navigation', { name: s.edition.name })
-    .getByRole('link', { name: 'Discount codes', exact: true })
-    .click()
+  await followFolderLink(
+    page.getByRole('navigation', { name: s.edition.name }),
+    'Offer',
+    'Discount codes',
+  )
   await expect(page.getByRole('heading', { name: 'Discount codes', level: 1 })).toBeVisible()
   await expect(page.getByText('The edition has no discount codes yet.')).toBeVisible()
   await page.getByLabel('Code', { exact: true }).fill('Early-25')

@@ -1963,6 +1963,10 @@ msgstr "Liczba miejsc"
 msgid "Off: merchandise is bought with a ticket"
 msgstr "Wyłączone: gadżety kupuje się razem z akredytacją"
 
+#: src/features/editions/components/edition-layout.tsx
+msgid "Offer"
+msgstr "Oferta"
+
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "On: the shop also takes an order with no ticket"
 msgstr "Włączone: sklep przyjmuje też zamówienie bez akredytacji"
@@ -2761,6 +2765,10 @@ msgstr "Sklep"
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Shop settings of the convention"
 msgstr "Ustawienia sklepu konwentu"
+
+#: src/features/editions/components/edition-layout.tsx
+msgid "Shop setup"
+msgstr "Konfiguracja sklepu"
 
 #: src/features/shop/model/documents.ts
 msgid "Shop terms"

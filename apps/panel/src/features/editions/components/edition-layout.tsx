@@ -2,21 +2,16 @@ import { Trans } from '@lingui/react/macro'
 import {
   CalendarClockIcon,
   ChartColumnIcon,
-  FileTextIcon,
   KeyRoundIcon,
   LayoutDashboardIcon,
-  PuzzleIcon,
   ReceiptTextIcon,
   ScanLineIcon,
   Settings2Icon,
-  ShirtIcon,
   StoreIcon,
   TicketIcon,
-  TicketPercentIcon,
-  UsersIcon,
 } from 'lucide-react'
 import { useParams } from 'react-router'
-import { AreaFrame, atLeast, SidebarLink, useCurrentTenant } from '../../tenants'
+import { AreaFrame, atLeast, SidebarFolder, SidebarLink, useCurrentTenant } from '../../tenants'
 import { useEditionBySlug } from '../hooks/use-editions'
 
 /**
@@ -24,6 +19,11 @@ import { useEditionBySlug } from '../hooks/use-editions'
  * its settings and team access included; the switch to another edition is the area switcher's. Until
  * the edition is known, or when the member does not see it, there is no menu and the page says
  * why.
+ *
+ * What a member opens day by day stands in the menu itself: the programme, the orders, the sales
+ * and the scanners. What the shop is set up with once is folded into two folders: the offer, which
+ * is what the edition sells, and the shop setup, which is when the shop is open and what it asks
+ * of a buyer.
  */
 export function EditionLayout() {
   const { editionSlug } = useParams()
@@ -52,9 +52,6 @@ export function EditionLayout() {
             )}
             {atLeast(level.tickets, 'read') && (
               <>
-                <SidebarLink to={`${base}/shop`} icon={<StoreIcon />}>
-                  <Trans>Shop</Trans>
-                </SidebarLink>
                 <SidebarLink to={`${base}/orders`} icon={<ReceiptTextIcon />}>
                   <Trans>Orders</Trans>
                 </SidebarLink>
@@ -64,24 +61,25 @@ export function EditionLayout() {
                 <SidebarLink to={`${base}/scanners`} icon={<ScanLineIcon />}>
                   <Trans>Scanners</Trans>
                 </SidebarLink>
-                <SidebarLink to={`${base}/ticket-types`} icon={<TicketIcon />}>
-                  <Trans>Ticket types</Trans>
-                </SidebarLink>
-                <SidebarLink to={`${base}/add-ons`} icon={<PuzzleIcon />}>
-                  <Trans>Add-ons</Trans>
-                </SidebarLink>
-                <SidebarLink to={`${base}/merchandise`} icon={<ShirtIcon />}>
-                  <Trans>Merchandise</Trans>
-                </SidebarLink>
-                <SidebarLink to={`${base}/discount-codes`} icon={<TicketPercentIcon />}>
-                  <Trans>Discount codes</Trans>
-                </SidebarLink>
-                <SidebarLink to={`${base}/ticket-holders`} icon={<UsersIcon />}>
-                  <Trans>Ticket holders’ data</Trans>
-                </SidebarLink>
-                <SidebarLink to={`${base}/documents`} icon={<FileTextIcon />}>
-                  <Trans>Documents and consents</Trans>
-                </SidebarLink>
+                <SidebarFolder
+                  icon={<TicketIcon />}
+                  title={<Trans>Offer</Trans>}
+                  links={[
+                    { to: `${base}/ticket-types`, label: <Trans>Ticket types</Trans> },
+                    { to: `${base}/add-ons`, label: <Trans>Add-ons</Trans> },
+                    { to: `${base}/merchandise`, label: <Trans>Merchandise</Trans> },
+                    { to: `${base}/discount-codes`, label: <Trans>Discount codes</Trans> },
+                  ]}
+                />
+                <SidebarFolder
+                  icon={<StoreIcon />}
+                  title={<Trans>Shop setup</Trans>}
+                  links={[
+                    { to: `${base}/shop`, label: <Trans>Shop</Trans> },
+                    { to: `${base}/ticket-holders`, label: <Trans>Ticket holders’ data</Trans> },
+                    { to: `${base}/documents`, label: <Trans>Documents and consents</Trans> },
+                  ]}
+                />
               </>
             )}
             {atLeast(access.settings, 'read') && (

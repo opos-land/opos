@@ -2,7 +2,13 @@ import { type Page } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import { pdf } from '../fixtures/documents'
 import { SELLER } from '../fixtures/tenants'
-import { notification, panelUrl, signInToPanel, switchPanelArea } from '../fixtures/ui'
+import {
+  followFolderLink,
+  notification,
+  panelUrl,
+  signInToPanel,
+  switchPanelArea,
+} from '../fixtures/ui'
 
 // The setup of a shop (docs/specs/0002-shop-setup.md): what a convention sets once, behind the
 // shop permission, and what each edition sets and opens, behind its tickets permission.
@@ -26,7 +32,7 @@ test('a head connects the provider, sets the seller, publishes the documents and
   await signInToPanel(page, head.email, head.password)
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
   const editionMenu = page.getByRole('navigation', { name: edition.name })
-  await editionMenu.getByRole('link', { name: 'Shop' }).click()
+  await followFolderLink(editionMenu, 'Shop setup', 'Shop')
   await expect(page.getByText('The shop is closed: nothing can be ordered.')).toBeVisible()
   await expect(needs(page).getByText('Missing')).toHaveCount(4)
 
@@ -60,7 +66,7 @@ test('a head connects the provider, sets the seller, publishes the documents and
 
   // What belongs to the edition: its documents, each published as a PDF, and a consent.
   await switchPanelArea(page, edition.name)
-  await editionMenu.getByRole('link', { name: 'Documents and consents' }).click()
+  await followFolderLink(editionMenu, 'Shop setup', 'Documents and consents')
   await expect(page.getByText('The edition has no documents yet.')).toBeVisible()
   for (const [kind, title] of [
     ['Shop terms', 'Shop terms 2027'],
@@ -98,7 +104,7 @@ test('a head connects the provider, sets the seller, publishes the documents and
   await expect(listed).toContainText('Links the document: Shop terms 2027')
 
   // Every condition holds now, and the shop opens.
-  await editionMenu.getByRole('link', { name: 'Shop' }).click()
+  await followFolderLink(editionMenu, 'Shop setup', 'Shop')
   await expect(needs(page).getByText('Met')).toHaveCount(4)
   await page.getByRole('button', { name: 'Open the shop' }).click()
   await expect(notification(page, 'success', 'The shop is open.')).toBeVisible()
@@ -125,10 +131,7 @@ test('an org with the tickets of an edition alone sees each condition as met or 
 
   await signInToPanel(page, org.email, org.password)
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/editions/${edition.slug}`))
-  await page
-    .getByRole('navigation', { name: edition.name })
-    .getByRole('link', { name: 'Shop' })
-    .click()
+  await followFolderLink(page.getByRole('navigation', { name: edition.name }), 'Shop setup', 'Shop')
 
   const rows = needs(page).getByRole('listitem')
   await expect(rows).toHaveCount(4)
@@ -160,10 +163,7 @@ test('opening a shop with a condition missing is refused, and the page says whic
   await tenants.addDocument(tenant.id, edition.id, 'shop-terms')
 
   await signInToPanel(page, head.email, head.password)
-  await page
-    .getByRole('navigation', { name: edition.name })
-    .getByRole('link', { name: 'Shop' })
-    .click()
+  await followFolderLink(page.getByRole('navigation', { name: edition.name }), 'Shop setup', 'Shop')
   await expect(needs(page).getByText('Met')).toHaveCount(3)
   await page.getByRole('button', { name: 'Open the shop' }).click()
 

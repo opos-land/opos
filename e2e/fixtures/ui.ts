@@ -1,6 +1,6 @@
 import { totp } from '@opos/db/totp'
 import AxeBuilder from '@axe-core/playwright'
-import { expect, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { stack } from './stack'
 
 // Signing in through the UI, the way a person does, to the panel, the portal or the admin
@@ -105,6 +105,17 @@ export async function switchPanelArea(page: Page, choice: string) {
   await expect(page.getByRole('menu')).toHaveCount(0)
   // Beside the page the switcher names its area; under 768 px it left with the sheet it sits in.
   if (!isNarrow(page)) await expect(panelSwitcher(page)).toContainText(choice)
+}
+
+/**
+ * Follows a link the panel's menu keeps in a folder, opening the folder first when it is closed.
+ * `menu` is the menu of the area, the navigation named after the edition or the convention.
+ */
+export async function followFolderLink(menu: Locator, folder: string, link: string) {
+  const opener = menu.getByRole('button', { name: folder, exact: true })
+  if ((await opener.getAttribute('aria-expanded')) !== 'true') await opener.click()
+  await expect(opener).toHaveAttribute('aria-expanded', 'true')
+  await menu.getByRole('link', { name: link, exact: true }).click()
 }
 
 /**

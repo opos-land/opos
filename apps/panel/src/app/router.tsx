@@ -33,7 +33,13 @@ import { DiscountCodesPage, NewDiscountCodePage } from '../features/discounts'
 import { SalesPage } from '../features/sales'
 import { ScannerPage, ScannersPage } from '../features/scanner'
 import { ProgramItemPage, ProgramPage } from '../features/program'
-import { EditionDocumentsPage, EditionShopPage, ShopSettingsPage } from '../features/shop'
+import {
+  EditionDocumentsPage,
+  EditionShopPage,
+  NewConsentPage,
+  NewDocumentPage,
+  ShopSettingsPage,
+} from '../features/shop'
 import { EditionAccessPage, InvitePage, MemberPage, TeamPage } from '../features/team'
 import {
   AreaFrame,
@@ -144,6 +150,8 @@ export const router = createBrowserRouter([
                   { path: 'program/:programItemId', element: <ProgramItemPage /> },
                   { path: 'shop', element: <EditionShopPage /> },
                   { path: 'documents', element: <EditionDocumentsPage /> },
+                  { path: 'documents/new', element: <NewDocumentPage /> },
+                  { path: 'documents/consents/new', element: <NewConsentPage /> },
                   { path: 'orders', element: <OrdersPage /> },
                   { path: 'orders/new', element: <ManualOrderPage /> },
                   { path: 'orders/:orderId', element: <OrderPage /> },

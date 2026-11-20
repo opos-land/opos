@@ -72,6 +72,8 @@ test('a head connects the provider, sets the seller, publishes the documents and
     ['Shop terms', 'Shop terms 2027'],
     ['Privacy policy', 'Privacy policy 2027'],
   ] as const) {
+    // A document is added on a page of its own, which leads back to the documents.
+    await page.getByRole('link', { name: 'New document' }).click()
     await page.getByLabel('Kind').selectOption({ label: kind })
     await page.getByLabel('Title of the new document').fill(title)
     await page.getByRole('button', { name: 'Add the document' }).click()
@@ -93,10 +95,11 @@ test('a head connects the provider, sets the seller, publishes the documents and
   expect(file.headers()['content-type']).toBe('application/pdf')
   expect(file.headers()['content-disposition']).toMatch(/^attachment/)
 
-  const consents = page.getByRole('region', { name: 'Consents' })
-  await consents.getByLabel('Sentence the buyer accepts').fill('I accept the shop terms.')
-  await consents.getByLabel('Linked document').selectOption({ label: 'Shop terms 2027' })
-  await consents.getByRole('button', { name: 'Add the consent' }).click()
+  // So is a consent, which links one of the documents.
+  await page.getByRole('link', { name: 'New consent' }).click()
+  await page.getByLabel('Sentence the buyer accepts').fill('I accept the shop terms.')
+  await page.getByLabel('Linked document').selectOption({ label: 'Shop terms 2027' })
+  await page.getByRole('button', { name: 'Add the consent' }).click()
   await expect(notification(page, 'success', 'The consent is added.')).toBeVisible()
   const listed = page.getByRole('list', { name: 'Consents in their order' }).getByRole('listitem')
   await expect(listed).toHaveCount(1)

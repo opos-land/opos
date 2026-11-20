@@ -274,7 +274,7 @@ msgstr "Add the add-on"
 msgid "Add the code"
 msgstr "Add the code"
 
-#: src/features/shop/pages/edition-documents-page.tsx
+#: src/features/shop/pages/new-consent-page.tsx
 msgid "Add the consent"
 msgstr "Add the consent"
 
@@ -282,7 +282,7 @@ msgstr "Add the consent"
 msgid "Add the custom field"
 msgstr "Add the custom field"
 
-#: src/features/shop/pages/edition-documents-page.tsx
+#: src/features/shop/pages/new-document-page.tsx
 msgid "Add the document"
 msgstr "Add the document"
 
@@ -698,6 +698,10 @@ msgstr "Connect the account"
 msgid "Connected"
 msgstr "Connected"
 
+#: src/features/shop/pages/new-consent-page.tsx
+msgid "Consent data"
+msgstr "Consent data"
+
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Consents"
 msgstr "Consents"
@@ -960,12 +964,18 @@ msgstr "Dismiss"
 msgid "Displays the mobile sidebar."
 msgstr "Displays the mobile sidebar."
 
+#: src/features/shop/pages/new-document-page.tsx
+msgid "Document data"
+msgstr "Document data"
+
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Documents"
 msgstr "Documents"
 
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/shop/pages/edition-documents-page.tsx
+#: src/features/shop/pages/new-consent-page.tsx
+#: src/features/shop/pages/new-document-page.tsx
 msgid "Documents and consents"
 msgstr "Documents and consents"
 
@@ -1569,7 +1579,7 @@ msgid "Kept on the order, for the team. The buyer does not see it."
 msgstr "Kept on the order, for the team. The buyer does not see it."
 
 #: src/features/discounts/components/discount-code-form.tsx
-#: src/features/shop/pages/edition-documents-page.tsx
+#: src/features/shop/pages/new-document-page.tsx
 msgid "Kind"
 msgstr "Kind"
 
@@ -1791,6 +1801,7 @@ msgid "New add-on"
 msgstr "New add-on"
 
 #: src/features/shop/pages/edition-documents-page.tsx
+#: src/features/shop/pages/new-consent-page.tsx
 msgid "New consent"
 msgstr "New consent"
 
@@ -1805,6 +1816,7 @@ msgid "New discount code"
 msgstr "New discount code"
 
 #: src/features/shop/pages/edition-documents-page.tsx
+#: src/features/shop/pages/new-document-page.tsx
 msgid "New document"
 msgstr "New document"
 
@@ -3047,7 +3059,7 @@ msgstr "The code was wrong."
 msgid "The confirmation is on its way to the order’s email."
 msgstr "The confirmation is on its way to the order’s email."
 
-#: src/features/shop/pages/edition-documents-page.tsx
+#: src/features/shop/pages/new-consent-page.tsx
 msgid "The consent is added."
 msgstr "The consent is added."
 
@@ -3107,7 +3119,7 @@ msgstr "The details are incomplete. The shop of an edition can open once every f
 msgid "The document “{documentTitle}” is deleted."
 msgstr "The document “{documentTitle}” is deleted."
 
-#: src/features/shop/pages/edition-documents-page.tsx
+#: src/features/shop/pages/new-document-page.tsx
 msgid "The document is added. Publish its first version."
 msgstr "The document is added. Publish its first version."
 
@@ -3809,7 +3821,7 @@ msgstr "Time zone"
 msgid "Title"
 msgstr "Title"
 
-#: src/features/shop/pages/edition-documents-page.tsx
+#: src/features/shop/pages/new-document-page.tsx
 msgid "Title of the new document"
 msgstr "Title of the new document"
 

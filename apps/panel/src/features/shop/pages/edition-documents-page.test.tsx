@@ -175,43 +175,23 @@ describe('EditionDocumentsPage', () => {
     await screen.findByText('Consent 1')
 
     expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'New document' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'New consent' })).toBeNull()
+  })
+
+  it('links a member who may add to the pages of a new document and a new consent, and holds no form of either', async () => {
+    state.tickets = 'write'
+    view()
+    await screen.findByText('Consent 1')
+
+    expect(screen.getByRole('link', { name: 'New document' }).getAttribute('href')).toBe(
+      '/convention-a/editions/2026/documents/new',
+    )
+    expect(screen.getByRole('link', { name: 'New consent' }).getAttribute('href')).toBe(
+      '/convention-a/editions/2026/documents/consents/new',
+    )
     expect(screen.queryByLabelText('Title of the new document')).toBeNull()
     expect(screen.queryByLabelText('Sentence the buyer accepts')).toBeNull()
-  })
-
-  it('names the forms that add a document and a consent, for a member who may add them', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByText('Consent 1')
-
-    expect(screen.getByRole('heading', { name: 'New document', level: 3 })).toBeDefined()
-    expect(screen.getByRole('heading', { name: 'New consent', level: 3 })).toBeDefined()
-    cleanup()
-
-    state.tickets = 'read'
-    view()
-    await screen.findByText('Consent 1')
-    expect(screen.queryByRole('heading', { name: 'New document' })).toBeNull()
-    expect(screen.queryByRole('heading', { name: 'New consent' })).toBeNull()
-  })
-
-  it('adds a document with its kind and title', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByRole('article', { name: 'Shop terms' })
-
-    fireEvent.change(screen.getByLabelText('Kind'), { target: { value: 'privacy-policy' } })
-    fireEvent.change(screen.getByLabelText('Title of the new document'), {
-      target: { value: ' Privacy policy ' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Add the document' }))
-
-    await vi.waitFor(() => expect(createDocument).toHaveBeenCalledTimes(1))
-    expect(createDocument.mock.calls[0]?.[0]).toEqual({
-      params: { editionId: 'edition-2026' },
-      body: { kind: 'privacy-policy', title: 'Privacy policy' },
-    })
-    await vi.waitFor(() => expect(readDocuments).toHaveBeenCalledTimes(2))
   })
 
   it('publishes the chosen PDF as the next version of its document', async () => {
@@ -311,25 +291,6 @@ describe('EditionDocumentsPage', () => {
     expect(within(rows[0]!).getByText('Required')).toBeDefined()
     expect(within(rows[0]!).getByText('Links the document: Shop terms')).toBeDefined()
     expect(within(rows[1]!).getByText('Optional')).toBeDefined()
-  })
-
-  it('adds a consent with its sentence, whether it is required and its document', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByText('Consent 1')
-
-    fireEvent.change(screen.getByLabelText('Sentence the buyer accepts'), {
-      target: { value: ' I accept the shop terms. ' },
-    })
-    fireEvent.change(screen.getByLabelText('Acceptance'), { target: { value: 'optional' } })
-    fireEvent.change(screen.getByLabelText('Linked document'), { target: { value: TERMS } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add the consent' }))
-
-    await vi.waitFor(() => expect(createConsent).toHaveBeenCalledTimes(1))
-    expect(createConsent.mock.calls[0]?.[0]).toEqual({
-      params: { editionId: 'edition-2026' },
-      body: { text: 'I accept the shop terms.', isRequired: false, documentId: TERMS },
-    })
   })
 
   it('moves a consent up and down the list, the first only down and the last only up', async () => {

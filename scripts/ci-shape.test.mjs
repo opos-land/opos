@@ -166,6 +166,8 @@ test('only the test fixtures are allowed by path alone, wherever a squash merge 
   const fixtures = gitleaksAllowlists().filter(({ text }) => !text.includes('commits = ['))
   assert.equal(fixtures.length, 1)
   assert.deepEqual(fixtures[0].paths.sort(), [
+    'apps/api/src/modules/payments/przelewy24/account.test.ts',
+    'apps/portal/src/features/shop/pages/order-link-page.test.tsx',
     'packages/db/src/totp.test.ts',
     'scripts/bff-boundary.test.mjs',
   ])
@@ -174,6 +176,8 @@ test('only the test fixtures are allowed by path alone, wherever a squash merge 
 test('no allowlist covers a path beyond the files the hits are in', () => {
   const allowed = new Set([
     'apps/api/.env.example',
+    'apps/api/src/modules/payments/przelewy24/account.test.ts',
+    'apps/portal/src/features/shop/pages/order-link-page.test.tsx',
     'docs/PLAN.md',
     'infra/live/dev/terragrunt.stack.hcl',
     'packages/db/src/seed.ts',

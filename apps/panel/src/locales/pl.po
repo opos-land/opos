@@ -526,7 +526,7 @@ msgstr "Klucz API"
 #: src/features/discounts/pages/discount-codes-page.tsx
 msgctxt "a discount code"
 msgid "Applies to"
-msgstr "Obejmuje"
+msgstr "Dotyczy"
 
 #: src/features/catalog/components/sensitive-data-notice.tsx
 msgid "Ask for nothing sensitive"
@@ -967,7 +967,7 @@ msgstr "Usunięcia kodu nie można cofnąć. Jeśli ma przestać działać tylko
 
 #: src/features/shop/pages/consent-page.tsx
 msgid "Deleting a consent cannot be undone. To stop asking for a while, hide it in the list of consents instead."
-msgstr "Usunięcia zgody nie można cofnąć. Jeśli sklep ma przestać o nią pytać tylko na jakiś czas, ukryj ją na liście zgód."
+msgstr "Usunięcia zgody nie można cofnąć. Jeśli sklep ma przestać o nią prosić tylko na jakiś czas, ukryj ją na liście zgód."
 
 #: src/features/catalog/pages/custom-field-page.tsx
 msgid "Deleting a custom field cannot be undone. To stop asking for a while, hide it in the list of custom fields instead."
@@ -1344,7 +1344,7 @@ msgstr "Podaj hasło."
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "Entries and items"
-msgstr "Wejścia i przedmioty"
+msgstr "Akredytacje i gadżety"
 
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "Entry"
@@ -2220,7 +2220,7 @@ msgstr "Opcjonalna"
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgctxt "a custom field"
 msgid "Optional"
-msgstr "Opcjonalne"
+msgstr "Opcjonalna"
 
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "Optional extras a buyer takes with a ticket, such as a workshop or a place in the sleeping room. A ticket type offers the add-ons you choose for it."
@@ -2782,7 +2782,7 @@ msgstr "Wymagana"
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgctxt "a custom field"
 msgid "Required"
-msgstr "Wymagane"
+msgstr "Wymagana"
 
 #: src/features/shop/components/consent-form.tsx
 msgid "Required: the buyer must accept the consent to order"
@@ -3905,11 +3905,11 @@ msgstr "Sklep przestanie o nią prosić: „{text}”."
 
 #: src/features/catalog/pages/custom-field-page.tsx
 msgid "The shop stops asking for it."
-msgstr "Sklep przestaje o nie pytać."
+msgstr "Sklep przestanie o nie pytać."
 
 #: src/features/catalog/pages/add-on-page.tsx
 msgid "The shop stops offering it, and no ticket type offers it any more."
-msgstr "Sklep przestaje go oferować i nie oferuje go już żaden rodzaj akredytacji."
+msgstr "Sklep przestanie go oferować i żaden rodzaj akredytacji nie będzie go już oferował."
 
 #: src/features/shop/model/documents.ts
 msgid "The shop terms have a published version."
@@ -4056,7 +4056,7 @@ msgstr "Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "This scanner was revoked or its access has ended: it gets no new pairing code. Enable a new scanner instead."
-msgstr "Dostęp tego skanera został cofnięty albo się skończył, więc nie dostanie nowego kodu parowania. Włącz nowy skaner."
+msgstr "Dostęp tego skanera został cofnięty albo wygasł, więc skaner nie dostanie nowego kodu parowania. Włącz nowy skaner."
 
 #: src/features/orders/pages/manual-order-page.tsx
 #: src/features/orders/pages/order-page.tsx
@@ -4465,7 +4465,7 @@ msgstr "Treść tego e-maila nie została zapisana: wysłano go, zanim zaczęli�
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "What this scanner marked as handed out: entry and items. A scan that hands nothing out is not counted, and neither is a mark taken back in the panel."
-msgstr "To, co ten skaner oznaczył jako wydane: wejście i przedmioty. Odczyt, po którym niczego nie wydano, nie jest liczony; nie liczy się też oznaczenie cofnięte w panelu."
+msgstr "To, co ten skaner oznaczył jako wydane: akredytacje i gadżety. Odczyt, po którym niczego nie wydano, nie jest liczony; nie liczy się też oznaczenie cofnięte w panelu."
 
 #: src/features/sales/components/sales-over-time.tsx
 msgid "What was sold on each day"

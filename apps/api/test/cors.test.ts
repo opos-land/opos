@@ -119,9 +119,10 @@ describe('CORS', () => {
     expect(noOrigin.headers.vary).toMatch(/origin/i)
   })
 
-  it('exposes Retry-After, which a browser hides from a script otherwise', async () => {
+  it('exposes Retry-After and the name of a file, which a browser hides from a script otherwise', async () => {
     const res = await request(app.getHttpServer()).get('/health').set('Origin', env.PANEL_URL)
 
-    expect(res.headers['access-control-expose-headers']).toBe('Retry-After')
+    // And Content-Disposition, by which a file an org exports is saved under its own name.
+    expect(res.headers['access-control-expose-headers']).toBe('Retry-After,Content-Disposition')
   })
 })

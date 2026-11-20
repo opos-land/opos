@@ -46,8 +46,9 @@ export async function configureApp(app: NestExpressApplication, env: Env) {
         // The result token of an order, which travels in no path and no query.
         'X-Result-Token',
       ],
-      // Not CORS-safelisted: without this an application cannot read it on a 429.
-      exposedHeaders: ['Retry-After'],
+      // Not CORS-safelisted: without this an application cannot read Retry-After on a 429, nor
+      // the name a file an org exports is served under.
+      exposedHeaders: ['Retry-After', 'Content-Disposition'],
       // The session travels in the API's cookies, for these origins only.
       credentials: allowed,
     })

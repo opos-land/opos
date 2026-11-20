@@ -30,6 +30,7 @@ describe('glossary', () => {
     ['orderLink', 'order link', 'link do zamówienia'],
     // The term order management brings.
     ['manualOrder', 'manual order', 'zamówienie ręczne'],
+    ['discountCode', 'discount code', 'kod rabatowy'],
   ] as const)('renders %s as its one word in each language', async (term, en, pl) => {
     const i18n = setupI18n()
 

@@ -220,6 +220,12 @@ msgstr "pole dodatkowe"
 msgid "Discount"
 msgstr "Rabat"
 
+#. Glossary term: discount code (a code a buyer enters to lower the price of an order)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "discount code"
+msgstr "kod rabatowy"
+
 #: src/order-emails.ts
 msgid "Documents you accepted"
 msgstr "Zaakceptowane dokumenty"

@@ -104,6 +104,7 @@ a ticket; what the scene calls accreditation is the ticket.
 | **QR code**                   | what a paid order is found by at the edition                                                       |
 | **order link**                | an emailed link that opens one order without a sign-in                                             |
 | **manual order**              | a sale made outside the shop, recorded by an org: at a desk, by invoice or complimentary           |
+| **discount code**             | a code a buyer enters at checkout to lower the price of an order, down to free entry               |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.

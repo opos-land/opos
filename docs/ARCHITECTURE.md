@@ -597,10 +597,7 @@ steps of [adding a feature](#adding-a-feature).
   under the lock of the order's row, so each thing an org changes is a kind of email of its own,
   and an email that would hand the order over to an address the order has left since is
   withdrawn, never sent. An order's page tells an org neither whether an email address has an
-  account nor the addresses of the orgs an alert went to. A file an org exports is CSV in UTF-8
-  with a byte order mark, its texts quoted and its fields separated by semicolons, its columns in
-  the language the panel shows and sends with its request; a cell that begins like a formula is written with a
-  leading apostrophe.
+  account nor the addresses of the orgs an alert went to.
 - **Discount codes.** A code's terms never leave the API. The offer names no code: the portal
   asks the quote for the price of the cart with the code a buyer entered, and the API prices it
   with the contract's one function. Every code that cannot be used answers the quote alike, and
@@ -612,6 +609,17 @@ steps of [adding a feature](#adding-a-feature).
   (invariant 9), when an order is placed, when a payment after the hold or an org settling a
   review takes it again, and when an org changes the limit. A code an order names is never
   deleted: the order's foreign key refuses it.
+- **Sales reports.** The dashboard of an edition and its lists are read from the orders as they
+  are, by queries that lock nothing: a report never slows a sale. What is sold is what "Paid"
+  and "Paid - manual" orders hold; what orders awaiting payment and needing review hold is
+  counted apart, and no other order counts. A file an org exports is CSV in UTF-8 with a byte
+  order mark, its texts quoted and its fields separated by semicolons, named after the edition
+  and the list; the API exposes that name to the panel's origin. Its columns are in the language
+  the panel shows and sends with its request, a moment in it is in the convention's time zone,
+  and an amount is a number to the cent with the decimal mark of that language. A cell that
+  begins like a formula is written with a leading apostrophe. A file holds names and email
+  addresses: it is written for the org who asked, kept nowhere, and no log holds any of it; the
+  lists share a rate limit an account.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than

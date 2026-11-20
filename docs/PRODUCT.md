@@ -338,6 +338,17 @@ panel: reading them needs read access, every change write access.
 | Handing out        | on an order's page an org marks a line of a paid order as handed out, or takes a mark back, for a buyer whose QR code cannot be read                                                                                                                                                                                                     |
 | Production numbers | once the pre-order deadline has passed: the count of every variant, what paid orders hold apart from what awaits payment and needs review, as a file too                                                                                                                                                                                 |
 
+**Sales reports.** An org with tickets read access to an edition sees how it sells, as it sells,
+and takes away the lists the convention works from.
+
+| Rule          | Value                                                                                                                                                                                                                                                                                               |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The dashboard | the revenue, the tickets of each ticket type, the merchandise of each variant, the count of each add-on, headcount-only ones among them, the ticket holders in each age band and the answers to each custom field with how many orders gave each; it shows the orders as they are when it is opened |
+| What counts   | sold is what "Paid" and "Paid - manual" orders hold; what orders awaiting payment and needing review hold is shown apart; an expired, declined or canceled order counts nowhere                                                                                                                     |
+| Revenue       | the totals of the "Paid" orders, and apart from them of the "Paid - manual" ones, whose money did not go through the provider                                                                                                                                                                       |
+| The lists     | three files a spreadsheet opens: the ticket holders, a row an order with a ticket; the merchandise pick list, a row a merchandise line of a paid order with whether it was handed out; the payments, a row a payment attempt with where the money is and what the provider's module keeps of it     |
+| In a file     | a date is in the convention's time zone, an amount is a number with its currency beside it, and a text somebody typed never runs as a formula                                                                                                                                                       |
+
 **The scanner.** At the gate and at the desk a phone with no account signed in reads a buyer's QR
 code, for one edition.
 

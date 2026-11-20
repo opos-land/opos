@@ -3,7 +3,7 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B7 and BR-16
-- Decisions: none recorded yet; the records this spec needs are among its
+- Decisions: none of its own; what the owner still has to confirm is among its
   [open questions](#open-questions)
 
 ## Goal
@@ -59,9 +59,9 @@ Tenant routes, each under `/editions/{editionId}`:
 
 A file is CSV in UTF-8 with a byte order mark, its fields quoted and separated by semicolons: it
 opens as columns in a spreadsheet set to Polish and imports cleanly into any other. It is named
-after the edition and the list. The exports share a rate limit an
-account. Before the payments file is written, the provider's module is asked again for what an
-attempt still lacks, outside the request's transaction.
+after the edition and the list. Its columns are in the language the panel shows, and an amount
+carries the decimal mark of that language. The exports share a rate limit an account. The
+payments file is written from what each attempt keeps.
 
 ### Screens
 
@@ -107,4 +107,14 @@ without the tickets permission of the edition sees neither.
 
 - **The columns of each list (E2–E4):** worth showing to one org who runs a desk before they are
   fixed.
-- **Records before acceptance:** none of its own.
+- **Asking a provider again before the payments file:** not built. A read that needs a
+  permission runs in one transaction and calls nobody outside
+  ([ARCHITECTURE.md, API conventions](../ARCHITECTURE.md#api-conventions)), so the file holds
+  what an attempt kept when its payment was confirmed. What a provider gives only later, as
+  Przelewy24 gives the batch of a payout, needs a job of the API or a route of its own: a
+  decision for the team.
+- **For the domain owner to confirm:** the rules marked "new" above; that the ticket holder list
+  holds every order with a ticket but an expired and a declined one, a canceled one among them
+  under its status; that the pick list holds the paid orders alone; that the ticket holders by
+  age band and the answers count the sold orders alone; that an amount carries the decimal mark
+  of the file's language, a comma in Polish, so that a spreadsheet set to it reads a number.

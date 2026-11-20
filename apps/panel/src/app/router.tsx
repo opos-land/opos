@@ -2,6 +2,7 @@ import { createBrowserRouter, Outlet } from 'react-router'
 import { AccountLocale, AccountPage } from '../features/account'
 import { BrandingPage } from '../features/branding'
 import {
+  AddOnPage,
   AddOnsPage,
   NewAddOnPage,
   NewCustomFieldPage,
@@ -165,6 +166,7 @@ export const router = createBrowserRouter([
                   { path: 'ticket-types/:ticketTypeId', element: <TicketTypePage /> },
                   { path: 'add-ons', element: <AddOnsPage /> },
                   { path: 'add-ons/new', element: <NewAddOnPage /> },
+                  { path: 'add-ons/:addOnId', element: <AddOnPage /> },
                   { path: 'merchandise', element: <MerchandisePage /> },
                   { path: 'merchandise/new', element: <MerchandiseItemPage /> },
                   { path: 'merchandise/:itemId', element: <MerchandiseItemPage /> },

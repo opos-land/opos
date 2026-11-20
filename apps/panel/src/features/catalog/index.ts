@@ -1,3 +1,4 @@
+export { AddOnPage } from './pages/add-on-page'
 export { AddOnsPage } from './pages/add-ons-page'
 export { NewAddOnPage } from './pages/new-add-on-page'
 export { NewCustomFieldPage } from './pages/new-custom-field-page'

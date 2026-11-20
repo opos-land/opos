@@ -213,6 +213,7 @@ msgstr "Dostęp ważny do"
 msgid "Account"
 msgstr "Konto"
 
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
 #: src/features/orders/components/order-lines.tsx
@@ -303,10 +304,12 @@ msgstr "Dodaj zdjęcie"
 msgid "Add the ticket type"
 msgstr "Dodaj rodzaj akredytacji"
 
+#: src/features/catalog/pages/add-on-page.tsx
 #: src/features/catalog/pages/new-add-on-page.tsx
 msgid "Add-on data"
 msgstr "Dane dodatku"
 
+#: src/features/catalog/pages/add-on-page.tsx
 #: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/discounts/components/discount-code-form.tsx
 #: src/features/editions/components/edition-layout.tsx
@@ -380,6 +383,7 @@ msgstr "Alert: płatność do zwrotu"
 msgid "Alert: the order needs review"
 msgstr "Alert: zamówienie do wyjaśnienia"
 
+#: src/features/catalog/pages/add-on-page.tsx
 #: src/features/catalog/pages/new-add-on-page.tsx
 msgid "All add-ons"
 msgstr "Wszystkie dodatki"
@@ -830,11 +834,11 @@ msgstr "Odrzucone"
 msgid "Delete"
 msgstr "Usuń"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
 msgid "Delete the add-on"
 msgstr "Usuń dodatek"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
 msgid "Delete the add-on “{name}”?"
 msgstr "Usunąć dodatek „{name}”?"
 
@@ -910,6 +914,10 @@ msgstr "Usunięcia punktu programu nie można cofnąć."
 #: src/features/catalog/pages/ticket-type-page.tsx
 msgid "Deleting a ticket type cannot be undone. To take it out of the shop for a while, hide it in the list of ticket types instead."
 msgstr "Usunięcia rodzaju akredytacji nie można cofnąć. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go na liście rodzajów akredytacji."
+
+#: src/features/catalog/pages/add-on-page.tsx
+msgid "Deleting an add-on cannot be undone. To take it out of the shop for a while, hide it in the list of add-ons instead."
+msgstr "Usunięcia dodatku nie można cofnąć. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go na liście dodatków."
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
@@ -1001,7 +1009,6 @@ msgstr "Każda lista to plik do otwarcia w arkuszu kalkulacyjnym, z zamówieniam
 msgid "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
 msgstr "Każdy próg to cena brutto obowiązująca od jednej chwili do drugiej. W chwili, której nie obejmuje żaden próg, rodzaj akredytacji nie jest w sprzedaży."
 
-#: src/features/catalog/components/add-on-row.tsx
 #: src/features/catalog/components/custom-field-row.tsx
 #: src/features/discounts/components/discount-code-row.tsx
 #: src/features/shop/components/consent-row.tsx
@@ -1313,7 +1320,7 @@ msgstr "Dla zespołu, na przykład numer faktury."
 msgid "Forgot your password?"
 msgstr "Nie pamiętasz hasła?"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 msgctxt "a price"
 msgid "Free"
 msgstr "Bezpłatnie"
@@ -1383,7 +1390,7 @@ msgstr "Główny organizator"
 msgid "Head organizers"
 msgstr "Główni organizatorzy"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/sales/pages/sales-page.tsx
 msgid "Headcount only"
 msgstr "Tylko zliczanie chętnych"
@@ -1422,7 +1429,7 @@ msgctxt "a ticket type"
 msgid "Hidden from the shop"
 msgstr "Ukryty w sklepie"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 msgctxt "an add-on"
 msgid "Hidden from the shop"
 msgstr "Ukryty w sklepie"
@@ -1614,7 +1621,12 @@ msgstr "Jasny"
 msgid "Limit"
 msgstr "Limit"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
+msgctxt "an add-on"
+msgid "Limit"
+msgstr "Limit"
+
+#: src/features/catalog/pages/add-ons-page.tsx
 msgid "Limited places: {capacity}"
 msgstr "Limit miejsc: {capacity}"
 
@@ -1766,6 +1778,7 @@ msgstr "Przesuń w górę"
 msgid "Name"
 msgstr "Nazwa"
 
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/sales/pages/sales-page.tsx
 msgctxt "a thing an edition sells"
 msgid "Name"
@@ -1898,7 +1911,7 @@ msgstr "Żaden kod rabatowy nie działa na ten rodzaj akredytacji, a jego strona
 msgid "No end date"
 msgstr "Bez daty końcowej"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
 msgid "No limit"
 msgstr "Bez limitu"
@@ -2292,6 +2305,7 @@ msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
 msgid "Previous page"
 msgstr "Poprzednia strona"
 
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Price"
 msgstr "Cena"
@@ -2660,7 +2674,7 @@ msgstr "Zapisz"
 msgid "Save how merchandise sells"
 msgstr "Zapisz sposób sprzedaży gadżetów"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
 msgid "Save the add-on"
 msgstr "Zapisz dodatek"
 
@@ -3020,7 +3034,7 @@ msgctxt "sales, on a day"
 msgid "That day"
 msgstr "Tego dnia"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
 msgid "The add-on “{name}” is deleted."
 msgstr "Dodatek „{name}” został usunięty."
 
@@ -3028,7 +3042,8 @@ msgstr "Dodatek „{name}” został usunięty."
 msgid "The add-on is added."
 msgstr "Dodatek został dodany."
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 msgid "The add-on is saved."
 msgstr "Dodatek został zapisany."
 
@@ -3636,9 +3651,9 @@ msgstr "Sklep przestanie o nią prosić: „{text}”."
 msgid "The shop stops asking for it. To stop asking for a while, hide it instead."
 msgstr "Sklep przestanie o nie pytać. Jeśli ma nie pytać tylko przez jakiś czas, ukryj je zamiast usuwać."
 
-#: src/features/catalog/components/add-on-row.tsx
-msgid "The shop stops offering it, and no ticket type offers it any more. To take it out of the shop for a while, hide it instead."
-msgstr "Sklep przestanie go oferować i żaden rodzaj akredytacji nie będzie go już oferował. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go zamiast usuwać."
+#: src/features/catalog/pages/add-on-page.tsx
+msgid "The shop stops offering it, and no ticket type offers it any more."
+msgstr "Sklep przestaje go oferować i nie oferuje go już żaden rodzaj akredytacji."
 
 #: src/features/shop/model/documents.ts
 msgid "The shop terms have a published version."

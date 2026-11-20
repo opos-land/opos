@@ -213,6 +213,7 @@ msgstr "Access until"
 msgid "Account"
 msgstr "Account"
 
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
 #: src/features/orders/components/order-lines.tsx
@@ -303,10 +304,12 @@ msgstr "Add the picture"
 msgid "Add the ticket type"
 msgstr "Add the ticket type"
 
+#: src/features/catalog/pages/add-on-page.tsx
 #: src/features/catalog/pages/new-add-on-page.tsx
 msgid "Add-on data"
 msgstr "Add-on data"
 
+#: src/features/catalog/pages/add-on-page.tsx
 #: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/discounts/components/discount-code-form.tsx
 #: src/features/editions/components/edition-layout.tsx
@@ -380,6 +383,7 @@ msgstr "Alert: a payment to return"
 msgid "Alert: the order needs review"
 msgstr "Alert: the order needs review"
 
+#: src/features/catalog/pages/add-on-page.tsx
 #: src/features/catalog/pages/new-add-on-page.tsx
 msgid "All add-ons"
 msgstr "All add-ons"
@@ -830,11 +834,11 @@ msgstr "Declined"
 msgid "Delete"
 msgstr "Delete"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
 msgid "Delete the add-on"
 msgstr "Delete the add-on"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
 msgid "Delete the add-on “{name}”?"
 msgstr "Delete the add-on “{name}”?"
 
@@ -910,6 +914,10 @@ msgstr "Deleting a programme item cannot be undone."
 #: src/features/catalog/pages/ticket-type-page.tsx
 msgid "Deleting a ticket type cannot be undone. To take it out of the shop for a while, hide it in the list of ticket types instead."
 msgstr "Deleting a ticket type cannot be undone. To take it out of the shop for a while, hide it in the list of ticket types instead."
+
+#: src/features/catalog/pages/add-on-page.tsx
+msgid "Deleting an add-on cannot be undone. To take it out of the shop for a while, hide it in the list of add-ons instead."
+msgstr "Deleting an add-on cannot be undone. To take it out of the shop for a while, hide it in the list of add-ons instead."
 
 #: src/features/editions/pages/edition-settings-page.tsx
 msgid "Deleting an edition cannot be undone. The active edition cannot be deleted."
@@ -1001,7 +1009,6 @@ msgstr "Each list is a file a spreadsheet opens, with the orders as they are now
 msgid "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
 msgstr "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
 
-#: src/features/catalog/components/add-on-row.tsx
 #: src/features/catalog/components/custom-field-row.tsx
 #: src/features/discounts/components/discount-code-row.tsx
 #: src/features/shop/components/consent-row.tsx
@@ -1313,7 +1320,7 @@ msgstr "For the team, such as an invoice’s number."
 msgid "Forgot your password?"
 msgstr "Forgot your password?"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 msgctxt "a price"
 msgid "Free"
 msgstr "Free"
@@ -1383,7 +1390,7 @@ msgstr "Head organizer"
 msgid "Head organizers"
 msgstr "Head organizers"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/sales/pages/sales-page.tsx
 msgid "Headcount only"
 msgstr "Headcount only"
@@ -1422,7 +1429,7 @@ msgctxt "a ticket type"
 msgid "Hidden from the shop"
 msgstr "Hidden from the shop"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 msgctxt "an add-on"
 msgid "Hidden from the shop"
 msgstr "Hidden from the shop"
@@ -1614,7 +1621,12 @@ msgstr "Light"
 msgid "Limit"
 msgstr "Limit"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
+msgctxt "an add-on"
+msgid "Limit"
+msgstr "Limit"
+
+#: src/features/catalog/pages/add-ons-page.tsx
 msgid "Limited places: {capacity}"
 msgstr "Limited places: {capacity}"
 
@@ -1766,6 +1778,7 @@ msgstr "Move up"
 msgid "Name"
 msgstr "Name"
 
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/sales/pages/sales-page.tsx
 msgctxt "a thing an edition sells"
 msgid "Name"
@@ -1898,7 +1911,7 @@ msgstr "No discount code applies to this ticket type, and its page says so."
 msgid "No end date"
 msgstr "No end date"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
 msgid "No limit"
 msgstr "No limit"
@@ -2292,6 +2305,7 @@ msgstr "Press the button to confirm your address. Then you choose your password.
 msgid "Previous page"
 msgstr "Previous page"
 
+#: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Price"
 msgstr "Price"
@@ -2660,7 +2674,7 @@ msgstr "Save"
 msgid "Save how merchandise sells"
 msgstr "Save how merchandise sells"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
 msgid "Save the add-on"
 msgstr "Save the add-on"
 
@@ -3020,7 +3034,7 @@ msgctxt "sales, on a day"
 msgid "That day"
 msgstr "That day"
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
 msgid "The add-on “{name}” is deleted."
 msgstr "The add-on “{name}” is deleted."
 
@@ -3028,7 +3042,8 @@ msgstr "The add-on “{name}” is deleted."
 msgid "The add-on is added."
 msgstr "The add-on is added."
 
-#: src/features/catalog/components/add-on-row.tsx
+#: src/features/catalog/pages/add-on-page.tsx
+#: src/features/catalog/pages/add-ons-page.tsx
 msgid "The add-on is saved."
 msgstr "The add-on is saved."
 
@@ -3636,9 +3651,9 @@ msgstr "The shop stops asking for it: “{text}”."
 msgid "The shop stops asking for it. To stop asking for a while, hide it instead."
 msgstr "The shop stops asking for it. To stop asking for a while, hide it instead."
 
-#: src/features/catalog/components/add-on-row.tsx
-msgid "The shop stops offering it, and no ticket type offers it any more. To take it out of the shop for a while, hide it instead."
-msgstr "The shop stops offering it, and no ticket type offers it any more. To take it out of the shop for a while, hide it instead."
+#: src/features/catalog/pages/add-on-page.tsx
+msgid "The shop stops offering it, and no ticket type offers it any more."
+msgstr "The shop stops offering it, and no ticket type offers it any more."
 
 #: src/features/shop/model/documents.ts
 msgid "The shop terms have a published version."

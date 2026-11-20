@@ -63,7 +63,11 @@ test('an org builds the catalog of an edition from nothing', async ({
   await page.getByLabel(/^Price/).fill('0')
   await page.getByLabel('Limit').selectOption('headcount')
   await page.getByRole('button', { name: 'Add the add-on' }).click()
-  const addOns = page.getByRole('list', { name: 'Add-ons in their order' }).getByRole('listitem')
+  // The add-ons are a table, a row an add-on under the row of the headings.
+  const addOns = page
+    .getByRole('table', { name: 'Add-ons in their order' })
+    .getByRole('row')
+    .filter({ has: page.getByRole('cell') })
   await expect(addOns).toHaveCount(2)
   await expect(addOns.nth(0)).toContainText('Limited places: 40')
   await expect(addOns.nth(1)).toContainText('Headcount only')
@@ -361,7 +365,7 @@ test('an org with tickets read access sees the catalog and can change nothing', 
   await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
 
   await followFolderLink(editionMenu, 'Shop', 'Add-ons')
-  await expect(page.getByRole('listitem').filter({ hasText: 'Workshop' })).toContainText(
+  await expect(page.getByRole('row').filter({ hasText: 'Workshop' })).toContainText(
     'Limited places: 30',
   )
   await expect(writes).toHaveCount(0)

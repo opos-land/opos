@@ -123,7 +123,11 @@ export const orders = pgTable(
     check('orders_number', sql`${t.number} ~ '^[2-9A-HJKMNP-Z]{10}$'`),
     check('orders_total', sql`${t.totalMinor} >= 0`),
     check('orders_currency', sql`${t.currency} = 'PLN'`),
-    check('orders_holder_name', sql`char_length(btrim(${t.holderName})) between 1 and 200`),
+    // An order of the shop is somebody's; a manual order asks for no name.
+    check(
+      'orders_holder_name',
+      sql`char_length(${t.holderName}) <= 200 and (${t.manualReason} is not null or char_length(btrim(${t.holderName})) >= 1)`,
+    ),
     // A manual order has a reason and nobody's email: an org recorded it at the desk.
     check(
       'orders_manual_reason',

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { CheckoutModule } from '../checkout/checkout.module'
 import { ManagedOrdersController } from './managed-orders.controller'
 import { ManagedOrdersRepository } from './managed-orders.repository'
+import { ManualOrders } from './manual-orders.service'
 import { OrderCorrections } from './order-corrections.service'
 import { OrderReadsRepository } from './order-reads.repository'
 import { OrderSettling } from './order-settling.service'
@@ -10,6 +11,12 @@ import { OrderSettling } from './order-settling.service'
 @Module({
   imports: [CheckoutModule],
   controllers: [ManagedOrdersController],
-  providers: [OrderReadsRepository, ManagedOrdersRepository, OrderCorrections, OrderSettling],
+  providers: [
+    OrderReadsRepository,
+    ManagedOrdersRepository,
+    OrderCorrections,
+    OrderSettling,
+    ManualOrders,
+  ],
 })
 export class OrderManagementModule {}

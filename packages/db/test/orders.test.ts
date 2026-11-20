@@ -665,6 +665,20 @@ describe('what the application role changes of an order', () => {
     await expect(order(at, { decline_reason: '' })).rejects.toThrow(/orders_decline_reason/)
   })
 
+  // A manual order asks for no name (M4); an order of the shop is always somebody's.
+  it('takes a manual order with no name, and no order of the shop without one', async () => {
+    const at = await place()
+    const manual = { status: 'paid-manual', email: null, manual_reason: 'desk', hold_ends_at: null }
+
+    await order(at, { ...manual, holder_name: '' })
+    await order(at, { ...manual, holder_name: 'Ada' })
+    await expect(order(at, { holder_name: '' })).rejects.toThrow(/orders_holder_name/)
+    await expect(order(at, { holder_name: '  ' })).rejects.toThrow(/orders_holder_name/)
+    await expect(order(at, { ...manual, holder_name: 'n'.repeat(201) })).rejects.toThrow(
+      /orders_holder_name/,
+    )
+  })
+
   // What order management tells a buyer (docs/specs/0006-order-management.md, Emails).
   it.each([
     'order-holder-changed',

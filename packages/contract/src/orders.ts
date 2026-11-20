@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { AGE_BANDS } from './catalog'
-import { FAILURE_REASONS, ORDER_STATUSES } from './checkout'
+import { AGE_BANDS, MAX_CUSTOM_FIELD_ANSWER, MAX_CUSTOM_FIELDS } from './catalog'
+import { cartSchema, FAILURE_REASONS, ORDER_STATUSES } from './checkout'
 import { tenantRoute, timestamp } from './common'
 import { PAYMENT_PROVIDERS } from './shop'
 
@@ -210,6 +210,37 @@ export const swapVariantSchema = z.strictObject({ variantId: z.uuid() })
 
 export type SwapVariant = z.infer<typeof swapVariantSchema>
 
+/**
+ * A sale made outside the shop, recorded by an org: at a desk, by invoice, or complimentary. It
+ * holds what the shop's cart holds and is priced as the shop prices it at that moment, a
+ * complimentary one at zero. It asks for no email, stores no consent, and requires neither a
+ * name nor an answer; with a ticket it takes the ticket holder's age band.
+ */
+export const manualOrderSchema = z.strictObject({
+  reason: z.enum(MANUAL_REASONS),
+  note: z
+    .string()
+    .trim()
+    .max(500)
+    .transform((note) => note || null)
+    .nullable()
+    .default(null),
+  cart: cartSchema,
+  holderName: z.string().trim().max(200).default(''),
+  ageBand: z.enum(AGE_BANDS).nullable(),
+  customFieldAnswers: z
+    .array(
+      z.strictObject({
+        fieldId: z.uuid(),
+        answer: z.string().trim().min(1).max(MAX_CUSTOM_FIELD_ANSWER),
+      }),
+    )
+    .max(MAX_CUSTOM_FIELDS)
+    .default([]),
+})
+
+export type ManualOrder = z.infer<typeof manualOrderSchema>
+
 const reason = z.string().trim().min(1).max(500)
 
 /**
@@ -249,6 +280,16 @@ export const ordersContract = {
         'An order with its lines, the data of its ticket holder, its payment attempts and its emails; needs tickets>=read',
     })
     .input(order)
+    .output(orderDetailSchema),
+  createManual: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/orders/manual',
+      successStatus: 201,
+      summary:
+        'Records a sale made outside the shop as a "Paid - manual" order with its lines handed out; refused with order.unavailable naming what ran out; needs tickets=write',
+    })
+    .input(edition.extend({ body: manualOrderSchema }))
     .output(orderDetailSchema),
   updateHolder: tenantRoute
     .route({

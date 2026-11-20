@@ -1,7 +1,9 @@
 import { Controller } from '@nestjs/common'
 import { contract } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
+import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
+import { ManualOrders } from './manual-orders.service'
 import { OrderCorrections } from './order-corrections.service'
 import { OrderReadsRepository } from './order-reads.repository'
 import { OrderSettling } from './order-settling.service'
@@ -16,6 +18,8 @@ export class ManagedOrdersController {
     private readonly reads: OrderReadsRepository,
     private readonly corrections: OrderCorrections,
     private readonly settling: OrderSettling,
+    private readonly manual: ManualOrders,
+    private readonly context: TenantContextService,
   ) {}
 
   @Implement(contract.orders.list)
@@ -32,6 +36,16 @@ export class ManagedOrdersController {
     return implement(contract.orders.get).handler(({ input }) =>
       this.reads.get(input.params.editionId, input.params.orderId),
     )
+  }
+
+  @Implement(contract.orders.createManual)
+  @RequireEdition('tickets', 'write')
+  createManual() {
+    return implement(contract.orders.createManual).handler(async ({ input }) => {
+      const { editionId } = input.params
+      const orderId = await this.manual.record(this.context.tenant().id, editionId, input.body)
+      return this.reads.get(editionId, orderId)
+    })
   }
 
   @Implement(contract.orders.updateHolder)

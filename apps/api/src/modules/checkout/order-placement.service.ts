@@ -7,7 +7,6 @@ import {
   type PlaceOrder,
   PRICE_GRACE_MINUTES,
   priceCart,
-  type PricedLine,
 } from '@opos/contract'
 import { TicketTypesRepository } from '../catalog/ticket-types.repository'
 import { providerUnavailable } from '../shop/shop.errors'
@@ -19,7 +18,7 @@ import {
   tooManyUnpaid,
   totalChanged,
 } from './checkout.errors'
-import { hashOf, orderNumber, secretToken } from './codes'
+import { hashOf, secretToken } from './codes'
 import { OfferService } from './offer.service'
 import { OrderSettlement } from './order-settlement.service'
 import { OrdersRepository } from './orders.repository'
@@ -75,22 +74,25 @@ export class OrderPlacement {
     const paid = totalMinor === 0
     if (!paid) await this.orders.holdProviderAccount(tenantId)
     const resultToken = secretToken()
-    const placed = await this.write(lines, {
-      tenantId,
-      editionId,
-      status: paid ? 'paid' : 'awaiting-payment',
-      email,
-      holderName: input.holderName,
-      ageBand: input.ageBand,
-      totalMinor,
-      // An order with nothing to pay has nothing to wait for; any other holds for thirty minutes.
-      holdEndsAt: paid ? null : new Date(at.getTime() + HOLD_MINUTES * MINUTE),
-      placedAt: at,
-      paidAt: paid ? at : null,
-      guardianConsentAcknowledgedAt: input.ageBand === 'teen' ? at : null,
-      providerConsentAcceptedAt: !paid && offer.provider?.consent ? at : null,
-      resultTokenHash: hashOf(resultToken),
-    })
+    const placed = await this.orders.write(
+      {
+        tenantId,
+        editionId,
+        status: paid ? 'paid' : 'awaiting-payment',
+        email,
+        holderName: input.holderName,
+        ageBand: input.ageBand,
+        totalMinor,
+        // An order with nothing to pay has nothing to wait for; any other holds for thirty minutes.
+        holdEndsAt: paid ? null : new Date(at.getTime() + HOLD_MINUTES * MINUTE),
+        placedAt: at,
+        paidAt: paid ? at : null,
+        guardianConsentAcknowledgedAt: input.ageBand === 'teen' ? at : null,
+        providerConsentAcceptedAt: !paid && offer.provider?.consent ? at : null,
+        resultTokenHash: hashOf(resultToken),
+      },
+      lines,
+    )
     const of = { tenantId, editionId, orderId: placed.id }
     const versions = new Map(offer.consents.map((consent) => [consent.id, consent]))
     await this.orders.addHolderData(of, {
@@ -111,19 +113,6 @@ export class OrderPlacement {
       totalMinor,
       resultToken,
     }
-  }
-
-  /** Writes the order under a number no other order of the convention has. */
-  private async write(
-    lines: readonly PricedLine[],
-    order: Omit<Parameters<OrdersRepository['insert']>[0], 'number'>,
-  ) {
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const number = orderNumber()
-      const id = await this.orders.insert({ ...order, number }, lines)
-      if (id) return { id, number }
-    }
-    throw new Error('No free order number was drawn in five tries')
   }
 
   /**

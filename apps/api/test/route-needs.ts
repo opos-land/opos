@@ -86,6 +86,7 @@ export const tenantRequirements: Record<string, Need> = {
   'program.speakers.put': program('write'),
   'orders.list': tickets('read'),
   'orders.get': tickets('read'),
+  'orders.createManual': tickets('write'),
   'orders.updateHolder': tickets('write'),
   'orders.changeEmail': tickets('write'),
   'orders.swapVariant': tickets('write'),

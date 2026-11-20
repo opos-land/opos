@@ -3,6 +3,7 @@ import {
   cancelOrderSchema,
   changeOrderEmailSchema,
   declineOrderSchema,
+  manualOrderSchema,
   MANUAL_REASONS,
   MAX_ORDER_PAGE,
   orderDetailSchema,
@@ -174,5 +175,40 @@ describe('a cancellation and a decline', () => {
       expect(schema.safeParse(body).success).toBe(false)
     }
     expect(schema.safeParse({ reason: 'Asked', refund: true }).success).toBe(false)
+  })
+})
+
+// A sale made outside the shop, recorded by an org (M1-M4).
+describe('a manual order', () => {
+  const ticketTypeId = '00000000-0000-4000-8000-000000000001'
+  const sale = { reason: 'desk', cart: { ticket: { ticketTypeId } }, ageBand: 'adult' }
+
+  it('takes a reason and what was sold, and requires neither a name, a note nor an answer', () => {
+    expect(manualOrderSchema.parse(sale)).toEqual({
+      reason: 'desk',
+      note: null,
+      cart: { ticket: { ticketTypeId }, addOnIds: [], items: [] },
+      holderName: '',
+      ageBand: 'adult',
+      customFieldAnswers: [],
+    })
+    expect(manualOrderSchema.parse({ ...sale, holderName: ' Ada ', note: ' Cash ' })).toMatchObject(
+      { holderName: 'Ada', note: 'Cash' },
+    )
+    // A note of spaces alone is no note.
+    expect(manualOrderSchema.parse({ ...sale, note: '  ' }).note).toBeNull()
+  })
+
+  it.each([
+    ['no reason', { ...sale, reason: undefined }],
+    ['a reason of its own', { ...sale, reason: 'gift' }],
+    ['a note longer than 500 characters', { ...sale, note: 'n'.repeat(501) }],
+    ['a name longer than 200 characters', { ...sale, holderName: 'n'.repeat(201) }],
+    // A manual order asks for no email, stores no consent and has no total to agree on.
+    ['an email', { ...sale, email: 'buyer@example.test' }],
+    ['a consent', { ...sale, consentIds: [] }],
+    ['a total', { ...sale, expectedTotalMinor: 0 }],
+  ])('refuses %s', (_, body) => {
+    expect(manualOrderSchema.safeParse(body).success).toBe(false)
   })
 })

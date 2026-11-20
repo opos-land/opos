@@ -33,7 +33,26 @@ export class OfferService {
    * total rests on a tier or a sale window that ended a little before: stock, capacity and
    * everything else are read as they stand at `at`.
    */
-  async of(tenantId: string, editionId: string, at = new Date(), ticketsAt = at): Promise<Offer> {
+  of(tenantId: string, editionId: string, at = new Date(), ticketsAt = at): Promise<Offer> {
+    return this.build(tenantId, editionId, at, ticketsAt, false)
+  }
+
+  /**
+   * What an org sells from outside the shop (docs/specs/0006-order-management.md, M2): the offer
+   * as the shop would make it at `at` were it open, so the same catalog at the prices in force,
+   * with merchandise sold alone whatever the shop lets a buyer do.
+   */
+  atDesk(tenantId: string, editionId: string, at = new Date()): Promise<Offer> {
+    return this.build(tenantId, editionId, at, at, true)
+  }
+
+  private async build(
+    tenantId: string,
+    editionId: string,
+    at: Date,
+    ticketsAt: Date,
+    desk: boolean,
+  ): Promise<Offer> {
     const shop = await this.offers.shop(editionId)
     const open = shop?.openedAt != null
     const documents = await this.documents.list(editionId)
@@ -57,7 +76,7 @@ export class OfferService {
           : [{ kind: document.kind, title: document.title, versionId: document.versions[0].id }],
       ),
     } as const
-    if (!shop || !open) {
+    if (!desk && !open) {
       // A closed shop offers nothing: what it sells is not for anyone to read yet.
       return {
         ...footer,
@@ -84,10 +103,12 @@ export class OfferService {
       .map((addOn) => offeredAddOn(addOn, held.addOns.get(addOn.id) ?? 0))
     const items = (await this.items.list(editionId))
       .filter((item) => !item.hidden)
-      .map((item) => offeredItem(item, at, shop.merchPreorderDeadline, held.variants))
+      .map((item) => offeredItem(item, at, shop?.merchPreorderDeadline ?? null, held.variants))
+    // At the desk merchandise is always sold alone, so that what ran out of it is named.
     const merchOnly =
-      shop.merchOnlyEnabled &&
-      items.some((item) => item.variants.some((variant) => variant.maxQuantity > 0))
+      desk ||
+      (shop?.merchOnlyEnabled === true &&
+        items.some((item) => item.variants.some((variant) => variant.maxQuantity > 0)))
     const newest = new Map(documents.map((document) => [document.id, document.versions[0]?.id]))
 
     return {
@@ -95,11 +116,11 @@ export class OfferService {
       open: true,
       onSale: merchOnly || ticketTypes.some((type) => type.state === 'on-sale'),
       ageBands:
-        shop.teenFromAge === null || shop.adultFromAge === null
+        shop?.teenFromAge == null || shop.adultFromAge === null
           ? null
           : { teenFromAge: shop.teenFromAge, adultFromAge: shop.adultFromAge },
-      guardianConsentFormUrl: shop.guardianConsentFormUrl,
-      merchPreorderDeadline: shop.merchPreorderDeadline?.toISOString() ?? null,
+      guardianConsentFormUrl: shop?.guardianConsentFormUrl ?? null,
+      merchPreorderDeadline: shop?.merchPreorderDeadline?.toISOString() ?? null,
       merchOnly,
       consents: (await this.consents.list(editionId))
         .filter((consent) => !consent.hidden)

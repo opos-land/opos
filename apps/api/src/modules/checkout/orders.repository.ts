@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { type AgeBand, type Cart, type PricedLine } from '@opos/contract'
+import { type AgeBand, type Cart, type ManualReason, type PricedLine } from '@opos/contract'
 import {
   accounts,
   addOns,
@@ -19,14 +19,16 @@ import { and, asc, count, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
 import { providerAccountLockKey } from '../shop/provider-account-lock'
+import { orderNumber } from './codes'
 
 /** An order as it is written when it is placed. */
 export interface NewOrder {
   tenantId: string
   editionId: string
   number: string
-  status: 'awaiting-payment' | 'paid'
-  email: string
+  status: 'awaiting-payment' | 'paid' | 'paid-manual'
+  /** Null for a manual order, which nobody placed in the shop. */
+  email: string | null
   holderName: string
   ageBand: AgeBand | null
   totalMinor: number
@@ -36,6 +38,9 @@ export interface NewOrder {
   guardianConsentAcknowledgedAt: Date | null
   providerConsentAcceptedAt: Date | null
   resultTokenHash: string
+  /** Why an org recorded it in the panel, and what it noted of it. */
+  manualReason?: ManualReason
+  note?: string | null
 }
 
 /** What kinds of email an order sends. */
@@ -145,8 +150,13 @@ export class OrdersRepository {
   /**
    * Writes an order with its lines; it holds what its lines take from the moment it is there.
    * Answers its identifier, or undefined where its number is another order's already.
+   * `handedOutAt` marks every line handed over as it is written: a sale at a desk.
    */
-  async insert(order: NewOrder, lines: readonly PricedLine[]): Promise<string | undefined> {
+  async insert(
+    order: NewOrder,
+    lines: readonly PricedLine[],
+    handedOutAt: Date | null = null,
+  ): Promise<string | undefined> {
     const tx = this.context.tx()
     const [row] = await tx
       .insert(orders)
@@ -166,9 +176,24 @@ export class OrdersRepository {
         quantity: line.quantity,
         unitAmountMinor: line.unitAmountMinor,
         amountMinor: line.amountMinor,
+        handedOutAt,
       })),
     )
     return row.id
+  }
+
+  /** Writes the order under a number no other order of the convention has. */
+  async write(
+    order: Omit<NewOrder, 'number'>,
+    lines: readonly PricedLine[],
+    handedOutAt: Date | null = null,
+  ) {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const number = orderNumber()
+      const id = await this.insert({ ...order, number }, lines, handedOutAt)
+      if (id) return { id, number }
+    }
+    throw new Error('No free order number was drawn in five tries')
   }
 
   /** What the ticket holder answered and accepted, written once with the order. */

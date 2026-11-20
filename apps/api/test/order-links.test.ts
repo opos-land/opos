@@ -20,6 +20,7 @@ import {
   setPublished,
   storedRows,
   suspend,
+  jobTime,
 } from './tenants'
 
 // The order link (docs/specs/0009-buyer-self-service.md, K1-K7): an emailed link that opens one
@@ -191,14 +192,14 @@ describe('a fresh order link', () => {
     const email = buyer()
     const placed = await d.paid({ email, emailConfirmation: email })
     // The confirmation is sent first, so the mailbox then holds the fresh link alone as its second.
-    await app.get(OrderEmailsOutbox).run(new Date(), { tenantId: d.t.id })
+    await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })
     const expired = await addOrderLinkWithToken(d.t.id, d.edition, placed.orderId, 'expired')
 
     const res = await renew(expired).expect(204)
 
     expect(res.body).toEqual({})
     expect(await linkEmails(d, placed.orderId)).toEqual([['order-link', email]])
-    expect(await app.get(OrderEmailsOutbox).run(new Date(), { tenantId: d.t.id })).toMatchObject({
+    expect(await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })).toMatchObject({
       sent: 1,
     })
     const mails = await waitForMail(email, 2)
@@ -219,14 +220,14 @@ describe('a fresh order link', () => {
     const d = await orderDesk(app)
     const email = buyer()
     const placed = await d.paid({ email, emailConfirmation: email })
-    await app.get(OrderEmailsOutbox).run(new Date(), { tenantId: d.t.id })
+    await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })
     await setColumn('editions', d.edition, 'starts_at', '2020-05-01T08:00:00Z')
     await setColumn('editions', d.edition, 'ends_at', '2020-05-03T18:00:00Z')
     const expired = await addOrderLinkWithToken(d.t.id, d.edition, placed.orderId, 'expired')
     const before = Date.now()
 
     await renew(expired).expect(204)
-    await app.get(OrderEmailsOutbox).run(new Date(), { tenantId: d.t.id })
+    await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })
 
     // The link made last is the fresh one.
     const time = (value: unknown) => new Date(String(value)).getTime()

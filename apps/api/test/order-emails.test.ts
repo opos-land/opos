@@ -20,6 +20,7 @@ import {
   closeTenantDb,
   connectFake,
   deleteCreatedTenants,
+  jobTime,
   makeShopReady,
   offerWith,
   queueOrderEmail,
@@ -61,7 +62,7 @@ const MINUTE = 60_000
 const DAY = 24 * 60 * MINUTE
 const fake = () => app.get<Map<string, FakeProvider>>(PROVIDER_MODULES).get('fake')!
 /** The outbox for one tenant alone: other tests queue emails of their own beside this one. */
-const send = (s: { t: { id: string } }, now = new Date()) =>
+const send = (s: { t: { id: string } }, now = jobTime()) =>
   app.get(OrderEmailsOutbox).run(now, { tenantId: s.t.id })
 /** An address of a buyer no other test writes to, cleaned from Mailpit afterwards. */
 const buyer = () => {

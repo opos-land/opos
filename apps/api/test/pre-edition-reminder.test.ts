@@ -19,6 +19,7 @@ import {
   setColumn,
   storedRows,
   suspend,
+  jobTime,
 } from './tenants'
 
 // The pre-edition reminder (docs/specs/0011-pre-edition-reminder.md): a few days before the
@@ -253,9 +254,9 @@ describe('what a reminder says', () => {
       ageBand,
       guardianConsentAcknowledged: ageBand === 'teen',
     })
-    await app.get(OrderEmailsOutbox).run(new Date(), { tenantId: d.t.id })
+    await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })
     expect(await run(d, DUE)).toMatchObject({ queued: 1 })
-    expect(await app.get(OrderEmailsOutbox).run(new Date(), { tenantId: d.t.id })).toMatchObject({
+    expect(await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })).toMatchObject({
       sent: 1,
     })
     // The confirmation came first; the reminder is the one that says the edition starts soon.

@@ -29,6 +29,7 @@ import {
   setPublished,
   storedRows,
   tenantWithHead,
+  jobTime,
 } from './tenants'
 
 // Przelewy24 behind the port of a payment provider (docs/specs/0005-przelewy24.md), against a
@@ -475,7 +476,7 @@ describe('a payment Przelewy24 reports', () => {
       { id: second, status: 'refused', money_with: 'buyer' },
     ])
     await setColumn('tenants', s.t.id, 'default_locale', 'en')
-    await app.get(OrderEmailsOutbox).run(new Date(), { tenantId: s.t.id })
+    await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: s.t.id })
     const mails = await waitForMail(to, 2)
     const notNeeded = mails.find((mail) => mail.Subject.includes('does not need'))!
     expect(notNeeded.Text).toContain('stays at your disposal at Przelewy24')

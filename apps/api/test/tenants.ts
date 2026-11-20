@@ -770,6 +770,14 @@ export async function addPaymentAttempt(
   return row!.id
 }
 
+/**
+ * The moment a test runs a job at: now, a few milliseconds on. The database keeps a moment to
+ * the microsecond and a `Date` to the millisecond, so a row made due "now" in this very
+ * millisecond is later than a `Date` taken right after it, and a job run at that `Date` would
+ * pass it by as not due yet.
+ */
+export const jobTime = () => new Date(Date.now() + 5)
+
 /** An email of an order as its row alone, due at once: what a route queues for the outbox. */
 export const queueOrderEmail = (
   tenantId: string,

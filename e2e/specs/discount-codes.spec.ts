@@ -66,9 +66,10 @@ test('an org makes a code, and a buyer who enters it sees the discount’s line 
   await page.getByLabel('Usage limit').fill('10')
   await page.getByRole('button', { name: 'Add the code' }).click()
   await expect(notification(page, 'success', 'The code is added.')).toBeVisible()
-  const row = page.getByRole('listitem', { name: 'EARLY-25' })
-  await expect(row.getByText('Uses: 0 of 10')).toBeVisible()
-  await expect(row.getByText('Applies to: Standard')).toBeVisible()
+  // The codes are a table: the new one is a row with its uses and what it applies to.
+  const row = page.getByRole('row').filter({ hasText: 'EARLY-25' })
+  await expect(row.getByRole('cell', { name: '0 of 10' })).toBeVisible()
+  await expect(row.getByRole('cell', { name: 'Standard' })).toBeVisible()
 
   const email = accounts.freshEmail('buyer')
   await toSummary(page, s, email)

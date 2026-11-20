@@ -61,6 +61,16 @@ msgstr "{needsReview, plural, one {# order needs review: its payment arrived and
 msgid "{title}, version {version}"
 msgstr "{title}, version {version}"
 
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgctxt "the uses of a discount code"
+msgid "{uses} of {limit}"
+msgstr "{uses} of {limit}"
+
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgctxt "the uses of a discount code"
+msgid "{uses}, no limit"
+msgstr "{uses}, no limit"
+
 #: src/features/discounts/components/discount-code-form.tsx
 msgid "100 makes what the code applies to free: an order with nothing left to pay is paid at once."
 msgstr "100 makes what the code applies to free: an order with nothing left to pay is paid at once."
@@ -216,6 +226,7 @@ msgstr "Account"
 #: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 #: src/features/orders/components/order-lines.tsx
 #: src/features/scanner/pages/scanners-page.tsx
 #: src/features/team/pages/edition-access-page.tsx
@@ -238,7 +249,7 @@ msgstr "Activation and publication"
 msgid "Active"
 msgstr "Active"
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 msgctxt "a discount code"
 msgid "Active"
 msgstr "Active"
@@ -388,6 +399,7 @@ msgstr "Alert: the order needs review"
 msgid "All add-ons"
 msgstr "All add-ons"
 
+#: src/features/discounts/pages/discount-code-page.tsx
 #: src/features/discounts/pages/new-discount-code-page.tsx
 msgid "All discount codes"
 msgstr "All discount codes"
@@ -481,9 +493,10 @@ msgstr "Anything"
 msgid "API key"
 msgstr "API key"
 
-#: src/features/discounts/components/discount-code-row.tsx
-msgid "Applies to: {applies}"
-msgstr "Applies to: {applies}"
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgctxt "a discount code"
+msgid "Applies to"
+msgstr "Applies to"
 
 #: src/features/catalog/components/sensitive-data-notice.tsx
 msgid "Ask for nothing sensitive"
@@ -546,7 +559,7 @@ msgstr "breadcrumb"
 msgid "Brought on paper to the convention"
 msgstr "Brought on paper to the convention"
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-code-page.tsx
 msgid "Buyers can no longer use it. A code an order used cannot be deleted: end it instead, and it stays on its orders."
 msgstr "Buyers can no longer use it. A code an order used cannot be deleted: end it instead, and it stays on its orders."
 
@@ -664,6 +677,11 @@ msgstr "Close the shop"
 
 #: src/features/auth/pages/mfa-page.tsx
 #: src/features/discounts/components/discount-code-form.tsx
+msgid "Code"
+msgstr "Code"
+
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgctxt "a discount code"
 msgid "Code"
 msgstr "Code"
 
@@ -842,11 +860,11 @@ msgstr "Delete the add-on"
 msgid "Delete the add-on “{name}”?"
 msgstr "Delete the add-on “{name}”?"
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-code-page.tsx
 msgid "Delete the code"
 msgstr "Delete the code"
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-code-page.tsx
 msgid "Delete the code “{name}”?"
 msgstr "Delete the code “{name}”?"
 
@@ -907,6 +925,10 @@ msgstr "Delete the ticket type “{name}”?"
 msgid "Delete this consent?"
 msgstr "Delete this consent?"
 
+#: src/features/discounts/pages/discount-code-page.tsx
+msgid "Deleting a code cannot be undone. To stop it for a while, end it in the list of discount codes instead."
+msgstr "Deleting a code cannot be undone. To stop it for a while, end it in the list of discount codes instead."
+
 #: src/features/program/pages/program-item-page.tsx
 msgid "Deleting a programme item cannot be undone."
 msgstr "Deleting a programme item cannot be undone."
@@ -953,10 +975,12 @@ msgstr "Discount"
 msgid "Discount code {code}"
 msgstr "Discount code {code}"
 
+#: src/features/discounts/pages/discount-code-page.tsx
 #: src/features/discounts/pages/new-discount-code-page.tsx
 msgid "Discount code data"
 msgstr "Discount code data"
 
+#: src/features/discounts/pages/discount-code-page.tsx
 #: src/features/discounts/pages/discount-codes-page.tsx
 #: src/features/editions/components/edition-layout.tsx
 msgid "Discount codes"
@@ -1010,7 +1034,6 @@ msgid "Each tier is a gross price from one moment until another. At a moment no 
 msgstr "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
 
 #: src/features/catalog/components/custom-field-row.tsx
-#: src/features/discounts/components/discount-code-row.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Edit"
 msgstr "Edit"
@@ -1074,7 +1097,7 @@ msgstr "Enable the scanner"
 msgid "Enabled by"
 msgstr "Enabled by"
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 msgid "End the code"
 msgstr "End the code"
 
@@ -1082,7 +1105,7 @@ msgstr "End the code"
 msgid "Ended"
 msgstr "Ended"
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 msgctxt "a discount code"
 msgid "Ended"
 msgstr "Ended"
@@ -1281,7 +1304,7 @@ msgstr "Exists"
 msgid "expired"
 msgstr "expired"
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 msgctxt "a discount code"
 msgid "Expired"
 msgstr "Expired"
@@ -1609,7 +1632,7 @@ msgstr "Last used"
 msgid "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
 msgstr "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 msgid "Let it run again"
 msgstr "Let it run again"
 
@@ -1989,7 +2012,7 @@ msgstr "Not sent: the order moved to another address before it went out"
 msgid "Not valid"
 msgstr "Not valid"
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 msgctxt "a discount code"
 msgid "Not valid yet"
 msgstr "Not valid yet"
@@ -2694,7 +2717,7 @@ msgstr "Save the axes"
 msgid "Save the axes and remove variants?"
 msgstr "Save the axes and remove variants?"
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-code-page.tsx
 msgid "Save the code"
 msgstr "Save the code"
 
@@ -2960,6 +2983,7 @@ msgstr "Started"
 msgid "Starts"
 msgstr "Starts"
 
+#: src/features/discounts/pages/discount-codes-page.tsx
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "State"
 msgstr "State"
@@ -3083,15 +3107,15 @@ msgstr "The camera’s view"
 msgid "The changes are saved."
 msgstr "The changes are saved."
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 msgid "The code “{name}” can be used again."
 msgstr "The code “{name}” can be used again."
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-code-page.tsx
 msgid "The code “{name}” is deleted."
 msgstr "The code “{name}” is deleted."
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 msgid "The code “{name}” is ended."
 msgstr "The code “{name}” is ended."
 
@@ -3099,7 +3123,7 @@ msgstr "The code “{name}” is ended."
 msgid "The code is added."
 msgstr "The code is added."
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-code-page.tsx
 msgid "The code is saved."
 msgstr "The code is saved."
 
@@ -4022,18 +4046,20 @@ msgstr "Use the code of the app"
 msgid "Use up to 5000 characters."
 msgstr "Use up to 5000 characters."
 
-#: src/features/discounts/components/discount-code-row.tsx
+#: src/features/discounts/pages/discount-codes-page.tsx
 msgctxt "a discount code"
 msgid "Used up"
 msgstr "Used up"
 
-#: src/features/discounts/components/discount-code-row.tsx
-msgid "Uses: {uses} of {limit}"
-msgstr "Uses: {uses} of {limit}"
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgctxt "a discount code"
+msgid "Uses"
+msgstr "Uses"
 
-#: src/features/discounts/components/discount-code-row.tsx
-msgid "Uses: {uses}, no limit"
-msgstr "Uses: {uses}, no limit"
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgctxt "a discount code"
+msgid "Valid"
+msgstr "Valid"
 
 #: src/features/discounts/components/discount-code-form.tsx
 msgid "Valid from"
@@ -4043,9 +4069,10 @@ msgstr "Valid from"
 msgid "Valid until"
 msgstr "Valid until"
 
-#: src/features/discounts/components/discount-code-row.tsx
-msgid "Valid: {window}"
-msgstr "Valid: {window}"
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgctxt "a discount code"
+msgid "Value"
+msgstr "Value"
 
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Value {order} of axis {number}"

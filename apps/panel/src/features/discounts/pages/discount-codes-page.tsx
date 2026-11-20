@@ -1,35 +1,51 @@
+import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { useQuery } from '@tanstack/react-query'
+import { type DiscountCode } from '@opos/contract'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
-import { useId } from 'react'
 import { Link, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
+  Badge,
+  Button,
   buttonVariants,
   ErrorMessage,
+  LinkRow,
   LoadingView,
   NoPermissionView,
   PageHeader,
+  RowLink,
   Section,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '../../../shared/ui'
-import { addOnsOptions, merchandiseOptions, ticketTypesOptions } from '../../catalog'
+import { addOnsOptions, merchandiseOptions, ticketTypesOptions, useMoney } from '../../catalog'
 import { useEditionBySlug } from '../../editions'
-import { atLeast, useCurrentTenant } from '../../tenants'
-import { discountCodesOptions } from '../api/discount-codes'
+import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
+import {
+  discountCodesKey,
+  discountCodesOptions,
+  updateDiscountCodeOptions,
+} from '../api/discount-codes'
 import { type CodeCatalog } from '../components/discount-code-form'
-import { DiscountCodeRow } from '../components/discount-code-row'
+import { shownCode, type Standing, standingOf } from '../model/discount-code-form'
 
 /**
  * The discount codes of an edition (`/editions/:editionSlug/discount-codes`,
- * docs/specs/0008-discount-codes.md): the codes by their text, each with the uses orders hold
- * against its limit, and for a member who may add, the link to the page of a new one. Reading
- * needs tickets>=read in the edition, changing tickets=write.
+ * docs/specs/0008-discount-codes.md, D4-D6): the codes as a table by their text, each with its
+ * value, the uses orders hold against its limit, its window, what it applies to and whether it can
+ * be used now. A member who may change them ends a code here or lets it run again, opens a code's
+ * own page from its row, and is linked to the page of a new one. Reading needs tickets>=read in
+ * the edition, changing tickets=write.
  */
 export function DiscountCodesPage() {
   const { t } = useLingui()
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
-  const listId = useId()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
   usePageTitle(t`Discount codes`, edition?.name ?? tenant.name)
   const level = edition ? access.edition(edition.id).tickets : 'none'
@@ -87,24 +103,159 @@ export function DiscountCodesPage() {
             <Trans>The edition has no discount codes yet.</Trans>
           </p>
         ) : (
-          <>
-            <h3 id={listId} className="sr-only">
+          <Table>
+            <caption className="sr-only">
               <Trans>Discount codes by their text</Trans>
-            </h3>
-            <ul aria-labelledby={listId} className="flex flex-col gap-3">
+            </caption>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col">
+                  <Trans context="a discount code">Code</Trans>
+                </TableHead>
+                <TableHead scope="col">
+                  <Trans context="a discount code">Value</Trans>
+                </TableHead>
+                <TableHead scope="col">
+                  <Trans context="a discount code">Uses</Trans>
+                </TableHead>
+                <TableHead scope="col">
+                  <Trans context="a discount code">Valid</Trans>
+                </TableHead>
+                <TableHead scope="col">
+                  <Trans context="a discount code">Applies to</Trans>
+                </TableHead>
+                <TableHead scope="col">
+                  <Trans>State</Trans>
+                </TableHead>
+                {canWrite && (
+                  <TableHead scope="col">
+                    <Trans>Actions</Trans>
+                  </TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {codes.data?.map((code) => (
                 <DiscountCodeRow
                   key={code.id}
                   editionId={edition.id}
                   code={code}
                   catalog={catalog}
-                  canWrite={canWrite}
+                  // The page of a code is where it is changed: a reader has none to open.
+                  to={
+                    canWrite
+                      ? `/${tenant.slug}/editions/${edition.slug}/discount-codes/${code.id}`
+                      : undefined
+                  }
                 />
               ))}
-            </ul>
-          </>
+            </TableBody>
+          </Table>
         )}
       </Section>
     </>
+  )
+}
+
+/**
+ * One discount code in the table (D4-D6). Ending a code is undone by the same button and asks
+ * nothing; its fields and its deletion are on its own page.
+ */
+function DiscountCodeRow({
+  editionId,
+  code,
+  catalog,
+  to,
+}: {
+  editionId: string
+  code: DiscountCode
+  catalog: CodeCatalog
+  to: string | undefined
+}) {
+  const { t, i18n } = useLingui()
+  const { api } = useCurrentTenant()
+  const money = useMoney()
+  const time = useTenantTime()
+  const queryClient = useQueryClient()
+  const params = { editionId, codeId: code.id }
+  const name = shownCode(code.code)
+  const uses = i18n.number(code.uses)
+  const limit = i18n.number(code.usageLimit ?? 0)
+  const standings: Record<Standing, string> = {
+    active: t({ message: 'Active', context: 'a discount code' }),
+    ended: t({ message: 'Ended', context: 'a discount code' }),
+    expired: t({ message: 'Expired', context: 'a discount code' }),
+    'not-yet': t({ message: 'Not valid yet', context: 'a discount code' }),
+    'used-up': t({ message: 'Used up', context: 'a discount code' }),
+  }
+  const standing = standingOf(code, new Date())
+  const applies = [
+    ...catalog.ticketTypes.filter((type) => code.ticketTypeIds.includes(type.id)),
+    ...catalog.addOns.filter((addOn) => code.addOnIds.includes(addOn.id)),
+    ...catalog.items.filter((item) => code.itemIds.includes(item.id)),
+  ]
+    .map((sold) => sold.name)
+    .join(', ')
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: discountCodesKey(api) })
+  const end = useMutation({
+    ...updateDiscountCodeOptions(api),
+    meta: { success: msg`The code “${name}” is ended.` },
+    onSuccess: refresh,
+  })
+  const resume = useMutation({
+    ...updateDiscountCodeOptions(api),
+    meta: { success: msg`The code “${name}” can be used again.` },
+    onSuccess: refresh,
+  })
+
+  return (
+    <LinkRow to={to}>
+      <TableCell className="font-mono">
+        {to ? <RowLink to={to}>{name}</RowLink> : <span>{name}</span>}
+      </TableCell>
+      <TableCell>
+        {code.kind === 'percent'
+          ? i18n.number((code.percent ?? 0) / 100, { style: 'percent' })
+          : money.format(code.amountMinor ?? 0)}
+      </TableCell>
+      <TableCell>
+        {code.usageLimit === null ? (
+          <Trans context="the uses of a discount code">{uses}, no limit</Trans>
+        ) : (
+          <Trans context="the uses of a discount code">
+            {uses} of {limit}
+          </Trans>
+        )}
+      </TableCell>
+      <TableCell>{time.range(code.validFrom, code.validUntil)}</TableCell>
+      <TableCell>{applies}</TableCell>
+      <TableCell>
+        <Badge variant={standing === 'active' ? 'secondary' : 'outline'}>
+          {standings[standing]}
+        </Badge>
+      </TableCell>
+      {to && (
+        <TableCell>
+          {code.ended ? (
+            <Button
+              variant="outline"
+              disabled={resume.isPending}
+              onClick={() => resume.mutate({ params, body: { ended: false } })}
+            >
+              <Trans>Let it run again</Trans>
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              disabled={end.isPending}
+              onClick={() => end.mutate({ params, body: { ended: true } })}
+            >
+              <Trans>End the code</Trans>
+            </Button>
+          )}
+        </TableCell>
+      )}
+    </LinkRow>
   )
 }

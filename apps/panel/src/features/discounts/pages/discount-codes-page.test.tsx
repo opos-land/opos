@@ -111,7 +111,8 @@ const view = () =>
     </QueryClientProvider>,
   )
 
-const row = (name: string) => screen.getByRole('listitem', { name })
+/** The row of the table that holds the code of that text. */
+const row = (name: string) => screen.getByText(name).closest('tr')!
 const empty = () => screen.findByText('The edition has no discount codes yet.')
 
 beforeAll(() => {
@@ -158,16 +159,47 @@ describe('the discount codes page', () => {
 
     view()
 
-    const early = await screen.findByRole('listitem', { name: 'EARLY10' })
-    expect(within(early).getByText('10%')).toBeDefined()
-    expect(within(early).getByText('Uses: 3 of 10')).toBeDefined()
-    expect(within(early).getByText('Applies to: Standard')).toBeDefined()
-    expect(within(early).getByText('Valid: 2020-01-01 to 2099-01-01')).toBeDefined()
-    expect(within(early).getByText('Active')).toBeDefined()
-    const merch = row('MERCH20')
-    expect(within(merch).getByText('20.00 PLN')).toBeDefined()
-    expect(within(merch).getByText('Uses: 1, no limit')).toBeDefined()
-    expect(within(merch).getByText('Applies to: Sleeping room, T-shirt')).toBeDefined()
+    await screen.findByRole('table', { name: 'Discount codes by their text' })
+    expect(screen.getAllByRole('columnheader').map((heading) => heading.textContent)).toEqual([
+      'Code',
+      'Value',
+      'Uses',
+      'Valid',
+      'Applies to',
+      'State',
+      'Actions',
+    ])
+    const cells = (name: string) =>
+      [...row(name).querySelectorAll('td')].slice(0, 6).map((cell) => cell.textContent)
+    expect(cells('EARLY10')).toEqual([
+      'EARLY10',
+      '10%',
+      '3 of 10',
+      '2020-01-01 to 2099-01-01',
+      'Standard',
+      'Active',
+    ])
+    expect(cells('MERCH20')).toEqual([
+      'MERCH20',
+      '20.00 PLN',
+      '1, no limit',
+      '2020-01-01 to 2099-01-01',
+      'Sleeping room, T-shirt',
+      'Active',
+    ])
+  })
+
+  it('opens the page of a code from its row, for a member who may change it', async () => {
+    readCodes.mockResolvedValue([code('early10')])
+    view()
+
+    const link = await screen.findByRole('link', { name: 'EARLY10' })
+    expect(link.getAttribute('href')).toBe(
+      '/convention-a/editions/2026/discount-codes/code-early10',
+    )
+    // The list itself holds no form and deletes nothing.
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Delete the code' })).toBeNull()
   })
 
   it('says why a code cannot be used now', async () => {
@@ -180,8 +212,8 @@ describe('the discount codes page', () => {
 
     view()
 
-    const ended = await screen.findByRole('listitem', { name: 'ENDED-ONE' })
-    expect(within(ended).getByText('Ended')).toBeDefined()
+    await screen.findByText('ENDED-ONE')
+    expect(within(row('ENDED-ONE')).getByText('Ended')).toBeDefined()
     expect(within(row('EXPIRED-ONE')).getByText('Expired')).toBeDefined()
     expect(within(row('LATER-ONE')).getByText('Not valid yet')).toBeDefined()
     expect(within(row('USED-ONE')).getByText('Used up')).toBeDefined()
@@ -193,11 +225,11 @@ describe('the discount codes page', () => {
 
     view()
 
-    await screen.findByRole('listitem', { name: 'EARLY10' })
-    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'End the code' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Delete the code' })).toBeNull()
-    expect(screen.queryByRole('link', { name: 'New discount code' })).toBeNull()
+    await screen.findByText('EARLY10')
+    expect(screen.queryByRole('button')).toBeNull()
+    // No page to open either: the page of a code is where it is changed.
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.queryByRole('columnheader', { name: 'Actions' })).toBeNull()
   })
 
   it('links a member who may add to the page of a new code, and holds no form of one', async () => {
@@ -213,7 +245,7 @@ describe('the discount codes page', () => {
   it('ends a code without asking, and lets an ended one run again', async () => {
     readCodes.mockResolvedValue([code('early10'), code('guest100', { ended: true })])
     view()
-    await screen.findByRole('listitem', { name: 'EARLY10' })
+    await screen.findByText('EARLY10')
 
     fireEvent.click(within(row('EARLY10')).getByRole('button', { name: 'End the code' }))
     fireEvent.click(within(row('GUEST100')).getByRole('button', { name: 'Let it run again' }))
@@ -223,45 +255,5 @@ describe('the discount codes page', () => {
       { params: { editionId: 'edition-2026', codeId: 'code-early10' }, body: { ended: true } },
       { params: { editionId: 'edition-2026', codeId: 'code-guest100' }, body: { ended: false } },
     ])
-  })
-
-  it('edits a code in place, the form filled with what it holds', async () => {
-    readCodes.mockResolvedValue([code('early10', { usageLimit: 5, uses: 2 })])
-    view()
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
-
-    const form = within(row('EARLY10'))
-    await form.findByRole('checkbox', { name: 'Standard' })
-    expect(form.getByLabelText<HTMLInputElement>('Code').value).toBe('EARLY10')
-    expect(form.getByLabelText<HTMLInputElement>('Percent off').value).toBe('10')
-    expect(form.getByLabelText<HTMLInputElement>('Usage limit').value).toBe('5')
-    expect(form.getByRole('checkbox', { name: 'Standard' }).getAttribute('aria-checked')).toBe(
-      'true',
-    )
-    fireEvent.change(form.getByLabelText('Usage limit'), { target: { value: '20' } })
-    fireEvent.click(form.getByRole('button', { name: 'Save the code' }))
-
-    await waitFor(() => expect(updateCode).toHaveBeenCalledTimes(1))
-    expect(updateCode.mock.calls[0]![0]).toMatchObject({
-      params: { editionId: 'edition-2026', codeId: 'code-early10' },
-      body: { code: 'EARLY10', kind: 'percent', percent: 10, usageLimit: 20 },
-    })
-  })
-
-  it('deletes a code only once the modal that names it is confirmed', async () => {
-    readCodes.mockResolvedValue([code('early10')])
-    view()
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete the code' }))
-
-    const dialog = await screen.findByRole('alertdialog')
-    expect(within(dialog).getByText('Delete the code “EARLY10”?')).toBeDefined()
-    expect(removeCode).not.toHaveBeenCalled()
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete the code' }))
-
-    await waitFor(() => expect(removeCode).toHaveBeenCalledTimes(1))
-    expect(removeCode.mock.calls[0]![0]).toEqual({
-      params: { editionId: 'edition-2026', codeId: 'code-early10' },
-    })
   })
 })

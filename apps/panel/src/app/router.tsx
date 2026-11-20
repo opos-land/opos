@@ -30,7 +30,7 @@ import {
   NewEditionPage,
 } from '../features/editions'
 import { ManualOrderPage, OrderPage, OrdersPage, ProductionNumbersPage } from '../features/orders'
-import { DiscountCodesPage, NewDiscountCodePage } from '../features/discounts'
+import { DiscountCodePage, DiscountCodesPage, NewDiscountCodePage } from '../features/discounts'
 import { SalesPage } from '../features/sales'
 import { NewScannerPage, ScannerPage, ScannersPage } from '../features/scanner'
 import { NewProgramItemPage, ProgramItemPage, ProgramPage } from '../features/program'
@@ -172,6 +172,7 @@ export const router = createBrowserRouter([
                   { path: 'merchandise/:itemId', element: <MerchandiseItemPage /> },
                   { path: 'discount-codes', element: <DiscountCodesPage /> },
                   { path: 'discount-codes/new', element: <NewDiscountCodePage /> },
+                  { path: 'discount-codes/:codeId', element: <DiscountCodePage /> },
                   { path: 'ticket-holders', element: <TicketHoldersPage /> },
                   { path: 'ticket-holders/custom-fields/new', element: <NewCustomFieldPage /> },
                   { path: 'access', element: <EditionAccessPage /> },

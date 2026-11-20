@@ -578,9 +578,10 @@ steps of [adding a feature](#adding-a-feature).
   tiers apart, and the API refuses them first by a code of its own
   ([0046](adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md)).
   A statement by identifier names the parent it acts within, whoever calls it. A picture or a
-  size chart of a merchandise item is a file for everyone once its item is not hidden and its
-  edition is published, served under the convention's address by the identifier its row holds;
-  before that the edition's orgs read it through a route of their own.
+  size chart of a merchandise item, and the picture of an add-on, is a file for everyone once
+  what it shows is not hidden and its edition is published, served under the convention's address
+  by the identifier its row holds; before that the edition's orgs read it through a route of
+  their own.
 - **Checkout and orders.** A buyer needs no membership: a visitor's routes open the tenant from
   its address and answer an unpublished edition and a suspended tenant as an unknown address; an
   account's are tenant routes behind `@InTenant`, which answer an unpublished edition the same
@@ -679,7 +680,10 @@ steps of [adding a feature](#adding-a-feature).
   token alone ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). A guard
   names the scanner before anything of a request is read, and the device is judged at every
   request in its tenant's transaction: revoked, ended, or enabled by an org whose access has
-  ended, it opens nothing. A scan reads the orders of the scanner's own edition that the code
+  ended, it opens nothing. It is judged there by the secret the phone sent, the token or the
+  pairing code, which the scanner must still hold: a new pairing code replaces both, and the hash
+  that found the scanner across tenants was read a moment before. An org gives a new pairing
+  code only to a scanner that ends no later than its own access. A scan reads the orders of the scanner's own edition that the code
   carries, and no email address; a code of another edition is told as such, and nothing of its
   order is read. A hand-out is marked only under the code the scanner read, and names the
   scanner. The list of an edition's scanners tells who enabled each by an address only to a

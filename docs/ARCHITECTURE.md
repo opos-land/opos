@@ -368,6 +368,13 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   authentication off, asks first in a modal that names what goes, says what goes with it and that
   it cannot be undone; only the modal's own button acts. A change the same screen reverses asks
   nothing ([0023](adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
+- A new entity, anything a list holds with an identity of its own, is added on a page of its own,
+  at `new` under the address of its list: the list holds the link to that page and never the form.
+  The page links back, and after adding leads to the entity's own page or, where it has none, to
+  the list. A part saved with its entity, such as a price tier, a variant or a speaker, stays in
+  that entity's form; `src/app/pages.test.ts` of the panel and of the admin application refuses a
+  mutation that creates an entity outside a page routed at `new`
+  ([0066](adr/0066-add-a-new-entity-on-a-page-of-its-own.md)).
 - A tracker, anything the portal does not strictly need (analytics, a pixel, an embed, a script,
   stylesheet or font from another origin, its cookies), is an entry of the consent feature's
   `TRACKERS`, started by that feature alone after the visitor allowed its category. Only it creates

@@ -222,6 +222,15 @@ and that it cannot be undone: `IrreversibleAction` of `shared/ui`, or its `alert
 the same way when the action needs more than one press. A change the same screen reverses asks
 nothing ([0023](docs/adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
 
+**A new entity is always added on a page of its own**, at `new` under the address of its list: a
+programme item, a ticket type, a discount code, a document, a scanner and anything else a list
+holds. The list shows a link to that page to a member who may add, never the form of a new entity;
+the page links back to the list, and after adding leads to the entity's own page or, where it has
+none, to the list. A part saved with its entity (a price tier, a variant, a speaker) stays in that
+entity's form. `src/app/pages.test.ts` of the panel and of the admin application refuses a
+`create…Options` mutation in a file that is not a page routed at `new`
+([0066](docs/adr/0066-add-a-new-entity-on-a-page-of-its-own.md)).
+
 **A tracker runs only through the consent banner.** Anything the portal does not strictly need for
 what the visitor asked is a tracker: analytics, an advertising pixel, a screen recorder, a
 third-party embed, a script, stylesheet or font from another origin, and the cookies or browser

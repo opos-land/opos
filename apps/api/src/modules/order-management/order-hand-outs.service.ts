@@ -45,7 +45,11 @@ export class OrderHandOuts {
       if (!line) throw notFound('line')
       if (line.handedOutAt) throw alreadyHandedOut(line.id, line.handedOutAt)
     }
-    await this.managed.handOut(order.id, lineIds, at)
+    // A scanner may mark a line between the read above and this write: the update matches
+    // only a line not yet handed out, and a line it missed refuses the whole mark.
+    const marked = await this.managed.handOut(order.id, lineIds, at)
+    const missed = lineIds.find((lineId) => !marked.includes(lineId))
+    if (missed) throw alreadyHandedOut(missed, at)
   }
 
   /** Takes a line's mark back, whoever made it; a line with no mark stays as it is. */
@@ -53,6 +57,6 @@ export class OrderHandOuts {
     const order = await this.managed.locked(editionId, orderId)
     const line = (await this.managed.lines(order.id)).find((held) => held.id === lineId)
     if (!line) throw notFound('line')
-    await this.managed.takeBack(line.id)
+    await this.managed.takeBack(order.id, line.id)
   }
 }

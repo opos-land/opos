@@ -81,6 +81,20 @@ describe('errorMessage', () => {
     ['order.not-cancelable', 'Anulować można tylko opłacone zamówienie.'],
     ['order.not-paid', 'To można zrobić tylko z opłaconym zamówieniem.'],
     ['scan.already-handed-out', 'To zostało już wydane.'],
+    ['scan.not-valid', 'Ten kod QR jest nieważny.'],
+    ['scanner.name-taken', 'Inny skaner tej edycji ma już tę nazwę. Wybierz inną.'],
+    [
+      'scanner.outlives-org',
+      'Skaner nie może działać dłużej niż twój dostęp do konwentu. Ustaw wcześniejszy koniec.',
+    ],
+    [
+      'scanner.code-refused',
+      'Ten kod parowania nie działa: został już użyty albo wygasł. Poproś organizatora o nowy.',
+    ],
+    [
+      'scanner.revoked',
+      'Ten skaner już nie działa: jego dostęp cofnięto albo wygasł. Sparuj telefon ponownie.',
+    ],
     [
       'production.before-deadline',
       'Liczby do produkcji będą gotowe po upływie terminu przedsprzedaży.',
@@ -110,6 +124,7 @@ describe('errorMessage', () => {
     ['document.too-many', 'Ta edycja osiągnęła limit dokumentów: 30.'],
     ['document.too-many-versions', 'Ten dokument osiągnął limit wersji: 30.'],
     ['consent.too-many', 'Ta edycja osiągnęła limit zgód: 30.'],
+    ['scanner.limit-reached', 'Ta edycja osiągnęła limit włączonych skanerów: 30.'],
     ['catalog.limit-reached', 'Ta lista osiągnęła limit pozycji: 30.'],
   ] as const)('says %s in Polish, with the limit', async (code, text) => {
     const i18n = setupI18n()

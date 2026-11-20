@@ -6,10 +6,12 @@ import { MerchandiseRepository } from '../src/modules/catalog/merchandise.reposi
 import { OfferRepository } from '../src/modules/checkout/offer.repository'
 import { OrdersRepository } from '../src/modules/checkout/orders.repository'
 import { PaymentsRepository } from '../src/modules/checkout/payments.repository'
+import { ScannersRepository } from '../src/modules/scanner/scanners.repository'
+import { ScansRepository } from '../src/modules/scanner/scans.repository'
 import { DocumentsRepository } from '../src/modules/shop/documents.repository'
 import { InvitationsRepository } from '../src/modules/tenants/invitations.repository'
 import { deleteCreatedAccounts } from './auth'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import {
   addDocument,
   addEdition,
@@ -18,6 +20,9 @@ import {
   addMerchandiseItem,
   addOrder,
   addOrg,
+  addQrCode,
+  addScanner,
+  aQrCode,
   closeTenantDb,
   deleteCreatedTenants,
   member,
@@ -115,6 +120,46 @@ describe('a file of merchandise that is for everyone', () => {
       expect(await find(a.id, fileId)).toBeUndefined()
       expect(await find(b.id, fileId)).toEqual({ kind, fileId, editionId: editionOfB })
     }
+  })
+})
+
+// A scanner's requests name no tenant: its token does, by a lookup across tenants. What the
+// device may then do, and what it reads, is found in that tenant alone
+// (docs/specs/0007-scanner.md, Tenant isolation and permissions).
+describe('what a scanner opens', () => {
+  it("finds no scanner of another tenant in this tenant's transaction", async () => {
+    const scanner = await addScanner(b.id, editionOfB)
+    const find = (tenantId: string) =>
+      withoutRls(a.id, (tx) =>
+        new ScannersRepository(contextOf(tx)).standing(tenantId, scanner.id, new Date()),
+      )
+
+    expect(await find(a.id)).toBeUndefined()
+    expect(await find(b.id)).toMatchObject({ id: scanner.id, tenantId: b.id })
+  })
+
+  it("reads no QR code, no order and no line of another tenant in this tenant's transaction", async () => {
+    const order = await addOrder(b.id, editionOfB, { status: 'paid' })
+    const code = aQrCode()
+    const codeId = await addQrCode(b.id, editionOfB, order.id, code)
+    const scanned = { ...order, status: 'paid' as const, holderName: 'Ada', ageBand: null }
+    const hash = createHash('sha256').update(code).digest('hex')
+    const read = (tenantId: string) =>
+      withoutRls(a.id, async (tx) => {
+        const scans = new ScansRepository(contextOf(tx))
+        return {
+          code: await scans.code(tenantId, hash),
+          orders: await scans.orders(tenantId, editionOfB, codeId),
+          marked: await scans.handOut(tenantId, order.id, [randomUUID()], randomUUID(), new Date()),
+        }
+      })
+
+    expect(await read(a.id)).toEqual({ code: undefined, orders: [], marked: [] })
+    expect(await read(b.id)).toMatchObject({
+      code: { id: codeId, editionId: editionOfB },
+      orders: [{ id: order.id }],
+    })
+    expect(scanned.id).toBe(order.id)
   })
 })
 

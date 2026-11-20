@@ -32,6 +32,12 @@ export async function createOpenApiDocument(): Promise<OpenAPIObject> {
           description:
             'The admin application session, set by POST /auth/sign-in with its Origin; the admin routes take no other',
         },
+        scannerDevice: {
+          type: 'http',
+          scheme: 'bearer',
+          description:
+            'The token of a scanner, handed to the phone once by POST /scanner/pair; the scanner routes take nothing else',
+        },
       },
     },
     security: [{ portalSession: [] }, { panelSession: [] }],

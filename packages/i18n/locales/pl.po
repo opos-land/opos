@@ -36,6 +36,10 @@ msgid "A payment of {paid} arrived for the order {number} of {conventionName}, w
 msgstr "Do zamówienia {number} konwentu {conventionName}, które nie czekało na płatność, wpłynęła płatność na kwotę {paid}, a dostawca płatności nie mógł jej odrzucić."
 
 #: src/errors.ts
+msgid "A scanner cannot work longer than your access to the convention. Set an earlier end."
+msgstr "Skaner nie może działać dłużej niż twój dostęp do konwentu. Ustaw wcześniejszy koniec."
+
+#: src/errors.ts
 msgid "A shop of this convention is open. Close it first."
 msgstr "Sklep jednej z edycji tego konwentu jest otwarty. Najpierw go zamknij."
 
@@ -108,6 +112,10 @@ msgstr "Organizator konwentu {conventionName} zamienił wariant gadżetu w twoim
 #: src/order-emails.ts
 msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 msgstr "Organizator konwentu {conventionName} skontaktuje się z tobą. Nie musisz płacić ponownie."
+
+#: src/errors.ts
+msgid "Another scanner of this edition already has this name. Choose another."
+msgstr "Inny skaner tej edycji ma już tę nazwę. Wybierz inną."
 
 #. Glossary term: attendee
 #: src/glossary.ts
@@ -716,6 +724,10 @@ msgid "This edition has orders, so it cannot be deleted."
 msgstr "Ta edycja ma zamówienia, więc nie można jej usunąć."
 
 #: src/errors.ts
+msgid "This edition has reached its limit of enabled scanners: {limit}."
+msgstr "Ta edycja osiągnęła limit włączonych skanerów: {limit}."
+
+#: src/errors.ts
 msgid "This edition has reached the limit of consents: {limit}."
 msgstr "Ta edycja osiągnęła limit zgód: {limit}."
 
@@ -788,12 +800,24 @@ msgid "This order does not wait for a payment any more. Check its status."
 msgstr "To zamówienie nie czeka już na płatność. Sprawdź jego status."
 
 #: src/errors.ts
+msgid "This pairing code does not work: it was already used or it expired. Ask an organizer for a new one."
+msgstr "Ten kod parowania nie działa: został już użyty albo wygasł. Poproś organizatora o nowy."
+
+#: src/errors.ts
 msgid "This person is already in the team. Change their membership on the team screen."
 msgstr "Ta osoba już należy do zespołu. Zmień jej członkostwo na ekranie zespołu."
 
 #: src/errors.ts
+msgid "This QR code is not valid."
+msgstr "Ten kod QR jest nieważny."
+
+#: src/errors.ts
 msgid "This request cannot be made from this address. Reload the page and try again."
 msgstr "Tego żądania nie można wykonać z tego adresu. Odśwież stronę i spróbuj ponownie."
+
+#: src/errors.ts
+msgid "This scanner no longer works: its access was revoked or expired. Pair the phone again."
+msgstr "Ten skaner już nie działa: jego dostęp cofnięto albo wygasł. Sparuj telefon ponownie."
 
 #: src/errors.ts
 msgid "This shop is not selling right now."

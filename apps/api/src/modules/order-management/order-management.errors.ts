@@ -18,11 +18,15 @@ export const notInReview = () =>
 /** Only a paid order has a confirmation to resend, and something to hand out (S1, H1). */
 export const notPaid = () => new ApiError(409, 'order.not-paid', 'The order is not paid')
 
-/** The line was handed out already, by a scanner or on the order's page. */
-export const alreadyHandedOut = (lineId: string, handedOutAt: Date) =>
+/**
+ * The line was handed out already: when, and by which scanner, or by none for a mark an org made
+ * on the order's page.
+ */
+export const alreadyHandedOut = (lineId: string, handedOutAt: Date, scanner?: string | null) =>
   new ApiError(409, 'scan.already-handed-out', 'The line was already handed out', {
     lineId,
     handedOutAt: handedOutAt.toISOString(),
+    ...(scanner && { scanner }),
   })
 
 /** The production numbers are read once the pre-order deadline has passed (S2). */

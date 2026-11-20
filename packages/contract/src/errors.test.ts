@@ -78,6 +78,18 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain(code)
   })
 
+  // The scanners of an edition and what a scan answers (docs/specs/0007-scanner.md, Routes).
+  it.each([
+    'scanner.limit-reached',
+    'scanner.name-taken',
+    'scanner.outlives-org',
+    'scanner.code-refused',
+    'scanner.revoked',
+    'scan.not-valid',
+  ])('lists %s of the scanner', (code) => {
+    expect(errorCodes).toContain(code)
+  })
+
   it.each(errorCodes)('%s has a message in @opos/i18n/errors', (code) => {
     expect(errorMessages[code]).toBeDefined()
   })

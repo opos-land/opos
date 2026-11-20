@@ -43,6 +43,11 @@ export interface RequestStore {
   aal2?: boolean
   tenant?: TenantInContext
   membership?: TenantMembership | null
+  /**
+   * The scanner a device's token named, and its tenant: a caller with no account and no
+   * membership (modules/scanner). Whether it still stands is judged in its tenant's transaction.
+   */
+  scanner?: { id: string; tenantId: string }
   tx?: Transaction
   /** A transaction on opos_app for the session's own global rows, outside every tenant. */
   accountTx?: Transaction
@@ -127,6 +132,17 @@ export class TenantContextService {
     const { account } = TenantContextService.store()
     if (!account) throw new Error('No account in the request store: JwtAuthGuard did not run')
     return account
+  }
+
+  setScanner(scanner: { id: string; tenantId: string }) {
+    TenantContextService.store().scanner = scanner
+  }
+
+  /** The scanner the request's token named; only behind ScannerGuard. */
+  scanner(): { id: string; tenantId: string } {
+    const { scanner } = TenantContextService.store()
+    if (!scanner) throw new Error('No scanner in the request store: ScannerGuard did not run')
+    return scanner
   }
 
   /** The open tenant transaction; repositories never query a pool directly. */

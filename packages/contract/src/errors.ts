@@ -91,6 +91,12 @@ export const errorCodes = [
   'order.not-paid',
   'scan.already-handed-out',
   'production.before-deadline',
+  'scan.not-valid',
+  'scanner.limit-reached',
+  'scanner.name-taken',
+  'scanner.outlives-org',
+  'scanner.code-refused',
+  'scanner.revoked',
   'bot-check.failed',
 ] as const
 

@@ -7,6 +7,7 @@ import {
   orderEmails,
   orders,
   paymentAttempts,
+  scannerDevices,
   programItemLikes,
   programItems,
   tenantLogos,
@@ -325,6 +326,32 @@ export class GlobalDbService {
           unpointed(uploadedFiles.id),
         ),
       )
+  }
+
+  /**
+   * The scanner a pairing code belongs to, by the hash of the code: a phone that opens a pairing
+   * link names nothing else. It answers the scanner and its tenant alone; whether the code still
+   * works is judged in that tenant's transaction.
+   */
+  async scannerByPairingCode(hash: string): Promise<{ id: string; tenantId: string } | undefined> {
+    const [row] = await this.db
+      .select({ id: scannerDevices.id, tenantId: scannerDevices.tenantId })
+      .from(scannerDevices)
+      .where(eq(scannerDevices.pairingCodeHash, hash))
+    return row
+  }
+
+  /**
+   * The scanner a device's token names, by the hash of the token. It answers the scanner and its
+   * tenant alone: that the device was not revoked and has not ended, and everything it then
+   * reads, come from the tenant's own transaction.
+   */
+  async scannerByToken(hash: string): Promise<{ id: string; tenantId: string } | undefined> {
+    const [row] = await this.db
+      .select({ id: scannerDevices.id, tenantId: scannerDevices.tenantId })
+      .from(scannerDevices)
+      .where(eq(scannerDevices.tokenHash, hash))
+    return row
   }
 
   /**

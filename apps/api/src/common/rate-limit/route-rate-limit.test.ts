@@ -66,6 +66,9 @@ describe('RouteRateLimiter', () => {
       orderPlacements: { limit: 300, ttl: 3_600_000 },
       paymentAttempts: { limit: 300, ttl: 3_600_000 },
       confirmationResends: { limit: 5, ttl: 3_600_000 },
+      scannerPairings: { limit: 30, ttl: 3_600_000 },
+      scannerScans: { limit: 6000, ttl: 3_600_000 },
+      scannerHandOuts: { limit: 6000, ttl: 3_600_000 },
     })
   })
 })

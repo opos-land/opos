@@ -62,6 +62,8 @@ export async function addEdition(
   tenantId: string,
   values: {
     slug?: string
+    /** Left out, the edition is named after its slug. */
+    name?: string
     isPublished?: boolean
     isActive?: boolean
     startsAt?: string
@@ -72,7 +74,7 @@ export async function addEdition(
   const slug = values.slug ?? randomUUID().slice(0, 8)
   const rows = await db.execute<{ id: string }>(sql`
     insert into editions (tenant_id, slug, name, starts_at, ends_at, is_published, is_active, venue_city)
-    values (${tenantId}, ${slug}, ${slug}, ${values.startsAt ?? '2027-06-01'},
+    values (${tenantId}, ${slug}, ${values.name ?? slug}, ${values.startsAt ?? '2027-06-01'},
       ${values.endsAt ?? '2027-06-03'}, ${values.isPublished ?? false}, ${values.isActive ?? false},
       ${values.venueCity ?? null})
     returning id
@@ -483,6 +485,8 @@ export async function addOrder(
     /** Null for a manual order, which nobody placed in the shop. */
     email?: string | null
     holderName?: string
+    /** Null for an order with no ticket. */
+    ageBand?: 'child' | 'teen' | 'adult' | null
     placedAt?: string
     totalMinor?: number
     manualReason?: 'desk' | 'invoice' | 'complimentary'
@@ -502,7 +506,8 @@ export async function addOrder(
       total_minor, holds, hold_ends_at, result_token_hash, placed_at, manual_reason, review_cause)
     values (${tenantId}, ${editionId}, ${number}, ${values.status ?? 'awaiting-payment'},
       ${values.email === undefined ? 'buyer@example.test' : values.email},
-      ${values.holderName ?? 'Ada'}, 'adult', ${values.totalMinor ?? 10000},
+      ${values.holderName ?? 'Ada'}, ${values.ageBand === undefined ? 'adult' : values.ageBand},
+      ${values.totalMinor ?? 10000},
       ${values.holds ?? true}, ${values.holdEndsAt ?? '2099-01-01T00:00:00Z'}, repeat('0', 64),
       ${values.placedAt ?? sql`now()`}, ${values.manualReason ?? null},
       ${values.reviewCause ?? null})
@@ -532,6 +537,45 @@ export async function addOrder(
     `)
   }
   return { id: order!.id, number }
+}
+
+/**
+ * A scanner of an edition as its row alone, paired already: the phone holds `token`, of which
+ * the row keeps the hash. Enabled by the tenant's first head unless a membership is given.
+ */
+export async function addScanner(
+  tenantId: string,
+  editionId: string,
+  values: {
+    name?: string
+    membershipId?: string | null
+    expiresAt?: string
+    revoked?: boolean
+    /** Not paired yet: no token, and a pairing code still to spend. */
+    pairingCode?: string
+    pairingExpiresAt?: string
+  } = {},
+) {
+  const token = randomBytes(32).toString('base64url')
+  const hashOf = (secret: string) => createHash('sha256').update(secret).digest('hex')
+  const paired = values.pairingCode === undefined
+  const [row] = await db.execute<{ id: string }>(sql`
+    insert into scanner_devices (tenant_id, edition_id, name, enabled_by_membership_id,
+      pairing_code_hash, pairing_expires_at, paired_at, token_hash, expires_at, revoked_at)
+    values (${tenantId}, ${editionId}, ${values.name ?? `Gate ${randomUUID().slice(0, 8)}`},
+      ${
+        values.membershipId === undefined
+          ? sql`(select id from tenant_memberships where tenant_id = ${tenantId}
+              and role = 'head' order by created_at limit 1)`
+          : values.membershipId
+      },
+      ${hashOf(values.pairingCode ?? randomUUID())},
+      ${values.pairingExpiresAt ?? sql`now() + interval '15 minutes'`},
+      ${paired ? sql`now()` : null}, ${paired ? hashOf(token) : null},
+      ${values.expiresAt ?? '2099-01-01T00:00:00Z'}, ${values.revoked ? sql`now()` : null})
+    returning id
+  `)
+  return { id: row!.id, token }
 }
 
 /** A QR code's text no other test holds: a code is found by its hash, which no two share. */
@@ -1004,6 +1048,18 @@ export async function tenantState(tenantId: string) {
     select program_item_id, account_id
     from program_item_speakers where tenant_id = ${tenantId} order by program_item_id, account_id
   `)
+  const orders = await db.execute(sql`
+    select id, status, holder_name, email, holds, canceled_at, declined_at
+    from orders where tenant_id = ${tenantId} order by id
+  `)
+  const orderLines = await db.execute(sql`
+    select id, order_id, merchandise_variant_id, handed_out_at, handed_out_by
+    from order_lines where tenant_id = ${tenantId} order by id
+  `)
+  const scanners = await db.execute(sql`
+    select id, name, paired_at, revoked_at
+    from scanner_devices where tenant_id = ${tenantId} order by id
+  `)
   return {
     tenant,
     logos: [...logos],
@@ -1020,6 +1076,9 @@ export async function tenantState(tenantId: string) {
     editionMemberships: [...editionMemberships],
     programItems: [...programItems],
     programItemSpeakers: [...programItemSpeakers],
+    orders: [...orders],
+    orderLines: [...orderLines],
+    scanners: [...scanners],
   }
 }
 

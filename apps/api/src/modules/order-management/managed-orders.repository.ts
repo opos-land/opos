@@ -176,21 +176,33 @@ export class ManagedOrdersRepository {
       .where(and(eq(orderLines.orderId, orderId), ne(orderLines.kind, 'discount')))
   }
 
-  /** Marks the lines of the order as handed out at `at`. */
-  async handOut(orderId: string, lineIds: readonly string[], at: Date) {
-    await this.context
+  /**
+   * Marks lines of the order as handed out at `at`, each by an update that matches only a line
+   * not yet handed out, as a scanner's does (docs/ARCHITECTURE.md, invariant 10). Answers the
+   * lines it marked.
+   */
+  async handOut(orderId: string, lineIds: readonly string[], at: Date): Promise<string[]> {
+    const marked = await this.context
       .tx()
       .update(orderLines)
       .set({ handedOutAt: at })
-      .where(and(eq(orderLines.orderId, orderId), inArray(orderLines.id, [...lineIds])))
+      .where(
+        and(
+          eq(orderLines.orderId, orderId),
+          inArray(orderLines.id, [...lineIds]),
+          isNull(orderLines.handedOutAt),
+        ),
+      )
+      .returning({ id: orderLines.id })
+    return marked.map((line) => line.id)
   }
 
-  /** Takes the hand-out mark of a line back. */
-  async takeBack(lineId: string) {
+  /** Takes the hand-out mark of a line of the order back, with the scanner that made it. */
+  async takeBack(orderId: string, lineId: string) {
     await this.context
       .tx()
       .update(orderLines)
-      .set({ handedOutAt: null })
-      .where(eq(orderLines.id, lineId))
+      .set({ handedOutAt: null, handedOutBy: null })
+      .where(and(eq(orderLines.orderId, orderId), eq(orderLines.id, lineId)))
   }
 }

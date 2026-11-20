@@ -33,6 +33,12 @@ export const ROUTE_RATE_LIMITS = {
   paymentAttempts: { limit: 300, ttl: 3_600_000 },
   /** Resending an order's confirmation, per order: each one is an email to its buyer. */
   confirmationResends: { limit: 5, ttl: 3_600_000 },
+  /** `POST /scanner/pair`, per client address: a pairing code is guessed by nobody. */
+  scannerPairings: { limit: 30, ttl: 3_600_000 },
+  /** `POST /scanner/scans`, per scanner: a busy gate reads a code every few seconds. */
+  scannerScans: { limit: 6000, ttl: 3_600_000 },
+  /** `POST /scanner/hand-outs`, per scanner. */
+  scannerHandOuts: { limit: 6000, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS

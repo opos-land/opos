@@ -36,6 +36,10 @@ msgid "A payment of {paid} arrived for the order {number} of {conventionName}, w
 msgstr "A payment of {paid} arrived for the order {number} of {conventionName}, which was not waiting for one, and the payment provider could not refuse it."
 
 #: src/errors.ts
+msgid "A scanner cannot work longer than your access to the convention. Set an earlier end."
+msgstr "A scanner cannot work longer than your access to the convention. Set an earlier end."
+
+#: src/errors.ts
 msgid "A shop of this convention is open. Close it first."
 msgstr "A shop of this convention is open. Close it first."
 
@@ -108,6 +112,10 @@ msgstr "An organizer of {conventionName} swapped a variant of the merchandise in
 #: src/order-emails.ts
 msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 msgstr "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
+
+#: src/errors.ts
+msgid "Another scanner of this edition already has this name. Choose another."
+msgstr "Another scanner of this edition already has this name. Choose another."
 
 #. Glossary term: attendee
 #: src/glossary.ts
@@ -716,6 +724,10 @@ msgid "This edition has orders, so it cannot be deleted."
 msgstr "This edition has orders, so it cannot be deleted."
 
 #: src/errors.ts
+msgid "This edition has reached its limit of enabled scanners: {limit}."
+msgstr "This edition has reached its limit of enabled scanners: {limit}."
+
+#: src/errors.ts
 msgid "This edition has reached the limit of consents: {limit}."
 msgstr "This edition has reached the limit of consents: {limit}."
 
@@ -788,12 +800,24 @@ msgid "This order does not wait for a payment any more. Check its status."
 msgstr "This order does not wait for a payment any more. Check its status."
 
 #: src/errors.ts
+msgid "This pairing code does not work: it was already used or it expired. Ask an organizer for a new one."
+msgstr "This pairing code does not work: it was already used or it expired. Ask an organizer for a new one."
+
+#: src/errors.ts
 msgid "This person is already in the team. Change their membership on the team screen."
 msgstr "This person is already in the team. Change their membership on the team screen."
 
 #: src/errors.ts
+msgid "This QR code is not valid."
+msgstr "This QR code is not valid."
+
+#: src/errors.ts
 msgid "This request cannot be made from this address. Reload the page and try again."
 msgstr "This request cannot be made from this address. Reload the page and try again."
+
+#: src/errors.ts
+msgid "This scanner no longer works: its access was revoked or expired. Pair the phone again."
+msgstr "This scanner no longer works: its access was revoked or expired. Pair the phone again."
 
 #: src/errors.ts
 msgid "This shop is not selling right now."

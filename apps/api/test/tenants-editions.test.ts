@@ -19,6 +19,7 @@ import {
   addOrder,
   addOrg,
   addProgramItem,
+  addScanner,
   addTicketType,
   addVariant,
   closeTenantDb,
@@ -593,6 +594,7 @@ describe('concurrency', () => {
         ticketLine: string
         shirtLine: string
         otherVariant: string
+        scanner: string
       }
     }
     type Request = { method: Method; path: string; body?: object }
@@ -821,6 +823,15 @@ describe('concurrency', () => {
         method: 'delete',
         path: `/editions/${s.desk.edition}/orders/${s.desk.paid}/lines/${s.desk.ticketLine}/hand-out`,
       }),
+      'scanners.create': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/scanners`,
+        body: { name: 'Late gate' },
+      }),
+      'scanners.revoke': (s) => ({
+        method: 'delete',
+        path: `/editions/${s.desk.edition}/scanners/${s.desk.scanner}`,
+      }),
       'catalog.merchandise.create': (s) => ({
         method: 'post',
         path: `/editions/${s.edition}/merchandise-items`,
@@ -909,6 +920,7 @@ describe('concurrency', () => {
       )
       const ticketLine = String(lines.find((line) => line.kind === 'ticket')!.id)
       await setColumn('order_lines', ticketLine, 'handed_out_at', new Date().toISOString())
+      const scanner = await addScanner(t.id, desk)
       return {
         t,
         edition,
@@ -931,6 +943,7 @@ describe('concurrency', () => {
           ticketLine,
           shirtLine: String(lines.find((line) => line.kind === 'merchandise')!.id),
           otherVariant,
+          scanner: scanner.id,
         },
       }
     }

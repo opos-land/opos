@@ -81,6 +81,12 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'order.not-paid': msg`This can be done only with a paid order.`,
   'scan.already-handed-out': msg`This was already handed out.`,
   'production.before-deadline': msg`The production numbers are ready once the pre-order deadline has passed.`,
+  'scan.not-valid': msg`This QR code is not valid.`,
+  'scanner.limit-reached': msg`This edition has reached its limit of enabled scanners: {limit}.`,
+  'scanner.name-taken': msg`Another scanner of this edition already has this name. Choose another.`,
+  'scanner.outlives-org': msg`A scanner cannot work longer than your access to the convention. Set an earlier end.`,
+  'scanner.code-refused': msg`This pairing code does not work: it was already used or it expired. Ask an organizer for a new one.`,
+  'scanner.revoked': msg`This scanner no longer works: its access was revoked or expired. Pair the phone again.`,
   'bot-check.failed': msg`We could not confirm that you are not a robot. Try again.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 

@@ -291,3 +291,177 @@ export function paymentNotNeededOrgsEmail(
     ],
   }
 }
+
+// What an org's work on an order tells its buyer (docs/specs/0006-order-management.md, Emails).
+
+/** Whom the buyer writes to about a change: the convention's contact, when it gave one. */
+interface Contact {
+  contactEmail: string | null
+}
+
+/** For a change the buyer may not have asked for. */
+const notAsked = ({ contactEmail }: Contact): EmailPart[] =>
+  contactEmail
+    ? [
+        {
+          kind: 'paragraph',
+          text: msg`If you did not ask for this change, write to ${contactEmail}.`,
+        },
+      ]
+    : []
+
+const nothingElse: EmailPart = {
+  kind: 'paragraph',
+  text: msg`Nothing else of the order changed, and your QR code stays the same.`,
+}
+
+/** An org corrected the ticket holder's name: nothing else changed. */
+export const orderHolderChangedEmail = ({
+  conventionName,
+  number,
+  holderName,
+  contactEmail,
+}: OrderOf & Contact & { holderName: string }): OrderEmailContent => ({
+  subject: msg`The ticket holder of your order ${number} was changed`,
+  parts: [
+    {
+      kind: 'paragraph',
+      text: msg`An organizer of ${conventionName} changed the ticket holder of your order ${number}.`,
+    },
+    { kind: 'rows', rows: [{ label: msg`Ticket holder`, value: holderName }] },
+    nothingElse,
+    ...notAsked({ contactEmail }),
+  ],
+})
+
+/** An org swapped a variant of a merchandise line: the merchandise the order holds now. */
+export const orderVariantChangedEmail = ({
+  conventionName,
+  number,
+  merchandise,
+  contactEmail,
+}: OrderOf &
+  Contact & {
+    merchandise: readonly { name: string; quantity: number }[]
+  }): OrderEmailContent => ({
+  subject: msg`The merchandise of your order ${number} was changed`,
+  parts: [
+    {
+      kind: 'paragraph',
+      text: msg`An organizer of ${conventionName} swapped a variant of the merchandise in your order ${number}. This is the merchandise the order holds now:`,
+    },
+    ...(merchandise.length > 0
+      ? [
+          {
+            kind: 'quote' as const,
+            lines: merchandise.map((line) =>
+              line.quantity > 1 ? `${line.quantity} × ${line.name}` : line.name,
+            ),
+          },
+        ]
+      : []),
+    nothingElse,
+    ...notAsked({ contactEmail }),
+  ],
+})
+
+/** An org changed the order's email: to the new address, with the new QR code and order link. */
+export const orderEmailChangedEmail = ({
+  conventionName,
+  number,
+  qrCode,
+  qrCodeCid,
+  orderLink,
+  contactEmail,
+}: OrderOf &
+  Contact & {
+    /** The new QR code as text; its picture travels with the email under `qrCodeCid`. */
+    qrCode: string
+    qrCodeCid: string
+    orderLink: string
+  }): OrderEmailContent => ({
+  subject: msg`Your order ${number} for ${conventionName} is now under this email address`,
+  parts: [
+    {
+      kind: 'paragraph',
+      text: msg`An organizer of ${conventionName} moved the order ${number} to this email address.`,
+    },
+    { kind: 'heading', text: msg`Your QR code` },
+    {
+      kind: 'paragraph',
+      text: msg`This is the new QR code of the order. The one sent before no longer works.`,
+    },
+    {
+      kind: 'image',
+      cid: qrCodeCid,
+      alt: msg`The QR code of the order ${number}`,
+      caption: qrCode,
+    },
+    { kind: 'link', label: msg`See your order`, url: orderLink },
+    ...notAsked({ contactEmail }),
+  ],
+})
+
+/** The same change, to the old address: what was sent there no longer works. */
+export const orderEmailReplacedEmail = ({
+  conventionName,
+  number,
+  contactEmail,
+}: OrderOf & Contact): OrderEmailContent => ({
+  subject: msg`Your order ${number} for ${conventionName} was moved to another email address`,
+  parts: [
+    {
+      kind: 'paragraph',
+      text: msg`An organizer of ${conventionName} moved the order ${number} to another email address. The QR code and the order link sent to this address no longer work.`,
+    },
+    ...notAsked({ contactEmail }),
+  ],
+})
+
+/** An org declined an order that needed review: where the money is, and whom to write to. */
+export const orderDeclinedEmail = ({
+  conventionName,
+  number,
+  moneyWith,
+  contactEmail,
+}: OrderOf & Contact & { moneyWith: string | null }): OrderEmailContent => ({
+  subject: msg`The payment for your order ${number} was declined`,
+  parts: [
+    {
+      kind: 'paragraph',
+      text: msg`An organizer of ${conventionName} looked at your payment for the order ${number} and declined it. The order is not paid and gets no QR code.`,
+    },
+    ...(moneyWith ? [{ kind: 'quote' as const, lines: [moneyWith] }] : []),
+    ...(contactEmail
+      ? [
+          {
+            kind: 'paragraph' as const,
+            text: msg`To settle the return of the money, write to ${contactEmail}.`,
+          },
+        ]
+      : []),
+  ],
+})
+
+/** An org canceled a paid order of the shop: its QR code is no longer valid. */
+export const orderCanceledEmail = ({
+  conventionName,
+  number,
+  contactEmail,
+}: OrderOf & Contact): OrderEmailContent => ({
+  subject: msg`Your order ${number} for ${conventionName} was canceled`,
+  parts: [
+    {
+      kind: 'paragraph',
+      text: msg`An organizer of ${conventionName} canceled your order ${number}. Its QR code is no longer valid.`,
+    },
+    ...(contactEmail
+      ? [
+          {
+            kind: 'paragraph' as const,
+            text: msg`If you have questions about the order or its payment, write to ${contactEmail}.`,
+          },
+        ]
+      : []),
+  ],
+})

@@ -449,6 +449,15 @@ export const orderEmailKind = pgEnum('order_email_kind', [
   'needs-review',
   'payment-not-needed',
   'payment-not-needed-orgs',
+  // An org corrected the ticket holder's name, or swapped a variant of a merchandise line.
+  'order-holder-changed',
+  'order-variant-changed',
+  // An org changed the order's email: to the new address, with the new QR code and order link.
+  'order-email-changed',
+  // The same change, to the old address: a notice that its QR code and link no longer work.
+  'order-email-replaced',
+  'order-declined',
+  'order-canceled',
 ])
 
 /**

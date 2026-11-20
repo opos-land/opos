@@ -5,9 +5,15 @@ import {
   type ConfirmationData,
   type EmailPart,
   needsReviewEmail,
+  orderCanceledEmail,
   orderConfirmationEmail,
+  orderDeclinedEmail,
+  orderEmailChangedEmail,
   type OrderEmailContent,
+  orderEmailReplacedEmail,
   orderExpiredEmail,
+  orderHolderChangedEmail,
+  orderVariantChangedEmail,
   paymentNotNeededEmail,
   paymentNotNeededOrgsEmail,
   paymentUnderReviewEmail,
@@ -259,5 +265,125 @@ describe('the other emails of an order', () => {
         )
       ).parts.join(' '),
     ).not.toContain('transaction')
+  })
+})
+
+// What an org's work on an order tells its buyer (docs/specs/0006-order-management.md, Emails).
+describe('the emails of order management', () => {
+  const contact = { contactEmail: 'shop@seller.test' }
+
+  it('tell a buyer the ticket holder was changed, and that nothing else was', async () => {
+    const email = orderHolderChangedEmail({ ...order, ...contact, holderName: 'Grace Hopper' })
+
+    const told = await read(email, 'en')
+    expect(told.subject).toBe('The ticket holder of your order ABCDEFGHJK was changed')
+    expect(told.parts).toEqual([
+      'An organizer of Pyrkon changed the ticket holder of your order ABCDEFGHJK.',
+      'Ticket holder: Grace Hopper',
+      'Nothing else of the order changed, and your QR code stays the same.',
+      'If you did not ask for this change, write to shop@seller.test.',
+    ])
+    const polish = await read(email, 'pl')
+    expect(polish.subject).toBe('Zmieniono posiadacza akredytacji w zamówieniu ABCDEFGHJK')
+    expect(polish.parts[1]).toBe('Posiadacz akredytacji: Grace Hopper')
+  })
+
+  it('tell a buyer a variant was swapped, with the merchandise the order holds now', async () => {
+    const email = orderVariantChangedEmail({
+      ...order,
+      ...contact,
+      merchandise: [
+        { name: 'T-shirt (L)', quantity: 2 },
+        { name: 'Pin', quantity: 1 },
+      ],
+    })
+
+    const told = await read(email, 'en')
+    expect(told.subject).toBe('The merchandise of your order ABCDEFGHJK was changed')
+    expect(told.parts).toEqual([
+      'An organizer of Pyrkon swapped a variant of the merchandise in your order ABCDEFGHJK. This is the merchandise the order holds now:',
+      '2 × T-shirt (L)',
+      'Pin',
+      'Nothing else of the order changed, and your QR code stays the same.',
+      'If you did not ask for this change, write to shop@seller.test.',
+    ])
+    expect((await read(email, 'pl')).subject).toBe('Zmieniono gadżety w zamówieniu ABCDEFGHJK')
+  })
+
+  it('tell the new address of an order its new QR code and order link, and the old one that its own stopped working', async () => {
+    const moved = orderEmailChangedEmail({
+      ...order,
+      ...contact,
+      qrCode: 'NEWCODE',
+      qrCodeCid: 'qr@opos',
+      orderLink: 'https://portal.test/orders/new-token',
+    })
+    const left = orderEmailReplacedEmail({ ...order, ...contact })
+
+    const told = await read(moved, 'en')
+    expect(told.subject).toBe('Your order ABCDEFGHJK for Pyrkon is now under this email address')
+    expect(told.parts).toEqual([
+      'An organizer of Pyrkon moved the order ABCDEFGHJK to this email address.',
+      'Your QR code',
+      'This is the new QR code of the order. The one sent before no longer works.',
+      'The QR code of the order ABCDEFGHJK [NEWCODE]',
+      'See your order <https://portal.test/orders/new-token>',
+      'If you did not ask for this change, write to shop@seller.test.',
+    ])
+    const old = await read(left, 'en')
+    expect(old.subject).toBe('Your order ABCDEFGHJK for Pyrkon was moved to another email address')
+    expect(old.parts).toEqual([
+      'An organizer of Pyrkon moved the order ABCDEFGHJK to another email address. The QR code and the order link sent to this address no longer work.',
+      'If you did not ask for this change, write to shop@seller.test.',
+    ])
+    expect((await read(left, 'pl')).parts[0]).toBe(
+      'Organizator konwentu Pyrkon przeniósł zamówienie ABCDEFGHJK na inny adres e-mail. Kod QR i link do zamówienia wysłane na ten adres już nie działają.',
+    )
+  })
+
+  it('tell a buyer a payment was declined, where the money is and whom to write to', async () => {
+    const email = orderDeclinedEmail({
+      ...order,
+      ...contact,
+      moneyWith: 'The money is with the convention.',
+    })
+
+    const told = await read(email, 'en')
+    expect(told.subject).toBe('The payment for your order ABCDEFGHJK was declined')
+    expect(told.parts).toEqual([
+      'An organizer of Pyrkon looked at your payment for the order ABCDEFGHJK and declined it. The order is not paid and gets no QR code.',
+      'The money is with the convention.',
+      'To settle the return of the money, write to shop@seller.test.',
+    ])
+    expect((await read(email, 'pl')).subject).toBe(
+      'Płatność za zamówienie ABCDEFGHJK została odrzucona',
+    )
+  })
+
+  it('tell a buyer an order was canceled and its QR code is no longer valid', async () => {
+    const email = orderCanceledEmail({ ...order, ...contact })
+
+    const told = await read(email, 'en')
+    expect(told.subject).toBe('Your order ABCDEFGHJK for Pyrkon was canceled')
+    expect(told.parts).toEqual([
+      'An organizer of Pyrkon canceled your order ABCDEFGHJK. Its QR code is no longer valid.',
+      'If you have questions about the order or its payment, write to shop@seller.test.',
+    ])
+    expect((await read(email, 'pl')).parts[0]).toBe(
+      'Organizator konwentu Pyrkon anulował twoje zamówienie ABCDEFGHJK. Jego kod QR jest już nieważny.',
+    )
+  })
+
+  it('leave out the address to write to when the convention gave none', async () => {
+    const none = { ...order, contactEmail: null }
+    for (const email of [
+      orderHolderChangedEmail({ ...none, holderName: 'Ada' }),
+      orderVariantChangedEmail({ ...none, merchandise: [] }),
+      orderEmailReplacedEmail(none),
+      orderDeclinedEmail({ ...none, moneyWith: null }),
+      orderCanceledEmail(none),
+    ]) {
+      expect((await read(email, 'en')).parts.join(' ')).not.toMatch(/write to/)
+    }
   })
 })

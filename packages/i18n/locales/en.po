@@ -82,6 +82,30 @@ msgid "An order of this convention is waiting for payment. You can replace the c
 msgstr "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
 
 #: src/order-emails.ts
+msgid "An organizer of {conventionName} canceled your order {number}. Its QR code is no longer valid."
+msgstr "An organizer of {conventionName} canceled your order {number}. Its QR code is no longer valid."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} changed the ticket holder of your order {number}."
+msgstr "An organizer of {conventionName} changed the ticket holder of your order {number}."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} looked at your payment for the order {number} and declined it. The order is not paid and gets no QR code."
+msgstr "An organizer of {conventionName} looked at your payment for the order {number} and declined it. The order is not paid and gets no QR code."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} moved the order {number} to another email address. The QR code and the order link sent to this address no longer work."
+msgstr "An organizer of {conventionName} moved the order {number} to another email address. The QR code and the order link sent to this address no longer work."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} moved the order {number} to this email address."
+msgstr "An organizer of {conventionName} moved the order {number} to this email address."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} swapped a variant of the merchandise in your order {number}. This is the merchandise the order holds now:"
+msgstr "An organizer of {conventionName} swapped a variant of the merchandise in your order {number}. This is the merchandise the order holds now:"
+
+#: src/order-emails.ts
 msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 msgstr "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 
@@ -239,6 +263,10 @@ msgstr "If you did not ask for this change, do not confirm it and change your pa
 msgid "If you did not ask for this change, ignore this message."
 msgstr "If you did not ask for this change, ignore this message."
 
+#: src/order-emails.ts
+msgid "If you did not ask for this change, write to {contactEmail}."
+msgstr "If you did not ask for this change, write to {contactEmail}."
+
 #: src/emails.ts
 msgid "If you did not create an account, ignore this message."
 msgstr "If you did not create an account, ignore this message."
@@ -254,6 +282,10 @@ msgstr "If you do not expect this invitation, ignore this message."
 #: src/emails.ts
 msgid "If you do not expect this, contact the head organizer of the convention."
 msgstr "If you do not expect this, contact the head organizer of the convention."
+
+#: src/order-emails.ts
+msgid "If you have questions about the order or its payment, write to {contactEmail}."
+msgstr "If you have questions about the order or its payment, write to {contactEmail}."
 
 #: src/order-emails.ts
 msgid "If you have questions, write to {contactEmail}."
@@ -302,6 +334,10 @@ msgstr "No account uses this email address."
 #: src/errors.ts
 msgid "No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address."
 msgstr "No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address."
+
+#: src/order-emails.ts
+msgid "Nothing else of the order changed, and your QR code stays the same."
+msgstr "Nothing else of the order changed, and your QR code stays the same."
 
 #: src/errors.ts
 msgid "Only a head organizer can edit or remove another head organizer."
@@ -502,6 +538,10 @@ msgid "The link is valid for 7 days and works once."
 msgstr "The link is valid for 7 days and works once."
 
 #: src/order-emails.ts
+msgid "The merchandise of your order {number} was changed"
+msgstr "The merchandise of your order {number} was changed"
+
+#: src/order-emails.ts
 msgid "The money is with the convention. Return it to the buyer at the payment provider."
 msgstr "The money is with the convention. Return it to the buyer at the payment provider."
 
@@ -528,6 +568,10 @@ msgstr "The order had expired, and what it held is no longer available."
 #: src/errors.ts
 msgid "The password is too weak. Use at least 8 characters."
 msgstr "The password is too weak. Use at least 8 characters."
+
+#: src/order-emails.ts
+msgid "The payment for your order {number} was declined"
+msgstr "The payment for your order {number} was declined"
 
 #: src/errors.ts
 msgid "The payment provider cannot take this email address. Use a shorter one."
@@ -560,6 +604,10 @@ msgstr "The shop cannot be opened yet: something it needs is missing."
 #: src/order-emails.ts
 msgid "The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention."
 msgstr "The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention."
+
+#: src/order-emails.ts
+msgid "The ticket holder of your order {number} was changed"
+msgstr "The ticket holder of your order {number} was changed"
 
 #: src/errors.ts
 msgid "The time to pay for this order has ended. Start a new order."
@@ -681,6 +729,10 @@ msgstr "This invitation link is not valid. Check that you opened the whole link 
 msgid "This invitation was sent to another email address. Sign in with the account that uses that address."
 msgstr "This invitation was sent to another email address. Sign in with the account that uses that address."
 
+#: src/order-emails.ts
+msgid "This is the new QR code of the order. The one sent before no longer works."
+msgstr "This is the new QR code of the order. The one sent before no longer works."
+
 #: src/errors.ts
 msgid "This language is not supported."
 msgstr "This language is not supported."
@@ -717,11 +769,19 @@ msgctxt "glossary"
 msgid "ticket holder"
 msgstr "ticket holder"
 
+#: src/order-emails.ts
+msgid "Ticket holder"
+msgstr "Ticket holder"
+
 #. Glossary term: ticket type
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "ticket type"
 msgstr "ticket type"
+
+#: src/order-emails.ts
+msgid "To settle the return of the money, write to {contactEmail}."
+msgstr "To settle the return of the money, write to {contactEmail}."
 
 #: src/errors.ts
 msgid "Too many attempts. Try again in a few minutes."
@@ -860,8 +920,20 @@ msgid "Your order {number} for {conventionName} has expired"
 msgstr "Your order {number} for {conventionName} has expired"
 
 #: src/order-emails.ts
+msgid "Your order {number} for {conventionName} is now under this email address"
+msgstr "Your order {number} for {conventionName} is now under this email address"
+
+#: src/order-emails.ts
 msgid "Your order {number} for {conventionName} is paid"
 msgstr "Your order {number} for {conventionName} is paid"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} was canceled"
+msgstr "Your order {number} for {conventionName} was canceled"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} was moved to another email address"
+msgstr "Your order {number} for {conventionName} was moved to another email address"
 
 #: src/order-emails.ts
 msgid "Your order {number} for {conventionName} was not paid in time and has expired. Nothing was charged."

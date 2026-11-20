@@ -560,6 +560,19 @@ export async function addQrCode(
   return row!.id
 }
 
+/** An email of an order as its row alone, due at once: what a route queues for the outbox. */
+export const queueOrderEmail = (
+  tenantId: string,
+  editionId: string,
+  orderId: string,
+  kind: string,
+  recipient: string,
+) =>
+  db.execute(sql`
+    insert into order_emails (tenant_id, edition_id, order_id, kind, recipient)
+    values (${tenantId}, ${editionId}, ${orderId}, ${kind}, ${recipient})
+  `)
+
 /** A custom field of an edition as its row alone, last in the list. */
 export async function addCustomField(
   tenantId: string,

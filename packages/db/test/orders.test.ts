@@ -664,4 +664,25 @@ describe('what the application role changes of an order', () => {
     await expect(order(at, { cancel_reason: ' ' })).rejects.toThrow(/orders_cancel_reason/)
     await expect(order(at, { decline_reason: '' })).rejects.toThrow(/orders_decline_reason/)
   })
+
+  // What order management tells a buyer (docs/specs/0006-order-management.md, Emails).
+  it.each([
+    'order-holder-changed',
+    'order-variant-changed',
+    'order-email-changed',
+    'order-email-replaced',
+    'order-declined',
+    'order-canceled',
+  ])('queues the email %s of an order', async (kind) => {
+    const at = await place()
+    const mine = await order(at)
+
+    await migrator`
+      insert into order_emails (tenant_id, edition_id, order_id, kind, recipient)
+      values (${at.tenant}, ${at.edition}, ${mine}, ${kind}, 'buyer@example.test')
+    `
+    expect(await migrator`select kind from order_emails where order_id = ${mine}`).toEqual([
+      { kind },
+    ])
+  })
 })

@@ -22,6 +22,7 @@ import {
   deleteCreatedTenants,
   makeShopReady,
   offerWith,
+  queueOrderEmail,
   openShop,
   restore,
   setCatalogSettings,
@@ -295,6 +296,95 @@ describe('the other emails of an order', () => {
     expect(mails.map((mail) => mail.Subject)).toContain(
       `Your order ${placed.number} for ${s.name} is paid`,
     )
+  })
+})
+
+// What order management tells a buyer (docs/specs/0006-order-management.md, Emails): the route
+// that changes an order queues the email, and the outbox writes it from the order as it stands.
+describe('the emails of order management', () => {
+  it('tell the buyer the ticket holder and the merchandise as the order holds them now', async () => {
+    const s = await shop('en')
+    const to = buyer()
+    const shirt = await addMerchandiseItem(s.t.id, s.edition, { name: 'T-shirt', stock: 5 })
+    await offerWith(s.t.id, s.edition, s.standard, { itemIds: [shirt.id] })
+    const placed = await s.place(to, {
+      cart: {
+        ticket: { ticketTypeId: s.standard },
+        items: [{ variantId: shirt.variantId, quantity: 2 }],
+      },
+      holderName: 'Grace Hopper',
+      expectedTotalMinor: 20000,
+    })
+    await s.pay(placed)
+    await queueOrderEmail(s.t.id, s.edition, placed.orderId, 'order-holder-changed', to)
+    await queueOrderEmail(s.t.id, s.edition, placed.orderId, 'order-variant-changed', to)
+
+    expect(await send(s)).toMatchObject({ sent: 3, failed: 0 })
+
+    const mails = await mailTo(to, 3)
+    const holder = mails.find((mail) => mail.Subject.includes('ticket holder'))
+    expect(holder!.Subject).toBe(`The ticket holder of your order ${placed.number} was changed`)
+    expect(holder!.Text).toContain('Ticket holder: Grace Hopper')
+    expect(holder!.Text).toContain('shop@seller.test')
+    const variant = mails.find((mail) => mail.Subject.includes('merchandise'))
+    expect(variant!.Subject).toBe(`The merchandise of your order ${placed.number} was changed`)
+    expect(variant!.Text).toContain('2 × T-shirt')
+    // A correction carries no QR code: the one the buyer has stays.
+    for (const mail of [holder, variant]) expect(mail!.Text).not.toMatch(/[A-Z2-7]{32}/)
+  })
+
+  it('give the new address of an order its QR code and a link of its own, and the old one a notice', async () => {
+    const s = await shop('en')
+    const [old, moved] = [buyer(), buyer()]
+    const placed = await s.place(old)
+    await s.pay(placed)
+    await send(s)
+    await queueOrderEmail(s.t.id, s.edition, placed.orderId, 'order-email-changed', moved)
+    await queueOrderEmail(s.t.id, s.edition, placed.orderId, 'order-email-replaced', old)
+
+    expect(await send(s)).toMatchObject({ sent: 2, failed: 0 })
+
+    const [toNew] = await mailTo(moved)
+    expect(toNew!.Subject).toBe(
+      `Your order ${placed.number} for ${s.name} is now under this email address`,
+    )
+    // The code the order carries when the email is written, as text and as a picture.
+    expect(toNew!.Text).toMatch(/The QR code of the order \S+: [A-Z2-7]{32}/)
+    expect(toNew!.HTML).toContain('<img src="cid:qr-code@opos"')
+    const token = /\/orders\/([A-Za-z0-9_-]{43})/.exec(toNew!.Text)?.[1]
+    expect(token).toBeDefined()
+    const links = await storedRows('order_links', s.t.id)
+    expect(links.map((link) => link.token_hash)).toContain(
+      createHash('sha256').update(token!).digest('hex'),
+    )
+    const toOld = (await mailTo(old, 2)).find((mail) => mail.Subject.includes('moved'))
+    expect(toOld!.Subject).toBe(
+      `Your order ${placed.number} for ${s.name} was moved to another email address`,
+    )
+    expect(toOld!.Text).not.toMatch(/[A-Z2-7]{32}|\/orders\//)
+  })
+
+  it('tell the buyer of a declined payment where the money is, and of a canceled order that its QR code is no longer valid', async () => {
+    const s = await shop('en')
+    const [declined, canceled] = [buyer(), buyer()]
+    const review = await s.place(declined)
+    await s.pay(review, 9000)
+    const paid = await s.place(canceled)
+    await s.pay(paid)
+    await send(s)
+    await queueOrderEmail(s.t.id, s.edition, review.orderId, 'order-declined', declined)
+    await queueOrderEmail(s.t.id, s.edition, paid.orderId, 'order-canceled', canceled)
+
+    expect(await send(s)).toMatchObject({ sent: 2, failed: 0 })
+
+    const toDeclined = (await mailTo(declined, 2)).find((mail) => mail.Subject.includes('declined'))
+    expect(toDeclined!.Subject).toBe(`The payment for your order ${review.number} was declined`)
+    // Where the money is, as the provider's module words it.
+    expect(toDeclined!.Text).toContain(fake().moneyWith('convention').en)
+    expect(toDeclined!.Text).toContain('shop@seller.test')
+    const toCanceled = (await mailTo(canceled, 2)).find((mail) => mail.Subject.includes('canceled'))
+    expect(toCanceled!.Subject).toBe(`Your order ${paid.number} for ${s.name} was canceled`)
+    expect(toCanceled!.Text).toContain('Its QR code is no longer valid')
   })
 })
 

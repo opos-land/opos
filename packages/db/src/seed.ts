@@ -492,7 +492,7 @@ const DEMO_ORDERS: SeedOrder[] = [
     ageBand: 'adult',
     ticketType: 'Standard',
     attempts: [{ status: 'paid' }],
-    emails: ['order-confirmation'],
+    emails: ['order-confirmation', 'order-email-changed'],
     emailChanged: true,
     placedDaysAgo: 7,
   },

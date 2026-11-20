@@ -9,9 +9,15 @@ import { open, orderQrCodeOf, sealingKey } from '@opos/db/sealed'
 import { type Locale } from '@opos/i18n'
 import {
   needsReviewEmail,
+  orderCanceledEmail,
   orderConfirmationEmail,
+  orderDeclinedEmail,
+  orderEmailChangedEmail,
   type OrderEmailContent,
+  orderEmailReplacedEmail,
   orderExpiredEmail,
+  orderHolderChangedEmail,
+  orderVariantChangedEmail,
   paymentNotNeededEmail,
   paymentNotNeededOrgsEmail,
   paymentUnderReviewEmail,
@@ -173,16 +179,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
 
     switch (email.kind) {
       case 'order-confirmation': {
-        const sealed = await this.emails.qrCode(order.id)
-        if (!sealed) throw new Error('A paid order has a QR code')
-        const qrCode = open(this.key, sealed.code, orderQrCodeOf(order.tenantId, sealed.id))
-        // A link of its own for each email sent: only its hash is kept.
-        const token = secretToken()
-        await this.emails.addLink(
-          order,
-          hashOf(token),
-          new Date(order.editionEndsAt.getTime() + ORDER_LINK_DAYS * DAY),
-        )
+        const { qrCode, orderLink, pictures } = await this.codeAndLink(order)
         const lines = await this.emails.lines(order.id)
         const documents = await this.emails.documents(order.id)
         return {
@@ -197,7 +194,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
             picksUp: lines.some((line) => line.kind === 'merchandise'),
             qrCode,
             qrCodeCid: QR_CODE_CID,
-            orderLink: `${this.portalUrl}/orders/${token}`,
+            orderLink,
             signInLink: account ? `${this.portalUrl}/login` : null,
             seller,
             documents: documents.map((document) => ({
@@ -209,18 +206,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
                 ? { formUrl: await this.emails.guardianFormUrl(order.editionId) }
                 : null,
           }),
-          pictures: [
-            {
-              cid: QR_CODE_CID,
-              filename: `${order.number}.png`,
-              content: await toBuffer(qrCode, {
-                type: 'png',
-                errorCorrectionLevel: 'M',
-                margin: 2,
-                width: 480,
-              }),
-            },
-          ],
+          pictures,
         }
       }
       case 'order-expired':
@@ -270,6 +256,89 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
             providerReference: payment?.providerReference ?? null,
           }),
         }
+      // What an org's work on the order tells its buyer, written from the order as it stands
+      // when the email is sent (docs/specs/0006-order-management.md, Emails).
+      case 'order-holder-changed':
+        return {
+          to,
+          locale,
+          content: orderHolderChangedEmail({ ...of, holderName: order.holderName, contactEmail }),
+        }
+      case 'order-variant-changed': {
+        const lines = await this.emails.lines(order.id)
+        return {
+          to,
+          locale,
+          content: orderVariantChangedEmail({
+            ...of,
+            merchandise: lines.filter((line) => line.kind === 'merchandise'),
+            contactEmail,
+          }),
+        }
+      }
+      case 'order-email-changed': {
+        const { qrCode, orderLink, pictures } = await this.codeAndLink(order)
+        return {
+          to,
+          locale,
+          content: orderEmailChangedEmail({
+            ...of,
+            qrCode,
+            qrCodeCid: QR_CODE_CID,
+            orderLink,
+            contactEmail,
+          }),
+          pictures,
+        }
+      }
+      case 'order-email-replaced':
+        return { to, locale, content: orderEmailReplacedEmail({ ...of, contactEmail }) }
+      case 'order-declined':
+        return {
+          to,
+          locale,
+          content: orderDeclinedEmail({ ...of, moneyWith: moneyWith(), contactEmail }),
+        }
+      case 'order-canceled':
+        return { to, locale, content: orderCanceledEmail({ ...of, contactEmail }) }
+    }
+  }
+
+  /**
+   * What an email that hands an order over carries: the QR code the order carries now, opened,
+   * with its picture, and an order link of its own, of which only the hash is kept.
+   */
+  private async codeAndLink(order: {
+    id: string
+    tenantId: string
+    editionId: string
+    number: string
+    editionEndsAt: Date
+  }) {
+    const sealed = await this.emails.qrCode(order.id)
+    if (!sealed) throw new Error('A paid order has a QR code')
+    const qrCode = open(this.key, sealed.code, orderQrCodeOf(order.tenantId, sealed.id))
+    const token = secretToken()
+    await this.emails.addLink(
+      order,
+      hashOf(token),
+      new Date(order.editionEndsAt.getTime() + ORDER_LINK_DAYS * DAY),
+    )
+    return {
+      qrCode,
+      orderLink: `${this.portalUrl}/orders/${token}`,
+      pictures: [
+        {
+          cid: QR_CODE_CID,
+          filename: `${order.number}.png`,
+          content: await toBuffer(qrCode, {
+            type: 'png',
+            errorCorrectionLevel: 'M',
+            margin: 2,
+            width: 480,
+          }),
+        },
+      ],
     }
   }
 }

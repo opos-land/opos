@@ -82,6 +82,30 @@ msgid "An order of this convention is waiting for payment. You can replace the c
 msgstr "Zamówienie w tym konwencie oczekuje na płatność. Dane dostępowe zmienisz, gdy zostanie opłacone albo wygaśnie."
 
 #: src/order-emails.ts
+msgid "An organizer of {conventionName} canceled your order {number}. Its QR code is no longer valid."
+msgstr "Organizator konwentu {conventionName} anulował twoje zamówienie {number}. Jego kod QR jest już nieważny."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} changed the ticket holder of your order {number}."
+msgstr "Organizator konwentu {conventionName} zmienił posiadacza akredytacji w twoim zamówieniu {number}."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} looked at your payment for the order {number} and declined it. The order is not paid and gets no QR code."
+msgstr "Organizator konwentu {conventionName} sprawdził twoją płatność za zamówienie {number} i ją odrzucił. Zamówienie nie jest opłacone i nie dostanie kodu QR."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} moved the order {number} to another email address. The QR code and the order link sent to this address no longer work."
+msgstr "Organizator konwentu {conventionName} przeniósł zamówienie {number} na inny adres e-mail. Kod QR i link do zamówienia wysłane na ten adres już nie działają."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} moved the order {number} to this email address."
+msgstr "Organizator konwentu {conventionName} przeniósł zamówienie {number} na ten adres e-mail."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} swapped a variant of the merchandise in your order {number}. This is the merchandise the order holds now:"
+msgstr "Organizator konwentu {conventionName} zamienił wariant gadżetu w twoim zamówieniu {number}. Oto gadżety, które zamówienie teraz zawiera:"
+
+#: src/order-emails.ts
 msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 msgstr "Organizator konwentu {conventionName} skontaktuje się z tobą. Nie musisz płacić ponownie."
 
@@ -239,6 +263,10 @@ msgstr "Jeśli to nie ty prosisz o tę zmianę, nie potwierdzaj jej i zmień has
 msgid "If you did not ask for this change, ignore this message."
 msgstr "Jeśli to nie ty prosisz o tę zmianę, zignoruj tę wiadomość."
 
+#: src/order-emails.ts
+msgid "If you did not ask for this change, write to {contactEmail}."
+msgstr "Jeśli ta zmiana nie była na twoją prośbę, napisz na adres {contactEmail}."
+
 #: src/emails.ts
 msgid "If you did not create an account, ignore this message."
 msgstr "Jeśli to nie ty zakładasz konto, zignoruj tę wiadomość."
@@ -254,6 +282,10 @@ msgstr "Jeśli nie spodziewasz się tego zaproszenia, zignoruj tę wiadomość."
 #: src/emails.ts
 msgid "If you do not expect this, contact the head organizer of the convention."
 msgstr "Jeśli się tego nie spodziewasz, skontaktuj się z głównym organizatorem konwentu."
+
+#: src/order-emails.ts
+msgid "If you have questions about the order or its payment, write to {contactEmail}."
+msgstr "W razie pytań o zamówienie lub płatność za nie napisz na adres {contactEmail}."
 
 #: src/order-emails.ts
 msgid "If you have questions, write to {contactEmail}."
@@ -302,6 +334,10 @@ msgstr "Żadne konto nie używa tego adresu e-mail."
 #: src/errors.ts
 msgid "No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address."
 msgstr "Żadne potwierdzone konto nie używa adresu e-mail {email}. Poproś prelegenta o założenie konta, jeśli jeszcze go nie ma, i potwierdzenie tego adresu."
+
+#: src/order-emails.ts
+msgid "Nothing else of the order changed, and your QR code stays the same."
+msgstr "Nic poza tym w zamówieniu się nie zmieniło, a twój kod QR pozostaje ten sam."
 
 #: src/errors.ts
 msgid "Only a head organizer can edit or remove another head organizer."
@@ -502,6 +538,10 @@ msgid "The link is valid for 7 days and works once."
 msgstr "Link jest ważny przez 7 dni i działa tylko raz."
 
 #: src/order-emails.ts
+msgid "The merchandise of your order {number} was changed"
+msgstr "Zmieniono gadżety w zamówieniu {number}"
+
+#: src/order-emails.ts
 msgid "The money is with the convention. Return it to the buyer at the payment provider."
 msgstr "Pieniądze są u konwentu. Zwróć je kupującemu u dostawcy płatności."
 
@@ -528,6 +568,10 @@ msgstr "Zamówienie wygasło, a to, co obejmowało, nie jest już dostępne."
 #: src/errors.ts
 msgid "The password is too weak. Use at least 8 characters."
 msgstr "Hasło jest za słabe. Użyj co najmniej 8 znaków."
+
+#: src/order-emails.ts
+msgid "The payment for your order {number} was declined"
+msgstr "Płatność za zamówienie {number} została odrzucona"
 
 #: src/errors.ts
 msgid "The payment provider cannot take this email address. Use a shorter one."
@@ -560,6 +604,10 @@ msgstr "Sklepu nie można jeszcze otworzyć: brakuje czegoś, czego potrzebuje."
 #: src/order-emails.ts
 msgid "The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention."
 msgstr "Posiadacz akredytacji jest nastolatkiem: na konwent trzeba przynieść zgodę opiekuna na papierze."
+
+#: src/order-emails.ts
+msgid "The ticket holder of your order {number} was changed"
+msgstr "Zmieniono posiadacza akredytacji w zamówieniu {number}"
 
 #: src/errors.ts
 msgid "The time to pay for this order has ended. Start a new order."
@@ -681,6 +729,10 @@ msgstr "Ten link z zaproszeniem jest nieprawidłowy. Sprawdź, czy otwierasz ca�
 msgid "This invitation was sent to another email address. Sign in with the account that uses that address."
 msgstr "To zaproszenie wysłano na inny adres e-mail. Zaloguj się na konto, które używa tego adresu."
 
+#: src/order-emails.ts
+msgid "This is the new QR code of the order. The one sent before no longer works."
+msgstr "To nowy kod QR zamówienia. Kod wysłany wcześniej już nie działa."
+
 #: src/errors.ts
 msgid "This language is not supported."
 msgstr "Ten język nie jest obsługiwany."
@@ -717,11 +769,19 @@ msgctxt "glossary"
 msgid "ticket holder"
 msgstr "posiadacz akredytacji"
 
+#: src/order-emails.ts
+msgid "Ticket holder"
+msgstr "Posiadacz akredytacji"
+
 #. Glossary term: ticket type
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "ticket type"
 msgstr "rodzaj akredytacji"
+
+#: src/order-emails.ts
+msgid "To settle the return of the money, write to {contactEmail}."
+msgstr "Aby ustalić zwrot pieniędzy, napisz na adres {contactEmail}."
 
 #: src/errors.ts
 msgid "Too many attempts. Try again in a few minutes."
@@ -860,8 +920,20 @@ msgid "Your order {number} for {conventionName} has expired"
 msgstr "Twoje zamówienie {number} w sklepie konwentu {conventionName} wygasło"
 
 #: src/order-emails.ts
+msgid "Your order {number} for {conventionName} is now under this email address"
+msgstr "Twoje zamówienie {number} w sklepie konwentu {conventionName} jest teraz przypisane do tego adresu e-mail"
+
+#: src/order-emails.ts
 msgid "Your order {number} for {conventionName} is paid"
 msgstr "Twoje zamówienie {number} w sklepie konwentu {conventionName} jest opłacone"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} was canceled"
+msgstr "Twoje zamówienie {number} w sklepie konwentu {conventionName} zostało anulowane"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} was moved to another email address"
+msgstr "Twoje zamówienie {number} w sklepie konwentu {conventionName} przeniesiono na inny adres e-mail"
 
 #: src/order-emails.ts
 msgid "Your order {number} for {conventionName} was not paid in time and has expired. Nothing was charged."

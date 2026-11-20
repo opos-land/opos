@@ -98,6 +98,7 @@ export class OrderEmailsRepository {
         editionId: orders.editionId,
         number: orders.number,
         email: orders.email,
+        holderName: orders.holderName,
         ageBand: orders.ageBand,
         totalMinor: orders.totalMinor,
         currency: orders.currency,

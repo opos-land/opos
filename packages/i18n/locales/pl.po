@@ -1068,6 +1068,10 @@ msgid "This scanner no longer works: its access was revoked or expired. Pair the
 msgstr "Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Sparuj telefon ponownie."
 
 #: src/errors.ts
+msgid "This scanner was revoked or its access has ended, so it gets no new pairing code. Enable a new scanner."
+msgstr "Ten skaner został odwołany albo jego dostęp się skończył, więc nie dostanie nowego kodu parowania. Włącz nowy skaner."
+
+#: src/errors.ts
 msgid "This shop is not selling right now."
 msgstr "Ten sklep w tej chwili nie prowadzi sprzedaży."
 

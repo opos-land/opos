@@ -98,6 +98,10 @@ describe('errorMessage', () => {
       'Skaner nie może działać dłużej niż twój dostęp do konwentu. Ustaw wcześniejszy koniec.',
     ],
     [
+      'scanner.ended',
+      'Ten skaner został odwołany albo jego dostęp się skończył, więc nie dostanie nowego kodu parowania. Włącz nowy skaner.',
+    ],
+    [
       'scanner.code-refused',
       'Ten kod parowania nie działa: został już użyty albo wygasł. Poproś organizatora o nowy.',
     ],

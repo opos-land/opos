@@ -50,6 +50,38 @@ export const enabledScannerSchema = scannerSchema.extend({
 
 export type EnabledScanner = z.infer<typeof enabledScannerSchema>
 
+/** The most orders a scanner's page lists of what it handed out: the ones it marked last. */
+export const MAX_LISTED_HAND_OUTS = 100
+
+/**
+ * What a scanner handed out (D15): the lines that name it as the one that marked them. A mark an
+ * org made in the panel, and one taken back, are not the scanner's.
+ */
+export const scannerHandOutsSchema = z.object({
+  /** How many orders it marked something of. */
+  orders: z.number().int().min(0),
+  /** How many lines it marked in all. */
+  lines: z.number().int().min(0),
+  firstAt: timestamp.nullable(),
+  lastAt: timestamp.nullable(),
+  /** The orders, the one marked last first, at most `MAX_LISTED_HAND_OUTS` of them. */
+  latest: z.array(
+    z.object({
+      orderId: z.uuid(),
+      number: z.string(),
+      holderName: z.string(),
+      /** How many lines of the order the scanner marked. */
+      lines: z.number().int().min(1),
+      lastAt: timestamp,
+    }),
+  ),
+})
+
+/** A scanner as its own page shows it: what the list tells of it, and what it handed out. */
+export const scannerDetailSchema = scannerSchema.extend({ handOuts: scannerHandOutsSchema })
+
+export type ScannerDetail = z.infer<typeof scannerDetailSchema>
+
 /** A pairing code, spent by the phone that becomes the scanner. */
 export const pairScannerSchema = z.strictObject({ code: z.string().min(1).max(200) })
 
@@ -158,6 +190,24 @@ export const scannersContract = {
         'Enables a scanner and answers its pairing code, once; refused with scanner.limit-reached, scanner.name-taken or scanner.outlives-org; needs tickets=write',
     })
     .input(edition.extend({ body: createScannerSchema }))
+    .output(enabledScannerSchema),
+  get: tenantRoute
+    .route({
+      method: 'GET',
+      path: '/editions/{editionId}/scanners/{scannerId}',
+      summary:
+        'One scanner of the edition with what it handed out: how many orders and lines, when, and the orders it marked last; needs tickets>=read',
+    })
+    .input(scanner)
+    .output(scannerDetailSchema),
+  renewPairing: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/scanners/{scannerId}/pairing-code',
+      summary:
+        'Gives a scanner a new pairing code and answers it, once: the phone that held the scanner holds it no more; refused with scanner.ended for a scanner revoked or ended; needs tickets=write',
+    })
+    .input(scanner)
     .output(enabledScannerSchema),
   revoke: tenantRoute
     .route({

@@ -1,7 +1,15 @@
 import { Injectable } from '@nestjs/common'
-import { type Scanner } from '@opos/contract'
-import { accounts, editions, scannerDevices, tenantMemberships, tenants } from '@opos/db'
-import { and, asc, count, eq, gt, isNull, or, sql } from 'drizzle-orm'
+import { MAX_LISTED_HAND_OUTS, type Scanner, type ScannerDetail } from '@opos/contract'
+import {
+  accounts,
+  editions,
+  orderLines,
+  orders,
+  scannerDevices,
+  tenantMemberships,
+  tenants,
+} from '@opos/db'
+import { and, asc, count, desc, eq, gt, isNull, or, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
 import { isUuid } from '../../common/uuid'
@@ -79,6 +87,79 @@ export class ScannersRepository {
     )
     if (!row) throw notFound('scanner')
     return toScanner(row)
+  }
+
+  /**
+   * What the scanner of the edition handed out: the lines that name it. A line an org marked in
+   * the panel names no scanner, and a mark taken back names none either.
+   */
+  async handOuts(editionId: string, id: string): Promise<ScannerDetail['handOuts']> {
+    const marked = and(eq(orderLines.editionId, editionId), eq(orderLines.handedOutBy, id))
+    const lastAt = sql<Date>`max(${orderLines.handedOutAt})`
+    const [total] = await this.context
+      .tx()
+      .select({
+        orders: sql<number>`count(distinct ${orderLines.orderId})::int`,
+        lines: sql<number>`count(*)::int`,
+        firstAt: sql<Date | null>`min(${orderLines.handedOutAt})`,
+        lastAt: sql<Date | null>`max(${orderLines.handedOutAt})`,
+      })
+      .from(orderLines)
+      .where(marked)
+    const latest = await this.context
+      .tx()
+      .select({
+        orderId: orders.id,
+        number: orders.number,
+        holderName: orders.holderName,
+        lines: sql<number>`count(*)::int`,
+        lastAt,
+      })
+      .from(orderLines)
+      .innerJoin(orders, eq(orders.id, orderLines.orderId))
+      .where(marked)
+      .groupBy(orders.id, orders.number, orders.holderName)
+      .orderBy(desc(lastAt), asc(orders.number))
+      .limit(MAX_LISTED_HAND_OUTS)
+    return {
+      orders: total?.orders ?? 0,
+      lines: total?.lines ?? 0,
+      firstAt: total?.firstAt ? new Date(total.firstAt).toISOString() : null,
+      lastAt: total?.lastAt ? new Date(total.lastAt).toISOString() : null,
+      latest: latest.map((order) => ({ ...order, lastAt: new Date(order.lastAt).toISOString() })),
+    }
+  }
+
+  /**
+   * Gives the scanner of the edition a new pairing code, when it stands at `now`: not revoked and
+   * not ended. In one statement the phone that held it loses its token and the scanner waits for
+   * the phone that opens the new code. Answers whether it did.
+   */
+  async renewPairing(
+    editionId: string,
+    id: string,
+    pairing: { codeHash: string; expiresAt: Date },
+    now: Date,
+  ): Promise<boolean> {
+    const renewed = await this.context
+      .tx()
+      .update(scannerDevices)
+      .set({
+        pairingCodeHash: pairing.codeHash,
+        pairingExpiresAt: pairing.expiresAt,
+        pairedAt: null,
+        tokenHash: null,
+      })
+      .where(
+        and(
+          eq(scannerDevices.editionId, editionId),
+          eq(scannerDevices.id, id),
+          isNull(scannerDevices.revokedAt),
+          gt(scannerDevices.expiresAt, now),
+        ),
+      )
+      .returning({ id: scannerDevices.id })
+    return renewed.length > 0
   }
 
   /** When the edition ends, or undefined. */

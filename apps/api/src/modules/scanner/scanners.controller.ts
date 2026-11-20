@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common'
-import { contract } from '@opos/contract'
+import { contract, type Scanner } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
@@ -24,18 +24,41 @@ export class ScannersController {
    * reads the tickets alone is told the address behind its own scanners, and of another's only
    * that an org enabled it.
    */
+  private shown<T extends Scanner>(scanner: T): T {
+    if (decideTenant(this.context.membership(), 'settings', 'read') === 'allow') return scanner
+    const own = this.context.account().email
+    return { ...scanner, enabledBy: scanner.enabledBy === own ? own : null }
+  }
+
   @Implement(contract.scanners.list)
   @RequireEdition('tickets', 'read')
   list() {
-    return implement(contract.scanners.list).handler(async ({ input }) => {
-      const scanners = await this.scanners.list(input.params.editionId)
-      if (decideTenant(this.context.membership(), 'settings', 'read') === 'allow') return scanners
-      const own = this.context.account().email
-      return scanners.map((scanner) => ({
+    return implement(contract.scanners.list).handler(async ({ input }) =>
+      (await this.scanners.list(input.params.editionId)).map((scanner) => this.shown(scanner)),
+    )
+  }
+
+  /** One scanner with what it handed out: the names on its orders are behind the same permission. */
+  @Implement(contract.scanners.get)
+  @RequireEdition('tickets', 'read')
+  get() {
+    return implement(contract.scanners.get).handler(async ({ input }) => {
+      const { editionId, scannerId } = input.params
+      const scanner = await this.scanners.get(editionId, scannerId)
+      return this.shown({
         ...scanner,
-        enabledBy: scanner.enabledBy === own ? own : null,
-      }))
+        handOuts: await this.scanners.handOuts(editionId, scanner.id),
+      })
     })
+  }
+
+  /** Any org with tickets write access pairs any scanner of the edition again, whoever enabled it. */
+  @Implement(contract.scanners.renewPairing)
+  @RequireEdition('tickets', 'write')
+  renewPairing() {
+    return implement(contract.scanners.renewPairing).handler(async ({ input }) =>
+      this.shown(await this.service.pairAgain(input.params.editionId, input.params.scannerId)),
+    )
   }
 
   @Implement(contract.scanners.create)

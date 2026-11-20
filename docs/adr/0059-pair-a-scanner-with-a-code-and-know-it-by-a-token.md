@@ -19,6 +19,9 @@ of the panel's origin would be the session of whoever signed in on that phone.
 - An org with tickets write access names a scanner and is shown a pairing code once, as a QR code
   and as a link that carries the code after the `#`. The code works once and for fifteen minutes.
   The phone that opens it becomes the scanner and is handed a token, once.
+- A scanner that stands is given a new pairing code in the same way, shown once: issuing it empties
+  the token, so the phone that held the scanner holds it no more, and the scanner waits for the
+  phone that opens the new code. A scanner holds one token at a time.
 - A pairing code and a token each carry 256 random bits and are kept as hashes. The API finds a
   scanner by either hash in a lookup across tenants that answers the scanner and its tenant
   alone.
@@ -38,8 +41,9 @@ of the panel's origin would be the session of whoever signed in on that phone.
 - **The scanner's token in a cookie.** It would travel with every request of the panel on that
   phone, beside or instead of an account's session, and a route could not tell which it was
   given.
-- **A pairing code that stays valid.** A photograph of the screen would make scanners for as
-  long as nobody noticed.
+- **A pairing code that stays valid**, or one kept readable to show again on the scanner's page. A
+  photograph of the screen would make scanners for as long as nobody noticed; a phone that lost
+  its token is paired again with a new code instead.
 - **The order's identifier alone to mark a hand-out.** A scanner could mark an order it never
   scanned; the code read is the proof that the buyer stood there.
 
@@ -49,5 +53,5 @@ of the panel's origin would be the session of whoever signed in on that phone.
   shows nothing of an account.
 - A token in the phone's storage is as safe as the phone: a lost phone is revoked in the panel,
   and its token opens the scans of one edition, never an account.
-- Enabling and revoking a device as proposed here (D7 to D13 of
+- Enabling, pairing again and revoking a device as proposed here (D7 to D15 of
   [the spec](../specs/0007-scanner.md)) is the domain owner's to confirm.

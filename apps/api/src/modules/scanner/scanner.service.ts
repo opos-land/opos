@@ -18,6 +18,7 @@ import { alreadyHandedOut } from '../order-management/order-management.errors'
 import {
   pairingCodeRefused,
   scanNotValid,
+  scannerEnded,
   scannerLimitReached,
   scannerNameTaken,
   scannerOutlivesOrg,
@@ -85,6 +86,30 @@ export class ScannerService {
     })
     return {
       ...(await this.scanners.get(editionId, id)),
+      pairingCode,
+      pairingExpiresAt: pairingExpiresAt.toISOString(),
+    }
+  }
+
+  /**
+   * Gives a scanner of the edition a new pairing code (D14) and answers it: the only time that
+   * code is told. The phone that held the scanner holds it no more from this moment, whether or
+   * not another opens the new code. A scanner of another edition is not found; one that was
+   * revoked or has ended is refused.
+   */
+  async pairAgain(editionId: string, scannerId: string, now = new Date()): Promise<EnabledScanner> {
+    await this.scanners.get(editionId, scannerId)
+    const pairingCode = secretToken()
+    const pairingExpiresAt = new Date(now.getTime() + PAIRING_MINUTES * MINUTE)
+    const renewed = await this.scanners.renewPairing(
+      editionId,
+      scannerId,
+      { codeHash: hashOf(pairingCode), expiresAt: pairingExpiresAt },
+      now,
+    )
+    if (!renewed) throw scannerEnded()
+    return {
+      ...(await this.scanners.get(editionId, scannerId)),
       pairingCode,
       pairingExpiresAt: pairingExpiresAt.toISOString(),
     }

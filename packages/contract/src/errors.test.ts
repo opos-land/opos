@@ -85,6 +85,7 @@ describe('errorCodes', () => {
     'scanner.outlives-org',
     'scanner.code-refused',
     'scanner.revoked',
+    'scanner.ended',
     'scan.not-valid',
   ])('lists %s of the scanner', (code) => {
     expect(errorCodes).toContain(code)

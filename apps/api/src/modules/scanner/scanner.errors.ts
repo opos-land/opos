@@ -13,6 +13,10 @@ export const scannerNameTaken = () =>
 export const scannerOutlivesOrg = () =>
   new ApiError(422, 'scanner.outlives-org', 'The scanner would outlive the access of its org')
 
+/** A scanner that was revoked or has ended is paired with no phone again (D14). */
+export const scannerEnded = () =>
+  new ApiError(409, 'scanner.ended', 'The scanner was revoked or has ended')
+
 /** A pairing code that is unknown, used or expired, or of a scanner that no longer stands. */
 export const pairingCodeRefused = () =>
   new ApiError(403, 'scanner.code-refused', 'The pairing code is refused')

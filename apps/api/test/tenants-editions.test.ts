@@ -855,6 +855,10 @@ describe('concurrency', () => {
         method: 'delete',
         path: `/editions/${s.desk.edition}/scanners/${s.desk.scanner}`,
       }),
+      'scanners.renewPairing': (s) => ({
+        method: 'post',
+        path: `/editions/${s.desk.edition}/scanners/${s.desk.scanner}/pairing-code`,
+      }),
       'catalog.merchandise.create': (s) => ({
         method: 'post',
         path: `/editions/${s.edition}/merchandise-items`,

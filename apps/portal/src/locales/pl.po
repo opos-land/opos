@@ -58,6 +58,10 @@ msgstr "Konwent prowadzi swój zespół, edycje, program i sprzedaż akredytacji
 msgid "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
 msgstr "Konwent widzi zapisy na swoje edycje i złożone na nie zamówienia. Konwenty są od siebie odizolowane: żaden nie widzi danych innego."
 
+#: src/features/shop/pages/order-link-page.tsx
+msgid "A link to an order works for a limited time. We can send a new one to the email address of the order."
+msgstr "Link do zamówienia działa przez ograniczony czas. Możemy wysłać nowy na adres e-mail zamówienia."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
 msgstr "Opinia pokazuje twoje imię i nazwisko albo „anonimowo”, jeśli tak wybierzesz; anonimowość obowiązuje wobec wszystkich, także organizatorów. Komentarz do niej jest publiczny albo widoczny tylko dla prelegentów punktu programu, zależnie od twojego wyboru."
@@ -131,6 +135,11 @@ msgstr "Zastosuj kod"
 msgid "At least 8 characters."
 msgstr "Co najmniej 8 znaków."
 
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Awaiting payment"
+msgstr "Oczekuje na płatność"
+
 #: src/features/shop/pages/checkout-page.tsx
 msgid "Back"
 msgstr "Wstecz"
@@ -174,6 +183,11 @@ msgid "Cancel"
 msgstr "Anuluj"
 
 #: src/features/shop/pages/result-page.tsx
+msgid "Canceled"
+msgstr "Anulowane"
+
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
 msgid "Canceled"
 msgstr "Anulowane"
 
@@ -331,6 +345,10 @@ msgstr "Kod rabatowy"
 msgid "Discount code {appliedCode}"
 msgstr "Kod rabatowy {appliedCode}"
 
+#: src/features/shop/components/order-lines.tsx
+msgid "Discount code {code}"
+msgstr "Kod rabatowy {code}"
+
 #: src/features/account/components/two-factor-card.tsx
 msgid "Dismiss"
 msgstr "Zamknij"
@@ -403,6 +421,11 @@ msgstr "Podaj hasło."
 #: src/features/shop/pages/shop-page.tsx
 msgid "Every price is a gross amount."
 msgstr "Wszystkie ceny są cenami brutto."
+
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Expired"
+msgstr "Wygasłe"
 
 #: src/features/landing/pages/landing-page.tsx
 msgid "Fantasy conventions, in one place"
@@ -481,6 +504,10 @@ msgstr "Wiem, że posiadacz akredytacji przynosi na konwent zgodę opiekuna na p
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
 msgstr "Jeśli adres {sentTo} należy do konta, wysłaliśmy na niego link do ustawienia nowego hasła. Link działa jeden raz, przez godzinę."
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "If this link belonged to an order, a new link is on its way to the email address of that order."
+msgstr "Jeśli ten link należał do zamówienia, nowy link jest już w drodze na adres e-mail tego zamówienia."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "If you sign in with Google, Google confirms your email address and gives us your name."
@@ -662,6 +689,10 @@ msgctxt "the button that places an order with nothing to pay"
 msgid "Order"
 msgstr "Zamawiam"
 
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Order {number}"
+msgstr "Zamówienie {number}"
+
 #: src/features/shop/pages/checkout-page.tsx
 msgid "Order and pay"
 msgstr "Zamawiam i płacę"
@@ -698,6 +729,11 @@ msgstr "Nie znaleziono strony"
 msgid "Paid"
 msgstr "Opłacone"
 
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Paid"
+msgstr "Opłacone"
+
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Password"
 msgstr "Hasło"
@@ -710,9 +746,19 @@ msgstr "Minione edycje"
 msgid "payment card"
 msgstr "karta płatnicza"
 
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Payment declined"
+msgstr "Płatność odrzucona"
+
 #: src/features/shop/pages/shop-page.tsx
 msgid "Payment methods: {methods}"
 msgstr "Metody płatności: {methods}"
+
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Payment under review"
+msgstr "Płatność w trakcie weryfikacji"
 
 #: src/features/shop/pages/shop-page.tsx
 msgid "Payments are handled by {provider}."
@@ -721,6 +767,14 @@ msgstr "Płatności obsługuje {provider}."
 #: src/features/shop/pages/shop-page.tsx
 msgid "Payments are handled by a fake provider that takes no money."
 msgstr "Płatności obsługuje testowy dostawca, który nie pobiera pieniędzy."
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Picking up merchandise"
+msgstr "Odbiór gadżetów"
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Placed"
+msgstr "Złożone"
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
@@ -752,6 +806,10 @@ msgstr "Program"
 #: src/features/account/components/two-factor-card.tsx
 msgid "QR code for your authenticator app"
 msgstr "Kod QR dla aplikacji uwierzytelniającej"
+
+#: src/features/shop/components/order-qr-code.tsx
+msgid "QR code of the order {number}"
+msgstr "Kod QR zamówienia {number}"
 
 #. placeholder {0}: item.name
 #: src/features/shop/components/merch-step.tsx
@@ -860,6 +918,7 @@ msgstr "Sprzedawca"
 
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
+#: src/features/shop/pages/order-link-page.tsx
 msgid "Send a new link"
 msgstr "Wyślij nowy link"
 
@@ -878,6 +937,10 @@ msgstr "Sklep"
 #: src/features/conventions/components/edition-directory.tsx
 msgid "Show more"
 msgstr "Pokaż więcej"
+
+#: src/features/shop/components/order-qr-code.tsx
+msgid "Show this code at the entrance and when you pick up your merchandise. Whoever holds it can use it, so keep it to yourself."
+msgstr "Pokaż ten kod przy wejściu i przy odbiorze gadżetów. Każdy, kto go ma, może go użyć, więc nie udostępniaj go nikomu."
 
 #: src/app/layout.tsx
 #: src/features/auth/components/sign-in-form.tsx
@@ -925,6 +988,10 @@ msgstr "Wyprzedane"
 #: src/features/shop/pages/result-page.tsx
 msgid "Start a new order"
 msgstr "Złóż nowe zamówienie"
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Status"
+msgstr "Status"
 
 #: src/features/shop/components/steps-nav.tsx
 msgid "Steps of the order"
@@ -1068,6 +1135,14 @@ msgstr "Tej operacji nie można cofnąć."
 msgid "This code cannot be used for this order."
 msgstr "Tego kodu nie można użyć w tym zamówieniu."
 
+#: src/features/shop/pages/order-link-page.tsx
+msgid "This link does not open an order. Use the link from the newest email about your order: an earlier one stops working when the email address of the order changes."
+msgstr "Ten link nie otwiera żadnego zamówienia. Użyj linku z najnowszej wiadomości o zamówieniu: wcześniejszy przestaje działać, gdy zmieni się adres e-mail zamówienia."
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "This link has expired"
+msgstr "Ten link wygasł"
+
 #: src/features/shop/components/add-ons-step.tsx
 msgid "This only tells the convention how many to expect: no place is reserved."
 msgstr "To tylko informacja dla konwentu, ilu osób się spodziewać: nie rezerwuje miejsca."
@@ -1108,6 +1183,10 @@ msgstr "Aby prowadzić twoje konto i umożliwiać logowanie; aby konwenty mogły
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Too much time has passed since you opened the link. Ask for a new one."
 msgstr "Od otwarcia linku minęło zbyt dużo czasu. Poproś o nowy."
+
+#: src/features/shop/components/order-lines.tsx
+msgid "Total"
+msgstr "Razem"
 
 #: src/features/shop/components/summary-step.tsx
 msgid "Total due"
@@ -1193,6 +1272,10 @@ msgstr "Użyj kodu z aplikacji"
 msgid "Variant of {0}"
 msgstr "Wariant: {0}"
 
+#: src/features/shop/pages/order-link-page.tsx
+msgid "We cannot open this order"
+msgstr "Nie możemy otworzyć tego zamówienia"
+
 #: src/features/shop/pages/result-page.tsx
 msgid "We cannot show this order here. The page opens in the browser the order was placed in, for 24 hours. Its confirmation comes by email once it is paid."
 msgstr "Nie możemy tu pokazać tego zamówienia. Ta strona otwiera się w przeglądarce, w której złożono zamówienie, przez 24 godziny. Potwierdzenie przyjdzie e-mailem, gdy zamówienie zostanie opłacone."
@@ -1232,6 +1315,11 @@ msgstr "Kod QR zamówienia wysłaliśmy na twój adres e-mail."
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."
 msgstr "Wyślemy ci link do ustawienia nowego hasła."
+
+#: src/features/shop/components/order-lines.tsx
+#: src/features/shop/pages/order-link-page.tsx
+msgid "What the order holds"
+msgstr "Co zawiera zamówienie"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "What we store"
@@ -1326,6 +1414,7 @@ msgid "Your name or nickname"
 msgstr "Twoje imię i nazwisko albo pseudonim"
 
 #: src/features/shop/components/summary-step.tsx
+#: src/features/shop/pages/order-link-page.tsx
 #: src/features/shop/pages/result-page.tsx
 msgid "Your order"
 msgstr "Twoje zamówienie"
@@ -1342,6 +1431,10 @@ msgstr "Twoja płatność dotarła, ale nie udało się nią potwierdzić zamów
 #: src/features/shop/pages/result-page.tsx
 msgid "Your payment is under review"
 msgstr "Twoja płatność jest wyjaśniana"
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Your QR code"
+msgstr "Twój kod QR"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your rights"

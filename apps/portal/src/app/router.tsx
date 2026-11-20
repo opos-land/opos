@@ -16,7 +16,7 @@ import {
 } from '../features/conventions'
 import { LandingPage, PrivacyPage } from '../features/landing'
 import { SchedulePage } from '../features/schedule'
-import { CheckoutPage, ResultPage, ShopPage } from '../features/shop'
+import { CheckoutPage, OrderLinkPage, ResultPage, ShopPage } from '../features/shop'
 import { NotFoundView } from '../shared/ui'
 import { Layout } from './layout'
 
@@ -61,6 +61,8 @@ export const router = createBrowserRouter([
         path: '/conventions/:tenantSlug/:editionSlug/shop/result/:orderId',
         element: <ResultPage />,
       },
+      // An order opened by the link from its email: the token comes after the `#`.
+      { path: '/order', element: <OrderLinkPage /> },
       { path: '*', element: <NotFoundView /> },
     ],
   },

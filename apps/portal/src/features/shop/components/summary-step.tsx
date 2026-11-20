@@ -15,7 +15,7 @@ import { type Draft, summaryIssues } from '../model/checkout'
 import { documentVersionUrl } from '../model/files'
 
 /** The name of a line as the summary and the emails write it. */
-export const lineName = (line: PricedLine) => {
+export const lineName = (line: Pick<PricedLine, 'name' | 'variant' | 'quantity'>) => {
   const name = line.variant.length > 0 ? `${line.name} (${line.variant.join(', ')})` : line.name
   return line.quantity > 1 ? `${line.quantity} × ${name}` : name
 }

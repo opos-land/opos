@@ -58,6 +58,10 @@ msgstr "A convention runs its team, editions, programme and ticket sales in the 
 msgid "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
 msgstr "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
 
+#: src/features/shop/pages/order-link-page.tsx
+msgid "A link to an order works for a limited time. We can send a new one to the email address of the order."
+msgstr "A link to an order works for a limited time. We can send a new one to the email address of the order."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
 msgstr "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
@@ -131,6 +135,11 @@ msgstr "Apply the code"
 msgid "At least 8 characters."
 msgstr "At least 8 characters."
 
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Awaiting payment"
+msgstr "Awaiting payment"
+
 #: src/features/shop/pages/checkout-page.tsx
 msgid "Back"
 msgstr "Back"
@@ -174,6 +183,11 @@ msgid "Cancel"
 msgstr "Cancel"
 
 #: src/features/shop/pages/result-page.tsx
+msgid "Canceled"
+msgstr "Canceled"
+
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
 msgid "Canceled"
 msgstr "Canceled"
 
@@ -331,6 +345,10 @@ msgstr "Discount code"
 msgid "Discount code {appliedCode}"
 msgstr "Discount code {appliedCode}"
 
+#: src/features/shop/components/order-lines.tsx
+msgid "Discount code {code}"
+msgstr "Discount code {code}"
+
 #: src/features/account/components/two-factor-card.tsx
 msgid "Dismiss"
 msgstr "Dismiss"
@@ -403,6 +421,11 @@ msgstr "Enter your password."
 #: src/features/shop/pages/shop-page.tsx
 msgid "Every price is a gross amount."
 msgstr "Every price is a gross amount."
+
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Expired"
+msgstr "Expired"
 
 #: src/features/landing/pages/landing-page.tsx
 msgid "Fantasy conventions, in one place"
@@ -481,6 +504,10 @@ msgstr "I know that the ticket holder brings the guardian’s consent on paper t
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
 msgstr "If an account uses {sentTo}, we sent it a link to set a new password. The link works once, for one hour."
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "If this link belonged to an order, a new link is on its way to the email address of that order."
+msgstr "If this link belonged to an order, a new link is on its way to the email address of that order."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "If you sign in with Google, Google confirms your email address and gives us your name."
@@ -662,6 +689,10 @@ msgctxt "the button that places an order with nothing to pay"
 msgid "Order"
 msgstr "Order"
 
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Order {number}"
+msgstr "Order {number}"
+
 #: src/features/shop/pages/checkout-page.tsx
 msgid "Order and pay"
 msgstr "Order and pay"
@@ -698,6 +729,11 @@ msgstr "Page not found"
 msgid "Paid"
 msgstr "Paid"
 
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Paid"
+msgstr "Paid"
+
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Password"
 msgstr "Password"
@@ -710,9 +746,19 @@ msgstr "Past editions"
 msgid "payment card"
 msgstr "payment card"
 
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Payment declined"
+msgstr "Payment declined"
+
 #: src/features/shop/pages/shop-page.tsx
 msgid "Payment methods: {methods}"
 msgstr "Payment methods: {methods}"
+
+#: src/features/shop/model/order-status.ts
+msgctxt "the status of an order"
+msgid "Payment under review"
+msgstr "Payment under review"
 
 #: src/features/shop/pages/shop-page.tsx
 msgid "Payments are handled by {provider}."
@@ -721,6 +767,14 @@ msgstr "Payments are handled by {provider}."
 #: src/features/shop/pages/shop-page.tsx
 msgid "Payments are handled by a fake provider that takes no money."
 msgstr "Payments are handled by a fake provider that takes no money."
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Picking up merchandise"
+msgstr "Picking up merchandise"
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Placed"
+msgstr "Placed"
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
@@ -752,6 +806,10 @@ msgstr "Programme"
 #: src/features/account/components/two-factor-card.tsx
 msgid "QR code for your authenticator app"
 msgstr "QR code for your authenticator app"
+
+#: src/features/shop/components/order-qr-code.tsx
+msgid "QR code of the order {number}"
+msgstr "QR code of the order {number}"
 
 #. placeholder {0}: item.name
 #: src/features/shop/components/merch-step.tsx
@@ -860,6 +918,7 @@ msgstr "Seller"
 
 #: src/features/auth/components/choose-password-form.tsx
 #: src/features/auth/pages/confirm-page.tsx
+#: src/features/shop/pages/order-link-page.tsx
 msgid "Send a new link"
 msgstr "Send a new link"
 
@@ -878,6 +937,10 @@ msgstr "Shop"
 #: src/features/conventions/components/edition-directory.tsx
 msgid "Show more"
 msgstr "Show more"
+
+#: src/features/shop/components/order-qr-code.tsx
+msgid "Show this code at the entrance and when you pick up your merchandise. Whoever holds it can use it, so keep it to yourself."
+msgstr "Show this code at the entrance and when you pick up your merchandise. Whoever holds it can use it, so keep it to yourself."
 
 #: src/app/layout.tsx
 #: src/features/auth/components/sign-in-form.tsx
@@ -925,6 +988,10 @@ msgstr "Sold out"
 #: src/features/shop/pages/result-page.tsx
 msgid "Start a new order"
 msgstr "Start a new order"
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Status"
+msgstr "Status"
 
 #: src/features/shop/components/steps-nav.tsx
 msgid "Steps of the order"
@@ -1068,6 +1135,14 @@ msgstr "This action cannot be undone."
 msgid "This code cannot be used for this order."
 msgstr "This code cannot be used for this order."
 
+#: src/features/shop/pages/order-link-page.tsx
+msgid "This link does not open an order. Use the link from the newest email about your order: an earlier one stops working when the email address of the order changes."
+msgstr "This link does not open an order. Use the link from the newest email about your order: an earlier one stops working when the email address of the order changes."
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "This link has expired"
+msgstr "This link has expired"
+
 #: src/features/shop/components/add-ons-step.tsx
 msgid "This only tells the convention how many to expect: no place is reserved."
 msgstr "This only tells the convention how many to expect: no place is reserved."
@@ -1108,6 +1183,10 @@ msgstr "To run your account and sign you in; to let conventions sell you tickets
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Too much time has passed since you opened the link. Ask for a new one."
 msgstr "Too much time has passed since you opened the link. Ask for a new one."
+
+#: src/features/shop/components/order-lines.tsx
+msgid "Total"
+msgstr "Total"
 
 #: src/features/shop/components/summary-step.tsx
 msgid "Total due"
@@ -1193,6 +1272,10 @@ msgstr "Use the code of the app"
 msgid "Variant of {0}"
 msgstr "Variant of {0}"
 
+#: src/features/shop/pages/order-link-page.tsx
+msgid "We cannot open this order"
+msgstr "We cannot open this order"
+
 #: src/features/shop/pages/result-page.tsx
 msgid "We cannot show this order here. The page opens in the browser the order was placed in, for 24 hours. Its confirmation comes by email once it is paid."
 msgstr "We cannot show this order here. The page opens in the browser the order was placed in, for 24 hours. Its confirmation comes by email once it is paid."
@@ -1232,6 +1315,11 @@ msgstr "We sent the QR code of your order to your email address."
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "We will send you a link to set a new password."
 msgstr "We will send you a link to set a new password."
+
+#: src/features/shop/components/order-lines.tsx
+#: src/features/shop/pages/order-link-page.tsx
+msgid "What the order holds"
+msgstr "What the order holds"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "What we store"
@@ -1326,6 +1414,7 @@ msgid "Your name or nickname"
 msgstr "Your name or nickname"
 
 #: src/features/shop/components/summary-step.tsx
+#: src/features/shop/pages/order-link-page.tsx
 #: src/features/shop/pages/result-page.tsx
 msgid "Your order"
 msgstr "Your order"
@@ -1342,6 +1431,10 @@ msgstr "Your payment arrived, but it could not confirm the order."
 #: src/features/shop/pages/result-page.tsx
 msgid "Your payment is under review"
 msgstr "Your payment is under review"
+
+#: src/features/shop/pages/order-link-page.tsx
+msgid "Your QR code"
+msgstr "Your QR code"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your rights"

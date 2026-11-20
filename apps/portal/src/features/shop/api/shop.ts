@@ -102,3 +102,13 @@ export const orderResultOptions = (slug: string, orderId: string, token: string)
   accountApi.public.orderResult.queryOptions({
     input: { params: { slug, orderId }, headers: withToken(token) },
   })
+
+/**
+ * What an order link opens (docs/specs/0009-buyer-self-service.md): the token travels in the
+ * body, never in an address of the API.
+ */
+export const openOrderLink = (token: string) => accountApi.orderLinks.open.call({ body: { token } })
+
+/** Asks for a fresh link to the order's email; the answer is the same for any token. */
+export const renewOrderLink = (token: string) =>
+  accountApi.orderLinks.renew.call({ body: { token } })

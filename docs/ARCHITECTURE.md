@@ -616,13 +616,15 @@ steps of [adding a feature](#adding-a-feature).
   is queued without a text: the outbox writes it from the order as it stands when it is sent,
   under the lock of the order's row, so each thing an org changes is a kind of email of its own,
   and an email that would hand the order over to an address the order has left since is
-  withdrawn, never sent. What a sent email said is kept on its row, its subject and its text,
-  without the QR code and the token of the order link: each is noted for leaving out where the
-  outbox makes it, never by the kind of the email, and no read across tenants reaches the text
+  withdrawn, never sent. What a sent email said is kept on its row, a subject and a text written
+  apart from the email that goes out, as for an address with no account: in the convention's
+  language and with no way to sign in. It holds neither the QR code nor the token of the order
+  link: each is noted for leaving out where the outbox makes it, never by the kind of the email,
+  and no read across tenants reaches the text
   ([0068](adr/0068-keep-what-a-sent-email-of-an-order-said-without-what-hands-the-order-over.md)).
-  An order's page and the list of an edition's emails tell an org neither whether an email
-  address has an account nor the addresses of the orgs an alert went to, and no search finds an
-  alert by an address.
+  An order's page, the list of an edition's emails and what is kept of an email tell an org
+  neither whether an email address has an account nor the addresses of the orgs an alert went
+  to, and no search finds an alert by an address.
 - **Discount codes.** A code's terms never leave the API. The offer names no code: the portal
   asks the quote for the price of the cart with the code a buyer entered, and the API prices it
   with the contract's one function. Every code that cannot be used answers the quote alike, and

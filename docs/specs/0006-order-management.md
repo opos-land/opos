@@ -27,12 +27,12 @@ needs write access.
 
 ### Finding and reading
 
-| #   | Rule                                                                                                                                                                                                                                                                                                                                                                                             | Brief       |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
-| F1  | An org searches an edition's orders by number, name, email or QR code, and filters them by status, product, variant and date.                                                                                                                                                                                                                                                                    | B4.1        |
-| F2  | An order's page shows its lines, the ticket holder's data, the custom field answers, the consents with the document versions accepted, the payment attempts with what the provider's module keeps of each, and the emails sent.                                                                                                                                                                  | B4.2        |
-| F3  | The panel lists every order in "Needs review" until it is settled, and shows on the edition how many there are.                                                                                                                                                                                                                                                                                  | P2.5, UR-12 |
-| F4  | An org sees every email of the edition's orders in one list, the newest first, searched by the address it went to or by its order's number. An email's page shows to whom it went, of which order and when, and what it said: its subject and its text as they went out, without the QR code and the order link, which only its recipient sees. An email that has not gone out says nothing yet. | new         |
+| #   | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Brief       |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| F1  | An org searches an edition's orders by number, name, email or QR code, and filters them by status, product, variant and date.                                                                                                                                                                                                                                                                                                                                                           | B4.1        |
+| F2  | An order's page shows its lines, the ticket holder's data, the custom field answers, the consents with the document versions accepted, the payment attempts with what the provider's module keeps of each, and the emails sent.                                                                                                                                                                                                                                                         | B4.2        |
+| F3  | The panel lists every order in "Needs review" until it is settled, and shows on the edition how many there are.                                                                                                                                                                                                                                                                                                                                                                         | P2.5, UR-12 |
+| F4  | An org sees every email of the edition's orders in one list, the newest first, searched by the address it went to or by its order's number. An email's page shows to whom it went, of which order and when, and what it said as it went out: a subject and a text in the convention's language, without the QR code and the order link, which only its recipient sees, and with nothing that tells whether its address has an account. An email that has not gone out says nothing yet. | new         |
 
 ### Corrections
 
@@ -149,8 +149,9 @@ written from the order as it stands when it is sent; a changed email is one to t
 and one to the old. An email that carries the QR code goes only to the address the order has
 when it is sent: one still queued for an address the order has left is withdrawn. An order's page
 and the list of F4 show an alert to the orgs without their addresses, and name no account; the
-search of F4 finds an alert by its order's number alone. What is kept of an email has `[…]` where
-its QR code and the token of its order link stood.
+search of F4 finds an alert by its order's number alone. What is kept of an email is written as
+for an address with no account, in the convention's language, and has `[…]` where its QR code and
+the token of its order link stood.
 
 ### Screens
 
@@ -211,9 +212,9 @@ Integration, in `apps/api/test`:
   gone, refused, then allowed once raised. Declining: the status, nothing held, the email.
 - The alerts reach the heads and the orgs with tickets write access, and nobody else.
 - The production numbers before and after the deadline, with orders in each status.
-- What is kept of a sent email: its subject and text as they went out, with no QR code and no
-  token of an order link in them, for each kind of email that carries one; nothing of an email
-  whose send failed. The list of F4: its order, its search, an alert without its address and
+- What is kept of a sent email: its subject and text, with no QR code and no token of an order
+  link in them, for each kind of email that carries one; the same for an address with an account
+  as for one with none, in the convention's language; nothing of an email whose send failed. The list of F4: its order, its search, an alert without its address and
   found by no address, no email of another edition.
 
 e2e, each scenario making its own tenant and checking the BFF boundary:
@@ -250,5 +251,5 @@ e2e, each scenario making its own tenant and checking the BFF boundary:
   and sells merchandise alone where the shop does not; that every line of a manual order, one
   paid by invoice too, is handed out as it is recorded; that the production numbers of an edition
   with no pre-order deadline are read at any time; that the reason of a cancellation or a decline
-  is not sent to the buyer; that an org reads what an email said (F4), and for how long its text
-  is kept.
+  is not sent to the buyer; that an org reads what an email said (F4), in the convention's
+  language and not the one it went out in, and for how long its text is kept.

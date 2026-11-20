@@ -106,6 +106,8 @@ describe('the add-ons of an edition', () => {
       placesLeftThreshold: null,
       position: 1,
       hidden: false,
+      // A new add-on has no picture: one is set on its page afterwards.
+      picture: null,
     })
     expect(limited.body).toMatchObject({
       name: 'Workshop',

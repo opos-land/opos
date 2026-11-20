@@ -26,6 +26,7 @@ import {
   EditionsPage,
   NewEditionPage,
 } from '../features/editions'
+import { ManualOrderPage, OrderPage, OrdersPage, ProductionNumbersPage } from '../features/orders'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionDocumentsPage, EditionShopPage, ShopSettingsPage } from '../features/shop'
 import { EditionAccessPage, InvitePage, MemberPage, TeamPage } from '../features/team'
@@ -136,6 +137,10 @@ export const router = createBrowserRouter([
                   { path: 'program/:programItemId', element: <ProgramItemPage /> },
                   { path: 'shop', element: <EditionShopPage /> },
                   { path: 'documents', element: <EditionDocumentsPage /> },
+                  { path: 'orders', element: <OrdersPage /> },
+                  { path: 'orders/new', element: <ManualOrderPage /> },
+                  { path: 'orders/:orderId', element: <OrderPage /> },
+                  { path: 'production-numbers', element: <ProductionNumbersPage /> },
                   { path: 'ticket-types', element: <TicketTypesPage /> },
                   { path: 'ticket-types/new', element: <TicketTypePage /> },
                   { path: 'ticket-types/:ticketTypeId', element: <TicketTypePage /> },

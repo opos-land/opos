@@ -4,3 +4,11 @@ export { TicketTypePage } from './pages/ticket-type-page'
 export { TicketTypesPage } from './pages/ticket-types-page'
 export { MerchandiseItemPage } from './pages/merchandise-item-page'
 export { MerchandisePage } from './pages/merchandise-page'
+// What an edition sells, for the screens that read it beside their own: the orders'.
+export {
+  addOnsOptions,
+  customFieldsOptions,
+  merchandiseOptions,
+  ticketTypesOptions,
+} from './api/catalog'
+export { useMoney } from './hooks/use-money'

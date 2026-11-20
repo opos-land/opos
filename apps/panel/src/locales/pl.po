@@ -7,6 +7,15 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: pl\n"
 
+#. placeholder {0}: item.name
+#: src/features/orders/pages/orders-page.tsx
+msgid "{0}: every variant"
+msgstr "{0}: każdy wariant"
+
+#: src/features/orders/components/orders-in-review.tsx
+msgid "{count, plural, one {# order needs review: its payment arrived and could not confirm it. It waits for an organizer to mark it paid or decline it.} other {# orders need review: their payments arrived and could not confirm them. They wait for an organizer to mark them paid or decline them.}}"
+msgstr "{count, plural, one {# zamówienie jest do wyjaśnienia: płatność za nie dotarła, ale nie mogła go potwierdzić. Czeka, aż organizator oznaczy je jako opłacone albo odrzuci.} few {# zamówienia są do wyjaśnienia: płatności za nie dotarły, ale nie mogły ich potwierdzić. Czekają, aż organizator oznaczy je jako opłacone albo odrzuci.} many {# zamówień jest do wyjaśnienia: płatności za nie dotarły, ale nie mogły ich potwierdzić. Czekają, aż organizator oznaczy je jako opłacone albo odrzuci.} other {# zamówienia jest do wyjaśnienia: płatności za nie dotarły, ale nie mogły ich potwierdzić. Czekają, aż organizator oznaczy je jako opłacone albo odrzuci.}}"
+
 #: src/features/team/components/invite-form.tsx
 msgid "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
 msgstr "{count, plural, one {Uprawnienia w edycji} few {Uprawnienia w edycjach} many {Uprawnienia w edycjach} other {Uprawnienia w edycjach}}"
@@ -39,6 +48,14 @@ msgstr "{name}: stan magazynowy"
 #: src/features/catalog/components/variants-editor.tsx
 msgid "{name}: unlimited"
 msgstr "{name}: bez limitu"
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "{needsReview, plural, one {# order needs review: its payment arrived and could not confirm it. It waits for you to mark it paid or decline it.} other {# orders need review: their payments arrived and could not confirm them. They wait for you to mark them paid or decline them.}}"
+msgstr "{needsReview, plural, one {# zamówienie jest do wyjaśnienia: płatność za nie dotarła, ale nie mogła go potwierdzić. Czeka, aż oznaczysz je jako opłacone albo odrzucisz.} few {# zamówienia są do wyjaśnienia: płatności za nie dotarły, ale nie mogły ich potwierdzić. Czekają, aż oznaczysz je jako opłacone albo odrzucisz.} many {# zamówień jest do wyjaśnienia: płatności za nie dotarły, ale nie mogły ich potwierdzić. Czekają, aż oznaczysz je jako opłacone albo odrzucisz.} other {# zamówienia jest do wyjaśnienia: płatności za nie dotarły, ale nie mogły ich potwierdzić. Czekają, aż oznaczysz je jako opłacone albo odrzucisz.}}"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "{title}, version {version}"
+msgstr "{title}, wersja {version}"
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "A combination that is not ticked does not exist and cannot be bought. A variant at zero stock shows as unavailable. An unlimited variant sells only until the pre-order deadline of the edition."
@@ -84,9 +101,17 @@ msgstr "Nowa edycja jest na początku nieaktywna i nieopublikowana."
 msgid "A page with answers for buyers, linked from the shop’s footer. Leave it empty for none."
 msgstr "Strona z odpowiedziami dla kupujących, do której odsyła stopka sklepu. Zostaw pole puste, jeśli jej nie ma."
 
+#: src/features/orders/model/labels.ts
+msgid "A payment the order did not need"
+msgstr "Płatność, której zamówienie nie potrzebowało"
+
 #: src/features/shop/components/document-card.tsx
 msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 msgstr "Plik PDF o rozmiarze do 10 MB. Opublikowanej wersji nie można zmienić ani usunąć: poprawka to nowa wersja."
+
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "A sale made outside the shop. What it sells is handed over as you record it: the order has no QR code and sends no email. A person who should hold a QR code ahead of the edition gets a 100% discount code instead, and places the order in the shop."
+msgstr "Sprzedaż poza sklepem. To, co sprzedajesz, wydajesz od razu przy zapisie: zamówienie nie ma kodu QR i nie wysyła żadnego e-maila. Osoba, która ma mieć kod QR przed edycją, dostaje zamiast tego kod rabatowy na 100% i składa zamówienie w sklepie."
 
 #: src/features/shop/model/providers.ts
 msgid "A sandbox account takes no real money, and connects only where none is taken."
@@ -103,6 +128,10 @@ msgstr "Nastolatek: od ilu lat"
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "A ticket holder is a child, a teen or an adult by their age on the first day of the edition. A child enters with a guardian present, a teen with a guardian’s written consent brought on paper."
 msgstr "Posiadacz akredytacji jest dzieckiem, nastolatkiem albo dorosłym według wieku w pierwszym dniu edycji. Dziecko wchodzi w towarzystwie opiekuna, nastolatek z pisemną zgodą opiekuna przyniesioną na papierze."
+
+#: src/features/orders/model/labels.ts
+msgid "A variant was swapped"
+msgstr "Zamieniono wariant"
 
 #: src/features/shop/components/consent-form.tsx
 msgid "Acceptance"
@@ -142,6 +171,7 @@ msgstr "Konto"
 
 #: src/features/catalog/pages/merchandise-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
+#: src/features/orders/components/order-lines.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Actions"
 msgstr "Działania"
@@ -221,6 +251,8 @@ msgstr "Dodaj rodzaj akredytacji"
 
 #: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/editions/components/edition-layout.tsx
+#: src/features/orders/pages/manual-order-page.tsx
+#: src/features/orders/pages/orders-page.tsx
 msgid "Add-ons"
 msgstr "Dodatki"
 
@@ -258,8 +290,14 @@ msgid "Address of the seller"
 msgstr "Adres sprzedawcy"
 
 #: src/features/catalog/components/ticket-type-form.tsx
+#: src/features/orders/model/labels.ts
 msgid "Adult"
 msgstr "Dorosły"
+
+#: src/features/orders/pages/manual-order-page.tsx
+#: src/features/orders/pages/order-page.tsx
+msgid "Age band"
+msgstr "Przedział wiekowy"
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "Age bands"
@@ -268,6 +306,14 @@ msgstr "Przedziały wiekowe"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Age bands allowed"
 msgstr "Dozwolone przedziały wiekowe"
+
+#: src/features/orders/model/labels.ts
+msgid "Alert: a payment to return"
+msgstr "Alert: płatność do zwrotu"
+
+#: src/features/orders/model/labels.ts
+msgid "Alert: the order needs review"
+msgstr "Alert: zamówienie do wyjaśnienia"
 
 #: src/features/editions/pages/editions-page.tsx
 msgid "All editions"
@@ -289,6 +335,10 @@ msgstr "Wszystkie rodzaje akredytacji"
 msgid "Allow at least one age band."
 msgstr "Zaznacz co najmniej jeden przedział wiekowy."
 
+#: src/features/orders/components/order-lines.tsx
+msgid "Amount"
+msgstr "Kwota"
+
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "An adult from the age of"
 msgstr "Dorosły: od ilu lat"
@@ -309,6 +359,10 @@ msgstr "Gadżet może mieć najwyżej 100 wariantów. Odznacz część kombinacj
 msgid "An item without option axes has no size chart."
 msgstr "Gadżet bez osi nie ma tabeli rozmiarów."
 
+#: src/features/orders/pages/orders-page.tsx
+msgid "An order’s number, a name, an email address or a QR code."
+msgstr "Numer zamówienia, imię i nazwisko, adres e-mail albo kod QR."
+
 #: src/features/catalog/components/custom-field-form.tsx
 msgid "Answer"
 msgstr "Odpowiedź"
@@ -321,6 +375,10 @@ msgstr "Dowolny tekst podłącza gotowe konto. Testowy dostawca odrzuca „refus
 msgid "Anyone younger is a child."
 msgstr "Każdy młodszy jest dzieckiem."
 
+#: src/features/orders/pages/orders-page.tsx
+msgid "Anything"
+msgstr "Cokolwiek"
+
 #: src/features/shop/model/providers.ts
 msgid "API key"
 msgstr "Klucz API"
@@ -329,9 +387,23 @@ msgstr "Klucz API"
 msgid "Ask for nothing sensitive"
 msgstr "Nie pytaj o nic wrażliwego"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "Asked"
+msgstr "Żądano"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
 msgstr "Co najmniej 8 znaków."
+
+#: src/features/orders/model/labels.ts
+msgctxt "order status"
+msgid "Awaiting payment"
+msgstr "Oczekuje na płatność"
+
+#: src/features/orders/pages/production-numbers-page.tsx
+msgctxt "production numbers"
+msgid "Awaiting payment"
+msgstr "Oczekujące na płatność"
 
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Axis {number}"
@@ -384,6 +456,23 @@ msgstr "Na ten adres piszą kupujący. Pokazują go sklep i jego e-maile."
 msgid "Cancel"
 msgstr "Anuluj"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Cancel the order"
+msgstr "Anuluj zamówienie"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Cancel the order {number}?"
+msgstr "Anulować zamówienie {number}?"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Canceled"
+msgstr "Anulowano"
+
+#: src/features/orders/model/labels.ts
+msgctxt "order status"
+msgid "Canceled"
+msgstr "Anulowane"
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Cannot sign in?"
 msgstr "Nie możesz się zalogować?"
@@ -393,7 +482,12 @@ msgstr "Nie możesz się zalogować?"
 msgid "Capacity"
 msgstr "Limit akredytacji"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Change the email"
+msgstr "Zmień e-mail"
+
 #: src/features/catalog/components/ticket-type-form.tsx
+#: src/features/orders/model/labels.ts
 msgid "Child"
 msgstr "Dziecko"
 
@@ -414,9 +508,17 @@ msgstr "Wybierz plik PDF."
 msgid "Choose a PDF of up to 10 MB."
 msgstr "Wybierz plik PDF o rozmiarze do 10 MB."
 
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "Choose a ticket type or merchandise to record a sale."
+msgstr "Wybierz rodzaj akredytacji albo gadżety, żeby zapisać sprzedaż."
+
 #: src/features/tenants/pages/settings-page.tsx
 msgid "Choose a time zone from the list."
 msgstr "Wybierz strefę czasową z listy."
+
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "Choose an age band"
+msgstr "Wybierz przedział wiekowy"
 
 #: src/features/branding/pages/branding-page.tsx
 msgid "Choose an image of up to 2 MB."
@@ -451,6 +553,10 @@ msgstr "Kod"
 msgid "Code from the app"
 msgstr "Kod z aplikacji"
 
+#: src/features/orders/model/labels.ts
+msgid "Complimentary"
+msgstr "Gratisowe"
+
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Confirm"
 msgstr "Potwierdź"
@@ -467,6 +573,10 @@ msgstr "Potwierdź swój adres"
 msgid "Confirmation link"
 msgstr "Link potwierdzający"
 
+#: src/features/orders/model/labels.ts
+msgid "Confirmation with the QR code"
+msgstr "Potwierdzenie z kodem QR"
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Connect the account"
 msgstr "Podłącz konto"
@@ -478,6 +588,10 @@ msgstr "Podłączono"
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Consents"
 msgstr "Zgody"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Consents accepted"
+msgstr "Zaakceptowane zgody"
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Consents in their order"
@@ -558,6 +672,23 @@ msgstr "Pulpit"
 #: src/features/editions/pages/editions-page.tsx
 msgid "Dates"
 msgstr "Daty"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Decline the payment"
+msgstr "Odrzuć płatność"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Decline the payment for the order {number}?"
+msgstr "Odrzucić płatność za zamówienie {number}?"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Declined"
+msgstr "Odrzucono"
+
+#: src/features/orders/model/labels.ts
+msgctxt "order status"
+msgid "Declined"
+msgstr "Odrzucone"
 
 #: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
@@ -651,6 +782,10 @@ msgstr "Usunięcia gadżetu nie można cofnąć. Jeśli ma zniknąć ze sklepu t
 msgid "Description"
 msgstr "Opis"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Difference"
+msgstr "Różnica"
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Disconnect the account"
 msgstr "Odłącz konto"
@@ -658,6 +793,10 @@ msgstr "Odłącz konto"
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Disconnect the payment provider account of {name}?"
 msgstr "Odłączyć konto konwentu {name} u dostawcy płatności?"
+
+#: src/features/orders/components/order-lines.tsx
+msgid "Discount"
+msgstr "Rabat"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Discounts"
@@ -679,6 +818,10 @@ msgstr "Dokumenty"
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Documents and consents"
 msgstr "Dokumenty i zgody"
+
+#: src/features/orders/pages/production-numbers-page.tsx
+msgid "Download as a file"
+msgstr "Pobierz jako plik"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
@@ -718,13 +861,28 @@ msgstr "Edycje"
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
+#: src/features/orders/pages/order-page.tsx
+#: src/features/orders/pages/orders-page.tsx
 #: src/features/team/components/invite-form.tsx
 msgid "Email"
 msgstr "E-mail"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Email of the order"
+msgstr "E-mail zamówienia"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Emails"
+msgstr "E-maile"
+
 #: src/features/team/components/member-form.tsx
 msgid "Empty for no end date. In the convention's time zone, {zone}."
 msgstr "Puste pole oznacza brak daty końcowej. W strefie czasowej konwentu, {zone}."
+
+#: src/features/orders/model/labels.ts
+msgctxt "payment attempt status"
+msgid "Ended unpaid"
+msgstr "Zakończona bez płatności"
 
 #: src/features/editions/components/edition-form.tsx
 #: src/features/program/components/program-item-form.tsx
@@ -864,6 +1022,10 @@ msgstr "Podaj początek i koniec sprzedaży; koniec musi być późniejszy niż 
 msgid "Enter your password."
 msgstr "Podaj hasło."
 
+#: src/features/orders/pages/orders-page.tsx
+msgid "Every status"
+msgstr "Każdy stan"
+
 #: src/features/catalog/components/ticket-type-form.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
 msgid "Excluded from discounts"
@@ -881,6 +1043,16 @@ msgstr "Istnieje"
 msgid "expired"
 msgstr "wygasł"
 
+#: src/features/orders/model/labels.ts
+msgctxt "order status"
+msgid "Expired"
+msgstr "Wygasłe"
+
+#: src/features/orders/model/labels.ts
+msgctxt "payment attempt status"
+msgid "Failed"
+msgstr "Nieudana"
+
 #: src/features/shop/model/providers.ts
 msgid "Fake provider (no real payments)"
 msgstr "Testowy dostawca (bez prawdziwych płatności)"
@@ -889,9 +1061,17 @@ msgstr "Testowy dostawca (bez prawdziwych płatności)"
 msgid "FAQ"
 msgstr "FAQ"
 
+#: src/features/orders/pages/orders-page.tsx
+msgid "Find an order"
+msgstr "Znajdź zamówienie"
+
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Finish signing in"
 msgstr "Dokończ logowanie"
+
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "For the team, such as an invoice’s number."
+msgstr "Dla zespołu, na przykład numer faktury."
 
 #: src/features/auth/pages/login-page.tsx
 msgid "Forgot your password?"
@@ -905,6 +1085,10 @@ msgstr "Bezpłatnie"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "From"
 msgstr "Od"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "From the payment provider"
+msgstr "Od dostawcy płatności"
 
 #: src/features/team/components/members-table.tsx
 msgid "Full access"
@@ -931,6 +1115,10 @@ msgstr "Przejdź do logowania"
 #: src/features/auth/components/accept-invitation.tsx
 msgid "Go to your conventions"
 msgstr "Przejdź do swoich konwentów"
+
+#: src/features/orders/components/order-lines.tsx
+msgid "Handed out"
+msgstr "Wydano"
 
 #: src/features/team/components/invite-form.tsx
 #: src/features/team/components/member-form.tsx
@@ -999,6 +1187,14 @@ msgstr "Ukryj w sklepie"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Higher amounts a buyer may choose instead of the price of the tier. The shop offers only those above the price in force."
 msgstr "Wyższe kwoty, które kupujący może wybrać zamiast ceny z progu. Sklep oferuje tylko te, które są wyższe od obowiązującej ceny."
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "Holds"
+msgstr "Zawiera"
+
+#: src/features/orders/pages/production-numbers-page.tsx
+msgid "How many of each variant the orders hold. “Paid” counts the paid orders, manual ones among them; the orders awaiting payment and those needing review are counted apart, since they may still fall away."
+msgstr "Ile sztuk każdego wariantu zawierają zamówienia. „Opłacone” liczy opłacone zamówienia, w tym ręczne; zamówienia oczekujące na płatność i te do wyjaśnienia są liczone osobno, bo mogą jeszcze odpaść."
 
 #: src/features/catalog/components/item-form.tsx
 msgid "How many of this item one order may take, over all its variants: from 1 to 100."
@@ -1072,6 +1268,10 @@ msgstr "Nie potwierdzono, że własny e-mail Przelewy24 o porzuconej płatności
 msgid "It is off unless Przelewy24’s account manager turned it on. With it on, a buyer could pay for an order after its time ran out, so the account is ready to sell only once you confirm it is off."
 msgstr "Jest wyłączony, chyba że opiekun konta w Przelewy24 go włączył. Gdy jest włączony, kupujący mógłby opłacić zamówienie po upływie czasu na płatność, więc konto jest gotowe do sprzedaży dopiero, gdy potwierdzisz, że jest wyłączony."
 
+#: src/features/orders/components/order-lines.tsx
+msgid "Item"
+msgstr "Pozycja"
+
 #: src/features/catalog/pages/merchandise-item-page.tsx
 msgctxt "a merchandise item"
 msgid "Item data"
@@ -1107,6 +1307,10 @@ msgstr "Razem z nim znikną jego progi cenowe, ceny wspierające i bonusy."
 msgid "Its programme items, with their likes and lists of speakers, and the team’s access to the edition go with it."
 msgstr "Razem z nią znikną jej punkty programu z polubieniami i listami prelegentów, a także dostęp zespołu do tej edycji."
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Its QR code stops being valid, what it holds goes back on sale, and the buyer is told. OPOS returns no money: returning it is a matter between the convention and the buyer, outside OPOS."
+msgstr "Jego kod QR przestaje być ważny, to, co zawiera, wraca do sprzedaży, a kupujący dostaje wiadomość. OPOS nie zwraca pieniędzy: zwrot to sprawa między konwentem a kupującym, poza OPOS."
+
 #: src/features/catalog/pages/merchandise-item-page.tsx
 msgid "Its variants with their stock, its pictures and its size charts go with it."
 msgstr "Razem z nim znikną jego warianty ze stanami magazynowymi, zdjęcia i tabele rozmiarów."
@@ -1118,6 +1322,10 @@ msgstr "Razem z nim znikną jego wersje i ich pliki, a prowadzące do nich linki
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Join the organizing team"
 msgstr "Dołącz do zespołu organizatorów"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Kept on the order, for the team. The buyer does not see it."
+msgstr "Zostaje przy zamówieniu, dla zespołu. Kupujący go nie widzi."
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Kind"
@@ -1163,6 +1371,19 @@ msgstr "Plik z logo"
 msgid "Long description"
 msgstr "Długi opis"
 
+#. placeholder {0}: line.name
+#: src/features/orders/components/order-lines.tsx
+msgid "Mark {0} as handed out"
+msgstr "Oznacz jako wydane: {0}"
+
+#: src/features/orders/components/order-lines.tsx
+msgid "Mark as handed out"
+msgstr "Oznacz jako wydane"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Mark as paid"
+msgstr "Oznacz jako opłacone"
+
 #: src/features/team/components/members-table.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Member"
@@ -1179,6 +1400,7 @@ msgstr "Członkostwo"
 #: src/features/catalog/pages/merchandise-item-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
 #: src/features/editions/components/edition-layout.tsx
+#: src/features/orders/pages/manual-order-page.tsx
 msgid "Merchandise"
 msgstr "Gadżety"
 
@@ -1186,9 +1408,17 @@ msgstr "Gadżety"
 msgid "Merchandise is picked up at the edition: the shop promises no shipping. A ticket type offers the items you choose for it."
 msgstr "Gadżety odbiera się podczas edycji: sklep nie obiecuje wysyłki. Rodzaj akredytacji oferuje te gadżety, które dla niego wybierzesz."
 
+#: src/features/orders/pages/production-numbers-page.tsx
+msgid "Merchandise item"
+msgstr "Gadżet"
+
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Merchandise offered with it"
 msgstr "Gadżety oferowane razem z nim"
+
+#: src/features/orders/pages/production-numbers-page.tsx
+msgid "Merchandise to produce"
+msgstr "Gadżety do produkcji"
 
 #: src/features/shop/model/providers.ts
 msgid "Merchant ID"
@@ -1227,6 +1457,10 @@ msgstr "Przesuń zdjęcie {number} w dół"
 msgid "Move picture {number} up"
 msgstr "Przesuń zdjęcie {number} w górę"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Move the order {number} to {next}?"
+msgstr "Przenieść zamówienie {number} na adres {next}?"
+
 #: src/features/catalog/components/list-actions.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Move up"
@@ -1250,6 +1484,20 @@ msgstr "Nazwa osi {number}"
 msgid "Name of the seller"
 msgstr "Nazwa sprzedawcy"
 
+#: src/features/orders/pages/orders-page.tsx
+msgid "Name on the order"
+msgstr "Imię i nazwisko"
+
+#: src/features/orders/model/labels.ts
+msgctxt "order status"
+msgid "Needs review"
+msgstr "Do wyjaśnienia"
+
+#: src/features/orders/pages/production-numbers-page.tsx
+msgctxt "production numbers"
+msgid "Needs review"
+msgstr "Do wyjaśnienia"
+
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "New add-on"
 msgstr "Nowy dodatek"
@@ -1271,11 +1519,20 @@ msgstr "Nowy dokument"
 msgid "New edition"
 msgstr "Nowa edycja"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "New email address"
+msgstr "Nowy adres e-mail"
+
 #: src/features/catalog/pages/merchandise-item-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
 msgctxt "a merchandise item"
 msgid "New item"
 msgstr "Nowy gadżet"
+
+#: src/features/orders/pages/manual-order-page.tsx
+#: src/features/orders/pages/orders-page.tsx
+msgid "New manual order"
+msgstr "Nowe zamówienie ręczne"
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "New password"
@@ -1289,6 +1546,10 @@ msgstr "Nowe zdjęcie"
 msgid "New programme item"
 msgstr "Nowy punkt programu"
 
+#: src/features/orders/model/labels.ts
+msgid "New QR code for the new email"
+msgstr "Nowy kod QR na nowy adres"
+
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "New size chart of {label}"
 msgstr "Nowa tabela rozmiarów – {label}"
@@ -1301,6 +1562,10 @@ msgstr "Nowy rodzaj akredytacji"
 #: src/features/shop/components/document-card.tsx
 msgid "New version"
 msgstr "Nowa wersja"
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "Next page"
+msgstr "Następna strona"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx
@@ -1324,6 +1589,10 @@ msgstr "Bez limitu"
 msgid "No limit: anyone may take it"
 msgstr "Bez limitu: każdy może go wziąć"
 
+#: src/features/orders/pages/orders-page.tsx
+msgid "No order matches."
+msgstr "Żadne zamówienie nie pasuje."
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "No payment provider account is connected."
 msgstr "Nie podłączono żadnego konta u dostawcy płatności."
@@ -1344,10 +1613,15 @@ msgstr "Brak obowiązującej ceny"
 msgid "No size chart."
 msgstr "Brak tabeli rozmiarów."
 
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "No ticket: merchandise alone"
+msgstr "Bez akredytacji: same gadżety"
+
 #: src/features/shop/components/document-card.tsx
 msgid "No version is published yet."
 msgstr "Nie opublikowano jeszcze żadnej wersji."
 
+#: src/features/orders/pages/order-page.tsx
 #: src/features/shop/components/consent-form.tsx
 msgid "None"
 msgstr "Brak"
@@ -1364,9 +1638,30 @@ msgstr "Nieopublikowana"
 msgid "Not ready to sell"
 msgstr "Niegotowe do sprzedaży"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "Not sent yet: it is tried again"
+msgstr "Jeszcze nie wysłano: próba zostanie ponowiona"
+
+#: src/features/orders/components/order-lines.tsx
+msgid "Not yet"
+msgstr "Jeszcze nie"
+
+#: src/features/orders/pages/manual-order-page.tsx
+#: src/features/orders/pages/order-page.tsx
+msgid "Note"
+msgstr "Notatka"
+
+#: src/features/orders/model/labels.ts
+msgid "Notice to the old email"
+msgstr "Powiadomienie na stary adres"
+
 #: src/shared/ui/toast.tsx
 msgid "Notifications"
 msgstr "Powiadomienia"
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "Number"
+msgstr "Numer"
 
 #: src/features/catalog/components/add-on-form.tsx
 msgid "Number of places"
@@ -1376,6 +1671,10 @@ msgstr "Liczba miejsc"
 msgid "Off: merchandise is bought with a ticket"
 msgstr "Wyłączone: gadżety kupuje się razem z akredytacją"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "On the account"
+msgstr "Na koncie"
+
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "On: the shop also takes an order with no ticket"
 msgstr "Włączone: sklep przyjmuje też zamówienie bez akredytacji"
@@ -1383,6 +1682,10 @@ msgstr "Włączone: sklep przyjmuje też zamówienie bez akredytacji"
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Once an axis is added or removed, every variant of the item goes with its stock. A removed value takes the variants that held it, and its size chart."
 msgstr "Po dodaniu albo usunięciu osi znikną wszystkie warianty gadżetu razem ze stanami magazynowymi. Usunięta wartość zabiera warianty, które ją miały, i swoją tabelę rozmiarów."
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Only the name changes: the QR code and everything else stay."
+msgstr "Zmienia się tylko imię i nazwisko: kod QR i wszystko inne zostają."
 
 #: src/features/auth/pages/invitation-page.tsx
 msgid "Open the invitation link from your email to join a convention's team."
@@ -1440,9 +1743,47 @@ msgstr "Opcjonalna: kupujący może złożyć zamówienie bez odpowiedzi"
 msgid "or"
 msgstr "albo"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "Order"
+msgstr "Zamówienie"
+
+#. placeholder {0}: order.number
+#: src/features/orders/pages/order-page.tsx
+msgid "Order {0}"
+msgstr "Zamówienie {0}"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Order {number}"
+msgstr "Zamówienie {number}"
+
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/orders/pages/orders-page.tsx
+msgid "Orders"
+msgstr "Zamówienia"
+
+#. placeholder {0}: page.first
+#. placeholder {1}: page.last
+#. placeholder {2}: orders.data.total
+#: src/features/orders/pages/orders-page.tsx
+msgid "Orders {0}–{1} of {2}"
+msgstr "Zamówienia {0}–{1} z {2}"
+
+#. placeholder {0}: edition.name
+#: src/features/orders/pages/order-page.tsx
+msgid "Orders of {0}"
+msgstr "Zamówienia edycji {0}"
+
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Orders of merchandise alone"
 msgstr "Zamówienia samych gadżetów"
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "Orders of the edition"
+msgstr "Zamówienia edycji"
+
+#: src/features/orders/components/orders-in-review.tsx
+msgid "Orders that need review"
+msgstr "Zamówienia do wyjaśnienia"
 
 #: src/features/team/components/invite-form.tsx
 #: src/features/team/components/member-form.tsx
@@ -1471,6 +1812,35 @@ msgstr "Poza okresem sprzedaży"
 msgid "Page not found"
 msgstr "Nie znaleziono strony"
 
+#: src/features/orders/components/order-changes.tsx
+#: src/features/orders/pages/order-page.tsx
+msgid "Paid"
+msgstr "Zapłacono"
+
+#: src/features/orders/model/labels.ts
+msgctxt "order status"
+msgid "Paid"
+msgstr "Opłacone"
+
+#: src/features/orders/model/labels.ts
+msgctxt "payment attempt status"
+msgid "Paid"
+msgstr "Opłacona"
+
+#: src/features/orders/pages/production-numbers-page.tsx
+msgctxt "production numbers"
+msgid "Paid"
+msgstr "Opłacone"
+
+#: src/features/orders/model/labels.ts
+msgctxt "order status"
+msgid "Paid - manual"
+msgstr "Opłacone ręcznie"
+
+#: src/features/orders/model/labels.ts
+msgid "Paid by invoice"
+msgstr "Opłacone fakturą"
+
 #: src/features/editions/components/edition-form.tsx
 msgid "Part of the edition's address in the portal: lowercase letters, digits and hyphens."
 msgstr "Część adresu edycji w portalu: małe litery, cyfry i myślniki."
@@ -1478,6 +1848,10 @@ msgstr "Część adresu edycji w portalu: małe litery, cyfry i myślniki."
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Password"
 msgstr "Hasło"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Payment attempts"
+msgstr "Próby płatności"
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Payment provider account"
@@ -1507,6 +1881,19 @@ msgstr "Zdjęcia"
 msgid "Pictures in their order"
 msgstr "Zdjęcia w kolejności wyświetlania"
 
+#: src/features/orders/pages/order-page.tsx
+#: src/features/orders/pages/orders-page.tsx
+msgid "Placed"
+msgstr "Złożono"
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "Placed from"
+msgstr "Złożone od"
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "Placed until"
+msgstr "Złożone do"
+
 #: src/features/shop/model/providers.ts
 msgid "Point of sale ID"
 msgstr "ID sklepu"
@@ -1526,6 +1913,10 @@ msgstr "Naciśnij przycisk, aby wybrać nowe hasło."
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "Previous page"
+msgstr "Poprzednia strona"
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Price"
@@ -1552,6 +1943,11 @@ msgstr "Progi cenowe"
 #: src/features/shop/model/documents.ts
 msgid "Privacy policy"
 msgstr "Polityka prywatności"
+
+#: src/features/orders/pages/orders-page.tsx
+#: src/features/orders/pages/production-numbers-page.tsx
+msgid "Production numbers"
+msgstr "Liczby do produkcji"
 
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/program/pages/program-item-page.tsx
@@ -1608,9 +2004,17 @@ msgstr "Opublikuj wersję"
 msgid "Published"
 msgstr "Opublikowana"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "QR code"
+msgstr "Kod QR"
+
 #: src/features/account/components/two-factor-card.tsx
 msgid "QR code for your authenticator app"
 msgstr "Kod QR dla aplikacji uwierzytelniającej"
+
+#: src/features/orders/components/order-lines.tsx
+msgid "Quantity"
+msgstr "Liczba"
 
 #: src/features/catalog/components/custom-field-form.tsx
 msgid "Question"
@@ -1625,9 +2029,34 @@ msgstr "Odczyt"
 msgid "Ready to sell"
 msgstr "Gotowe do sprzedaży"
 
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "Reason"
+msgstr "Powód"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Reason of the cancellation"
+msgstr "Powód anulowania"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Reason of the decline"
+msgstr "Powód odrzucenia"
+
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "Record the order"
+msgstr "Zapisz zamówienie"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Recorded as"
+msgstr "Zapisano jako"
+
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Recovery code"
 msgstr "Kod odzyskiwania"
+
+#: src/features/orders/model/labels.ts
+msgctxt "payment attempt status"
+msgid "Refused: the order did not need it"
+msgstr "Odmówiona: zamówienie jej nie potrzebowało"
 
 #: src/features/shop/components/seller-section.tsx
 msgid "Register or tax number"
@@ -1748,6 +2177,10 @@ msgstr "Wymagana: kupujący musi zaakceptować zgodę, żeby złożyć zamówien
 msgid "Required: the buyer must answer to order"
 msgstr "Wymagana: kupujący musi odpowiedzieć, żeby złożyć zamówienie"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Resend the QR code"
+msgstr "Wyślij kod QR ponownie"
+
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Reset your password"
@@ -1763,6 +2196,10 @@ msgstr "Rola"
 #: src/features/catalog/pages/ticket-types-page.tsx
 msgid "Sale"
 msgstr "Sprzedaż"
+
+#: src/features/orders/model/labels.ts
+msgid "Sale at the desk"
+msgstr "Sprzedaż na stanowisku"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Sale ends"
@@ -1825,6 +2262,10 @@ msgstr "Zapisz gadżet"
 msgid "Save the message"
 msgstr "Zapisz komunikat"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Save the name"
+msgstr "Zapisz imię i nazwisko"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Save the password"
 msgstr "Zapisz hasło"
@@ -1857,9 +2298,17 @@ msgstr "Zapisywany na twoim koncie."
 msgid "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
 msgstr "Zeskanuj kod QR aplikacją uwierzytelniającą albo wpisz do niej sekret. Następnie wpisz sześciocyfrowy kod, który pokaże aplikacja."
 
+#: src/features/orders/pages/orders-page.tsx
+msgid "Search"
+msgstr "Szukaj"
+
 #: src/features/account/components/two-factor-card.tsx
 msgid "Secret: <0>{secret}</0>"
 msgstr "Sekret: <0>{secret}</0>"
+
+#: src/features/orders/components/orders-in-review.tsx
+msgid "See the orders"
+msgstr "Zobacz zamówienia"
 
 #: src/features/shop/components/seller-section.tsx
 msgid "Seller’s details"
@@ -1877,6 +2326,10 @@ msgstr "Wyślij link do ustawienia hasła"
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Send the link"
 msgstr "Wyślij link"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Sent"
+msgstr "Wysłano"
 
 #: src/features/shop/components/consent-form.tsx
 msgid "Sentence the buyer accepts"
@@ -1919,6 +2372,10 @@ msgstr "Pokaż w sklepie"
 #: src/features/catalog/components/add-on-form.tsx
 msgid "Show the places left when fewer than"
 msgstr "Pokazuj liczbę wolnych miejsc, gdy zostanie mniej niż"
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "Show them"
+msgstr "Pokaż je"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Shown as not yet on sale or as closed, and not selectable"
@@ -1995,6 +2452,15 @@ msgstr "Adres e-mail prelegenta"
 msgid "Speakers"
 msgstr "Prelegenci"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "Started"
+msgstr "Rozpoczęto"
+
+#: src/features/orders/model/labels.ts
+msgctxt "payment attempt status"
+msgid "Started"
+msgstr "Rozpoczęta"
+
 #: src/features/editions/components/edition-form.tsx
 #: src/features/program/components/program-item-form.tsx
 msgid "Starts"
@@ -2002,6 +2468,8 @@ msgstr "Początek"
 
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/editions-page.tsx
+#: src/features/orders/pages/order-page.tsx
+#: src/features/orders/pages/orders-page.tsx
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Status"
 msgstr "Stan"
@@ -2009,6 +2477,10 @@ msgstr "Stan"
 #: src/features/catalog/components/variants-editor.tsx
 msgid "Stock"
 msgstr "Stan magazynowy"
+
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "Summary"
+msgstr "Podsumowanie"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Supporter price {number} ({currency})"
@@ -2023,6 +2495,19 @@ msgstr "Ceny wspierające"
 msgid "Suspended"
 msgstr "Zawieszony"
 
+#: src/features/orders/components/order-lines.tsx
+msgid "Swap the variant"
+msgstr "Zamień wariant"
+
+#: src/features/orders/components/order-lines.tsx
+msgid "Take back"
+msgstr "Cofnij"
+
+#. placeholder {0}: line.name
+#: src/features/orders/components/order-lines.tsx
+msgid "Take back the hand-out of {0}"
+msgstr "Cofnij wydanie: {0}"
+
 #: src/features/team/pages/member-page.tsx
 #: src/features/team/pages/team-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
@@ -2030,6 +2515,7 @@ msgid "Team"
 msgstr "Zespół"
 
 #: src/features/catalog/components/ticket-type-form.tsx
+#: src/features/orders/model/labels.ts
 msgid "Teen"
 msgstr "Nastolatek"
 
@@ -2057,6 +2543,10 @@ msgstr "Adres e-mail potwierdzonego konta prelegenta."
 msgid "The age bands are saved."
 msgstr "Przedziały wiekowe zostały zapisane."
 
+#: src/features/orders/model/labels.ts
+msgid "The amount paid differs from the total of the order."
+msgstr "Zapłacona kwota różni się od kwoty zamówienia."
+
 #: src/features/catalog/components/axes-editor.tsx
 msgid "The axes are saved."
 msgstr "Osie zostały zapisane."
@@ -2068,6 +2558,10 @@ msgstr "Język przeglądarki"
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
 msgstr "Zmiany zostały zapisane."
+
+#: src/features/orders/components/order-changes.tsx
+msgid "The confirmation is on its way to the order’s email."
+msgstr "Potwierdzenie jest w drodze na adres e-mail zamówienia."
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "The consent is added."
@@ -2183,6 +2677,10 @@ msgstr "Edycja nie ma jeszcze żadnych dokumentów."
 msgid "The edition has no merchandise yet."
 msgstr "Edycja nie ma jeszcze gadżetów."
 
+#: src/features/orders/pages/production-numbers-page.tsx
+msgid "The edition has no merchandise."
+msgstr "Edycja nie ma gadżetów."
+
 #: src/features/catalog/pages/ticket-types-page.tsx
 msgid "The edition has no ticket types yet."
 msgstr "Edycja nie ma jeszcze rodzajów akredytacji."
@@ -2205,6 +2703,10 @@ msgstr "Edycja została zapisana."
 msgid "The edition must end after it starts."
 msgstr "Edycja musi kończyć się po swoim początku."
 
+#: src/features/orders/components/order-changes.tsx
+msgid "The email is changed, and both addresses are told."
+msgstr "E-mail zmieniono, a oba adresy dostały wiadomość."
+
 #: src/features/shop/model/providers.ts
 msgid "The fake provider reports this account as not ready."
 msgstr "Testowy dostawca zgłasza to konto jako niegotowe."
@@ -2216,6 +2718,18 @@ msgstr "Kwota brutto, taka sama dla każdego wariantu."
 #: src/features/catalog/components/add-on-form.tsx
 msgid "The gross amount. Enter 0 for a free add-on."
 msgstr "Kwota brutto. Wpisz 0, jeśli dodatek jest bezpłatny."
+
+#: src/features/orders/pages/order-page.tsx
+msgid "the guardian’s consent is brought on paper"
+msgstr "zgoda opiekuna zostanie przyniesiona na papierze"
+
+#: src/features/orders/components/order-lines.tsx
+msgid "The hand-out is marked."
+msgstr "Wydanie oznaczono."
+
+#: src/features/orders/components/order-lines.tsx
+msgid "The hand-out mark is taken back."
+msgstr "Oznaczenie wydania cofnięto."
 
 #: src/features/catalog/components/image-picker.tsx
 msgid "The image is over 5 MB. Choose a smaller one."
@@ -2300,6 +2814,26 @@ msgstr "Zapisano zmiany członkostwa: {name}."
 msgid "The message is saved."
 msgstr "Komunikat został zapisany."
 
+#: src/features/orders/pages/order-page.tsx
+msgid "The money is"
+msgstr "Pieniądze są"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "The money is with the convention. Marked paid, the order stays at its total and gets its QR code; a difference is settled with the buyer outside OPOS. An order that holds nothing takes again what it held, so raise the stock or the capacity first when that is gone."
+msgstr "Pieniądze są u konwentu. Zamówienie oznaczone jako opłacone zachowuje swoją kwotę i dostaje kod QR; różnicę rozliczasz z kupującym poza OPOS. Zamówienie, które niczego nie rezerwuje, bierze ponownie to, co zawierało, więc jeśli tego już nie ma, najpierw zwiększ stan magazynowy albo limit."
+
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "The name and the answers are optional for a manual order."
+msgstr "Imię i nazwisko oraz odpowiedzi są w zamówieniu ręcznym nieobowiązkowe."
+
+#: src/features/orders/components/order-changes.tsx
+msgid "The name is saved, and the buyer is told."
+msgstr "Imię i nazwisko zapisano, a kupujący dostał wiadomość."
+
+#: src/features/orders/components/order-changes.tsx
+msgid "The name is saved."
+msgstr "Imię i nazwisko zapisano."
+
 #: src/features/editions/components/edition-form.tsx
 msgid "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
 msgstr "Nazwa miejsca, w którym odbywa się edycja. Portal pokazuje miejsce na stronie edycji."
@@ -2316,13 +2850,73 @@ msgstr "Numer konta, tak jak pokazuje go panel Przelewy24."
 msgid "The number the seller is registered under, such as KRS or NIP."
 msgstr "Numer, pod którym sprzedawca jest zarejestrowany, na przykład KRS lub NIP."
 
+#: src/features/orders/components/order-changes.tsx
+msgid "The only way a ticket passes to another person. The order stays on the account it is on."
+msgstr "Jedyny sposób, by akredytacja przeszła na inną osobę. Zamówienie zostaje na koncie, na którym jest."
+
+#: src/features/orders/pages/order-page.tsx
+msgid "The order"
+msgstr "Zamówienie"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "The order carries one"
+msgstr "Zamówienie ma kod"
+
+#: src/features/orders/model/labels.ts
+msgid "The order expired"
+msgstr "Zamówienie wygasło"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "The order gets a new QR code and a new order link, sent to the new address. The QR code and the order link sent so far stop working, and the old address is told so."
+msgstr "Zamówienie dostaje nowy kod QR i nowy link do zamówienia, wysłane na nowy adres. Kod QR i link do zamówienia wysłane do tej pory przestają działać, a stary adres dostaje o tym wiadomość."
+
+#: src/features/orders/pages/order-page.tsx
+msgid "The order has no payment attempt."
+msgstr "Zamówienie nie ma żadnej próby płatności."
+
+#: src/features/orders/components/order-changes.tsx
+msgid "The order holds nothing from then on and never gets a QR code, and the buyer is told. OPOS returns no money: returning it is a matter between the convention and the buyer, outside OPOS."
+msgstr "Zamówienie od tej chwili niczego nie rezerwuje i nigdy nie dostanie kodu QR, a kupujący dostaje wiadomość. OPOS nie zwraca pieniędzy: zwrot to sprawa między konwentem a kupującym, poza OPOS."
+
+#: src/features/orders/components/order-changes.tsx
+msgid "The order is canceled."
+msgstr "Zamówienie anulowano."
+
+#: src/features/orders/components/order-changes.tsx
+msgid "The order is paid: its QR code is on its way to the buyer."
+msgstr "Zamówienie jest opłacone: kod QR jest w drodze do kupującego."
+
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "The order is recorded."
+msgstr "Zamówienie zapisano."
+
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "The order of the pictures is saved."
 msgstr "Kolejność zdjęć została zapisana."
 
+#: src/features/orders/pages/order-page.tsx
+msgid "The order sent no email."
+msgstr "Zamówienie nie wysłało żadnego e-maila."
+
+#: src/features/orders/model/labels.ts
+msgid "The order was canceled"
+msgstr "Zamówienie anulowano"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "Hasła się różnią."
+
+#: src/features/orders/model/labels.ts
+msgid "The payment arrived after the order had expired, and what it held was no longer available."
+msgstr "Płatność dotarła po wygaśnięciu zamówienia, a tego, co zawierało, już nie było."
+
+#: src/features/orders/components/order-changes.tsx
+msgid "The payment is declined, and the buyer is told."
+msgstr "Płatność odrzucono, a kupujący dostał wiadomość."
+
+#: src/features/orders/model/labels.ts
+msgid "The payment is under review"
+msgstr "Płatność jest wyjaśniana"
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The payment provider account is connected."
@@ -2331,6 +2925,10 @@ msgstr "Konto u dostawcy płatności zostało podłączone."
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The payment provider account is disconnected."
 msgstr "Konto u dostawcy płatności zostało odłączone."
+
+#: src/features/orders/model/labels.ts
+msgid "The payment was declined"
+msgstr "Płatność odrzucono"
 
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "The picture is added."
@@ -2356,6 +2954,11 @@ msgstr "Portal pokazuje logo obok nazwy konwentu: na liście edycji, na stronie 
 msgid "The portal stops showing it at once. To have it back, upload its file again."
 msgstr "Portal od razu przestanie je pokazywać. Aby je przywrócić, trzeba ponownie wgrać plik."
 
+#. placeholder {0}: time.format(deadline)
+#: src/features/orders/pages/production-numbers-page.tsx
+msgid "The pre-order deadline passed on {0}."
+msgstr "Termin przedsprzedaży minął {0}."
+
 #: src/features/shop/model/documents.ts
 msgid "The privacy policy has a published version."
 msgstr "Polityka prywatności ma opublikowaną wersję."
@@ -2379,6 +2982,10 @@ msgstr "Punkt programu musi kończyć się po swoim początku."
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The provider reports a condition this panel cannot describe yet (code: {code})."
 msgstr "Dostawca zgłasza warunek, którego ten panel nie potrafi jeszcze opisać (kod: {code})."
+
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "The sale"
+msgstr "Sprzedaż"
 
 #: src/features/shop/model/providers.ts
 msgid "The same number as the merchant ID, unless Przelewy24 gave the shop one of its own."
@@ -2468,6 +3075,10 @@ msgstr "Motyw systemu"
 msgid "The team has no organizers besides its head organizers."
 msgstr "Zespół nie ma organizatorów poza głównymi organizatorami."
 
+#: src/features/orders/model/labels.ts
+msgid "The ticket holder was changed"
+msgstr "Zmieniono posiadacza akredytacji"
+
 #: src/features/catalog/pages/ticket-type-page.tsx
 msgid "The ticket type “{added}” is added."
 msgstr "Rodzaj akredytacji „{added}” został dodany."
@@ -2480,6 +3091,10 @@ msgstr "Rodzaj akredytacji „{name}” został usunięty."
 #: src/features/catalog/pages/ticket-types-page.tsx
 msgid "The ticket type is saved."
 msgstr "Rodzaj akredytacji został zapisany."
+
+#: src/features/orders/components/order-lines.tsx
+msgid "The variant is swapped, and the buyer is told."
+msgstr "Wariant zamieniono, a kupujący dostał wiadomość."
 
 #: src/features/catalog/components/variants-editor.tsx
 msgid "The variants and their stock are saved."
@@ -2527,6 +3142,10 @@ msgstr "To jest aktywna edycja konwentu."
 msgid "This item has no speakers yet."
 msgstr "Ten punkt programu nie ma jeszcze prelegentów."
 
+#: src/features/orders/components/order-changes.tsx
+msgid "This order needs review"
+msgstr "To zamówienie jest do wyjaśnienia"
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "This provider answers only to the addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
 msgstr "Ten dostawca odpowiada tylko na adresy wpisane w jego panelu. Zanim podłączysz konto, zapytaj administratorów OPOS o adres, który trzeba tam wpisać."
@@ -2535,10 +3154,28 @@ msgstr "Ten dostawca odpowiada tylko na adresy wpisane w jego panelu. Zanim pod�
 msgid "This provider answers only to the addresses entered in its panel. Enter this one there before you connect the account: <0>{callsFrom}</0>"
 msgstr "Ten dostawca odpowiada tylko na adresy wpisane w jego panelu. Zanim podłączysz konto, wpisz tam ten adres: <0>{callsFrom}</0>"
 
+#: src/features/orders/pages/manual-order-page.tsx
+#: src/features/orders/pages/order-page.tsx
+msgid "Ticket holder"
+msgstr "Posiadacz akredytacji"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Ticket holder’s name"
+msgstr "Imię i nazwisko posiadacza akredytacji"
+
+#: src/features/orders/pages/manual-order-page.tsx
+msgid "Ticket holder’s name (optional)"
+msgstr "Imię i nazwisko posiadacza akredytacji (nieobowiązkowe)"
+
 #: src/features/catalog/pages/ticket-holders-page.tsx
 #: src/features/editions/components/edition-layout.tsx
 msgid "Ticket holders’ data"
 msgstr "Dane posiadaczy akredytacji"
+
+#: src/features/orders/pages/manual-order-page.tsx
+#: src/features/orders/pages/orders-page.tsx
+msgid "Ticket type"
+msgstr "Rodzaj akredytacji"
 
 #: src/features/catalog/pages/ticket-type-page.tsx
 msgid "Ticket type data"
@@ -2547,6 +3184,7 @@ msgstr "Dane rodzaju akredytacji"
 #: src/features/catalog/pages/ticket-type-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
 #: src/features/editions/components/edition-layout.tsx
+#: src/features/orders/pages/orders-page.tsx
 msgid "Ticket types"
 msgstr "Rodzaje akredytacji"
 
@@ -2584,6 +3222,10 @@ msgstr "Tytuł"
 msgid "Title of the new document"
 msgstr "Tytuł nowego dokumentu"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "To"
+msgstr "Do"
+
 #: src/shared/ui/sidebar.tsx
 msgid "Toggle Sidebar"
 msgstr "Pokaż lub ukryj pasek boczny"
@@ -2591,6 +3233,16 @@ msgstr "Pokaż lub ukryj pasek boczny"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Too much time has passed since you opened the link. Ask for a new one."
 msgstr "Od otwarcia linku minęło zbyt dużo czasu. Poproś o nowy."
+
+#: src/features/orders/components/order-lines.tsx
+#: src/features/orders/pages/manual-order-page.tsx
+#: src/features/orders/pages/orders-page.tsx
+msgid "Total"
+msgstr "Razem"
+
+#: src/features/orders/components/order-changes.tsx
+msgid "Total of the order"
+msgstr "Kwota zamówienia"
 
 #: src/features/auth/components/accept-invitation.tsx
 #: src/shared/ui/messages.tsx
@@ -2695,8 +3347,14 @@ msgid "Value {order} of axis {number}"
 msgstr "Wartość {order} osi {number}"
 
 #: src/features/catalog/components/variants-editor.tsx
+#: src/features/orders/pages/production-numbers-page.tsx
 msgid "Variant"
 msgstr "Wariant"
+
+#. placeholder {0}: line.name
+#: src/features/orders/components/order-lines.tsx
+msgid "Variant of {0}"
+msgstr "Wariant: {0}"
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Variants"
@@ -2717,6 +3375,10 @@ msgstr "Adres miejsca"
 #: src/features/shop/components/document-card.tsx
 msgid "Version {number}"
 msgstr "Wersja {number}"
+
+#: src/features/orders/pages/order-page.tsx
+msgid "Waiting to be sent"
+msgstr "Czeka na wysłanie"
 
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
@@ -2750,6 +3412,10 @@ msgstr "Wyślemy ci link do ustawienia nowego hasła."
 msgid "What a buyer accepts at the checkout, in the order below. The wording is yours, and so is the choice of which consent is required."
 msgstr "To, co kupujący akceptuje przy składaniu zamówienia, w poniższej kolejności. Treść należy do ciebie, podobnie jak wybór, która zgoda jest wymagana."
 
+#: src/features/orders/components/order-changes.tsx
+msgid "What it holds goes back on sale. OPOS returns no money: returning it is a matter between the convention and the buyer, outside OPOS."
+msgstr "To, co zawiera, wraca do sprzedaży. OPOS nie zwraca pieniędzy: zwrot to sprawa między konwentem a kupującym, poza OPOS."
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "What opening the shop needs"
 msgstr "Czego wymaga otwarcie sklepu"
@@ -2762,6 +3428,10 @@ msgstr "O co posiadacza akredytacji pyta się przy składaniu zamówienia poza i
 msgid "What the checkout asks the ticket holder, such as “City you travel from”. The answer is a text of up to 200 characters."
 msgstr "O co posiadacza akredytacji pyta się przy składaniu zamówienia, na przykład „Miasto, z którego przyjeżdżasz”. Odpowiedź to tekst do 200 znaków."
 
+#: src/features/orders/pages/order-page.tsx
+msgid "What the order holds"
+msgstr "Co zawiera zamówienie"
+
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
 msgstr "Co zawiera akredytacja, na przykład przypinkę albo identyfikator: widoczne dla kupującego, nigdy niesprzedawane osobno."
@@ -2769,6 +3439,14 @@ msgstr "Co zawiera akredytacja, na przykład przypinkę albo identyfikator: wido
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "While nothing is on sale"
 msgstr "Gdy nic nie jest w sprzedaży"
+
+#: src/features/orders/model/labels.ts
+msgid "with the buyer"
+msgstr "u kupującego"
+
+#: src/features/orders/model/labels.ts
+msgid "with the convention"
+msgstr "u konwentu"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx

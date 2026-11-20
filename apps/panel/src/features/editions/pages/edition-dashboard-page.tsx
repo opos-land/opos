@@ -8,11 +8,15 @@ import {
   PageHeader,
   Section,
 } from '../../../shared/ui'
+import { OrdersInReview } from '../../orders'
 import { useCurrentTenant, useTenantTime } from '../../tenants'
 import { EditionStatus } from '../components/edition-status'
 import { useEditionBySlug } from '../hooks/use-editions'
 
-/** The edition's dashboard: its dates, and whether it is active and shown in the portal. */
+/**
+ * The edition's dashboard: its dates, whether it is active and shown in the portal, and how many
+ * of its orders wait for an org.
+ */
 export function EditionDashboardPage() {
   const { t } = useLingui()
   const { editionSlug } = useParams()
@@ -31,6 +35,10 @@ export function EditionDashboardPage() {
         title={edition.name}
         description={time.range(edition.startsAt, edition.endsAt)}
         actions={<EditionStatus edition={edition} />}
+      />
+      <OrdersInReview
+        editionId={edition.id}
+        to={`/${tenant.slug}/editions/${edition.slug}/orders`}
       />
       <Section title={<Trans>Status</Trans>}>
         <div className="flex flex-col gap-2 text-sm">

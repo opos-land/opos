@@ -5,6 +5,7 @@ import {
   KeyRoundIcon,
   LayoutDashboardIcon,
   PuzzleIcon,
+  ReceiptTextIcon,
   Settings2Icon,
   ShirtIcon,
   StoreIcon,
@@ -50,6 +51,9 @@ export function EditionLayout() {
               <>
                 <SidebarLink to={`${base}/shop`} icon={<StoreIcon />}>
                   <Trans>Shop</Trans>
+                </SidebarLink>
+                <SidebarLink to={`${base}/orders`} icon={<ReceiptTextIcon />}>
+                  <Trans>Orders</Trans>
                 </SidebarLink>
                 <SidebarLink to={`${base}/ticket-types`} icon={<TicketIcon />}>
                   <Trans>Ticket types</Trans>

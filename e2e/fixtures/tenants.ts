@@ -375,6 +375,29 @@ export class TenantFactory {
     `)
   }
 
+  /** Lets every order link of an order expire, as a link does 30 days after its edition ends. */
+  async expireOrderLinks(orderId: string) {
+    await this.db.execute(sql`
+      update order_links set expires_at = now() - interval '1 day' where order_id = ${orderId}
+    `)
+  }
+
+  /** Says where and when an edition hands merchandise over, as an org sets it in the panel. */
+  async setPickupInformation(editionId: string, text: string) {
+    await this.db.execute(sql`
+      update edition_shops set pickup_information = ${text} where edition_id = ${editionId}
+    `)
+  }
+
+  /** How many QR codes the orders of a tenant carry between them. */
+  async qrCodesCarried(tenantId: string) {
+    const [row] = await this.db.execute<{ codes: number; orders: number }>(sql`
+      select count(distinct qr_code_id)::int as codes, count(*)::int as orders
+      from order_qr_code_orders where tenant_id = ${tenantId}
+    `)
+    return row!
+  }
+
   /** The order links of an order as stored: whether each still opens. */
   async orderLinks(orderId: string) {
     return [

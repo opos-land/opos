@@ -3,26 +3,35 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { type CustomField, type EditionShop, updateEditionShopSchema } from '@opos/contract'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
+  Badge,
   Button,
   buttonVariants,
   ErrorMessage,
   FieldSet,
   FormField,
   Input,
+  LinkRow,
   LoadingView,
   NoPermissionView,
   PageHeader,
+  RowLink,
   Section,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '../../../shared/ui'
 import { useEditionBySlug } from '../../editions'
 import { editionShopOptions, updateEditionShopOptions } from '../../shop'
 import { atLeast, useCurrentTenant } from '../../tenants'
-import { customFieldsOptions } from '../api/catalog'
-import { CustomFieldRow } from '../components/custom-field-row'
+import { catalogKey, customFieldsOptions, updateCustomFieldOptions } from '../api/catalog'
+import { ListActions } from '../components/list-actions'
 import { SensitiveDataNotice } from '../components/sensitive-data-notice'
 import { ageBandsBody } from '../model/age-bands'
 
@@ -76,7 +85,7 @@ export function TicketHoldersPage() {
           <CustomFields
             fields={fields.data}
             canWrite={canWrite}
-            adding={`/${tenant.slug}/editions/${edition.slug}/ticket-holders/custom-fields/new`}
+            base={`/${tenant.slug}/editions/${edition.slug}/ticket-holders/custom-fields`}
           />
         )}
       </Section>
@@ -188,18 +197,17 @@ function AgeBands({
   )
 }
 
+/** The custom fields as a table in the order the checkout asks them, a row a field. */
 function CustomFields({
   fields,
   canWrite,
-  adding,
+  base,
 }: {
   fields: CustomField[]
   canWrite: boolean
-  /** The address of the page that adds a field. */
-  adding: string
+  /** The address the pages of the fields stand under. */
+  base: string
 }) {
-  const listId = useId()
-
   return (
     <>
       {fields.length === 0 ? (
@@ -207,30 +215,102 @@ function CustomFields({
           <Trans>The edition has no custom fields yet.</Trans>
         </p>
       ) : (
-        <>
-          <h3 id={listId} className="sr-only">
+        <Table>
+          <caption className="sr-only">
             <Trans>Custom fields in their order</Trans>
-          </h3>
-          <ol aria-labelledby={listId} className="flex flex-col gap-3">
+          </caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">
+                <Trans context="a custom field">Question</Trans>
+              </TableHead>
+              <TableHead scope="col">
+                <Trans context="a custom field">Answer</Trans>
+              </TableHead>
+              {canWrite && (
+                <TableHead scope="col">
+                  <Trans>Actions</Trans>
+                </TableHead>
+              )}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {fields.map((field, index) => (
               <CustomFieldRow
                 key={field.id}
                 field={field}
+                // The page of a field is where it is changed: a reader has none to open.
+                to={canWrite ? `${base}/${field.id}` : undefined}
                 last={index === fields.length - 1}
-                canWrite={canWrite}
               />
             ))}
-          </ol>
-        </>
+          </TableBody>
+        </Table>
       )}
       {canWrite && (
         <div>
-          <Link to={adding} className={buttonVariants({ variant: 'outline' })}>
+          <Link to={`${base}/new`} className={buttonVariants({ variant: 'outline' })}>
             <PlusIcon data-icon="inline-start" />
             <Trans>New custom field</Trans>
           </Link>
         </div>
       )}
     </>
+  )
+}
+
+/** One custom field in the table: what it asks, whether it must be answered, its place and hiding. */
+function CustomFieldRow({
+  field,
+  to,
+  last,
+}: {
+  field: CustomField
+  to: string | undefined
+  last: boolean
+}) {
+  const { api } = useCurrentTenant()
+  const queryClient = useQueryClient()
+  const params = { editionId: field.editionId, fieldId: field.id }
+  const update = useMutation({
+    ...updateCustomFieldOptions(api),
+    meta: { success: msg`The custom field is saved.` },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: catalogKey(api) }),
+  })
+
+  return (
+    <LinkRow to={to}>
+      <TableCell>
+        <div className="flex flex-wrap items-center gap-2">
+          {to ? <RowLink to={to}>{field.label}</RowLink> : <span>{field.label}</span>}
+          {field.hidden && (
+            <Badge variant="outline">
+              <Trans context="a custom field">Hidden from the shop</Trans>
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        {field.isRequired ? (
+          <Trans context="a custom field">Required</Trans>
+        ) : (
+          <Trans context="a custom field">Optional</Trans>
+        )}
+      </TableCell>
+      {to && (
+        <TableCell>
+          <div className="flex flex-wrap gap-2">
+            <ListActions
+              position={field.position}
+              last={last}
+              hidden={field.hidden}
+              pending={update.isPending}
+              onMove={(position) => update.mutate({ params, body: { position } })}
+              onHide={(hidden) => update.mutate({ params, body: { hidden } })}
+            />
+          </div>
+        </TableCell>
+      )}
+    </LinkRow>
   )
 }

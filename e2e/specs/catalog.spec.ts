@@ -176,7 +176,7 @@ test('an org builds the catalog of an edition from nothing', async ({
     await page.getByLabel('Answer').selectOption(answer)
     await page.getByRole('button', { name: 'Add the custom field' }).click()
     await expect(
-      page.getByRole('list', { name: 'Custom fields in their order' }).getByText(label),
+      page.getByRole('table', { name: 'Custom fields in their order' }).getByText(label),
     ).toBeVisible()
   }
 

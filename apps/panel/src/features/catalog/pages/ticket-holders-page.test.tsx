@@ -205,41 +205,47 @@ describe("the ticket holders' data page", () => {
 
     view()
 
-    const city = await screen.findByRole('listitem', { name: 'City' })
-    expect(within(city).getByText('Required')).toBeDefined()
-    const fandom = screen.getByRole('listitem', { name: 'Fandom' })
-    expect(within(fandom).getByText('Optional')).toBeDefined()
-    expect(within(fandom).getByText('Hidden from the shop')).toBeDefined()
+    const table = await screen.findByRole('table', { name: 'Custom fields in their order' })
+    expect(
+      within(table)
+        .getAllByRole('row')
+        .slice(1)
+        .map((line) =>
+          [...line.querySelectorAll('td')].slice(0, 2).map((cell) => cell.textContent),
+        ),
+    ).toEqual([
+      ['City', 'Required'],
+      ['FandomHidden from the shop', 'Optional'],
+    ])
   })
 
-  it('changes, moves and hides a field, and deletes it once the modal is confirmed', async () => {
+  it('opens the page of a custom field from its row, for a member who may change it', async () => {
+    readFields.mockResolvedValue([customField(1, { label: 'City' })])
+    view()
+
+    const link = await screen.findByRole('link', { name: 'City' })
+    expect(link.getAttribute('href')).toBe(
+      '/convention-a/editions/2026/ticket-holders/custom-fields/field-1',
+    )
+    // The list itself holds no form and deletes nothing.
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Delete the custom field' })).toBeNull()
+  })
+
+  it('moves and hides a field in the list itself', async () => {
     readFields.mockResolvedValue([customField(1), customField(2)])
     view()
-    const first = await screen.findByRole('listitem', { name: 'Field 1' })
+    const first = within((await screen.findByText('Field 1')).closest('tr')!)
 
-    fireEvent.click(within(first).getByRole('button', { name: 'Move down' }))
-    fireEvent.click(within(first).getByRole('button', { name: 'Hide from the shop' }))
+    expect(first.queryByRole('button', { name: 'Move up' })).toBeNull()
+    fireEvent.click(first.getByRole('button', { name: 'Move down' }))
+    fireEvent.click(first.getByRole('button', { name: 'Hide from the shop' }))
+
     await waitFor(() => expect(updateField).toHaveBeenCalledTimes(2))
     expect(updateField.mock.calls.map(([call]) => (call as { body: object }).body)).toEqual([
       { position: 2 },
       { hidden: true },
     ])
-
-    fireEvent.click(within(first).getByRole('button', { name: 'Edit' }))
-    fireEvent.change(within(first).getByLabelText('Answer'), { target: { value: 'required' } })
-    fireEvent.click(within(first).getByRole('button', { name: 'Save the custom field' }))
-    await waitFor(() => expect(updateField).toHaveBeenCalledTimes(3))
-    expect(updateField.mock.calls[2]![0]).toEqual({
-      params: { editionId: 'edition-2026', fieldId: 'field-1' },
-      body: { label: 'Field 1', isRequired: true },
-    })
-
-    const second = screen.getByRole('listitem', { name: 'Field 2' })
-    fireEvent.click(within(second).getByRole('button', { name: 'Delete the custom field' }))
-    const dialog = await screen.findByRole('alertdialog')
-    expect(removeField).not.toHaveBeenCalled()
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete the custom field' }))
-    await waitFor(() => expect(removeField).toHaveBeenCalledTimes(1))
   })
 
   it('lets a reader see everything and change nothing', async () => {
@@ -248,9 +254,10 @@ describe("the ticket holders' data page", () => {
 
     view()
 
-    await screen.findByRole('listitem', { name: 'Field 1' })
+    await screen.findByText('Field 1')
     expect(screen.queryByRole('button')).toBeNull()
-    expect(screen.queryByRole('link', { name: 'New custom field' })).toBeNull()
+    // No page to open either: the page of a field is where it is changed.
+    expect(screen.queryByRole('link')).toBeNull()
     expect(field(TEEN).matches(':disabled')).toBe(true)
   })
 

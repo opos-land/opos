@@ -225,6 +225,7 @@ msgstr "Konto"
 
 #: src/features/catalog/pages/add-ons-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
+#: src/features/catalog/pages/ticket-holders-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
 #: src/features/discounts/pages/discount-codes-page.tsx
 #: src/features/orders/components/order-lines.tsx
@@ -470,6 +471,11 @@ msgid "Another organizer"
 msgstr "Inny organizator"
 
 #: src/features/catalog/components/custom-field-form.tsx
+msgid "Answer"
+msgstr "Odpowiedź"
+
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgctxt "a custom field"
 msgid "Answer"
 msgstr "Odpowiedź"
 
@@ -793,6 +799,7 @@ msgstr "Utwórz edycję"
 msgid "Currency"
 msgstr "Waluta"
 
+#: src/features/catalog/pages/custom-field-page.tsx
 #: src/features/catalog/pages/new-custom-field-page.tsx
 msgid "Custom field data"
 msgstr "Dane pola dodatkowego"
@@ -872,11 +879,11 @@ msgstr "Usunąć kod „{name}”?"
 msgid "Delete the consent"
 msgstr "Usuń zgodę"
 
-#: src/features/catalog/components/custom-field-row.tsx
+#: src/features/catalog/pages/custom-field-page.tsx
 msgid "Delete the custom field"
 msgstr "Usuń pole dodatkowe"
 
-#: src/features/catalog/components/custom-field-row.tsx
+#: src/features/catalog/pages/custom-field-page.tsx
 msgid "Delete the custom field “{label}”?"
 msgstr "Usunąć pole dodatkowe „{label}”?"
 
@@ -928,6 +935,10 @@ msgstr "Usunąć tę zgodę?"
 #: src/features/discounts/pages/discount-code-page.tsx
 msgid "Deleting a code cannot be undone. To stop it for a while, end it in the list of discount codes instead."
 msgstr "Usunięcia kodu nie można cofnąć. Jeśli ma przestać działać tylko na jakiś czas, zakończ go na liście kodów rabatowych."
+
+#: src/features/catalog/pages/custom-field-page.tsx
+msgid "Deleting a custom field cannot be undone. To stop asking for a while, hide it in the list of custom fields instead."
+msgstr "Usunięcia pola dodatkowego nie można cofnąć. Jeśli sklep ma przestać o nie pytać tylko na jakiś czas, ukryj je na liście pól dodatkowych."
 
 #: src/features/program/pages/program-item-page.tsx
 msgid "Deleting a programme item cannot be undone."
@@ -1033,7 +1044,6 @@ msgstr "Każda lista to plik do otwarcia w arkuszu kalkulacyjnym, z zamówieniam
 msgid "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
 msgstr "Każdy próg to cena brutto obowiązująca od jednej chwili do drugiej. W chwili, której nie obejmuje żaden próg, rodzaj akredytacji nie jest w sprzedaży."
 
-#: src/features/catalog/components/custom-field-row.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Edit"
 msgstr "Edytuj"
@@ -1432,7 +1442,7 @@ msgctxt "a consent"
 msgid "Hidden from the shop"
 msgstr "Ukryta w sklepie"
 
-#: src/features/catalog/components/custom-field-row.tsx
+#: src/features/catalog/pages/ticket-holders-page.tsx
 msgctxt "a custom field"
 msgid "Hidden from the shop"
 msgstr "Ukryte w sklepie"
@@ -2093,7 +2103,7 @@ msgctxt "a consent"
 msgid "Optional"
 msgstr "Opcjonalna"
 
-#: src/features/catalog/components/custom-field-row.tsx
+#: src/features/catalog/pages/ticket-holders-page.tsx
 msgctxt "a custom field"
 msgid "Optional"
 msgstr "Opcjonalne"
@@ -2433,6 +2443,11 @@ msgstr "Liczba"
 msgid "Question"
 msgstr "Pytanie"
 
+#: src/features/catalog/pages/ticket-holders-page.tsx
+msgctxt "a custom field"
+msgid "Question"
+msgstr "Pytanie"
+
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx
 msgid "Read"
@@ -2599,7 +2614,7 @@ msgctxt "a consent"
 msgid "Required"
 msgstr "Wymagana"
 
-#: src/features/catalog/components/custom-field-row.tsx
+#: src/features/catalog/pages/ticket-holders-page.tsx
 msgctxt "a custom field"
 msgid "Required"
 msgstr "Wymagane"
@@ -2725,7 +2740,7 @@ msgstr "Zapisz kod"
 msgid "Save the consent"
 msgstr "Zapisz zgodę"
 
-#: src/features/catalog/components/custom-field-row.tsx
+#: src/features/catalog/pages/custom-field-page.tsx
 msgid "Save the custom field"
 msgstr "Zapisz pole dodatkowe"
 
@@ -3171,7 +3186,7 @@ msgstr "Dane dostępowe są sprawdzane u dostawcy, przechowywane w postaci zaszy
 msgid "The credentials stored now go. Once the provider accepts the new ones, payments use them."
 msgstr "Obecne dane dostępowe zostaną usunięte. Gdy dostawca przyjmie nowe, płatności będą z nich korzystać."
 
-#: src/features/catalog/components/custom-field-row.tsx
+#: src/features/catalog/pages/custom-field-page.tsx
 msgid "The custom field “{label}” is deleted."
 msgstr "Pole dodatkowe „{label}” zostało usunięte."
 
@@ -3179,7 +3194,8 @@ msgstr "Pole dodatkowe „{label}” zostało usunięte."
 msgid "The custom field is added."
 msgstr "Pole dodatkowe zostało dodane."
 
-#: src/features/catalog/components/custom-field-row.tsx
+#: src/features/catalog/pages/custom-field-page.tsx
+#: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "The custom field is saved."
 msgstr "Pole dodatkowe zostało zapisane."
 
@@ -3671,9 +3687,9 @@ msgstr "Sklep pokazuje liczbę wolnych miejsc dopiero wtedy, gdy zostanie ich mn
 msgid "The shop stops asking for it: “{text}”."
 msgstr "Sklep przestanie o nią prosić: „{text}”."
 
-#: src/features/catalog/components/custom-field-row.tsx
-msgid "The shop stops asking for it. To stop asking for a while, hide it instead."
-msgstr "Sklep przestanie o nie pytać. Jeśli ma nie pytać tylko przez jakiś czas, ukryj je zamiast usuwać."
+#: src/features/catalog/pages/custom-field-page.tsx
+msgid "The shop stops asking for it."
+msgstr "Sklep przestaje o nie pytać."
 
 #: src/features/catalog/pages/add-on-page.tsx
 msgid "The shop stops offering it, and no ticket type offers it any more."
@@ -3843,6 +3859,7 @@ msgstr "Posiadacze akredytacji według przedziałów wiekowych"
 msgid "Ticket holders of the sold tickets"
 msgstr "Posiadacze sprzedanych akredytacji"
 
+#: src/features/catalog/pages/custom-field-page.tsx
 #: src/features/catalog/pages/new-custom-field-page.tsx
 #: src/features/catalog/pages/ticket-holders-page.tsx
 #: src/features/editions/components/edition-layout.tsx

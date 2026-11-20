@@ -4,6 +4,7 @@ import { BrandingPage } from '../features/branding'
 import {
   AddOnPage,
   AddOnsPage,
+  CustomFieldPage,
   NewAddOnPage,
   NewCustomFieldPage,
   MerchandiseItemPage,
@@ -175,6 +176,10 @@ export const router = createBrowserRouter([
                   { path: 'discount-codes/:codeId', element: <DiscountCodePage /> },
                   { path: 'ticket-holders', element: <TicketHoldersPage /> },
                   { path: 'ticket-holders/custom-fields/new', element: <NewCustomFieldPage /> },
+                  {
+                    path: 'ticket-holders/custom-fields/:fieldId',
+                    element: <CustomFieldPage />,
+                  },
                   { path: 'access', element: <EditionAccessPage /> },
                   { path: 'settings', element: <EditionSettingsPage /> },
                   { path: '*', element: <NotFoundView /> },

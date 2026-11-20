@@ -77,17 +77,29 @@ test('a head connects the provider, sets the seller, publishes the documents and
     await page.getByLabel('Kind').selectOption({ label: kind })
     await page.getByLabel('Title of the new document').fill(title)
     await page.getByRole('button', { name: 'Add the document' }).click()
-    const card = page.getByRole('article', { name: title })
-    await expect(card.getByText('No version is published yet.')).toBeVisible()
-    await card
-      .getByLabel('New version')
+    // The documents are a table: the new one is a row, which opens the page of the document,
+    // where its first version is published.
+    const listed = page.getByRole('row').filter({ hasText: title })
+    await expect(listed).toContainText('No version is published yet.')
+    await listed.getByRole('link', { name: title, exact: true }).click()
+    await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible()
+    // By its whole label: the notification of the version published before names "new version" too.
+    await page
+      .getByLabel('New version', { exact: true })
       .setInputFiles({ name: `${title}.pdf`, mimeType: 'application/pdf', buffer: pdf() })
-    await card.getByRole('button', { name: 'Publish the version' }).click()
-    await expect(card.getByRole('link', { name: 'Version 1' })).toBeVisible()
+    await page.getByRole('button', { name: 'Publish the version' }).click()
+    await expect(
+      page
+        .getByRole('table', { name: 'Versions of the document' })
+        .getByRole('link', { name: 'Version 1' }),
+    ).toBeVisible()
+    await page.getByRole('main').getByRole('link', { name: 'Documents and consents' }).click()
+    await expect(listed.getByRole('link', { name: 'Version 1' })).toBeVisible()
   }
   // A published version is read by anyone, with no session, as a download.
   const address = await page
-    .getByRole('article', { name: 'Shop terms 2027' })
+    .getByRole('row')
+    .filter({ hasText: 'Shop terms 2027' })
     .getByRole('link', { name: 'Version 1' })
     .getAttribute('href')
   const file = await request.get(address!)
@@ -101,10 +113,14 @@ test('a head connects the provider, sets the seller, publishes the documents and
   await page.getByLabel('Linked document').selectOption({ label: 'Shop terms 2027' })
   await page.getByRole('button', { name: 'Add the consent' }).click()
   await expect(notification(page, 'success', 'The consent is added.')).toBeVisible()
-  const listed = page.getByRole('list', { name: 'Consents in their order' }).getByRole('listitem')
+  // The consents are a table too, a row a consent with the document it links.
+  const listed = page
+    .getByRole('table', { name: 'Consents in their order' })
+    .getByRole('row')
+    .filter({ has: page.getByRole('cell') })
   await expect(listed).toHaveCount(1)
   await expect(listed).toContainText('I accept the shop terms.')
-  await expect(listed).toContainText('Links the document: Shop terms 2027')
+  await expect(listed.getByRole('cell', { name: 'Shop terms 2027' })).toBeVisible()
 
   // Every condition holds now, and the shop opens.
   await followFolderLink(editionMenu, 'Shop', 'Settings')

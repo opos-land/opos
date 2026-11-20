@@ -108,10 +108,10 @@ const view = () =>
     </QueryClientProvider>,
   )
 
-const document_ = (title: string) => within(screen.getByRole('article', { name: title }))
-const consents = () => within(screen.getByRole('list', { name: 'Consents in their order' }))
-const pdf = (type = 'application/pdf', name = 'terms-v2.pdf') =>
-  new File([new Uint8Array(5)], name, { type })
+/** The row of a table that holds the text. */
+const row = (text: string) => within(screen.getByText(text).closest('tr')!)
+const cells = (text: string) =>
+  [...screen.getByText(text).closest('tr')!.querySelectorAll('td')].map((cell) => cell.textContent)
 
 beforeAll(() => {
   i18n.loadAndActivate({ locale: 'en', messages: {} })
@@ -148,35 +148,114 @@ describe('EditionDocumentsPage', () => {
     expect(readConsents).not.toHaveBeenCalled()
   })
 
-  it('names itself, and lists the documents with their kind, their versions and where to read them', async () => {
+  it('names itself, and lists the documents in a table with their kind and their newest version', async () => {
     state.tickets = 'read'
     view()
 
-    const shown = within(await screen.findByRole('article', { name: 'Shop terms' }))
+    await screen.findByRole('table', { name: 'Documents by their title' })
     expect(screen.getByRole('heading', { name: 'Documents and consents', level: 1 })).toBeDefined()
     expect(document.title).toBe('Documents and consents · Edition 2026 · OPOS panel')
-    expect(shown.getByText('Shop terms', { selector: '[data-slot=badge]' })).toBeDefined()
-    const link = shown.getByRole('link', { name: 'Version 1' })
-    expect(link.getAttribute('href')).toMatch(
+    expect(cells('House rules')).toEqual([
+      'House rulesHidden from the shop',
+      'Edition rules',
+      'No version is published yet.',
+    ])
+    const shown = row('Version 1')
+    expect(shown.getByRole('link', { name: 'Shop terms' })).toBeDefined()
+    // Anyone reads the newest version straight from the list.
+    expect(shown.getByRole('link', { name: 'Version 1' }).getAttribute('href')).toMatch(
       new RegExp(`/public/tenants/convention-a/document-versions/${VERSION}$`),
     )
     expect(shown.getByText(/at 2027-05-01T08:00:00.000Z/)).toBeDefined()
-    expect(shown.getByText(/terms\.pdf/)).toBeDefined()
+  })
 
-    const hidden = document_('House rules')
-    expect(hidden.getByText('Hidden from the shop')).toBeDefined()
-    expect(hidden.getByText('No version is published yet.')).toBeDefined()
+  it('opens the page of a document from its row, for a reader too: its versions are read there', async () => {
+    state.tickets = 'read'
+    view()
+
+    const link = await screen.findByRole('link', { name: 'Shop terms' })
+    expect(link.getAttribute('href')).toBe(`/convention-a/editions/2026/documents/${TERMS}`)
   })
 
   it('shows a member who reads the tickets nothing to change', async () => {
     state.tickets = 'read'
     view()
-    await screen.findByRole('article', { name: 'Shop terms' })
     await screen.findByText('Consent 1')
 
     expect(screen.queryByRole('button')).toBeNull()
     expect(screen.queryByRole('link', { name: 'New document' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'New consent' })).toBeNull()
+    // A consent has a page only to be changed on: a reader has none to open.
+    expect(screen.queryByRole('link', { name: 'Consent 1' })).toBeNull()
+  })
+
+  it('hides a document that is shown and shows one that is hidden, in the list itself', async () => {
+    state.tickets = 'write'
+    view()
+    await screen.findByText('House rules')
+
+    fireEvent.click(row('Version 1').getByRole('button', { name: 'Hide from the shop' }))
+    fireEvent.click(row('House rules').getByRole('button', { name: 'Show in the shop' }))
+
+    await vi.waitFor(() => expect(updateDocument).toHaveBeenCalledTimes(2))
+    expect(updateDocument.mock.calls.map(([call]) => call as object)).toEqual([
+      { params: { editionId: 'edition-2026', documentId: TERMS }, body: { hidden: true } },
+      { params: { editionId: 'edition-2026', documentId: RULES }, body: { hidden: false } },
+    ])
+    // Its title, a new version and its deletion are on the page of the document.
+    expect(screen.queryByLabelText('Title')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Delete the document' })).toBeNull()
+  })
+
+  it('lists the consents in a table in their order, each with what it asks and the document it links', async () => {
+    state.tickets = 'read'
+    view()
+    await screen.findByRole('table', { name: 'Consents in their order' })
+
+    expect(cells('Consent 1')).toEqual(['Consent 1', 'Required', 'Shop terms'])
+    expect(cells('Consent 2')).toEqual(['Consent 2', 'Optional', '—'])
+  })
+
+  it('opens the page of a consent from its row, for a member who may change it', async () => {
+    state.tickets = 'write'
+    view()
+
+    const link = await screen.findByRole('link', { name: 'Consent 1' })
+    expect(link.getAttribute('href')).toBe(
+      '/convention-a/editions/2026/documents/consents/consent-1',
+    )
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Delete the consent' })).toBeNull()
+  })
+
+  it('moves a consent up and down the list, the first only down and the last only up', async () => {
+    state.tickets = 'write'
+    view()
+    await screen.findByText('Consent 1')
+
+    expect(row('Consent 1').queryByRole('button', { name: 'Move up' })).toBeNull()
+    expect(row('Consent 2').queryByRole('button', { name: 'Move down' })).toBeNull()
+    fireEvent.click(row('Consent 1').getByRole('button', { name: 'Move down' }))
+
+    await vi.waitFor(() => expect(updateConsent).toHaveBeenCalledTimes(1))
+    expect(updateConsent.mock.calls[0]?.[0]).toEqual({
+      params: { editionId: 'edition-2026', consentId: 'consent-1' },
+      body: { position: 2 },
+    })
+  })
+
+  it('hides a consent in the list itself', async () => {
+    state.tickets = 'write'
+    view()
+    await screen.findByText('Consent 1')
+
+    fireEvent.click(row('Consent 1').getByRole('button', { name: 'Hide from the shop' }))
+
+    await vi.waitFor(() => expect(updateConsent).toHaveBeenCalledTimes(1))
+    expect(updateConsent.mock.calls[0]?.[0]).toEqual({
+      params: { editionId: 'edition-2026', consentId: 'consent-1' },
+      body: { hidden: true },
+    })
   })
 
   it('links a member who may add to the pages of a new document and a new consent, and holds no form of either', async () => {
@@ -192,171 +271,6 @@ describe('EditionDocumentsPage', () => {
     )
     expect(screen.queryByLabelText('Title of the new document')).toBeNull()
     expect(screen.queryByLabelText('Sentence the buyer accepts')).toBeNull()
-  })
-
-  it('publishes the chosen PDF as the next version of its document', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByRole('article', { name: 'Shop terms' })
-    const shown = document_('Shop terms')
-    const publish = shown.getByRole('button', { name: 'Publish the version' })
-    expect(publish.hasAttribute('disabled')).toBe(true)
-
-    fireEvent.change(shown.getByLabelText('New version'), { target: { files: [pdf()] } })
-    fireEvent.click(publish)
-
-    await vi.waitFor(() => expect(publishVersion).toHaveBeenCalledTimes(1))
-    expect(publishVersion.mock.calls[0]?.[0]).toEqual({
-      params: { editionId: 'edition-2026', documentId: TERMS },
-      body: {
-        file: {
-          name: 'terms-v2.pdf',
-          type: 'application/pdf',
-          data: Buffer.from(new Uint8Array(5)).toString('base64'),
-        },
-      },
-    })
-  })
-
-  it('refuses a file that is no PDF beside its field, and sends nothing', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByRole('article', { name: 'Shop terms' })
-    const shown = document_('Shop terms')
-
-    fireEvent.change(shown.getByLabelText('New version'), {
-      target: { files: [pdf('image/png', 'terms.png')] },
-    })
-
-    expect(shown.getByText('Choose a PDF file.')).toBeDefined()
-    expect(
-      shown.getByRole('button', { name: 'Publish the version' }).hasAttribute('disabled'),
-    ).toBe(true)
-    expect(publishVersion).not.toHaveBeenCalled()
-  })
-
-  it('renames a document, hides one that is shown and shows one that is hidden', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByRole('article', { name: 'Shop terms' })
-
-    const shown = document_('Shop terms')
-    fireEvent.change(shown.getByLabelText('Title'), { target: { value: 'Terms of the shop' } })
-    fireEvent.click(shown.getByRole('button', { name: 'Save the title' }))
-    await vi.waitFor(() => expect(updateDocument).toHaveBeenCalledTimes(1))
-    expect(updateDocument.mock.calls[0]?.[0]).toEqual({
-      params: { editionId: 'edition-2026', documentId: TERMS },
-      body: { title: 'Terms of the shop' },
-    })
-
-    fireEvent.click(shown.getByRole('button', { name: 'Hide from the shop' }))
-    await vi.waitFor(() => expect(updateDocument).toHaveBeenCalledTimes(2))
-    expect(updateDocument.mock.calls[1]?.[0]).toMatchObject({ body: { hidden: true } })
-
-    fireEvent.click(document_('House rules').getByRole('button', { name: 'Show in the shop' }))
-    await vi.waitFor(() => expect(updateDocument).toHaveBeenCalledTimes(3))
-    expect(updateDocument.mock.calls[2]?.[0]).toEqual({
-      params: { editionId: 'edition-2026', documentId: RULES },
-      body: { hidden: false },
-    })
-  })
-
-  it('deletes a document once its modal is confirmed', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByRole('article', { name: 'House rules' })
-
-    fireEvent.click(document_('House rules').getByRole('button', { name: 'Delete the document' }))
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete the document “House rules”?' })
-    expect(dialog.textContent).toContain('This action cannot be undone.')
-    expect(removeDocument).not.toHaveBeenCalled()
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete the document' }))
-
-    await vi.waitFor(() => expect(removeDocument).toHaveBeenCalledTimes(1))
-    expect(removeDocument.mock.calls[0]?.[0]).toEqual({
-      params: { editionId: 'edition-2026', documentId: RULES },
-    })
-  })
-
-  it('lists the consents in their order, each with what it asks and the document it links', async () => {
-    state.tickets = 'read'
-    view()
-    await screen.findByText('Consent 1')
-
-    const rows = consents().getAllByRole('listitem')
-    expect(rows.map((row) => within(row).getByText(/^Consent \d$/).textContent)).toEqual([
-      'Consent 1',
-      'Consent 2',
-    ])
-    expect(within(rows[0]!).getByText('Required')).toBeDefined()
-    expect(within(rows[0]!).getByText('Links the document: Shop terms')).toBeDefined()
-    expect(within(rows[1]!).getByText('Optional')).toBeDefined()
-  })
-
-  it('moves a consent up and down the list, the first only down and the last only up', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByText('Consent 1')
-    const [first, second] = consents().getAllByRole('listitem')
-
-    expect(within(first!).queryByRole('button', { name: 'Move up' })).toBeNull()
-    expect(within(second!).queryByRole('button', { name: 'Move down' })).toBeNull()
-    fireEvent.click(within(first!).getByRole('button', { name: 'Move down' }))
-
-    await vi.waitFor(() => expect(updateConsent).toHaveBeenCalledTimes(1))
-    expect(updateConsent.mock.calls[0]?.[0]).toEqual({
-      params: { editionId: 'edition-2026', consentId: 'consent-1' },
-      body: { position: 2 },
-    })
-  })
-
-  it('changes a consent in place: its sentence and whether it is required, never its document', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByText('Consent 1')
-    const [first] = consents().getAllByRole('listitem')
-
-    fireEvent.click(within(first!).getByRole('button', { name: 'Edit' }))
-    // The document is linked for good: another link is a new consent.
-    expect(within(first!).queryByLabelText('Linked document')).toBeNull()
-    expect(
-      within(first!).getByText(
-        'A consent links its document for good. To link another one, add a new consent.',
-      ),
-    ).toBeDefined()
-    fireEvent.change(within(first!).getByLabelText('Sentence the buyer accepts'), {
-      target: { value: 'I accept the terms of the shop.' },
-    })
-    fireEvent.change(within(first!).getByLabelText('Acceptance'), { target: { value: 'optional' } })
-    fireEvent.click(within(first!).getByRole('button', { name: 'Save the consent' }))
-
-    await vi.waitFor(() => expect(updateConsent).toHaveBeenCalledTimes(1))
-    expect(updateConsent.mock.calls[0]?.[0]).toEqual({
-      params: { editionId: 'edition-2026', consentId: 'consent-1' },
-      body: { text: 'I accept the terms of the shop.', isRequired: false },
-    })
-  })
-
-  it('hides a consent, and deletes one once its modal is confirmed', async () => {
-    state.tickets = 'write'
-    view()
-    await screen.findByText('Consent 1')
-    const [first, second] = consents().getAllByRole('listitem')
-
-    fireEvent.click(within(first!).getByRole('button', { name: 'Hide from the shop' }))
-    await vi.waitFor(() => expect(updateConsent).toHaveBeenCalledTimes(1))
-    expect(updateConsent.mock.calls[0]?.[0]).toMatchObject({ body: { hidden: true } })
-
-    fireEvent.click(within(second!).getByRole('button', { name: 'Delete the consent' }))
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete this consent?' })
-    expect(dialog.textContent).toContain('“Consent 2”. This action cannot be undone.')
-    expect(dialog.textContent).toContain('This action cannot be undone.')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete the consent' }))
-
-    await vi.waitFor(() => expect(removeConsent).toHaveBeenCalledTimes(1))
-    expect(removeConsent.mock.calls[0]?.[0]).toEqual({
-      params: { editionId: 'edition-2026', consentId: 'consent-2' },
-    })
   })
 
   it('says so when the edition has no document and no consent yet', async () => {

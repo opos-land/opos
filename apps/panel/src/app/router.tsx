@@ -36,6 +36,8 @@ import { SalesPage } from '../features/sales'
 import { NewScannerPage, ScannerPage, ScannersPage } from '../features/scanner'
 import { NewProgramItemPage, ProgramItemPage, ProgramPage } from '../features/program'
 import {
+  ConsentPage,
+  DocumentPage,
   EditionDocumentsPage,
   EditionShopPage,
   NewConsentPage,
@@ -155,6 +157,8 @@ export const router = createBrowserRouter([
                   { path: 'documents', element: <EditionDocumentsPage /> },
                   { path: 'documents/new', element: <NewDocumentPage /> },
                   { path: 'documents/consents/new', element: <NewConsentPage /> },
+                  { path: 'documents/consents/:consentId', element: <ConsentPage /> },
+                  { path: 'documents/:documentId', element: <DocumentPage /> },
                   { path: 'orders', element: <OrdersPage /> },
                   { path: 'orders/new', element: <ManualOrderPage /> },
                   { path: 'orders/:orderId', element: <OrderPage /> },

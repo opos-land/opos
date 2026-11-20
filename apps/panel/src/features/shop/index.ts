@@ -1,3 +1,5 @@
+export { ConsentPage } from './pages/consent-page'
+export { DocumentPage } from './pages/document-page'
 export { EditionDocumentsPage } from './pages/edition-documents-page'
 export { NewConsentPage } from './pages/new-consent-page'
 export { NewDocumentPage } from './pages/new-document-page'

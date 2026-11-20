@@ -139,7 +139,7 @@ msgstr "Strona z odpowiedziami dla kupujących, do której odsyła stopka sklepu
 msgid "A payment the order did not need"
 msgstr "Płatność, której zamówienie nie potrzebowało"
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 msgstr "Plik PDF o rozmiarze do 10 MB. Opublikowanej wersji nie można zmienić ani usunąć: poprawka to nowa wersja."
 
@@ -187,6 +187,11 @@ msgstr "Zamieniono wariant"
 msgid "Acceptance"
 msgstr "Akceptacja"
 
+#: src/features/shop/pages/edition-documents-page.tsx
+msgctxt "a consent"
+msgid "Acceptance"
+msgstr "Akceptacja"
+
 #: src/features/editions/components/edition-layout.tsx
 msgid "Access"
 msgstr "Dostęp"
@@ -230,6 +235,7 @@ msgstr "Konto"
 #: src/features/discounts/pages/discount-codes-page.tsx
 #: src/features/orders/components/order-lines.tsx
 #: src/features/scanner/pages/scanners-page.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Actions"
 msgstr "Działania"
@@ -632,11 +638,11 @@ msgstr "Wybierz konwent"
 msgid "Choose a JPEG, PNG or WebP image."
 msgstr "Wybierz obraz JPEG, PNG lub WebP."
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "Choose a PDF file."
 msgstr "Wybierz plik PDF."
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "Choose a PDF of up to 10 MB."
 msgstr "Wybierz plik PDF o rozmiarze do 10 MB."
 
@@ -731,6 +737,11 @@ msgstr "Podłącz konto"
 msgid "Connected"
 msgstr "Podłączono"
 
+#: src/features/shop/pages/consent-page.tsx
+msgid "Consent"
+msgstr "Zgoda"
+
+#: src/features/shop/pages/consent-page.tsx
 #: src/features/shop/pages/new-consent-page.tsx
 msgid "Consent data"
 msgstr "Dane zgody"
@@ -875,7 +886,7 @@ msgstr "Usuń kod"
 msgid "Delete the code “{name}”?"
 msgstr "Usunąć kod „{name}”?"
 
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/consent-page.tsx
 msgid "Delete the consent"
 msgstr "Usuń zgodę"
 
@@ -887,11 +898,11 @@ msgstr "Usuń pole dodatkowe"
 msgid "Delete the custom field “{label}”?"
 msgstr "Usunąć pole dodatkowe „{label}”?"
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "Delete the document"
 msgstr "Usuń dokument"
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "Delete the document “{documentTitle}”?"
 msgstr "Usunąć dokument „{documentTitle}”?"
 
@@ -928,7 +939,7 @@ msgstr "Usuń rodzaj akredytacji"
 msgid "Delete the ticket type “{name}”?"
 msgstr "Usunąć rodzaj akredytacji „{name}”?"
 
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/consent-page.tsx
 msgid "Delete this consent?"
 msgstr "Usunąć tę zgodę?"
 
@@ -936,9 +947,17 @@ msgstr "Usunąć tę zgodę?"
 msgid "Deleting a code cannot be undone. To stop it for a while, end it in the list of discount codes instead."
 msgstr "Usunięcia kodu nie można cofnąć. Jeśli ma przestać działać tylko na jakiś czas, zakończ go na liście kodów rabatowych."
 
+#: src/features/shop/pages/consent-page.tsx
+msgid "Deleting a consent cannot be undone. To stop asking for a while, hide it in the list of consents instead."
+msgstr "Usunięcia zgody nie można cofnąć. Jeśli sklep ma przestać o nią pytać tylko na jakiś czas, ukryj ją na liście zgód."
+
 #: src/features/catalog/pages/custom-field-page.tsx
 msgid "Deleting a custom field cannot be undone. To stop asking for a while, hide it in the list of custom fields instead."
 msgstr "Usunięcia pola dodatkowego nie można cofnąć. Jeśli sklep ma przestać o nie pytać tylko na jakiś czas, ukryj je na liście pól dodatkowych."
+
+#: src/features/shop/pages/document-page.tsx
+msgid "Deleting a document cannot be undone. To take it out of the shop for a while, hide it in the list of documents instead."
+msgstr "Usunięcia dokumentu nie można cofnąć. Jeśli ma zniknąć ze sklepu tylko na jakiś czas, ukryj go na liście dokumentów."
 
 #: src/features/program/pages/program-item-page.tsx
 msgid "Deleting a programme item cannot be undone."
@@ -1017,6 +1036,7 @@ msgstr "Zamknij"
 msgid "Displays the mobile sidebar."
 msgstr "Wyświetla pasek boczny na małym ekranie."
 
+#: src/features/shop/pages/document-page.tsx
 #: src/features/shop/pages/new-document-page.tsx
 msgid "Document data"
 msgstr "Dane dokumentu"
@@ -1026,11 +1046,17 @@ msgid "Documents"
 msgstr "Dokumenty"
 
 #: src/features/editions/components/edition-layout.tsx
+#: src/features/shop/pages/consent-page.tsx
+#: src/features/shop/pages/document-page.tsx
 #: src/features/shop/pages/edition-documents-page.tsx
 #: src/features/shop/pages/new-consent-page.tsx
 #: src/features/shop/pages/new-document-page.tsx
 msgid "Documents and consents"
 msgstr "Dokumenty i zgody"
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Documents by their title"
+msgstr "Dokumenty według tytułów"
 
 #: src/features/orders/pages/production-numbers-page.tsx
 msgid "Download as a file"
@@ -1043,10 +1069,6 @@ msgstr "Każda lista to plik do otwarcia w arkuszu kalkulacyjnym, z zamówieniam
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Each tier is a gross price from one moment until another. At a moment no tier covers, the ticket type is not on sale."
 msgstr "Każdy próg to cena brutto obowiązująca od jednej chwili do drugiej. W chwili, której nie obejmuje żaden próg, rodzaj akredytacji nie jest w sprzedaży."
-
-#: src/features/shop/components/consent-row.tsx
-msgid "Edit"
-msgstr "Edytuj"
 
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/team/components/invite-form.tsx
@@ -1337,6 +1359,11 @@ msgstr "Testowy dostawca (bez prawdziwych płatności)"
 msgid "FAQ"
 msgstr "FAQ"
 
+#: src/features/shop/pages/document-page.tsx
+msgctxt "a document"
+msgid "File"
+msgstr "Plik"
+
 #: src/features/orders/pages/orders-page.tsx
 msgid "Find an order"
 msgstr "Znajdź zamówienie"
@@ -1437,7 +1464,7 @@ msgctxt "a variant"
 msgid "Hidden"
 msgstr "Ukryty"
 
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgctxt "a consent"
 msgid "Hidden from the shop"
 msgstr "Ukryta w sklepie"
@@ -1447,7 +1474,8 @@ msgctxt "a custom field"
 msgid "Hidden from the shop"
 msgstr "Ukryte w sklepie"
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgctxt "a document"
 msgid "Hidden from the shop"
 msgstr "Ukryty w sklepie"
@@ -1472,8 +1500,7 @@ msgid "Hidden: the shop does not show the ticket type"
 msgstr "Ukryty: sklep nie pokazuje tego rodzaju akredytacji"
 
 #: src/features/catalog/components/list-actions.tsx
-#: src/features/shop/components/consent-row.tsx
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgid "Hide from the shop"
 msgstr "Ukryj w sklepie"
 
@@ -1617,7 +1644,7 @@ msgstr "Jego kod QR przestaje być ważny, to, co zawiera, wraca do sprzedaży, 
 msgid "Its variants with their stock, its pictures and its size charts go with it."
 msgstr "Razem z nim znikną jego warianty ze stanami magazynowymi, zdjęcia i tabele rozmiarów."
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "Its versions and their files go with it, and their links stop working."
 msgstr "Razem z nim znikną jego wersje i ich pliki, a prowadzące do nich linki przestaną działać."
 
@@ -1631,6 +1658,11 @@ msgstr "Zostaje przy zamówieniu, dla zespołu. Kupujący go nie widzi."
 
 #: src/features/discounts/components/discount-code-form.tsx
 #: src/features/shop/pages/new-document-page.tsx
+msgid "Kind"
+msgstr "Rodzaj"
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgctxt "a document"
 msgid "Kind"
 msgstr "Rodzaj"
 
@@ -1671,9 +1703,10 @@ msgstr "Limitowany: określona liczba miejsc"
 msgid "Linked document"
 msgstr "Powiązany dokument"
 
-#: src/features/shop/components/consent-row.tsx
-msgid "Links the document: {linkedTitle}"
-msgstr "Odsyła do dokumentu: {linkedTitle}"
+#: src/features/shop/pages/edition-documents-page.tsx
+msgctxt "a consent"
+msgid "Linked document"
+msgstr "Powiązany dokument"
 
 #: src/features/sales/pages/sales-page.tsx
 msgid "Lists to download"
@@ -1780,7 +1813,7 @@ msgid "Most in a single order"
 msgstr "Najwięcej w jednym zamówieniu"
 
 #: src/features/catalog/components/list-actions.tsx
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgid "Move down"
 msgstr "Przesuń w dół"
 
@@ -1797,7 +1830,7 @@ msgid "Move the order {number} to {next}?"
 msgstr "Przenieść zamówienie {number} na adres {next}?"
 
 #: src/features/catalog/components/list-actions.tsx
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgid "Move up"
 msgstr "Przesuń w górę"
 
@@ -1923,9 +1956,13 @@ msgstr "Nowa tabela rozmiarów – {label}"
 msgid "New ticket type"
 msgstr "Nowy rodzaj akredytacji"
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "New version"
 msgstr "Nowa wersja"
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgid "Newest version"
+msgstr "Najnowsza wersja"
 
 #: src/features/orders/pages/orders-page.tsx
 msgid "Next page"
@@ -1989,7 +2026,8 @@ msgstr "Brak tabeli rozmiarów."
 msgid "No ticket: merchandise alone"
 msgstr "Bez akredytacji: same gadżety"
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgid "No version is published yet."
 msgstr "Nie opublikowano jeszcze żadnej wersji."
 
@@ -2098,7 +2136,7 @@ msgstr "Panel OPOS"
 msgid "Option axes"
 msgstr "Osie wariantów"
 
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgctxt "a consent"
 msgid "Optional"
 msgstr "Opcjonalna"
@@ -2418,13 +2456,22 @@ msgstr "W panelu Przelewy24 nazywa się kluczem do raportów."
 msgid "Publish"
 msgstr "Opublikuj"
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
+msgid "Publish a version"
+msgstr "Opublikuj wersję"
+
+#: src/features/shop/pages/document-page.tsx
 msgid "Publish the version"
 msgstr "Opublikuj wersję"
 
 #: src/features/editions/components/edition-status.tsx
 msgid "Published"
 msgstr "Opublikowana"
+
+#: src/features/shop/pages/document-page.tsx
+msgctxt "a document"
+msgid "Published"
+msgstr "Opublikowano"
 
 #: src/features/orders/pages/order-page.tsx
 #: src/features/scanner/pages/scanner-page.tsx
@@ -2609,7 +2656,7 @@ msgstr "Zmienić logo konwentu {name}?"
 msgid "Replace the size chart"
 msgstr "Zmień tabelę rozmiarów"
 
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgctxt "a consent"
 msgid "Required"
 msgstr "Wymagana"
@@ -2736,7 +2783,7 @@ msgstr "Zapisać osie i usunąć warianty?"
 msgid "Save the code"
 msgstr "Zapisz kod"
 
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/consent-page.tsx
 msgid "Save the consent"
 msgstr "Zapisz zgodę"
 
@@ -2777,7 +2824,7 @@ msgstr "Zapisz przypomnienie"
 msgid "Save the ticket type"
 msgstr "Zapisz rodzaj akredytacji"
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "Save the title"
 msgstr "Zapisz tytuł"
 
@@ -2852,6 +2899,11 @@ msgstr "Wyślij link"
 msgid "Sent"
 msgstr "Wysłano"
 
+#: src/features/shop/pages/edition-documents-page.tsx
+msgctxt "a consent"
+msgid "Sentence"
+msgstr "Treść"
+
 #: src/features/shop/components/consent-form.tsx
 msgid "Sentence the buyer accepts"
 msgstr "Zdanie, które akceptuje kupujący"
@@ -2886,8 +2938,7 @@ msgid "Short description"
 msgstr "Krótki opis"
 
 #: src/features/catalog/components/list-actions.tsx
-#: src/features/shop/components/consent-row.tsx
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgid "Show in the shop"
 msgstr "Pokaż w sklepie"
 
@@ -3154,11 +3205,12 @@ msgstr "Potwierdzenie jest w drodze na adres e-mail zamówienia."
 msgid "The consent is added."
 msgstr "Zgoda została dodana."
 
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/consent-page.tsx
 msgid "The consent is deleted."
 msgstr "Zgoda została usunięta."
 
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/consent-page.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgid "The consent is saved."
 msgstr "Zgoda została zapisana."
 
@@ -3211,7 +3263,7 @@ msgstr "Dane są kompletne."
 msgid "The details are incomplete. The shop of an edition can open once every field below is set."
 msgstr "Dane są niekompletne. Sklep edycji można otworzyć, gdy wszystkie poniższe pola będą wypełnione."
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "The document “{documentTitle}” is deleted."
 msgstr "Dokument „{documentTitle}” został usunięty."
 
@@ -3219,7 +3271,8 @@ msgstr "Dokument „{documentTitle}” został usunięty."
 msgid "The document is added. Publish its first version."
 msgstr "Dokument został dodany. Opublikuj jego pierwszą wersję."
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgid "The document is saved."
 msgstr "Dokument został zapisany."
 
@@ -3442,7 +3495,7 @@ msgstr "Imię i nazwisko zostały zapisane."
 msgid "The name of the place the edition takes place in. The portal shows the venue on the edition's page."
 msgstr "Nazwa miejsca, w którym odbywa się edycja. Portal pokazuje miejsce na stronie edycji."
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
 msgid "The new version of “{documentTitle}” is published."
 msgstr "Nowa wersja dokumentu „{documentTitle}” została opublikowana."
 
@@ -3683,7 +3736,7 @@ msgstr "Sklep informuje obok zdjęć, że gadżet może wyglądać inaczej."
 msgid "The shop shows how many places are left only once fewer than this many remain. Leave it empty to never show them."
 msgstr "Sklep pokazuje liczbę wolnych miejsc dopiero wtedy, gdy zostanie ich mniej niż wpisana tu liczba. Zostaw pole puste, żeby nigdy jej nie pokazywać."
 
-#: src/features/shop/components/consent-row.tsx
+#: src/features/shop/pages/consent-page.tsx
 msgid "The shop stops asking for it: “{text}”."
 msgstr "Sklep przestanie o nią prosić: „{text}”."
 
@@ -3919,7 +3972,12 @@ msgstr "Strefa czasowa"
 
 #: src/features/program/components/program-item-form.tsx
 #: src/features/program/pages/program-page.tsx
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
+msgid "Title"
+msgstr "Tytuł"
+
+#: src/features/shop/pages/edition-documents-page.tsx
+msgctxt "a document"
 msgid "Title"
 msgstr "Tytuł"
 
@@ -4121,9 +4179,23 @@ msgstr "Miejsce"
 msgid "Venue address"
 msgstr "Adres miejsca"
 
-#: src/features/shop/components/document-card.tsx
+#: src/features/shop/pages/document-page.tsx
+msgctxt "a document"
+msgid "Version"
+msgstr "Wersja"
+
+#: src/features/shop/pages/document-page.tsx
+#: src/features/shop/pages/edition-documents-page.tsx
 msgid "Version {number}"
 msgstr "Wersja {number}"
+
+#: src/features/shop/pages/document-page.tsx
+msgid "Versions"
+msgstr "Wersje"
+
+#: src/features/shop/pages/document-page.tsx
+msgid "Versions of the document"
+msgstr "Wersje dokumentu"
 
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "Waiting for a phone"

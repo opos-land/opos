@@ -84,6 +84,10 @@ const view = () =>
         <MemoryRouter initialEntries={['/convention-a/editions/2026/orders']}>
           <Routes>
             <Route path="/:tenantSlug/editions/:editionSlug/orders" element={<OrdersPage />} />
+            <Route
+              path="/:tenantSlug/editions/:editionSlug/orders/:orderId"
+              element={<p>the page of the order</p>}
+            />
           </Routes>
         </MemoryRouter>
       </I18nProvider>
@@ -149,6 +153,16 @@ describe('the orders page', () => {
     // How many of the edition's orders wait for an org, whatever is searched.
     expect(screen.getByText(/1 order needs review/i)).toBeDefined()
     expect(lastQuery()).toEqual({ offset: 0, limit: 50 })
+  })
+
+  it('opens the page of an order from anywhere in its row', async () => {
+    readOrders.mockResolvedValue({ orders: [order('PAID222222')], total: 1, needsReview: 0 })
+    view()
+
+    const row = (await screen.findByRole('link', { name: 'PAID222222' })).closest('tr')!
+    fireEvent.click(row.querySelectorAll('td')[2]!)
+
+    expect(await screen.findByText('the page of the order')).toBeDefined()
   })
 
   it('searches by what is typed, and by the hash of a QR code', async () => {

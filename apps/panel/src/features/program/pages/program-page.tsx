@@ -6,9 +6,11 @@ import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   buttonVariants,
   ErrorMessage,
+  LinkRow,
   LoadingView,
   NoPermissionView,
   PageHeader,
+  RowLink,
   Section,
   Table,
   TableBody,
@@ -80,15 +82,13 @@ export function ProgramPage() {
             </TableHeader>
             <TableBody>
               {items.data.map((item) => (
-                <TableRow key={item.id}>
+                <LinkRow key={item.id} to={`${base}/${item.id}`}>
                   <TableCell>
-                    <Link to={`${base}/${item.id}`} className="text-primary font-medium underline">
-                      {item.title}
-                    </Link>
+                    <RowLink to={`${base}/${item.id}`}>{item.title}</RowLink>
                   </TableCell>
                   <TableCell>{time.range(item.startsAt, item.endsAt)}</TableCell>
                   <TableCell>{item.speakers.map(speakerName).join(', ')}</TableCell>
-                </TableRow>
+                </LinkRow>
               ))}
             </TableBody>
           </Table>

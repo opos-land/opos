@@ -11,6 +11,7 @@ import {
   ErrorMessage,
   FormField,
   Input,
+  LinkRow,
   LoadingView,
   NativeSelect,
   NativeSelectOptGroup,
@@ -18,6 +19,7 @@ import {
   NoPermissionView,
   Notice,
   PageHeader,
+  RowLink,
   Section,
   Table,
   TableBody,
@@ -312,11 +314,9 @@ export function OrdersPage() {
             </TableHeader>
             <TableBody>
               {orders.data.orders.map((order) => (
-                <TableRow key={order.id}>
+                <LinkRow key={order.id} to={`${base}/orders/${order.id}`}>
                   <TableCell className="font-mono">
-                    <Link to={`${base}/orders/${order.id}`} className="underline">
-                      {order.number}
-                    </Link>
+                    <RowLink to={`${base}/orders/${order.id}`}>{order.number}</RowLink>
                   </TableCell>
                   <TableCell>
                     <OrderStatusBadge status={order.status} />
@@ -331,7 +331,7 @@ export function OrdersPage() {
                     {money.format(order.totalMinor)}
                   </TableCell>
                   <TableCell>{time.format(order.placedAt)}</TableCell>
-                </TableRow>
+                </LinkRow>
               ))}
             </TableBody>
           </Table>

@@ -71,6 +71,10 @@ const view = () =>
               path="/:tenantSlug/editions/:editionSlug/ticket-types"
               element={<TicketTypesPage />}
             />
+            <Route
+              path="/:tenantSlug/editions/:editionSlug/ticket-types/:ticketTypeId"
+              element={<p>the page of the ticket type</p>}
+            />
           </Routes>
         </MemoryRouter>
       </I18nProvider>
@@ -132,6 +136,16 @@ describe('the ticket types page', () => {
     expect(screen.getByRole('link', { name: 'Standard' }).getAttribute('href')).toBe(
       '/convention-a/editions/2026/ticket-types/type-1',
     )
+  })
+
+  it('opens the page of a ticket type from anywhere in its row', async () => {
+    readTypes.mockResolvedValue([ticketType(1, { name: 'Standard', capacity: 800 })])
+    view()
+
+    const row = (await screen.findByRole('link', { name: 'Standard' })).closest('tr')!
+    fireEvent.click(row.querySelectorAll('td')[1]!)
+
+    expect(await screen.findByText('the page of the ticket type')).toBeDefined()
   })
 
   it('leads a writer to a new ticket type, and a reader nowhere', async () => {

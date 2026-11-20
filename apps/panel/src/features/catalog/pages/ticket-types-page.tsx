@@ -9,9 +9,11 @@ import {
   Badge,
   buttonVariants,
   ErrorMessage,
+  LinkRow,
   LoadingView,
   NoPermissionView,
   PageHeader,
+  RowLink,
   Section,
   Table,
   TableBody,
@@ -136,12 +138,10 @@ function TicketTypeRow({
   const price = priceAt(type.tiers, new Date())
 
   return (
-    <TableRow>
+    <LinkRow to={to}>
       <TableCell>
         <div className="flex flex-wrap items-center gap-2">
-          <Link to={to} className="text-primary font-medium underline">
-            {type.name}
-          </Link>
+          <RowLink to={to}>{type.name}</RowLink>
           {type.hidden && (
             <Badge variant="outline">
               <Trans context="a ticket type">Hidden from the shop</Trans>
@@ -175,6 +175,6 @@ function TicketTypeRow({
           </div>
         </TableCell>
       )}
-    </TableRow>
+    </LinkRow>
   )
 }

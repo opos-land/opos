@@ -14,11 +14,13 @@ import {
   FieldSet,
   FormField,
   Input,
+  LinkRow,
   LoadingView,
   NativeSelect,
   NativeSelectOption,
   NoPermissionView,
   PageHeader,
+  RowLink,
   Section,
   Table,
   TableBody,
@@ -269,12 +271,10 @@ function ItemRow({
   const soldOut = item.variants.filter((variant) => variant.stock === 0).length
 
   return (
-    <TableRow>
+    <LinkRow to={to}>
       <TableCell>
         <div className="flex flex-wrap items-center gap-2">
-          <Link to={to} className="text-primary font-medium underline">
-            {item.name}
-          </Link>
+          <RowLink to={to}>{item.name}</RowLink>
           {item.hidden && (
             <Badge variant="outline">
               <Trans context="a merchandise item">Hidden from the shop</Trans>
@@ -306,6 +306,6 @@ function ItemRow({
           </div>
         </TableCell>
       )}
-    </TableRow>
+    </LinkRow>
   )
 }

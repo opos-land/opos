@@ -89,6 +89,10 @@ const view = () =>
               path="/:tenantSlug/editions/:editionSlug/merchandise"
               element={<MerchandisePage />}
             />
+            <Route
+              path="/:tenantSlug/editions/:editionSlug/merchandise/:itemId"
+              element={<p>the page of the item</p>}
+            />
           </Routes>
         </MemoryRouter>
       </I18nProvider>
@@ -204,6 +208,16 @@ describe('the merchandise page', () => {
     expect(screen.getByRole('link', { name: 'T-shirt' }).getAttribute('href')).toBe(
       '/convention-a/editions/2026/merchandise/item-1',
     )
+  })
+
+  it('opens the page of an item from anywhere in its row', async () => {
+    readItems.mockResolvedValue([item(1, { name: 'T-shirt' })])
+    view()
+
+    const row = (await screen.findByRole('link', { name: 'T-shirt' })).closest('tr')!
+    fireEvent.click(row.querySelectorAll('td')[1]!)
+
+    expect(await screen.findByText('the page of the item')).toBeDefined()
   })
 
   it('says that merchandise is picked up at the edition, and promises no shipping', async () => {

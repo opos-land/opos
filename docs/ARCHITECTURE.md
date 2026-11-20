@@ -529,8 +529,11 @@ steps of [adding a feature](#adding-a-feature).
   steps, a transaction that locks the order and decides, the module's call, a transaction that
   writes the outcome, and the order is paid only in the last
   ([0047](adr/0047-take-a-payment-in-three-steps-around-the-providers-call.md)); a repeat changes
-  nothing, and another amount than the total never pays the order. Only `local` and `dev` load a
-  fake provider.
+  nothing, and another amount than the total never pays the order. Przelewy24 is the first real
+  provider, loaded everywhere
+  ([0054](adr/0054-take-the-first-payments-through-przelewy24.md)): its module holds no table,
+  finds a transaction by the attempt's identifier, and logs nothing of a request or an answer.
+  Only `local` and `dev` load a fake provider, and only there does a sandbox account connect.
 - **The shop's setup.** What opening a shop asks of the convention, an edition-level route answers
   as a yes or a no alone: the provider account and the seller's details stay behind `shop`,
   until an edition's shop is open and shows its buyers the seller and names the provider. The

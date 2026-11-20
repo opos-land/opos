@@ -5,8 +5,8 @@
 - Brief: [0001](../briefs/0001-convention-shop.md), "What the shop asks of a provider's module",
   and [0002](../briefs/0002-convention-shop-review.md); read against Przelewy24's REST
   documentation, version 1.0.18 and the extended 1.1.1, and its service regulations
-- Decisions: none recorded yet; the records this spec needs are among its
-  [open questions](#open-questions)
+- Decisions: [0054](../adr/0054-take-the-first-payments-through-przelewy24.md), proposed; what
+  the owner still has to settle is among its [open questions](#open-questions)
 
 ## Goal
 
@@ -107,7 +107,14 @@ fits the 250 characters Przelewy24 takes. The order's number fits the 20 charact
 letters and digits of a transfer's title.
 
 The API calls Przelewy24 from one address that does not change, since every convention enters it
-in Przelewy24's panel (A3).
+in Przelewy24's panel (A3). The environment names that address, and the provider account's screen
+shows it; where none is set, the screen says whom to ask.
+
+An additional notification of a card is read as the documentation gives it: a refusal by its
+`errorCode` and `errorMessage`, a payment that went through by the card's details, each signed
+over its own fields. The additional notification of BLIK is not read, since the documentation
+gives neither the fields of its result nor how it is signed: a BLIK payment that fails leaves its
+attempt as it was. A verification names the amount the notification gave as paid.
 
 ### Routes and screens
 
@@ -181,8 +188,13 @@ documentation does not settle them:
 - that the channels of T4 hide the traditional transfer and the advance payment on the payment
   page;
 - that the payment page adds nothing on the return to the shop (T6);
-- the card's error codes and the values of the BLIK notification's status and error, for the
-  reasons of T9, and how the BLIK notification is signed;
+- the card's error codes, for the reasons of T9: until then the module reads the general codes
+  the documentation lists, a cancellation, a time that ran out and a card that is not valid, and
+  takes any other for the general failure;
+- the fields of the BLIK notification's result and how it is signed: until then it is not read,
+  and T8 holds for cards alone;
+- the format of the dates `transaction/by/sessionId` answers, which the module reads as digits on
+  Warsaw's clock;
 - that a transaction can still be paid after a refusal was reported for it (T8).
 
 For the domain owner:

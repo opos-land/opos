@@ -46,6 +46,15 @@ describe('a new discount code', () => {
     expect(createDiscountCodeSchema.safeParse(code(changes)).success).toBe(false)
   })
 
+  // A thing is named once: a code applies to it or it does not.
+  it('names each thing it applies to once', () => {
+    const twice = { ticketTypeIds: [TYPE, TYPE] }
+
+    expect(createDiscountCodeSchema.safeParse(code(twice)).success).toBe(false)
+    expect(updateDiscountCodeSchema.safeParse({ addOnIds: [TYPE, TYPE] }).success).toBe(false)
+    expect(updateDiscountCodeSchema.safeParse({ itemIds: [TYPE] }).success).toBe(true)
+  })
+
   it('takes an amount instead of a percent', () => {
     const amount = code({ kind: 'amount', percent: undefined, amountMinor: 2000, usageLimit: 5 })
 

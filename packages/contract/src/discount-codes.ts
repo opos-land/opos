@@ -14,7 +14,11 @@ const codeText = z
   .toLowerCase()
   .regex(/^[a-z0-9-]{4,40}$/)
 
-const ids = z.array(z.uuid()).max(MAX_APPLIES_TO)
+/** What a code applies to of one kind: each thing named once. */
+const ids = z
+  .array(z.uuid())
+  .max(MAX_APPLIES_TO)
+  .refine((named) => new Set(named).size === named.length, 'A thing is named once')
 
 /** A discount code as the panel lists it, with the uses orders hold of it against its limit. */
 export const discountCodeSchema = z.object({

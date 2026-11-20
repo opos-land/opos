@@ -23,16 +23,29 @@ export class Discounts {
   }
 
   /**
-   * Whether one more order may hold the code. `locked` takes the lock of the code's row first, so
-   * the count is the caller's alone: for an order being placed, or taking its use again. Without
-   * it the answer is what a quote shows, and placing counts again.
+   * The code an order takes, or undefined where it cannot: the row of the code is locked first,
+   * the last lock an order takes, and the code is then read again, so the order is priced by the
+   * terms the code has under that lock and counts its uses alone. A code an org ended or changed
+   * while the order waited is the one it finds.
    */
-  async hasUse(editionId: string, codeId: string, locked: boolean): Promise<boolean> {
-    if (locked) {
-      const code = await this.codes.lock(editionId, codeId)
-      if (!code) return false
-      return code.usageLimit === null || (await this.codes.uses(codeId)) < code.usageLimit
+  async taken(editionId: string, entry: string, at: Date): Promise<StoredDiscount | undefined> {
+    const seen = await this.codes.find(editionId, entry.trim().toLowerCase())
+    if (!seen) return undefined
+    const locked = await this.codes.lock(editionId, seen.id)
+    if (!locked) return undefined
+    const code = await this.usable(editionId, entry, at)
+    if (!code) return undefined
+    if (code.usageLimit !== null && (await this.codes.uses(code.id)) >= code.usageLimit) {
+      return undefined
     }
+    return code
+  }
+
+  /**
+   * Whether one more order may hold the code, as a quote shows it: read with no lock, since an
+   * order that then takes the code counts again under the lock of its row.
+   */
+  async hasUse(editionId: string, codeId: string): Promise<boolean> {
     const code = await this.codes.limit(editionId, codeId)
     if (!code) return false
     return code.usageLimit === null || (await this.codes.uses(codeId)) < code.usageLimit

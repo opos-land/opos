@@ -66,7 +66,7 @@ export class ShopPublicController {
         // What cannot be had of the cart is told first, as it is without a code.
         const plain = priceCart(offer, cart)
         if ('problem' in plain) return plain
-        if (!code || !(await this.discounts.hasUse(edition.id, code.id, false))) {
+        if (!code || !(await this.discounts.hasUse(edition.id, code.id))) {
           throw discountCodeRefused()
         }
         return priceCart(offer, cart, code)

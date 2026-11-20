@@ -104,6 +104,16 @@ describe('setting a discount code', () => {
     expect(code(res)).toMatchObject({ kind: 'amount', amountMinor: 2000, percent: null })
   })
 
+  it('refuses a thing named twice, and sets nothing', async () => {
+    const c = await convention()
+    const type = await addTicketType(c.t.id, c.edition)
+
+    const res = await c.as('post', '', c.body({ ticketTypeIds: [type, type] })).expect(400)
+
+    expect(res.body).toMatchObject({ code: 'request.invalid' })
+    expect(await storedRows('discount_codes', c.t.id)).toEqual([])
+  })
+
   it('refuses a code another one of the edition has, in any case', async () => {
     const c = await convention()
     const sibling = await addEdition(c.t.id)

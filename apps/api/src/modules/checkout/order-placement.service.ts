@@ -87,10 +87,8 @@ export class OrderPlacement {
     // returns to the Summary with the code marked.
     let discount: StoredDiscount | undefined
     if (input.discountCode !== undefined) {
-      discount = await this.discounts.usable(editionId, input.discountCode, at)
-      if (!discount || !(await this.discounts.hasUse(editionId, discount.id, true))) {
-        throw orderUnavailable({ kind: 'discount-code' })
-      }
+      discount = await this.discounts.taken(editionId, input.discountCode, at)
+      if (!discount) throw orderUnavailable({ kind: 'discount-code' })
     }
     const { lines, totalMinor, rests } = await this.priced(
       tenantId,

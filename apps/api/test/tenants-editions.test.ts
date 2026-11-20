@@ -1044,33 +1044,35 @@ describe('concurrency', () => {
       },
     )
 
-    // Anti-escalation already refuses an expiring org most member changes, so this covers the
-    // routes that check nothing but the permission.
-    it.each(Object.entries(writes).filter(([name]) => !name.includes('members')))(
-      '%s refuses once the access of its actor ends while it waits',
-      async (_, build) => {
-        // The same expiry with nothing holding the lock: the org is active when its write starts.
-        const control = await setup()
-        await expireIn(control.orgId, 2000)
-        expect((await send(control, build(control))).status, 'without the wait').toBeLessThan(300)
+    // Anti-escalation already refuses an expiring org most member changes, and a new pairing
+    // code for a scanner that works longer than the org's own access, so this covers the routes
+    // that check nothing but the permission.
+    it.each(
+      Object.entries(writes).filter(
+        ([name]) => !name.includes('members') && name !== 'scanners.renewPairing',
+      ),
+    )('%s refuses once the access of its actor ends while it waits', async (_, build) => {
+      // The same expiry with nothing holding the lock: the org is active when its write starts.
+      const control = await setup()
+      await expireIn(control.orgId, 2000)
+      expect((await send(control, build(control))).status, 'without the wait').toBeLessThan(300)
 
-        // The test helpers share one connection, which the open transaction keeps: everything
-        // they read or write comes before it.
-        const s = await setup()
-        await expireIn(s.orgId, 400)
-        const expected = await tenantState(s.t.id)
-        const holder = await openTransaction()
-        await lockTenantWrites(holder.sql, s.t)
+      // The test helpers share one connection, which the open transaction keeps: everything
+      // they read or write comes before it.
+      const s = await setup()
+      await expireIn(s.orgId, 400)
+      const expected = await tenantState(s.t.id)
+      const holder = await openTransaction()
+      await lockTenantWrites(holder.sql, s.t)
 
-        const pending = send(s, build(s))
-        await sleep(800)
-        await holder.commit()
+      const pending = send(s, build(s))
+      await sleep(800)
+      await holder.commit()
 
-        const res = await pending
-        expect(res.status).toBe(403)
-        expect(await tenantState(s.t.id)).toEqual(expected)
-      },
-    )
+      const res = await pending
+      expect(res.status).toBe(403)
+      expect(await tenantState(s.t.id)).toEqual(expected)
+    })
 
     // After the check under the write lock, a member change waits for rows and re-checks its actor
     // on the row it locked, so the access of an actor may end during that wait too.

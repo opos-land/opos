@@ -4,8 +4,9 @@
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B4, P2, B5.3 and B6.5
 - Decisions: [0055](../adr/0055-record-a-sale-made-outside-the-shop-as-a-manual-order.md),
-  [0056](../adr/0056-cancel-and-decline-an-order-without-returning-money.md) and
-  [0057](../adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md), proposed; what the
+  [0056](../adr/0056-cancel-and-decline-an-order-without-returning-money.md),
+  [0057](../adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md) and
+  [0058](../adr/0058-let-the-api-change-the-variant-an-order-line-names.md), proposed; what the
   owner still has to confirm is among its [open questions](#open-questions)
 
 ## Goal
@@ -139,7 +140,9 @@ for nothing.
 
 A correction is two kinds of email, one for the ticket holder's name and one for a variant, each
 written from the order as it stands when it is sent; a changed email is one to the new address
-and one to the old.
+and one to the old. An email that carries the QR code goes only to the address the order has
+when it is sent: one still queued for an address the order has left is withdrawn. An order's page
+lists an alert to the orgs without their addresses, and names no account.
 
 ### Screens
 

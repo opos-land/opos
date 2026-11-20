@@ -6,8 +6,10 @@ import { createApp } from './app'
 import { deleteCreatedAccounts } from './auth'
 import { type OrderDesk, orderDesk } from './order-desk'
 import {
+  addEdition,
   addMerchandiseItem,
   addOrder,
+  addTicketType,
   closeTenantDb,
   deleteCreatedTenants,
   offerWith,
@@ -220,5 +222,24 @@ describe('handing out on the page of an order', () => {
     }
     const now = await d.head('get', `/orders/${o.placed.orderId}`).expect(200)
     expect(marks(now)).toEqual([false, false])
+  })
+})
+
+// The edition of the path is the one whose orders are resent and handed out.
+describe('an order of another edition of the same convention', () => {
+  it('is resent and handed out by no route of this edition', async () => {
+    const d = await orderDesk(app)
+    const sibling = await addEdition(d.t.id)
+    const type = await addTicketType(d.t.id, sibling)
+    const elsewhere = await addOrder(d.t.id, sibling, { status: 'paid', ticketTypeId: type })
+    const [line] = (await d.stored('order_lines')).filter((row) => row.order_id === elsewhere.id)
+    const lineId = String(line!.id)
+
+    await d.head('post', `/orders/${elsewhere.id}/resend-confirmation`).expect(404)
+    await d.head('post', `/orders/${elsewhere.id}/hand-outs`, { lineIds: [lineId] }).expect(404)
+    await d.head('delete', `/orders/${elsewhere.id}/lines/${lineId}/hand-out`).expect(404)
+    expect(await d.emails(elsewhere.id)).toEqual([])
+    const [now] = (await d.stored('order_lines')).filter((row) => row.id === line!.id)
+    expect(now!.handed_out_at).toBeNull()
   })
 })

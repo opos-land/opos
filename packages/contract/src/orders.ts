@@ -37,6 +37,12 @@ export const ORDER_EMAIL_KINDS = [
   'order-canceled',
 ] as const
 
+/** The emails that go to the orgs who settle an order, not to its buyer. */
+export const ORG_EMAIL_KINDS: readonly (typeof ORDER_EMAIL_KINDS)[number][] = [
+  'needs-review',
+  'payment-not-needed-orgs',
+]
+
 export const PAYMENT_ATTEMPT_STATUSES = ['started', 'paid', 'failed', 'ended', 'refused'] as const
 
 /** A QR code's text, as the panel tells one from a name or a number typed into the search. */
@@ -156,8 +162,6 @@ export const orderDetailSchema = z.object({
   declineReason: z.string().nullable(),
   /** Whether the order carries a QR code; the code itself is shown to its buyer alone. */
   hasQrCode: z.boolean(),
-  /** The account the order is attached to, by its email; null for a visitor's. */
-  account: z.string().nullable(),
   lines: z.array(lineSchema),
   answers: z.array(z.object({ fieldId: z.uuid(), label: z.string(), answer: z.string() })),
   consents: z.array(
@@ -176,9 +180,12 @@ export const orderDetailSchema = z.object({
     z.object({
       id: z.uuid(),
       kind: z.enum(ORDER_EMAIL_KINDS),
-      recipient: z.string(),
+      /** Null for an alert to the orgs: their addresses stay behind the team's own permission. */
+      recipient: z.string().nullable(),
       queuedAt: timestamp,
       sentAt: timestamp.nullable(),
+      /** Set for an email not sent because the order left its address before it went out. */
+      withdrawnAt: timestamp.nullable(),
       failedAttempts: z.number().int(),
     }),
   ),

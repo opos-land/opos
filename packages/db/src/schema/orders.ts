@@ -496,6 +496,11 @@ export const orderEmails = pgTable(
     failedAttempts: integer().notNull().default(0),
     /** When the outbox tries it next: at once, then later after each failure. */
     nextAttemptAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /**
+     * Set instead of a send for an email that would hand the order over, with its QR code and a
+     * link, to an address the order has left since it was queued.
+     */
+    withdrawnAt: timestamp({ withTimezone: true }),
   },
   (t) => [
     index('order_emails_tenant_order_idx').on(t.tenantId, t.orderId),

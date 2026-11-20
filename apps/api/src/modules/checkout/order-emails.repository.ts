@@ -62,6 +62,7 @@ export class OrderEmailsRepository {
         and(
           eq(orderEmails.id, emailId),
           isNull(orderEmails.sentAt),
+          isNull(orderEmails.withdrawnAt),
           lte(orderEmails.nextAttemptAt, now),
         ),
       )
@@ -88,7 +89,20 @@ export class OrderEmailsRepository {
       .where(eq(orderEmails.id, emailId))
   }
 
-  /** The order with its edition and its convention, as an email names them. */
+  /** An email not sent because the order left its address before it went out. */
+  async withdraw(emailId: string, at: Date) {
+    await this.context
+      .tx()
+      .update(orderEmails)
+      .set({ withdrawnAt: at })
+      .where(eq(orderEmails.id, emailId))
+  }
+
+  /**
+   * The order with its edition and its convention, as an email names them. Its row is locked
+   * until the email is written: a change of the order's email waits, and then ends the link
+   * this email was given.
+   */
   async order(orderId: string) {
     const [row] = await this.context
       .tx()
@@ -112,6 +126,7 @@ export class OrderEmailsRepository {
       .innerJoin(editions, eq(editions.id, orders.editionId))
       .innerJoin(tenants, eq(tenants.id, orders.tenantId))
       .where(eq(orders.id, orderId))
+      .for('update', { of: orders })
     return row
   }
 

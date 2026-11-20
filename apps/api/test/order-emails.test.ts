@@ -10,7 +10,7 @@ import { MailService } from '../src/modules/mail/mail.service'
 import { type FakeProvider } from '../src/modules/payments/fake-provider'
 import { PROVIDER_MODULES } from '../src/modules/payments/payment-providers'
 import { createApp } from './app'
-import { createAccount, deleteCreatedAccounts, testEmail } from './auth'
+import { createAccount, deleteCreatedAccounts, session, testEmail } from './auth'
 import { deleteMail, type Mail, waitForMail } from './mailpit'
 import {
   addConsent,
@@ -339,6 +339,8 @@ describe('the emails of order management', () => {
     const placed = await s.place(old)
     await s.pay(placed)
     await send(s)
+    // The order is under its new address when the two emails of the change are written.
+    await setColumn('orders', placed.orderId, 'email', moved)
     await queueOrderEmail(s.t.id, s.edition, placed.orderId, 'order-email-changed', moved)
     await queueOrderEmail(s.t.id, s.edition, placed.orderId, 'order-email-replaced', old)
 
@@ -362,6 +364,39 @@ describe('the emails of order management', () => {
       `Your order ${placed.number} for ${s.name} was moved to another email address`,
     )
     expect(toOld!.Text).not.toMatch(/[A-Z2-7]{32}|\/orders\//)
+  })
+
+  // An email is written when it is sent, from the order as it then stands: one that would hand
+  // the order over to an address the order has left is withdrawn instead.
+  it('send no QR code and no link to an address the order left before its confirmation went out', async () => {
+    const s = await shop('en')
+    const [old, moved] = [buyer(), buyer()]
+    const placed = await s.place(old)
+    await s.pay(placed)
+    // The org moves the order before the outbox has sent its confirmation.
+    await request(app.getHttpServer())
+      .put(`/editions/${s.edition}/orders/${placed.orderId}/email`)
+      .use(session(s.t.head.token))
+      .set('X-Tenant-Slug', s.t.slug)
+      .send({ email: moved })
+      .expect(200)
+
+    expect(await send(s)).toMatchObject({ sent: 2, failed: 0 })
+
+    const toOld = await mailTo(old)
+    expect(toOld.map((mail) => mail.Subject)).toEqual([
+      `Your order ${placed.number} for ${s.name} was moved to another email address`,
+    ])
+    expect(toOld[0]!.Text).not.toMatch(/[A-Z2-7]{32}|\/orders\//)
+    const [toNew] = await mailTo(moved)
+    expect(toNew!.Text).toMatch(/The QR code of the order \S+: [A-Z2-7]{32}/)
+    // Withdrawn, the confirmation is never sent, and no link was made for it.
+    const [confirmation] = (await s.emails()).filter((row) => row.kind === 'order-confirmation')
+    expect(confirmation).toMatchObject({ recipient: old, sent_at: null })
+    expect(confirmation!.withdrawn_at).not.toBeNull()
+    expect(await send(s)).toMatchObject({ sent: 0, failed: 0 })
+    expect(await storedRows('order_links', s.t.id)).toHaveLength(1)
+    expect(await mailTo(old)).toHaveLength(1)
   })
 
   it('tell the buyer of a declined payment where the money is, and of a canceled order that its QR code is no longer valid', async () => {

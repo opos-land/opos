@@ -22,6 +22,26 @@ describe('searchOf', () => {
     // Read out and typed in small letters, it is the same code.
     expect(await searchOf(code.toLowerCase())).toEqual(await searchOf(code))
   })
+
+  // A code with a character missing or mistyped is still a secret: it is not sent as a text
+  // to search names by, where it would travel in the address.
+  it('sends nothing of a text that looks like a QR code with a mistake in it', async () => {
+    for (const text of [
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZ23456',
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZ2345678',
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZ23456!',
+      'abcdefghijklmnopqrstuv2345',
+    ]) {
+      expect(await searchOf(text)).toEqual({ refused: 'qr-code' })
+    }
+    // A long name or address is no code.
+    expect(await searchOf('Wolfeschlegelsteinhausenbergerdorff')).toEqual({
+      q: 'Wolfeschlegelsteinhausenbergerdorff',
+    })
+    expect(await searchOf('a.very.long.address.of.a.buyer@example.test')).toEqual({
+      q: 'a.very.long.address.of.a.buyer@example.test',
+    })
+  })
 })
 
 describe('pageOf', () => {

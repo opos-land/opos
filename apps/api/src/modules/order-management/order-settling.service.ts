@@ -31,7 +31,7 @@ export class OrderSettling {
     const order = await this.managed.locked(editionId, orderId)
     if (order.status !== 'paid' && order.status !== 'paid-manual') throw notCancelable()
     await this.lockLimits(order)
-    await this.managed.change(order.id, {
+    await this.managed.change(order, {
       status: 'canceled',
       holds: false,
       canceledAt: at,
@@ -54,7 +54,7 @@ export class OrderSettling {
       const gone = await this.payments.gone(order.editionId, cart)
       if (gone) throw orderUnavailable(gone)
     }
-    await this.managed.change(order.id, {
+    await this.managed.change(order, {
       status: 'paid',
       holds: true,
       holdEndsAt: null,
@@ -71,7 +71,7 @@ export class OrderSettling {
     const order = await this.managed.locked(editionId, orderId)
     if (order.status !== 'needs-review') throw notInReview()
     await this.lockLimits(order)
-    await this.managed.change(order.id, {
+    await this.managed.change(order, {
       status: 'declined',
       holds: false,
       holdEndsAt: null,

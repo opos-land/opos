@@ -4,7 +4,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
 import { deleteCreatedAccounts } from './auth'
 import { type OrderDesk, orderDesk, whilePlacing } from './order-desk'
-import { addOrder, closeTenantDb, deleteCreatedTenants, member, setColumn } from './tenants'
+import {
+  addEdition,
+  addOrder,
+  closeTenantDb,
+  deleteCreatedTenants,
+  member,
+  setColumn,
+} from './tenants'
 
 // Canceling a paid order and settling one that needs review
 // (docs/specs/0006-order-management.md, X1-X5 and R2-R5). OPOS returns no money: a cancellation
@@ -96,7 +103,7 @@ describe('canceling an order', () => {
 
     const res = await d.head('post', `/orders/${placed.orderId}/cancel`, reason).expect(200)
 
-    expect(detail(res).account).toBe(buyer.email)
+    expect(detail(res).status).toBe('canceled')
     expect(await d.stored('order_accounts')).toEqual(attached)
   })
 
@@ -160,9 +167,11 @@ describe('marking an order in review paid', () => {
     const placed = await inReview(d, buyer.email)
     expect(await d.stored('order_accounts')).toEqual([])
 
-    const res = await d.head('post', `/orders/${placed.orderId}/mark-paid`).expect(200)
+    await d.head('post', `/orders/${placed.orderId}/mark-paid`).expect(200)
 
-    expect(detail(res).account).toBe(buyer.email)
+    expect(await d.stored('order_accounts')).toMatchObject([
+      { order_id: placed.orderId, account_id: buyer.id },
+    ])
   })
 
   it('takes again what the order let go of, and is refused while that is gone', async () => {
@@ -290,5 +299,21 @@ describe('declining an order in review', () => {
       await d.head('post', `/orders/${placed.orderId}/decline`, body).expect(400)
     }
     expect((await d.order(placed.orderId)).status).toBe('needs-review')
+  })
+})
+
+// The edition of the path is the one whose orders are settled, whatever RLS lets a request see.
+describe('an order of another edition of the same convention', () => {
+  it('is canceled, marked paid and declined by no route of this edition', async () => {
+    const d = await orderDesk(app)
+    const sibling = await addEdition(d.t.id)
+    const paid = await addOrder(d.t.id, sibling, { status: 'paid' })
+    const review = await addOrder(d.t.id, sibling, { status: 'needs-review' })
+
+    await d.head('post', `/orders/${paid.id}/cancel`, reason).expect(404)
+    await d.head('post', `/orders/${review.id}/mark-paid`).expect(404)
+    await d.head('post', `/orders/${review.id}/decline`, reason).expect(404)
+    expect((await d.order(paid.id)).status).toBe('paid')
+    expect((await d.order(review.id)).status).toBe('needs-review')
   })
 })

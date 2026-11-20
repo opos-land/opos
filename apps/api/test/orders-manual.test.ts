@@ -7,6 +7,7 @@ import { type OrderDesk, orderDesk, whilePlacing } from './order-desk'
 import {
   addAddOn,
   addCustomField,
+  addEdition,
   addMerchandiseItem,
   addTicketType,
   closeShop,
@@ -85,7 +86,6 @@ describe('a manual order', () => {
       holds: true,
       // It has no QR code, sends no email and is on no account.
       hasQrCode: false,
-      account: null,
       emails: [],
       attempts: [],
       consents: [],
@@ -288,6 +288,28 @@ describe('a manual order', () => {
     ]) {
       await record(d, changes).expect(400)
     }
+    expect(await d.stored('orders')).toEqual([])
+  })
+
+  // The catalog of the path's edition is the one a manual order sells from.
+  it('sells nothing of another edition of the same convention', async () => {
+    const d = await orderDesk(app)
+    const sibling = await addEdition(d.t.id)
+    const type = await addTicketType(d.t.id, sibling, { name: 'Of the sibling' })
+    const pin = await addMerchandiseItem(d.t.id, sibling, { stock: 5 })
+    const field = await addCustomField(d.t.id, sibling)
+
+    const ticket = await record(d, { cart: { ticket: { ticketTypeId: type } } }).expect(409)
+    expect(ticket.body).toMatchObject({
+      code: 'order.unavailable',
+      params: { kind: 'ticket-type', id: type },
+    })
+    const variant = await record(d, {
+      cart: { ticket: null, items: [{ variantId: pin.variantId, quantity: 1 }] },
+      ageBand: null,
+    }).expect(409)
+    expect(variant.body).toMatchObject({ code: 'order.unavailable' })
+    await record(d, { customFieldAnswers: [{ fieldId: field, answer: 'x' }] }).expect(400)
     expect(await d.stored('orders')).toEqual([])
   })
 })

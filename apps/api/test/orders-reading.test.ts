@@ -295,8 +295,9 @@ describe('the page of an order', () => {
       declinedAt: null,
       declineReason: null,
       hasQrCode: true,
-      account: null,
     })
+    // Whether an email address has an account is told to nobody: the page names none.
+    expect(order).not.toHaveProperty('account')
     expect(Date.parse(order.paidAt!)).toBeGreaterThanOrEqual(Date.parse(order.placedAt))
     expect(order.lines.map(({ id: _, ...line }) => line)).toEqual([
       {
@@ -367,6 +368,7 @@ describe('the page of an order', () => {
         recipient: 'buyer@example.test',
         queuedAt: expect.any(String) as string,
         sentAt: null,
+        withdrawnAt: null,
         failedAttempts: 0,
       },
     ])
@@ -374,7 +376,7 @@ describe('the page of an order', () => {
     expect(JSON.stringify(res.body)).not.toMatch(/qrCode"|codeHash|resultToken/)
   })
 
-  it('shows what was paid beside the total, the cause of a review and the account an order is on', async () => {
+  it('shows what was paid beside the total and the cause of a review, and no address of an org', async () => {
     const d = await orderDesk(app)
     const buyer = await member()
     const placed = await d.place({ email: buyer.email })
@@ -388,20 +390,20 @@ describe('the page of an order', () => {
       totalMinor: 10000,
       paidMinor: 9000,
       hasQrCode: false,
-      account: null,
       paidAt: null,
     })
     expect(order.attempts[0]).toMatchObject({ amountMinor: 10000, paidAmountMinor: 9000 })
-    expect(order.emails.map((email) => email.kind).sort()).toEqual([
-      'needs-review',
-      'payment-under-review',
-    ])
-
-    // A paid order under the confirmed email of an account is on that account.
-    const mine = await d.paid({ email: buyer.email })
+    // An alert goes to the heads and the orgs who settle the order. Their addresses stay
+    // behind the team's own permission: the page says that the alert went, not to whom.
     expect(
-      ((await d.head('get', `/orders/${mine.orderId}`).expect(200)).body as OrderDetail).account,
-    ).toBe(buyer.email)
+      order.emails
+        .map((email) => [email.kind, email.recipient])
+        .sort(([a], [b]) => a!.localeCompare(b!)),
+    ).toEqual([
+      ['needs-review', null],
+      ['payment-under-review', buyer.email],
+    ])
+    expect(JSON.stringify(order)).not.toContain(d.t.head.email)
   })
 
   it('shows an order that came once what it held was gone as needing review for that', async () => {

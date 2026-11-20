@@ -172,6 +172,20 @@ describe('the orders page', () => {
     )
   })
 
+  it('searches nothing by a QR code typed with a mistake, and says why', async () => {
+    view()
+    await screen.findByText(/no order/i)
+    const asked = lastQuery()
+
+    fireEvent.change(screen.getByLabelText(/search/i), {
+      target: { value: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ23456' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }))
+
+    expect(await screen.findByText(/QR code has 32 characters/)).toBeDefined()
+    expect(lastQuery()).toBe(asked)
+  })
+
   it('filters by status, by what an order holds and by the day it was placed', async () => {
     view()
     await screen.findByText(/no order/i)

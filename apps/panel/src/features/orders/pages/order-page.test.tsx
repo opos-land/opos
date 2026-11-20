@@ -100,7 +100,6 @@ const order = (fields: object = {}) => ({
   declinedAt: null,
   declineReason: null,
   hasQrCode: true,
-  account: null,
   lines: [
     {
       id: 'line-ticket',
@@ -160,6 +159,7 @@ const order = (fields: object = {}) => ({
       recipient: 'buyer@example.test',
       queuedAt: '2026-05-01T10:05:01.000Z',
       sentAt: '2026-05-01T10:05:10.000Z',
+      withdrawnAt: null,
       failedAttempts: 0,
     },
   ],
@@ -222,6 +222,32 @@ describe('the page of an order', () => {
     expect(screen.getByText(/Rules, version 2/)).toBeDefined()
     expect(screen.getByText('TX-1')).toBeDefined()
     expect(screen.getByText('Confirmation with the QR code')).toBeDefined()
+  })
+
+  it('lists an alert to the orgs without their addresses, and an email that was withdrawn', async () => {
+    const email = (fields: object) => ({
+      id: 'email',
+      kind: 'order-confirmation',
+      recipient: 'old@example.test',
+      queuedAt: '2026-05-01T10:05:01.000Z',
+      sentAt: null,
+      withdrawnAt: null,
+      failedAttempts: 0,
+      ...fields,
+    })
+    readOrder.mockResolvedValue(
+      order({
+        emails: [
+          email({ id: 'alert', kind: 'needs-review', recipient: null }),
+          email({ id: 'stale', withdrawnAt: '2026-05-02T08:00:00.000Z' }),
+        ],
+      }),
+    )
+    view()
+    const emails = await section('Emails')
+
+    expect(await emails.findByText('The organizers')).toBeDefined()
+    expect(emails.getByText(/Not sent: the order moved to another address/)).toBeDefined()
   })
 
   it('corrects the ticket holder’s name', async () => {

@@ -98,8 +98,8 @@ describe('an order as its page shows it', () => {
   // Its lines, the ticket holder's data, the answers, the consents with the versions accepted,
   // the payment attempts with what the provider's module keeps of each, and the emails sent.
   it('holds everything the order keeps', () => {
+    // Whether an email address has an account is told to nobody: the page names no account.
     expect(Object.keys(orderDetailSchema.shape).sort()).toEqual([
-      'account',
       'ageBand',
       'answers',
       'attempts',

@@ -107,7 +107,6 @@ export function OrderPage() {
           )}
           {order.note && <Fact label={<Trans>Note</Trans>}>{order.note}</Fact>}
           <Fact label={<Trans>Email</Trans>}>{order.email ?? '—'}</Fact>
-          {order.account && <Fact label={<Trans>On the account</Trans>}>{order.account}</Fact>}
           <Fact label={<Trans>Ticket holder</Trans>}>{order.holderName || '—'}</Fact>
           {order.ageBand && (
             <Fact label={<Trans>Age band</Trans>}>
@@ -266,9 +265,11 @@ export function OrderPage() {
               {order.emails.map((email) => (
                 <TableRow key={email.id}>
                   <TableCell>{t(EMAIL_KIND_LABELS[email.kind])}</TableCell>
-                  <TableCell>{email.recipient}</TableCell>
+                  <TableCell>{email.recipient ?? <Trans>The organizers</Trans>}</TableCell>
                   <TableCell>
-                    {email.sentAt ? (
+                    {email.withdrawnAt ? (
+                      <Trans>Not sent: the order moved to another address before it went out</Trans>
+                    ) : email.sentAt ? (
                       time.format(email.sentAt)
                     ) : email.failedAttempts > 0 ? (
                       <Trans>Not sent yet: it is tried again</Trans>

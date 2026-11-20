@@ -32,7 +32,7 @@ import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
 import { ordersOptions } from '../api/orders'
 import { OrderStatusBadge } from '../components/order-status'
 import { MANUAL_REASON_LABELS, STATUS_LABELS } from '../model/labels'
-import { ORDERS_PAGE, pageOf, searchOf } from '../model/search'
+import { type OrderSearch, ORDERS_PAGE, pageOf, searchOf } from '../model/search'
 
 /** What the list is narrowed to, besides the search. */
 interface Filters {
@@ -71,7 +71,9 @@ export function OrdersPage() {
   const editionId = edition?.id ?? ''
 
   const [typed, setTyped] = useState('')
-  const [search, setSearch] = useState<{ q?: string; qrCodeHash?: string }>({})
+  const [search, setSearch] = useState<OrderSearch>({})
+  // A text that looks like a QR code with a mistake in it is not searched by.
+  const [mistyped, setMistyped] = useState(false)
   const [filters, setFilters] = useState(NO_FILTERS)
   const [offset, setOffset] = useState(0)
   const narrow = (changes: Partial<Filters>) => {
@@ -109,7 +111,10 @@ export function OrdersPage() {
   const base = `/${tenant.slug}/editions/${edition.slug}`
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    setSearch(await searchOf(typed))
+    const next = await searchOf(typed)
+    setMistyped('refused' in next)
+    if ('refused' in next) return
+    setSearch(next)
     setOffset(0)
   }
   const page = orders.data
@@ -161,6 +166,14 @@ export function OrdersPage() {
             <FormField
               label={<Trans>Search</Trans>}
               hint={<Trans>An order’s number, a name, an email address or a QR code.</Trans>}
+              error={
+                mistyped && (
+                  <Trans>
+                    This looks like a QR code with a mistake in it: a QR code has 32 characters.
+                    Check it and try again.
+                  </Trans>
+                )
+              }
             >
               {(control) => (
                 <Input

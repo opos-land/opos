@@ -83,19 +83,29 @@ export class ManagedOrdersRepository {
     return row
   }
 
-  async change(orderId: string, changes: OrderChanges) {
-    await this.context.tx().update(orders).set(changes).where(eq(orders.id, orderId))
+  /** Changes the order of the edition: the statement names the edition itself. */
+  async change(order: Pick<ManagedOrder, 'id' | 'editionId'>, changes: OrderChanges) {
+    await this.context
+      .tx()
+      .update(orders)
+      .set(changes)
+      .where(and(eq(orders.editionId, order.editionId), eq(orders.id, order.id)))
   }
 
   /**
    * The order lets go of the QR code it carries. A code no order carries any more is marked
    * replaced, so the scanner can say why it is refused; one another order still carries stays.
    */
-  async releaseQrCode(orderId: string, at: Date) {
+  async releaseQrCode(order: Pick<ManagedOrder, 'id' | 'editionId'>, at: Date) {
     const tx = this.context.tx()
     const [carried] = await tx
       .delete(orderQrCodeOrders)
-      .where(eq(orderQrCodeOrders.orderId, orderId))
+      .where(
+        and(
+          eq(orderQrCodeOrders.editionId, order.editionId),
+          eq(orderQrCodeOrders.orderId, order.id),
+        ),
+      )
       .returning({ qrCodeId: orderQrCodeOrders.qrCodeId })
     if (!carried) return
     const [other] = await tx
@@ -107,7 +117,9 @@ export class ManagedOrdersRepository {
     await tx
       .update(orderQrCodes)
       .set({ replacedAt: at })
-      .where(eq(orderQrCodes.id, carried.qrCodeId))
+      .where(
+        and(eq(orderQrCodes.editionId, order.editionId), eq(orderQrCodes.id, carried.qrCodeId)),
+      )
   }
 
   /** The order links sent so far open nothing from now on. */
@@ -158,13 +170,16 @@ export class ManagedOrdersRepository {
     return row !== undefined
   }
 
-  /** The line sells another variant of its item from now on, at the price it was sold at. */
-  async swap(lineId: string, variantId: string) {
+  /**
+   * The line of the order sells another variant of its item from now on, at the price it was
+   * sold at.
+   */
+  async swap(orderId: string, lineId: string, variantId: string) {
     await this.context
       .tx()
       .update(orderLines)
       .set({ merchandiseVariantId: variantId })
-      .where(eq(orderLines.id, lineId))
+      .where(and(eq(orderLines.orderId, orderId), eq(orderLines.id, lineId)))
   }
 
   /** The lines of the order that are handed over: every line but a discount. */

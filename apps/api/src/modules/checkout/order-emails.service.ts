@@ -49,6 +49,12 @@ export const ORDER_LINK_DAYS = 30
 /** The content id the picture of a QR code travels under. */
 const QR_CODE_CID = 'qr-code@opos'
 
+/** The emails that carry an order's QR code and an order link. */
+const HANDS_OVER: readonly ClaimedEmail['kind'][] = ['order-confirmation', 'order-email-changed']
+
+/** What writing an email answers when the email is not to be sent. */
+const WITHDRAWN = 'withdrawn'
+
 /**
  * How long a failed send waits for its next try, by how many tries have failed: a minute, then
  * twice as long each time, up to six hours.
@@ -133,7 +139,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
       const email = await this.emails.claim(emailId, now, new Date(now.getTime() + LEASE_MS))
       if (!email) return undefined
       // An email that cannot be written is tried again later, as one that could not be sent.
-      const composed = await this.compose(email).catch((error: unknown) => {
+      const composed = await this.compose(email, now).catch((error: unknown) => {
         // Only the error's name: the message of a failed query quotes its parameters, an
         // address among them.
         const name = error instanceof Error ? error.name : 'unknown failure'
@@ -145,6 +151,8 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     // Sent, or taken by another process, since it was found.
     if (!claimed) return undefined
     const { email, composed } = claimed
+    // Withdrawn while it was written: it goes nowhere, and is not tried again.
+    if (composed === WITHDRAWN) return undefined
     try {
       if (!composed) throw new Error('The email could not be written')
       await this.mail.sendOrderEmail(composed)
@@ -158,10 +166,19 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     return 'sent'
   }
 
-  /** The email as it is sent: to whom, in what language, saying what. */
-  private async compose(email: ClaimedEmail): Promise<Composed> {
+  /**
+   * The email as it is sent: to whom, in what language, saying what. It is written from the
+   * order as it stands now, so one that hands the order over, with its QR code and a link, goes
+   * only to the address the order has: queued for an address the order has left since, it is
+   * withdrawn instead.
+   */
+  private async compose(email: ClaimedEmail, now: Date): Promise<Composed | typeof WITHDRAWN> {
     const order = await this.emails.order(email.orderId)
     if (!order) throw new Error('The order of the email is not there')
+    if (HANDS_OVER.includes(email.kind) && email.recipient !== order.email) {
+      await this.emails.withdraw(email.id, now)
+      return WITHDRAWN
+    }
     const account = await this.emails.account(email.recipient)
     const locale = recipientLocale({ account: account?.locale, tenant: order.conventionLocale })
     const of = { conventionName: order.conventionName, number: order.number }

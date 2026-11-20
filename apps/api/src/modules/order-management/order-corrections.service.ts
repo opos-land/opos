@@ -26,7 +26,7 @@ export class OrderCorrections {
   async holder(editionId: string, orderId: string, holderName: string) {
     const order = await this.correctable(editionId, orderId)
     if (order.holderName === holderName) return
-    await this.managed.change(order.id, { holderName })
+    await this.managed.change(order, { holderName })
     await this.tell(order, 'order-holder-changed')
   }
 
@@ -40,10 +40,10 @@ export class OrderCorrections {
     if (order.email === null) throw notCorrectable()
     if (order.email === email) return
     const of = { tenantId: order.tenantId, editionId: order.editionId, orderId: order.id }
-    await this.managed.releaseQrCode(order.id, at)
+    await this.managed.releaseQrCode(order, at)
     await this.settlement.issueQrCode(of)
     await this.managed.endLinks(order.id, at)
-    await this.managed.change(order.id, { email })
+    await this.managed.change(order, { email })
     await this.orders.queueEmail(of, 'order-email-changed', email)
     await this.orders.queueEmail(of, 'order-email-replaced', order.email)
   }
@@ -73,7 +73,7 @@ export class OrderCorrections {
     })
     const gone = await this.payments.gone(editionId, taken)
     if (gone) throw orderUnavailable(gone)
-    await this.managed.swap(line.id, variantId)
+    await this.managed.swap(order.id, line.id, variantId)
     await this.tell(order, 'order-variant-changed')
   }
 

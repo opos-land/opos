@@ -416,6 +416,7 @@ export class GlobalDbService {
       .where(
         and(
           isNull(orderEmails.sentAt),
+          isNull(orderEmails.withdrawnAt),
           lte(orderEmails.nextAttemptAt, now),
           isNull(tenants.suspendedAt),
           tenantId === undefined ? undefined : eq(orderEmails.tenantId, tenantId),

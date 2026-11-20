@@ -492,6 +492,7 @@ describe('verifyDatabase', () => {
       ['payment_attempts', 'order_id'],
       ['payment_attempts', 'information'],
       ['order_emails', 'recipient'],
+      ['order_emails', 'kind'],
       ['order_links', 'token_hash'],
       ['order_qr_codes', 'code'],
       // A scanner is found across tenants by a hash, and nothing of it is read there.

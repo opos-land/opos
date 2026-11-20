@@ -69,6 +69,7 @@ export const globalReads = [
   'order_emails.tenant_id',
   'order_emails.sent_at',
   'order_emails.next_attempt_at',
+  'order_emails.withdrawn_at',
   'scanner_devices.id',
   'scanner_devices.tenant_id',
   'scanner_devices.pairing_code_hash',
@@ -164,9 +165,10 @@ const authTriggers: Record<string, Record<string, string>> = {
 }
 
 /**
- * The columns opos_app updates: never `id`, `tenant_id` or a column that points a
- * row at an account or another row. A column the API starts changing joins this list in the PR
- * of the migration that grants it.
+ * The columns opos_app updates: never `id` or `tenant_id`, and never a column that points a row
+ * at an account or another row, but for the one exception named below, the variant of an order
+ * line. A column the API starts changing joins this list in the PR of the migration that grants
+ * it.
  */
 const appUpdates = [
   'account_recovery_codes.used_at',
@@ -289,6 +291,7 @@ const appUpdates = [
   'order_emails.sent_at',
   'order_emails.failed_attempts',
   'order_emails.next_attempt_at',
+  'order_emails.withdrawn_at',
 ]
 
 /**

@@ -138,7 +138,9 @@ reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of ve
 
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
-account or another row. `tenants` rows are inserted, deleted, suspended and given a new slug only by
+account or another row, but for the variant an order's merchandise line names, which the line's
+constraints keep within its item, its edition and its tenant
+([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)). `tenants` rows are inserted, deleted, suspended and given a new slug only by
 `opos_admin`, behind the admin routes, and by the seed; `opos_app` updates `name`, `default_locale`
 and `timezone` alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and
 `auth.mfa_factors` are listed in verify.ts. A `security definer` function pins `search_path = ''`
@@ -570,7 +572,7 @@ steps of [adding a feature](#adding-a-feature).
   credentials of a provider account stay as they are while an order awaits payment: an order
   being placed and a change of them share one lock of the tenant's account. `opos_app` never
   updates an order's number, its prices or what a line sells, but for a merchandise line's
-  variant, which its foreign key keeps within the item the line names.
+  variant ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).
 - **Order management.** Every change an org makes of an order runs under the tenant's write lock
   and locks the order's row first, then the rows that carry the limits its lines touch, in the
   order placing takes them (invariant 9): the order a payment's confirmation takes too. A manual
@@ -583,8 +585,11 @@ steps of [adding a feature](#adding-a-feature).
   the links sent before are ended. A QR code is searched by its hash, which the panel makes, and
   never travels in an address
   ([0057](adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md)). An email of an order
-  holds no text of its own: the outbox writes it from the order as it stands when it is sent, so
-  each thing an org changes is a kind of email of its own. A file an org exports is CSV in UTF-8
+  holds no text of its own: the outbox writes it from the order as it stands when it is sent,
+  under the lock of the order's row, so each thing an org changes is a kind of email of its own,
+  and an email that would hand the order over to an address the order has left since is
+  withdrawn, never sent. An order's page tells an org neither whether an email address has an
+  account nor the addresses of the orgs an alert went to. A file an org exports is CSV in UTF-8
   with a byte order mark, its texts quoted and its fields separated by semicolons, its columns in
   the language of the account that asks; a cell that begins like a formula is written with a
   leading apostrophe.

@@ -599,6 +599,15 @@ describe('what the application role changes of an order', () => {
       await sql`delete from order_qr_code_orders`
       await sql`update order_links set ended_at = now()`
     })
+    // An email that would hand the order over to an address it has left is withdrawn, not sent.
+    await migrator`
+      insert into order_emails (tenant_id, edition_id, order_id, kind, recipient)
+      values (${at.tenant}, ${at.edition}, ${mine}, 'order-confirmation', 'old@example.test')
+    `
+    await inTenant(at.tenant, (sql) => sql`update order_emails set withdrawn_at = now()`)
+    await expect(
+      inTenant(at.tenant, (sql) => sql`update order_emails set recipient = 'new@example.test'`),
+    ).rejects.toThrow(/permission denied/)
 
     const [stored] = await migrator`
       select holder_name, email, status, review_cause, cancel_reason, decline_reason

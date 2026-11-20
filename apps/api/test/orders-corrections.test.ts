@@ -6,6 +6,7 @@ import { deleteCreatedAccounts } from './auth'
 import { orderDesk, whilePlacing } from './order-desk'
 import {
   addAddOn,
+  addEdition,
   addMerchandiseItem,
   addOrder,
   addOrderLink,
@@ -172,7 +173,7 @@ describe('the email of an order', () => {
       .head('put', `/orders/${placed.orderId}/email`, { email: 'friend@example.test' })
       .expect(200)
 
-    expect(detail(res)).toMatchObject({ email: 'friend@example.test', account: buyer.email })
+    expect(detail(res)).toMatchObject({ email: 'friend@example.test' })
     expect(await d.stored('order_accounts')).toEqual(attached)
   })
 
@@ -381,5 +382,43 @@ describe('the variant of a merchandise line', () => {
       .expect(409)
 
     expect(res.body).toMatchObject(notCorrectable)
+  })
+})
+
+// The edition of the path is the one whose orders are corrected: RLS keeps a request inside its
+// tenant, and each route looks its order up within that edition itself.
+describe('an order of another edition of the same convention', () => {
+  it('is corrected by no route of this edition, nor is a variant of another edition swapped in', async () => {
+    const d = await orderDesk(app)
+    const sibling = await addEdition(d.t.id)
+    const shirt = await addMerchandiseItem(d.t.id, sibling, { stock: 5 })
+    const other = await addVariant(d.t.id, sibling, shirt.id, 5)
+    const elsewhere = await addOrder(d.t.id, sibling, {
+      status: 'paid',
+      variants: [{ itemId: shirt.id, variantId: shirt.variantId, quantity: 1 }],
+    })
+    const [line] = (await d.stored('order_lines')).filter((row) => row.order_id === elsewhere.id)
+    const base = `/orders/${elsewhere.id}`
+
+    await d.head('patch', `${base}/holder`, { holderName: 'Grace' }).expect(404)
+    await d.head('put', `${base}/email`, { email: 'moved@example.test' }).expect(404)
+    await d
+      .head('put', `${base}/lines/${String(line!.id)}/variant`, { variantId: other })
+      .expect(404)
+    expect(await d.order(elsewhere.id)).toMatchObject({
+      holder_name: 'Ada',
+      email: 'buyer@example.test',
+    })
+
+    // A line of this edition takes no variant of the sibling's item.
+    const mine = await addMerchandiseItem(d.t.id, d.edition, { stock: 5 })
+    const own = await addOrder(d.t.id, d.edition, {
+      status: 'paid',
+      variants: [{ itemId: mine.id, variantId: mine.variantId, quantity: 1 }],
+    })
+    const [ownLine] = (await d.stored('order_lines')).filter((row) => row.order_id === own.id)
+    await d
+      .head('put', `/orders/${own.id}/lines/${String(ownLine!.id)}/variant`, { variantId: other })
+      .expect(404)
   })
 })

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import {
+  ORG_EMAIL_KINDS,
   type OrderDetail,
   type OrderList,
   type OrderListQuery,
   type OrderSummary,
 } from '@opos/contract'
 import {
-  accounts,
   addOns,
   editionConsents,
   editionCustomFields,
@@ -16,7 +16,6 @@ import {
   merchandiseOptionAxes,
   merchandiseOptionValues,
   merchandiseVariantValues,
-  orderAccounts,
   orderConsents,
   orderCustomFieldAnswers,
   orderEmails,
@@ -221,6 +220,7 @@ export class OrderReadsRepository {
         recipient: orderEmails.recipient,
         queuedAt: orderEmails.queuedAt,
         sentAt: orderEmails.sentAt,
+        withdrawnAt: orderEmails.withdrawnAt,
         failedAttempts: orderEmails.failedAttempts,
       })
       .from(orderEmails)
@@ -231,12 +231,6 @@ export class OrderReadsRepository {
       .select({ id: orderQrCodeOrders.qrCodeId })
       .from(orderQrCodeOrders)
       .where(of(orderQrCodeOrders))
-    const [owner] = await tx
-      .select({ email: accounts.email })
-      .from(orderAccounts)
-      .innerJoin(accounts, eq(accounts.id, orderAccounts.accountId))
-      .where(of(orderAccounts))
-
     return {
       id: order.id,
       number: order.number,
@@ -263,7 +257,6 @@ export class OrderReadsRepository {
       declinedAt: iso(order.declinedAt),
       declineReason: order.declineReason,
       hasQrCode: code !== undefined,
-      account: owner?.email ?? null,
       lines: lines.map(({ ticketType, addOn, item, handedOutAt, ...line }) => ({
         ...line,
         name: ticketType ?? addOn ?? item ?? '',
@@ -296,8 +289,12 @@ export class OrderReadsRepository {
       })),
       emails: emails.map((email) => ({
         ...email,
+        // An alert to the orgs is listed without its address: who is in the team, and under
+        // which address, is behind the team's own permission.
+        recipient: ORG_EMAIL_KINDS.includes(email.kind) ? null : email.recipient,
         queuedAt: email.queuedAt.toISOString(),
         sentAt: iso(email.sentAt),
+        withdrawnAt: iso(email.withdrawnAt),
       })),
     }
   }

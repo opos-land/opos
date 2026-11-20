@@ -1642,6 +1642,10 @@ msgstr "Not ready to sell"
 msgid "Not sent yet: it is tried again"
 msgstr "Not sent yet: it is tried again"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "Not sent: the order moved to another address before it went out"
+msgstr "Not sent: the order moved to another address before it went out"
+
 #: src/features/orders/components/order-lines.tsx
 msgid "Not yet"
 msgstr "Not yet"
@@ -1670,10 +1674,6 @@ msgstr "Number of places"
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Off: merchandise is bought with a ticket"
 msgstr "Off: merchandise is bought with a ticket"
-
-#: src/features/orders/pages/order-page.tsx
-msgid "On the account"
-msgstr "On the account"
 
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "On: the shop also takes an order with no ticket"
@@ -2902,6 +2902,10 @@ msgstr "The order sent no email."
 msgid "The order was canceled"
 msgstr "The order was canceled"
 
+#: src/features/orders/pages/order-page.tsx
+msgid "The organizers"
+msgstr "The organizers"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "The passwords differ."
 msgstr "The passwords differ."
@@ -3141,6 +3145,10 @@ msgstr "This is the convention's active edition."
 #: src/features/program/components/speakers-editor.tsx
 msgid "This item has no speakers yet."
 msgstr "This item has no speakers yet."
+
+#: src/features/orders/pages/orders-page.tsx
+msgid "This looks like a QR code with a mistake in it: a QR code has 32 characters. Check it and try again."
+msgstr "This looks like a QR code with a mistake in it: a QR code has 32 characters. Check it and try again."
 
 #: src/features/orders/components/order-changes.tsx
 msgid "This order needs review"

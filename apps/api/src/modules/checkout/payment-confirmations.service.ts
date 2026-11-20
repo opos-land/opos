@@ -133,7 +133,7 @@ export class PaymentConfirmations {
   private async locked(tenantId: string, attemptId: string): Promise<Found | undefined> {
     const attempt = await this.payments.attempt(attemptId)
     if (!attempt) return undefined
-    const order = await this.payments.order(attempt.orderId, true)
+    const order = await this.payments.order(tenantId, attempt.orderId, true)
     const account = await this.payments.providerAccount(tenantId)
     if (!order || account?.provider !== attempt.provider) return undefined
     // Read again under the order's lock: another request may have confirmed it meanwhile.

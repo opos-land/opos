@@ -96,7 +96,8 @@ and after every restore.
   session or a signed hook names; the sweep alone removes an account's file nothing points at.
   Another account is read only in a tenant transaction, through a tenant table, by a confirmed
   email behind a write permission and a rate limit of the tenant, or by the confirmed email of
-  an order as it is paid or written to, which answers nothing to the buyer; or behind
+  an order as it is paid and of the recipient of an order's email as it is written, for its
+  language alone, which answers nothing to anyone; or behind
   `@RequireAdmin`, as a tenant's head, as an account an entry of the log names, or by its email
   address for a new tenant's first head and for a reset of two-factor authentication.
   The admin's tables are global too, and `opos_app` and `opos_app_global` hold nothing on them:
@@ -531,7 +532,8 @@ steps of [adding a feature](#adding-a-feature).
   nothing, and another amount than the total never pays the order. Only `local` and `dev` load a
   fake provider.
 - **The shop's setup.** What opening a shop asks of the convention, an edition-level route answers
-  as a yes or a no alone: the provider account and the seller's details stay behind `shop`. The
+  as a yes or a no alone: the provider account and the seller's details stay behind `shop`,
+  until an edition's shop is open and shows its buyers the seller and names the provider. The
   conditions are read under the tenant's write lock, and every write that would take one away
   from an open shop is refused under the same lock. A published version of a legal document is a
   file for everyone, served by the version's own identifier and bound to the tenant its address
@@ -546,8 +548,10 @@ steps of [adding a feature](#adding-a-feature).
   edition is published, served under the convention's address by the identifier its row holds;
   before that the edition's orgs read it through a route of their own.
 - **Checkout and orders.** A buyer needs no membership: a visitor's routes open the tenant from
-  its address, an account's are tenant routes behind `@InTenant`, and both answer an unpublished
-  edition and a suspended tenant as an unknown address. A cart is priced by one function of the
+  its address and answer an unpublished edition and a suspended tenant as an unknown address; an
+  account's are tenant routes behind `@InTenant`, which answer an unpublished edition the same
+  way and a suspended tenant as every tenant route does. The reads that decide which order a
+  buyer opens filter on the tenant themselves. A cart is priced by one function of the
   contract, which the portal runs for the running total and the API for the order
   ([0050](adr/0050-price-a-cart-with-one-function-of-the-contract.md)); an order is placed at
   the total the buyer saw or not at all. The routes that open an order without a sign-in take

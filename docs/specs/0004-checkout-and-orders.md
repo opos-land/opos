@@ -420,7 +420,9 @@ the accessibility of every page it opens:
   provider cannot be asked when its hold ends waits, and is not expired until the provider
   answers; the confirmation's pick-up notice says only that merchandise is picked up at the
   edition, until [buyer self-service](0009-buyer-self-service.md) gives the edition its pick-up
-  information; the page an order link opens comes with that spec too.
+  information; the page an order link opens comes with that spec too; the page of a closed shop
+  names neither the seller nor the provider, whose details stay with the orgs until a shop is
+  open.
 - **Records before acceptance:** an order holding at most one ticket (D5 of the brief, with
   PRODUCT.md 3); "Needs review", a payment after the hold and the information an attempt keeps
   (D8), a record superseding that part of

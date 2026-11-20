@@ -3,6 +3,9 @@ import { type TenantContextService } from '../src/common/als/tenant-context.serv
 import { AccessRepository } from '../src/common/permissions/access.repository'
 import { LogoRepository } from '../src/modules/branding/logo.repository'
 import { MerchandiseRepository } from '../src/modules/catalog/merchandise.repository'
+import { OfferRepository } from '../src/modules/checkout/offer.repository'
+import { OrdersRepository } from '../src/modules/checkout/orders.repository'
+import { PaymentsRepository } from '../src/modules/checkout/payments.repository'
 import { DocumentsRepository } from '../src/modules/shop/documents.repository'
 import { InvitationsRepository } from '../src/modules/tenants/invitations.repository'
 import { deleteCreatedAccounts } from './auth'
@@ -13,6 +16,7 @@ import {
   addEditionAccess,
   addLogo,
   addMerchandiseItem,
+  addOrder,
   addOrg,
   closeTenantDb,
   deleteCreatedTenants,
@@ -111,6 +115,48 @@ describe('a file of merchandise that is for everyone', () => {
       expect(await find(a.id, fileId)).toBeUndefined()
       expect(await find(b.id, fileId)).toEqual({ kind, fileId, editionId: editionOfB })
     }
+  })
+})
+
+// The reads that decide which order a buyer opens, and in which edition an account buys.
+describe('an order a buyer opens', () => {
+  const payments = (tx: unknown) =>
+    new PaymentsRepository(contextOf(tx), new OfferRepository(contextOf(tx)))
+
+  it("finds no order of another tenant in this tenant's transaction", async () => {
+    await setPublished(editionOfB, true)
+    const order = await addOrder(b.id, editionOfB)
+    const find = (tenantId: string) =>
+      withoutRls(a.id, (tx) => payments(tx).order(tenantId, order.id))
+
+    expect(await find(a.id)).toBeUndefined()
+    expect(await find(b.id)).toMatchObject({ id: order.id, tenantId: b.id })
+  })
+
+  it("finds no account of another tenant's order in this tenant's transaction", async () => {
+    const order = await addOrder(b.id, editionOfB)
+    await withoutRls(b.id, (tx) =>
+      new OrdersRepository(contextOf(tx)).attach(
+        { tenantId: b.id, editionId: editionOfB, orderId: order.id },
+        orgOfB.id,
+      ),
+    )
+    const isOf = (tenantId: string) =>
+      withoutRls(a.id, (tx) => payments(tx).isOf(tenantId, order.id, orgOfB.id))
+
+    expect(await isOf(a.id)).toBe(false)
+    expect(await isOf(b.id)).toBe(true)
+  })
+
+  it("finds no published edition of another tenant in this tenant's transaction", async () => {
+    await setPublished(editionOfB, true)
+    const find = (tenantId: string) =>
+      withoutRls(a.id, (tx) =>
+        new OrdersRepository(contextOf(tx)).publishedEdition(tenantId, editionOfB),
+      )
+
+    expect(await find(a.id)).toBeUndefined()
+    expect(await find(b.id)).toEqual({ id: editionOfB })
   })
 })
 

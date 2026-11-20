@@ -50,14 +50,23 @@ export type OrderEmailKind = (typeof orderEmails.kind.enumValues)[number]
 export class OrdersRepository {
   constructor(private readonly context: TenantContextService) {}
 
-  /** The published edition of the tenant, or undefined: an account's route finds its own. */
-  async publishedEdition(editionId: string): Promise<{ id: string } | undefined> {
+  /**
+   * The published edition of the tenant, or undefined. It is the only guard of the route an
+   * account places an order through, so it filters on the tenant itself too.
+   */
+  async publishedEdition(tenantId: string, editionId: string): Promise<{ id: string } | undefined> {
     if (!isUuid(editionId)) return undefined
     const [row] = await this.context
       .tx()
       .select({ id: editions.id })
       .from(editions)
-      .where(and(eq(editions.id, editionId), eq(editions.isPublished, true)))
+      .where(
+        and(
+          eq(editions.tenantId, tenantId),
+          eq(editions.id, editionId),
+          eq(editions.isPublished, true),
+        ),
+      )
     return row
   }
 

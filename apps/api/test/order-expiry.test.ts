@@ -184,6 +184,22 @@ describe('the expiry of orders', () => {
     expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
   })
 
+  // The job reads a page at a time, each after the last order of the one before: an order left
+  // to wait at the head holds no other order back.
+  it('expires an order behind one that has to wait', async () => {
+    const s = await shop(FAKE_ACCOUNT.stateUnavailable)
+    const [waiting, behind] = [await s.place(), await s.place('other@example.test')]
+    await s.started(waiting)
+    await setColumn('orders', waiting.orderId, 'hold_ends_at', ago(10))
+    await s.endHold(behind)
+
+    const result = await app.get(OrderExpiry).run(new Date(), { tenantId: s.t.id, limit: 1 })
+
+    expect(result).toEqual({ expired: 1, paid: 0, waiting: 1 })
+    expect(await s.stored(waiting)).toMatchObject({ status: 'awaiting-payment' })
+    expect(await s.stored(behind)).toMatchObject({ status: 'expired' })
+  })
+
   it('passes by the orders of a suspended convention, and takes them once it is restored', async () => {
     const s = await shop()
     const placed = await s.place()

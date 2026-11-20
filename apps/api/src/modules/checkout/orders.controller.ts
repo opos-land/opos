@@ -36,10 +36,11 @@ export class OrdersController {
     return implement(contract.checkout.placeOrder).handler(async ({ input }) => {
       await this.limiter.consume('orderPlacements', `ip:${this.context.clientAddress()}`)
       if (!this.context.prepared<boolean>()) throw botCheckFailed()
-      const edition = await this.orders.publishedEdition(input.params.editionId)
+      const tenantId = this.context.tenant().id
+      const edition = await this.orders.publishedEdition(tenantId, input.params.editionId)
       if (!edition) throw notFound('edition')
       const account = this.context.account()
-      return this.placement.place(this.context.tenant().id, edition.id, input.body, {
+      return this.placement.place(tenantId, edition.id, input.body, {
         email: account.email,
         accountId: account.id,
       })

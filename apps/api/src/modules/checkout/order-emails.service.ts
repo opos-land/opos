@@ -128,7 +128,10 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
       if (!email) return undefined
       // An email that cannot be written is tried again later, as one that could not be sent.
       const composed = await this.compose(email).catch((error: unknown) => {
-        this.logger.error(`The email ${emailId} could not be written: ${String(error)}`)
+        // Only the error's name: the message of a failed query quotes its parameters, an
+        // address among them.
+        const name = error instanceof Error ? error.name : 'unknown failure'
+        this.logger.error(`The email ${emailId} could not be written: ${name}`)
         return undefined
       })
       return { email, composed }

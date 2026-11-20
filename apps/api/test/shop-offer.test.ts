@@ -85,7 +85,8 @@ describe('the offer of a shop', () => {
     await request(app.getHttpServer()).get(s.path).expect(404)
   })
 
-  it('shows the message of a closed shop instead of products, with the footer it still has', async () => {
+  // The seller's details and the provider are for buyers: nobody reads them before a shop opens.
+  it('shows the message of a closed shop instead of products, and names no seller and no provider', async () => {
     const t = await tenantWithHead()
     const edition = await addEdition(t.id)
     await setPublished(edition, true)
@@ -106,7 +107,8 @@ describe('the offer of a shop', () => {
       onSale: false,
       salesClosedMessage: 'Tickets return in spring.',
       faqUrl: 'https://convention.test/faq',
-      seller: { name: 'Seller Ltd', contactEmail: 'shop@seller.test' },
+      seller: null,
+      provider: null,
       ticketTypes: [],
       addOns: [],
       items: [],

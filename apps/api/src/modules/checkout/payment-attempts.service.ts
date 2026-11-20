@@ -50,7 +50,7 @@ export class PaymentAttempts {
    */
   async start(tenant: TenantInContext, orderId: string, opener: Opener): Promise<StartedAttempt> {
     const first = await this.context.withTenant(tenant.id, async () => {
-      const order = await this.opened(orderId, opener, new Date())
+      const order = await this.opened(tenant.id, orderId, opener, new Date())
       this.payable(order, new Date())
       const account = await this.account(tenant.id)
       const earlier = (await this.payments.attempts(order.id)).filter(
@@ -71,9 +71,9 @@ export class PaymentAttempts {
     }
 
     const attemptId = await this.context.withTenant(tenant.id, async () => {
-      // The order as it is now, alone: it may have been paid or expired meanwhile.
-      const order = await this.payments.order(orderId, true)
-      if (!order) throw notFound('order')
+      // The order as it is now, alone, and its opener judged again: it may have been paid or
+      // expired, its edition taken back or its token run out while the provider was asked.
+      const order = await this.opened(tenant.id, orderId, opener, new Date(), true)
       this.payable(order, new Date())
       return this.payments.addAttempt(order, first.provider)
     })
@@ -109,7 +109,7 @@ export class PaymentAttempts {
   /** What the result page shows of the order: its status and number alone. */
   result(tenant: TenantInContext, orderId: string, token: string): Promise<OrderResult> {
     return this.context.withTenant(tenant.id, async () => {
-      const order = await this.opened(orderId, { token }, new Date())
+      const order = await this.opened(tenant.id, orderId, { token }, new Date())
       const attempts = await this.payments.attempts(order.id)
       const last = attempts.at(-1)
       const confirmed = attempts.findLast((attempt) => attempt.moneyWith !== null)
@@ -133,16 +133,23 @@ export class PaymentAttempts {
   }
 
   /**
-   * The order its opener may open, or `404`: a published edition's, by its result token for 24
-   * hours from its placing, or the account's own of the edition named.
+   * The order of the tenant its opener may open, or `404`: a published edition's, by its result
+   * token for 24 hours from its placing, or the account's own of the edition named. `lock` holds
+   * its row until the transaction ends.
    */
-  private async opened(orderId: string, opener: Opener, at: Date): Promise<PayableOrder> {
-    const order = await this.payments.order(orderId)
+  private async opened(
+    tenantId: string,
+    orderId: string,
+    opener: Opener,
+    at: Date,
+    lock = false,
+  ): Promise<PayableOrder> {
+    const order = await this.payments.order(tenantId, orderId, lock)
     if (!order?.editionPublished) throw notFound('order')
     if ('accountId' in opener) {
       const own =
         order.editionId === opener.editionId &&
-        (await this.payments.isOf(order.id, opener.accountId))
+        (await this.payments.isOf(tenantId, order.id, opener.accountId))
       if (!own) throw notFound('order')
       return order
     }

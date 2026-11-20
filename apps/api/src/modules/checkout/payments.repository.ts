@@ -75,10 +75,11 @@ export class PaymentsRepository {
   ) {}
 
   /**
-   * The order with its edition, or undefined. `lock` holds its row until the transaction ends:
-   * whatever then decides what a payment does of it decides alone.
+   * The order of the tenant with its edition, or undefined. It decides which order a buyer
+   * opens, so it filters on the tenant itself too. `lock` holds its row until the transaction
+   * ends: whatever then decides what a payment does of it decides alone.
    */
-  async order(orderId: string, lock = false): Promise<PayableOrder | undefined> {
+  async order(tenantId: string, orderId: string, lock = false): Promise<PayableOrder | undefined> {
     if (!isUuid(orderId)) return undefined
     const query = this.context
       .tx()
@@ -100,18 +101,24 @@ export class PaymentsRepository {
       })
       .from(orders)
       .innerJoin(editions, eq(editions.id, orders.editionId))
-      .where(eq(orders.id, orderId))
+      .where(and(eq(orders.tenantId, tenantId), eq(orders.id, orderId)))
     const [row] = await (lock ? query.for('update', { of: orders }) : query)
     return row
   }
 
-  /** Whether the order is attached to the account. */
-  async isOf(orderId: string, accountId: string): Promise<boolean> {
+  /** Whether the order of the tenant is attached to the account. */
+  async isOf(tenantId: string, orderId: string, accountId: string): Promise<boolean> {
     const [row] = await this.context
       .tx()
       .select({ orderId: orderAccounts.orderId })
       .from(orderAccounts)
-      .where(and(eq(orderAccounts.orderId, orderId), eq(orderAccounts.accountId, accountId)))
+      .where(
+        and(
+          eq(orderAccounts.tenantId, tenantId),
+          eq(orderAccounts.orderId, orderId),
+          eq(orderAccounts.accountId, accountId),
+        ),
+      )
     return row !== undefined
   }
 
@@ -235,7 +242,9 @@ export class PaymentsRepository {
       const [type] = await tx
         .select({ capacity: ticketTypes.capacity })
         .from(ticketTypes)
-        .where(eq(ticketTypes.id, cart.ticket.ticketTypeId))
+        .where(
+          and(eq(ticketTypes.editionId, editionId), eq(ticketTypes.id, cart.ticket.ticketTypeId)),
+        )
       const taken = held.ticketTypes.get(cart.ticket.ticketTypeId) ?? 0
       if (!type || (type.capacity !== null && taken + 1 > type.capacity)) return false
     }
@@ -243,7 +252,7 @@ export class PaymentsRepository {
       const rows = await tx
         .select({ id: addOns.id, capacity: addOns.capacity })
         .from(addOns)
-        .where(inArray(addOns.id, cart.addOnIds))
+        .where(and(eq(addOns.editionId, editionId), inArray(addOns.id, cart.addOnIds)))
       if (rows.length !== new Set(cart.addOnIds).size) return false
       for (const row of rows) {
         const taken = held.addOns.get(row.id) ?? 0
@@ -255,9 +264,12 @@ export class PaymentsRepository {
         .select({ id: merchandiseVariants.id, stock: merchandiseVariants.stock })
         .from(merchandiseVariants)
         .where(
-          inArray(
-            merchandiseVariants.id,
-            cart.items.map((item) => item.variantId),
+          and(
+            eq(merchandiseVariants.editionId, editionId),
+            inArray(
+              merchandiseVariants.id,
+              cart.items.map((item) => item.variantId),
+            ),
           ),
         )
       const stock = new Map(rows.map((row) => [row.id, row.stock]))
@@ -330,7 +342,11 @@ export class PaymentsRepository {
       .where(
         and(
           eq(tenantMemberships.tenantId, tenantId),
-          or(isNull(tenantMemberships.expiresAt), gt(tenantMemberships.expiresAt, sql`now()`)),
+          // Measured when the read runs: this transaction may have waited for the order's lock.
+          or(
+            isNull(tenantMemberships.expiresAt),
+            gt(tenantMemberships.expiresAt, sql`statement_timestamp()`),
+          ),
           or(eq(tenantMemberships.role, 'head'), eq(editionMemberships.ticketsAccess, 'write')),
         ),
       )

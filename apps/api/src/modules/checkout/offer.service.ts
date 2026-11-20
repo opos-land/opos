@@ -37,13 +37,15 @@ export class OfferService {
     const shop = await this.offers.shop(editionId)
     const open = shop?.openedAt != null
     const documents = await this.documents.list(editionId)
-    const provider = await this.offers.provider(tenantId)
+    // The seller's details and the provider are for buyers: they stay behind the shop permission
+    // until the edition's shop is open.
+    const provider = open ? await this.offers.provider(tenantId) : undefined
     const pages = provider && this.providers.pages(provider)
     const footer = {
       salesClosedMessage: shop?.salesClosedMessage ?? null,
       currency: SHOP_CURRENCY,
       faqUrl: shop?.faqUrl ?? null,
-      seller: await this.offers.seller(tenantId),
+      seller: open ? await this.offers.seller(tenantId) : null,
       provider:
         provider && pages
           ? { name: provider, methods: pages.methods, ...pages.requirements }

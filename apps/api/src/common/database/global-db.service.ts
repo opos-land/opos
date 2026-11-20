@@ -343,14 +343,19 @@ export class GlobalDbService {
 
   /**
    * The expiry job: the orders awaiting payment whose hold ended, the longest ended first, of the
-   * tenants that are not suspended. Identifiers alone: each is judged again in its own tenant.
+   * tenants that are not suspended, a page at a time. Identifiers and the moment a page continues
+   * from alone: each order is judged again in its own tenant.
    */
   ordersPastHold(
     now: Date,
-    { limit = 200, tenantId }: JobScope = {},
-  ): Promise<{ id: string; tenantId: string }[]> {
+    { limit = 200, tenantId, after }: JobScope & { after?: { holdEndsAt: Date; id: string } } = {},
+  ): Promise<{ id: string; tenantId: string; holdEndsAt: Date }[]> {
     return this.db
-      .select({ id: orders.id, tenantId: orders.tenantId })
+      .select({
+        id: orders.id,
+        tenantId: orders.tenantId,
+        holdEndsAt: sql<Date>`${orders.holdEndsAt}`.mapWith(orders.holdEndsAt),
+      })
       .from(orders)
       .innerJoin(tenants, eq(tenants.id, orders.tenantId))
       .where(
@@ -359,6 +364,10 @@ export class GlobalDbService {
           lte(orders.holdEndsAt, now),
           isNull(tenants.suspendedAt),
           tenantId === undefined ? undefined : eq(orders.tenantId, tenantId),
+          // The page after the last order of the one before, in the order they are read in.
+          after === undefined
+            ? undefined
+            : sql`(${orders.holdEndsAt}, ${orders.id}) > (${after.holdEndsAt.toISOString()}::timestamptz, ${after.id}::uuid)`,
         ),
       )
       .orderBy(asc(orders.holdEndsAt), asc(orders.id))

@@ -253,6 +253,31 @@ describe('a payment attempt', () => {
     expect(await s.order(placed.orderId)).toMatchObject({ status: 'paid' })
   })
 
+  // An order is opened in its own convention alone, whatever token comes with it.
+  it('opens no order of another convention under this one\u2019s address', async () => {
+    const [s, other] = [await shop(), await shop()]
+    const theirs = await other.place()
+    const server = request(app.getHttpServer())
+    const under = (path: 'result' | 'payment-attempts') => {
+      const address = `/public/tenants/${s.t.slug}/orders/${theirs.orderId}/${path}`
+      const sent = path === 'result' ? server.get(address) : server.post(address)
+      return sent.set(RESULT_TOKEN_HEADER, theirs.resultToken)
+    }
+
+    await under('result').expect(404)
+    await under('payment-attempts').expect(404)
+    const buyer = await member()
+    await request(app.getHttpServer())
+      .post(`/editions/${other.edition}/orders/${theirs.orderId}/payment-attempts`)
+      .use(session(buyer.token))
+      .set('X-Tenant-Slug', s.t.slug)
+      .set(RESULT_TOKEN_HEADER, theirs.resultToken)
+      .expect(404)
+    expect(await other.attempts()).toEqual([])
+    // Under its own address the same token opens it.
+    await other.result(theirs).expect(200)
+  })
+
   it('is not started for a suspended convention or an unpublished edition', async () => {
     const s = await shop()
     const placed = await s.place()

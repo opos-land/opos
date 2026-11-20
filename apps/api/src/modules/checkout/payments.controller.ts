@@ -85,7 +85,7 @@ export class PaymentsController {
     const notification = await this.context
       .withTenant(tenantId, async () => {
         const attempt = await this.payments.attempt(address.attemptId)
-        const order = attempt && (await this.payments.order(attempt.orderId))
+        const order = attempt && (await this.payments.order(tenantId, attempt.orderId))
         const account = await this.payments.providerAccount(tenantId)
         if (!attempt || !order || account?.provider !== attempt.provider) return undefined
         let credentials: Credentials

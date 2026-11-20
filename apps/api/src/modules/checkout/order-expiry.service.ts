@@ -15,6 +15,10 @@ import { PaymentsRepository } from './payments.repository'
 /** How often the job looks for orders whose hold ended. */
 const EXPIRY_EVERY_MS = 60_000
 
+/** How many orders one page of a run holds, and how many pages a run reads at most. */
+const EXPIRY_PAGE = 200
+const MAX_PAGES = 50
+
 /** What one run made of the orders it found: expired, paid after all, or left to wait. */
 export interface ExpiryResult {
   expired: number
@@ -59,24 +63,37 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
     clearTimeout(this.timer)
   }
 
-  /** One run over the orders whose hold has ended by `now`. */
+  /**
+   * One run over the orders whose hold has ended by `now`, a page at a time, each page after the
+   * last order of the one before: an order left to wait holds no other order back, of its own
+   * tenant or of another.
+   */
   async run(now = new Date(), scope: JobScope = {}): Promise<ExpiryResult> {
     const result: ExpiryResult = { expired: 0, paid: 0, waiting: 0 }
-    for (const { id, tenantId } of await this.global.ordersPastHold(now, scope)) {
-      try {
-        result[await this.one(tenantId, id, now)] += 1
-      } catch (error) {
-        // One order that fails, such as one of a tenant suspended meanwhile, leaves the rest.
-        result.waiting += 1
-        this.logger.warn(`The expiry left the order ${id} as it was: ${String(error)}`)
+    let after: { holdEndsAt: Date; id: string } | undefined
+    for (let page = 0; page < MAX_PAGES; page += 1) {
+      const due = await this.global.ordersPastHold(now, { ...scope, after })
+      for (const { id, tenantId } of due) {
+        try {
+          result[await this.one(tenantId, id, now)] += 1
+        } catch (error) {
+          // One order that fails, such as one of a tenant suspended meanwhile, leaves the rest.
+          // Only the error's name goes to the log: its message may quote an address.
+          result.waiting += 1
+          const name = error instanceof Error ? error.name : 'unknown failure'
+          this.logger.warn(`The expiry left the order ${id} as it was: ${name}`)
+        }
       }
+      const last = due.at(-1)
+      if (!last || due.length < (scope.limit ?? EXPIRY_PAGE)) break
+      after = { holdEndsAt: last.holdEndsAt, id: last.id }
     }
     return result
   }
 
   private async one(tenantId: string, orderId: string, now: Date): Promise<keyof ExpiryResult> {
     const read = await this.context.withTenant(tenantId, async () => {
-      const order = await this.payments.order(orderId)
+      const order = await this.payments.order(tenantId, orderId)
       if (order?.status !== 'awaiting-payment') return undefined
       const open = (await this.payments.attempts(orderId)).filter(
         (attempt) => attempt.status === 'started' || attempt.status === 'failed',

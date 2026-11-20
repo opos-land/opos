@@ -16,12 +16,13 @@ import { useEditionBySlug } from '../../editions'
 import { atLeast, useCurrentTenant } from '../../tenants'
 import { addOnsOptions, catalogKey, removeAddOnOptions, updateAddOnOptions } from '../api/catalog'
 import { AddOnForm } from '../components/add-on-form'
+import { AddOnPicture } from '../components/add-on-picture'
 import { useMoney } from '../hooks/use-money'
 import { addOnFields } from '../model/add-on-form'
 
 /**
  * One add-on of an edition (`/editions/:editionSlug/add-ons/:addOnId`), for a member with
- * tickets=write in the edition: its fields, and its deletion. Its place in the list and whether
+ * tickets=write in the edition: its fields, its picture and its deletion. Its place in the list and whether
  * the shop shows it are changed in the list of the add-ons.
  */
 export function AddOnPage() {
@@ -79,6 +80,9 @@ export function AddOnPage() {
           submitLabel={<Trans>Save the add-on</Trans>}
           onSubmit={(body) => update.mutate({ params, body })}
         />
+      </Section>
+      <Section title={<Trans>Picture</Trans>}>
+        <AddOnPicture addOn={addOn} />
       </Section>
       <Section title={<Trans>Delete the add-on</Trans>}>
         <p className="text-sm">

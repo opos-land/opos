@@ -1638,6 +1638,11 @@ msgctxt "a picture"
 msgid "Its file is deleted with it."
 msgstr "Jego plik zostanie usunięty razem z nim."
 
+#: src/features/catalog/components/add-on-picture.tsx
+msgctxt "a picture of an add-on"
+msgid "Its file is deleted with it."
+msgstr "Jego plik zostanie usunięty razem z nim."
+
 #: src/features/catalog/components/size-charts-editor.tsx
 msgctxt "a size chart"
 msgid "Its file is deleted with it."
@@ -1963,6 +1968,7 @@ msgstr "Nowy kod parowania"
 msgid "New password"
 msgstr "Nowe hasło"
 
+#: src/features/catalog/components/add-on-picture.tsx
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "New picture"
 msgstr "Nowe zdjęcie"
@@ -2130,6 +2136,10 @@ msgstr "Włączone: sklep przyjmuje też zamówienie bez akredytacji"
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Once an axis is added or removed, every variant of the item goes with its stock. A removed value takes the variants that held it, and its size chart."
 msgstr "Po dodaniu albo usunięciu osi znikną wszystkie warianty gadżetu razem ze stanami magazynowymi. Usunięta wartość zabiera warianty, które ją miały, i swoją tabelę rozmiarów."
+
+#: src/features/catalog/components/add-on-picture.tsx
+msgid "One picture, which the shop shows with the add-on. It is for everyone once the add-on is shown in the shop of a published edition."
+msgstr "Jedno zdjęcie, które sklep pokazuje przy dodatku. Jest dostępne dla wszystkich, gdy dodatek jest widoczny w sklepie opublikowanej edycji."
 
 #: src/features/orders/components/order-changes.tsx
 msgid "Only the name changes: the QR code and everything else stay."
@@ -2374,9 +2384,17 @@ msgstr "Uprawnienia w poszczególnych edycjach ustawia się na stronie dostępu 
 msgid "Pick-up information"
 msgstr "Informacja o odbiorze"
 
+#: src/features/catalog/pages/add-on-page.tsx
+msgid "Picture"
+msgstr "Zdjęcie"
+
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "Picture {number} of {name}"
 msgstr "Zdjęcie {number}: {name}"
+
+#: src/features/catalog/components/add-on-picture.tsx
+msgid "Picture of {name}"
+msgstr "Zdjęcie: {name}"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 msgid "Pictures"
@@ -2659,9 +2677,14 @@ msgstr "Usuń logo"
 msgid "Remove the logo of {name}?"
 msgstr "Usunąć logo konwentu {name}?"
 
+#: src/features/catalog/components/add-on-picture.tsx
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "Remove the picture"
 msgstr "Usuń zdjęcie"
+
+#: src/features/catalog/components/add-on-picture.tsx
+msgid "Remove the picture of {name}?"
+msgstr "Usunąć zdjęcie dodatku {name}?"
 
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "Remove the size chart"
@@ -2698,6 +2721,10 @@ msgstr "Zmień logo"
 #: src/features/branding/pages/branding-page.tsx
 msgid "Replace the logo of {name}?"
 msgstr "Zmienić logo konwentu {name}?"
+
+#: src/features/catalog/components/add-on-picture.tsx
+msgid "Replace the picture"
+msgstr "Zmień zdjęcie"
 
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "Replace the size chart"
@@ -2953,6 +2980,10 @@ msgstr "Treść"
 msgid "Sentence the buyer accepts"
 msgstr "Zdanie, które akceptuje kupujący"
 
+#: src/features/catalog/components/add-on-picture.tsx
+msgid "Set the picture"
+msgstr "Ustaw zdjęcie"
+
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "Set the size chart"
 msgstr "Ustaw tabelę rozmiarów"
@@ -3173,6 +3204,10 @@ msgstr "Tego dnia"
 #: src/features/catalog/pages/add-on-page.tsx
 msgid "The add-on “{name}” is deleted."
 msgstr "Dodatek „{name}” został usunięty."
+
+#: src/features/catalog/components/add-on-picture.tsx
+msgid "The add-on has no picture."
+msgstr "Dodatek nie ma zdjęcia."
 
 #: src/features/catalog/pages/new-add-on-page.tsx
 msgid "The add-on is added."
@@ -3669,9 +3704,14 @@ msgstr "Telefon, który jest teraz skanerem, od tej chwili niczego nie odczyta a
 msgid "The picture is added."
 msgstr "Zdjęcie zostało dodane."
 
+#: src/features/catalog/components/add-on-picture.tsx
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "The picture is removed."
 msgstr "Zdjęcie zostało usunięte."
+
+#: src/features/catalog/components/add-on-picture.tsx
+msgid "The picture is saved."
+msgstr "Zdjęcie zostało zapisane."
 
 #: src/features/catalog/components/item-form.tsx
 msgid "The pictures are illustrative"

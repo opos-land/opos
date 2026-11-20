@@ -24,6 +24,19 @@ export const updateAddOnOptions = (api: Api) => api.catalog.addOns.update.mutati
 
 export const removeAddOnOptions = (api: Api) => api.catalog.addOns.remove.mutationOptions()
 
+export const putAddOnPictureOptions = (api: Api) => api.catalog.addOns.putPicture.mutationOptions()
+
+export const removeAddOnPictureOptions = (api: Api) =>
+  api.catalog.addOns.removePicture.mutationOptions()
+
+/** The picture of an add-on in one of its sizes, as the edition's orgs read it. */
+export const addOnFileOptions = (
+  api: Api,
+  editionId: string,
+  fileId: string,
+  variant: 'small' | 'large',
+) => api.catalog.addOns.file.queryOptions({ input: { params: { editionId, fileId, variant } } })
+
 export const customFieldsOptions = (api: Api, editionId: string) =>
   api.catalog.customFields.list.queryOptions(ofEdition(editionId))
 

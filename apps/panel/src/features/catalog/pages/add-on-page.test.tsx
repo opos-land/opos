@@ -11,6 +11,9 @@ const readAddOns = vi.hoisted(() => vi.fn())
 const createAddOn = vi.hoisted(() => vi.fn())
 const updateAddOn = vi.hoisted(() => vi.fn())
 const removeAddOn = vi.hoisted(() => vi.fn())
+const putPicture = vi.hoisted(() => vi.fn())
+const removePicture = vi.hoisted(() => vi.fn())
+const readFile = vi.hoisted(() => vi.fn())
 
 vi.mock('../../tenants', () => ({
   atLeast: (held: string, needed: string) =>
@@ -36,7 +39,16 @@ vi.mock('../api/catalog', () => ({
   createAddOnOptions: () => ({ mutationFn: createAddOn }),
   updateAddOnOptions: () => ({ mutationFn: updateAddOn }),
   removeAddOnOptions: () => ({ mutationFn: removeAddOn }),
+  putAddOnPictureOptions: () => ({ mutationFn: putPicture }),
+  removeAddOnPictureOptions: () => ({ mutationFn: removePicture }),
+  addOnFileOptions: (_api: unknown, _edition: string, fileId: string) => ({
+    queryKey: ['catalog', 'add-on-file', fileId],
+    queryFn: readFile,
+  }),
   catalogKey: () => ['catalog'],
+}))
+vi.mock('../../../shared/lib/file-upload', () => ({
+  toUpload: (file: File) => Promise.resolve({ name: file.name, type: file.type, data: 'AAAA' }),
 }))
 
 const addOn = (position: number, fields: object = {}) => ({
@@ -50,6 +62,7 @@ const addOn = (position: number, fields: object = {}) => ({
   placesLeftThreshold: null,
   position,
   hidden: false,
+  picture: null,
   ...fields,
 })
 
@@ -77,9 +90,15 @@ const view = (id = 'add-on-1') =>
 
 const field = (label: string | RegExp) => screen.getByLabelText<HTMLInputElement>(label)
 
+const PICTURE = { fileId: 'file-room', width: 800, height: 600 }
+const png = (name = 'room.png') => new File(['x'], name, { type: 'image/png' })
+
 beforeAll(() => {
   i18n.load('en', {})
   i18n.activate('en')
+  // jsdom has no copy of a file to point at.
+  URL.createObjectURL = vi.fn(() => 'blob:picture')
+  URL.revokeObjectURL = vi.fn()
 })
 
 beforeEach(() => {
@@ -157,5 +176,71 @@ describe('the page of an add-on', () => {
     })
     // Nothing is left to show of it: the member is led back to the add-ons.
     expect(await screen.findByText('the list of add-ons')).toBeDefined()
+  })
+
+  // docs/specs/0003-catalog.md, A4: one picture an add-on.
+  describe('its picture', () => {
+    const section = async () => within(await screen.findByRole('region', { name: 'Picture' }))
+
+    it('says so while the add-on has none, and offers to set one', async () => {
+      readAddOns.mockResolvedValue([addOn(1, { name: 'Sleeping room' })])
+      view()
+
+      const picture = await section()
+      expect(picture.getByText('The add-on has no picture.')).toBeDefined()
+      expect(picture.getByRole('button', { name: 'Set the picture' })).toBeDefined()
+      expect(picture.queryByRole('button', { name: 'Remove the picture' })).toBeNull()
+    })
+
+    it('is set from an image', async () => {
+      readAddOns.mockResolvedValue([addOn(1, { name: 'Sleeping room' })])
+      putPicture.mockResolvedValue({})
+      view()
+      const picture = await section()
+
+      fireEvent.change(picture.getByLabelText('New picture'), { target: { files: [png()] } })
+      fireEvent.click(picture.getByRole('button', { name: 'Set the picture' }))
+
+      await waitFor(() => expect(putPicture).toHaveBeenCalledTimes(1))
+      expect(putPicture.mock.calls[0]![0]).toEqual({
+        params: { editionId: 'edition-2026', addOnId: 'add-on-1' },
+        body: { file: { name: 'room.png', type: 'image/png', data: 'AAAA' } },
+      })
+    })
+
+    it('is shown once it is there, and replaced by another image', async () => {
+      readAddOns.mockResolvedValue([addOn(1, { name: 'Sleeping room', picture: PICTURE })])
+      readFile.mockResolvedValue({ headers: {}, body: new Blob(['x']) })
+      view()
+      const picture = await section()
+
+      // Its place is held until the file is read, then the image is the browser's own copy of it.
+      await waitFor(() =>
+        expect(
+          picture.getByRole('img', { name: 'Picture of Sleeping room' }).getAttribute('src'),
+        ).toBe('blob:picture'),
+      )
+      expect(picture.getByRole('button', { name: 'Replace the picture' })).toBeDefined()
+      expect(picture.queryByText('The add-on has no picture.')).toBeNull()
+    })
+
+    it('is removed only once the modal is confirmed', async () => {
+      readAddOns.mockResolvedValue([addOn(1, { name: 'Sleeping room', picture: PICTURE })])
+      readFile.mockResolvedValue({ headers: {}, body: new Blob(['x']) })
+      removePicture.mockResolvedValue({})
+      view()
+      const picture = await section()
+
+      fireEvent.click(picture.getByRole('button', { name: 'Remove the picture' }))
+      expect(removePicture).not.toHaveBeenCalled()
+      const dialog = await screen.findByRole('alertdialog')
+      expect(within(dialog).getByText('Remove the picture of Sleeping room?')).toBeDefined()
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Remove the picture' }))
+
+      await waitFor(() => expect(removePicture).toHaveBeenCalledTimes(1))
+      expect(removePicture.mock.calls[0]![0]).toEqual({
+        params: { editionId: 'edition-2026', addOnId: 'add-on-1' },
+      })
+    })
   })
 })

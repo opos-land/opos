@@ -118,57 +118,6 @@ describe('the scanners page', () => {
     expect(within(rows[3]!).queryByRole('button', { name: /Revoke/ })).toBeNull()
   })
 
-  it('enables a scanner and shows its pairing code once, as a QR code and as a link', async () => {
-    createScanner.mockResolvedValue({
-      ...scanner('Main gate', { paired: false, lastUsedAt: null }),
-      pairingCode: 'the-pairing-code',
-      pairingExpiresAt: '2026-06-05T08:15:00.000Z',
-    })
-    view()
-
-    fireEvent.change(await screen.findByLabelText('Name of the scanner'), {
-      target: { value: 'Main gate' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Enable the scanner' }))
-
-    await waitFor(() =>
-      expect(createScanner.mock.calls[0]?.[0]).toEqual({
-        params: { editionId: 'edition-2026' },
-        body: { name: 'Main gate' },
-      }),
-    )
-    const link = `${window.location.origin}/scanner#the-pairing-code`
-    expect(await screen.findByText(link)).toBeDefined()
-    const picture = await screen.findByRole('img', { name: /QR code that pairs a phone/ })
-    expect(picture.getAttribute('src')).toBe(`data:qr,${link}`)
-    expect(screen.getByText(/works once, until at 2026-06-05T08:15:00.000Z/)).toBeDefined()
-    expect(screen.getByText(/shown only now/)).toBeDefined()
-  })
-
-  it('sets an earlier end when the org gives one', async () => {
-    createScanner.mockResolvedValue({
-      ...scanner('Desk'),
-      pairingCode: 'code',
-      pairingExpiresAt: '2026-06-05T08:15:00.000Z',
-    })
-    view()
-
-    fireEvent.change(await screen.findByLabelText('Name of the scanner'), {
-      target: { value: 'Desk' },
-    })
-    fireEvent.change(screen.getByLabelText(/Ends earlier/), {
-      target: { value: '2026-06-06T18:00' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Enable the scanner' }))
-
-    await waitFor(() =>
-      expect(createScanner.mock.calls[0]?.[0]).toEqual({
-        params: { editionId: 'edition-2026' },
-        body: { name: 'Desk', expiresAt: '2026-06-06T18:00:00.000Z' },
-      }),
-    )
-  })
-
   it('revokes a scanner only through a modal that says nothing brings its access back', async () => {
     readScanners.mockResolvedValue([scanner('Main gate')])
     view()
@@ -194,6 +143,16 @@ describe('the scanners page', () => {
 
     expect(await screen.findByText('Main gate')).toBeDefined()
     expect(screen.queryByRole('button', { name: /Revoke/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Enable the scanner' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Enable a scanner' })).toBeNull()
+  })
+
+  it('links an org who may enable one to the page that does, and holds no form of it', async () => {
+    view()
+    await screen.findByText('The edition has no scanners yet.')
+
+    expect(screen.getByRole('link', { name: 'Enable a scanner' }).getAttribute('href')).toBe(
+      '/convention-a/editions/2026/scanners/new',
+    )
+    expect(screen.queryByLabelText('Name of the scanner')).toBeNull()
   })
 })

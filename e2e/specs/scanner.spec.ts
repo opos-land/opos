@@ -40,6 +40,8 @@ test(
     await signInToPanel(page, s.head.email, s.head.password)
     await page.goto(panelUrl(`/${s.tenant.slug}/editions/${s.edition.slug}/scanners`))
     await expect(page.getByText('The edition has no scanners yet.')).toBeVisible()
+    // A scanner is enabled on a page of its own, which then shows the code.
+    await page.getByRole('link', { name: 'Enable a scanner' }).click()
     await page.getByLabel('Name of the scanner').fill('Main gate')
     await page.getByRole('button', { name: 'Enable the scanner' }).click()
     await expect(
@@ -47,6 +49,7 @@ test(
     ).toBeVisible()
     await expect(page.getByRole('img', { name: /QR code that pairs a phone/ })).toBeVisible()
     const link = await page.getByText(/\/scanner#[A-Za-z0-9_-]{43}$/).textContent()
+    await page.getByRole('link', { name: 'All scanners' }).click()
     await expect(page.getByRole('row').filter({ hasText: 'Main gate' })).toContainText(
       'Waiting for a phone',
     )

@@ -31,7 +31,7 @@ import {
 import { ManualOrderPage, OrderPage, OrdersPage, ProductionNumbersPage } from '../features/orders'
 import { DiscountCodesPage, NewDiscountCodePage } from '../features/discounts'
 import { SalesPage } from '../features/sales'
-import { ScannerPage, ScannersPage } from '../features/scanner'
+import { NewScannerPage, ScannerPage, ScannersPage } from '../features/scanner'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import {
   EditionDocumentsPage,
@@ -158,6 +158,7 @@ export const router = createBrowserRouter([
                   { path: 'production-numbers', element: <ProductionNumbersPage /> },
                   { path: 'sales', element: <SalesPage /> },
                   { path: 'scanners', element: <ScannersPage /> },
+                  { path: 'scanners/new', element: <NewScannerPage /> },
                   { path: 'ticket-types', element: <TicketTypesPage /> },
                   { path: 'ticket-types/new', element: <TicketTypePage /> },
                   { path: 'ticket-types/:ticketTypeId', element: <TicketTypePage /> },

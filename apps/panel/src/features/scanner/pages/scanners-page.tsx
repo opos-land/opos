@@ -1,16 +1,13 @@
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { type EnabledScanner, type Scanner } from '@opos/contract'
+import { type Scanner } from '@opos/contract'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { toDataURL } from 'qrcode'
-import { type FormEvent, useEffect, useState } from 'react'
-import { useParams } from 'react-router'
+import { PlusIcon } from 'lucide-react'
+import { Link, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
-  Button,
+  buttonVariants,
   ErrorMessage,
-  FormField,
-  Input,
   IrreversibleAction,
   LoadingView,
   NoPermissionView,
@@ -25,18 +22,12 @@ import {
 } from '../../../shared/ui'
 import { useEditionBySlug } from '../../editions'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
-import {
-  createScannerOptions,
-  revokeScannerOptions,
-  scannersKey,
-  scannersOptions,
-} from '../api/scanners'
-import { pairingLink } from '../model/device'
+import { revokeScannerOptions, scannersKey, scannersOptions } from '../api/scanners'
 
 /**
  * The scanners of an edition (`/editions/:editionSlug/scanners`): the phones that read QR codes
  * at the gate and at the desk (docs/specs/0007-scanner.md, D7-D11). An org with tickets write
- * access enables one, is shown its pairing code once, and revokes any of them; reading the list
+ * access is linked to the page that enables one, and revokes any of them here; reading the list
  * needs tickets>=read.
  */
 export function ScannersPage() {
@@ -51,21 +42,7 @@ export function ScannersPage() {
   const canRead = atLeast(level, 'read')
   const editionId = edition?.id ?? ''
   const scanners = useQuery({ ...scannersOptions(api, editionId), enabled: canRead })
-  const [name, setName] = useState('')
-  const [ends, setEnds] = useState('')
-  // The scanner just enabled, with its pairing code: shown until the page is left.
-  const [enabled, setEnabled] = useState<EnabledScanner | null>(null)
   const refresh = () => queryClient.invalidateQueries({ queryKey: scannersKey(api) })
-  const create = useMutation({
-    ...createScannerOptions(api),
-    meta: { success: msg`The scanner is enabled. Pair a phone with its code now.` },
-    onSuccess: async (scanner) => {
-      setEnabled(scanner)
-      setName('')
-      setEnds('')
-      await refresh()
-    },
-  })
   const revoke = useMutation({
     ...revokeScannerOptions(api),
     meta: { success: msg`The scanner is revoked.` },
@@ -77,14 +54,6 @@ export function ScannersPage() {
   if (!edition || !canRead) return <NoPermissionView />
 
   const canWrite = atLeast(level, 'write')
-  const submit = (event: FormEvent) => {
-    event.preventDefault()
-    const expiresAt = ends ? time.fromInput(ends) : null
-    create.mutate({
-      params: { editionId },
-      body: { name: name.trim(), ...(expiresAt && { expiresAt }) },
-    })
-  }
   // Judged at the moment the list was last read.
   const stateOf = (scanner: Scanner) =>
     scanner.revokedAt
@@ -97,8 +66,21 @@ export function ScannersPage() {
 
   return (
     <>
-      <PageHeader title={<Trans>Scanners</Trans>} description={edition.name} />
-      {enabled && <PairingCode scanner={enabled} />}
+      <PageHeader
+        title={<Trans>Scanners</Trans>}
+        description={edition.name}
+        actions={
+          canWrite && (
+            <Link
+              to={`/${tenant.slug}/editions/${edition.slug}/scanners/new`}
+              className={buttonVariants()}
+            >
+              <PlusIcon data-icon="inline-start" />
+              <Trans>Enable a scanner</Trans>
+            </Link>
+          )
+        }
+      />
       <Section title={<Trans>Scanners of the edition</Trans>}>
         <p className="max-w-2xl text-sm">
           <Trans>
@@ -186,94 +168,6 @@ export function ScannersPage() {
           </Table>
         )}
       </Section>
-      {canWrite && (
-        <Section title={<Trans>Enable a scanner</Trans>}>
-          <form onSubmit={submit} className="flex max-w-xl flex-col gap-4">
-            <FormField
-              label={<Trans>Name of the scanner</Trans>}
-              hint={
-                <Trans>Such as the gate it stands at. Every hand-out it marks is told by it.</Trans>
-              }
-            >
-              {(control) => (
-                <Input
-                  {...control}
-                  value={name}
-                  maxLength={60}
-                  required
-                  onChange={(event) => setName(event.target.value)}
-                />
-              )}
-            </FormField>
-            <FormField
-              label={<Trans>Ends earlier (optional)</Trans>}
-              hint={
-                <Trans>
-                  Left empty, the scanner’s access ends a day after the edition’s last day, and no
-                  later than your own access.
-                </Trans>
-              }
-            >
-              {(control) => (
-                <Input
-                  {...control}
-                  type="datetime-local"
-                  value={ends}
-                  onChange={(event) => setEnds(event.target.value)}
-                />
-              )}
-            </FormField>
-            <div>
-              <Button type="submit" disabled={create.isPending || name.trim() === ''}>
-                <Trans>Enable the scanner</Trans>
-              </Button>
-            </div>
-          </form>
-        </Section>
-      )}
     </>
-  )
-}
-
-/**
- * The pairing code of a scanner just enabled, shown once: as a QR code to read with the phone and
- * as a link. The code is after the `#` of the link, which no server sees.
- */
-function PairingCode({ scanner }: { scanner: EnabledScanner }) {
-  const { t } = useLingui()
-  const time = useTenantTime()
-  const link = pairingLink(window.location.origin, scanner.pairingCode)
-  const [picture, setPicture] = useState<string>()
-  useEffect(() => {
-    let shown = true
-    void toDataURL(link, { margin: 2, width: 320 }).then((url) => {
-      if (shown) setPicture(url)
-    })
-    return () => {
-      shown = false
-    }
-  }, [link])
-  const { name } = scanner
-  const until = time.format(scanner.pairingExpiresAt)
-
-  return (
-    <Section title={<Trans>Pair a phone with {name}</Trans>}>
-      <p className="max-w-2xl text-sm">
-        <Trans>
-          Read this QR code with the phone’s camera, or open the link on the phone. The phone that
-          opens it becomes the scanner. The code works once, until {until}, and is shown only now.
-        </Trans>
-      </p>
-      {picture && (
-        <img
-          src={picture}
-          alt={t`The QR code that pairs a phone with ${name}`}
-          width={320}
-          height={320}
-          className="rounded-md border"
-        />
-      )}
-      <p className="font-mono text-sm break-all">{link}</p>
-    </Section>
   )
 }

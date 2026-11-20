@@ -197,7 +197,7 @@ test(
     const desk = await browser.newContext()
     const panel = await desk.newPage()
     await signInToPanel(panel, s.head.email, s.head.password)
-    await panel.goto(panelUrl(`/${s.tenant.slug}/editions/${s.edition.slug}/scanners`))
+    await panel.goto(panelUrl(`/${s.tenant.slug}/editions/${s.edition.slug}/scanners/new`))
     await panel.getByLabel('Name of the scanner').fill('Main gate')
     await panel.getByRole('button', { name: 'Enable the scanner' }).click()
     const link = await panel.getByText(/\/scanner#[A-Za-z0-9_-]{43}$/).textContent()

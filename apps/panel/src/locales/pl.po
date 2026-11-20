@@ -400,6 +400,10 @@ msgstr "Wszystkie gadżety"
 msgid "All programme items"
 msgstr "Wszystkie punkty programu"
 
+#: src/features/scanner/pages/new-scanner-page.tsx
+msgid "All scanners"
+msgstr "Wszystkie skanery"
+
 #: src/features/catalog/pages/ticket-type-page.tsx
 msgid "All ticket types"
 msgstr "Wszystkie rodzaje akredytacji"
@@ -1044,11 +1048,12 @@ msgstr "E-maile"
 msgid "Empty for no end date. In the convention's time zone, {zone}."
 msgstr "Puste pole oznacza brak daty końcowej. W strefie czasowej konwentu, {zone}."
 
+#: src/features/scanner/pages/new-scanner-page.tsx
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "Enable a scanner"
 msgstr "Włącz skaner"
 
-#: src/features/scanner/pages/scanners-page.tsx
+#: src/features/scanner/pages/new-scanner-page.tsx
 msgid "Enable the scanner"
 msgstr "Włącz skaner"
 
@@ -1079,7 +1084,7 @@ msgstr "Zakończona bez płatności"
 msgid "Ends"
 msgstr "Koniec"
 
-#: src/features/scanner/pages/scanners-page.tsx
+#: src/features/scanner/pages/new-scanner-page.tsx
 msgid "Ends earlier (optional)"
 msgstr "Kończy się wcześniej (nieobowiązkowe)"
 
@@ -1587,7 +1592,7 @@ msgstr "Rodzaj"
 msgid "Last used"
 msgstr "Ostatnio używany"
 
-#: src/features/scanner/pages/scanners-page.tsx
+#: src/features/scanner/pages/new-scanner-page.tsx
 msgid "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
 msgstr "Jeśli zostawisz to pole puste, dostęp skanera skończy się dzień po ostatnim dniu edycji, nie później niż twój własny dostęp."
 
@@ -1764,7 +1769,7 @@ msgstr "Nazwa"
 msgid "Name of axis {number}"
 msgstr "Nazwa osi {number}"
 
-#: src/features/scanner/pages/scanners-page.tsx
+#: src/features/scanner/pages/new-scanner-page.tsx
 msgid "Name of the scanner"
 msgstr "Nazwa skanera"
 
@@ -2173,7 +2178,7 @@ msgstr "Opłacone na podstawie faktury"
 msgid "Paid in the shop"
 msgstr "Opłacone w sklepie"
 
-#: src/features/scanner/pages/scanners-page.tsx
+#: src/features/scanner/pages/new-scanner-page.tsx
 msgid "Pair a phone with {name}"
 msgstr "Sparuj telefon ze skanerem {name}"
 
@@ -2395,7 +2400,7 @@ msgstr "Odczytaj kod"
 msgid "Read the next code"
 msgstr "Odczytaj następny kod"
 
-#: src/features/scanner/pages/scanners-page.tsx
+#: src/features/scanner/pages/new-scanner-page.tsx
 msgid "Read this QR code with the phone’s camera, or open the link on the phone. The phone that opens it becomes the scanner. The code works once, until {until}, and is shown only now."
 msgstr "Odczytaj ten kod QR aparatem telefonu albo otwórz link na telefonie. Telefon, który go otworzy, stanie się skanerem. Kod działa raz, do {until}, i jest pokazywany tylko teraz."
 
@@ -2727,6 +2732,10 @@ msgstr "Zeskanuj kod QR aplikacją uwierzytelniającą albo wpisz do niej sekret
 msgid "Scanner"
 msgstr "Skaner"
 
+#: src/features/scanner/pages/new-scanner-page.tsx
+msgid "Scanner data"
+msgstr "Dane skanera"
+
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "Scanner of {editionName}, {conventionName}"
 msgstr "Skaner edycji {editionName}, konwent {conventionName}"
@@ -2933,7 +2942,7 @@ msgstr "Status"
 msgid "Stock"
 msgstr "Stan magazynowy"
 
-#: src/features/scanner/pages/scanners-page.tsx
+#: src/features/scanner/pages/new-scanner-page.tsx
 msgid "Such as the gate it stands at. Every hand-out it marks is told by it."
 msgstr "Na przykład wejście, przy którym stoi. Każde wydanie, które oznaczy, będzie nią podpisane."
 
@@ -3519,7 +3528,7 @@ msgstr "Punkt programu musi kończyć się po swoim początku."
 msgid "The provider reports a condition this panel cannot describe yet (code: {code})."
 msgstr "Dostawca zgłasza warunek, którego ten panel nie potrafi jeszcze opisać (kod: {code})."
 
-#: src/features/scanner/pages/scanners-page.tsx
+#: src/features/scanner/pages/new-scanner-page.tsx
 msgid "The QR code that pairs a phone with {name}"
 msgstr "Kod QR, który paruje telefon ze skanerem {name}"
 
@@ -3543,7 +3552,7 @@ msgstr "Sprzedaż"
 msgid "The same number as the merchant ID, unless Przelewy24 gave the shop one of its own."
 msgstr "Ten sam numer co ID sprzedawcy, chyba że Przelewy24 nadało sklepowi własny."
 
-#: src/features/scanner/pages/scanners-page.tsx
+#: src/features/scanner/pages/new-scanner-page.tsx
 msgid "The scanner is enabled. Pair a phone with its code now."
 msgstr "Skaner został włączony. Sparuj teraz telefon jego kodem."
 

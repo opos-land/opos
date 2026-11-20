@@ -351,6 +351,20 @@
       "when": 1795140573619,
       "tag": "0049_order_emails_withdrawn",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1795142300113,
+      "tag": "0050_discount_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1795142317710,
+      "tag": "0051_discount_codes_privileges",
+      "breakpoints": true
     }
   ]
 }

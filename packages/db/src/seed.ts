@@ -49,6 +49,9 @@ import {
   ticketTypes,
   ticketTypeSupporterPrices,
   uploadedFiles,
+  discountCodeMerchandiseItems,
+  discountCodes,
+  discountCodeTicketTypes,
 } from './schema'
 import { open, orderQrCodeOf, providerAccountOf, seal, sealingKey } from './sealed'
 import { createTenant, restoreTenant, suspendTenant } from './tenants'
@@ -193,7 +196,19 @@ interface SeedOrder {
   note?: string
   /** An org changed its email: the QR code it had before is replaced by the one it has. */
   emailChanged?: boolean
+  /** The discount code the buyer entered; its line carries what the code took off. */
+  discountCode?: string
   placedDaysAgo: number
+}
+
+/** A discount code of a demo edition; what it applies to is named as the catalog names it. */
+interface SeedDiscountCode {
+  code: string
+  percent?: number
+  amountMinor?: number
+  usageLimit?: number
+  ticketTypes?: string[]
+  items?: string[]
 }
 
 /** The shop of a demo edition: what opening asks of the edition, and whether it is open. */
@@ -206,6 +221,8 @@ interface SeedEditionShop {
   catalog?: SeedCatalog
   /** The orders placed of the catalog. */
   orders?: SeedOrder[]
+  /** The discount codes of the edition, by what each applies to. */
+  discountCodes?: SeedDiscountCode[]
   /** The scanners the edition's head enabled; a phone was paired with each, so none opens. */
   scanners?: { name: string; revoked?: boolean }[]
 }
@@ -454,6 +471,31 @@ const DEMO_ORDERS: SeedOrder[] = [
     emails: ['order-confirmation'],
     placedDaysAgo: 4,
   },
+  // Orders that used a discount code (docs/specs/0008-discount-codes.md, Seed): a guest who came
+  // in for nothing, and the one buyer a code of one use was for.
+  {
+    number: 'DEMGUEST22',
+    status: 'paid',
+    email: 'guest@example.com',
+    holderName: 'Demo Guest of Honour',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    discountCode: 'guest100',
+    emails: ['order-confirmation'],
+    placedDaysAgo: 6,
+  },
+  {
+    number: 'DEMFAN2222',
+    status: 'paid',
+    email: 'first-fan@example.com',
+    holderName: 'Demo First Fan',
+    ageBand: 'adult',
+    ticketType: 'Standard',
+    attempts: [{ status: 'paid' }],
+    discountCode: 'firstfan',
+    emails: ['order-confirmation'],
+    placedDaysAgo: 9,
+  },
   // A manual order of each reason (docs/specs/0006-order-management.md, Seed).
   {
     number: 'DEMMANUA22',
@@ -643,6 +685,12 @@ const TENANTS: SeedTenant[] = [
             { text: 'I want to receive news of the convention by email.', isRequired: false },
           ],
           catalog: DEMO_CATALOG,
+          discountCodes: [
+            { code: 'early10', percent: 10, ticketTypes: ['Standard'] },
+            { code: 'merch20', amountMinor: 2000, items: ['T-shirt'] },
+            { code: 'guest100', percent: 100, ticketTypes: ['Standard'] },
+            { code: 'firstfan', percent: 15, usageLimit: 1, ticketTypes: ['Standard'] },
+          ],
           orders: DEMO_ORDERS,
           scanners: [{ name: 'Main gate' }, { name: 'Merchandise desk', revoked: true }],
         },
@@ -1059,6 +1107,9 @@ async function seedTenant(spec: SeedTenant) {
       objects.push(...(await seedEditionShop(tx, tenantId, editionId, edition.shop)))
       if (edition.shop.catalog) {
         objects.push(...(await seedCatalog(tx, tenantId, editionId, edition, edition.shop.catalog)))
+      }
+      for (const code of edition.shop.discountCodes ?? []) {
+        await seedDiscountCode(tx, tenantId, editionId, code)
       }
       for (const order of edition.shop.orders ?? []) {
         await seedOrder(tx, tenantId, editionId, order)
@@ -1517,6 +1568,58 @@ const demoQrCode = () =>
  * A demo order, placed once: one the seed finds by its number stays as a demo left it. Its lines
  * take their prices from the catalog as it stands, and its total is their sum.
  */
+/**
+ * A discount code of a demo edition with what it applies to, valid for ten years around now. One
+ * that is there already stays as the demo left it.
+ */
+async function seedDiscountCode(
+  tx: Tx,
+  tenantId: string,
+  editionId: string,
+  code: SeedDiscountCode,
+) {
+  const [existing] = await tx
+    .select({ id: discountCodes.id })
+    .from(discountCodes)
+    .where(and(eq(discountCodes.editionId, editionId), eq(discountCodes.code, code.code)))
+  if (existing) return
+  const at = { tenantId, editionId }
+  const [row] = await tx
+    .insert(discountCodes)
+    .values({
+      ...at,
+      code: code.code,
+      kind: code.percent ? 'percent' : 'amount',
+      percent: code.percent ?? null,
+      amountMinor: code.amountMinor ?? null,
+      usageLimit: code.usageLimit ?? null,
+      validFrom: new Date(Date.now() - 365 * DAY),
+      validUntil: new Date(Date.now() + 3650 * DAY),
+    })
+    .returning({ id: discountCodes.id })
+  const discountCodeId = row!.id
+  for (const name of code.ticketTypes ?? []) {
+    const [type] = await tx
+      .select({ id: ticketTypes.id })
+      .from(ticketTypes)
+      .where(and(eq(ticketTypes.editionId, editionId), eq(ticketTypes.name, name)))
+    if (!type) throw new Error(`No demo ticket type ${name}`)
+    await tx
+      .insert(discountCodeTicketTypes)
+      .values({ ...at, discountCodeId, ticketTypeId: type.id })
+  }
+  for (const name of code.items ?? []) {
+    const [item] = await tx
+      .select({ id: merchandiseItems.id })
+      .from(merchandiseItems)
+      .where(and(eq(merchandiseItems.editionId, editionId), eq(merchandiseItems.name, name)))
+    if (!item) throw new Error(`No demo merchandise item ${name}`)
+    await tx
+      .insert(discountCodeMerchandiseItems)
+      .values({ ...at, discountCodeId, merchandiseItemId: item.id })
+  }
+}
+
 async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: SeedOrder) {
   const [existing] = await tx
     .select({ id: orders.id })
@@ -1596,6 +1699,37 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
       unitAmountMinor: item.amountMinor,
     })
   }
+  // A discount code lowers the lines it applies to together, as one line of the order.
+  let discountCodeId: string | null = null
+  if (order.discountCode) {
+    const [code] = await tx
+      .select()
+      .from(discountCodes)
+      .where(
+        and(eq(discountCodes.editionId, editionId), eq(discountCodes.code, order.discountCode)),
+      )
+    if (!code) throw new Error(`No demo discount code ${order.discountCode}`)
+    const types = await tx
+      .select({ id: discountCodeTicketTypes.ticketTypeId })
+      .from(discountCodeTicketTypes)
+      .where(eq(discountCodeTicketTypes.discountCodeId, code.id))
+    const items = await tx
+      .select({ id: discountCodeMerchandiseItems.merchandiseItemId })
+      .from(discountCodeMerchandiseItems)
+      .where(eq(discountCodeMerchandiseItems.discountCodeId, code.id))
+    const lowered = lines
+      .filter(
+        (held) =>
+          types.some((type) => type.id === held.ticketTypeId) ||
+          items.some((item) => item.id === held.merchandiseItemId),
+      )
+      .reduce((sum, held) => sum + held.amountMinor, 0)
+    const off = code.percent
+      ? Math.floor((lowered * code.percent + 50) / 100)
+      : Math.min(code.amountMinor ?? 0, lowered)
+    discountCodeId = code.id
+    line({ kind: 'discount', unitAmountMinor: -off })
+  }
   const totalMinor = lines.reduce((sum, { amountMinor }) => sum + amountMinor, 0)
 
   const paid = ['paid', 'paid-manual', 'canceled'].includes(order.status)
@@ -1626,6 +1760,7 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
       resultTokenHash: createHash('sha256').update(randomBytes(32)).digest('hex'),
       manualReason: order.manualReason ?? null,
       note: order.note ?? null,
+      discountCodeId,
     })
     .returning({ id: orders.id })
   const orderId = placed!.id

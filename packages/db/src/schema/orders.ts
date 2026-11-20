@@ -18,6 +18,7 @@ import {
 import { accounts } from './accounts'
 import { addOns } from './add-ons'
 import { id, timestamps } from './columns'
+import { discountCodes } from './discount-codes'
 import { editionCustomFields } from './edition-custom-fields'
 import { editionConsents, editionDocumentVersions } from './edition-documents'
 import { editions } from './editions'
@@ -95,6 +96,8 @@ export const orders = pgTable(
     providerConsentAcceptedAt: timestamp({ withTimezone: true }),
     /** The hash of the token that opens the order's result page, for a day from its placing. */
     resultTokenHash: text().notNull(),
+    /** The discount code the order used; its discount line carries the amount taken off. */
+    discountCodeId: uuid(),
     /** Set for an order an org recorded in the panel, which nobody placed in the shop. */
     manualReason: manualOrderReason(),
     /** What the org noted of a manual order. */
@@ -129,6 +132,12 @@ export const orders = pgTable(
       'orders_holder_name',
       sql`char_length(${t.holderName}) <= 200 and (${t.manualReason} is not null or char_length(btrim(${t.holderName})) >= 1)`,
     ),
+    // No cascade: a code an order used is ended, never deleted.
+    foreignKey({
+      name: 'orders_discount_code_fk',
+      columns: [t.discountCodeId, t.tenantId, t.editionId],
+      foreignColumns: [discountCodes.id, discountCodes.tenantId, discountCodes.editionId],
+    }),
     // A manual order has a reason and nobody's email: an org recorded it at the desk.
     check(
       'orders_manual_reason',
@@ -180,6 +189,10 @@ export const orderLines = pgTable(
     uniqueIndex('order_lines_one_ticket')
       .on(t.orderId)
       .where(sql`${t.kind} = 'ticket'`),
+    // An order takes one code, so one line carries what it took off.
+    uniqueIndex('order_lines_one_discount')
+      .on(t.orderId)
+      .where(sql`${t.kind} = 'discount'`),
     foreignKey({
       name: 'order_lines_order_fk',
       columns: [t.orderId, t.tenantId, t.editionId],
@@ -225,6 +238,11 @@ export const orderLines = pgTable(
     check(
       'order_lines_sells',
       sql`(${t.ticketTypeId} is not null) = (${t.kind} = 'ticket') and (${t.addOnId} is not null) = (${t.kind} = 'add_on') and (${t.merchandiseVariantId} is not null) = (${t.kind} = 'merchandise') and (${t.merchandiseItemId} is not null) = (${t.kind} = 'merchandise')`,
+    ),
+    // What a line sells costs nothing or more; what a code takes off is nothing or less.
+    check(
+      'order_lines_amount',
+      sql`(${t.kind} = 'discount' and ${t.amountMinor} <= 0) or (${t.kind} <> 'discount' and ${t.amountMinor} >= 0)`,
     ),
     check(
       'order_lines_quantity',

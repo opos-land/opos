@@ -644,6 +644,8 @@ describe('db:seed shop', () => {
         'paid',
         'paid',
         'paid',
+        'paid',
+        'paid',
         'paid-manual',
         'paid-manual',
         'paid-manual',
@@ -687,8 +689,9 @@ describe('db:seed shop', () => {
         select id, code, code_hash, replaced_at from order_qr_codes where edition_id = ${edition}
       `
       expect(codes.filter((code) => code.replaced_at !== null)).toHaveLength(1)
-      // One a paid order of the shop, and one more that a changed email replaced.
-      expect(codes).toHaveLength(5)
+      // One a paid order of the shop, those a discount code paid for among them, and one more
+      // that a changed email replaced.
+      expect(codes).toHaveLength(7)
       const key = sealingKey(env('PAYMENT_CREDENTIALS_KEY'))
       for (const code of codes) {
         const text = open(key, code.code, orderQrCodeOf(a, code.id))
@@ -738,6 +741,92 @@ describe('db:seed shop', () => {
       expect(kept!.answers).toBeGreaterThan(0)
       expect(kept!.consents).toBeGreaterThan(0)
       expect(kept!.unsent).toBe(0)
+    },
+  )
+
+  // docs/specs/0008-discount-codes.md, Seed: a percent code for a ticket type, an amount code for
+  // merchandise, a 100% code used once, and a code used up.
+  it(
+    'gives the selling edition four discount codes, two of them used',
+    { timeout: 120_000 },
+    async () => {
+      const run = runSeed('local')
+      expect(run.status, run.stderr).toBe(0)
+      const a = await tenantId('convention-a')
+      const edition = await editionId(a, '2026')
+
+      const codes = await migrator<
+        {
+          code: string
+          kind: string
+          percent: number | null
+          amount_minor: number | null
+          usage_limit: number | null
+          uses: number
+          ticket_types: number
+          items: number
+        }[]
+      >`
+      select c.code, c.kind, c.percent, c.amount_minor, c.usage_limit,
+        (select count(*)::int from orders o where o.discount_code_id = c.id and o.holds) as uses,
+        (select count(*)::int from discount_code_ticket_types t where t.discount_code_id = c.id)
+          as ticket_types,
+        (select count(*)::int from discount_code_merchandise_items i
+          where i.discount_code_id = c.id) as items
+      from discount_codes c where c.edition_id = ${edition} order by c.code
+    `
+      expect(codes).toEqual([
+        {
+          code: 'early10',
+          kind: 'percent',
+          percent: 10,
+          amount_minor: null,
+          usage_limit: null,
+          uses: 0,
+          ticket_types: 1,
+          items: 0,
+        },
+        {
+          code: 'firstfan',
+          kind: 'percent',
+          percent: 15,
+          amount_minor: null,
+          usage_limit: 1,
+          uses: 1,
+          ticket_types: 1,
+          items: 0,
+        },
+        {
+          code: 'guest100',
+          kind: 'percent',
+          percent: 100,
+          amount_minor: null,
+          usage_limit: null,
+          uses: 1,
+          ticket_types: 1,
+          items: 0,
+        },
+        {
+          code: 'merch20',
+          kind: 'amount',
+          percent: null,
+          amount_minor: 2000,
+          usage_limit: null,
+          uses: 0,
+          ticket_types: 0,
+          items: 1,
+        },
+      ])
+      // An order a code paid for in full costs nothing, and its discount line says what was taken off.
+      const [guest] = await migrator<{ total_minor: number; discount: number; status: string }[]>`
+      select o.total_minor, o.status,
+        (select l.amount_minor from order_lines l where l.order_id = o.id and l.kind = 'discount')
+          as discount
+      from orders o join discount_codes c on c.id = o.discount_code_id
+      where o.edition_id = ${edition} and c.code = 'guest100'
+    `
+      expect(guest).toMatchObject({ total_minor: 0, status: 'paid' })
+      expect(guest!.discount).toBeLessThan(0)
     },
   )
 

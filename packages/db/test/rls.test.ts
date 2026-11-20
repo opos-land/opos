@@ -58,6 +58,10 @@ const covered = [
   ['order_emails', 'tenant_id'],
   ['order_links', 'tenant_id'],
   ['scanner_devices', 'tenant_id'],
+  ['discount_codes', 'tenant_id'],
+  ['discount_code_ticket_types', 'tenant_id'],
+  ['discount_code_add_ons', 'tenant_id'],
+  ['discount_code_merchandise_items', 'tenant_id'],
 ] as const
 
 class Rollback extends Error {}
@@ -290,6 +294,33 @@ async function order(
     pairing_expires_at: '2099-01-01',
     expires_at: '2099-01-01',
   })
+  // A discount code with one row of each thing it applies to
+  // (docs/specs/0008-discount-codes.md).
+  const discountCode = await add('discount_codes', {
+    code: 'guest-2026',
+    kind: 'percent',
+    percent: 100,
+    valid_from: '2020-01-01',
+    valid_until: '2099-01-01',
+  })
+  const ofCode = { discount_code_id: discountCode }
+  await add(
+    'discount_code_ticket_types',
+    { ...ofCode, ticket_type_id: catalog.ticketType },
+    'ticket_type_id',
+  )
+  const [addOn] = await migrator<{ id: string }[]>`
+    select id from add_ons where tenant_id = ${tenantId} limit 1
+  `
+  await add('discount_code_add_ons', { ...ofCode, add_on_id: addOn!.id }, 'add_on_id')
+  const [item] = await migrator<{ id: string }[]>`
+    select id from merchandise_items where tenant_id = ${tenantId} limit 1
+  `
+  await add(
+    'discount_code_merchandise_items',
+    { ...ofCode, merchandise_item_id: item!.id },
+    'merchandise_item_id',
+  )
 }
 
 beforeAll(async () => {
@@ -409,6 +440,17 @@ async function foreignOrderRows(tenantId: string, edition: string) {
     `insert into scanner_devices (tenant_id, edition_id, name, pairing_code_hash,
        pairing_expires_at, expires_at)
      values (${at}, 'Foreign gate', 'foreign-pairing', '2099-01-01', '2099-01-01')`,
+    `insert into discount_codes (tenant_id, edition_id, code, kind, percent, valid_from,
+       valid_until)
+     values (${at}, 'foreign-code', 'percent', 10, '2020-01-01', '2099-01-01')`,
+    `insert into discount_code_ticket_types (tenant_id, edition_id, discount_code_id,
+       ticket_type_id)
+     values (${at}, '${await held('discount_codes')}', '${await held('ticket_types')}')`,
+    `insert into discount_code_add_ons (tenant_id, edition_id, discount_code_id, add_on_id)
+     values (${at}, '${await held('discount_codes')}', '${await held('add_ons')}')`,
+    `insert into discount_code_merchandise_items (tenant_id, edition_id, discount_code_id,
+       merchandise_item_id)
+     values (${at}, '${await held('discount_codes')}', '${await held('merchandise_items')}')`,
     `insert into order_custom_field_answers (tenant_id, edition_id, order_id, custom_field_id,
        answer)
      values (${at}, '${bare!.id}', '${await held('edition_custom_fields')}', 'Foreign')`,

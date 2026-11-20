@@ -99,6 +99,7 @@ const order = (fields: object = {}) => ({
   cancelReason: null,
   declinedAt: null,
   declineReason: null,
+  discountCode: null,
   hasQrCode: true,
   lines: [
     {
@@ -223,6 +224,38 @@ describe('the page of an order', () => {
     expect(screen.getByText('TX-1')).toBeDefined()
     expect(screen.getByText('With the convention')).toBeDefined()
     expect(screen.getByText('Confirmation with the QR code')).toBeDefined()
+  })
+
+  // docs/specs/0008-discount-codes.md, D5: a code stays on the orders that used it.
+  it('shows what a discount code took off as a line under the code, with no hand-out', async () => {
+    const plain = order()
+    readOrder.mockResolvedValue({
+      ...plain,
+      discountCode: 'early10',
+      totalMinor: 14000,
+      lines: [
+        ...plain.lines,
+        {
+          id: 'line-discount',
+          kind: 'discount',
+          name: 'early10',
+          variant: [],
+          merchandiseItemId: null,
+          variantId: null,
+          quantity: 1,
+          unitAmountMinor: -1000,
+          amountMinor: -1000,
+          handedOutAt: null,
+        },
+      ],
+    })
+    view()
+
+    const lines = await section('What the order holds')
+    const discount = lines.getByText('Discount code EARLY10').closest('tr')!
+    expect(within(discount).getByText('-10 PLN')).toBeDefined()
+    expect(within(discount).queryByRole('button')).toBeNull()
+    expect(within(discount).queryByText('Not yet')).toBeNull()
   })
 
   it('lists an alert to the orgs without their addresses, and an email that was withdrawn', async () => {

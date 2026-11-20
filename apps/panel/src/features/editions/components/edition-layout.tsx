@@ -11,6 +11,7 @@ import {
   ShirtIcon,
   StoreIcon,
   TicketIcon,
+  TicketPercentIcon,
   UsersIcon,
 } from 'lucide-react'
 import { useParams } from 'react-router'
@@ -67,6 +68,9 @@ export function EditionLayout() {
                 </SidebarLink>
                 <SidebarLink to={`${base}/merchandise`} icon={<ShirtIcon />}>
                   <Trans>Merchandise</Trans>
+                </SidebarLink>
+                <SidebarLink to={`${base}/discount-codes`} icon={<TicketPercentIcon />}>
+                  <Trans>Discount codes</Trans>
                 </SidebarLink>
                 <SidebarLink to={`${base}/ticket-holders`} icon={<UsersIcon />}>
                   <Trans>Ticket holders’ data</Trans>

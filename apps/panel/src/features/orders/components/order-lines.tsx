@@ -88,7 +88,10 @@ export function OrderLines({
       </TableHeader>
       <TableBody>
         {order.lines.map((line) => {
-          const name = line.kind === 'discount' ? t`Discount` : nameOf(line)
+          // What a discount code took off is told by the code, written as a buyer sees it.
+          const code = order.discountCode?.toUpperCase()
+          const name =
+            line.kind !== 'discount' ? nameOf(line) : code ? t`Discount code ${code}` : t`Discount`
           return (
             <TableRow key={line.id}>
               <TableCell>{name}</TableCell>

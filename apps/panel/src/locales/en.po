@@ -57,6 +57,14 @@ msgstr "{needsReview, plural, one {# order needs review: its payment arrived and
 msgid "{title}, version {version}"
 msgstr "{title}, version {version}"
 
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "100 makes what the code applies to free: an order with nothing left to pay is paid at once."
+msgstr "100 makes what the code applies to free: an order with nothing left to pay is paid at once."
+
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgid "A buyer enters a code at the Summary of the checkout, and it lowers the price of what you chose for it. A code of 100% gives free entry: give one to a guest, who then checks out like any buyer and gets a QR code."
+msgstr "A buyer enters a code at the Summary of the checkout, and it lowers the price of what you chose for it. A code of 100% gives free entry: give one to a guest, who then checks out like any buyer and gets a QR code."
+
 #: src/features/scanner/model/labels.ts
 msgid "A child enters only with a guardian present."
 msgstr "A child enters only with a guardian present."
@@ -112,6 +120,10 @@ msgstr "A payment the order did not need"
 #: src/features/shop/components/document-card.tsx
 msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 msgstr "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
+
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "A percent of the price"
+msgstr "A percent of the price"
 
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "A QR code has 32 characters: letters and digits."
@@ -213,6 +225,11 @@ msgstr "Activation and publication"
 msgid "Active"
 msgstr "Active"
 
+#: src/features/discounts/components/discount-code-row.tsx
+msgctxt "a discount code"
+msgid "Active"
+msgstr "Active"
+
 #: src/features/program/components/speakers-editor.tsx
 msgid "Add"
 msgstr "Add"
@@ -240,6 +257,10 @@ msgstr "Add an axis"
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "Add the add-on"
 msgstr "Add the add-on"
+
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgid "Add the code"
+msgstr "Add the code"
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Add the consent"
@@ -271,6 +292,7 @@ msgid "Add the ticket type"
 msgstr "Add the ticket type"
 
 #: src/features/catalog/pages/add-ons-page.tsx
+#: src/features/discounts/components/discount-code-form.tsx
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/orders/pages/manual-order-page.tsx
 #: src/features/orders/pages/orders-page.tsx
@@ -360,9 +382,17 @@ msgstr "Allow at least one age band."
 msgid "Amount"
 msgstr "Amount"
 
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Amount off ({currency})"
+msgstr "Amount off ({currency})"
+
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "An adult from the age of"
 msgstr "An adult from the age of"
+
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "An amount"
+msgstr "An amount"
 
 #: src/features/catalog/components/axes-editor.tsx
 msgid "An axis is something a buyer chooses, such as the cut or the size. An item without axes is sold as one variant."
@@ -407,6 +437,10 @@ msgstr "Anything"
 #: src/features/shop/model/providers.ts
 msgid "API key"
 msgstr "API key"
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "Applies to: {applies}"
+msgstr "Applies to: {applies}"
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "Ask for nothing sensitive"
@@ -464,6 +498,10 @@ msgstr "breadcrumb"
 msgid "Brought on paper to the convention"
 msgstr "Brought on paper to the convention"
 
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "Buyers can no longer use it. A code an order used cannot be deleted: end it instead, and it stays on its orders."
+msgstr "Buyers can no longer use it. A code an order used cannot be deleted: end it instead, and it stays on its orders."
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Buyers pay straight into the convention’s own account with a payment provider. OPOS holds no money."
 msgstr "Buyers pay straight into the convention’s own account with a payment provider. OPOS holds no money."
@@ -476,6 +514,7 @@ msgstr "Buyers write to this address. The shop and its emails show it."
 #: src/features/account/components/two-factor-card.tsx
 #: src/features/catalog/components/add-on-form.tsx
 #: src/features/catalog/components/custom-field-form.tsx
+#: src/features/discounts/components/discount-code-form.tsx
 #: src/features/shop/components/consent-form.tsx
 #: src/shared/ui/irreversible-action.tsx
 msgid "Cancel"
@@ -549,6 +588,10 @@ msgstr "Choose an age band"
 msgid "Choose an image of up to 2 MB."
 msgstr "Choose an image of up to 2 MB."
 
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Choose at least one thing the code applies to."
+msgstr "Choose at least one thing the code applies to."
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Choose your password"
 msgstr "Choose your password"
@@ -571,6 +614,7 @@ msgid "Close the shop"
 msgstr "Close the shop"
 
 #: src/features/auth/pages/mfa-page.tsx
+#: src/features/discounts/components/discount-code-form.tsx
 msgid "Code"
 msgstr "Code"
 
@@ -732,6 +776,14 @@ msgstr "Delete the add-on"
 msgid "Delete the add-on “{name}”?"
 msgstr "Delete the add-on “{name}”?"
 
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "Delete the code"
+msgstr "Delete the code"
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "Delete the code “{name}”?"
+msgstr "Delete the code “{name}”?"
+
 #: src/features/shop/components/consent-row.tsx
 msgid "Delete the consent"
 msgstr "Delete the consent"
@@ -827,6 +879,23 @@ msgstr "Disconnect the payment provider account of {name}?"
 msgid "Discount"
 msgstr "Discount"
 
+#: src/features/orders/components/order-lines.tsx
+msgid "Discount code {code}"
+msgstr "Discount code {code}"
+
+#: src/features/discounts/pages/discount-codes-page.tsx
+#: src/features/editions/components/edition-layout.tsx
+msgid "Discount codes"
+msgstr "Discount codes"
+
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgid "Discount codes by their text"
+msgstr "Discount codes by their text"
+
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgid "Discount codes of the edition"
+msgstr "Discount codes of the edition"
+
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Discounts"
 msgstr "Discounts"
@@ -858,6 +927,7 @@ msgstr "Each tier is a gross price from one moment until another. At a moment no
 
 #: src/features/catalog/components/add-on-row.tsx
 #: src/features/catalog/components/custom-field-row.tsx
+#: src/features/discounts/components/discount-code-row.tsx
 #: src/features/shop/components/consent-row.tsx
 msgid "Edit"
 msgstr "Edit"
@@ -920,7 +990,16 @@ msgstr "Enable the scanner"
 msgid "Enabled by"
 msgstr "Enabled by"
 
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "End the code"
+msgstr "End the code"
+
 #: src/features/scanner/pages/scanners-page.tsx
+msgid "Ended"
+msgstr "Ended"
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgctxt "a discount code"
 msgid "Ended"
 msgstr "Ended"
 
@@ -937,6 +1016,10 @@ msgstr "Ends"
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "Ends earlier (optional)"
 msgstr "Ends earlier (optional)"
+
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Enter 4 to 40 letters, digits and hyphens."
+msgstr "Enter 4 to 40 letters, digits and hyphens."
 
 #: src/features/editions/components/edition-form.tsx
 msgid "Enter a city of up to 100 characters."
@@ -983,10 +1066,12 @@ msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
 
 #: src/features/catalog/components/item-form.tsx
+#: src/features/discounts/components/discount-code-form.tsx
 msgid "Enter a whole number from 1 to 100."
 msgstr "Enter a whole number from 1 to 100."
 
 #: src/features/catalog/components/add-on-form.tsx
+#: src/features/discounts/components/discount-code-form.tsx
 msgid "Enter a whole number from 1, or leave it empty."
 msgstr "Enter a whole number from 1, or leave it empty."
 
@@ -1010,6 +1095,10 @@ msgstr "Enter an address of up to 500 characters."
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Enter an address that starts with https:// or http://."
 msgstr "Enter an address that starts with https:// or http://."
+
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Enter an amount above zero, such as 40 or 40.50."
+msgstr "Enter an amount above zero, such as 40 or 40.50."
 
 #: src/features/catalog/components/add-on-form.tsx
 #: src/features/catalog/components/item-form.tsx
@@ -1063,6 +1152,10 @@ msgstr "Enter the start date and time."
 msgid "Enter the stock of every variant that exists as a whole number from 0, or mark it unlimited."
 msgstr "Enter the stock of every variant that exists as a whole number from 0, or mark it unlimited."
 
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Enter when the code starts to be valid and when it stops, the end later."
+msgstr "Enter when the code starts to be valid and when it stops, the end later."
+
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Enter when the sale starts and when it ends, the end later."
 msgstr "Enter when the sale starts and when it ends, the end later."
@@ -1084,6 +1177,10 @@ msgstr "Every status"
 msgid "Excluded from discounts"
 msgstr "Excluded from discounts"
 
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Excluded from discounts on its page."
+msgstr "Excluded from discounts on its page."
+
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "Existing: {variants}, out of stock: {soldOut}"
 msgstr "Existing: {variants}, out of stock: {soldOut}"
@@ -1095,6 +1192,11 @@ msgstr "Exists"
 #: src/features/team/components/members-table.tsx
 msgid "expired"
 msgstr "expired"
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgctxt "a discount code"
+msgid "Expired"
+msgstr "Expired"
 
 #: src/features/orders/model/labels.ts
 msgctxt "order status"
@@ -1273,6 +1375,10 @@ msgstr "How many of this item one order may take, over all its variants: from 1 
 msgid "How many of this ticket type may be sold. Leave it empty for no limit."
 msgstr "How many of this ticket type may be sold. Leave it empty for no limit."
 
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "How many orders may use the code. Leave it empty for no limit."
+msgstr "How many orders may use the code. Leave it empty for no limit."
+
 #: src/features/catalog/pages/merchandise-page.tsx
 msgid "How merchandise sells"
 msgstr "How merchandise sells"
@@ -1302,6 +1408,7 @@ msgid "If you confirmed your address in another browser, or someone else registe
 msgstr "If you confirmed your address in another browser, or someone else registered it before you, ask for a link that lets you set a new password."
 
 #: src/features/catalog/components/ticket-type-form.tsx
+#: src/features/discounts/components/discount-code-form.tsx
 #: src/features/editions/components/edition-form.tsx
 #: src/features/program/components/program-item-form.tsx
 msgid "In the convention's time zone, {zone}."
@@ -1396,6 +1503,7 @@ msgstr "Join the organizing team"
 msgid "Kept on the order, for the team. The buyer does not see it."
 msgstr "Kept on the order, for the team. The buyer does not see it."
 
+#: src/features/discounts/components/discount-code-form.tsx
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "Kind"
 msgstr "Kind"
@@ -1407,6 +1515,10 @@ msgstr "Last used"
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
 msgstr "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "Let it run again"
+msgstr "Let it run again"
 
 #: src/features/account/pages/account-page.tsx
 msgid "Light"
@@ -1477,6 +1589,7 @@ msgstr "Membership"
 
 #: src/features/catalog/pages/merchandise-item-page.tsx
 #: src/features/catalog/pages/merchandise-page.tsx
+#: src/features/discounts/components/discount-code-form.tsx
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/orders/pages/manual-order-page.tsx
 msgid "Merchandise"
@@ -1595,6 +1708,10 @@ msgstr "New consent"
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "New custom field"
 msgstr "New custom field"
+
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgid "New discount code"
+msgstr "New discount code"
 
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "New document"
@@ -1739,6 +1856,11 @@ msgstr "Not sent: the order moved to another address before it went out"
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "Not valid"
 msgstr "Not valid"
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgctxt "a discount code"
+msgid "Not valid yet"
+msgstr "Not valid yet"
 
 #: src/features/orders/components/order-lines.tsx
 msgid "Not yet"
@@ -1963,6 +2085,10 @@ msgstr "Payment provider account"
 #: src/features/orders/model/labels.ts
 msgid "Payout batch number"
 msgstr "Payout batch number"
+
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Percent off"
+msgstr "Percent off"
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "Perk {number}"
@@ -2381,6 +2507,10 @@ msgstr "Save the axes"
 msgid "Save the axes and remove variants?"
 msgstr "Save the axes and remove variants?"
 
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "Save the code"
+msgstr "Save the code"
+
 #: src/features/shop/components/consent-row.tsx
 msgid "Save the consent"
 msgstr "Save the consent"
@@ -2677,6 +2807,10 @@ msgstr "Take back"
 msgid "Take back the hand-out of {0}"
 msgstr "Take back the hand-out of {0}"
 
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Taken off what the code applies to together, at most its price."
+msgstr "Taken off what the code applies to together, at most its price."
+
 #: src/features/team/pages/member-page.tsx
 #: src/features/team/pages/team-page.tsx
 #: src/features/tenants/components/convention-layout.tsx
@@ -2735,6 +2869,26 @@ msgstr "The camera’s view"
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
 msgstr "The changes are saved."
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "The code “{name}” can be used again."
+msgstr "The code “{name}” can be used again."
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "The code “{name}” is deleted."
+msgstr "The code “{name}” is deleted."
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "The code “{name}” is ended."
+msgstr "The code “{name}” is ended."
+
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgid "The code is added."
+msgstr "The code is added."
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "The code is saved."
+msgstr "The code is saved."
 
 #: src/features/orders/model/labels.ts
 msgid "The code was wrong."
@@ -2853,6 +3007,10 @@ msgstr "The edition has no consents yet."
 msgid "The edition has no custom fields yet."
 msgstr "The edition has no custom fields yet."
 
+#: src/features/discounts/pages/discount-codes-page.tsx
+msgid "The edition has no discount codes yet."
+msgstr "The edition has no discount codes yet."
+
 #: src/features/shop/pages/edition-documents-page.tsx
 msgid "The edition has no documents yet."
 msgstr "The edition has no documents yet."
@@ -2891,6 +3049,10 @@ msgstr "The edition is saved."
 #: src/features/editions/components/edition-form.tsx
 msgid "The edition must end after it starts."
 msgstr "The edition must end after it starts."
+
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "The edition sells nothing yet. Add a ticket type first."
+msgstr "The edition sells nothing yet. Add a ticket type first."
 
 #: src/features/orders/components/order-changes.tsx
 msgid "The email is changed, and both addresses are told."
@@ -3428,6 +3590,7 @@ msgstr "Ticket type data"
 
 #: src/features/catalog/pages/ticket-type-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
+#: src/features/discounts/components/discount-code-form.tsx
 #: src/features/editions/components/edition-layout.tsx
 #: src/features/orders/pages/orders-page.tsx
 msgid "Ticket types"
@@ -3575,6 +3738,10 @@ msgstr "Until this moment a variant marked unlimited sells without a stock limit
 msgid "Upload the logo"
 msgstr "Upload the logo"
 
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Usage limit"
+msgstr "Usage limit"
+
 #: src/features/editions/components/edition-form.tsx
 msgid "Use 1 to 40 lowercase letters, digits and hyphens."
 msgstr "Use 1 to 40 lowercase letters, digits and hyphens."
@@ -3598,6 +3765,31 @@ msgstr "Use the code of the app"
 #: src/features/program/components/program-item-form.tsx
 msgid "Use up to 5000 characters."
 msgstr "Use up to 5000 characters."
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgctxt "a discount code"
+msgid "Used up"
+msgstr "Used up"
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "Uses: {uses} of {limit}"
+msgstr "Uses: {uses} of {limit}"
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "Uses: {uses}, no limit"
+msgstr "Uses: {uses}, no limit"
+
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Valid from"
+msgstr "Valid from"
+
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "Valid until"
+msgstr "Valid until"
+
+#: src/features/discounts/components/discount-code-row.tsx
+msgid "Valid: {window}"
+msgstr "Valid: {window}"
 
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Value {order} of axis {number}"
@@ -3673,6 +3865,10 @@ msgstr "We will send you a link to set a new password."
 msgid "What a buyer accepts at the checkout, in the order below. The wording is yours, and so is the choice of which consent is required."
 msgstr "What a buyer accepts at the checkout, in the order below. The wording is yours, and so is the choice of which consent is required."
 
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "What a buyer types at the Summary, in any case."
+msgstr "What a buyer types at the Summary, in any case."
+
 #: src/features/orders/components/order-changes.tsx
 msgid "What it holds goes back on sale. OPOS returns no money: returning it is a matter between the convention and the buyer, outside OPOS."
 msgstr "What it holds goes back on sale. OPOS returns no money: returning it is a matter between the convention and the buyer, outside OPOS."
@@ -3688,6 +3884,10 @@ msgstr "What the checkout asks a ticket holder beyond the name, the email and th
 #: src/features/catalog/components/custom-field-form.tsx
 msgid "What the checkout asks the ticket holder, such as “City you travel from”. The answer is a text of up to 200 characters."
 msgstr "What the checkout asks the ticket holder, such as “City you travel from”. The answer is a text of up to 200 characters."
+
+#: src/features/discounts/components/discount-code-form.tsx
+msgid "What the code applies to"
+msgstr "What the code applies to"
 
 #: src/features/orders/pages/order-page.tsx
 msgid "What the order holds"

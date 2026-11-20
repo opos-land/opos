@@ -297,6 +297,20 @@ one ticket holder, with its add-ons and merchandise, or merchandise alone.
 | Emails                        | a fixed text with the convention's name, in the recipient's language or the convention's for an address with no account, listed on the order and sent again after a failed send                                           |
 | Limits                        | three orders awaiting payment an email address in an edition; the result page of an order opens for 24 hours, in the browser that placed it                                                                               |
 
+**Discount codes.** An org with tickets write access to an edition sets its discount codes, and
+with read access sees each code's uses against its limit
+([0061](adr/0061-lower-a-price-with-a-discount-code-and-give-free-entry-with-one-of-100-percent.md)).
+
+| Rule        | Value                                                                                                                                                                                                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A code      | belongs to one edition: 4 to 40 letters, digits and hyphens, unique in it and read without regard to case, with a percent or an amount, a usage limit or none, and a validity window                                                                                                       |
+| Applies to  | the ticket types, add-ons and merchandise items the org names; never a ticket type excluded from discounts, whatever the org named                                                                                                                                                         |
+| In checkout | an order takes one code, entered at the Summary; it lowers the lines it applies to together, as one line of its own: a percent of their sum, rounded to the grosz half up, or an amount, at most their sum                                                                                 |
+| A refusal   | a code that is unknown, outside its window, ended, used up or applies to nothing in the cart is refused alike: the buyer is told only that it cannot be used for the order ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md))               |
+| A use       | is held, released and taken again with its order's stock: it counts against the limit while the order holds. A code used up after the buyer entered it places no order; a payment after the hold whose use is gone needs review, until an org raises the limit or declines it              |
+| Free entry  | a 100% code for a ticket type: its holder checks out as any buyer, pays for merchandise at its price and gets a QR code; an order with nothing left to pay is paid at once. A person paid for outside the shop who should hold a QR code ahead of the edition gets one, not a manual order |
+| Ending      | an org ends a code and lets it run again; a code an order used is never deleted and stays on its orders, and a limit is never set below the uses orders hold                                                                                                                               |
+
 **Order management.** An org with the tickets permission of an edition works on its orders in the
 panel: reading them needs read access, every change write access.
 
@@ -419,8 +433,9 @@ interface language.
 - The list of every convention's published editions on the portal's home page; an edition's page
   with its venue and the convention's logo
 - The programme with speakers on the edition's programme page, likes, personal schedule, reviews
-- Tickets and merchandise sold to the convention's own account and checked at the venue; sales
-  made outside the shop recorded as manual orders; attendee registrations
+- Tickets and merchandise sold to the convention's own account and checked at the venue; discount
+  codes, down to free entry; sales made outside the shop recorded as manual orders; attendee
+  registrations
 - Account deletion; a privacy policy linked from registration
 - File uploads, as far as a feature's spec asks for them
 - A portal for phone browsers; the designer's interface, with no AI-generated graphics

@@ -3,8 +3,9 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B3 and BR-04
-- Decisions: none recorded yet; the records this spec needs are among its
-  [open questions](#open-questions)
+- Decisions: [0061](../adr/0061-lower-a-price-with-a-discount-code-and-give-free-entry-with-one-of-100-percent.md)
+  and [0062](../adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md),
+  proposed; what the owner still has to confirm is among its [open questions](#open-questions)
 
 ## Goal
 
@@ -85,6 +86,7 @@ code.
 | Application | Screen            | Holds                                                                      |
 | ----------- | ----------------- | -------------------------------------------------------------------------- |
 | panel       | discount codes    | the list with each code's uses and limit; the form of D1–D4; ending a code |
+| panel       | an order's page   | the code, on the line of what it took off                                  |
 | portal      | checkout, Summary | the code's field, the discount's line, the message of K4                   |
 
 ### Seed
@@ -132,5 +134,10 @@ e2e:
 
 ## Open questions
 
-- **Records before acceptance:** discount codes and 100% codes in the MVP (D2 of the brief, with
-  PRODUCT.md 11, which keeps "tickets without a purchase" beyond it).
+- **Records to accept:** discount codes and 100% codes in the MVP, proposed in 0061 (D2 of the
+  brief; PRODUCT.md 11 keeps "tickets issued ahead with no order" beyond it), and a code's terms
+  kept in the API with one refusal for every code that cannot be used, proposed in 0062.
+- **For the domain owner to confirm:** the rules marked "new" above (D3, D4, D5, K3, K4); that a
+  code is written in capitals wherever it is shown, whatever case it was typed in; that a new
+  code is valid from the moment it is made until the edition ends unless the org says otherwise;
+  that an order is placed without a code the shop refused, at the price without it.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDateTime, formatMoney, moneyInput, parseMoney } from './format'
+import { formatDateTime, formatMoney, formatMoneyShort, moneyInput, parseMoney } from './format'
 
 describe('formatDateTime', () => {
   it('formats in the given time zone', () => {
@@ -14,6 +14,23 @@ describe('formatDateTime', () => {
 describe('formatMoney', () => {
   it('formats minor units as currency', () => {
     expect(formatMoney(12000, 'PLN', 'pl').replace(/\s/g, ' ')).toBe('120,00 zł')
+  })
+})
+
+describe('formatMoneyShort', () => {
+  // The axis of a chart has no room for every digit: thousands and millions are named.
+  it('writes minor units short, as the language names thousands and millions', () => {
+    const short = (amountMinor: number, locale: 'pl' | 'en') =>
+      formatMoneyShort(amountMinor, 'PLN', locale).replace(/\s/g, ' ')
+
+    expect(short(1250000, 'pl')).toBe('12,5 tys. zł')
+    expect(short(123456789, 'pl')).toBe('1,2 mln zł')
+    expect(short(1250000, 'en')).toBe('PLN 12.5K')
+  })
+
+  it('writes a small amount in whole units, and nothing as zero', () => {
+    expect(formatMoneyShort(12000, 'PLN', 'pl').replace(/\s/g, ' ')).toBe('120 zł')
+    expect(formatMoneyShort(0, 'PLN', 'pl').replace(/\s/g, ' ')).toBe('0 zł')
   })
 })
 

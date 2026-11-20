@@ -13,6 +13,19 @@ export const formatMoney = (amountMinor: number, currency: string, locale: Local
   new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amountMinor / 100)
 
 /**
+ * An amount in minor units written short, for a place with no room for every digit, such as the
+ * axis of a chart: thousands and millions are named as the language names them, with one decimal
+ * at most.
+ */
+export const formatMoneyShort = (amountMinor: number, currency: string, locale: Locale) =>
+  new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(amountMinor / 100)
+
+/**
  * The amount a person typed, in minor units: digits with an optional decimal part of one or two
  * digits after a comma or a dot, spaces between the digits aside. Null for anything else, a
  * negative amount and a third decimal among them. The digits are read as they stand, never through

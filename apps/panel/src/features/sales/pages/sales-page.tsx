@@ -1,5 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { type Sales } from '@opos/contract'
+import { toZonedWallTime } from '@opos/i18n'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useState } from 'react'
 import { useParams } from 'react-router'
@@ -24,6 +25,7 @@ import { useMoney } from '../../catalog'
 import { useEditionBySlug } from '../../editions'
 import { atLeast, useCurrentTenant } from '../../tenants'
 import { type ExportedList, exportOptions, salesOptions } from '../api/sales'
+import { SalesOverTime } from '../components/sales-over-time'
 
 /** A table of what is sold and what is pending, a row a thing sold. */
 function HeldTable({
@@ -146,7 +148,13 @@ export function SalesPage() {
       ) : sales.isError ? (
         <ErrorMessage error={sales.error} />
       ) : (
-        <Dashboard sales={sales.data} money={money.format} number={(n) => i18n.number(n)} />
+        <Dashboard
+          sales={sales.data}
+          // Today as the convention counts its days, which is how the API tells them apart.
+          today={toZonedWallTime(new Date(), tenant.timezone).slice(0, 10)}
+          money={money.format}
+          number={(n) => i18n.number(n)}
+        />
       )}
       <Section title={<Trans>Lists to download</Trans>}>
         <p className="max-w-2xl text-sm">
@@ -175,10 +183,12 @@ export function SalesPage() {
 
 function Dashboard({
   sales,
+  today,
   money,
   number,
 }: {
   sales: Sales
+  today: string
   money: (amountMinor: number) => string
   number: (value: number) => string
 }) {
@@ -218,6 +228,23 @@ function Dashboard({
           ]}
         />
       </Section>
+      {sales.days.length > 0 && (
+        <Section title={<Trans>Sales over time</Trans>}>
+          <p className="max-w-2xl text-sm">
+            <Trans>
+              What the paid orders came to and the tickets they hold, summed day by day up to today.
+              An order counts on the day it was paid, in the time zone of the convention.
+            </Trans>
+          </p>
+          <SalesOverTime
+            days={sales.days}
+            today={today}
+            currency={sales.currency}
+            money={money}
+            number={number}
+          />
+        </Section>
+      )}
       <Section title={<Trans>Tickets</Trans>}>
         <p className="max-w-2xl text-sm">
           <Trans>

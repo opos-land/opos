@@ -799,6 +799,11 @@ msgstr "Pulpit"
 msgid "Dates"
 msgstr "Daty"
 
+#: src/features/sales/components/sales-over-time.tsx
+msgctxt "sales"
+msgid "Day"
+msgstr "Dzień"
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Days before the edition"
 msgstr "Liczba dni przed edycją"
@@ -2176,6 +2181,7 @@ msgstr "Opłacone ręcznie"
 msgid "Paid by invoice"
 msgstr "Opłacone na podstawie faktury"
 
+#: src/features/sales/components/sales-over-time.tsx
 #: src/features/sales/pages/sales-page.tsx
 msgid "Paid in the shop"
 msgstr "Opłacone w sklepie"
@@ -2431,6 +2437,7 @@ msgstr "Zapisz zamówienie"
 msgid "Recorded as"
 msgstr "Zapisano jako"
 
+#: src/features/sales/components/sales-over-time.tsx
 #: src/features/sales/pages/sales-page.tsx
 msgid "Recorded by organizers"
 msgstr "Zapisane przez organizatorów"
@@ -2585,6 +2592,10 @@ msgstr "Przychód"
 msgid "Revenue and orders"
 msgstr "Przychód i zamówienia"
 
+#: src/features/sales/components/sales-over-time.tsx
+msgid "Revenue so far"
+msgstr "Przychód narastająco"
+
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "Revoke"
 msgstr "Cofnij dostęp"
@@ -2632,6 +2643,10 @@ msgstr "Początek sprzedaży"
 #: src/features/sales/pages/sales-page.tsx
 msgid "Sales"
 msgstr "Sprzedaż"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Sales over time"
+msgstr "Sprzedaż w czasie"
 
 #: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
@@ -2894,6 +2909,11 @@ msgstr "Tabela rozmiarów – {label}"
 msgid "Size charts"
 msgstr "Tabele rozmiarów"
 
+#: src/features/sales/components/sales-over-time.tsx
+msgctxt "sales, up to a day"
+msgid "So far"
+msgstr "Narastająco"
+
 #: src/features/sales/pages/sales-page.tsx
 msgctxt "sales"
 msgid "Sold"
@@ -2994,6 +3014,11 @@ msgstr "Zespół"
 #: src/features/sales/pages/sales-page.tsx
 msgid "Teen"
 msgstr "Nastolatek"
+
+#: src/features/sales/components/sales-over-time.tsx
+msgctxt "sales, on a day"
+msgid "That day"
+msgstr "Tego dnia"
 
 #: src/features/catalog/components/add-on-row.tsx
 msgid "The add-on “{name}” is deleted."
@@ -3118,6 +3143,10 @@ msgstr "Pole dodatkowe zostało dodane."
 #: src/features/catalog/components/custom-field-row.tsx
 msgid "The custom field is saved."
 msgstr "Pole dodatkowe zostało zapisane."
+
+#: src/features/sales/components/sales-over-time.tsx
+msgid "The days as a table"
+msgstr "Dni w tabeli"
 
 #: src/features/shop/components/seller-section.tsx
 msgid "The details are complete."
@@ -3802,6 +3831,7 @@ msgstr "Rodzaje akredytacji"
 msgid "Ticket types of the edition"
 msgstr "Rodzaje akredytacji edycji"
 
+#: src/features/sales/components/sales-over-time.tsx
 #: src/features/sales/pages/sales-page.tsx
 #: src/features/team/components/permission-labels.tsx
 msgid "Tickets"
@@ -3818,6 +3848,10 @@ msgstr "Akredytacje w edycji {edition}"
 #: src/features/team/components/edition-access-row.tsx
 msgid "Tickets of {name}"
 msgstr "Akredytacje – {name}"
+
+#: src/features/sales/components/sales-over-time.tsx
+msgid "Tickets sold so far"
+msgstr "Sprzedane akredytacje narastająco"
 
 #: src/features/program/pages/program-page.tsx
 msgid "Time"
@@ -4101,12 +4135,20 @@ msgid "What the order holds"
 msgstr "Co zawiera zamówienie"
 
 #: src/features/sales/pages/sales-page.tsx
+msgid "What the paid orders came to and the tickets they hold, summed day by day up to today. An order counts on the day it was paid, in the time zone of the convention."
+msgstr "Wartość opłaconych zamówień i liczba akredytacji w nich, sumowane dzień po dniu aż do dziś. Zamówienie liczy się w dniu, w którym zostało opłacone, w strefie czasowej konwentu."
+
+#: src/features/sales/pages/sales-page.tsx
 msgid "What the paid orders came to. The orders an organizer recorded by hand are counted apart: their money did not go through the payment provider."
 msgstr "Suma opłaconych zamówień. Zamówienia zapisane ręcznie przez organizatora są liczone osobno: ich pieniądze nie przeszły przez dostawcę płatności."
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
 msgstr "Co zawiera akredytacja, na przykład przypinkę albo identyfikator: widoczne dla kupującego, nigdy niesprzedawane osobno."
+
+#: src/features/sales/components/sales-over-time.tsx
+msgid "What was sold on each day"
+msgstr "Sprzedaż w poszczególnych dniach"
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "When the edition is open, as the reminder tells it. Up to 1000 characters."

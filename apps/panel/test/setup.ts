@@ -14,3 +14,12 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     }),
   })
 }
+
+// jsdom has no ResizeObserver, which a chart asks for the size of its box: one that never reports.
+if (typeof window !== 'undefined' && !window.ResizeObserver) {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+}

@@ -25,6 +25,15 @@ test('an org opens the sales after two orders and downloads the ticket holder li
   const revenue = page.getByRole('region', { name: 'Revenue' })
   await expect(revenue.getByRole('row', { name: /Paid in the shop/ })).toContainText('200.00')
   await expect(revenue.getByRole('row', { name: /Awaiting payment/ })).toContainText('1')
+  // The paid order is drawn on the day it was paid: the revenue and the tickets so far, and the
+  // same day as a row of the table under the charts.
+  const overTime = page.getByRole('region', { name: 'Sales over time' })
+  await expect(overTime.getByRole('figure', { name: 'Revenue so far' })).toBeVisible()
+  await expect(overTime.getByRole('figure', { name: 'Tickets sold so far' })).toBeVisible()
+  await overTime.getByText('The days as a table').click()
+  await expect(
+    overTime.getByRole('table', { name: 'What was sold on each day' }).getByRole('row'),
+  ).toHaveCount(2)
   const tickets = page.getByRole('region', { name: 'Tickets' })
   await expect(tickets.getByRole('row', { name: /Standard/ }).getByRole('cell')).toHaveText([
     '1',

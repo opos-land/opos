@@ -799,6 +799,11 @@ msgstr "Dashboard"
 msgid "Dates"
 msgstr "Dates"
 
+#: src/features/sales/components/sales-over-time.tsx
+msgctxt "sales"
+msgid "Day"
+msgstr "Day"
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "Days before the edition"
 msgstr "Days before the edition"
@@ -2176,6 +2181,7 @@ msgstr "Paid - manual"
 msgid "Paid by invoice"
 msgstr "Paid by invoice"
 
+#: src/features/sales/components/sales-over-time.tsx
 #: src/features/sales/pages/sales-page.tsx
 msgid "Paid in the shop"
 msgstr "Paid in the shop"
@@ -2431,6 +2437,7 @@ msgstr "Record the order"
 msgid "Recorded as"
 msgstr "Recorded as"
 
+#: src/features/sales/components/sales-over-time.tsx
 #: src/features/sales/pages/sales-page.tsx
 msgid "Recorded by organizers"
 msgstr "Recorded by organizers"
@@ -2585,6 +2592,10 @@ msgstr "Revenue"
 msgid "Revenue and orders"
 msgstr "Revenue and orders"
 
+#: src/features/sales/components/sales-over-time.tsx
+msgid "Revenue so far"
+msgstr "Revenue so far"
+
 #: src/features/scanner/pages/scanners-page.tsx
 msgid "Revoke"
 msgstr "Revoke"
@@ -2632,6 +2643,10 @@ msgstr "Sale starts"
 #: src/features/sales/pages/sales-page.tsx
 msgid "Sales"
 msgstr "Sales"
+
+#: src/features/sales/pages/sales-page.tsx
+msgid "Sales over time"
+msgstr "Sales over time"
 
 #: src/features/editions/pages/edition-settings-page.tsx
 #: src/features/program/pages/program-item-page.tsx
@@ -2894,6 +2909,11 @@ msgstr "Size chart of {label}"
 msgid "Size charts"
 msgstr "Size charts"
 
+#: src/features/sales/components/sales-over-time.tsx
+msgctxt "sales, up to a day"
+msgid "So far"
+msgstr "So far"
+
 #: src/features/sales/pages/sales-page.tsx
 msgctxt "sales"
 msgid "Sold"
@@ -2994,6 +3014,11 @@ msgstr "Team"
 #: src/features/sales/pages/sales-page.tsx
 msgid "Teen"
 msgstr "Teen"
+
+#: src/features/sales/components/sales-over-time.tsx
+msgctxt "sales, on a day"
+msgid "That day"
+msgstr "That day"
 
 #: src/features/catalog/components/add-on-row.tsx
 msgid "The add-on “{name}” is deleted."
@@ -3118,6 +3143,10 @@ msgstr "The custom field is added."
 #: src/features/catalog/components/custom-field-row.tsx
 msgid "The custom field is saved."
 msgstr "The custom field is saved."
+
+#: src/features/sales/components/sales-over-time.tsx
+msgid "The days as a table"
+msgstr "The days as a table"
 
 #: src/features/shop/components/seller-section.tsx
 msgid "The details are complete."
@@ -3802,6 +3831,7 @@ msgstr "Ticket types"
 msgid "Ticket types of the edition"
 msgstr "Ticket types of the edition"
 
+#: src/features/sales/components/sales-over-time.tsx
 #: src/features/sales/pages/sales-page.tsx
 #: src/features/team/components/permission-labels.tsx
 msgid "Tickets"
@@ -3818,6 +3848,10 @@ msgstr "Tickets in {edition}"
 #: src/features/team/components/edition-access-row.tsx
 msgid "Tickets of {name}"
 msgstr "Tickets of {name}"
+
+#: src/features/sales/components/sales-over-time.tsx
+msgid "Tickets sold so far"
+msgstr "Tickets sold so far"
 
 #: src/features/program/pages/program-page.tsx
 msgid "Time"
@@ -4101,12 +4135,20 @@ msgid "What the order holds"
 msgstr "What the order holds"
 
 #: src/features/sales/pages/sales-page.tsx
+msgid "What the paid orders came to and the tickets they hold, summed day by day up to today. An order counts on the day it was paid, in the time zone of the convention."
+msgstr "What the paid orders came to and the tickets they hold, summed day by day up to today. An order counts on the day it was paid, in the time zone of the convention."
+
+#: src/features/sales/pages/sales-page.tsx
 msgid "What the paid orders came to. The orders an organizer recorded by hand are counted apart: their money did not go through the payment provider."
 msgstr "What the paid orders came to. The orders an organizer recorded by hand are counted apart: their money did not go through the payment provider."
 
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
 msgstr "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
+
+#: src/features/sales/components/sales-over-time.tsx
+msgid "What was sold on each day"
+msgstr "What was sold on each day"
 
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "When the edition is open, as the reminder tells it. Up to 1000 characters."

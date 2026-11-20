@@ -65,6 +65,10 @@ const sales = (changes: object = {}) => ({
       ],
     },
   ],
+  days: [
+    { day: '2027-03-02', paidMinor: 25000, manualMinor: 0, tickets: 2 },
+    { day: '2027-03-04', paidMinor: 3000, manualMinor: 7000, tickets: 1 },
+  ],
   ageBands: { child: 0, teen: 1, adult: 2 },
   customFields: [
     {
@@ -178,6 +182,42 @@ describe('the sales page', () => {
     expect(answers.getByRole('heading', { name: 'City', level: 3 })).toBeDefined()
     expect(row(answers, 'Poznań').getByText('2')).toBeDefined()
     expect(row(answers, 'Gdynia').getByText('1')).toBeDefined()
+  })
+
+  // D6: what was sold over time, drawn, and the same days as a table.
+  it('draws the revenue and the tickets sold so far over the days', async () => {
+    view()
+
+    const over = await section('Sales over time')
+    expect(over.getByRole('figure', { name: 'Revenue so far' })).toBeDefined()
+    expect(over.getByRole('figure', { name: 'Tickets sold so far' })).toBeDefined()
+  })
+
+  it('lists the days something was sold on, each with its revenue and its tickets', async () => {
+    view()
+
+    const over = await section('Sales over time')
+    expect(over.getByRole('table', { name: 'What was sold on each day' })).toBeDefined()
+    const second = row(over, 'Mar 2, 2027')
+    expect(second.getAllByRole('cell').map((cell) => cell.textContent)).toEqual([
+      '250.00 PLN',
+      '0.00 PLN',
+      '2',
+    ])
+    const fourth = row(over, 'Mar 4, 2027')
+    expect(fourth.getAllByRole('cell').map((cell) => cell.textContent)).toEqual([
+      '30.00 PLN',
+      '70.00 PLN',
+      '1',
+    ])
+  })
+
+  it('draws nothing over time while nothing was sold', async () => {
+    readSales.mockResolvedValue(sales({ days: [] }))
+    view()
+
+    await section('Revenue')
+    expect(screen.queryByRole('heading', { name: 'Sales over time' })).toBeNull()
   })
 
   it('says so when nothing was sold yet', async () => {

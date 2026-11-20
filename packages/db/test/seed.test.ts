@@ -512,12 +512,16 @@ describe('db:seed shop', () => {
         preorder_open: true,
         message: true,
       })
-      const fields = await migrator`
+      const fields = await migrator<{ label: string; is_required: boolean }[]>`
         select label, is_required from edition_custom_fields
         where edition_id = ${edition} order by position
       `
       expect(fields).toHaveLength(2)
-      expect(fields.map((field) => field.is_required as boolean)).toEqual([true, false])
+      // Both are optional: the demo checkout asks a ticket holder for nothing it could do without.
+      expect(fields.map((field) => [field.label, field.is_required])).toEqual([
+        ['City you travel from', false],
+        ['Favourite fandom', false],
+      ])
     },
   )
 

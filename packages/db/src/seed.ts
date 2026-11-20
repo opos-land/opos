@@ -361,7 +361,7 @@ const DEMO_CATALOG: SeedCatalog = {
   openingHours: 'The convention is open on every day from 10:00 to 20:00; the gate opens at 9:30.',
   reminderDaysBefore: 3,
   customFields: [
-    { label: 'City you travel from', isRequired: true },
+    { label: 'City you travel from', isRequired: false },
     { label: 'Favourite fandom', isRequired: false },
   ],
   addOns: [
@@ -1845,15 +1845,14 @@ async function seedOrder(tx: Tx, tenantId: string, editionId: string, order: See
   // What a buyer answers and accepts with an order; a manual order has neither.
   if (order.email) {
     if (order.ticketType) {
+      // Each demo ticket holder answered the edition's first field, required or not, so the
+      // order's page, the sales and the exports have answers to show.
       const fields = await tx
         .select({ id: editionCustomFields.id })
         .from(editionCustomFields)
-        .where(
-          and(
-            eq(editionCustomFields.editionId, editionId),
-            eq(editionCustomFields.isRequired, true),
-          ),
-        )
+        .where(eq(editionCustomFields.editionId, editionId))
+        .orderBy(editionCustomFields.position)
+        .limit(1)
       if (fields.length > 0) {
         await tx
           .insert(orderCustomFieldAnswers)

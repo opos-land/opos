@@ -76,6 +76,8 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'order.hold-ended': msg`The time to pay for this order has ended. Start a new order.`,
   'order.already-paid': msg`This order does not wait for a payment any more. Check its status.`,
   'order.not-correctable': msg`This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address.`,
+  'order.not-cancelable': msg`Only a paid order can be canceled.`,
+  'order.not-in-review': msg`This order does not need review any more. Check its status.`,
   'bot-check.failed': msg`We could not confirm that you are not a robot. Try again.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,
 

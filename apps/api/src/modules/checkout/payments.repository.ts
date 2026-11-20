@@ -45,6 +45,12 @@ export interface PayableOrder {
 
 export type StoredAttempt = typeof paymentAttempts.$inferSelect
 
+/** What of a cart is no longer there: the row whose capacity or stock is used up, or gone. */
+export interface Gone {
+  kind: 'ticket-type' | 'add-on' | 'variant'
+  id: string
+}
+
 /** What a provider's module said of an attempt, as the attempt keeps it. */
 export type AttemptChanges = Partial<
   Pick<
@@ -236,27 +242,36 @@ export class PaymentsRepository {
    * caller locked those rows first (docs/ARCHITECTURE.md, invariant 9).
    */
   async stillThere(editionId: string, cart: Cart): Promise<boolean> {
+    return (await this.gone(editionId, cart)) === undefined
+  }
+
+  /** The first thing of a cart that is no longer there, or undefined while all of it is. */
+  async gone(editionId: string, cart: Cart): Promise<Gone | undefined> {
     const tx = this.context.tx()
     const held = await this.offers.held(editionId)
     if (cart.ticket) {
+      const id = cart.ticket.ticketTypeId
       const [type] = await tx
         .select({ capacity: ticketTypes.capacity })
         .from(ticketTypes)
-        .where(
-          and(eq(ticketTypes.editionId, editionId), eq(ticketTypes.id, cart.ticket.ticketTypeId)),
-        )
-      const taken = held.ticketTypes.get(cart.ticket.ticketTypeId) ?? 0
-      if (!type || (type.capacity !== null && taken + 1 > type.capacity)) return false
+        .where(and(eq(ticketTypes.editionId, editionId), eq(ticketTypes.id, id)))
+      const taken = held.ticketTypes.get(id) ?? 0
+      if (!type || (type.capacity !== null && taken + 1 > type.capacity)) {
+        return { kind: 'ticket-type', id }
+      }
     }
     if (cart.addOnIds.length > 0) {
       const rows = await tx
         .select({ id: addOns.id, capacity: addOns.capacity })
         .from(addOns)
         .where(and(eq(addOns.editionId, editionId), inArray(addOns.id, cart.addOnIds)))
-      if (rows.length !== new Set(cart.addOnIds).size) return false
-      for (const row of rows) {
-        const taken = held.addOns.get(row.id) ?? 0
-        if (row.capacity !== null && taken + 1 > row.capacity) return false
+      const capacity = new Map(rows.map((row) => [row.id, row.capacity]))
+      for (const id of cart.addOnIds) {
+        const limit = capacity.get(id)
+        const taken = held.addOns.get(id) ?? 0
+        if (limit === undefined || (limit !== null && taken + 1 > limit)) {
+          return { kind: 'add-on', id }
+        }
       }
     }
     if (cart.items.length > 0) {
@@ -274,13 +289,14 @@ export class PaymentsRepository {
         )
       const stock = new Map(rows.map((row) => [row.id, row.stock]))
       for (const item of cart.items) {
-        if (!stock.has(item.variantId)) return false
         const left = stock.get(item.variantId)
         const taken = held.variants.get(item.variantId) ?? 0
-        if (left !== null && left !== undefined && taken + item.quantity > left) return false
+        if (left === undefined || (left !== null && taken + item.quantity > left)) {
+          return { kind: 'variant', id: item.variantId }
+        }
       }
     }
-    return true
+    return undefined
   }
 
   /** What a payment makes of the order: its status, and whether it holds what its lines take. */

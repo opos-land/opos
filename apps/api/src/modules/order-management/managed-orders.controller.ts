@@ -4,6 +4,7 @@ import { Implement, implement } from '@orpc/nest'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
 import { OrderCorrections } from './order-corrections.service'
 import { OrderReadsRepository } from './order-reads.repository'
+import { OrderSettling } from './order-settling.service'
 
 /**
  * An edition's orders as its orgs manage them, behind the tickets permission of the edition
@@ -14,6 +15,7 @@ export class ManagedOrdersController {
   constructor(
     private readonly reads: OrderReadsRepository,
     private readonly corrections: OrderCorrections,
+    private readonly settling: OrderSettling,
   ) {}
 
   @Implement(contract.orders.list)
@@ -58,6 +60,36 @@ export class ManagedOrdersController {
     return implement(contract.orders.swapVariant).handler(async ({ input }) => {
       const { editionId, orderId, lineId } = input.params
       await this.corrections.variant(editionId, orderId, lineId, input.body.variantId)
+      return this.reads.get(editionId, orderId)
+    })
+  }
+
+  @Implement(contract.orders.cancel)
+  @RequireEdition('tickets', 'write')
+  cancel() {
+    return implement(contract.orders.cancel).handler(async ({ input }) => {
+      const { editionId, orderId } = input.params
+      await this.settling.cancel(editionId, orderId, input.body.reason)
+      return this.reads.get(editionId, orderId)
+    })
+  }
+
+  @Implement(contract.orders.markPaid)
+  @RequireEdition('tickets', 'write')
+  markPaid() {
+    return implement(contract.orders.markPaid).handler(async ({ input }) => {
+      const { editionId, orderId } = input.params
+      await this.settling.markPaid(editionId, orderId)
+      return this.reads.get(editionId, orderId)
+    })
+  }
+
+  @Implement(contract.orders.decline)
+  @RequireEdition('tickets', 'write')
+  decline() {
+    return implement(contract.orders.decline).handler(async ({ input }) => {
+      const { editionId, orderId } = input.params
+      await this.settling.decline(editionId, orderId, input.body.reason)
       return this.reads.get(editionId, orderId)
     })
   }

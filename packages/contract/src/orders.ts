@@ -210,6 +210,21 @@ export const swapVariantSchema = z.strictObject({ variantId: z.uuid() })
 
 export type SwapVariant = z.infer<typeof swapVariantSchema>
 
+const reason = z.string().trim().min(1).max(500)
+
+/**
+ * A cancellation of a paid order, with its reason. It is only a cancellation: OPOS returns no
+ * money, which is the convention's matter.
+ */
+export const cancelOrderSchema = z.strictObject({ reason })
+
+export type CancelOrder = z.infer<typeof cancelOrderSchema>
+
+/** A decline of an order that needs review, with its reason. */
+export const declineOrderSchema = z.strictObject({ reason })
+
+export type DeclineOrder = z.infer<typeof declineOrderSchema>
+
 const edition = z.object({ params: z.object({ editionId: z.string() }) })
 const order = z.object({ params: z.object({ editionId: z.string(), orderId: z.string() }) })
 const line = z.object({
@@ -261,5 +276,32 @@ export const ordersContract = {
         "Swaps a merchandise line's variant for another of the same item, while that one has stock; needs tickets=write",
     })
     .input(line.extend({ body: swapVariantSchema }))
+    .output(orderDetailSchema),
+  cancel: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/orders/{orderId}/cancel',
+      summary:
+        'Cancels a paid order with a reason: what it held returns, and the buyer of a shop order is told. No money is returned; needs tickets=write',
+    })
+    .input(order.extend({ body: cancelOrderSchema }))
+    .output(orderDetailSchema),
+  markPaid: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/orders/{orderId}/mark-paid',
+      summary:
+        'Marks an order that needs review paid; one that holds nothing takes again what it held, and is refused with order.unavailable naming what is gone; needs tickets=write',
+    })
+    .input(order)
+    .output(orderDetailSchema),
+  decline: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/orders/{orderId}/decline',
+      summary:
+        'Declines an order that needs review with a reason: it holds nothing, gets no QR code, and its buyer is told; needs tickets=write',
+    })
+    .input(order.extend({ body: declineOrderSchema }))
     .output(orderDetailSchema),
 }

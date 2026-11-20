@@ -344,6 +344,10 @@ msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Only a head organizer can edit or remove another head organizer."
 
 #: src/errors.ts
+msgid "Only a paid order can be canceled."
+msgstr "Only a paid order can be canceled."
+
+#: src/errors.ts
 msgid "Only a suspended convention can be deleted. Suspend it first."
 msgstr "Only a suspended convention can be deleted. Suspend it first."
 
@@ -744,6 +748,10 @@ msgstr "This list has reached its limit of entries: {limit}."
 #: src/errors.ts
 msgid "This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address."
 msgstr "This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address."
+
+#: src/errors.ts
+msgid "This order does not need review any more. Check its status."
+msgstr "This order does not need review any more. Check its status."
 
 #: src/errors.ts
 msgid "This order does not wait for a payment any more. Check its status."

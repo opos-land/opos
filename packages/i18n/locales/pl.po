@@ -344,6 +344,10 @@ msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Tylko główny organizator może edytować lub usunąć innego głównego organizatora."
 
 #: src/errors.ts
+msgid "Only a paid order can be canceled."
+msgstr "Anulować można tylko opłacone zamówienie."
+
+#: src/errors.ts
 msgid "Only a suspended convention can be deleted. Suspend it first."
 msgstr "Usunąć można tylko zawieszony konwent. Najpierw go zawieś."
 
@@ -744,6 +748,10 @@ msgstr "Ta lista osiągnęła limit pozycji: {limit}."
 #: src/errors.ts
 msgid "This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address."
 msgstr "Tego zamówienia nie można tak poprawić: poprawia się tylko opłacone zamówienie, a zamówienie ręczne nie ma adresu e-mail."
+
+#: src/errors.ts
+msgid "This order does not need review any more. Check its status."
+msgstr "To zamówienie nie jest już do wyjaśnienia. Sprawdź jego status."
 
 #: src/errors.ts
 msgid "This order does not wait for a payment any more. Check its status."

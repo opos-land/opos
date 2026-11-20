@@ -71,9 +71,8 @@ export class OrderCorrections {
       ...taken,
       items: [...taken.items, { variantId: line.variantId, quantity: line.quantity }],
     })
-    if (!(await this.payments.stillThere(editionId, taken))) {
-      throw orderUnavailable({ kind: 'variant', id: variantId })
-    }
+    const gone = await this.payments.gone(editionId, taken)
+    if (gone) throw orderUnavailable(gone)
     await this.managed.swap(line.id, variantId)
     await this.tell(order, 'order-variant-changed')
   }

@@ -67,9 +67,12 @@ describe('errorCodes', () => {
   })
 
   // What an org does with an order (docs/specs/0006-order-management.md, Routes).
-  it.each(['order.not-correctable'])('lists %s of order management', (code) => {
-    expect(errorCodes).toContain(code)
-  })
+  it.each(['order.not-correctable', 'order.not-cancelable', 'order.not-in-review'])(
+    'lists %s of order management',
+    (code) => {
+      expect(errorCodes).toContain(code)
+    },
+  )
 
   it.each(errorCodes)('%s has a message in @opos/i18n/errors', (code) => {
     expect(errorMessages[code]).toBeDefined()

@@ -78,6 +78,8 @@ describe('errorMessage', () => {
     ['bot-check.failed', 'Nie udało się potwierdzić, że nie jesteś robotem. Spróbuj ponownie.'],
     ['order.hold-ended', 'Czas na opłacenie tego zamówienia minął. Złóż nowe zamówienie.'],
     ['order.already-paid', 'To zamówienie nie czeka już na płatność. Sprawdź jego status.'],
+    ['order.not-cancelable', 'Anulować można tylko opłacone zamówienie.'],
+    ['order.not-in-review', 'To zamówienie nie jest już do wyjaśnienia. Sprawdź jego status.'],
     [
       'order.not-correctable',
       'Tego zamówienia nie można tak poprawić: poprawia się tylko opłacone zamówienie, a zamówienie ręczne nie ma adresu e-mail.',

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cancelOrderSchema,
   changeOrderEmailSchema,
+  declineOrderSchema,
   MANUAL_REASONS,
   MAX_ORDER_PAGE,
   orderDetailSchema,
@@ -158,5 +160,19 @@ describe('a correction of an order', () => {
     expect(swapVariantSchema.parse({ variantId })).toEqual({ variantId })
     expect(swapVariantSchema.safeParse({ variantId: 'large' }).success).toBe(false)
     expect(swapVariantSchema.safeParse({ variantId, quantity: 2 }).success).toBe(false)
+  })
+})
+
+// A cancellation and a decline each take a reason (X1, R4).
+describe('a cancellation and a decline', () => {
+  it.each([
+    ['a cancellation', cancelOrderSchema],
+    ['a decline', declineOrderSchema],
+  ])('%s takes a reason of up to 500 characters', (_, schema) => {
+    expect(schema.parse({ reason: '  Asked for it ' })).toEqual({ reason: 'Asked for it' })
+    for (const body of [{}, { reason: '' }, { reason: '   ' }, { reason: 'x'.repeat(501) }]) {
+      expect(schema.safeParse(body).success).toBe(false)
+    }
+    expect(schema.safeParse({ reason: 'Asked', refund: true }).success).toBe(false)
   })
 })

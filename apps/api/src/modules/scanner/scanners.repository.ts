@@ -208,11 +208,18 @@ export class ScannersRepository {
       .where(eq(scannerDevices.id, id))
   }
 
-  /** What a paired phone shows of itself: its edition and its convention, by name. */
+  /**
+   * What a paired phone shows of itself: its edition and its convention, by name, and the time
+   * zone it shows a moment in.
+   */
   async names(tenantId: string, editionId: string) {
     const [row] = await this.context
       .tx()
-      .select({ editionName: editions.name, conventionName: tenants.name })
+      .select({
+        editionName: editions.name,
+        conventionName: tenants.name,
+        timezone: tenants.timezone,
+      })
       .from(editions)
       .innerJoin(tenants, eq(tenants.id, editions.tenantId))
       .where(and(eq(editions.tenantId, tenantId), eq(editions.id, editionId)))

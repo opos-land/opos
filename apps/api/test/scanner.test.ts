@@ -101,6 +101,8 @@ describe('pairing a phone', () => {
       name: 'Desk',
       editionName: 'Edition of the gate',
       conventionName: `Tenant ${g.t.slug}`,
+      // What the phone shows a moment in: the convention's time zone, never its own.
+      timezone: 'Europe/Warsaw',
       expiresAt,
     })
     // The phone is a scanner from now on, and the code is spent.

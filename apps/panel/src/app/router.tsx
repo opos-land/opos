@@ -27,6 +27,7 @@ import {
   NewEditionPage,
 } from '../features/editions'
 import { ManualOrderPage, OrderPage, OrdersPage, ProductionNumbersPage } from '../features/orders'
+import { ScannerPage, ScannersPage } from '../features/scanner'
 import { ProgramItemPage, ProgramPage } from '../features/program'
 import { EditionDocumentsPage, EditionShopPage, ShopSettingsPage } from '../features/shop'
 import { EditionAccessPage, InvitePage, MemberPage, TeamPage } from '../features/team'
@@ -88,6 +89,8 @@ export const router = createBrowserRouter([
       { path: '/auth/confirm', element: <ConfirmPage /> },
       { path: '/auth/mfa', element: <MfaPage /> },
       { path: '/invitation', element: <InvitationPage /> },
+      // The scanner: a phone with no account signed in; `scanner` is a reserved tenant slug.
+      { path: '/scanner', element: <ScannerPage /> },
       {
         element: <SignedIn />,
         children: [
@@ -141,6 +144,7 @@ export const router = createBrowserRouter([
                   { path: 'orders/new', element: <ManualOrderPage /> },
                   { path: 'orders/:orderId', element: <OrderPage /> },
                   { path: 'production-numbers', element: <ProductionNumbersPage /> },
+                  { path: 'scanners', element: <ScannersPage /> },
                   { path: 'ticket-types', element: <TicketTypesPage /> },
                   { path: 'ticket-types/new', element: <TicketTypePage /> },
                   { path: 'ticket-types/:ticketTypeId', element: <TicketTypePage /> },

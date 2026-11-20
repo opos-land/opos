@@ -57,6 +57,10 @@ msgstr "{needsReview, plural, one {# order needs review: its payment arrived and
 msgid "{title}, version {version}"
 msgstr "{title}, version {version}"
 
+#: src/features/scanner/model/labels.ts
+msgid "A child enters only with a guardian present."
+msgstr "A child enters only with a guardian present."
+
 #: src/features/catalog/components/variants-editor.tsx
 msgid "A combination that is not ticked does not exist and cannot be bought. A variant at zero stock shows as unavailable. An unlimited variant sells only until the pre-order deadline of the edition."
 msgstr "A combination that is not ticked does not exist and cannot be bought. A variant at zero stock shows as unavailable. An unlimited variant sells only until the pre-order deadline of the edition."
@@ -109,6 +113,10 @@ msgstr "A payment the order did not need"
 msgid "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 msgstr "A PDF of up to 10 MB. A published version is never changed or removed: a correction is a new version."
 
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "A QR code has 32 characters: letters and digits."
+msgstr "A QR code has 32 characters: letters and digits."
+
 #: src/features/orders/pages/manual-order-page.tsx
 msgid "A sale made outside the shop. What it sells is handed over as you record it: the order has no QR code and sends no email. A person who should hold a QR code ahead of the edition gets a 100% discount code instead, and places the order in the shop."
 msgstr "A sale made outside the shop. What it sells is handed over as you record it: the order has no QR code and sends no email. A person who should hold a QR code ahead of the edition gets a 100% discount code instead, and places the order in the shop."
@@ -117,9 +125,17 @@ msgstr "A sale made outside the shop. What it sells is handed over as you record
 msgid "A sandbox account takes no real money, and connects only where none is taken."
 msgstr "A sandbox account takes no real money, and connects only where none is taken."
 
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "A scanner is a phone that reads buyers’ QR codes at the gate and at the desk, with no account signed in. It reads the orders of this edition alone."
+msgstr "A scanner is a phone that reads buyers’ QR codes at the gate and at the desk, with no account signed in. It reads the orders of this edition alone."
+
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
 msgstr "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
+
+#: src/features/scanner/model/labels.ts
+msgid "A teen enters only with the guardian’s consent on paper."
+msgstr "A teen enters only with the guardian’s consent on paper."
 
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "A teen from the age of"
@@ -140,6 +156,10 @@ msgstr "Acceptance"
 #: src/features/editions/components/edition-layout.tsx
 msgid "Access"
 msgstr "Access"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Access ends"
+msgstr "Access ends"
 
 #: src/features/team/components/edition-access-row.tsx
 msgid "access expired"
@@ -172,6 +192,7 @@ msgstr "Account"
 #: src/features/catalog/pages/merchandise-page.tsx
 #: src/features/catalog/pages/ticket-types-page.tsx
 #: src/features/orders/components/order-lines.tsx
+#: src/features/scanner/pages/scanners-page.tsx
 #: src/features/team/pages/edition-access-page.tsx
 msgid "Actions"
 msgstr "Actions"
@@ -362,6 +383,10 @@ msgstr "An item without option axes has no size chart."
 #: src/features/orders/pages/orders-page.tsx
 msgid "An order’s number, a name, an email address or a QR code."
 msgstr "An order’s number, a name, an email address or a QR code."
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "An organizer who left the team"
+msgstr "An organizer who left the team"
 
 #: src/features/catalog/components/custom-field-form.tsx
 msgid "Answer"
@@ -883,6 +908,22 @@ msgstr "Emails"
 msgid "Empty for no end date. In the convention's time zone, {zone}."
 msgstr "Empty for no end date. In the convention's time zone, {zone}."
 
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Enable a scanner"
+msgstr "Enable a scanner"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Enable the scanner"
+msgstr "Enable the scanner"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Enabled by"
+msgstr "Enabled by"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Ended"
+msgstr "Ended"
+
 #: src/features/orders/model/labels.ts
 msgctxt "payment attempt status"
 msgid "Ended unpaid"
@@ -892,6 +933,10 @@ msgstr "Ended unpaid"
 #: src/features/program/components/program-item-form.tsx
 msgid "Ends"
 msgstr "Ends"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Ends earlier (optional)"
+msgstr "Ends earlier (optional)"
 
 #: src/features/editions/components/edition-form.tsx
 msgid "Enter a city of up to 100 characters."
@@ -1026,6 +1071,10 @@ msgstr "Enter when the sale starts and when it ends, the end later."
 msgid "Enter your password."
 msgstr "Enter your password."
 
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "Entry"
+msgstr "Entry"
+
 #: src/features/orders/pages/orders-page.tsx
 msgid "Every status"
 msgstr "Every status"
@@ -1131,6 +1180,14 @@ msgstr "Guardian’s consent"
 #: src/features/orders/components/order-lines.tsx
 msgid "Handed out"
 msgstr "Handed out"
+
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "Handed out {when} by {by}"
+msgstr "Handed out {when} by {by}"
+
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "Handed out {when} in the panel"
+msgstr "Handed out {when} in the panel"
 
 #: src/features/team/components/invite-form.tsx
 #: src/features/team/components/member-form.tsx
@@ -1343,6 +1400,14 @@ msgstr "Kept on the order, for the team. The buyer does not see it."
 msgid "Kind"
 msgstr "Kind"
 
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Last used"
+msgstr "Last used"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
+msgstr "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
+
 #: src/features/account/pages/account-page.tsx
 msgid "Light"
 msgstr "Light"
@@ -1389,6 +1454,7 @@ msgid "Mark {0} as handed out"
 msgstr "Mark {0} as handed out"
 
 #: src/features/orders/components/order-lines.tsx
+#: src/features/scanner/pages/scanner-page.tsx
 msgid "Mark as handed out"
 msgstr "Mark as handed out"
 
@@ -1492,6 +1558,10 @@ msgstr "Name"
 msgid "Name of axis {number}"
 msgstr "Name of axis {number}"
 
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Name of the scanner"
+msgstr "Name of the scanner"
+
 #: src/features/shop/components/seller-section.tsx
 msgid "Name of the seller"
 msgstr "Name of the seller"
@@ -1509,6 +1579,10 @@ msgstr "Needs review"
 msgctxt "production numbers"
 msgid "Needs review"
 msgstr "Needs review"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Never"
+msgstr "Never"
 
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "New add-on"
@@ -1601,6 +1675,10 @@ msgstr "No limit"
 msgid "No limit: anyone may take it"
 msgstr "No limit: anyone may take it"
 
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "No name"
+msgstr "No name"
+
 #: src/features/orders/pages/orders-page.tsx
 msgid "No order matches."
 msgstr "No order matches."
@@ -1657,6 +1735,10 @@ msgstr "Not sent yet: it is tried again"
 #: src/features/orders/pages/order-page.tsx
 msgid "Not sent: the order moved to another address before it went out"
 msgstr "Not sent: the order moved to another address before it went out"
+
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "Not valid"
+msgstr "Not valid"
 
 #: src/features/orders/components/order-lines.tsx
 msgid "Not yet"
@@ -1765,6 +1847,7 @@ msgid "Order {0}"
 msgstr "Order {0}"
 
 #: src/features/orders/pages/order-page.tsx
+#: src/features/scanner/pages/scanner-page.tsx
 msgid "Order {number}"
 msgstr "Order {number}"
 
@@ -1852,6 +1935,14 @@ msgstr "Paid - manual"
 #: src/features/orders/model/labels.ts
 msgid "Paid by invoice"
 msgstr "Paid by invoice"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Pair a phone with {name}"
+msgstr "Pair a phone with {name}"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Paired with a phone"
+msgstr "Paired with a phone"
 
 #: src/features/editions/components/edition-form.tsx
 msgid "Part of the edition's address in the portal: lowercase letters, digits and hyphens."
@@ -2021,6 +2112,7 @@ msgid "Published"
 msgstr "Published"
 
 #: src/features/orders/pages/order-page.tsx
+#: src/features/scanner/pages/scanner-page.tsx
 msgid "QR code"
 msgstr "QR code"
 
@@ -2040,6 +2132,18 @@ msgstr "Question"
 #: src/features/team/components/members-table.tsx
 msgid "Read"
 msgstr "Read"
+
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "Read the code"
+msgstr "Read the code"
+
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "Read the next code"
+msgstr "Read the next code"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Read this QR code with the phone’s camera, or open the link on the phone. The phone that opens it becomes the scanner. The code works once, until {until}, and is shown only now."
+msgstr "Read this QR code with the phone’s camera, or open the link on the phone. The phone that opens it becomes the scanner. The code works once, until {until}, and is shown only now."
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "Ready to sell"
@@ -2202,6 +2306,26 @@ msgstr "Resend the QR code"
 msgid "Reset your password"
 msgstr "Reset your password"
 
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Revoke"
+msgstr "Revoke"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Revoke {scannerName}"
+msgstr "Revoke {scannerName}"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Revoke the scanner"
+msgstr "Revoke the scanner"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Revoke the scanner {scannerName}?"
+msgstr "Revoke the scanner {scannerName}?"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Revoked"
+msgstr "Revoked"
+
 #: src/features/team/components/invite-form.tsx
 #: src/features/team/components/member-form.tsx
 #: src/features/team/components/members-table.tsx
@@ -2313,6 +2437,24 @@ msgstr "Saved on your account."
 #: src/features/account/components/two-factor-card.tsx
 msgid "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
 msgstr "Scan the QR code with an authenticator app, or type the secret into it. Then enter the six-digit code the app shows."
+
+#: src/features/scanner/pages/scanner-page.tsx
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Scanner"
+msgstr "Scanner"
+
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "Scanner of {editionName}, {conventionName}"
+msgstr "Scanner of {editionName}, {conventionName}"
+
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Scanners"
+msgstr "Scanners"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Scanners of the edition"
+msgstr "Scanners of the edition"
 
 #: src/features/orders/pages/orders-page.tsx
 msgid "Search"
@@ -2482,6 +2624,10 @@ msgstr "Started"
 msgid "Starts"
 msgstr "Starts"
 
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "State"
+msgstr "State"
+
 #: src/features/editions/pages/edition-dashboard-page.tsx
 #: src/features/editions/pages/editions-page.tsx
 #: src/features/shop/components/provider-account-section.tsx
@@ -2496,6 +2642,10 @@ msgstr "Status"
 #: src/features/catalog/components/variants-editor.tsx
 msgid "Stock"
 msgstr "Stock"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Such as the gate it stands at. Every hand-out it marks is told by it."
+msgstr "Such as the gate it stands at. Every hand-out it marks is told by it."
 
 #: src/features/orders/pages/manual-order-page.tsx
 msgid "Summary"
@@ -2573,6 +2723,14 @@ msgstr "The axes are saved."
 #: src/features/account/pages/account-page.tsx
 msgid "The browser's language"
 msgstr "The browser's language"
+
+#: src/features/scanner/components/qr-reader.tsx
+msgid "The camera is not available on this phone. Type the code instead."
+msgstr "The camera is not available on this phone. Type the code instead."
+
+#: src/features/scanner/components/qr-reader.tsx
+msgid "The camera’s view"
+msgstr "The camera’s view"
 
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
@@ -2678,6 +2836,10 @@ msgstr "The edition {editionName} is published."
 msgid "The edition {name} is created."
 msgstr "The edition {name} is created."
 
+#: src/features/scanner/model/labels.ts
+msgid "The edition does not know this code."
+msgstr "The edition does not know this code."
+
 #: src/features/catalog/components/ticket-type-form.tsx
 #: src/features/catalog/pages/add-ons-page.tsx
 msgid "The edition has no add-ons yet."
@@ -2703,6 +2865,10 @@ msgstr "The edition has no merchandise yet."
 #: src/features/orders/pages/production-numbers-page.tsx
 msgid "The edition has no merchandise."
 msgstr "The edition has no merchandise."
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "The edition has no scanners yet."
+msgstr "The edition has no scanners yet."
 
 #: src/features/catalog/pages/ticket-types-page.tsx
 msgid "The edition has no ticket types yet."
@@ -2917,6 +3083,10 @@ msgstr "The order sent no email."
 msgid "The order was canceled"
 msgstr "The order was canceled"
 
+#: src/features/scanner/model/labels.ts
+msgid "The order was canceled."
+msgstr "The order was canceled."
+
 #: src/features/orders/pages/order-page.tsx
 msgid "The organizers"
 msgstr "The organizers"
@@ -2964,6 +3134,10 @@ msgstr "The payment was declined"
 #: src/features/orders/model/labels.ts
 msgid "The payment was declined."
 msgstr "The payment was declined."
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "The phone reads and marks nothing from then on, and no screen brings its access back: a phone is paired again as a new scanner."
+msgstr "The phone reads and marks nothing from then on, and no screen brings its access back: a phone is paired again as a new scanner."
 
 #: src/features/catalog/components/pictures-editor.tsx
 msgid "The picture is added."
@@ -3018,6 +3192,10 @@ msgstr "The programme item must end after it starts."
 msgid "The provider reports a condition this panel cannot describe yet (code: {code})."
 msgstr "The provider reports a condition this panel cannot describe yet (code: {code})."
 
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "The QR code that pairs a phone with {name}"
+msgstr "The QR code that pairs a phone with {name}"
+
 #: src/features/orders/pages/manual-order-page.tsx
 msgid "The sale"
 msgstr "The sale"
@@ -3025,6 +3203,14 @@ msgstr "The sale"
 #: src/features/shop/model/providers.ts
 msgid "The same number as the merchant ID, unless Przelewy24 gave the shop one of its own."
 msgstr "The same number as the merchant ID, unless Przelewy24 gave the shop one of its own."
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "The scanner is enabled. Pair a phone with its code now."
+msgstr "The scanner is enabled. Pair a phone with its code now."
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "The scanner is revoked."
+msgstr "The scanner is revoked."
 
 #: src/features/shop/components/seller-section.tsx
 msgid "The seller’s details are saved."
@@ -3156,6 +3342,14 @@ msgstr "There was not enough money to pay."
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
 
+#: src/features/scanner/model/labels.ts
+msgid "This code is of an order of another edition."
+msgstr "This code is of an order of another edition."
+
+#: src/features/scanner/model/labels.ts
+msgid "This code was replaced: the order has a new one, sent to its new email address."
+msgstr "This code was replaced: the order has a new one, sent to its new email address."
+
 #: src/shared/ui/messages.tsx
 msgid "This convention is suspended"
 msgstr "This convention is suspended"
@@ -3189,6 +3383,10 @@ msgstr "This looks like a QR code with a mistake in it: a QR code has 32 charact
 msgid "This order needs review"
 msgstr "This order needs review"
 
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "This phone is no scanner yet. Open the pairing link an organizer shows you in the panel, or read its QR code with the camera."
+msgstr "This phone is no scanner yet. Open the pairing link an organizer shows you in the panel, or read its QR code with the camera."
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
 msgstr "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
@@ -3196,6 +3394,10 @@ msgstr "This provider answers only calls from the IP addresses entered in its pa
 #: src/features/shop/components/provider-account-section.tsx
 msgid "This provider answers only calls from the IP addresses entered in its panel. Enter this one there before you connect the account: <0>{callsFrom}</0>"
 msgstr "This provider answers only calls from the IP addresses entered in its panel. Enter this one there before you connect the account: <0>{callsFrom}</0>"
+
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "This scanner no longer works: its access was revoked or has ended. Ask an organizer to pair this phone again."
+msgstr "This scanner no longer works: its access was revoked or has ended. Ask an organizer to pair this phone again."
 
 #: src/features/orders/pages/manual-order-page.tsx
 #: src/features/orders/pages/order-page.tsx
@@ -3349,6 +3551,10 @@ msgstr "Two-factor authentication is on."
 msgid "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 msgstr "Two-factor authentication is on. You enter a code from your authenticator app each time you sign in."
 
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "Type the code under the QR picture when the camera cannot read it."
+msgstr "Type the code under the QR picture when the camera cannot read it."
+
 #: src/features/catalog/components/variants-editor.tsx
 msgid "Unlimited"
 msgstr "Unlimited"
@@ -3426,6 +3632,10 @@ msgstr "Venue address"
 #: src/features/shop/components/document-card.tsx
 msgid "Version {number}"
 msgstr "Version {number}"
+
+#: src/features/scanner/pages/scanners-page.tsx
+msgid "Waiting for a phone"
+msgstr "Waiting for a phone"
 
 #: src/features/orders/pages/order-page.tsx
 msgid "Waiting to be sent"

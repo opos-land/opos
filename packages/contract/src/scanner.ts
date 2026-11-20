@@ -62,6 +62,8 @@ export const pairedScannerSchema = z.object({
   name: z.string(),
   editionName: z.string(),
   conventionName: z.string(),
+  /** The convention's time zone: the scanner shows every moment in it, never in the phone's. */
+  timezone: z.string(),
   expiresAt: timestamp,
 })
 

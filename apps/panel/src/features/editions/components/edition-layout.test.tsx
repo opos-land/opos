@@ -122,6 +122,7 @@ describe('EditionLayout', () => {
       ['Dashboard', '/convention-a/editions/2026'],
       ['Shop', '/convention-a/editions/2026/shop'],
       ['Orders', '/convention-a/editions/2026/orders'],
+      ['Scanners', '/convention-a/editions/2026/scanners'],
       ['Ticket types', '/convention-a/editions/2026/ticket-types'],
       ['Add-ons', '/convention-a/editions/2026/add-ons'],
       ['Merchandise', '/convention-a/editions/2026/merchandise'],

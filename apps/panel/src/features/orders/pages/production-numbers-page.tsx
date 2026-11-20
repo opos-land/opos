@@ -21,7 +21,7 @@ import {
 import { useEditionBySlug } from '../../editions'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
 import { productionNumbersExportOptions, productionNumbersOptions } from '../api/orders'
-import { fileNameOf, saveFile } from '../model/save-file'
+import { fileNameOf, saveFile } from '../../../shared/lib/save-file'
 
 /**
  * The production numbers of an edition's merchandise

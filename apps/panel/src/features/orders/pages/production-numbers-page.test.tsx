@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as SaveFile from '../model/save-file'
+import type * as SaveFile from '../../../shared/lib/save-file'
 import { ProductionNumbersPage } from './production-numbers-page'
 
 const state = vi.hoisted(() => ({ tickets: 'none' }))
@@ -40,7 +40,7 @@ vi.mock('../api/orders', () => ({
     queryFn: readFile,
   }),
 }))
-vi.mock('../model/save-file', async (original) => ({
+vi.mock('../../../shared/lib/save-file', async (original) => ({
   ...(await original<typeof SaveFile>()),
   saveFile: (name: string, body: Blob) => saved.files.push({ name, body }),
 }))

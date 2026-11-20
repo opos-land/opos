@@ -74,6 +74,47 @@ test('an org finds an order by its buyer’s email, corrects the ticket holder�
   ])
 })
 
+test('an org reads what an email of an order said, without the QR code it carried', async ({
+  page,
+  request,
+  accounts,
+  tenants,
+}) => {
+  const s = await selling(tenants, accounts)
+  const email = accounts.freshEmail('buyer')
+  const order = await buy(request, s, { email })
+  await pay(request, order)
+  await buy(request, s, { email: accounts.freshEmail('other') })
+  const mail = await waitForMail(email, 1, 60_000)
+  const code = /The QR code of the order \S+: ([A-Z2-7]{32})/.exec(mail.Text)![1]!
+
+  await signInToPanel(page, s.head.email, s.head.password)
+  await followFolderLink(page.getByRole('navigation', { name: s.edition.name }), 'Shop', 'Emails')
+  await expect(page.getByRole('heading', { name: 'Emails', level: 1 })).toBeVisible()
+  await page.getByLabel('Search').fill(email)
+  await page.getByRole('button', { name: 'Search' }).click()
+  await expect(page.getByRole('row')).toHaveCount(2)
+  // The row opens the email from anywhere in it.
+  await page.getByRole('cell', { name: email }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Confirmation with the QR code', level: 1 }),
+  ).toBeVisible()
+
+  // What went out, but for what only the buyer sees.
+  const said = section(page, 'What it said')
+  await expect(said.getByText(mail.Subject, { exact: true })).toBeVisible()
+  await expect(said.getByText(`The QR code of the order ${order.number}: […]`)).toBeVisible()
+  await expect(said.getByText('Standard: ')).toBeVisible()
+  await expect(page.getByText(code)).toHaveCount(0)
+  await expect(said.getByText('The QR code and the order link are left out')).toBeVisible()
+
+  await section(page, 'Email').getByRole('link', { name: order.number, exact: true }).click()
+  await expect(page.getByRole('heading', { name: `Order ${order.number}`, level: 1 })).toBeVisible()
+  // The order lists the email, and its row leads back to what it said.
+  await section(page, 'Emails').getByRole('link', { name: 'Confirmation with the QR code' }).click()
+  await expect(said.getByText(mail.Subject, { exact: true })).toBeVisible()
+})
+
 test('a changed email gives the new address the QR code, and ends the links sent before', async ({
   page,
   request,

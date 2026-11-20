@@ -452,6 +452,37 @@ describe('what a sent email said', () => {
     expect(JSON.stringify(kept)).not.toContain(token)
   })
 
+  // Whether an address has an account is told to nobody: neither by a sentence of the email
+  // nor by the language it went out in.
+  it('is kept in the convention’s language and with no word of an account, whoever it went to', async () => {
+    const s = await shop()
+    const account = await createAccount({ locale: 'en' })
+    const [visitor, owner] = [await s.place(buyer()), await s.place(account.email)]
+    await s.pay(visitor)
+    await s.pay(owner)
+
+    await send(s)
+
+    const [mail] = await mailTo(account.email)
+    expect(mail!.Subject).toBe(`Your order ${owner.number} for ${s.name} is paid`)
+    expect(mail!.Text).toMatch(/This email address has an OPOS account[^]*Sign in: \S+\/login/)
+    const kept = await s.emails()
+    const [toVisitor, toOwner] = [visitor, owner].map((placed) =>
+      kept.find((email) => email.order_id === placed.orderId)!,
+    )
+    expect(toOwner!.subject).toBe(
+      `Twoje zamówienie ${owner.number} w sklepie konwentu ${s.name} jest opłacone`,
+    )
+    // The amount is written as the language writes it, with a space that does not break.
+    expect(toOwner!.body).toMatch(/Razem: 100,00\szł/)
+    expect(toOwner!.body).toContain(`Kod QR zamówienia ${owner.number}: […]`)
+    expect(toOwner!.body).not.toMatch(/Sign in|Zaloguj|account|kont[oa]/i)
+    // But for the order's number, the two say the same.
+    expect(lines(String(toOwner!.body).replaceAll(owner.number, visitor.number))).toEqual(
+      lines(toVisitor!.body),
+    )
+  })
+
   it('is kept whole for an email that hands nothing over', async () => {
     const s = await shop('en')
     const to = buyer()

@@ -34,7 +34,7 @@ import { MailService } from '../mail/mail.service'
 import { recipientLocale } from '../mail/recipient-locale'
 import { PaymentProviders } from '../payments/payment-providers'
 import { hashOf, secretToken } from './codes'
-import { keptOf } from './kept-email'
+import { type KeptEmail, keptOf } from './kept-email'
 import { OfferRepository } from './offer.repository'
 import { type ClaimedEmail, OrderEmailsRepository } from './order-emails.repository'
 
@@ -67,12 +67,35 @@ const WITHDRAWN = 'withdrawn'
 export const retryDelayMs = (failedAttempts: number) =>
   Math.min(2 ** Math.max(failedAttempts - 1, 0), 360) * MINUTE
 
+interface Picture {
+  cid: string
+  filename: string
+  content: Buffer
+}
+
+/** Whom an email is written for: the language it is in, and where an account signs in. */
+interface Reader {
+  locale: Locale
+  /** For an address with an account; null for one with none. */
+  signInLink: string | null
+}
+
+/** What an email says, to be written for a reader, with the pictures that travel with it. */
+interface Written {
+  write: (reader: Reader) => OrderEmailContent
+  pictures?: Picture[]
+}
+
 interface Composed {
   to: string
   locale: Locale
   content: OrderEmailContent
-  pictures?: { cid: string; filename: string; content: Buffer }[]
+  /** The same email as it is kept: written for a reader of whom nothing is told. */
+  kept: { locale: Locale; content: OrderEmailContent }
+  pictures?: Picture[]
 }
+
+type OrderOfEmail = NonNullable<Awaited<ReturnType<OrderEmailsRepository['order']>>>
 
 /**
  * The outbox of the orders' emails (docs/specs/0004-checkout-and-orders.md, Emails, Jobs). An
@@ -80,8 +103,9 @@ interface Composed {
  * language or the convention's for an address with no account, marks it sent, and tries a failed
  * send again after a growing delay, so no email is lost to one. Sending is outbound I/O and runs
  * outside every transaction: an email is claimed first, for this process alone, under a lock
- * another process skips. What a sent email said is kept on its row, without what hands the order
- * over (docs/specs/0006-order-management.md, F4).
+ * another process skips. What a sent email said is kept on its row, written in the convention's
+ * language, without what hands the order over and with no word of an account
+ * (docs/specs/0006-order-management.md, F4).
  */
 @Injectable()
 export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationShutdown {
@@ -162,17 +186,19 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     const { email, composed } = claimed
     // Withdrawn while it was written: it goes nowhere, and is not tried again.
     if (composed === WITHDRAWN) return undefined
-    let sent: { subject: string; text: string }
+    let said: KeptEmail
     try {
       if (!composed) throw new Error('The email could not be written')
-      sent = await this.mail.sendOrderEmail(composed)
+      // Written before the email goes out: a text that cannot be written sends nothing, so no
+      // email goes out twice for it.
+      said = keptOf(await this.mail.orderEmailText(composed.kept), handedOver)
+      await this.mail.sendOrderEmail(composed)
     } catch (error) {
       const next = new Date(Date.now() + retryDelayMs(email.failedAttempts + 1))
       await this.context.withTenant(tenantId, () => this.emails.failed(emailId, next))
       this.logger.warn(`The email ${emailId} was not sent: ${mailFailure(error)}`)
       return 'failed'
     }
-    const said = keptOf(sent, handedOver)
     await this.context.withTenant(tenantId, () => this.emails.sent(emailId, new Date(), said))
     return 'sent'
   }
@@ -194,147 +220,164 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
       await this.emails.withdraw(email.id, now)
       return WITHDRAWN
     }
+    const written = await this.written(email, order, now, handedOver)
+    if (written === WITHDRAWN) return WITHDRAWN
     const account = await this.emails.account(email.recipient)
     const locale = recipientLocale({ account: account?.locale, tenant: order.conventionLocale })
+    // Whether an address has an account is told to nobody. What is kept of the email is so
+    // written as for an address with none: in the convention's language, with no way to sign in.
+    const keptLocale = recipientLocale({ tenant: order.conventionLocale })
+    return {
+      to: email.recipient,
+      locale,
+      content: written.write({ locale, signInLink: account ? `${this.portalUrl}/login` : null }),
+      kept: {
+        locale: keptLocale,
+        content: written.write({ locale: keptLocale, signInLink: null }),
+      },
+      pictures: written.pictures,
+    }
+  }
+
+  /**
+   * What an email says, from the order as it stands now: read once, and written for each reader
+   * in the language of their own.
+   */
+  private async written(
+    email: ClaimedEmail,
+    order: OrderOfEmail,
+    now: Date,
+    handedOver: string[],
+  ): Promise<Written | typeof WITHDRAWN> {
     const of = { conventionName: order.conventionName, number: order.number }
     const seller = await this.offers.seller(order.tenantId)
     const contactEmail = seller?.contactEmail ?? null
     const payment = await this.emails.lastPayment(order.id)
     /** Where the money of the last payment is, as its provider's module words it. */
-    const moneyWith = () => {
+    const moneyWith = (locale: Locale) => {
       const sentence =
         payment?.moneyWith && this.providers.moneyWith(payment.provider, payment.moneyWith)
       if (!sentence) return null
       return sentence[locale] ?? sentence.en ?? Object.values(sentence)[0] ?? null
     }
-    const to = email.recipient
 
     switch (email.kind) {
       case 'order-confirmation': {
         const { qrCode, orderLink, pictures } = await this.codeAndLink(order, now, handedOver)
         const lines = await this.emails.lines(order.id)
         const documents = await this.emails.documents(order.id)
+        const guardianConsent =
+          order.ageBand === 'teen'
+            ? { formUrl: await this.emails.guardianFormUrl(order.editionId) }
+            : null
         return {
-          to,
-          locale,
-          content: orderConfirmationEmail({
-            ...of,
-            locale,
-            currency: order.currency,
-            totalMinor: order.totalMinor,
-            // What a discount code took off is a row of its own, not something sold.
-            lines: lines.filter((line) => line.kind !== 'discount'),
-            discountMinor: lines.find((line) => line.kind === 'discount')?.amountMinor ?? null,
-            picksUp: lines.some((line) => line.kind === 'merchandise'),
-            qrCode,
-            qrCodeCid: QR_CODE_CID,
-            orderLink,
-            signInLink: account ? `${this.portalUrl}/login` : null,
-            seller,
-            documents: documents.map((document) => ({
-              title: document.title,
-              url: `${this.apiUrl}/public/tenants/${order.conventionSlug}/document-versions/${document.versionId}`,
-            })),
-            guardianConsent:
-              order.ageBand === 'teen'
-                ? { formUrl: await this.emails.guardianFormUrl(order.editionId) }
-                : null,
-          }),
           pictures,
+          write: ({ locale, signInLink }) =>
+            orderConfirmationEmail({
+              ...of,
+              locale,
+              currency: order.currency,
+              totalMinor: order.totalMinor,
+              // What a discount code took off is a row of its own, not something sold.
+              lines: lines.filter((line) => line.kind !== 'discount'),
+              discountMinor: lines.find((line) => line.kind === 'discount')?.amountMinor ?? null,
+              picksUp: lines.some((line) => line.kind === 'merchandise'),
+              qrCode,
+              qrCodeCid: QR_CODE_CID,
+              orderLink,
+              signInLink,
+              seller,
+              documents: documents.map((document) => ({
+                title: document.title,
+                url: `${this.apiUrl}/public/tenants/${order.conventionSlug}/document-versions/${document.versionId}`,
+              })),
+              guardianConsent,
+            }),
         }
       }
       case 'order-expired':
         return {
-          to,
-          locale,
-          content: orderExpiredEmail({
-            ...of,
-            shopLink: `${this.portalUrl}/conventions/${order.conventionSlug}/${order.editionSlug}/shop`,
-          }),
+          write: () =>
+            orderExpiredEmail({
+              ...of,
+              shopLink: `${this.portalUrl}/conventions/${order.conventionSlug}/${order.editionSlug}/shop`,
+            }),
         }
       case 'payment-under-review':
         return {
-          to,
-          locale,
-          content: paymentUnderReviewEmail({ ...of, moneyWith: moneyWith(), contactEmail }),
+          write: ({ locale }) =>
+            paymentUnderReviewEmail({ ...of, moneyWith: moneyWith(locale), contactEmail }),
         }
       case 'needs-review':
         return {
-          to,
-          locale,
-          content: needsReviewEmail({
-            ...of,
-            locale,
-            currency: order.currency,
-            // The amount matched, so the order had expired and what it held was gone.
-            cause: payment?.paidAmountMinor === order.totalMinor ? 'gone' : 'amount',
-            paidMinor: payment?.paidAmountMinor ?? 0,
-            totalMinor: order.totalMinor,
-          }),
+          write: ({ locale }) =>
+            needsReviewEmail({
+              ...of,
+              locale,
+              currency: order.currency,
+              // The amount matched, so the order had expired and what it held was gone.
+              cause: payment?.paidAmountMinor === order.totalMinor ? 'gone' : 'amount',
+              paidMinor: payment?.paidAmountMinor ?? 0,
+              totalMinor: order.totalMinor,
+            }),
         }
       case 'payment-not-needed':
         return {
-          to,
-          locale,
-          content: paymentNotNeededEmail({ ...of, moneyWith: moneyWith(), contactEmail }),
+          write: ({ locale }) =>
+            paymentNotNeededEmail({ ...of, moneyWith: moneyWith(locale), contactEmail }),
         }
       case 'payment-not-needed-orgs':
         return {
-          to,
-          locale,
-          content: paymentNotNeededOrgsEmail({
-            ...of,
-            locale,
-            currency: order.currency,
-            paidMinor: payment?.paidAmountMinor ?? 0,
-            providerReference: payment?.providerReference ?? null,
-          }),
+          write: ({ locale }) =>
+            paymentNotNeededOrgsEmail({
+              ...of,
+              locale,
+              currency: order.currency,
+              paidMinor: payment?.paidAmountMinor ?? 0,
+              providerReference: payment?.providerReference ?? null,
+            }),
         }
       // What an org's work on the order tells its buyer, written from the order as it stands
       // when the email is sent (docs/specs/0006-order-management.md, Emails).
       case 'order-holder-changed':
         return {
-          to,
-          locale,
-          content: orderHolderChangedEmail({ ...of, holderName: order.holderName, contactEmail }),
+          write: () =>
+            orderHolderChangedEmail({ ...of, holderName: order.holderName, contactEmail }),
         }
       case 'order-variant-changed': {
         const lines = await this.emails.lines(order.id)
         return {
-          to,
-          locale,
-          content: orderVariantChangedEmail({
-            ...of,
-            merchandise: lines.filter((line) => line.kind === 'merchandise'),
-            contactEmail,
-          }),
+          write: () =>
+            orderVariantChangedEmail({
+              ...of,
+              merchandise: lines.filter((line) => line.kind === 'merchandise'),
+              contactEmail,
+            }),
         }
       }
       case 'order-email-changed': {
         const { qrCode, orderLink, pictures } = await this.codeAndLink(order, now, handedOver)
         return {
-          to,
-          locale,
-          content: orderEmailChangedEmail({
-            ...of,
-            qrCode,
-            qrCodeCid: QR_CODE_CID,
-            orderLink,
-            contactEmail,
-          }),
           pictures,
+          write: () =>
+            orderEmailChangedEmail({
+              ...of,
+              qrCode,
+              qrCodeCid: QR_CODE_CID,
+              orderLink,
+              contactEmail,
+            }),
         }
       }
       case 'order-email-replaced':
-        return { to, locale, content: orderEmailReplacedEmail({ ...of, contactEmail }) }
+        return { write: () => orderEmailReplacedEmail({ ...of, contactEmail }) }
       case 'order-declined':
         return {
-          to,
-          locale,
-          content: orderDeclinedEmail({ ...of, moneyWith: moneyWith(), contactEmail }),
+          write: ({ locale }) =>
+            orderDeclinedEmail({ ...of, moneyWith: moneyWith(locale), contactEmail }),
         }
       case 'order-canceled':
-        return { to, locale, content: orderCanceledEmail({ ...of, contactEmail }) }
+        return { write: () => orderCanceledEmail({ ...of, contactEmail }) }
       // The reminder before the edition (docs/specs/0011-pre-edition-reminder.md, R4): the QR
       // code the order carries now, with what the edition says of its hours and its pick-up.
       case 'pre-edition-reminder': {
@@ -348,34 +391,27 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
         const guardian =
           order.ageBand === 'child' || order.ageBand === 'teen' ? order.ageBand : null
         return {
-          to,
-          locale,
-          content: preEditionReminderEmail({
-            ...of,
-            editionName: order.editionName,
-            qrCode,
-            qrCodeCid: QR_CODE_CID,
-            openingHours: told.openingHours,
-            pickupInformation: told.pickupInformation,
-            guardian,
-            guardianFormUrl: guardian === 'teen' ? told.guardianFormUrl : null,
-            contactEmail,
-          }),
           pictures,
+          write: () =>
+            preEditionReminderEmail({
+              ...of,
+              editionName: order.editionName,
+              qrCode,
+              qrCodeCid: QR_CODE_CID,
+              openingHours: told.openingHours,
+              pickupInformation: told.pickupInformation,
+              guardian,
+              guardianFormUrl: guardian === 'teen' ? told.guardianFormUrl : null,
+              contactEmail,
+            }),
         }
       }
       // A fresh link for one that expired (docs/specs/0009-buyer-self-service.md, K4): the link
       // alone, since the order's page shows the rest.
-      case 'order-link':
-        return {
-          to,
-          locale,
-          content: orderLinkEmail({
-            ...of,
-            orderLink: await this.link(order, now, handedOver),
-            contactEmail,
-          }),
-        }
+      case 'order-link': {
+        const orderLink = await this.link(order, now, handedOver)
+        return { write: () => orderLinkEmail({ ...of, orderLink, contactEmail }) }
+      }
     }
   }
 

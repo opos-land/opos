@@ -162,9 +162,10 @@ export const orderEmailListSchema = z.object({
 export type OrderEmailList = z.infer<typeof orderEmailListSchema>
 
 /**
- * An email with what it said: its subject and its text as they went out, in the language they
- * went out in, with `LEFT_OUT` where the QR code and the token of the order link were. Both are
- * null for an email not sent, and for one sent before texts were kept.
+ * An email with what it said as it went out: its subject and its text, written in the
+ * convention's language whatever language the email was in, with `LEFT_OUT` where the QR code and
+ * the token of the order link were and with no word of an account. Both are null for an email not
+ * sent, and for one sent before texts were kept.
  */
 export const orderEmailDetailSchema = orderEmailSummarySchema.extend({
   subject: z.string().nullable(),
@@ -410,7 +411,7 @@ export const ordersContract = {
       method: 'GET',
       path: '/editions/{editionId}/order-emails/{emailId}',
       summary:
-        'An email of an order with what it said: its subject and its text as they went out, without the QR code and the order link; needs tickets>=read',
+        "An email of an order with what it said as it went out: its subject and its text in the convention's language, without the QR code and the order link; needs tickets>=read",
     })
     .input(email)
     .output(orderEmailDetailSchema),

@@ -121,6 +121,7 @@ and after every restore.
 | the orders whose hold ended         | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
 | the emails of orders that are due   | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
 | a scanner by a hash                 | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction |
+| an order link by a hash             | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                   |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token), the API's own job, or publication, for what anyone
@@ -615,6 +616,20 @@ steps of [adding a feature](#adding-a-feature).
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than
   that of the org who enabled it.
+- **Buyer self-service.** An order link's token travels after the `#` of the portal's address
+  and in the body of a request, never in a path or a query; its routes name no tenant, so every
+  read behind them filters on the tenant the link's hash answered
+  ([0063](adr/0063-open-an-order-link-by-a-token-after-the-hash-found-across-tenants.md)).
+  What a link opens carries no email address and nothing of the ticket holder. Asking for a
+  fresh link answers alike for any token, and queues one at most once an hour for an order; the
+  email that carries it hands the order over, and is withdrawn like a confirmation when the order
+  has left its address. The routes of an account's own orders are tenant routes that ask for no
+  membership: their reads filter on the tenant and on the session's account, and another
+  account's order is not there. A "Buy more" order names the account's own paid order of the
+  same edition, whose row is locked before any limit; it is priced by the contract's one
+  function against what that order's ticket type offers and what was bought on its QR code, and
+  once paid joins the QR code that order then carries
+  ([0064](adr/0064-add-to-a-paid-order-with-an-order-of-its-own-on-the-same-qr-code.md)).
 - **The scanner.** A phone becomes a scanner by spending a pairing code, which travels in a
   request's body and after the `#` of a link, never in a path or a query; it is then known by its
   token alone ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). A guard

@@ -3,8 +3,9 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), F9 and P1.7
-- Decisions: none recorded yet; the records this spec needs are among its
-  [open questions](#open-questions)
+- Decisions: [0063](../adr/0063-open-an-order-link-by-a-token-after-the-hash-found-across-tenants.md)
+  and [0064](../adr/0064-add-to-a-paid-order-with-an-order-of-its-own-on-the-same-qr-code.md),
+  proposed; what the owner still has to confirm is among its [open questions](#open-questions)
 
 ## Goal
 
@@ -55,8 +56,8 @@ domain owner to confirm.
 ### Tables
 
 None is new. `orders` ([checkout and orders](0004-checkout-and-orders.md)) gains
-`extends_order_id`, the order a "Buy more" order was started from; once paid, its `qr_code_id` is
-that order's. `edition_shops` gains `pickup_information`.
+`extends_order_id`, the order a "Buy more" order was started from; once paid, it carries the QR
+code that order carries. `edition_shops` gains `pickup_information`.
 
 An order's links live in `order_links` of checkout and orders, which makes the first one with the
 confirmation. A fresh link is a new token, and the earlier ones stay valid until they expire.
@@ -75,10 +76,10 @@ rate limit of their own.
 
 Tenant routes for a signed-in account, with no membership needed:
 
-| Route                                                             | Does                               | Refuses with     |
-| ----------------------------------------------------------------- | ---------------------------------- | ---------------- |
-| `GET /orders/mine`                                                | the account's orders in the tenant |                  |
-| `POST /editions/{editionId}/orders/{orderId}/resend-confirmation` | U2, for the account's own order    | `order.not-paid` |
+| Route                                             | Does                               | Refuses with     |
+| ------------------------------------------------- | ---------------------------------- | ---------------- |
+| `GET /orders/mine`                                | the account's orders in the tenant |                  |
+| `POST /orders/mine/{orderId}/resend-confirmation` | U2, for the account's own order    | `order.not-paid` |
 
 "Pay now" is the account's route of checkout and orders that starts a payment attempt. Placing the
 account's order takes an optional order to extend, refused with `order.not-extendable` unless that
@@ -145,5 +146,14 @@ e2e, on a mobile viewport:
 
 ## Open questions
 
-- **Records before acceptance:** none of its own; it leans on those of
-  [checkout and orders](0004-checkout-and-orders.md).
+- **Records to accept:** the order link's token after the `#` and its lookup across tenants,
+  proposed in 0063, and "Buy more" as an order of its own on the same QR code, proposed in 0064.
+- **For the domain owner to confirm:** the rules marked "new" above (K3, K4, K7, B2, B3); that a
+  link sent after its edition's 30 days opens for 30 days from its sending; that a fresh link is
+  sent at most once an hour for an order; that the page of a link names neither the ticket
+  holder nor an email address; that a link of an edition no longer published opens nothing, and
+  an account's list leaves such an order out; that "Pay now" brings the buyer back to the
+  convention's page, not to the result page; that an add-on held by a "Buy more" order still
+  awaiting payment counts as bought; that a "Buy more" order paid after its first order was
+  canceled gets a QR code of its own; that the pick-up information is set beside how
+  merchandise sells and shown whenever it is set.

@@ -89,19 +89,35 @@ test(
     await expect(phone.getByRole('alert')).toContainText('Not valid')
     await expect(phone.getByRole('alert')).toContainText('The order was canceled.')
 
-    // Revoked in the panel, the scanner reads nothing.
+    // The scanner has a page of its own in the panel: what it handed out, with the order it marked.
     await page.reload()
-    await expect(page.getByRole('row').filter({ hasText: 'Main gate' })).toContainText(
-      'Paired with a phone',
+    const listed = page.getByRole('row').filter({ hasText: 'Main gate' })
+    await expect(listed).toContainText('Paired with a phone')
+    await listed.getByRole('link', { name: 'Main gate' }).click()
+    await expect(page.getByRole('heading', { name: 'Main gate', level: 1 })).toBeVisible()
+    const handOuts = page.getByRole('region', { name: 'Hand-outs' })
+    await expect(handOuts.getByRole('row', { name: /Entries and items/ }).first()).toContainText(
+      '2',
     )
-    await page.getByRole('button', { name: 'Revoke Main gate' }).click()
+    await expect(handOuts.getByRole('link', { name: order.number })).toBeVisible()
+
+    // A new pairing code, shown once, takes the scanner from the phone that held it.
+    await page.getByRole('button', { name: 'New pairing code' }).click()
+    const again = page.getByRole('alertdialog')
+    await expect(again).toContainText('Pair another phone with Main gate?')
+    await again.getByRole('button', { name: 'Pair another phone' }).click()
+    await expect(page.getByText(/\/scanner#[A-Za-z0-9_-]{43}$/)).toBeVisible()
+    await phone.getByRole('button', { name: 'Read the next code' }).click()
+    await read(phone, code)
+    await expect(phone.getByText(/This scanner no longer works/)).toBeVisible()
+
+    // Revoked on its page, the scanner takes no phone again.
+    await page.getByRole('button', { name: 'Revoke the scanner' }).click()
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('Revoke the scanner Main gate?')
     await dialog.getByRole('button', { name: 'Revoke the scanner' }).click()
     await expect(notification(page, 'success', 'The scanner is revoked.')).toBeVisible()
-    await phone.getByRole('button', { name: 'Read the next code' }).click()
-    await read(phone, code)
-    await expect(phone.getByText(/This scanner no longer works/)).toBeVisible()
+    await expect(page.getByText(/gets no new pairing code/)).toBeVisible()
     await context.close()
   },
 )

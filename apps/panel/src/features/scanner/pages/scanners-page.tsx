@@ -1,17 +1,16 @@
-import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { type Scanner } from '@opos/contract'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   buttonVariants,
   ErrorMessage,
-  IrreversibleAction,
+  LinkRow,
   LoadingView,
   NoPermissionView,
   PageHeader,
+  RowLink,
   Section,
   Table,
   TableBody,
@@ -22,59 +21,40 @@ import {
 } from '../../../shared/ui'
 import { useEditionBySlug } from '../../editions'
 import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
-import { revokeScannerOptions, scannersKey, scannersOptions } from '../api/scanners'
+import { scannersOptions } from '../api/scanners'
+import { useScannerState } from '../components/scanner-state'
 
 /**
  * The scanners of an edition (`/editions/:editionSlug/scanners`): the phones that read QR codes
- * at the gate and at the desk (docs/specs/0007-scanner.md, D7-D11). An org with tickets write
- * access is linked to the page that enables one, and revokes any of them here; reading the list
- * needs tickets>=read.
+ * at the gate and at the desk (docs/specs/0007-scanner.md, D7-D15), as a table. A row opens the
+ * page of its scanner, where it is paired again and revoked; an org with tickets write access is
+ * linked to the page that enables one. Reading the list needs tickets>=read.
  */
 export function ScannersPage() {
   const { t } = useLingui()
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
   const time = useTenantTime()
-  const queryClient = useQueryClient()
+  const stateOf = useScannerState()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
   usePageTitle(t`Scanners`, edition?.name ?? tenant.name)
   const level = edition ? access.edition(edition.id).tickets : 'none'
   const canRead = atLeast(level, 'read')
-  const editionId = edition?.id ?? ''
-  const scanners = useQuery({ ...scannersOptions(api, editionId), enabled: canRead })
-  const refresh = () => queryClient.invalidateQueries({ queryKey: scannersKey(api) })
-  const revoke = useMutation({
-    ...revokeScannerOptions(api),
-    meta: { success: msg`The scanner is revoked.` },
-    onSuccess: refresh,
-  })
+  const scanners = useQuery({ ...scannersOptions(api, edition?.id ?? ''), enabled: canRead })
 
   if (isPending) return <LoadingView />
   if (isError) return <ErrorMessage error={error} />
   if (!edition || !canRead) return <NoPermissionView />
 
-  const canWrite = atLeast(level, 'write')
-  // Judged at the moment the list was last read.
-  const stateOf = (scanner: Scanner) =>
-    scanner.revokedAt
-      ? t`Revoked`
-      : Date.parse(scanner.expiresAt) <= scanners.dataUpdatedAt
-        ? t`Ended`
-        : scanner.paired
-          ? t`Paired with a phone`
-          : t`Waiting for a phone`
-
+  const base = `/${tenant.slug}/editions/${edition.slug}/scanners`
   return (
     <>
       <PageHeader
         title={<Trans>Scanners</Trans>}
         description={edition.name}
         actions={
-          canWrite && (
-            <Link
-              to={`/${tenant.slug}/editions/${edition.slug}/scanners/new`}
-              className={buttonVariants()}
-            >
+          atLeast(level, 'write') && (
+            <Link to={`${base}/new`} className={buttonVariants()}>
               <PlusIcon data-icon="inline-start" />
               <Trans>Enable a scanner</Trans>
             </Link>
@@ -115,55 +95,26 @@ export function ScannersPage() {
                 <TableHead scope="col">
                   <Trans>Access ends</Trans>
                 </TableHead>
-                {canWrite && (
-                  <TableHead scope="col">
-                    <Trans>Actions</Trans>
-                  </TableHead>
-                )}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {scanners.data.map((scanner) => {
-                const scannerName = scanner.name
-                return (
-                  <TableRow key={scanner.id}>
-                    <TableCell className="font-medium">{scanner.name}</TableCell>
-                    <TableCell>{stateOf(scanner)}</TableCell>
-                    <TableCell>
-                      {/* No address: an org who left the team, or one this member may not be told of. */}
-                      {scanner.enabledBy ?? <Trans>Another organizer</Trans>}
-                    </TableCell>
-                    <TableCell>
-                      {scanner.lastUsedAt ? time.format(scanner.lastUsedAt) : t`Never`}
-                    </TableCell>
-                    <TableCell>{time.format(scanner.expiresAt)}</TableCell>
-                    {canWrite && (
-                      <TableCell>
-                        {!scanner.revokedAt && (
-                          <IrreversibleAction
-                            label={
-                              <span aria-label={t`Revoke ${scannerName}`}>
-                                <Trans>Revoke</Trans>
-                              </span>
-                            }
-                            title={<Trans>Revoke the scanner {scannerName}?</Trans>}
-                            action={<Trans>Revoke the scanner</Trans>}
-                            disabled={revoke.isPending}
-                            onConfirm={() =>
-                              revoke.mutateAsync({ params: { editionId, scannerId: scanner.id } })
-                            }
-                          >
-                            <Trans>
-                              The phone reads and marks nothing from then on, and no screen brings
-                              its access back: a phone is paired again as a new scanner.
-                            </Trans>
-                          </IrreversibleAction>
-                        )}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                )
-              })}
+              {scanners.data.map((scanner) => (
+                <LinkRow key={scanner.id} to={`${base}/${scanner.id}`}>
+                  <TableCell>
+                    <RowLink to={`${base}/${scanner.id}`}>{scanner.name}</RowLink>
+                  </TableCell>
+                  {/* Judged at the moment the list was last read. */}
+                  <TableCell>{stateOf(scanner, scanners.dataUpdatedAt)}</TableCell>
+                  <TableCell>
+                    {/* No address: an org who left the team, or one this member may not be told of. */}
+                    {scanner.enabledBy ?? <Trans>Another organizer</Trans>}
+                  </TableCell>
+                  <TableCell>
+                    {scanner.lastUsedAt ? time.format(scanner.lastUsedAt) : t`Never`}
+                  </TableCell>
+                  <TableCell>{time.format(scanner.expiresAt)}</TableCell>
+                </LinkRow>
+              ))}
             </TableBody>
           </Table>
         )}

@@ -1,15 +1,13 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScannersPage } from './scanners-page'
 
 const state = vi.hoisted(() => ({ tickets: 'none' }))
 const readScanners = vi.hoisted(() => vi.fn())
-const createScanner = vi.hoisted(() => vi.fn())
-const revokeScanner = vi.hoisted(() => vi.fn())
 
 vi.mock('qrcode', () => ({ toDataURL: (text: string) => Promise.resolve(`data:qr,${text}`) }))
 vi.mock('../../tenants', () => ({
@@ -38,8 +36,6 @@ vi.mock('../../editions', () => ({
 vi.mock('../api/scanners', () => ({
   scannersKey: () => ['scanners'],
   scannersOptions: () => ({ queryKey: ['scanners', 'list'], queryFn: readScanners }),
-  createScannerOptions: () => ({ mutationFn: createScanner }),
-  revokeScannerOptions: () => ({ mutationFn: revokeScanner }),
 }))
 
 const scanner = (name: string, fields: object = {}) => ({
@@ -76,7 +72,6 @@ beforeAll(() => {
 beforeEach(() => {
   state.tickets = 'write'
   readScanners.mockResolvedValue([])
-  revokeScanner.mockResolvedValue({})
 })
 
 afterEach(() => {
@@ -114,26 +109,23 @@ describe('the scanners page', () => {
     // No address: an org who left the team, or one this member may not be told of.
     expect(within(rows[2]!).getByText('Another organizer')).toBeDefined()
     expect(within(rows[3]!).getByText('Revoked')).toBeDefined()
-    // A revoked scanner is revoked no more.
-    expect(within(rows[3]!).queryByRole('button', { name: /Revoke/ })).toBeNull()
   })
 
-  it('revokes a scanner only through a modal that says nothing brings its access back', async () => {
+  it('opens the page of a scanner from its row, for a reader too, and revokes none in the list', async () => {
+    state.tickets = 'read'
     readScanners.mockResolvedValue([scanner('Main gate')])
     view()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Revoke Main gate' }))
-    const dialog = within(await screen.findByRole('alertdialog'))
-    expect(dialog.getByText(/Main gate/)).toBeDefined()
-    expect(dialog.getByText(/reads and marks nothing from then on/)).toBeDefined()
-    expect(revokeScanner).not.toHaveBeenCalled()
-    fireEvent.click(dialog.getByRole('button', { name: 'Revoke the scanner' }))
+    const link = await screen.findByRole('link', { name: 'Main gate' })
+    expect(link.getAttribute('href')).toBe('/convention-a/editions/2026/scanners/id-Main gate')
+    cleanup()
 
-    await waitFor(() =>
-      expect(revokeScanner.mock.calls[0]?.[0]).toEqual({
-        params: { editionId: 'edition-2026', scannerId: 'id-Main gate' },
-      }),
-    )
+    // Revoking is on the page of the scanner, for an org who may.
+    state.tickets = 'write'
+    view()
+    await screen.findByRole('link', { name: 'Main gate' })
+    expect(screen.queryByRole('button', { name: /Revoke/ })).toBeNull()
+    expect(screen.queryByRole('columnheader', { name: 'Actions' })).toBeNull()
   })
 
   it('lets an org with read access see the scanners and enable or revoke none', async () => {

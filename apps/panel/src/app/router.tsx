@@ -33,7 +33,7 @@ import {
 import { ManualOrderPage, OrderPage, OrdersPage, ProductionNumbersPage } from '../features/orders'
 import { DiscountCodePage, DiscountCodesPage, NewDiscountCodePage } from '../features/discounts'
 import { SalesPage } from '../features/sales'
-import { NewScannerPage, ScannerPage, ScannersPage } from '../features/scanner'
+import { EditionScannerPage, NewScannerPage, ScannerPage, ScannersPage } from '../features/scanner'
 import { NewProgramItemPage, ProgramItemPage, ProgramPage } from '../features/program'
 import {
   ConsentPage,
@@ -166,6 +166,7 @@ export const router = createBrowserRouter([
                   { path: 'sales', element: <SalesPage /> },
                   { path: 'scanners', element: <ScannersPage /> },
                   { path: 'scanners/new', element: <NewScannerPage /> },
+                  { path: 'scanners/:scannerId', element: <EditionScannerPage /> },
                   { path: 'ticket-types', element: <TicketTypesPage /> },
                   { path: 'ticket-types/new', element: <TicketTypePage /> },
                   { path: 'ticket-types/:ticketTypeId', element: <TicketTypePage /> },

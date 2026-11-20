@@ -460,7 +460,8 @@ tenant and accounts and only reads the seed.
 [ci.yml](../.github/workflows/ci.yml) runs on every PR and every push to `develop` and `main`, in
 three jobs: `check` (format, typecheck, lint, the tests, the tests-first, migration, database and
 catalog checks, the BFF boundary over the built bundles), `e2e`, and `secrets` (gitleaks over the
-whole history, `pnpm audit` on high advisories).
+whole history of the checked commit, a PR's merge or a push, and over no other branch; `pnpm audit`
+on high advisories).
 
 - PRs target `develop`, where CI blocks nothing. `main` changes only through a PR from `develop`
   with the three jobs green ([protect-main.json](../.github/rulesets/protect-main.json);

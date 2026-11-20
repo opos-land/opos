@@ -137,8 +137,8 @@ Every user-facing string sits in a Lingui macro and is translated into `pl` in t
 reusing the glossary renderings ([localization](docs/ARCHITECTURE.md#localization)).
 
 **CI gates** ([CI](docs/ARCHITECTURE.md#ci)): a PR into `main` needs the jobs `check`, `e2e` and
-`secrets` green; `secrets` scans the whole history, so a secret in any commit fails it. An action is
-pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it goes through
+`secrets` green; `secrets` scans the whole history of what it checks, so a secret in any commit a
+branch carries fails it, while another branch's commits never fail it. An action is pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it goes through
 `env`.
 
 **The seed follows the schema.** A change that adds a table, a column without a default, a

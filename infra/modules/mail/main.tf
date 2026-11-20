@@ -5,7 +5,7 @@
 
 # A project makes no domain before it subscribes to an offer. Essential has no monthly fee and is
 # billed by the email sent. The provider subscribes only through an action, which OpenTofu does not
-# run, so scw does it under the operator's profile (infra/run.sh). The API cancels no subscription:
+# run, so scw does it under the operator's profile (scripts/deploy.mjs). The API cancels no subscription:
 # destroying this changes nothing at Scaleway.
 resource "terraform_data" "offer" {
   input = { project_id = var.project_id, region = var.region, offer = "essential" }

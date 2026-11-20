@@ -15,12 +15,14 @@ The deployed environments, described in OpenTofu units that Terragrunt runs. The
 | `units/`                                  | the catalog: one unit per module, configured by the values a stack hands it                                                                    |
 | `live/<environment>/env.yaml`             | the one place an environment is configured: plain settings and the names of its secrets                                                        |
 | `live/<environment>/terragrunt.stack.hcl` | the environment's units, generated into `.terragrunt-stack` on every run                                                                       |
-| `*.sh`                                    | the scripts the deploy tasks run                                                                                                               |
 | `docker/`                                 | the images and the compose file of a deployment: the API, the database tools, and the panel, the portal and the admin application behind Caddy |
 
 ## Commands
 
-mise installs every tool they need. Read the plan before every apply. An agent never runs a
+Each runs [scripts/deploy.mjs](../scripts/deploy.mjs), also as `pnpm deploy:<name>` where mise's
+tools are on the path, and mise installs every tool it drives
+([0045](../docs/adr/0045-run-the-deploy-commands-as-node-scripts.md)). Read the plan before every
+apply. An agent never runs a
 command that changes anything, bootstrap, grant, revoke, apply, secret-set or destroy, nor
 secret-get, which prints a secret.
 

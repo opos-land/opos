@@ -418,7 +418,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,
   which turbo hashes, and [mise-tasks.test.mjs](../scripts/mise-tasks.test.mjs) keeps both lists
   equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). The
-  `deploy:*` commands alone are mise tasks with no root script: their tools come from mise.
+  deploy commands are root scripts too, one Node script tested like the others, driving tools that
+  come from mise; no shell script runs on an operator's machine
+  ([0045](adr/0045-run-the-deploy-commands-as-node-scripts.md)). `deploy:check`, `deploy:images`
+  and `deploy:lock` alone are mise tasks with no root script: they only run those tools.
 - The infrastructure lives in [infra](../infra/README.md): an environment is one directory with
   one `env.yaml`, its plain settings and the names of its secrets, and nothing else configures it.
   Every provider is pinned to an exact version with its lock file committed, at least 7 days old

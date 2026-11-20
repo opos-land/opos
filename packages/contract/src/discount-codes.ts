@@ -156,7 +156,7 @@ export const discountCodesContract = {
       path: '/editions/{editionId}/discount-codes/{codeId}',
       successStatus: 204,
       summary:
-        'Delete a discount code no order used; refused with catalog.in-use for one an order did; needs tickets=write',
+        'Delete a discount code no order used; refused with discount-code.in-use for one an order did; needs tickets=write',
     })
     .input(code),
 }

@@ -85,6 +85,10 @@ msgstr "To zostało już zaakceptowane w zamówieniu, więc nie można tego usun
 msgid "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
 msgstr "Zamówienie w tym konwencie oczekuje na płatność. Dane dostępowe zmienisz, gdy zostanie opłacone albo wygaśnie."
 
+#: src/errors.ts
+msgid "An order used this discount code, so it cannot be deleted. End it instead: buyers can no longer use it, and it stays on its orders."
+msgstr "Zamówienie użyło tego kodu rabatowego, więc nie można go usunąć. Zakończ go: kupujący nie użyją go więcej, a na swoich zamówieniach pozostanie."
+
 #: src/order-emails.ts
 msgid "An organizer of {conventionName} canceled your order {number}. Its QR code is no longer valid."
 msgstr "Organizator konwentu {conventionName} anulował twoje zamówienie {number}. Jego kod QR jest już nieważny."

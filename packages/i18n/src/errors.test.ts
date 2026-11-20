@@ -83,6 +83,10 @@ describe('errorMessage', () => {
     ['scan.already-handed-out', 'To zostało już wydane.'],
     ['discount-code.taken', 'Inny kod rabatowy tej edycji ma już tę treść. Wybierz inną.'],
     ['discount-code.refused', 'Tego kodu nie można użyć w tym zamówieniu.'],
+    [
+      'discount-code.in-use',
+      'Zamówienie użyło tego kodu rabatowego, więc nie można go usunąć. Zakończ go: kupujący nie użyją go więcej, a na swoich zamówieniach pozostanie.',
+    ],
     ['scan.not-valid', 'Ten kod QR jest nieważny.'],
     ['scanner.name-taken', 'Inny skaner tej edycji ma już tę nazwę. Wybierz inną.'],
     [

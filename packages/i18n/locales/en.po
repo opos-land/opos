@@ -85,6 +85,10 @@ msgstr "An order has already accepted this, so it cannot be deleted. Hide it ins
 msgid "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
 msgstr "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
 
+#: src/errors.ts
+msgid "An order used this discount code, so it cannot be deleted. End it instead: buyers can no longer use it, and it stays on its orders."
+msgstr "An order used this discount code, so it cannot be deleted. End it instead: buyers can no longer use it, and it stays on its orders."
+
 #: src/order-emails.ts
 msgid "An organizer of {conventionName} canceled your order {number}. Its QR code is no longer valid."
 msgstr "An organizer of {conventionName} canceled your order {number}. Its QR code is no longer valid."

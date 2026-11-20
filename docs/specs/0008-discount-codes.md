@@ -74,7 +74,7 @@ Tenant routes, each under `/editions/{editionId}`:
 | `GET /discount-codes`             | tickets>=read |                                             |
 | `POST /discount-codes`            | tickets=write | `discount-code.taken`                       |
 | `PATCH /discount-codes/{codeId}`  | tickets=write | `discount-code.taken`, `catalog.below-held` |
-| `DELETE /discount-codes/{codeId}` | tickets=write | `catalog.in-use`                            |
+| `DELETE /discount-codes/{codeId}` | tickets=write | `discount-code.in-use`                      |
 
 The quote and both routes that place an order take an optional code. The quote refuses a code with
 `discount-code.refused`; placing refuses one used up meanwhile with `order.unavailable`, naming the

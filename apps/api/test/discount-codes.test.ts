@@ -229,7 +229,7 @@ describe('deleting a discount code', () => {
     await c.as('delete', `/${unused.id}`).expect(204)
     const res = await c.as('delete', `/${used.id}`).expect(409)
 
-    expect(res.body).toMatchObject({ code: 'catalog.in-use' })
+    expect(res.body).toMatchObject({ code: 'discount-code.in-use' })
     expect((await storedRows('discount_codes', c.t.id)).map((row) => row.id)).toEqual([used.id])
   })
 

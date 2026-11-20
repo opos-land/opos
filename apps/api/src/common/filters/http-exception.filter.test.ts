@@ -109,6 +109,7 @@ describe('toErrorResponse', () => {
     ['order_custom_field_answers_field_fk', 'catalog.in-use'],
     ['order_consents_consent_fk', 'consent.in-use'],
     ['order_consents_version_fk', 'consent.in-use'],
+    ['orders_discount_code_fk', 'discount-code.in-use'],
   ])('maps a deletion %s refuses to %s', (constraint, code) => {
     expect(toErrorResponse(violated(constraint))).toMatchObject({ status: 409, body: { code } })
   })

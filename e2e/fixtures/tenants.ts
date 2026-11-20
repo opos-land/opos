@@ -316,6 +316,38 @@ export class TenantFactory {
     `)
   }
 
+  /**
+   * A percent discount code of the edition for the given ticket types, valid now, as an org sets
+   * one in the panel. `ended` stops it at once.
+   */
+  async addDiscountCode(
+    tenantId: string,
+    editionId: string,
+    {
+      code,
+      percent,
+      ticketTypeIds,
+      ended = false,
+    }: { code: string; percent: number; ticketTypeIds: string[]; ended?: boolean },
+  ) {
+    const at = sql`${tenantId}, ${editionId}`
+    const [row] = await this.db.execute<{ id: string }>(sql`
+      insert into discount_codes (tenant_id, edition_id, code, kind, percent, valid_from,
+        valid_until, ended_at)
+      values (${at}, ${code.toLowerCase()}, 'percent', ${percent}, now() - interval '1 day',
+        now() + interval '1 year', ${ended ? sql`now()` : sql`null`})
+      returning id
+    `)
+    for (const ticketTypeId of ticketTypeIds) {
+      await this.db.execute(sql`
+        insert into discount_code_ticket_types (tenant_id, edition_id, discount_code_id,
+          ticket_type_id)
+        values (${at}, ${row!.id}, ${ticketTypeId})
+      `)
+    }
+    return row!.id
+  }
+
   /** Sets how many tickets of a ticket type there are. */
   async setCapacity(ticketTypeId: string, capacity: number) {
     await this.db.execute(sql`
@@ -356,8 +388,13 @@ export class TenantFactory {
   /** The orders of a tenant as stored: their status, and the account each is attached to. */
   async orders(tenantId: string) {
     return [
-      ...(await this.db.execute<{ status: string; email: string; accountId: string | null }>(sql`
-        select o.status, o.email, a.account_id as "accountId"
+      ...(await this.db.execute<{
+        status: string
+        email: string
+        accountId: string | null
+        totalMinor: number
+      }>(sql`
+        select o.status, o.email, a.account_id as "accountId", o.total_minor as "totalMinor"
         from orders o left join order_accounts a on a.order_id = o.id
         where o.tenant_id = ${tenantId} order by o.placed_at
       `)),

@@ -270,7 +270,7 @@ msgstr "Dodaj oś"
 msgid "Add the add-on"
 msgstr "Dodaj dodatek"
 
-#: src/features/discounts/pages/discount-codes-page.tsx
+#: src/features/discounts/pages/new-discount-code-page.tsx
 msgid "Add the code"
 msgstr "Dodaj kod"
 
@@ -375,6 +375,10 @@ msgstr "Alert: płatność do zwrotu"
 #: src/features/orders/model/labels.ts
 msgid "Alert: the order needs review"
 msgstr "Alert: zamówienie do wyjaśnienia"
+
+#: src/features/discounts/pages/new-discount-code-page.tsx
+msgid "All discount codes"
+msgstr "Wszystkie kody rabatowe"
 
 #: src/features/editions/pages/editions-page.tsx
 msgid "All editions"
@@ -914,6 +918,10 @@ msgstr "Rabat"
 #: src/features/orders/components/order-lines.tsx
 msgid "Discount code {code}"
 msgstr "Kod rabatowy {code}"
+
+#: src/features/discounts/pages/new-discount-code-page.tsx
+msgid "Discount code data"
+msgstr "Dane kodu rabatowego"
 
 #: src/features/discounts/pages/discount-codes-page.tsx
 #: src/features/editions/components/edition-layout.tsx
@@ -1778,6 +1786,7 @@ msgid "New custom field"
 msgstr "Nowe pole dodatkowe"
 
 #: src/features/discounts/pages/discount-codes-page.tsx
+#: src/features/discounts/pages/new-discount-code-page.tsx
 msgid "New discount code"
 msgstr "Nowy kod rabatowy"
 
@@ -3008,7 +3017,7 @@ msgstr "Kod „{name}” został usunięty."
 msgid "The code “{name}” is ended."
 msgstr "Kod „{name}” został zakończony."
 
-#: src/features/discounts/pages/discount-codes-page.tsx
+#: src/features/discounts/pages/new-discount-code-page.tsx
 msgid "The code is added."
 msgstr "Kod został dodany."
 

@@ -270,7 +270,7 @@ msgstr "Add an axis"
 msgid "Add the add-on"
 msgstr "Add the add-on"
 
-#: src/features/discounts/pages/discount-codes-page.tsx
+#: src/features/discounts/pages/new-discount-code-page.tsx
 msgid "Add the code"
 msgstr "Add the code"
 
@@ -375,6 +375,10 @@ msgstr "Alert: a payment to return"
 #: src/features/orders/model/labels.ts
 msgid "Alert: the order needs review"
 msgstr "Alert: the order needs review"
+
+#: src/features/discounts/pages/new-discount-code-page.tsx
+msgid "All discount codes"
+msgstr "All discount codes"
 
 #: src/features/editions/pages/editions-page.tsx
 msgid "All editions"
@@ -914,6 +918,10 @@ msgstr "Discount"
 #: src/features/orders/components/order-lines.tsx
 msgid "Discount code {code}"
 msgstr "Discount code {code}"
+
+#: src/features/discounts/pages/new-discount-code-page.tsx
+msgid "Discount code data"
+msgstr "Discount code data"
 
 #: src/features/discounts/pages/discount-codes-page.tsx
 #: src/features/editions/components/edition-layout.tsx
@@ -1778,6 +1786,7 @@ msgid "New custom field"
 msgstr "New custom field"
 
 #: src/features/discounts/pages/discount-codes-page.tsx
+#: src/features/discounts/pages/new-discount-code-page.tsx
 msgid "New discount code"
 msgstr "New discount code"
 
@@ -3008,7 +3017,7 @@ msgstr "The code “{name}” is deleted."
 msgid "The code “{name}” is ended."
 msgstr "The code “{name}” is ended."
 
-#: src/features/discounts/pages/discount-codes-page.tsx
+#: src/features/discounts/pages/new-discount-code-page.tsx
 msgid "The code is added."
 msgstr "The code is added."
 

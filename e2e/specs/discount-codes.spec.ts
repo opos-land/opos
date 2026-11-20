@@ -57,6 +57,9 @@ test('an org makes a code, and a buyer who enters it sees the discount’s line 
   )
   await expect(page.getByRole('heading', { name: 'Discount codes', level: 1 })).toBeVisible()
   await expect(page.getByText('The edition has no discount codes yet.')).toBeVisible()
+  // A code is added on a page of its own, which leads back to the codes.
+  await page.getByRole('link', { name: 'New discount code' }).click()
+  await expect(page.getByRole('heading', { name: 'New discount code', level: 1 })).toBeVisible()
   await page.getByLabel('Code', { exact: true }).fill('Early-25')
   await page.getByLabel('Percent off').fill('25')
   await page.getByRole('checkbox', { name: 'Standard' }).click()

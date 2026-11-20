@@ -1,10 +1,11 @@
-import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useId, useState } from 'react'
-import { useParams } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
+import { PlusIcon } from 'lucide-react'
+import { useId } from 'react'
+import { Link, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
+  buttonVariants,
   ErrorMessage,
   LoadingView,
   NoPermissionView,
@@ -13,28 +14,21 @@ import {
 } from '../../../shared/ui'
 import { addOnsOptions, merchandiseOptions, ticketTypesOptions } from '../../catalog'
 import { useEditionBySlug } from '../../editions'
-import { atLeast, useCurrentTenant, useTenantTime } from '../../tenants'
-import {
-  createDiscountCodeOptions,
-  discountCodesKey,
-  discountCodesOptions,
-} from '../api/discount-codes'
-import { type CodeCatalog, DiscountCodeForm } from '../components/discount-code-form'
+import { atLeast, useCurrentTenant } from '../../tenants'
+import { discountCodesOptions } from '../api/discount-codes'
+import { type CodeCatalog } from '../components/discount-code-form'
 import { DiscountCodeRow } from '../components/discount-code-row'
-import { EMPTY_DISCOUNT_CODE } from '../model/discount-code-form'
 
 /**
  * The discount codes of an edition (`/editions/:editionSlug/discount-codes`,
  * docs/specs/0008-discount-codes.md): the codes by their text, each with the uses orders hold
- * against its limit, and the form of a new one. Reading needs tickets>=read in the edition,
- * changing tickets=write.
+ * against its limit, and for a member who may add, the link to the page of a new one. Reading
+ * needs tickets>=read in the edition, changing tickets=write.
  */
 export function DiscountCodesPage() {
   const { t } = useLingui()
   const { editionSlug } = useParams()
   const { tenant, access, api } = useCurrentTenant()
-  const time = useTenantTime()
-  const queryClient = useQueryClient()
   const listId = useId()
   const { edition, isPending, isError, error } = useEditionBySlug(editionSlug)
   usePageTitle(t`Discount codes`, edition?.name ?? tenant.name)
@@ -46,18 +40,6 @@ export function DiscountCodesPage() {
   const ticketTypes = useQuery({ ...ticketTypesOptions(api, editionId), enabled: canRead })
   const addOns = useQuery({ ...addOnsOptions(api, editionId), enabled: canRead })
   const items = useQuery({ ...merchandiseOptions(api, editionId), enabled: canRead })
-  // A new key empties the form once its code is added.
-  const [form, setForm] = useState(0)
-  // A new code is valid from now until the edition ends, unless the org says otherwise.
-  const [opened] = useState(() => new Date().toISOString())
-  const create = useMutation({
-    ...createDiscountCodeOptions(api),
-    meta: { success: msg`The code is added.` },
-    onSuccess: async () => {
-      setForm((key) => key + 1)
-      await queryClient.invalidateQueries({ queryKey: discountCodesKey(api) })
-    },
-  })
 
   if (isPending) return <LoadingView />
   if (isError) return <ErrorMessage error={error} />
@@ -73,7 +55,21 @@ export function DiscountCodesPage() {
   const failure = codes.error ?? ticketTypes.error ?? addOns.error ?? items.error
   return (
     <>
-      <PageHeader title={<Trans>Discount codes</Trans>} description={edition.name} />
+      <PageHeader
+        title={<Trans>Discount codes</Trans>}
+        description={edition.name}
+        actions={
+          canWrite && (
+            <Link
+              to={`/${tenant.slug}/editions/${edition.slug}/discount-codes/new`}
+              className={buttonVariants()}
+            >
+              <PlusIcon data-icon="inline-start" />
+              <Trans>New discount code</Trans>
+            </Link>
+          )
+        }
+      />
       <Section title={<Trans>Discount codes of the edition</Trans>}>
         <p className="max-w-2xl text-sm">
           <Trans>
@@ -109,22 +105,6 @@ export function DiscountCodesPage() {
           </>
         )}
       </Section>
-      {canWrite && !reading && !failure && (
-        <Section title={<Trans>New discount code</Trans>}>
-          <DiscountCodeForm
-            key={form}
-            initial={{
-              ...EMPTY_DISCOUNT_CODE,
-              validFrom: time.toInput(opened),
-              validUntil: time.toInput(edition.endsAt),
-            }}
-            catalog={catalog}
-            pending={create.isPending}
-            submitLabel={<Trans>Add the code</Trans>}
-            onSubmit={(body) => create.mutate({ params: { editionId: edition.id }, body })}
-          />
-        </Section>
-      )}
     </>
   )
 }

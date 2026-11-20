@@ -112,10 +112,6 @@ const view = () =>
   )
 
 const row = (name: string) => screen.getByRole('listitem', { name })
-const field = (label: string | RegExp) => screen.getByLabelText<HTMLInputElement>(label)
-const type = (label: string | RegExp, value: string) =>
-  fireEvent.change(field(label), { target: { value } })
-const tick = (name: string | RegExp) => fireEvent.click(screen.getByRole('checkbox', { name }))
 const empty = () => screen.findByText('The edition has no discount codes yet.')
 
 beforeAll(() => {
@@ -134,8 +130,8 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-// docs/specs/0008-discount-codes.md, Screens: the list with each code's uses and limit, the form
-// of D1-D4, ending a code.
+// docs/specs/0008-discount-codes.md, Screens: the list with each code's uses and limit, and
+// ending a code. The form of a new code has a page of its own.
 describe('the discount codes page', () => {
   it('shows nothing of the codes to a member without tickets access', async () => {
     state.tickets = 'none'
@@ -201,80 +197,17 @@ describe('the discount codes page', () => {
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'End the code' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Delete the code' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Add the code' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'New discount code' })).toBeNull()
   })
 
-  it('adds a percent code for what the org ticks, valid until the edition ends unless changed', async () => {
-    view()
-    await empty()
-    await screen.findByRole('checkbox', { name: 'Standard' })
-
-    // The window is filled in: an org changes it only when the code should run shorter.
-    expect(field('Valid until').value).toBe('2099-07-03T18:00')
-    expect(field('Valid from').value).not.toBe('')
-    type('Code', 'Early-10')
-    type('Percent off', '10')
-    type('Usage limit', '50')
-    type('Valid from', '2099-01-01T10:00')
-    tick('Standard')
-    tick('T-shirt')
-    fireEvent.click(screen.getByRole('button', { name: 'Add the code' }))
-
-    await waitFor(() => expect(createCode).toHaveBeenCalledTimes(1))
-    expect(createCode.mock.calls[0]![0]).toEqual({
-      params: { editionId: 'edition-2026' },
-      body: {
-        code: 'Early-10',
-        kind: 'percent',
-        percent: 10,
-        usageLimit: 50,
-        validFrom: '2099-01-01T10:00:00.000Z',
-        validUntil: '2099-07-03T18:00:00.000Z',
-        ticketTypeIds: ['standard'],
-        addOnIds: [],
-        itemIds: ['shirt'],
-      },
-    })
-    // The form is empty again for the next code.
-    await waitFor(() => expect(field('Code').value).toBe(''))
-  })
-
-  it('asks for an amount of an amount code alone', async () => {
+  it('links a member who may add to the page of a new code, and holds no form of one', async () => {
     view()
     await empty()
 
-    expect(screen.queryByLabelText(/^Amount off/)).toBeNull()
-    type('Kind', 'amount')
-
-    expect(field(/^Amount off/)).toBeDefined()
-    expect(screen.queryByLabelText('Percent off')).toBeNull()
-  })
-
-  it('names what is wrong beside its field, and sends nothing', async () => {
-    view()
-    await empty()
-
-    type('Code', 'x')
-    type('Percent off', '150')
-    fireEvent.click(screen.getByRole('button', { name: 'Add the code' }))
-
-    expect(await screen.findByText('Enter 4 to 40 letters, digits and hyphens.')).toBeDefined()
-    expect(screen.getByText('Enter a whole number from 1 to 100.')).toBeDefined()
-    expect(screen.getByText('Choose at least one thing the code applies to.')).toBeDefined()
-    expect(field('Code').getAttribute('aria-invalid')).toBe('true')
-    expect(createCode).not.toHaveBeenCalled()
-  })
-
-  // D2: a code never applies to a ticket type excluded from discounts.
-  it('offers no ticket type excluded from discounts, and says why', async () => {
-    view()
-    await empty()
-
-    const excluded = await screen.findByRole('checkbox', { name: 'Supporter' })
-    expect(excluded.getAttribute('aria-disabled')).toBe('true')
-    fireEvent.click(excluded)
-    expect(excluded.getAttribute('aria-checked')).toBe('false')
-    expect(screen.getByText('Excluded from discounts on its page.')).toBeDefined()
+    expect(screen.getByRole('link', { name: 'New discount code' }).getAttribute('href')).toBe(
+      '/convention-a/editions/2026/discount-codes/new',
+    )
+    expect(screen.queryByLabelText('Code')).toBeNull()
   })
 
   it('ends a code without asking, and lets an ended one run again', async () => {

@@ -419,6 +419,10 @@ msgstr "Wszystkie kody rabatowe"
 msgid "All editions"
 msgstr "Wszystkie edycje"
 
+#: src/features/orders/pages/email-page.tsx
+msgid "All emails"
+msgstr "Wszystkie e-maile"
+
 #: src/features/catalog/pages/merchandise-item-page.tsx
 msgid "All merchandise"
 msgstr "Wszystkie gadżety"
@@ -460,6 +464,14 @@ msgstr "Kwota"
 #: src/features/catalog/components/axes-editor.tsx
 msgid "An axis is something a buyer chooses, such as the cut or the size. An item without axes is sold as one variant."
 msgstr "Oś to coś, co wybiera kupujący, na przykład krój albo rozmiar. Gadżet bez osi jest sprzedawany jako jeden wariant."
+
+#: src/features/orders/pages/emails-page.tsx
+msgid "An email address or an order’s number."
+msgstr "Adres e-mail albo numer zamówienia."
+
+#: src/features/orders/pages/email-page.tsx
+msgid "An email is written when it is sent: this one has not gone out."
+msgstr "Treść e-maila powstaje w chwili wysyłki, a ten jeszcze nie został wysłany."
 
 #: src/features/team/model/invitation.ts
 msgid "An invitation has gone to {email}. Its link works once, until {validUntil}."
@@ -1104,6 +1116,8 @@ msgstr "Edycje"
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
+#: src/features/orders/pages/email-page.tsx
+#: src/features/orders/pages/emails-page.tsx
 #: src/features/orders/pages/order-page.tsx
 #: src/features/orders/pages/orders-page.tsx
 #: src/features/team/components/invite-form.tsx
@@ -1114,9 +1128,23 @@ msgstr "E-mail"
 msgid "Email of the order"
 msgstr "E-mail zamówienia"
 
+#: src/features/editions/components/edition-layout.tsx
+#: src/features/orders/pages/email-page.tsx
+#: src/features/orders/pages/emails-page.tsx
 #: src/features/orders/pages/order-page.tsx
 msgid "Emails"
 msgstr "E-maile"
+
+#. placeholder {0}: i18n.number(page.first)
+#. placeholder {1}: i18n.number(page.last)
+#. placeholder {2}: i18n.number(emails.data.total)
+#: src/features/orders/pages/emails-page.tsx
+msgid "Emails {0}–{1} of {2}"
+msgstr "E-maile {0}–{1} z {2}"
+
+#: src/features/orders/pages/emails-page.tsx
+msgid "Emails of the edition’s orders"
+msgstr "E-maile zamówień edycji"
 
 #: src/features/team/components/member-form.tsx
 msgid "Empty for no end date. In the convention's time zone, {zone}."
@@ -1374,6 +1402,10 @@ msgstr "FAQ"
 msgctxt "a document"
 msgid "File"
 msgstr "Plik"
+
+#: src/features/orders/pages/emails-page.tsx
+msgid "Find an email"
+msgstr "Znajdź e-mail"
 
 #: src/features/orders/pages/orders-page.tsx
 msgid "Find an order"
@@ -1999,6 +2031,7 @@ msgstr "Nowa wersja"
 msgid "Newest version"
 msgstr "Najnowsza wersja"
 
+#: src/features/orders/pages/emails-page.tsx
 #: src/features/orders/pages/orders-page.tsx
 msgid "Next page"
 msgstr "Następna strona"
@@ -2011,6 +2044,10 @@ msgstr "Brak dostępu"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "No discount code applies to this ticket type, and its page says so."
 msgstr "Żaden kod rabatowy nie działa na ten rodzaj akredytacji, a jego strona o tym informuje."
+
+#: src/features/orders/pages/emails-page.tsx
+msgid "No email matches."
+msgstr "Żaden e-mail nie pasuje."
 
 #: src/features/team/components/members-table.tsx
 msgid "No end date"
@@ -2083,11 +2120,11 @@ msgstr "Nieopublikowana"
 msgid "Not ready to sell"
 msgstr "Niegotowe do sprzedaży"
 
-#: src/features/orders/pages/order-page.tsx
+#: src/features/orders/components/email-sent.tsx
 msgid "Not sent yet: it is tried again"
 msgstr "Jeszcze nie wysłano: próba zostanie ponowiona"
 
-#: src/features/orders/pages/order-page.tsx
+#: src/features/orders/components/email-sent.tsx
 msgid "Not sent: the order moved to another address before it went out"
 msgstr "Nie wysłano: zamówienie przeniesiono na inny adres, zanim wiadomość wyszła"
 
@@ -2205,6 +2242,8 @@ msgstr "Opcjonalna: kupujący może złożyć zamówienie bez odpowiedzi"
 msgid "or"
 msgstr "albo"
 
+#: src/features/orders/pages/email-page.tsx
+#: src/features/orders/pages/emails-page.tsx
 #: src/features/orders/pages/order-page.tsx
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "Order"
@@ -2437,6 +2476,7 @@ msgstr "Naciśnij przycisk, aby wybrać nowe hasło."
 msgid "Press the button to confirm your address. Then you choose your password."
 msgstr "Naciśnij przycisk, aby potwierdzić adres. Potem wybierzesz hasło."
 
+#: src/features/orders/pages/emails-page.tsx
 #: src/features/orders/pages/orders-page.tsx
 msgid "Previous page"
 msgstr "Poprzednia strona"
@@ -2559,6 +2599,10 @@ msgstr "Pytanie"
 msgctxt "a custom field"
 msgid "Question"
 msgstr "Pytanie"
+
+#: src/features/orders/pages/email-page.tsx
+msgid "Queued"
+msgstr "Dodano do kolejki"
 
 #: src/features/team/components/level-select.tsx
 #: src/features/team/components/members-table.tsx
@@ -2938,6 +2982,7 @@ msgstr "Skanery"
 msgid "Scanners of the edition"
 msgstr "Skanery edycji"
 
+#: src/features/orders/pages/emails-page.tsx
 #: src/features/orders/pages/orders-page.tsx
 msgid "Search"
 msgstr "Szukaj"
@@ -2967,6 +3012,8 @@ msgstr "Wyślij link do ustawienia hasła"
 msgid "Send the link"
 msgstr "Wyślij link"
 
+#: src/features/orders/pages/email-page.tsx
+#: src/features/orders/pages/emails-page.tsx
 #: src/features/orders/pages/order-page.tsx
 msgid "Sent"
 msgstr "Wysłano"
@@ -3145,6 +3192,10 @@ msgstr "Status"
 #: src/features/catalog/components/variants-editor.tsx
 msgid "Stock"
 msgstr "Stan magazynowy"
+
+#: src/features/orders/pages/email-page.tsx
+msgid "Subject"
+msgstr "Temat"
 
 #: src/features/scanner/pages/new-scanner-page.tsx
 msgid "Such as the gate it stands at. Every hand-out it marks is told by it."
@@ -3644,6 +3695,12 @@ msgstr "Zamówienie anulowano"
 msgid "The order was canceled."
 msgstr "Zamówienie zostało anulowane."
 
+#: src/features/orders/pages/emails-page.tsx
+msgid "The orders of this edition sent no email yet."
+msgstr "Zamówienia tej edycji nie wysłały jeszcze żadnego e-maila."
+
+#: src/features/orders/pages/email-page.tsx
+#: src/features/orders/pages/emails-page.tsx
 #: src/features/orders/pages/order-page.tsx
 msgid "The organizers"
 msgstr "Organizatorzy"
@@ -3757,6 +3814,10 @@ msgstr "Punkt programu musi kończyć się po swoim początku."
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The provider reports a condition this panel cannot describe yet (code: {code})."
 msgstr "Dostawca zgłasza warunek, którego ten panel nie potrafi jeszcze opisać (kod: {code})."
+
+#: src/features/orders/pages/email-page.tsx
+msgid "The QR code and the order link are left out: only the recipient sees them. {LEFT_OUT} stands where the email had them."
+msgstr "Kod QR i link do zamówienia są pominięte: widzi je tylko odbiorca. W ich miejscu stoi {LEFT_OUT}."
 
 #: src/features/scanner/components/pairing-code.tsx
 msgid "The QR code that pairs a phone with {name}"
@@ -4092,6 +4153,8 @@ msgstr "Tytuł"
 msgid "Title of the new document"
 msgstr "Tytuł nowego dokumentu"
 
+#: src/features/orders/pages/email-page.tsx
+#: src/features/orders/pages/emails-page.tsx
 #: src/features/orders/pages/order-page.tsx
 msgid "To"
 msgstr "Do"
@@ -4308,7 +4371,7 @@ msgstr "Wersje dokumentu"
 msgid "Waiting for a phone"
 msgstr "Czeka na telefon"
 
-#: src/features/orders/pages/order-page.tsx
+#: src/features/orders/components/email-sent.tsx
 msgid "Waiting to be sent"
 msgstr "Czeka na wysłanie"
 
@@ -4352,6 +4415,10 @@ msgstr "To, co kupujący wpisuje w podsumowaniu; wielkość liter nie ma znaczen
 msgid "What it holds goes back on sale. OPOS returns no money: returning it is a matter between the convention and the buyer, outside OPOS."
 msgstr "To, co zawiera, wraca do sprzedaży. OPOS nie zwraca pieniędzy: zwrot to sprawa między konwentem a kupującym, poza OPOS."
 
+#: src/features/orders/pages/email-page.tsx
+msgid "What it said"
+msgstr "Treść"
+
 #: src/features/shop/pages/edition-shop-page.tsx
 msgid "What opening the shop needs"
 msgstr "Czego wymaga otwarcie sklepu"
@@ -4387,6 +4454,10 @@ msgstr "Co wydał skaner"
 #: src/features/catalog/components/ticket-type-form.tsx
 msgid "What the ticket includes, such as a pin or a badge: shown to the buyer, never sold separately."
 msgstr "Co zawiera akredytacja, na przykład przypinkę albo identyfikator: widoczne dla kupującego, nigdy niesprzedawane osobno."
+
+#: src/features/orders/pages/email-page.tsx
+msgid "What this email said was not kept: it went out before texts were."
+msgstr "Treść tego e-maila nie została zapisana: wysłano go, zanim zaczęliśmy zapisywać treści."
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "What this scanner marked as handed out: entry and items. A scan that hands nothing out is not counted, and neither is a mark taken back in the panel."

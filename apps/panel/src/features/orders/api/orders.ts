@@ -1,4 +1,4 @@
-import { type OrderListQuery } from '@opos/contract'
+import { type OrderEmailListQuery, type OrderListQuery } from '@opos/contract'
 import { type Api } from '../../../shared/lib/api'
 
 // An edition's orders, behind its tickets permission (docs/specs/0006-order-management.md).
@@ -11,6 +11,14 @@ export const ordersOptions = (api: Api, editionId: string, query: Partial<OrderL
 
 export const orderOptions = (api: Api, editionId: string, orderId: string) =>
   api.orders.get.queryOptions({ input: { params: { editionId, orderId } } })
+
+/** The emails of the edition's orders, a page at a time. */
+export const emailsOptions = (api: Api, editionId: string, query: Partial<OrderEmailListQuery>) =>
+  api.orders.emails.queryOptions({ input: { params: { editionId }, query } })
+
+/** One email with what it said. */
+export const emailOptions = (api: Api, editionId: string, emailId: string) =>
+  api.orders.email.queryOptions({ input: { params: { editionId, emailId } } })
 
 export const createManualOrderOptions = (api: Api) => api.orders.createManual.mutationOptions()
 

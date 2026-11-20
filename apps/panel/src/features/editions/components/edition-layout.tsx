@@ -50,6 +50,7 @@ export function EditionLayout() {
                 title={<Trans>Shop</Trans>}
                 links={[
                   { to: `${base}/orders`, label: <Trans>Orders</Trans> },
+                  { to: `${base}/emails`, label: <Trans>Emails</Trans> },
                   { to: `${base}/sales`, label: <Trans>Sales</Trans> },
                   { to: `${base}/scanners`, label: <Trans>Scanners</Trans> },
                   { to: `${base}/ticket-types`, label: <Trans>Ticket types</Trans> },

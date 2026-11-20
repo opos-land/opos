@@ -146,6 +146,7 @@ describe('EditionLayout', () => {
     expect(links('Edition 2026')).toEqual([
       ['Dashboard', '/convention-a/editions/2026'],
       ['Orders', '/convention-a/editions/2026/orders'],
+      ['Emails', '/convention-a/editions/2026/emails'],
       ['Sales', '/convention-a/editions/2026/sales'],
       ['Scanners', '/convention-a/editions/2026/scanners'],
       ['Ticket types', '/convention-a/editions/2026/ticket-types'],

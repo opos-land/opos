@@ -30,7 +30,14 @@ import {
   EditionsPage,
   NewEditionPage,
 } from '../features/editions'
-import { ManualOrderPage, OrderPage, OrdersPage, ProductionNumbersPage } from '../features/orders'
+import {
+  EmailPage,
+  EmailsPage,
+  ManualOrderPage,
+  OrderPage,
+  OrdersPage,
+  ProductionNumbersPage,
+} from '../features/orders'
 import { DiscountCodePage, DiscountCodesPage, NewDiscountCodePage } from '../features/discounts'
 import { SalesPage } from '../features/sales'
 import { EditionScannerPage, NewScannerPage, ScannerPage, ScannersPage } from '../features/scanner'
@@ -162,6 +169,8 @@ export const router = createBrowserRouter([
                   { path: 'orders', element: <OrdersPage /> },
                   { path: 'orders/new', element: <ManualOrderPage /> },
                   { path: 'orders/:orderId', element: <OrderPage /> },
+                  { path: 'emails', element: <EmailsPage /> },
+                  { path: 'emails/:emailId', element: <EmailPage /> },
                   { path: 'production-numbers', element: <ProductionNumbersPage /> },
                   { path: 'sales', element: <SalesPage /> },
                   { path: 'scanners', element: <ScannersPage /> },

@@ -5,9 +5,11 @@ import { Link, useParams } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   ErrorMessage,
+  LinkRow,
   LoadingView,
   NoPermissionView,
   PageHeader,
+  RowLink,
   Section,
   Table,
   TableBody,
@@ -27,6 +29,7 @@ import {
   ResendButton,
   ReviewPanel,
 } from '../components/order-changes'
+import { EmailSent } from '../components/email-sent'
 import { OrderLines } from '../components/order-lines'
 import { OrderStatusBadge } from '../components/order-status'
 import {
@@ -272,21 +275,18 @@ export function OrderPage() {
             </TableHeader>
             <TableBody>
               {order.emails.map((email) => (
-                <TableRow key={email.id}>
-                  <TableCell>{t(EMAIL_KIND_LABELS[email.kind])}</TableCell>
+                // What the email said is read on its own page.
+                <LinkRow key={email.id} to={`${base}/emails/${email.id}`}>
+                  <TableCell>
+                    <RowLink to={`${base}/emails/${email.id}`}>
+                      {t(EMAIL_KIND_LABELS[email.kind])}
+                    </RowLink>
+                  </TableCell>
                   <TableCell>{email.recipient ?? <Trans>The organizers</Trans>}</TableCell>
                   <TableCell>
-                    {email.withdrawnAt ? (
-                      <Trans>Not sent: the order moved to another address before it went out</Trans>
-                    ) : email.sentAt ? (
-                      time.format(email.sentAt)
-                    ) : email.failedAttempts > 0 ? (
-                      <Trans>Not sent yet: it is tried again</Trans>
-                    ) : (
-                      <Trans>Waiting to be sent</Trans>
-                    )}
+                    <EmailSent email={email} />
                   </TableCell>
-                </TableRow>
+                </LinkRow>
               ))}
             </TableBody>
           </Table>

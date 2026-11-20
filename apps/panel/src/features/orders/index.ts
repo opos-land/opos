@@ -1,4 +1,6 @@
 export { OrdersInReview } from './components/orders-in-review'
+export { EmailPage } from './pages/email-page'
+export { EmailsPage } from './pages/emails-page'
 export { ManualOrderPage } from './pages/manual-order-page'
 export { OrderPage } from './pages/order-page'
 export { OrdersPage } from './pages/orders-page'

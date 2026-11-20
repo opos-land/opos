@@ -179,6 +179,10 @@ const view = () =>
               path="/:tenantSlug/editions/:editionSlug/orders/:orderId"
               element={<OrderPage />}
             />
+            <Route
+              path="/:tenantSlug/editions/:editionSlug/emails/:emailId"
+              element={<p>the page of the email</p>}
+            />
           </Routes>
         </MemoryRouter>
       </I18nProvider>
@@ -287,6 +291,17 @@ describe('the page of an order', () => {
     expect(emails.getByText('A new order link')).toBeDefined()
     expect(emails.getByText('Reminder before the edition')).toBeDefined()
     expect(emails.getByText(/Not sent: the order moved to another address/)).toBeDefined()
+  })
+
+  it('opens the page of an email, where what it said is read, from its row', async () => {
+    view()
+    const emails = await section('Emails')
+
+    const link = await emails.findByRole('link', { name: 'Confirmation with the QR code' })
+    expect(link.getAttribute('href')).toBe('/convention-a/editions/2026/emails/email-1')
+    fireEvent.click(emails.getByText('buyer@example.test'))
+
+    expect(await screen.findByText('the page of the email')).toBeDefined()
   })
 
   // What a provider's module keeps of a payment is named in the member's language, and an

@@ -109,17 +109,18 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query                               | Bound                                                                                                                                            |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| a tenant by slug                    | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                    |
-| `GET /me/memberships`               | the session's account; expired memberships left out, and the editions of a suspended tenant                                                      |
-| `GET /me/schedule`                  | the session's own likes; published editions only, of tenants not suspended                                                                       |
-| `GET /public/editions`              | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                     |
-| `DELETE /me`                        | the session's account; answers only whether it is a tenant's last head                                                                           |
-| the sweep of files                  | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                         |
-| a payment attempt by its identifier | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds |
-| the orders whose hold ended         | the API's own job; identifiers alone, of tenants not suspended                                                                                   |
-| the emails of orders that are due   | the API's own job; identifiers alone, of tenants not suspended                                                                                   |
+| Query                               | Bound                                                                                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| a tenant by slug                    | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                  |
+| `GET /me/memberships`               | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                    |
+| `GET /me/schedule`                  | the session's own likes; published editions only, of tenants not suspended                                                                                     |
+| `GET /public/editions`              | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                   |
+| `DELETE /me`                        | the session's account; answers only whether it is a tenant's last head                                                                                         |
+| the sweep of files                  | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                       |
+| a payment attempt by its identifier | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds               |
+| the orders whose hold ended         | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
+| the emails of orders that are due   | the API's own job; identifiers alone, of tenants not suspended                                                                                                 |
+| a scanner by a hash                 | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token), the API's own job, or publication, for what anyone
@@ -162,15 +163,15 @@ case in [verify.test.ts](../packages/db/test/verify.test.ts);
 | 7   | An attendee registration stays in its edition's tenant and goes with its account                                            | a composite foreign key, a cascade                                                                                                                                                           |
 | 8   | Speakers, likes and reviews stay in the tenant of their programme item                                                      | composite foreign keys                                                                                                                                                                       |
 | 9   | A limit on what is sold holds under concurrent sales and changes of the limit                                               | a sale, and a change of a capacity or a stock, lock the rows carrying the limit in one fixed order before counting ([0053](adr/0053-lock-the-rows-that-carry-a-limit-in-one-fixed-order.md)) |
-| 10  | Two scans of one ticket never act on the same state                                                                         | a conditional update or a row lock, never a read first                                                                                                                                       |
-| 11  | A scanner works only inside its tenant and edition                                                                          | its tenant's context; every query filters on its edition                                                                                                                                     |
+| 10  | Two scans of one ticket never act on the same state                                                                         | a hand-out is one update that matches only a line not yet handed out, by a scanner and in the panel alike                                                                                    |
+| 11  | A scanner works only inside its tenant and edition                                                                          | the transaction of the tenant its token named; every query filters on that tenant and on the scanner's edition                                                                               |
 | 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                                       | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                                   |
 | 13  | A tenant is deleted only while suspended                                                                                    | the statement that deletes it judges the suspension itself                                                                                                                                   |
 | 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants                  | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since              |
 | 15  | An order holds at most one ticket                                                                                           | a partial unique index                                                                                                                                                                       |
 | 16  | What an order names is never deleted from under it: its edition, what it sold, what its ticket holder answered and accepted | foreign keys that do not cascade ([0048](adr/0048-keep-what-an-order-names-with-foreign-keys-that-do-not-cascade.md))                                                                        |
 
-Invariants 7, 10 and 11 belong to [modules not built yet](#modules-waiting-for-their-domain-owner);
+Invariant 7 belongs to a [module not built yet](#modules-waiting-for-their-domain-owner);
 [invariants.test.ts](../packages/db/test/invariants.test.ts),
 [tenants.test.ts](../packages/db/test/tenants.test.ts) and
 [accounts.test.ts](../packages/db/test/accounts.test.ts) cover the database-side ones.
@@ -251,8 +252,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 ## API conventions
 
 - The contract is the single source of the API: a route starts from `publicRoute`, `accountRoute`,
-  `tenantRoute` or `adminRoute` of [common.ts](../packages/contract/src/common.ts)
-  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)). An admin route lives under `/admin/`,
+  `tenantRoute`, `adminRoute` or `scannerRoute` of [common.ts](../packages/contract/src/common.ts)
+  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)). A scanner's route is called by a
+  device with no session and no membership, named by its token in `Authorization: Bearer`, the
+  one bearer credential the API takes
+  ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). An admin route lives under `/admin/`,
   and nothing else does.
 - An error is `{ code, params?, message }`, its code in
   [errors.ts](../packages/contract/src/errors.ts). The UI shows the code through the catalog, never
@@ -328,7 +332,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   deployed application's content security policy allows pictures from the API alone beside its own.
 - The browser holds no session state: no token, no cookie read, the account from `GET /me`. A `401`
   brings one refresh shared by the tabs; only a refresh answered `401` signs out, `unavailable` never
-  does, and `mfa-required` shows no account data.
+  does, and `mfa-required` shows no account data. The one token a browser keeps is a scanner's, on
+  the panel's `/scanner`: it is no session of an account, is sent with no cookie, and opens the
+  scanner's routes alone.
 - Nothing of one account outlives it: a sign-out or another account clears caches and permissions in
   every tab, each tenant has its own API client, and a page to return to belongs to the account that
   left it.
@@ -506,8 +512,9 @@ module's [spec](specs/README.md)
 ([PRODUCT.md](PRODUCT.md#7-modules), [0019](adr/0019-documents-hold-rules-the-code-holds-the-rest.md));
 the lasting ones land here. The tickets module has its owner's rules and is built one spec at a
 time, the [shop's setup](specs/0002-shop-setup.md), the [catalog](specs/0003-catalog.md),
-[checkout and orders](specs/0004-checkout-and-orders.md) and
-[order management](specs/0006-order-management.md) so far: what no spec has built yet keeps the
+[checkout and orders](specs/0004-checkout-and-orders.md),
+[order management](specs/0006-order-management.md) and the [scanner](specs/0007-scanner.md) so
+far: what no spec has built yet keeps the
 rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
 [cross-tenant query](#tenant-isolation), organizer routes behind the module's permission and the
 steps of [adding a feature](#adding-a-feature).
@@ -597,6 +604,16 @@ steps of [adding a feature](#adding-a-feature).
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than
   that of the org who enabled it.
+- **The scanner.** A phone becomes a scanner by spending a pairing code, which travels in a
+  request's body and after the `#` of a link, never in a path or a query; it is then known by its
+  token alone ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). A guard
+  names the scanner before anything of a request is read, and the device is judged at every
+  request in its tenant's transaction: revoked, ended, or enabled by an org whose access has
+  ended, it opens nothing. A scan reads the orders of the scanner's own edition that the code
+  carries, and no email address; a code of another edition is told as such, and nothing of its
+  order is read. A hand-out is marked only under the code the scanner read, and names the
+  scanner. QR codes are drawn and read in the browser, and a camera frame never leaves the phone
+  ([0060](adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md)).
 
 ## Adding a feature
 

@@ -3,8 +3,9 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B6.1–B6.4
-- Decisions: none recorded yet; the records this spec needs are among its
-  [open questions](#open-questions)
+- Decisions: [0059](../adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md) and
+  [0060](../adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md), proposed; what the owner
+  still has to confirm is among its [open questions](#open-questions)
 
 ## Goal
 
@@ -98,6 +99,16 @@ The pairing code travels in the request's body, never in a path or a query of th
 link of D7 carries it after the `#`, which no server sees. Pairing, scans and hand-outs each have
 a rate limit of their own.
 
+A hand-out names the QR code the scanner read beside the order and its lines: a scanner marks
+nothing of an order it did not scan. The add-ons of a ticket are shown with entry and have no
+mark of their own on the scanner. The pairing answers, with the token, the scanner's name, its
+edition and convention and the convention's time zone, in which the scanner shows every moment.
+`scan.not-valid` carries one of four reasons: an unknown code, another edition's, a replaced one,
+a canceled order's.
+
+The scanner reads a code with the phone's camera, in the browser, and takes one typed by hand
+when the camera cannot read it: the text under a QR picture is the code itself.
+
 ### Screens
 
 | Application              | Screen   | Holds                                                                                                 |
@@ -159,7 +170,8 @@ Integration, in `apps/api/test`:
 
 e2e, on a mobile viewport: an org enables a scanner and a phone pairs with its code; the scanner
 reads a paid order's QR code, hands out entry and one item, and a second scan shows both as handed
-out; a canceled order's code shows "Not valid"; a revoked scanner reads nothing.
+out; a canceled order's code shows "Not valid"; a revoked scanner reads nothing. The scenario
+types each code, as a person reads it out: a browser under test has no camera to show a code to.
 
 ## Out of scope
 
@@ -173,5 +185,7 @@ out; a canceled order's code shows "Not valid"; a revoked scanner reads nothing.
 
 - **The device's rules (D7–D13):** they are this draft's proposal. The brief leaves enabling and
   revoking a device to the domain owner, who has not set them yet.
-- **Records before acceptance:** none beyond those of
-  [checkout and orders](0004-checkout-and-orders.md).
+- **Records to accept:** how a phone is paired and known, proposed in 0059, and reading QR codes
+  in the browser, proposed in 0060.
+- **For the domain owner to confirm:** that the add-ons of a ticket have no mark of their own on
+  the scanner; that a code may be typed by hand on the scanner, which D12 does not name.

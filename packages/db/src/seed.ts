@@ -159,6 +159,10 @@ interface SeedCatalog {
   salesClosedMessage: string
   /** Where and when merchandise is handed over, as the page of an order says it. */
   pickupInformation: string
+  /** When the edition is open, as its reminder tells a buyer. */
+  openingHours: string
+  /** How many days before the edition its reminder goes out. */
+  reminderDaysBefore: number
   customFields: { label: string; isRequired: boolean }[]
   addOns: SeedAddOn[]
   items: SeedMerchandise[]
@@ -354,6 +358,8 @@ const DEMO_CATALOG: SeedCatalog = {
   salesClosedMessage: 'Sales are closed for now. See you at the convention.',
   pickupInformation:
     'Pick up your merchandise at the merchandise desk in the main hall, on every day of the convention from 10:00 to 18:00. Show the QR code of your order.',
+  openingHours: 'The convention is open on every day from 10:00 to 20:00; the gate opens at 9:30.',
+  reminderDaysBefore: 3,
   customFields: [
     { label: 'City you travel from', isRequired: true },
     { label: 'Favourite fandom', isRequired: false },
@@ -1436,6 +1442,8 @@ async function seedCatalog(
       merchOnlyEnabled: catalog.merchOnly,
       salesClosedMessage: catalog.salesClosedMessage,
       pickupInformation: catalog.pickupInformation,
+      openingHours: catalog.openingHours,
+      reminderDaysBefore: catalog.reminderDaysBefore,
     })
     .where(eq(editionShops.editionId, editionId))
 

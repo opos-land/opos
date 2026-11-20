@@ -732,10 +732,21 @@ describe('db:seed shop', () => {
         )
       }
       // The edition says where and when its merchandise is handed over.
-      const [shop] = await migrator<{ pickup_information: string | null }[]>`
-        select pickup_information from edition_shops where edition_id = ${edition}
+      const [shop] = await migrator<
+        {
+          pickup_information: string | null
+          opening_hours: string | null
+          reminder_days_before: number | null
+        }[]
+      >`
+        select pickup_information, opening_hours, reminder_days_before
+        from edition_shops where edition_id = ${edition}
       `
       expect(shop!.pickup_information).toMatch(/merchandise desk/)
+      // And when it is open, with a reminder three days before it starts
+      // (docs/specs/0011-pre-edition-reminder.md).
+      expect(shop!.opening_hours).toMatch(/10:00/)
+      expect(shop!.reminder_days_before).toBe(3)
 
       const attempts = await migrator<
         {

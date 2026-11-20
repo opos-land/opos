@@ -386,6 +386,20 @@
       "when": 1795145287775,
       "tag": "0054_order_link_email",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1795148744438,
+      "tag": "0055_pre_edition_reminder",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1795148745290,
+      "tag": "0056_pre_edition_reminder_privileges",
+      "breakpoints": true
     }
   ]
 }

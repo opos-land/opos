@@ -38,6 +38,12 @@ export const editionShops = pgTable(
     salesClosedMessage: text(),
     /** Where and when merchandise is handed over, as the page of an order tells its buyer. */
     pickupInformation: text(),
+    /** How many days before the edition's first day its reminder goes out; none while null. */
+    reminderDaysBefore: integer(),
+    /** When the edition is open, as an org writes it for the reminder. */
+    openingHours: text(),
+    /** When the reminder was queued: it goes out once an edition. */
+    reminderSentAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -54,5 +60,7 @@ export const editionShops = pgTable(
     ),
     check('edition_shops_sales_closed_message', sql`char_length(${t.salesClosedMessage}) <= 1000`),
     check('edition_shops_pickup_information', sql`char_length(${t.pickupInformation}) <= 1000`),
+    check('edition_shops_reminder_days_before', sql`${t.reminderDaysBefore} between 1 and 60`),
+    check('edition_shops_opening_hours', sql`char_length(${t.openingHours}) <= 1000`),
   ],
 )

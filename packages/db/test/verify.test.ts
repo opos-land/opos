@@ -429,6 +429,7 @@ describe('verifyDatabase', () => {
       ['merchandise_item_pictures', 'merchandise_item_id'],
       ['edition_custom_fields', 'label'],
       ['edition_shops', 'sales_closed_message'],
+      ['edition_shops', 'opening_hours'],
     ])(
       'reports opos_app_global reading %s.%s, which no cross-tenant query needs',
       async (table, column) => {

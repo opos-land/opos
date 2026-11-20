@@ -503,9 +503,10 @@ Reviews and attendee registrations get no code until their domain owner sets the
 module's [spec](specs/README.md)
 ([PRODUCT.md](PRODUCT.md#7-modules), [0019](adr/0019-documents-hold-rules-the-code-holds-the-rest.md));
 the lasting ones land here. The tickets module has its owner's rules and is built one spec at a
-time, the [shop's setup](specs/0002-shop-setup.md), the [catalog](specs/0003-catalog.md) and
-[checkout and orders](specs/0004-checkout-and-orders.md) so far: what no spec has built yet
-keeps the rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
+time, the [shop's setup](specs/0002-shop-setup.md), the [catalog](specs/0003-catalog.md),
+[checkout and orders](specs/0004-checkout-and-orders.md) and
+[order management](specs/0006-order-management.md) so far: what no spec has built yet keeps the
+rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
 [cross-tenant query](#tenant-isolation), organizer routes behind the module's permission and the
 steps of [adding a feature](#adding-a-feature).
 
@@ -568,7 +569,25 @@ steps of [adding a feature](#adding-a-feature).
   ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). The
   credentials of a provider account stay as they are while an order awaits payment: an order
   being placed and a change of them share one lock of the tenant's account. `opos_app` never
-  updates an order's number, prices or lines.
+  updates an order's number, its prices or what a line sells, but for a merchandise line's
+  variant, which its foreign key keeps within the item the line names.
+- **Order management.** Every change an org makes of an order runs under the tenant's write lock
+  and locks the order's row first, then the rows that carry the limits its lines touch, in the
+  order placing takes them (invariant 9): the order a payment's confirmation takes too. A manual
+  order is priced by the contract's one function against the offer the shop would make at that
+  moment were it open, and takes the same locks
+  ([0055](adr/0055-record-a-sale-made-outside-the-shop-as-a-manual-order.md)). A cancellation and
+  a decline change the order alone and ask no provider for anything
+  ([0056](adr/0056-cancel-and-decline-an-order-without-returning-money.md)). A changed email
+  gives the order a new QR code: the old one is marked replaced once no order carries it, and
+  the links sent before are ended. A QR code is searched by its hash, which the panel makes, and
+  never travels in an address
+  ([0057](adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md)). An email of an order
+  holds no text of its own: the outbox writes it from the order as it stands when it is sent, so
+  each thing an org changes is a kind of email of its own. A file an org exports is CSV in UTF-8
+  with a byte order mark, its texts quoted and its fields separated by semicolons, its columns in
+  the language of the account that asks; a cell that begins like a formula is written with a
+  leading apostrophe.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than

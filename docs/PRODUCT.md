@@ -103,6 +103,7 @@ a ticket; what the scene calls accreditation is the ticket.
 | **hold**                      | what an unpaid order keeps of stock and capacity, for thirty minutes                               |
 | **QR code**                   | what a paid order is found by at the edition                                                       |
 | **order link**                | an emailed link that opens one order without a sign-in                                             |
+| **manual order**              | a sale made outside the shop, recorded by an org: at a desk, by invoice or complimentary           |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.
@@ -295,6 +296,19 @@ one ticket holder, with its add-ons and merchandise, or merchandise alone.
 | Emails                        | a fixed text with the convention's name, in the recipient's language or the convention's for an address with no account, listed on the order and sent again after a failed send                                           |
 | Limits                        | three orders awaiting payment an email address in an edition; the result page of an order opens for 24 hours, in the browser that placed it                                                                               |
 
+**Order management.** An org with the tickets permission of an edition works on its orders in the
+panel: reading them needs read access, every change write access.
+
+| Rule               | Value                                                                                                                                                                                                                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Finding            | orders are searched by number, name, email or QR code and filtered by status, by what they hold and by date; those that need review come first, and the edition shows how many there are                                                                                                                                                 |
+| Corrections        | made on a paid order: the ticket holder's name, which changes nothing else; the order's email, which gives it a new QR code and order link and ends the old ones, the only way a ticket passes to another person; a merchandise line's variant, for another of the same item while that one has stock. Each tells the buyer what changed |
+| Manual orders      | a sale outside the shop is recorded at the prices in force, a complimentary one at zero, also while the shop is closed; it takes stock and capacity like any order, is handed over as it is recorded, and has no email, no QR code and no account ([0055](adr/0055-record-a-sale-made-outside-the-shop-as-a-manual-order.md))            |
+| Canceling          | a paid order is canceled whole, with a reason: what it held returns, its QR code is refused, and its buyer is told. OPOS returns no money: that is between the convention and the buyer ([0056](adr/0056-cancel-and-decline-an-order-without-returning-money.md))                                                                        |
+| Settling a review  | an order that needs review is marked paid, at the total it was placed at, or declined with a reason; one that holds nothing takes again what it held, and is refused while that is gone                                                                                                                                                  |
+| Handing out        | on an order's page an org marks a line of a paid order as handed out, or takes a mark back, for a buyer whose QR code cannot be read                                                                                                                                                                                                     |
+| Production numbers | once the pre-order deadline has passed: the count of every variant, what paid orders hold apart from what awaits payment and needs review, as a file too                                                                                                                                                                                 |
+
 ---
 
 ## 8. Design and public image
@@ -392,8 +406,8 @@ interface language.
 - The list of every convention's published editions on the portal's home page; an edition's page
   with its venue and the convention's logo
 - The programme with speakers on the edition's programme page, likes, personal schedule, reviews
-- Tickets and merchandise sold to the convention's own account and checked at the venue; attendee
-  registrations
+- Tickets and merchandise sold to the convention's own account and checked at the venue; sales
+  made outside the shop recorded as manual orders; attendee registrations
 - Account deletion; a privacy policy linked from registration
 - File uploads, as far as a feature's spec asks for them
 - A portal for phone browsers; the designer's interface, with no AI-generated graphics
@@ -403,8 +417,8 @@ interface language.
 
 - Modules: CMS with the website on `<convention>.opos.land` and custom domains, booths, friends
 - Domain ownership verification with self-service
-- Tickets without a purchase, passes, shipping of merchandise, refunds from the panel, sales
-  embedded on a convention's website, offline scanning
+- Tickets issued ahead with no order, passes, shipping of merchandise, refunds from the panel,
+  sales embedded on a convention's website, offline scanning
 - Fees for commercial exhibitors; an OPOS shop
 - Push notifications; professional email templates
 - Localized portal paths; content translations with a language switcher on the public website

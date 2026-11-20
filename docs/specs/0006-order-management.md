@@ -3,8 +3,10 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B4, P2, B5.3 and B6.5
-- Decisions: none recorded yet; the records this spec needs are among its
-  [open questions](#open-questions)
+- Decisions: [0055](../adr/0055-record-a-sale-made-outside-the-shop-as-a-manual-order.md),
+  [0056](../adr/0056-cancel-and-decline-an-order-without-returning-money.md) and
+  [0057](../adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md), proposed; what the
+  owner still has to confirm is among its [open questions](#open-questions)
 
 ## Goal
 
@@ -125,7 +127,19 @@ Tenant routes, each under `/editions/{editionId}`:
 | `GET /production-numbers`                          | tickets>=read                                                               | `production.before-deadline`                                   |
 | `GET /production-numbers/export`                   | tickets>=read                                                               | `production.before-deadline`                                   |
 
-A QR code is searched by its hash, never kept in a log. Resending has a rate limit of its own.
+A QR code is searched by its SHA-256 hash, which the panel makes and sends as `qrCodeHash`: the
+code never travels in an address, where a log would keep it. Resending has a rate limit of its
+own, an order. The export is a file as [sales reports](0010-sales-reports.md) writes its own,
+its columns in the language of the account that asks.
+
+A manual order is priced against the offer the shop would make at that moment were it open: it
+is recorded while the shop is closed, and sells merchandise alone whatever the shop lets a buyer
+do. An edition that set no pre-order deadline takes no pre-order, so its production numbers wait
+for nothing.
+
+A correction is two kinds of email, one for the ticket holder's name and one for a variant, each
+written from the order as it stands when it is sent; a changed email is one to the new address
+and one to the old.
 
 ### Screens
 
@@ -186,7 +200,9 @@ e2e, each scenario making its own tenant and checking the BFF boundary:
 
 1. An org finds an order by its buyer's email, corrects the ticket holder's name and resends the
    confirmation.
-2. A changed email: the new address gets the QR code, and the old order link no longer opens.
+2. A changed email: the new address gets the QR code, and the order link sent before is ended.
+   That an ended link opens nothing is the scenario of
+   [buyer self-service](0009-buyer-self-service.md), which brings the link's page.
 3. A sale at the desk recorded as a manual order lowers the stock the shop shows.
 4. A paid order is canceled through the modal, and its stock returns.
 5. An order in review is listed first; raising the stock lets the org mark it paid.
@@ -204,6 +220,11 @@ e2e, each scenario making its own tenant and checking the BFF boundary:
 
 ## Open questions
 
-- **Records before acceptance:** manual and complimentary orders and desk sales in the MVP (D2 of
-  the brief, with PRODUCT.md 11); an org canceling paid orders and declining payments while OPOS
-  returns no money (D14), which the documents already allow and should say.
+- **Records to accept:** manual and complimentary orders and desk sales in the MVP (D2 of the
+  brief), proposed in 0055 with the change of PRODUCT.md 11 it brings; an org canceling paid
+  orders and declining payments while OPOS returns no money (D14), proposed in 0056.
+- **For the domain owner to confirm:** that a manual order is recorded while the shop is closed
+  and sells merchandise alone where the shop does not; that every line of a manual order, one
+  paid by invoice too, is handed out as it is recorded; that the production numbers of an edition
+  with no pre-order deadline are read at any time; that the reason of a cancellation or a decline
+  is not sent to the buyer.

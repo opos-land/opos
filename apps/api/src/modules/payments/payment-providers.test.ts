@@ -134,6 +134,7 @@ describe('a payment asked of a provider', () => {
     email: 'buyer@example.test',
     locale: 'en',
     returnUrl: 'https://portal.test/result',
+    payableUntil: new Date('2026-05-01T10:30:00Z'),
     notificationUrl: 'https://api.test/payments/fake/notifications/a1',
     additionalNotificationUrl: 'https://api.test/payments/fake/notifications/a1/additional',
   }

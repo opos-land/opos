@@ -52,6 +52,8 @@ export interface StartRequest extends AttemptOf {
   locale: string
   /** Where the buyer returns to. */
   returnUrl: string
+  /** Until when the order may be paid: the end of its hold, for a provider that limits the time. */
+  payableUntil: Date
   /** Where the provider reports a payment made, and what else it reports of the attempt. */
   notificationUrl: string
   additionalNotificationUrl: string
@@ -76,6 +78,11 @@ export interface ReportedPayment {
 export type Notification =
   | { kind: 'payment'; payment: ReportedPayment }
   | { kind: 'failure'; reason: FailureReason; code: string | null; message: string | null }
+  /**
+   * Signed, and of the attempt, but nothing the shop acts on: such as an additional word of a
+   * card payment that went through, which the notification of the payment itself confirms.
+   */
+  | { kind: 'nothing' }
 
 export type SettleAnswer = { outcome: 'settled' } | { outcome: 'unavailable'; reason: string }
 

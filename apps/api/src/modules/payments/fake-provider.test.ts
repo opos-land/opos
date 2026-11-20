@@ -42,6 +42,7 @@ describe('a payment at the fake provider', () => {
     email: 'buyer@example.test',
     locale: 'pl',
     returnUrl: 'https://portal.test/result',
+    payableUntil: new Date('2026-05-01T10:30:00Z'),
     notificationUrl: `https://api.test/payments/fake/notifications/${id}`,
     additionalNotificationUrl: `https://api.test/payments/fake/notifications/${id}/additional`,
   })
@@ -62,6 +63,7 @@ describe('a payment at the fake provider', () => {
       amountMinor: 12300,
       reference: 'ABCDEFGHJK',
       returnUrl: 'https://portal.test/result',
+      payableUntil: new Date('2026-05-01T10:30:00Z'),
     })
     expect(provider.started('other')).toBeUndefined()
   })

@@ -91,6 +91,8 @@ export class PaymentAttempts {
       returnUrl:
         `${this.portalUrl}/conventions/${tenant.slug}/${order.editionSlug}/shop/result/${order.id}` +
         (token ? `?token=${encodeURIComponent(token)}` : ''),
+      // Judged payable a moment ago, so its hold has an end.
+      payableUntil: order.holdEndsAt ?? new Date(),
       notificationUrl: `${this.apiUrl}/payments/${first.provider}/notifications/${attemptId}`,
       additionalNotificationUrl: `${this.apiUrl}/payments/${first.provider}/notifications/${attemptId}/additional`,
     })

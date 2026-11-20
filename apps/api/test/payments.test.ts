@@ -161,6 +161,9 @@ describe('a payment attempt', () => {
       notificationUrl: `${payments}/notifications/${attemptId}`,
       additionalNotificationUrl: `${payments}/notifications/${attemptId}/additional`,
     })
+    // A provider that limits the time of a payment takes it from the end of the order's hold.
+    const [stored] = await storedRows('orders', s.t.id)
+    expect(sent.payableUntil.getTime()).toBe(new Date(String(stored!.hold_ends_at)).getTime())
     // What the buyer reads at the provider carries no personal data.
     expect(sent.description).toContain(placed.number)
     expect(sent.description).not.toMatch(/Ada|buyer@/)

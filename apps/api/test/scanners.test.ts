@@ -165,6 +165,37 @@ describe('enabling a scanner', () => {
   })
 })
 
+// Who is in the team, and under which address, is behind the settings permission: an org who
+// reads the tickets of an edition alone is told of a scanner only that another org enabled it.
+describe('who enabled a scanner', () => {
+  it('is an address for an org who may read the team, and for the org’s own scanner alone otherwise', async () => {
+    const c = await convention()
+    await addScanner(c.t.id, c.edition, { name: 'Gate of the head' })
+    const [gatekeeper, manager] = [await member(), await member()]
+    const gatekeeperId = await addOrg(c.t.id, gatekeeper)
+    await addEditionAccess(c.t.id, gatekeeperId, c.edition, { tickets: 'write' })
+    await addEditionAccess(c.t.id, await addOrg(c.t.id, manager, { settings: 'read' }), c.edition, {
+      tickets: 'read',
+    })
+    await c.as(gatekeeper, 'post', '', { name: 'Gate of the org' }).expect(201)
+    const who = async (reader: typeof gatekeeper) =>
+      Object.fromEntries(
+        list(await c.as(reader, 'get').expect(200)).map((scanner) => [
+          scanner.name,
+          scanner.enabledBy,
+        ]),
+      )
+
+    expect(await who(gatekeeper)).toEqual({
+      'Gate of the head': null,
+      'Gate of the org': gatekeeper.email,
+    })
+    const all = { 'Gate of the head': c.t.head.email, 'Gate of the org': gatekeeper.email }
+    expect(await who(manager)).toEqual(all)
+    expect(await who(c.t.head)).toEqual(all)
+  })
+})
+
 describe('the scanners of an edition', () => {
   it('are listed with who enabled each, when it was last used and when it ends', async () => {
     const c = await convention()

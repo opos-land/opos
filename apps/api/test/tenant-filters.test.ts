@@ -38,6 +38,7 @@ import {
   setColumn,
   setPublished,
   storedMembership,
+  storedRows,
   tenantWithHead,
   withoutRls,
 } from './tenants'
@@ -148,27 +149,52 @@ describe('what a scanner opens', () => {
   })
 
   it("reads no QR code, no order and no line of another tenant in this tenant's transaction", async () => {
-    const order = await addOrder(b.id, editionOfB, { status: 'paid' })
+    const ticketTypeId = await addTicketType(b.id, editionOfB)
+    const order = await addOrder(b.id, editionOfB, { status: 'paid', ticketTypeId })
     const code = aQrCode()
     const codeId = await addQrCode(b.id, editionOfB, order.id, code)
-    const scanned = { ...order, status: 'paid' as const, holderName: 'Ada', ageBand: null }
+    const scanner = await addScanner(b.id, editionOfB)
+    const line = (await storedRows('order_lines', b.id)).find((row) => row.order_id === order.id)!
+    const lineId = String(line.id)
     const hash = createHash('sha256').update(code).digest('hex')
     const read = (tenantId: string) =>
       withoutRls(a.id, async (tx) => {
         const scans = new ScansRepository(contextOf(tx))
+        const scanners = new ScannersRepository(contextOf(tx))
+        await scanners.touch(tenantId, scanner.id, new Date())
         return {
           code: await scans.code(tenantId, hash),
           orders: await scans.orders(tenantId, editionOfB, codeId),
-          marked: await scans.handOut(tenantId, order.id, [randomUUID()], randomUUID(), new Date()),
+          names: await scanners.names(tenantId, editionOfB),
+          // A real line of the other tenant, and its real scanner.
+          marked: await scans.handOut(tenantId, order.id, [lineId], scanner.id, new Date()),
+          mark: await scans.mark(tenantId, lineId),
         }
       })
+    const used = async () =>
+      (await storedRows('scanner_devices', b.id)).find((row) => row.id === scanner.id)!.last_used_at
 
-    expect(await read(a.id)).toEqual({ code: undefined, orders: [], marked: [] })
+    expect(await read(a.id)).toEqual({
+      code: undefined,
+      orders: [],
+      names: undefined,
+      marked: [],
+      mark: undefined,
+    })
+    // Nothing of the other tenant was written either: the line and the scanner are as they were.
+    expect((await storedRows('order_lines', b.id)).find((row) => row.id === lineId)).toMatchObject({
+      handed_out_at: null,
+      handed_out_by: null,
+    })
+    expect(await used()).toBeNull()
+
     expect(await read(b.id)).toMatchObject({
       code: { id: codeId, editionId: editionOfB },
       orders: [{ id: order.id }],
+      marked: [lineId],
+      mark: { scanner: expect.any(String) as string },
     })
-    expect(scanned.id).toBe(order.id)
+    expect(await used()).not.toBeNull()
   })
 })
 

@@ -148,7 +148,8 @@ export function ScannersPage() {
                     <TableCell className="font-medium">{scanner.name}</TableCell>
                     <TableCell>{stateOf(scanner)}</TableCell>
                     <TableCell>
-                      {scanner.enabledBy ?? <Trans>An organizer who left the team</Trans>}
+                      {/* No address: an org who left the team, or one this member may not be told of. */}
+                      {scanner.enabledBy ?? <Trans>Another organizer</Trans>}
                     </TableCell>
                     <TableCell>
                       {scanner.lastUsedAt ? time.format(scanner.lastUsedAt) : t`Never`}

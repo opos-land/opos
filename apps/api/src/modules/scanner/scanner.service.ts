@@ -106,7 +106,7 @@ export class ScannerService {
       const names = await this.scanners.names(found.tenantId, scanner.editionId)
       if (!names) throw pairingCodeRefused()
       const token = secretToken()
-      await this.scanners.pair(scanner.id, hashOf(token), now)
+      await this.scanners.pair(found.tenantId, scanner.id, hashOf(token), now)
       return {
         token,
         name: scanner.name,
@@ -185,7 +185,7 @@ export class ScannerService {
     return this.context.withTenant(found.tenantId, async () => {
       const scanner = await this.scanners.standing(found.tenantId, found.id, now)
       if (!scanner) throw scannerRevoked()
-      await this.scanners.touch(scanner.id, now)
+      await this.scanners.touch(found.tenantId, scanner.id, now)
       return fn(scanner)
     })
   }

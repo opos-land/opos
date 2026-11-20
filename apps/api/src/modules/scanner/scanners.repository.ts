@@ -192,20 +192,27 @@ export class ScannersRepository {
   }
 
   /** A phone spent the pairing code: it holds the token from now on, and the code is used. */
-  async pair(id: string, tokenHash: string, at: Date) {
+  async pair(tenantId: string, id: string, tokenHash: string, at: Date) {
     await this.context
       .tx()
       .update(scannerDevices)
       .set({ pairedAt: at, tokenHash })
-      .where(eq(scannerDevices.id, id))
+      .where(and(eq(scannerDevices.tenantId, tenantId), eq(scannerDevices.id, id)))
   }
 
-  async touch(id: string, at: Date) {
+  /** Notes that the scanner of the tenant was used; one revoked meanwhile is left as it is. */
+  async touch(tenantId: string, id: string, at: Date) {
     await this.context
       .tx()
       .update(scannerDevices)
       .set({ lastUsedAt: at })
-      .where(eq(scannerDevices.id, id))
+      .where(
+        and(
+          eq(scannerDevices.tenantId, tenantId),
+          eq(scannerDevices.id, id),
+          isNull(scannerDevices.revokedAt),
+        ),
+      )
   }
 
   /**

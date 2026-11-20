@@ -433,8 +433,8 @@ msgid "An order’s number, a name, an email address or a QR code."
 msgstr "An order’s number, a name, an email address or a QR code."
 
 #: src/features/scanner/pages/scanners-page.tsx
-msgid "An organizer who left the team"
-msgstr "An organizer who left the team"
+msgid "Another organizer"
+msgstr "Another organizer"
 
 #: src/features/catalog/components/custom-field-form.tsx
 msgid "Answer"

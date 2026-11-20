@@ -111,6 +111,8 @@ describe('the scanners page', () => {
     expect(gate.getByText('at 2026-06-05T09:00:00.000Z')).toBeDefined()
     expect(gate.getByText('at 2099-06-08T16:00:00.000Z')).toBeDefined()
     expect(within(rows[2]!).getByText('Waiting for a phone')).toBeDefined()
+    // No address: an org who left the team, or one this member may not be told of.
+    expect(within(rows[2]!).getByText('Another organizer')).toBeDefined()
     expect(within(rows[3]!).getByText('Revoked')).toBeDefined()
     // A revoked scanner is revoked no more.
     expect(within(rows[3]!).queryByRole('button', { name: /Revoke/ })).toBeNull()

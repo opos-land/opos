@@ -1,7 +1,9 @@
 import { Controller } from '@nestjs/common'
 import { contract } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
+import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RequireEdition } from '../../common/decorators/require-edition.decorator'
+import { decideTenant } from '../../common/permissions/permissions'
 import { ScannerService } from './scanner.service'
 import { ScannersRepository } from './scanners.repository'
 
@@ -14,14 +16,26 @@ export class ScannersController {
   constructor(
     private readonly scanners: ScannersRepository,
     private readonly service: ScannerService,
+    private readonly context: TenantContextService,
   ) {}
 
+  /**
+   * Who is in the team, and under which address, is behind the settings permission: an org who
+   * reads the tickets alone is told the address behind its own scanners, and of another's only
+   * that an org enabled it.
+   */
   @Implement(contract.scanners.list)
   @RequireEdition('tickets', 'read')
   list() {
-    return implement(contract.scanners.list).handler(({ input }) =>
-      this.scanners.list(input.params.editionId),
-    )
+    return implement(contract.scanners.list).handler(async ({ input }) => {
+      const scanners = await this.scanners.list(input.params.editionId)
+      if (decideTenant(this.context.membership(), 'settings', 'read') === 'allow') return scanners
+      const own = this.context.account().email
+      return scanners.map((scanner) => ({
+        ...scanner,
+        enabledBy: scanner.enabledBy === own ? own : null,
+      }))
+    })
   }
 
   @Implement(contract.scanners.create)

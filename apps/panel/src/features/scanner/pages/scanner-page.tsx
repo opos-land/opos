@@ -39,10 +39,12 @@ export function ScannerPage() {
 
   useEffect(() => {
     const code = codeFromHash(window.location.hash)
-    if (!code || pairing.current || readDevice()) return
+    if (!code || pairing.current) return
     pairing.current = true
     // The code leaves the address before it is spent: it stays in no history.
     window.history.replaceState(null, '', window.location.pathname)
+    // A phone that is a scanner already stays the one it is.
+    if (readDevice()) return
     pairScanner(code).then(
       (paired) => {
         saveDevice(paired)

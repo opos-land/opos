@@ -334,6 +334,15 @@ export class TenantFactory {
     `)
   }
 
+  /** Cancels a paid order, as an org does on its page: it holds nothing from then on. */
+  async cancelOrder(orderId: string) {
+    await this.db.execute(sql`
+      update orders set status = 'canceled', holds = false, canceled_at = now(),
+        cancel_reason = 'Canceled for the scenario'
+      where id = ${orderId}
+    `)
+  }
+
   /** The order links of an order as stored: whether each still opens. */
   async orderLinks(orderId: string) {
     return [

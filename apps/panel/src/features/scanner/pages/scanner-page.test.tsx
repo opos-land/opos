@@ -123,6 +123,16 @@ describe('a scanner', () => {
     localStorage.setItem('opos.scanner', JSON.stringify(paired))
   })
 
+  // A pairing link opened on a phone that is a scanner already pairs nothing, and its code
+  // stays in no address.
+  it('stays the scanner it is when a pairing link is opened on it, and drops the code', async () => {
+    view('#another-code')
+
+    expect(await screen.findByRole('heading', { name: 'Main gate' })).toBeDefined()
+    await waitFor(() => expect(window.location.hash).toBe(''))
+    expect(device.pair).not.toHaveBeenCalled()
+  })
+
   it('reads a code and shows whom to let in and what to hand over', async () => {
     view()
 

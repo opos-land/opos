@@ -3,8 +3,9 @@
 - Status: Draft
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B6.1–B6.4
-- Decisions: [0059](../adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md) and
-  [0060](../adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md), proposed; what the owner
+- Decisions: [0059](../adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md),
+  [0060](../adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md) and
+  [0065](../adr/0065-let-the-api-name-the-scanner-that-marked-a-hand-out.md), proposed; what the owner
   still has to confirm is among its [open questions](#open-questions)
 
 ## Goal
@@ -188,4 +189,12 @@ types each code, as a person reads it out: a browser under test has no camera to
 - **Records to accept:** how a phone is paired and known, proposed in 0059, and reading QR codes
   in the browser, proposed in 0060.
 - **For the domain owner to confirm:** that the add-ons of a ticket have no mark of their own on
-  the scanner; that a code may be typed by hand on the scanner, which D12 does not name.
+  the scanner; that a code may be typed by hand on the scanner, which D12 does not name; that
+  the list of scanners names who enabled each by an address only to a member who may read the
+  team.
+- **When the org behind a scanner loses access:** the scanner stops once that org's membership
+  expires or is removed, which is what the device's rules here ask. ARCHITECTURE.md says a
+  device's access ends no later than that of the org who enabled it, which may also be read as
+  that org's tickets permission of the edition: an org whose permission was lowered to none
+  keeps a working scanner until another org revokes it. Which reading holds is the owner's to
+  say; the stricter one would judge the permission at every request of the device.

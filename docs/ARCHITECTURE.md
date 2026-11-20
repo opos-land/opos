@@ -141,9 +141,11 @@ reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of ve
 
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
-account or another row, but for the variant an order's merchandise line names, which the line's
-constraints keep within its item, its edition and its tenant
-([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)). `tenants` rows are inserted, deleted, suspended and given a new slug only by
+account or another row, but for two pointers of an order's line that its constraints keep
+within its edition and its tenant: the variant a merchandise line names
+([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)) and the scanner that
+marked a line handed out
+([0065](adr/0065-let-the-api-name-the-scanner-that-marked-a-hand-out.md)). `tenants` rows are inserted, deleted, suspended and given a new slug only by
 `opos_admin`, behind the admin routes, and by the seed; `opos_app` updates `name`, `default_locale`
 and `timezone` alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and
 `auth.mfa_factors` are listed in verify.ts. A `security definer` function pins `search_path = ''`
@@ -166,7 +168,7 @@ case in [verify.test.ts](../packages/db/test/verify.test.ts);
 | 8   | Speakers, likes and reviews stay in the tenant of their programme item                                                      | composite foreign keys                                                                                                                                                                                                                        |
 | 9   | A limit on what is sold holds under concurrent sales and changes of the limit                                               | a sale, and a change of a capacity, a stock or a discount code's limit, lock the rows carrying the limit in one fixed order before counting, a discount code's last ([0053](adr/0053-lock-the-rows-that-carry-a-limit-in-one-fixed-order.md)) |
 | 10  | Two scans of one ticket never act on the same state                                                                         | a hand-out is one update that matches only a line not yet handed out, by a scanner and in the panel alike                                                                                                                                     |
-| 11  | A scanner works only inside its tenant and edition                                                                          | the transaction of the tenant its token named; every query filters on that tenant and on the scanner's edition                                                                                                                                |
+| 11  | A scanner works only inside its tenant and edition                                                                          | the transaction of the tenant its token named; every query filters on that tenant, and a scan reads the orders of the scanner's edition alone                                                                                                 |
 | 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                                       | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                                                                                    |
 | 13  | A tenant is deleted only while suspended                                                                                    | the statement that deletes it judges the suspension itself                                                                                                                                                                                    |
 | 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants                  | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since                                                               |
@@ -658,7 +660,8 @@ steps of [adding a feature](#adding-a-feature).
   ended, it opens nothing. A scan reads the orders of the scanner's own edition that the code
   carries, and no email address; a code of another edition is told as such, and nothing of its
   order is read. A hand-out is marked only under the code the scanner read, and names the
-  scanner. QR codes are drawn and read in the browser, and a camera frame never leaves the phone
+  scanner. The list of an edition's scanners tells who enabled each by an address only to a
+  member who may read the team; another org is told its own address alone. QR codes are drawn and read in the browser, and a camera frame never leaves the phone
   ([0060](adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md)).
 
 ## Adding a feature

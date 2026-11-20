@@ -137,6 +137,42 @@ describe('a hand-out', () => {
     await migrator`update order_lines set handed_out_by = null where id = ${held}`
   })
 
+  // The scanner a hand-out names is the second pointer the application role changes in place
+  // (docs/adr/0065-let-the-api-name-the-scanner-that-marked-a-hand-out.md): the role itself
+  // cannot point a line at a scanner of another edition or of another tenant, nor move the line.
+  it('is marked by the application role with a scanner of its own edition alone', async () => {
+    const at = await place()
+    const sibling = { tenant: at.tenant, edition: await createEdition(at.tenant) }
+    const stranger = await place()
+    const [mine, ofSibling, ofStranger] = [
+      await device(at),
+      await device(sibling),
+      await device(stranger),
+    ]
+    const held = await line(at)
+    const mark = (scanner: string) =>
+      inTenant(
+        at.tenant,
+        (sql) => sql`
+          update order_lines set handed_out_at = now(), handed_out_by = ${scanner}
+          where id = ${held}
+        `,
+      )
+
+    await expect(mark(ofSibling)).rejects.toThrow(/order_lines_handed_out_by_fk/)
+    await expect(mark(ofStranger)).rejects.toThrow(/order_lines_handed_out_by_fk/)
+    await mark(mine)
+    // What the pointer is kept in place by is nothing the role may change.
+    for (const column of ['tenant_id', 'edition_id', 'order_id']) {
+      await expect(
+        inTenant(at.tenant, (sql) =>
+          sql.unsafe(`update order_lines set ${column} = ${column} where id = '${held}'`),
+        ),
+        column,
+      ).rejects.toThrow(/permission denied/)
+    }
+  })
+
   // docs/ARCHITECTURE.md, invariant 10: one conditional update, never a read followed by a write.
   it('is marked once by two scanners at the same moment', async () => {
     const at = await place()

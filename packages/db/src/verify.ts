@@ -172,9 +172,9 @@ const authTriggers: Record<string, Record<string, string>> = {
 
 /**
  * The columns opos_app updates: never `id` or `tenant_id`, and never a column that points a row
- * at an account or another row, but for the one exception named below, the variant of an order
- * line. A column the API starts changing joins this list in the PR of the migration that grants
- * it.
+ * at an account or another row, but for the two exceptions named below, each with a record of
+ * its own: the variant of an order's line and the scanner that marked a line handed out. A
+ * column the API starts changing joins this list in the PR of the migration that grants it.
  */
 const appUpdates = [
   'account_recovery_codes.used_at',
@@ -279,8 +279,10 @@ const appUpdates = [
   'orders.declined_at',
   'orders.decline_reason',
   'order_lines.handed_out_at',
+  // The two pointers of an order's line changed in place, each kept within the line's edition
+  // and tenant by the line's constraints: the scanner that marked it handed out, and its
+  // variant, within the item it names.
   'order_lines.handed_out_by',
-  // The one pointer of an order changed in place: a line's variant, within the item it names.
   'order_lines.merchandise_variant_id',
   'order_qr_codes.replaced_at',
   'order_links.ended_at',

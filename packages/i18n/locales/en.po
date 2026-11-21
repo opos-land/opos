@@ -168,6 +168,12 @@ msgctxt "glossary"
 msgid "attendee"
 msgstr "attendee"
 
+#. Glossary term: avatar (an account's picture)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "avatar"
+msgstr "avatar"
+
 #: src/exports.ts
 msgctxt "export value"
 msgid "Awaiting payment"
@@ -639,6 +645,18 @@ msgctxt "glossary"
 msgid "price tier"
 msgstr "price tier"
 
+#. Glossary term: profile (what an account shows of itself to everyone)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "profile"
+msgstr "profile"
+
+#. Glossary term: profile report (a notice that a profile should not be there)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "profile report"
+msgstr "profile report"
+
 #. Glossary term: programme item
 #: src/glossary.ts
 msgctxt "glossary"
@@ -649,6 +667,12 @@ msgstr "programme item"
 msgctxt "export column"
 msgid "Provider"
 msgstr "Provider"
+
+#. Glossary term: public name (first name, nickname and last name in the chosen order)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "public name"
+msgstr "public name"
 
 #. Glossary term: QR code (what a paid order is found by at the edition)
 #: src/glossary.ts
@@ -774,6 +798,12 @@ msgstr "suspended"
 msgctxt "export value"
 msgid "Teen"
 msgstr "Teen"
+
+#. Glossary term: platform's terms (the rules of using OPOS an account accepts)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "terms"
+msgstr "terms"
 
 #: src/order-emails.ts
 msgid "Thank you. Your order {number} for {conventionName} is paid."

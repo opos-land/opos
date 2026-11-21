@@ -105,6 +105,11 @@ a ticket; what the scene calls accreditation is the ticket.
 | **order link**                | an emailed link that opens one order without a sign-in                                             |
 | **manual order**              | a sale made outside the shop, recorded by an org: at a desk, by invoice or complimentary           |
 | **discount code**             | a code a buyer enters at checkout to lower the price of an order, down to free entry               |
+| **profile**                   | what an account shows of itself to everyone once it publishes it                                   |
+| **public name**               | an account's first name, nickname and last name in the order it chose; "Anon" with none            |
+| **avatar**                    | an account's picture, public from its upload                                                       |
+| **profile report**            | a notice from anyone that a published profile should not be there                                  |
+| **platform's terms**          | the rules of using OPOS that an account accepts when it is created                                 |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.

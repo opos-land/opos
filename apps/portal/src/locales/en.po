@@ -106,6 +106,10 @@ msgstr "Adult"
 msgid "Adult ({adultFromAge} and over)"
 msgstr "Adult ({adultFromAge} and over)"
 
+#: src/features/account/components/name-form.tsx
+msgid "After the first and the last name"
+msgstr "After the first and the last name"
+
 #: src/features/shop/components/holder-step.tsx
 msgid "Age band"
 msgstr "Age band"
@@ -175,6 +179,10 @@ msgstr "Back to the shop"
 #: src/features/shop/pages/shop-page.tsx
 msgid "bank transfer"
 msgstr "bank transfer"
+
+#: src/features/account/components/name-form.tsx
+msgid "Between the first and the last name"
+msgstr "Between the first and the last name"
 
 #: src/features/shop/components/my-orders.tsx
 msgid "Buy more"
@@ -435,9 +443,9 @@ msgstr "Enter the code from your authenticator app to finish signing in."
 msgid "Enter the six digits from your authenticator app."
 msgstr "Enter the six digits from your authenticator app."
 
-#: src/features/account/components/profile-form.tsx
-msgid "Enter up to 100 characters."
-msgstr "Enter up to 100 characters."
+#: src/features/account/components/name-form.tsx
+msgid "Enter up to {max} characters."
+msgstr "Enter up to {max} characters."
 
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Enter your password."
@@ -446,6 +454,10 @@ msgstr "Enter your password."
 #: src/features/shop/pages/shop-page.tsx
 msgid "Every price is a gross amount."
 msgstr "Every price is a gross amount."
+
+#: src/features/account/components/name-form.tsx
+msgid "Everyone sees you as <0>{shown}</0>: on your profile and, when you are a speaker, in the programme."
+msgstr "Everyone sees you as <0>{shown}</0>: on your profile and, when you are a speaker, in the programme."
 
 #: src/features/shop/model/order-status.ts
 msgctxt "the status of an order"
@@ -468,7 +480,7 @@ msgstr "Finish signing in"
 msgid "Finish signing in to like this item"
 msgstr "Finish signing in to like this item"
 
-#: src/features/account/components/profile-form.tsx
+#: src/features/account/components/name-form.tsx
 #: src/features/auth/components/register-form.tsx
 msgid "First name"
 msgstr "First name"
@@ -576,7 +588,7 @@ msgstr "Keep the merchandise you chose?"
 msgid "Language"
 msgstr "Language"
 
-#: src/features/account/components/profile-form.tsx
+#: src/features/account/components/name-form.tsx
 #: src/features/auth/components/register-form.tsx
 msgid "Last name"
 msgstr "Last name"
@@ -630,6 +642,10 @@ msgstr "New password"
 #: src/features/shop/pages/checkout-page.tsx
 msgid "Next"
 msgstr "Next"
+
+#: src/features/account/components/name-form.tsx
+msgid "Nickname"
+msgstr "Nickname"
 
 #: src/features/auth/pages/login-page.tsx
 msgid "No account yet? <0>Create an account</0>"
@@ -913,7 +929,7 @@ msgstr "Sales are closed for now."
 msgid "Sales closed"
 msgstr "Sales closed"
 
-#: src/features/account/components/profile-form.tsx
+#: src/features/account/components/name-form.tsx
 msgid "Save"
 msgstr "Save"
 
@@ -1177,6 +1193,10 @@ msgstr "This action cannot be undone."
 msgid "This code cannot be used for this order."
 msgstr "This code cannot be used for this order."
 
+#: src/features/account/components/name-form.tsx
+msgid "This field holds a character that cannot be seen. Type it again."
+msgstr "This field holds a character that cannot be seen. Type it again."
+
 #: src/features/shop/pages/order-link-page.tsx
 msgid "This link does not open an order. Use the link from the newest email about your order: an earlier one stops working when the email address of the order changes."
 msgstr "This link does not open an order. Use the link from the newest email about your order: an earlier one stops working when the email address of the order changes."
@@ -1395,6 +1415,10 @@ msgstr "When you help organize a convention: your membership in its team and you
 msgid "Where"
 msgstr "Where"
 
+#: src/features/account/components/name-form.tsx
+msgid "Where the nickname stands"
+msgstr "Where the nickname stands"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Who sees it"
 msgstr "Who sees it"
@@ -1455,7 +1479,7 @@ msgstr "Your browser"
 msgid "Your name"
 msgstr "Your name"
 
-#: src/features/account/components/profile-form.tsx
+#: src/features/account/components/name-form.tsx
 msgid "Your name is saved."
 msgstr "Your name is saved."
 

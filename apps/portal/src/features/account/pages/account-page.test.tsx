@@ -13,9 +13,9 @@ const me = vi.hoisted(() => ({
   current: {
     id: 'user-anna',
     email: 'anna@example.test',
-    firstName: null,
-    lastName: null,
-    nickname: null,
+    firstName: null as string | null,
+    lastName: null as string | null,
+    nickname: null as string | null,
     nameOrder: 'nickname-middle' as const,
     locale: null,
     theme: null as 'light' | 'dark' | null,
@@ -44,7 +44,16 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
-  me.current = { ...me.current, theme: null, mfaEnabled: false, signInMethods: ['password'] }
+  me.current = {
+    ...me.current,
+    firstName: null,
+    lastName: null,
+    nickname: null,
+    nameOrder: 'nickname-middle',
+    theme: null,
+    mfaEnabled: false,
+    signInMethods: ['password'],
+  }
   update.mockClear()
   vi.mocked(signOut).mockReset()
 })
@@ -93,6 +102,69 @@ describe('AccountPage sign-out', () => {
     await openPage()
 
     expect(screen.getByText('Signing out ends your session on this device.')).toBeTruthy()
+  })
+})
+
+// docs/specs/0016-public-profile.md, N1-N4.
+describe('AccountPage name', () => {
+  const field = (label: string) => screen.getByLabelText<HTMLInputElement>(label)
+  const order = () => screen.getByLabelText<HTMLSelectElement>('Where the nickname stands')
+
+  it('offers the three parts of the name and where the nickname stands', async () => {
+    me.current = { ...me.current, firstName: 'Anna', nickname: 'Lisek', lastName: 'Nowak' }
+    await openPage()
+
+    expect(field('First name').value).toBe('Anna')
+    expect(field('Nickname').value).toBe('Lisek')
+    expect(field('Last name').value).toBe('Nowak')
+    expect(order().value).toBe('nickname-middle')
+    expect([...order().options].map((option) => option.textContent)).toEqual([
+      'Between the first and the last name',
+      'After the first and the last name',
+    ])
+  })
+
+  it('shows the public name as everyone will read it, while it is typed', async () => {
+    me.current = { ...me.current, firstName: 'Anna', lastName: 'Nowak' }
+    const user = await openPage()
+
+    expect(screen.getByText('Anna Nowak')).toBeTruthy()
+    await user.type(field('Nickname'), 'Lisek')
+    expect(screen.getByText('Anna “Lisek” Nowak')).toBeTruthy()
+    await user.selectOptions(order(), 'nickname-last')
+    expect(screen.getByText('Anna Nowak “Lisek”')).toBeTruthy()
+  })
+
+  it('shows an account with no part of a name as Anon', async () => {
+    await openPage()
+
+    expect(screen.getByText('Anon')).toBeTruthy()
+  })
+
+  it('saves the parts and the order, an emptied part as none', async () => {
+    me.current = { ...me.current, firstName: 'Anna', lastName: 'Nowak' }
+    const user = await openPage()
+
+    await user.clear(field('Last name'))
+    await user.type(field('Nickname'), ' Lisek ')
+    await user.selectOptions(order(), 'nickname-last')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() =>
+      expect(update.mock.lastCall?.[0]).toEqual({
+        body: { firstName: 'Anna', nickname: 'Lisek', lastName: null, nameOrder: 'nickname-last' },
+      }),
+    )
+  })
+
+  it('refuses a nickname above 50 characters and sends nothing', async () => {
+    const user = await openPage()
+
+    await user.type(field('Nickname'), 'x'.repeat(51))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByText('Enter up to 50 characters.')).toBeTruthy()
+    expect(update).not.toHaveBeenCalled()
   })
 })
 

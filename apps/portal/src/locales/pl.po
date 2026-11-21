@@ -106,6 +106,10 @@ msgstr "Dorosły"
 msgid "Adult ({adultFromAge} and over)"
 msgstr "Dorosły (od {adultFromAge} lat)"
 
+#: src/features/account/components/name-form.tsx
+msgid "After the first and the last name"
+msgstr "Po imieniu i nazwisku"
+
 #: src/features/shop/components/holder-step.tsx
 msgid "Age band"
 msgstr "Przedział wiekowy"
@@ -175,6 +179,10 @@ msgstr "Wróć do sklepu"
 #: src/features/shop/pages/shop-page.tsx
 msgid "bank transfer"
 msgstr "przelew bankowy"
+
+#: src/features/account/components/name-form.tsx
+msgid "Between the first and the last name"
+msgstr "Między imieniem a nazwiskiem"
 
 #: src/features/shop/components/my-orders.tsx
 msgid "Buy more"
@@ -435,9 +443,9 @@ msgstr "Wpisz kod z aplikacji uwierzytelniającej, aby dokończyć logowanie."
 msgid "Enter the six digits from your authenticator app."
 msgstr "Wpisz sześć cyfr z aplikacji uwierzytelniającej."
 
-#: src/features/account/components/profile-form.tsx
-msgid "Enter up to 100 characters."
-msgstr "Wpisz do 100 znaków."
+#: src/features/account/components/name-form.tsx
+msgid "Enter up to {max} characters."
+msgstr "Wpisz do {max} znaków."
 
 #: src/features/auth/components/sign-in-form.tsx
 msgid "Enter your password."
@@ -446,6 +454,10 @@ msgstr "Podaj hasło."
 #: src/features/shop/pages/shop-page.tsx
 msgid "Every price is a gross amount."
 msgstr "Wszystkie ceny są cenami brutto."
+
+#: src/features/account/components/name-form.tsx
+msgid "Everyone sees you as <0>{shown}</0>: on your profile and, when you are a speaker, in the programme."
+msgstr "Wszyscy widzą cię jako <0>{shown}</0>: na twoim profilu, a gdy jesteś prelegentem, także w programie."
 
 #: src/features/shop/model/order-status.ts
 msgctxt "the status of an order"
@@ -468,7 +480,7 @@ msgstr "Dokończ logowanie"
 msgid "Finish signing in to like this item"
 msgstr "Dokończ logowanie, aby polubić ten punkt programu"
 
-#: src/features/account/components/profile-form.tsx
+#: src/features/account/components/name-form.tsx
 #: src/features/auth/components/register-form.tsx
 msgid "First name"
 msgstr "Imię"
@@ -576,7 +588,7 @@ msgstr "Zachować wybrane gadżety?"
 msgid "Language"
 msgstr "Język"
 
-#: src/features/account/components/profile-form.tsx
+#: src/features/account/components/name-form.tsx
 #: src/features/auth/components/register-form.tsx
 msgid "Last name"
 msgstr "Nazwisko"
@@ -630,6 +642,10 @@ msgstr "Nowe hasło"
 #: src/features/shop/pages/checkout-page.tsx
 msgid "Next"
 msgstr "Dalej"
+
+#: src/features/account/components/name-form.tsx
+msgid "Nickname"
+msgstr "Ksywka"
 
 #: src/features/auth/pages/login-page.tsx
 msgid "No account yet? <0>Create an account</0>"
@@ -913,7 +929,7 @@ msgstr "Sprzedaż jest na razie zamknięta."
 msgid "Sales closed"
 msgstr "Sprzedaż zakończona"
 
-#: src/features/account/components/profile-form.tsx
+#: src/features/account/components/name-form.tsx
 msgid "Save"
 msgstr "Zapisz"
 
@@ -1177,6 +1193,10 @@ msgstr "Tej operacji nie można cofnąć."
 msgid "This code cannot be used for this order."
 msgstr "Tego kodu nie można użyć w tym zamówieniu."
 
+#: src/features/account/components/name-form.tsx
+msgid "This field holds a character that cannot be seen. Type it again."
+msgstr "To pole zawiera znak, którego nie widać. Wpisz je od nowa."
+
 #: src/features/shop/pages/order-link-page.tsx
 msgid "This link does not open an order. Use the link from the newest email about your order: an earlier one stops working when the email address of the order changes."
 msgstr "Ten link nie otwiera żadnego zamówienia. Użyj linku z najnowszej wiadomości o zamówieniu: wcześniejszy przestaje działać, gdy zmieni się adres e-mail zamówienia."
@@ -1395,6 +1415,10 @@ msgstr "Gdy współorganizujesz konwent: twoje członkostwo w jego zespole i two
 msgid "Where"
 msgstr "Gdzie"
 
+#: src/features/account/components/name-form.tsx
+msgid "Where the nickname stands"
+msgstr "Miejsce ksywki"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Who sees it"
 msgstr "Kto je widzi"
@@ -1453,9 +1477,9 @@ msgstr "Twoja przeglądarka"
 
 #: src/features/account/pages/account-page.tsx
 msgid "Your name"
-msgstr "Imię i nazwisko"
+msgstr "Imię, ksywka i nazwisko"
 
-#: src/features/account/components/profile-form.tsx
+#: src/features/account/components/name-form.tsx
 msgid "Your name is saved."
 msgstr "Imię i nazwisko zostały zapisane."
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { plainLine } from './text'
+import { isPlainLine, plainLine } from './text'
 
 describe('plainLine', () => {
   const line = plainLine(10)
@@ -30,5 +30,17 @@ describe('plainLine', () => {
     ['a directional isolate', 'Li⁧sek'],
   ])('refuses %s', (_name, text) => {
     expect(line.safeParse(text).success).toBe(false)
+  })
+})
+
+describe('isPlainLine', () => {
+  it('passes what a form may hold before it is trimmed, an empty field among it', () => {
+    expect(isPlainLine('')).toBe(true)
+    expect(isPlainLine(' Anna ')).toBe(true)
+  })
+
+  it('refuses a control and a direction character', () => {
+    expect(isPlainLine('An\u0007na')).toBe(false)
+    expect(isPlainLine('An\u202Ena')).toBe(false)
   })
 })

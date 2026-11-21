@@ -255,6 +255,7 @@ describe('PATCH /me', () => {
     [{ nickname: 'Li\u202Esek' }, 'nickname'],
     [{ firstName: 'Ew\u0007a' }, 'firstName'],
     [{ lastName: 'No\u200Fwak' }, 'lastName'],
+    [{ nickname: 'Li\u2067sek' }, 'nickname'],
   ])('refuses %o', async (body, field) => {
     const res = await patch(body).expect(400)
 

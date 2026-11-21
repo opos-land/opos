@@ -449,6 +449,20 @@
       "when": 1795203112297,
       "tag": "0063_order_email_text_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1795303772367,
+      "tag": "0064_accounts_nickname",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1795303777840,
+      "tag": "0065_accounts_nickname_privileges",
+      "breakpoints": true
     }
   ]
 }

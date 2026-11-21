@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm'
 import { check, foreignKey, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { authUsers } from 'drizzle-orm/supabase'
 import { timestamps } from './columns'
-import { theme } from './enums'
+import { nameOrder, theme } from './enums'
 
 export const accounts = pgTable(
   'accounts',
@@ -11,6 +11,9 @@ export const accounts = pgTable(
     email: text().notNull().unique('accounts_email_unique'),
     firstName: text(),
     lastName: text(),
+    // The three parts of the public name are optional; the order says where the nickname stands.
+    nickname: text(),
+    nameOrder: nameOrder().notNull().default('nickname-middle'),
     locale: text(),
     // The interface theme the account chose; null follows the system's.
     theme: theme(),
@@ -27,5 +30,6 @@ export const accounts = pgTable(
       foreignColumns: [authUsers.id],
     }).onDelete('cascade'),
     check('accounts_email_lowercase', sql`${t.email} = lower(${t.email})`),
+    check('accounts_nickname_length', sql`char_length(${t.nickname}) between 1 and 50`),
   ],
 )

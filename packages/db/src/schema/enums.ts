@@ -18,3 +18,8 @@ export const adminAction = pgEnum('admin_action', [
 ])
 /** An account's chosen interface theme; no choice follows the system's. */
 export const theme = pgEnum('theme', ['light', 'dark'])
+/**
+ * Where the nickname stands in an account's public name: between the first and the last name, or
+ * after them (docs/specs/0016-public-profile.md, N2).
+ */
+export const nameOrder = pgEnum('name_order', ['nickname-middle', 'nickname-last'])

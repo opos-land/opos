@@ -181,6 +181,8 @@ const appUpdates = [
   'account_recovery_codes.used_at',
   'accounts.first_name',
   'accounts.last_name',
+  'accounts.nickname',
+  'accounts.name_order',
   'accounts.locale',
   'accounts.theme',
   'tenants.name',

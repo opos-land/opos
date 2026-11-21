@@ -337,10 +337,39 @@ describe('accounts constraints', () => {
       migrator`update accounts set theme = 'blue' where id = ${user.id}`,
     ).rejects.toThrow(/invalid input value for enum theme/)
   })
+
+  // docs/specs/0016-public-profile.md, N1 and N2.
+  it('starts an account with no nickname and the nickname between the names', async () => {
+    const user = await createUser()
+
+    expect(await migrator`select nickname, name_order from accounts where id = ${user.id}`).toEqual(
+      [{ nickname: null, name_order: 'nickname-middle' }],
+    )
+  })
+
+  it('refuses an order of the name other than the two', async () => {
+    const user = await createUser()
+
+    await migrator`update accounts set name_order = 'nickname-last' where id = ${user.id}`
+    await expect(
+      migrator`update accounts set name_order = 'nickname-first' where id = ${user.id}`,
+    ).rejects.toThrow(/invalid input value for enum name_order/)
+  })
+
+  it('refuses an empty nickname and one over 50 characters', async () => {
+    const user = await createUser()
+
+    await migrator`update accounts set nickname = ${'x'.repeat(50)} where id = ${user.id}`
+    for (const nickname of ['', 'x'.repeat(51)]) {
+      await expect(
+        migrator`update accounts set nickname = ${nickname} where id = ${user.id}`,
+      ).rejects.toThrow(/accounts_nickname_length/)
+    }
+  })
 })
 
 describe('accounts on the runtime roles', () => {
-  it('lets opos_app read every column and change only the names, the locale and the theme', async () => {
+  it('lets opos_app read every column and change only the names, their order, the locale and the theme', async () => {
     const user = await createUser()
 
     await app`update accounts set first_name = 'Ola', last_name = 'Lis', locale = 'en', theme = 'dark' where id = ${user.id}`
@@ -349,6 +378,10 @@ describe('accounts on the runtime roles', () => {
       last_name: 'Lis',
       locale: 'en',
     })
+    await app`update accounts set nickname = 'Lisek', name_order = 'nickname-last' where id = ${user.id}`
+    expect(await app`select nickname, name_order from accounts where id = ${user.id}`).toEqual([
+      { nickname: 'Lisek', name_order: 'nickname-last' },
+    ])
     expect(await app`select theme from accounts where id = ${user.id}`).toEqual([{ theme: 'dark' }])
     await app`update accounts set theme = null where id = ${user.id}`
     expect(await app`select theme from accounts where id = ${user.id}`).toEqual([{ theme: null }])

@@ -9,13 +9,13 @@ in a change of its own.
 
 Each module's domain owner sets its rules ([PRODUCT.md 7](docs/PRODUCT.md#7-modules)).
 
-| Module                                   | Domain owner  |
-| ---------------------------------------- | ------------- |
-| tickets: the shop, payments, the scanner | Jakub Neumann |
-| programme                                | not named     |
-| reviews                                  | not named     |
-| attendee registrations                   | not named     |
-| profile                                  | not named     |
+| Module                                   | Domain owner        |
+| ---------------------------------------- | ------------------- |
+| tickets: the shop, payments, the scanner | Jakub Neumann       |
+| programme                                | not named           |
+| reviews                                  | not named           |
+| attendee registrations                   | not named           |
+| profile                                  | Adrian Wieprzkowicz |
 
 Open: whether the domain owner of tickets also owns attendee registrations, as far as a paid
 ticket makes them ([brief 0001](docs/briefs/0001-convention-shop.md), D15).

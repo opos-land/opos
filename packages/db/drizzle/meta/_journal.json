@@ -463,6 +463,13 @@
       "when": 1795303777840,
       "tag": "0065_accounts_nickname_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1795304744612,
+      "tag": "0066_plain_names_of_new_users",
+      "breakpoints": true
     }
   ]
 }

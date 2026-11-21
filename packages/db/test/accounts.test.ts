@@ -47,6 +47,38 @@ describe('accounts mirror auth.users', () => {
     expect(await account(user.id)).toMatchObject({ first_name: 'Cher', last_name: null })
   })
 
+  // docs/specs/0016-public-profile.md, N7: a name that comes with a new user, from the sign-up
+  // form or from Google, is not the API's to refuse, so the mirror takes the characters out.
+  it('keeps control and direction characters out of the names of a new user', async () => {
+    const user = await createUser({
+      first_name: 'An\u202Ena\u0007',
+      last_name: '\u2067No\u200Fwak\u2069',
+    })
+
+    expect(await account(user.id)).toMatchObject({ first_name: 'Anna', last_name: 'Nowak' })
+  })
+
+  it('keeps them out of a Google full name too', async () => {
+    const user = await createUser({ full_name: 'Jan\u061C Kowal\u202Aski\u009F' })
+
+    expect(await account(user.id)).toMatchObject({ first_name: 'Jan', last_name: 'Kowalski' })
+  })
+
+  it('takes a name made of such characters alone as no name', async () => {
+    const user = await createUser({ first_name: '\u202E\u200F', last_name: ' \u0001 ' })
+
+    expect(await account(user.id)).toMatchObject({ first_name: null, last_name: null })
+  })
+
+  it('leaves the letters of every script and the marks a name needs', async () => {
+    const user = await createUser({ first_name: 'Zo\u00EB', last_name: "O'Łoś-\u0639\u0644\u064A" })
+
+    expect(await account(user.id)).toMatchObject({
+      first_name: 'Zo\u00EB',
+      last_name: "O'Łoś-\u0639\u0644\u064A",
+    })
+  })
+
   it('follows an email change', async () => {
     const user = await createUser()
     const email = `Changed-${user.id.slice(0, 8)}@Example.test`

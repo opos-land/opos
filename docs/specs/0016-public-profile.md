@@ -1,6 +1,6 @@
 # Public profile
 
-- Status: Draft
+- Status: Accepted
 - Domain owner: the domain owner of profile ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Decisions: [0071](../adr/0071-let-anyone-read-the-profile-an-account-published.md)
 

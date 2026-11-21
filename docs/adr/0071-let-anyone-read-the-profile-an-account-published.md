@@ -1,6 +1,6 @@
 # 0071. Let anyone read the profile an account published
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-21
 
 ## Context

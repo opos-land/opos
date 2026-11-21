@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./glossary": "./src/glossary.ts",
     "./errors": "./src/errors.ts",
+    "./names": "./src/names.ts",
     "./emails": "./src/emails.ts",
     "./order-emails": "./src/order-emails.ts",
     "./exports": "./src/exports.ts",

@@ -7,6 +7,11 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#. A nickname in quotation marks, beside a first or a last name: Anna “Lisek” Nowak
+#: src/names.ts
+msgid "“{nickname}”"
+msgstr "“{nickname}”"
+
 #: src/order-emails.ts
 msgid "{editionName} starts soon: your QR code"
 msgstr "{editionName} starts soon: your QR code"
@@ -148,6 +153,11 @@ msgstr "An organizer of {conventionName} swapped a variant of the merchandise in
 #: src/order-emails.ts
 msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 msgstr "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
+
+#. The public name of an account that gave no first name, nickname or last name
+#: src/names.ts
+msgid "Anon"
+msgstr "Anon"
 
 #: src/errors.ts
 msgid "Another discount code of this edition already has this text. Choose another."

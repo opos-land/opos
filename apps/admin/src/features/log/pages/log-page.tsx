@@ -40,6 +40,10 @@ const ACTIONS: Record<AdminAction['action'], MessageDescriptor> = {
   }),
   'admin.grant': msg`Granted the administrator role`,
   'admin.revoke': msg`Took the administrator role away`,
+  'profile-report.close': msg`Closed a profile report`,
+  'profile.take-down': msg`Took the profile down`,
+  'profile.restore': msg`Restored the profile`,
+  'account.clear-name': msg`Cleared the name of the account`,
 }
 
 type Named = NonNullable<AdminAction['account']>

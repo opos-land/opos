@@ -66,6 +66,10 @@ export const adminActionKinds = [
   'account.reset-2fa',
   'admin.grant',
   'admin.revoke',
+  'profile-report.close',
+  'profile.take-down',
+  'profile.restore',
+  'account.clear-name',
 ] as const
 
 /** An account an entry of the log names, as it is now; only the identifier once it is gone. */

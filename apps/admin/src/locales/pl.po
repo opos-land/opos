@@ -73,9 +73,17 @@ msgstr "Zmiana adresu psuje każdy stary link do konwentu. Zwolniony adres od ra
 msgid "Choose a time zone from the list."
 msgstr "Wybierz strefę czasową z listy."
 
+#: src/features/log/pages/log-page.tsx
+msgid "Cleared the name of the account"
+msgstr "Wyczyszczono nazwę konta"
+
 #: src/shared/ui/toast.tsx
 msgid "Close"
 msgstr "Zamknij"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Closed a profile report"
+msgstr "Zamknięto zgłoszenie profilu"
 
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Code"
@@ -291,6 +299,10 @@ msgid "Restored the convention"
 msgstr "Przywrócono konwent"
 
 #: src/features/log/pages/log-page.tsx
+msgid "Restored the profile"
+msgstr "Przywrócono profil"
+
+#: src/features/log/pages/log-page.tsx
 msgid "Show older entries"
 msgstr "Pokaż starsze wpisy"
 
@@ -401,6 +413,10 @@ msgstr "Strefa czasowa"
 #: src/features/log/pages/log-page.tsx
 msgid "Took the administrator role away"
 msgstr "Odebrano rolę administratora"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Took the profile down"
+msgstr "Zdjęto profil"
 
 #: src/features/access/components/admin-gate.tsx
 #: src/shared/ui/messages.tsx

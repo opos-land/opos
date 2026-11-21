@@ -28,6 +28,7 @@ import {
   closeAdminDb,
   countLoggedActions,
   grant,
+  logAction,
   loggedActions,
   removeFactors,
   sessionToken,
@@ -762,6 +763,30 @@ describe('GET /admin/actions', () => {
       admin: null,
       tenant: null,
       account: { id: granted.id, firstName: 'Greta', email: granted.email },
+    })
+  })
+
+  // docs/specs/0016-public-profile.md, T12.
+  it.each([
+    'profile-report.close',
+    'profile.take-down',
+    'profile.restore',
+    'account.clear-name',
+  ] as const)('lists %s with the account it was done to', async (action) => {
+    const subject = await createAccount({ first_name: 'Sara' })
+    await logAction({ action, adminAccountId: admin.id, accountId: subject.id })
+
+    const res = await asAdmin(api().get('/admin/actions').query({ limit: 20 }))
+
+    expect(res.status).toBe(200)
+    const entry = (res.body as AdminAction[]).find(
+      (candidate) => candidate.account?.id === subject.id,
+    )
+    expect(entry).toMatchObject({
+      action,
+      admin: { id: admin.id },
+      tenant: null,
+      account: { firstName: 'Sara', email: subject.email },
     })
   })
 

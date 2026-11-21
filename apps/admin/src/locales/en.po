@@ -73,9 +73,17 @@ msgstr "Changing the address breaks every old link to the convention. The addres
 msgid "Choose a time zone from the list."
 msgstr "Choose a time zone from the list."
 
+#: src/features/log/pages/log-page.tsx
+msgid "Cleared the name of the account"
+msgstr "Cleared the name of the account"
+
 #: src/shared/ui/toast.tsx
 msgid "Close"
 msgstr "Close"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Closed a profile report"
+msgstr "Closed a profile report"
 
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Code"
@@ -291,6 +299,10 @@ msgid "Restored the convention"
 msgstr "Restored the convention"
 
 #: src/features/log/pages/log-page.tsx
+msgid "Restored the profile"
+msgstr "Restored the profile"
+
+#: src/features/log/pages/log-page.tsx
 msgid "Show older entries"
 msgstr "Show older entries"
 
@@ -401,6 +413,10 @@ msgstr "Time zone"
 #: src/features/log/pages/log-page.tsx
 msgid "Took the administrator role away"
 msgstr "Took the administrator role away"
+
+#: src/features/log/pages/log-page.tsx
+msgid "Took the profile down"
+msgstr "Took the profile down"
 
 #: src/features/access/components/admin-gate.tsx
 #: src/shared/ui/messages.tsx

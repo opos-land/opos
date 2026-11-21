@@ -477,6 +477,20 @@
       "when": 1795304929792,
       "tag": "0067_admin_action_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1795305333349,
+      "tag": "0068_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1795305352823,
+      "tag": "0069_profiles_privileges",
+      "breakpoints": true
     }
   ]
 }

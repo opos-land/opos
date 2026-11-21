@@ -518,6 +518,120 @@ describe('verifyDatabase', () => {
       },
     )
 
+    // The public profile (docs/specs/0016-public-profile.md): an account cannot give itself a
+    // public identifier, end its own takedown or start again with a new profile; the API reads
+    // nothing a report says; a read across accounts answers neither an email address nor what a
+    // takedown says; and the admin changes nothing a profile says.
+    it.each([
+      'public_id',
+      'taken_down_at',
+      'taken_down_reason',
+      'taken_down_note',
+      'taken_down_after_report',
+    ])('reports opos_app inserting account_profiles.%s', async (column) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant insert (${column}) on public.account_profiles to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(
+        new RegExp(`opos_app INSERT \\(${column}\\) on account_profiles`),
+      )
+    })
+
+    it.each([
+      'account_id',
+      'public_id',
+      'taken_down_at',
+      'taken_down_reason',
+      'taken_down_note',
+      'taken_down_after_report',
+    ])('reports opos_app updating account_profiles.%s', async (column) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (${column}) on public.account_profiles to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(
+        new RegExp(`opos_app UPDATE \\(${column}\\) on account_profiles`),
+      )
+    })
+
+    it('reports opos_app deleting a profile, which would end its takedown', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant delete on public.account_profiles to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app DELETE on account_profiles/)
+    })
+
+    it('reports opos_app changing the pointer at an avatar, which is replaced and never changed', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant update (file_id) on public.account_avatars to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app UPDATE \(file_id\) on account_avatars/)
+    })
+
+    it.each(['id', 'reason', 'note', 'email', 'locale', 'created_at'])(
+      'reports opos_app reading profile_reports.%s, which the API never reads',
+      async (column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.profile_reports to opos_app`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app SELECT \\(${column}\\) on profile_reports`),
+        )
+      },
+    )
+
+    it('reports a table-level read of the reports granted to opos_app', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant select on public.profile_reports to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app SELECT on profile_reports/)
+    })
+
+    it('reports opos_app closing a report', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant update (closed_at) on public.profile_reports to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app UPDATE \(closed_at\) on profile_reports/)
+    })
+
+    it.each([
+      ['accounts', 'locale'],
+      ['account_profiles', 'taken_down_note'],
+      ['account_profiles', 'review_requested_at'],
+      ['profile_reports', 'account_id'],
+    ])('reports opos_app_global reading %s.%s', async (table, column) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+      )
+      expect(problems.join('\n')).toMatch(
+        new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+      )
+    })
+
+    it.each([
+      ['accounts', 'email'],
+      ['accounts', 'name_order'],
+      ['account_profiles', 'description'],
+      ['account_profiles', 'public_id'],
+      ['profile_reports', 'note'],
+    ])('reports opos_admin updating %s.%s', async (table, column) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (${column}) on public.${table} to opos_admin`),
+      )
+      expect(problems.join('\n')).toMatch(
+        new RegExp(`opos_admin UPDATE \\(${column}\\) on ${table}`),
+      )
+    })
+
+    it.each(['account_profiles', 'account_avatars', 'profile_reports'])(
+      'reports RLS on %s, a global table',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`alter table public.${table} enable row level security`),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`Global tables with RLS on: ${table}`))
+      },
+    )
+
     it('reports RLS on account_files, a global table', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`alter table public.account_files enable row level security`),

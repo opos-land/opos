@@ -27,3 +27,32 @@ export const theme = pgEnum('theme', ['light', 'dark'])
  * after them (docs/specs/0016-public-profile.md, N2).
  */
 export const nameOrder = pgEnum('name_order', ['nickname-middle', 'nickname-last'])
+/**
+ * What an account may say it is into, of the platform's list, the same for everyone
+ * (docs/specs/0016-public-profile.md, P5).
+ */
+export const profileInterest = pgEnum('profile_interest', [
+  'tabletop-rpg',
+  'larp',
+  'board-games',
+  'card-games',
+  'miniature-wargames',
+  'video-games',
+  'literature',
+  'comics',
+  'manga-anime',
+  'film-tv',
+  'cosplay',
+  'crafts',
+])
+/**
+ * Why a profile is reported: someone else's picture or identity, offensive or unlawful content,
+ * spam or advertising, or another reason. A takedown and a cleared name take every one but the
+ * last, which no rule of the platform's terms stands behind.
+ */
+export const profileReportReason = pgEnum('profile_report_reason', [
+  'identity',
+  'offensive',
+  'spam',
+  'other',
+])

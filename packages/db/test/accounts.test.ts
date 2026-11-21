@@ -430,11 +430,14 @@ describe('accounts on the runtime roles', () => {
     }
   })
 
-  it('gives opos_app_global no access to accounts', async () => {
+  // What it reads, the public name alone, is in profiles.test.ts.
+  it('gives opos_app_global no email address and no write on accounts', async () => {
     const user = await createUser()
 
     for (const query of [
-      global`select 1 from accounts where id = ${user.id}`,
+      global`select * from accounts where id = ${user.id}`,
+      global`select email from accounts where id = ${user.id}`,
+      global`select locale, theme, email_confirmed_at, mfa_enabled_at from accounts where id = ${user.id}`,
       global`update accounts set first_name = 'X' where id = ${user.id}`,
       global`delete from accounts where id = ${user.id}`,
       global`insert into accounts (id, email) values (gen_random_uuid(), 'x@example.test')`,

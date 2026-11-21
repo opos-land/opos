@@ -424,7 +424,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `dev`. Each environment has a bucket of its own, Dev's holding demo files, in a Scaleway project
   that holds it alone, so that the API's key opens it and nothing else, and its deployment runs
   imgproxy beside the API
-  ([0044](adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
+  ([0069](adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
   the local stack and CI run Versity Gateway as the bucket and imgproxy in containers beside
   Supabase's, which
   `pnpm infra:init` and `pnpm infra:up` start ([compose.yaml](../infra/local/compose.yaml)). Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
@@ -472,7 +472,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). The
   deploy commands are root scripts too, one Node script tested like the others, driving tools that
   come from mise; no shell script runs on an operator's machine
-  ([0045](adr/0045-run-the-deploy-commands-as-node-scripts.md)). `deploy:check`, `deploy:images`
+  ([0070](adr/0070-run-the-deploy-commands-as-node-scripts.md)). `deploy:check`, `deploy:images`
   and `deploy:lock` alone are mise tasks with no root script: they only run those tools.
 - The infrastructure lives in [infra](../infra/README.md): an environment is one directory with
   one `env.yaml`, its plain settings and the names of its secrets, and nothing else configures it.

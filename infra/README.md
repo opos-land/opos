@@ -21,7 +21,7 @@ The deployed environments, described in OpenTofu units that Terragrunt runs. The
 
 Each runs [scripts/deploy.mjs](../scripts/deploy.mjs), also as `pnpm deploy:<name>` where mise's
 tools are on the path, and mise installs every tool it drives
-([0045](../docs/adr/0045-run-the-deploy-commands-as-node-scripts.md)). Read the plan before every
+([0070](../docs/adr/0070-run-the-deploy-commands-as-node-scripts.md)). Read the plan before every
 apply. An agent never runs a
 command that changes anything, bootstrap, grant, revoke, apply, secret-set or destroy, nor
 secret-get, which prints a secret.
@@ -66,7 +66,7 @@ The steps for Dev; another environment follows them with its own names.
 
    It writes the files project's id into `files.project_id` of `live/dev/env.yaml`, to commit, and
    prints the TXT record of the next step; run it again to print the record again
-   ([0044](../docs/adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md)).
+   ([0069](../docs/adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md)).
 
 3. In the `opos.land` zone at Cloudflare, add the TXT record within 48 hours of the first bootstrap:
 

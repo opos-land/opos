@@ -1,4 +1,4 @@
-# 0044. Keep an environment's uploaded files in a Scaleway project of their own
+# 0069. Keep an environment's uploaded files in a Scaleway project of their own
 
 - Status: Proposed
 - Date: 2026-11-20

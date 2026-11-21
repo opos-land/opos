@@ -1,4 +1,4 @@
-# 0045. Run the deploy commands as Node scripts
+# 0070. Run the deploy commands as Node scripts
 
 - Status: Proposed
 - Date: 2026-11-20

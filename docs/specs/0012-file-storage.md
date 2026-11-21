@@ -3,7 +3,7 @@
 - Status: Draft
 - Domain owner: the team: the file storage is part of the core
 - Decisions: [0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md),
-  [0044](../adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md)
+  [0069](../adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md)
 
 ## Goal
 
@@ -241,7 +241,7 @@ e2e: none of its own; the scenarios of the features that take files cover it.
 
 - **The provider and the key of a deployed bucket:** Scaleway Object Storage, in a project of its
   own beside each environment's, so that the API's key opens the bucket and nothing else
-  ([0044](../adr/0044-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
+  ([0069](../adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
   Dev's is described in [infra](../../infra/README.md). To confirm with the record.
 - **The domain owner:** the team, as written, or a named owner of the core.
 - **Proposed values to confirm:** 15 MB a file (K2), 5 GB a convention and 50 MB an account (K7),

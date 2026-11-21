@@ -1,0 +1,3635 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>J03. Attendee with a ticket: tokens, lottery, the door</title>
+    <link rel="stylesheet" href="wireframes.css" />
+  </head>
+  <body>
+    <header class="page">
+      <h1>J03. Attendee with a ticket: tokens, lottery, the door</h1>
+      <p>
+        A role journey: each row is one person on one convention, left to right in time. An arrow is
+        an action that screen offers or an event that reaches the person; refusals sit under the
+        step where the role tries. The same step on another convention stands in the same column,
+        without an arrow. All people shown are invented.
+      </p>
+    </header>
+    <nav class="pages">
+      <a href="index.html">Index</a
+      ><a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+        >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+      ><a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a
+      ><a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+        >3. Portal: my schedule, proposing an item, speaker screen</a
+      ><a href="04-at-the-room-door-volunteer-and-scanner.html"
+        >4. At the room door: volunteer and scanner</a
+      ><a href="05-panel-programme-settings-of-an-edition.html"
+        >5. Panel: programme settings of an edition</a
+      ><a href="06-panel-programme-dictionaries-and-the-item-form.html"
+        >6. Panel: programme dictionaries and the item form</a
+      ><a href="07-panel-building-the-programme.html">7. Panel: building the programme</a
+      ><a href="08-panel-changes-during-the-convention-and-entitlements.html"
+        >8. Panel: changes during the convention and entitlements</a
+      ><a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+        >9. Worldcon: stress test of the model (not for delivery)</a
+      ><a href="10-portal-programme-people-and-guests.html"
+        >10. Portal: programme people and guests</a
+      ><a href="11-portal-changes-now-and-next-rooms-reminders.html"
+        >11. Portal: changes, now and next, rooms, reminders</a
+      ><a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+        >12. Portal: the speaker from acceptance to the day of the item</a
+      ><a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+        >13. Panel: programme team, people, panels and the programme release</a
+      ><a href="14-panel-the-programme-during-the-convention.html"
+        >14. Panel: the programme during the convention</a
+      ><a href="15-panel-head-dictionaries-team-and-programme-status.html"
+        >15. Panel: head, dictionaries, team and programme status</a
+      ><a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+        >16. Portal: sign-ups, lottery, declines and empty states</a
+      ><a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+        >17. Panel: item list, proposals, announcements and re-import</a
+      >
+    </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
+    <h2 class="sec">J03. Attendee with a ticket: tokens, lottery, the door</h2>
+    <main
+      class="boards flow"
+      data-edges='[{"from": "j03-f-item", "to": "j03-f-signed", "label": "Tap Sign up"}, {"from": "j03-f-signed", "to": "j03-f-door", "label": "Sat 14:52: open the sign-up"}, {"from": "j03-d-item", "to": "j03-d-plan", "label": "Like it; Sat: My schedule"}, {"from": "j03-d-plan", "to": "j03-d-full", "label": "Event: Room full, 15:48"}, {"from": "j03-p-list", "to": "j03-p-item", "label": "Tap the AI panel"}, {"from": "j03-p-item", "to": "j03-p-reserved", "label": "Tap Reserve a seat"}, {"from": "j03-p-reserved", "to": "j03-p-lottery-in", "label": "Back; enter the lottery"}, {"from": "j03-p-lottery-in", "to": "j03-p-plan-wed", "label": "Wed 19:12: My schedule"}, {"from": "j03-p-plan-wed", "to": "ab-role-tokens-used", "label": "Tap the 12:00 talk"}, {"from": "ab-role-tokens-used", "to": "j03-p-plan-wed", "label": "Tap My schedule"}, {"from": "j03-p-plan-wed", "to": "j03-p-reminders", "label": "Tap Reminders and emails"}, {"from": "j03-p-reminders", "to": "j03-p-lottery", "label": "Email: lottery drawn, Fri"}, {"from": "j03-p-lottery", "to": "j03-p-moved", "label": "Email: item moved, 18:20"}, {"from": "j03-p-moved", "to": "j03-p-plan-sat", "label": "Sat 09:30: My schedule"}, {"from": "j03-p-plan-sat", "to": "ab-role-reservations-closed", "label": "Tap the 16:00 talk"}, {"from": "ab-role-reservations-closed", "to": "j03-p-plan-sat", "label": "Tap My schedule"}, {"from": "j03-p-plan-sat", "to": "ab-role-reservation-code", "label": "13:44: Show the code"}, {"from": "ab-role-reservation-code", "to": "ab-role-checked-in", "label": "Event: code scanned, 13:45"}, {"from": "ab-role-reservation-code", "to": "ab-role-forfeited", "label": "Event: not there by 13:50"}, {"from": "ab-role-checked-in", "to": "j03-p-code-moved", "label": "16:45: Show the code"}, {"from": "ab-role-forfeited", "to": "j03-p-code-moved", "label": "16:45: Show the code"}]'
+    >
+      <figure class="board" id="j03-f-item" style="grid-column: 2; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: workshop with sign-ups <code>j03-f-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 720px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Workshop</span>
+                </div>
+                <h2>A fantasy cover from sketch to print</h2>
+                <small>Saturday 15:00–16:50 · Sala Masterclass · II LO</small
+                ><small>Room access · II LO, 1st floor, stairs only</small
+                ><small
+                  >Host: <a href="#" style="text-decoration: underline">Wiktoria Głóg</a></small
+                >
+                <p>
+                  From a composition thumbnail to a print-ready file. We work on your own sketches;
+                  tablets and paper are provided.
+                </p>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Sign-ups · first come, first served</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free: 3 of 12</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>Open until the start</small></span>
+                  </div>
+                  <small>Any signed-in account can sign up.</small
+                  ><button class="primary">Sign up</button
+                  ><small class="wf-muted"
+                    >When the places run out, you join the waiting list. A freed seat is held for
+                    you for 1 hour, or until the start if that comes first. You can cancel until the
+                    start.</small
+                  >
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button>♡ Add to my schedule · 41</button>
+                </div>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Fantasmagoria: the ticket adds nothing</strong>Lane of Tymek Szyszka (invented),
+          holding a 3-day pass; Nordcon has no lane, since with sign-ups off and open entry a ticket
+          changes none of its screens. Same as for the signed-in user of J02: any account signs up,
+          and a condition on a ticket or its day waits for entitlements (Q20).
+        </div>
+      </figure>
+      <figure class="board" id="j03-f-signed" style="grid-column: 3; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: signed up <code>j03-f-signed</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 580px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Workshop</span>
+                </div>
+                <h2>A fantasy cover from sketch to print</h2>
+                <small>Saturday 15:00–16:50 · Sala Masterclass · II LO</small
+                ><small>Room access · II LO, 1st floor, stairs only</small
+                ><small
+                  >Host: <a href="#" style="text-decoration: underline">Wiktoria Głóg</a></small
+                >
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <strong>Sign-ups · first come, first served</strong>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Signed up</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free: 2 of 12</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>Open until the start</small></span>
+                  </div>
+                  <small>You have a place. At the door, show it from My schedule.</small
+                  ><button>Cancel sign-up…</button
+                  ><small class="wf-muted"
+                    >Cancel until the start: your place goes to the first person waiting.</small
+                  >
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button>♡ Add to my schedule · 41</button>
+                </div>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A place at once</strong>Sign up gives them a place straight away, and Cancel
+          sign-up asks in a modal first. They cannot sign up anyone else or see who else signed up
+          (Q15).
+        </div>
+      </figure>
+      <figure class="board" id="j03-f-door" style="grid-column: 10; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: sign-up at the room <code>j03-f-door</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 610px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    align-items: center;
+                    padding: 20px;
+                  "
+                >
+                  <svg
+                    role="img"
+                    aria-label="Signed up"
+                    class="wf-icon"
+                    data-icon="check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l5 5l10 -10"></path></svg
+                  ><strong>Signed up</strong><small>Show this screen at the door.</small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Workshop</span>
+                </div>
+                <h2>A fantasy cover from sketch to print</h2>
+                <small>Saturday 15:00–16:50 · Sala Masterclass · II LO</small
+                ><small>Host: Wiktoria Głóg</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>12 places · 11 signed up, 1 offered</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>3 waiting</small></span>
+                  </div>
+                  <small
+                    >Can't come? Cancel, and the first person on the waiting list gets your
+                    place.</small
+                  ><button>Cancel sign-up</button>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted"
+                  >Loaded at 14:52. Without signal this page shows the state from that time.</small
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Their phone is the door check</strong>Same as for any attendee signed up: the
+          volunteer at the door reads this screen, never a name list (Q15). It says when it was
+          loaded, because II LO may have no signal (Q27).
+        </div>
+      </figure>
+      <figure class="board" id="j03-d-item" style="grid-column: 2; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: author meeting, likely full <code>j03-d-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 580px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Literature</span><span class="wf-pill">Author meeting</span
+                  ><span class="wf-pill">EN · with interpretation</span>
+                </div>
+                <h2>Author meeting with the guest of honour</h2>
+                <small>Saturday 16:00–16:50 · Sala Rycerska · 2nd floor</small
+                ><small
+                  >Guest <a href="#" style="text-decoration: underline">Elena Varga</a> · moderator
+                  Nina Jawor · interpreter Zofia Mróz</small
+                >
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <strong style="color: var(--wf-warn)">Likely full</strong
+                  ><small>214 likes, about 80 seats. Entry is free, first come, first served.</small
+                  ><small>Ticketed zone: 3-day pass or day ticket.</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <strong>Room access</strong
+                  ><small style="color: var(--wf-warn)"
+                    >2nd floor, stairs only. The castle has no lift.</small
+                  ><small>Quiet tent: in the moat.</small>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button>♡ Add to my schedule · 214</button>
+                </div>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Dni Fantastyki: the castle ticket</strong>Lane of Hela Dudek (invented) on Monday
+          17 August; their 3-day pass is checked by Tickets at the castle zone entrance, not at a
+          room. Hela can like the item and read Likely full, but nothing reserves them a seat: entry
+          is free, first come.
+        </div>
+      </figure>
+      <figure class="board" id="j03-d-plan" style="grid-column: 9; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: my schedule on Saturday <code>j03-d-plan</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 800px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My schedule</h2>
+                  <small>Dni Fantastyki 2026 · 7 liked</small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; align-items: center">
+                  <span class="wf-pill">Fri · 1</span><span class="wf-pill accent">Sat · 4</span
+                  ><span class="wf-pill">Sun · 2</span
+                  ><small style="margin-left: auto; color: var(--wf-warn)">1 overlap</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>12:00–12:50 · Namiot 3 · moat</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>Destiny in fantasy sagas</strong
+                  ><small style="color: var(--wf-warn)"
+                    >Moved · 11:24 · was Sala Rycerska, 2nd floor</small
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>14:00–14:50 · Sala Rycerska · 2nd fl.</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>AI in organising conventions</strong>
+                </div>
+                <small style="color: var(--wf-warn)"
+                  >16:00–16:50 · two items at the same time</small
+                >
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00–16:50 · Sala Rycerska · 2nd fl.</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>Author meeting with the guest of honour</strong>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00–16:50 · Sala Kominkowa · 1st fl.</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong
+                    >Call for papers behind the scenes: how the programme team picks talks</strong
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Saturday 15:45</small>
+
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A schedule of likes only</strong>Same as for any signed-in user: their likes, the
+          16:00 overlap and the morning’s move, each with its time. Their ticket adds nothing here,
+          and no item holds a seat for them.
+        </div>
+      </figure>
+      <figure class="board" id="j03-d-full" style="grid-column: 10; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: room full <code>j03-d-full</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 770px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Literature</span><span class="wf-pill">Author meeting</span
+                  ><span class="wf-pill">EN · with interpretation</span>
+                </div>
+                <h2>Author meeting with the guest of honour</h2>
+                <small>Saturday 16:00–16:50 · Sala Rycerska · 2nd floor</small
+                ><small
+                  >Guest <a href="#" style="text-decoration: underline">Elena Varga</a> · moderator
+                  Nina Jawor · interpreter Zofia Mróz</small
+                >
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <strong style="color: var(--wf-warn)">Room full</strong>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">since 15:48</span>
+                  </div>
+                  <small>296 likes, about 80 seats. Sala Rycerska takes nobody more.</small
+                  ><small>Elena Varga signs books on Sunday 12:00, Namiot 2 · moat.</small>
+                </div>
+                <div style="display: flex; gap: 8px"><button>♡ Liked · 296</button></div>
+                <hr />
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <small><strong>Now and next</strong></small>
+                  <div style="flex: 1"></div>
+                  <span style="white-space: nowrap"><small>Saturday 15:52</small></span>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00 · Sala Kominkowa · 1st floor</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Free entry</span>
+                  </div>
+                  <strong
+                    >Call for papers behind the scenes: how the programme team picks talks</strong
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00 · Namiot 2 · moat</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Free entry</span>
+                  </div>
+                  <strong>Fantasy short films</strong>
+                </div>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Room full ends Hela’s path</strong>An org set Room full at 15:48, so the page and
+          now and next say so at once; their ticket gives them no priority. The way on is on the
+          same page: another 16:00 item or Sunday’s signing session.
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-list" style="grid-column: 1; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: programme <code>j03-p-list</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 1170px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Pyrkon 2027</h2>
+                  <small>MTP Poznań · 18–20 June</small>
+                </div>
+                <input value="Search the programme" />
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Zone ▾</span><span class="wf-pill">Format ▾</span
+                  ><span class="wf-pill">Entry ▾</span><span class="wf-pill">Language ▾</span
+                  ><span class="wf-pill">PJM</span><span class="wf-pill">More ▾</span>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill">Fri</span><span class="wf-pill accent">Sat</span
+                  ><span class="wf-pill">Sun</span
+                  ><small class="wf-muted" style="margin-left: auto">2,214 items</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Literature Zone</span
+                    ><span class="wf-pill">Panel discussion</span><span class="wf-pill">PJM</span>
+                  </div>
+                  <small>14:00–14:45 · Sala Literacka 1 · pawilon 7 · LIT-114</small
+                  ><strong>The future of fantasy: artificial intelligence and literature</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>½ by token · rest from the queue</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 341</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Gród Inicjatyw Fanowskich</span
+                    ><span class="wf-pill">Talk</span><span class="wf-pill">PJM</span>
+                  </div>
+                  <small>14:00–14:45 · Sala GIF 2 · pawilon 5 · GIF-031</small
+                  ><strong
+                    >An accessible convention: PJM, low stimulation and the ramp that isn't
+                    there</strong
+                  >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free entry</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 64</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Science Zone</span
+                    ><span class="wf-pill">Panel discussion</span>
+                  </div>
+                  <small>15:00–15:45 · Aula Wielka · NAU-007</small
+                  ><strong>There is room for everyone in space</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free entry · queue</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 187</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Literature Zone</span
+                    ><span class="wf-pill">Panel discussion</span><span class="wf-pill">EN</span>
+                  </div>
+                  <small>16:00–16:45 · Sala Literacka 1 · pawilon 7 · LIT-121</small
+                  ><strong>Revisiting the classics: is old fantasy still relevant?</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>½ by token · rest from the queue</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 212</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Literature Zone</span
+                    ><span class="wf-pill">Author meeting</span><span class="wf-pill">EN</span>
+                  </div>
+                  <small>19:00–19:45 · Aula Wielka · LIT-165</small
+                  ><strong>Meeting with Tessa Moorland</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Lottery · entries until Thu 23:59</small>
+                    <div style="flex: 1"></div>
+                    <small>♡ 530</small>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Pyrkon: an Early Bird attendee</strong>Lane of Weronika Ryś (invented) with an
+          Early Bird ticket and 4 tokens, on Tuesday 15 June. Same as for any visitor: the list
+          never shows their tokens, only each item’s entry label and code.
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-item" style="grid-column: 2; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: panel with tokens <code>j03-p-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 810px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Literature Zone</span
+                  ><span class="wf-pill">Panel discussion</span><span class="wf-pill">PL</span
+                  ><span class="wf-pill">PJM</span><span class="wf-pill">Low stimulation</span>
+                </div>
+                <h2>The future of fantasy: artificial intelligence and literature</h2>
+                <small
+                  >Saturday 14:00–14:45 · Sala Literacka 1 · pawilon 7 · ground floor ·
+                  LIT-114</small
+                >
+                <div
+                  class="wf-card"
+                  style="
+                    display: grid;
+                    grid-template-columns: 104px minmax(0, 1fr);
+                    gap: 6px 8px;
+                    align-items: center;
+                  "
+                >
+                  <small>Moderator</small
+                  ><a href="#" style="text-decoration: underline">Marta Wilk</a
+                  ><small>Panelist</small><a href="#" style="text-decoration: underline">Jan Bór</a
+                  ><small>Panelist</small><a href="#" style="text-decoration: underline">Lena Cis</a
+                  ><small>PJM interpreter</small
+                  ><a href="#" style="text-decoration: underline">Irmina Wąs</a>
+                </div>
+                <small class="wf-muted">Recorded and streamed</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Entry</strong
+                  ><small
+                    >Half the seats by token reservation, the rest from the queue outside the
+                    room.</small
+                  >
+                  <div style="display: flex; align-items: center; gap: 4px 8px; flex-wrap: wrap">
+                    <small>Free reservations: 7 of 30 · for the queue 30</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"
+                      ><small>You have 4 of 4 tokens left</small></span
+                    >
+                  </div>
+                  <button class="primary">Reserve a seat · 1 token</button
+                  ><small class="wf-muted"
+                    >Reservations until Friday 23:59. A reservation is forfeited 10 minutes before
+                    the start, and its seat goes to the queue.</small
+                  >
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button>♡ Add to my schedule · 341</button>
+                </div>
+                <a href="#">Report a problem with this item</a>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Reserve while tokens last</strong>Same as for any token holder: Weronika taps
+          Reserve a seat · 1 token until Friday 23:59, the day before the item. The 4 tokens come
+          from their ticket type, set in Tickets; nothing here changes the count (Q20).
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-reserved" style="grid-column: 3; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: seat reserved <code>j03-p-reserved</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 840px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Literature Zone</span
+                  ><span class="wf-pill">Panel discussion</span><span class="wf-pill">PL</span
+                  ><span class="wf-pill">PJM</span><span class="wf-pill">Low stimulation</span>
+                </div>
+                <h2>The future of fantasy: artificial intelligence and literature</h2>
+                <small
+                  >LIT-114 · Saturday 14:00–14:45 · Sala Literacka 1 · pawilon 7 · ground
+                  floor</small
+                >
+                <div
+                  class="wf-card"
+                  style="
+                    display: grid;
+                    grid-template-columns: 104px minmax(0, 1fr);
+                    gap: 6px 8px;
+                    align-items: center;
+                  "
+                >
+                  <small>Moderator</small
+                  ><a href="#" style="text-decoration: underline">Marta Wilk</a
+                  ><small>Panelist</small><a href="#" style="text-decoration: underline">Jan Bór</a
+                  ><small>Panelist</small><a href="#" style="text-decoration: underline">Lena Cis</a
+                  ><small>PJM interpreter</small
+                  ><a href="#" style="text-decoration: underline">Irmina Wąs</a>
+                </div>
+                <small class="wf-muted">Recorded and streamed</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <strong>Entry</strong>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reserved</span>
+                  </div>
+                  <small
+                    >Your seat is held until Saturday 13:50. After that it is forfeited and goes to
+                    the queue.</small
+                  >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Tokens: 3 of 4 left</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>Early Bird ticket</small></span>
+                  </div>
+                  <small>Your reservation code shows in My schedule.</small
+                  ><button>Release the reservation · the token returns</button
+                  ><small class="wf-muted">Free reservations: 6 of 30 · for the queue 30</small>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button>♡ Add to my schedule · 341</button>
+                </div>
+                <a href="#">Report a problem with this item</a>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The token is spent at once</strong>The reservation takes 1 token and holds their
+          seat until 13:50 on Saturday; Release returns the token any time before that. Weronika
+          cannot give the reservation to someone else: it belongs to their account.
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-lottery-in" style="grid-column: 4; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: lottery entered <code>j03-p-lottery-in</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 670px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Literature Zone</span
+                  ><span class="wf-pill">Author meeting</span><span class="wf-pill">EN</span
+                  ><span class="wf-pill">Guest of honour</span>
+                </div>
+                <h2>Meeting with Tessa Moorland</h2>
+                <small>Saturday 19:00–19:45 · Aula Wielka · LIT-165</small>
+                <div
+                  class="wf-card"
+                  style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                >
+                  <div style="padding: 8px 12px; border-bottom: 1.4px solid var(--wf-line)">
+                    <strong>Lottery for reserved seats</strong><br /><small
+                      >400 seats: 200 by lottery for token holders, 200 from the queue at the
+                      door.</small
+                    >
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">You entered</small><small>Tue 15 June 20:05</small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">Entries close</small><small>Thu 17 June 23:59</small>
+                  </div>
+                  <div style="display: flex; gap: 8px; padding: 8px 12px">
+                    <small style="flex: 1">Draw</small><small>Fri 18 June 08:00</small>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <small
+                    >Entering takes no token. A seat you win takes 1 token; you have 3 of 4
+                    now.</small
+                  >
+                  <div style="display: flex; gap: 8px"><button>Leave the lottery</button></div>
+                </div>
+                <small class="wf-muted"
+                  >The result comes by email and shows here. It is drawn once and never
+                  changes.</small
+                >
+                <div style="flex: 1"></div>
+                <div style="display: flex; gap: 8px">
+                  <button>♡ Add to my schedule · 530</button>
+                </div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Entering costs no token</strong>On a guest meeting set to a lottery (assumed for
+          Pyrkon, Q36) Weronika enters before Thursday 23:59 and may leave until then. The draw runs
+          once on Friday at 08:00; only a seat they win takes a token, and they cannot enter for
+          anyone else.
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-plan-wed" style="grid-column: 5; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: my schedule, no token left <code>j03-p-plan-wed</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 1100px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>My schedule · Pyrkon 2027</h2>
+                <div class="wf-card" style="display: flex; align-items: center; gap: 8px">
+                  <small style="flex-shrink: 0">Tokens: 0 of 4 left</small>
+                  <div style="flex: 1"></div>
+                  <small>from the Early Bird ticket</small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill accent">Saturday</span
+                  ><span class="wf-pill">Sunday · 1</span>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>12:00 · Sala Literacka 1</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>Leśmian’s fairy tales and modern fantasy</strong
+                  ><small>½ by token · you have no token left</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>14:00 · Sala Literacka 1</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reservation</span>
+                  </div>
+                  <strong>The future of fantasy: artificial intelligence and literature</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Be at the room by 13:50</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><a href="#">Release</a></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>15:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>There is room for everyone in space</strong
+                  ><small>Entry from the queue</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00 · Sala Literacka 1</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reservation</span>
+                  </div>
+                  <strong>Revisiting the classics: is old fantasy still relevant?</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Be at the room by 15:50</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><a href="#">Release</a></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>18:00 · Sala Literacka 1</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reservation</span>
+                  </div>
+                  <strong>Polish fantasy abroad</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Be at the room by 17:50</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><a href="#">Release</a></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Lottery</span>
+                  </div>
+                  <strong>Meeting with the guest of honour</strong
+                  ><small>Entered Mon 14 June · draw Friday 08:00</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>19:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Lottery</span>
+                  </div>
+                  <strong>Meeting with Tessa Moorland</strong
+                  ><small>Entered · draw Friday 08:00</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <small><a href="#">Reminders and emails</a></small>
+                  <div style="flex: 1"></div>
+                  <span style="white-space: nowrap"
+                    ><small class="wf-muted">Wed 16 June 19:12</small></span
+                  >
+                </div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Four tokens in four reservations</strong>By Wednesday evening Weronika holds four
+          reservations, three here and Live captions on Sunday, so the count reads 0 of 4 (the
+          fourth is invented). Each reservation offers Release, which returns its token at once; a
+          liked item says it needs a token.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-tokens-used" style="grid-column: 5; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: all tokens in use <code>ab-role-tokens-used</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 930px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Literature Zone</span><span class="wf-pill">Talk</span
+                  ><span class="wf-pill">PL</span>
+                </div>
+                <h2>Leśmian’s fairy tales and modern fantasy</h2>
+                <small
+                  >LIT-102 · Saturday 12:00–12:45 · Sala Literacka 1 · pawilon 7 · ground
+                  floor</small
+                >
+                <small>Host Jan Bór · co-host Marta Wilk</small>
+                <div class="wf-card" style="display: flex; align-items: center; gap: 8px">
+                  <small style="flex-shrink: 0">Tokens: 0 of 4 left</small>
+                  <div style="flex: 1"></div>
+                  <small>from the Early Bird ticket</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Entry</strong
+                  ><small
+                    >Half the seats by token reservation, the rest from the queue outside the
+                    room.</small
+                  ><small>Free reservations: 11 of 30 · for the queue 30</small
+                  ><button disabled style="opacity: 0.5">Reserve a seat · 1 token</button
+                  ><small style="color: var(--wf-warn)"
+                    >All 4 tokens are in reservations. Release one in My schedule and its token
+                    returns.</small
+                  >
+                </div>
+                <div
+                  class="wf-card"
+                  style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1"><strong>Your reservations · 4</strong></small
+                    ><small></small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">Sat 14:00 · LIT-114 · The future of fantasy</small
+                    ><small></small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">Sat 16:00 · LIT-121 · Revisiting the classics</small
+                    ><small></small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">Sat 18:00 · LIT-131 · Polish fantasy abroad</small
+                    ><small></small>
+                  </div>
+                  <div style="display: flex; gap: 8px; padding: 8px 12px">
+                    <small style="flex: 1">Sun 11:00 · GIF-044 · Live captions</small
+                    ><small></small>
+                  </div>
+                </div>
+                <small class="wf-muted"
+                  >No waiting list for reservations: the queue at the door takes 30 seats.</small
+                >
+                <div style="flex: 1"></div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <a href="#">My schedule</a>
+                  <div style="flex: 1"></div>
+                  <button>♡ Liked</button>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A counter with its context</strong>With 0 of 4 left, Reserve is disabled and names
+          the way out: release one of the four in My schedule. Weronika cannot join a waiting list
+          instead, because Pyrkon’s queue at the door takes the free seats (Q14).
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-reminders" style="grid-column: 6; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: reminders and notifications <code>j03-p-reminders</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 730px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Reminders and notifications</h2>
+                  <small>Pyrkon 2027 · 14 items in your schedule</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Remind me before an item</strong>
+                  <div style="display: flex; gap: 6px; white-space: nowrap">
+                    <span class="wf-pill">Off</span><span class="wf-pill">10 min</span
+                    ><span class="wf-pill accent">30 min</span><span class="wf-pill">1 h</span>
+                  </div>
+                  <div style="display: flex; gap: 6px; white-space: nowrap">
+                    <span class="wf-pill accent">Email</span
+                    ><span class="wf-pill">Calendar alarm</span>
+                  </div>
+                  <label style="display: flex; align-items: center; gap: 8px"
+                    ><input type="checkbox" checked /> Also remind me before a reservation is
+                    forfeited</label
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Changes to items in my schedule</strong
+                  ><small
+                    >Cancelled · new time · new room · cast changed · accessibility changed</small
+                  ><label style="display: flex; align-items: center; gap: 8px"
+                    ><input type="checkbox" checked /> Email me about changes to liked items</label
+                  ><small class="wf-muted"
+                    >Items you reserved or entered a lottery for are always emailed, even with this
+                    off.</small
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <svg
+                      role="img"
+                      aria-label="Calendar"
+                      class="wf-icon"
+                      data-icon="calendar"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"
+                      ></path>
+                      <path d="M16 3v4"></path>
+                      <path d="M8 3v4"></path>
+                      <path d="M4 11h16"></path></svg
+                    ><strong>Calendar</strong>
+                  </div>
+                  <small>A subscribed calendar picks up a new time or room by itself.</small
+                  ><button>Subscribe in a calendar</button>
+                </div>
+                <div style="flex: 1"></div>
+                <button class="primary">Save settings</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Remind before the forfeit</strong>Weronika picks a reminder by email or calendar
+          alarm and adds one before a reservation is forfeited. They cannot turn off change emails
+          for a reservation, only those for liked items (Q18), and there is no push (Q17).
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-lottery" style="grid-column: 7; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: lottery result <code>j03-p-lottery</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 800px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Literature Zone</span
+                  ><span class="wf-pill">Author meeting</span><span class="wf-pill">EN</span
+                  ><span class="wf-pill">Guest of honour</span>
+                </div>
+                <h2>Meeting with Tessa Moorland</h2>
+                <small>Saturday 19:00–19:45 · Aula Wielka · LIT-165</small>
+                <div
+                  class="wf-card"
+                  style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                >
+                  <div style="padding: 8px 12px; border-bottom: 1.4px solid var(--wf-line)">
+                    <strong>Lottery for reserved seats</strong><br /><small
+                      >400 seats: 200 by lottery for token holders, 200 from the queue at the
+                      door.</small
+                    >
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">You entered</small><small>Tue 15 June 20:05</small>
+                  </div>
+                  <div style="display: flex; gap: 8px; padding: 8px 12px">
+                    <small style="flex: 1">Drawn from 1,412 entries</small
+                    ><small>Fri 18 June 08:00</small>
+                  </div>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <strong>Your result</strong>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Waiting list · 4</span>
+                  </div>
+                  <small
+                    >If someone accepted gives up their seat before Saturday 18:50, the next person
+                    waiting gets it and an email.</small
+                  ><small>No token used. A seat you get takes 1 token; you have 1 of 4.</small>
+                  <div><button>Leave the waiting list…</button></div>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                    gap: 6px;
+                    text-align: center;
+                  "
+                >
+                  <div><strong>200</strong><br /><small>accepted</small></div>
+                  <div><strong>30</strong><br /><small>waiting</small></div>
+                  <div><strong>1,182</strong><br /><small>not accepted</small></div>
+                </div>
+                <small class="wf-muted"
+                  >An accepted seat lapses at 18:50 if you are not at the door, and goes to the
+                  queue.</small
+                >
+                <div style="flex: 1"></div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Waiting list, no token spent</strong>The draw put Weronika fourth on the waiting
+          list, so they get a seat and an email only if an accepted person gives theirs up before
+          18:50; the result never changes. This is their second lottery, for LIT-165; the 16:00
+          guest-of-honour meeting draws its own. Their count is back to 1 of 4 because Polish
+          fantasy abroad was cancelled on Wednesday at 21:10 and its token returned.
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-moved" style="grid-column: 8; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: moved item <code>j03-p-moved</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 780px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div
+                  class="wf-box"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap">
+                    <strong style="color: var(--wf-warn)">Moved</strong>
+                    <div style="flex: 1"></div>
+                    <small>changed: Fri 18:20</small>
+                  </div>
+                  <small
+                    >Was:
+                    <span style="text-decoration: line-through"
+                      >Saturday 16:00–16:45 · Sala Literacka 1 · pawilon 7</span
+                    ></small
+                  ><small><strong>Now: Saturday 17:00–17:45 · Aula Wielka</strong></small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Literature Zone</span
+                  ><span class="wf-pill">Panel discussion</span><span class="wf-pill">EN</span>
+                </div>
+                <h2>Revisiting the classics: is old fantasy still relevant?</h2>
+                <small>Moderator: Lena Cis</small
+                ><small>Panelists: Tessa Moorland, Ivo Brandt</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <strong>Entry</strong>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reserved</span>
+                  </div>
+                  <small>Your reservation moved with the item to the new time and room.</small
+                  ><small>Tokens unchanged: you have 1 of 4 left</small
+                  ><small
+                    >Your seat is held until 16:50. After that it is forfeited and goes to the
+                    queue.</small
+                  ><button>Release the reservation · the token returns</button>
+                </div>
+                <small>Free reservations: 172 of 200 · 200 for the queue</small>
+                <div style="display: flex; gap: 8px"><button>♡ Liked · 212</button></div>
+                <a href="#">Report a problem with this item</a>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The reservation follows the move</strong>The move keeps their reservation and
+          token, and the forfeit counts from the new start. They can release it here for the token
+          or report a problem, but cannot keep the old time or room.
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-plan-sat" style="grid-column: 9; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: my schedule on Saturday <code>j03-p-plan-sat</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 1190px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>My schedule · Pyrkon 2027</h2>
+                <div class="wf-card" style="display: flex; align-items: center; gap: 8px">
+                  <small style="flex-shrink: 0">Tokens: 1 of 4 left</small>
+                  <div style="flex: 1"></div>
+                  <small>from the Early Bird ticket</small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill accent">Saturday</span
+                  ><span class="wf-pill">Sunday · 1</span>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>14:00 · Sala Literacka 1</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reservation</span>
+                  </div>
+                  <strong>The future of fantasy: artificial intelligence and literature</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Be at the room by 13:50</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><a href="#">Show the code</a></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>15:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>There is room for everyone in space</strong
+                  ><small>Entry from the queue</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Waiting list · 4</span>
+                  </div>
+                  <strong>Meeting with the guest of honour</strong
+                  ><small>Lottery drawn Fri 08:00</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00 · Sala Literacka 2</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>How to publish your first fantasy book</strong><small>½ by token</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>17:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reservation</span>
+                  </div>
+                  <strong>Revisiting the classics: is old fantasy still relevant?</strong
+                  ><small style="color: var(--wf-warn)"
+                    >Moved · Fri 18:20 · was 16:00, Sala Literacka 1</small
+                  >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Be at the room by 16:50</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><a href="#">Show the code</a></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>18:00 · Sala Literacka 1</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Cancelled</span>
+                  </div>
+                  <strong>Polish fantasy abroad</strong
+                  ><small>Cancelled Wed 21:10 · reservation released, token returned</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>19:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Waiting list · 4</span>
+                  </div>
+                  <strong>Meeting with Tessa Moorland</strong><small>Lottery drawn Fri 08:00</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <small><a href="#">Reminders and emails</a></small>
+                  <div style="flex: 1"></div>
+                  <span style="white-space: nowrap"
+                    ><small class="wf-muted">Sat 19 June 09:30</small></span
+                  >
+                </div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The day in one list</strong>Saturday shows each reservation with its deadline and
+          code, the cancelled item with its returned token and their place on the lottery’s waiting
+          list. Their last token can no longer hold a Saturday seat, since those reservations closed
+          on Friday at 23:59.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-reservations-closed" style="grid-column: 9; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: reservations closed <code>ab-role-reservations-closed</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 620px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Literature Zone</span><span class="wf-pill">Talk</span
+                  ><span class="wf-pill">PL</span>
+                </div>
+                <h2>How to publish your first fantasy book</h2>
+                <small
+                  >LIT-127 · Saturday 16:00–16:45 · Sala Literacka 2 · pawilon 7 · 1st floor</small
+                >
+                <small>Host: Jan Bór</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Reservations closed on Friday at 23:59</strong
+                  ><small>Reserved 24 of 30 · for the queue 30</small
+                  ><button disabled style="opacity: 0.5">Reserve a seat · 1 token</button
+                  ><small style="color: var(--wf-warn)"
+                    >Entry now only from the queue outside the room. Sala Literacka 2 holds 60; come
+                    early.</small
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Tokens: 1 of 4 left</small>
+                    <div style="flex: 1"></div>
+                  </div>
+                  <small>Sunday items take reservations until Saturday 23:59.</small>
+                </div>
+                <div style="flex: 1"></div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <a href="#">My schedule</a>
+                  <div style="flex: 1"></div>
+                  <button>♡ Liked</button>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Closed the day before</strong>Reservations close the day before at 23:59, a rule
+          relative to the item’s day, so on Saturday morning their last token cannot hold a seat
+          today. The page names what is left: the queue here, or a Sunday item until tonight.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-reservation-code" style="grid-column: 10; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: show the reservation code <code>ab-role-reservation-code</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 650px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>Your reservation</h2>
+                <strong>The future of fantasy: artificial intelligence and literature</strong>
+                <small
+                  >LIT-114 · Saturday 14:00–14:45 · Sala Literacka 1 · pawilon 7 · ground
+                  floor</small
+                >
+                <div style="display: flex; justify-content: center">
+                  <div
+                    style="
+                      width: 168px;
+                      height: 168px;
+                      border: 1.4px solid var(--wf-line);
+                      border-radius: var(--wf-radius);
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      background: var(--wf-accent-soft);
+                    "
+                  >
+                    <small>Reservation code</small>
+                  </div>
+                </div>
+                <div style="text-align: center"><strong>R7K4 · Q2MD</strong></div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Show it at the door by 13:50</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"
+                      ><span class="wf-pill accent">6 min left</span></span
+                    >
+                  </div>
+                  <small
+                    >The gżdacz at Sala Literacka 1 scans it. It lets one person in, once, to this
+                    item only.</small
+                  >
+                </div>
+                <small class="wf-muted"
+                  >Without signal this code still shows; the door checks it.</small
+                >
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Saturday 13:44</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The code the door reads</strong>Weronika’s code for this item and account, shown
+          with the time left to the forfeit; the gżdacz (volunteer) scans it at the room. They
+          cannot use it at another door or after 13:50; whether the scanner reads this code or the
+          ticket’s is Q23, and offline display is Q27.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-checked-in" style="grid-column: 11; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: in with the reservation <code>ab-role-checked-in</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 670px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    align-items: center;
+                    padding: 20px;
+                  "
+                >
+                  <svg
+                    role="img"
+                    aria-label="In"
+                    class="wf-icon"
+                    data-icon="check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l5 5l10 -10"></path></svg
+                  ><strong>You are in</strong><small>Scanned at Sala Literacka 1 · 13:45</small>
+                </div>
+                <strong>The future of fantasy: artificial intelligence and literature</strong
+                ><small>LIT-114 · Saturday 14:00–14:45</small
+                ><small class="wf-muted">The token stays used; the code no longer works.</small>
+                <h3>Next in your schedule</h3>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>15:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>There is room for everyone in space</strong
+                  ><small>Entry from the queue</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>17:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reservation</span>
+                  </div>
+                  <strong>Revisiting the classics: is old fantasy still relevant?</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Be at the room by 16:50</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><a href="#">Show the code</a></span>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <a href="#">Report a problem with this item</a>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>In, and the phone says so</strong>Once the scanner reads the code before 13:50
+          their phone shows they are in and what comes next. The door saw no name (Q15), and they
+          cannot bring anyone in on the same code.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-forfeited" style="grid-column: 11; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: a reservation forfeited <code>ab-role-forfeited</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 830px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>My schedule · Pyrkon 2027</h2>
+                <div class="wf-card" style="display: flex; align-items: center; gap: 8px">
+                  <small style="flex-shrink: 0">Tokens: 1 of 4 left</small>
+                  <div style="flex: 1"></div>
+                  <small>from the Early Bird ticket</small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill accent">Saturday</span
+                  ><span class="wf-pill">Sunday · 1</span>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>14:00 · Sala Literacka 1</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Forfeited · 13:50</span>
+                  </div>
+                  <strong>The future of fantasy: artificial intelligence and literature</strong
+                  ><small style="color: var(--wf-warn)"
+                    >Your reservation lapsed at 13:50: the scanner did not see you at the room. Its
+                    seat went to the queue. The token stays spent.</small
+                  ><small>You can still join the queue: 33 seats for the queue.</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>15:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>There is room for everyone in space</strong
+                  ><small>Entry from the queue</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>17:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reservation</span>
+                  </div>
+                  <strong>Revisiting the classics: is old fantasy still relevant?</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Be at the room by 16:50</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><a href="#">Show the code</a></span>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Saturday 13:52</small>
+
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The forfeit is a clock event</strong>Had Weronika not reached the door by 13:50,
+          the reservation would lapse and its seat go to the queue; a forfeited reservation does not
+          return its token. They can still join the queue, and their 17:00 reservation stays.
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-code-moved" style="grid-column: 12; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: the code for the moved item <code>j03-p-code-moved</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 640px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My schedule</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>Your reservation</h2>
+                <strong>Revisiting the classics: is old fantasy still relevant?</strong>
+                <small>LIT-121 · Saturday 17:00–17:45 · Aula Wielka</small
+                ><small style="color: var(--wf-warn)"
+                  >Moved · Fri 18:20 · was 16:00, Sala Literacka 1</small
+                >
+                <div style="display: flex; justify-content: center">
+                  <div
+                    style="
+                      width: 168px;
+                      height: 168px;
+                      border: 1.4px solid var(--wf-line);
+                      border-radius: var(--wf-radius);
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      background: var(--wf-accent-soft);
+                    "
+                  >
+                    <small>Reservation code</small>
+                  </div>
+                </div>
+                <div style="text-align: center"><strong>R7K4 · W8TJ</strong></div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Show it at the door by 16:50</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"
+                      ><span class="wf-pill accent">5 min left</span></span
+                    >
+                  </div>
+                  <small
+                    >The gżdacz at Aula Wielka scans it. At Sala Literacka 1 the scanner would send
+                    you here.</small
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Saturday 16:45</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The code follows the room</strong>The 17:00 code names Aula Wielka, where the item
+          moved on Friday, and the new forfeit at 16:50. Whatever happened at 14:00, this
+          reservation is untouched; at the old room the scanner refuses it and names the right one.
+        </div>
+      </figure>
+    </main>
+    <h2 class="sec">J03 (continued): Pyrkon, an eBilet ticket linked to the account</h2>
+    <main
+      class="boards flow"
+      data-edges='[{"from": "j03-p-eb-item", "to": "j03-p-eb-link", "label": "Tap Link an eBilet ticket"}, {"from": "j03-p-eb-link", "to": "j03-p-eb-mismatch", "label": "Typo: tap Link ticket"}, {"from": "j03-p-eb-mismatch", "to": "j03-p-eb-link", "label": "Fix the number"}, {"from": "j03-p-eb-link", "to": "j03-p-eb-linked", "label": "Tap Link ticket"}]'
+    >
+      <figure class="board" id="j03-p-eb-item" style="grid-column: 1; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: panel with tokens, ticket on eBilet <code>j03-p-eb-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 710px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Literature Zone</span
+                  ><span class="wf-pill">Panel discussion</span><span class="wf-pill">PL</span
+                  ><span class="wf-pill">PJM</span>
+                </div>
+                <h2>The future of fantasy: artificial intelligence and literature</h2>
+                <small
+                  >LIT-114 · Saturday 14:00–14:45 · Sala Literacka 1 · pawilon 7 · ground
+                  floor</small
+                >
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Entry</strong
+                  ><small
+                    >Half the seats by token reservation, the rest from the queue outside the
+                    room.</small
+                  ><small>Free reservations: 7 of 30 · for the queue 30</small
+                  ><button disabled style="opacity: 0.5">Reserve a seat · 1 token</button>
+                  <div
+                    class="wf-box"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                      border-color: var(--wf-warn);
+                    "
+                  >
+                    <small
+                      >You have no tokens on this account. Bought your ticket on eBilet? Link it,
+                      and its tokens come here.</small
+                    >
+                  </div>
+                  <button>Link an eBilet ticket</button
+                  ><small class="wf-muted"
+                    >Without a reservation you come in from the queue: 30 seats.</small
+                  >
+                </div>
+                <div><button>♡ Add to my schedule · 341</button></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Ticket bought on eBilet</strong>Lane of Kuba Jaskier (invented), signed in, on
+          Tuesday 15 June 2027, who bought an Early Bird ticket on eBilet. Kuba’s account has no
+          tokens yet, so Reserve is disabled and the page offers Link an eBilet ticket (Q20, Q23).
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-eb-link" style="grid-column: 2; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: link an eBilet ticket <code>j03-p-eb-link</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 600px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Back</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>Link an eBilet ticket</h2>
+                <small
+                  >Pyrkon 2027 · tickets bought on eBilet come to OPOS in an import with their
+                  tokens.</small
+                >
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <label>Ticket number, from the eBilet email<input value="EB 4471 2039" /></label
+                  ><label
+                    >Email address used on eBilet<input value="kuba.jaskier@example.pl" /></label
+                  ><small class="wf-muted"
+                    >The ticket links when its number and email address match the eBilet import. One
+                    ticket links to one account, once.</small
+                  ><button class="primary">Link ticket</button>
+                </div>
+                <small class="wf-muted">Signed in as kuba.jaskier@example.pl</small>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Number and address must match</strong>Kuba types the number from the eBilet email
+          and the address used there; the import of eBilet buyers decides the match (assumed
+          mechanism, Q23). One ticket links to one account, once.
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-eb-mismatch" style="grid-column: 2; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: the ticket does not match <code>j03-p-eb-mismatch</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 600px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Back</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>Link an eBilet ticket</h2>
+                <small
+                  >Pyrkon 2027 · tickets bought on eBilet come to OPOS in an import with their
+                  tokens.</small
+                >
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <label
+                    >Ticket number, from the eBilet email<input
+                      value="EB 4471 2093"
+                      style="border-color: var(--wf-warn)" /></label
+                  ><label
+                    >Email address used on eBilet<input value="kuba.jaskier@example.pl"
+                  /></label>
+                  <div
+                    class="wf-box"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                      border-color: var(--wf-warn);
+                    "
+                  >
+                    <small
+                      >This ticket number is in the eBilet import with another email address, so it
+                      cannot be linked to this account.</small
+                    ><small
+                      >Check the number in your eBilet email, or ask at the box office with the
+                      ticket.</small
+                    >
+                  </div>
+                  <button class="primary">Link ticket</button>
+                </div>
+                <small class="wf-muted">Signed in as kuba.jaskier@example.pl</small>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A number with another address</strong>A mistyped number that belongs to another
+          buyer is refused without naming that buyer. The way out is the right number from the email
+          or the box office with the ticket (Q23).
+        </div>
+      </figure>
+      <figure class="board" id="j03-p-eb-linked" style="grid-column: 3; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: tokens from the linked ticket <code>j03-p-eb-linked</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 740px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                  <span class="wf-pill">Literature Zone</span
+                  ><span class="wf-pill">Panel discussion</span><span class="wf-pill">PL</span
+                  ><span class="wf-pill">PJM</span>
+                </div>
+                <h2>The future of fantasy: artificial intelligence and literature</h2>
+                <small
+                  >LIT-114 · Saturday 14:00–14:45 · Sala Literacka 1 · pawilon 7 · ground
+                  floor</small
+                >
+                <div class="wf-box" style="border-color: var(--wf-accent)">
+                  <small>Ticket linked: Early Bird 3 days, from eBilet.</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Entry</strong
+                  ><small
+                    >Half the seats by token reservation, the rest from the queue outside the
+                    room.</small
+                  ><small>Free reservations: 7 of 30 · for the queue 30</small
+                  ><small
+                    ><strong>You have 4 of 4 tokens left</strong> · from your eBilet ticket</small
+                  ><button class="primary">Reserve a seat · 1 token</button
+                  ><small class="wf-muted"
+                    >Reservations until Friday 23:59. A reservation is forfeited 10 minutes before
+                    the start, and its seat goes to the queue.</small
+                  >
+                </div>
+                <div><button>♡ Add to my schedule · 341</button></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Four tokens, reserve now</strong>Once linked, the eBilet ticket’s 4 tokens show on
+          every item and Reserve is enabled; the number of tokens comes from the import, set in
+          Tickets (Q20). Kuba cannot link a second ticket to the same account (assumed).
+        </div>
+      </figure>
+    </main>
+    <script>
+      ;(function () {
+        var NS = 'http://www.w3.org/2000/svg'
+        function drawAll() {
+          document.querySelectorAll('main.boards.flow').forEach(function (main, mi) {
+            var edges = JSON.parse(main.getAttribute('data-edges') || '[]')
+            function box(el) {
+              var r = el.getBoundingClientRect(),
+                m = main.getBoundingClientRect()
+              return {
+                l: r.left - m.left,
+                t: r.top - m.top,
+                r: r.right - m.left,
+                b: r.bottom - m.top,
+              }
+            }
+            var old = main.querySelector('svg.edges')
+            if (old) old.remove()
+            var svg = document.createElementNS(NS, 'svg')
+            svg.setAttribute('class', 'edges')
+            svg.setAttribute('width', main.scrollWidth)
+            svg.setAttribute('height', main.scrollHeight)
+            var mid = 'ah' + mi
+            svg.innerHTML =
+              '<defs><marker id="' +
+              mid +
+              '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b5b57"/></marker></defs>'
+            main.appendChild(svg)
+            var seen = {}
+            edges.forEach(function (e) {
+              var fa = document.getElementById(e.from),
+                fb = document.getElementById(e.to)
+              if (!fa || !fb) return
+              var a = box(fa.querySelector('.screen')),
+                b = box(fb.querySelector('.screen'))
+              var A = box(fa),
+                B = box(fb)
+              var key = [e.from, e.to].sort().join('|'),
+                k = (seen[key] = (seen[key] || 0) + 1) - 1
+              var off = k * 26,
+                x1,
+                y1,
+                x2,
+                y2,
+                d
+              if (b.l >= a.r - 1 || a.l >= b.r - 1) {
+                var right = b.l >= a.r - 1
+                var top = Math.max(a.t, b.t),
+                  bot = Math.min(a.b, b.b)
+                x1 = right ? a.r : a.l
+                x2 = right ? b.l : b.r
+                if (bot > top) {
+                  y1 = y2 = Math.min(top + 140, (top + bot) / 2) + off
+                } else {
+                  y1 = Math.min(a.t + 140, (a.t + a.b) / 2) + off
+                  y2 = Math.min(b.t + 140, (b.t + b.b) / 2) + off
+                }
+                var mx = (x1 + x2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  mx +
+                  ',' +
+                  y1 +
+                  ' ' +
+                  mx +
+                  ',' +
+                  y2 +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              } else {
+                var down = B.t >= A.b - 1
+                x1 = (a.l + a.r) / 2 + off
+                x2 = (b.l + b.r) / 2 + off
+                y1 = down ? A.b : A.t
+                y2 = down ? B.t : B.b
+                var my = (y1 + y2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  x1 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              }
+              var p = document.createElementNS(NS, 'path')
+              p.setAttribute('d', d)
+              p.setAttribute('marker-end', 'url(#' + mid + ')')
+              svg.appendChild(p)
+              if (e.label) {
+                var t = document.createElementNS(NS, 'text')
+                t.textContent = e.label
+                svg.appendChild(t)
+                var w = t.getComputedTextLength(),
+                  cx = (x1 + x2) / 2,
+                  cy = (y1 + y2) / 2 + k * 24
+                t.setAttribute('x', cx - w / 2)
+                t.setAttribute('y', cy + 4)
+                var r = document.createElementNS(NS, 'rect')
+                r.setAttribute('x', cx - w / 2 - 6)
+                r.setAttribute('y', cy - 10)
+                r.setAttribute('width', w + 12)
+                r.setAttribute('height', 20)
+                r.setAttribute('rx', 10)
+                svg.insertBefore(r, t)
+              }
+            })
+          })
+        }
+        window.addEventListener('load', drawAll)
+        window.addEventListener('resize', drawAll)
+      })()
+    </script>
+  </body>
+</html>

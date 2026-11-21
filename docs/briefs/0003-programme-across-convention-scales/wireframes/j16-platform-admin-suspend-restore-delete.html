@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>J16. Platform admin: suspend, restore, delete</title>
+    <link rel="stylesheet" href="wireframes.css" />
+  </head>
+  <body>
+    <header class="page">
+      <h1>J16. Platform admin: suspend, restore, delete</h1>
+      <p>
+        A role journey: each row is one person on one convention, left to right in time. An arrow is
+        an action that screen offers or an event that reaches the person; refusals sit under the
+        step where the role tries. The same step on another convention stands in the same column,
+        without an arrow. All people shown are invented.
+      </p>
+    </header>
+    <nav class="pages">
+      <a href="index.html">Index</a
+      ><a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+        >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+      ><a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a
+      ><a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+        >3. Portal: my schedule, proposing an item, speaker screen</a
+      ><a href="04-at-the-room-door-volunteer-and-scanner.html"
+        >4. At the room door: volunteer and scanner</a
+      ><a href="05-panel-programme-settings-of-an-edition.html"
+        >5. Panel: programme settings of an edition</a
+      ><a href="06-panel-programme-dictionaries-and-the-item-form.html"
+        >6. Panel: programme dictionaries and the item form</a
+      ><a href="07-panel-building-the-programme.html">7. Panel: building the programme</a
+      ><a href="08-panel-changes-during-the-convention-and-entitlements.html"
+        >8. Panel: changes during the convention and entitlements</a
+      ><a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+        >9. Worldcon: stress test of the model (not for delivery)</a
+      ><a href="10-portal-programme-people-and-guests.html"
+        >10. Portal: programme people and guests</a
+      ><a href="11-portal-changes-now-and-next-rooms-reminders.html"
+        >11. Portal: changes, now and next, rooms, reminders</a
+      ><a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+        >12. Portal: the speaker from acceptance to the day of the item</a
+      ><a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+        >13. Panel: programme team, people, panels and the programme release</a
+      ><a href="14-panel-the-programme-during-the-convention.html"
+        >14. Panel: the programme during the convention</a
+      ><a href="15-panel-head-dictionaries-team-and-programme-status.html"
+        >15. Panel: head, dictionaries, team and programme status</a
+      ><a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+        >16. Portal: sign-ups, lottery, declines and empty states</a
+      ><a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+        >17. Panel: item list, proposals, announcements and re-import</a
+      >
+    </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
+    <main
+      class="boards flow"
+      data-edges='[{"from": "ab-role-admin-conventions", "to": "ab-role-admin-convention", "label": "Open Pyrkon, 22:09"}, {"from": "ab-role-admin-convention", "to": "j16-p-admin-suspended", "label": "Press Suspend the convention"}, {"from": "j16-p-admin-suspended", "to": "j16-p-admin-restored", "label": "Press Restore, 22:41"}, {"from": "j16-p-admin-suspended", "to": "ab-role-admin-delete", "label": "Press Delete the convention"}, {"from": "ab-role-admin-delete", "to": "ab-role-admin-signin-again", "label": "Delete for good: old sign-in"}, {"from": "ab-role-admin-signin-again", "to": "j16-p-admin-deleted", "label": "Sign in, delete again"}, {"from": "j16-p-plan", "to": "ab-role-suspended-portal", "label": "Attendee reloads at 22:12"}]'
+    >
+      <figure class="board" id="ab-role-admin-conventions" style="grid-column: 1; grid-row: 1">
+        <figcaption class="t" style="width: 840px">
+          Admin: the conventions <code>ab-role-admin-conventions</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 520px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  position: relative;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <small class="wf-muted"><strong>OPOS ADMINISTRATION</strong></small>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">ops@example.com</small><button>Sign out</button>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 6px;
+                    white-space: nowrap;
+                    padding-bottom: 6px;
+                    border-bottom: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <span class="wf-pill accent">Conventions</span
+                  ><span class="wf-pill">Two-factor reset</span><span class="wf-pill">Log</span>
+                </div>
+                <div
+                  style="
+                    width: 100%;
+                    max-width: 680px;
+                    margin-inline: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div>
+                      <h1>Conventions</h1>
+                      <small>Every convention on the platform, by name.</small>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button class="primary">
+                      <svg
+                        role="img"
+                        aria-label="New"
+                        class="wf-icon"
+                        data-icon="plus"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M12 5l0 14"></path>
+                        <path d="M5 12l14 0"></path>
+                      </svg>
+                      New convention
+                    </button>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                  >
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr)
+                          minmax(0, 1.2fr);
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <small class="wf-muted">Name</small><small class="wf-muted">Address</small
+                      ><small class="wf-muted">Status</small><small class="wf-muted">Created</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr)
+                          minmax(0, 1.2fr);
+                        gap: 8px;
+                        padding: 8px 12px;
+                        align-items: center;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <a href="#" style="text-decoration: underline">Dni Fantastyki</a
+                      ><small><code>dni-fantastyki</code></small
+                      ><span class="wf-pill">Active</span><small>2 Mar 2026, 11:20</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr)
+                          minmax(0, 1.2fr);
+                        gap: 8px;
+                        padding: 8px 12px;
+                        align-items: center;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <a href="#" style="text-decoration: underline">Fantasmagoria</a
+                      ><small><code>fantasmagoria</code></small
+                      ><span class="wf-pill">Active</span><small>20 Jan 2026, 18:05</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr)
+                          minmax(0, 1.2fr);
+                        gap: 8px;
+                        padding: 8px 12px;
+                        align-items: center;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <a href="#" style="text-decoration: underline">Nordcon</a
+                      ><small><code>nordcon</code></small
+                      ><span class="wf-pill">Active</span><small>3 Mar 2025, 09:40</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr)
+                          minmax(0, 1.2fr);
+                        gap: 8px;
+                        padding: 8px 12px;
+                        align-items: center;
+                      "
+                    >
+                      <a href="#" style="text-decoration: underline">Pyrkon</a
+                      ><small><code>pyrkon</code></small
+                      ><span class="wf-pill">Active</span><small>2 Nov 2026, 10:14</small>
+                    </div>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Lane: the platform admin</strong>One lane: the platform admin (signed in as
+          ops@example.com) acts on the platform, not inside a convention, so J16 has no convention
+          lanes. The list shows each convention’s name, address, status and creation date and opens
+          one by its name; no programme, team or edition of any convention shows here.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-admin-convention" style="grid-column: 2; grid-row: 1">
+        <figcaption class="t" style="width: 840px">
+          Admin: the convention Pyrkon <code>ab-role-admin-convention</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 760px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  position: relative;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <small class="wf-muted"><strong>OPOS ADMINISTRATION</strong></small>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">ops@example.com</small><button>Sign out</button>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 6px;
+                    white-space: nowrap;
+                    padding-bottom: 6px;
+                    border-bottom: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <span class="wf-pill accent">Conventions</span
+                  ><span class="wf-pill">Two-factor reset</span><span class="wf-pill">Log</span>
+                </div>
+                <div
+                  style="
+                    width: 100%;
+                    max-width: 680px;
+                    margin-inline: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div>
+                      <h1>Pyrkon</h1>
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <small><code>pyrkon</code></small>
+                      </div>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button>
+                      <svg
+                        role="img"
+                        aria-label="Back"
+                        class="wf-icon"
+                        data-icon="arrowLeft"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M5 12l14 0"></path>
+                        <path d="M5 12l6 6"></path>
+                        <path d="M5 12l6 -6"></path>
+                      </svg>
+                      Back to the conventions
+                    </button>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Head organizers</strong
+                    ><small class="wf-muted"
+                      >No email goes to them when the convention is suspended, restored or deleted:
+                      tell them yourself.</small
+                    ><small><strong>Kinga Orlik</strong> · kinga.orlik@example.com</small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Address</strong><label>Address<input value="pyrkon" /></label
+                    ><small class="wf-muted"
+                      >Changing the address breaks every old link to the convention. The address it
+                      leaves is free for another convention at once.</small
+                    >
+                    <div><button disabled>Change the address</button></div>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Suspension</strong
+                    ><small
+                      >A suspended convention is off for everyone but the administrators: its page
+                      is not found, and its organizers see only that it is suspended. Nothing is
+                      removed, no email is sent, and you can restore it here.</small
+                    >
+                    <div><button>Suspend the convention</button></div>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>The convention, not its programme</strong>At 22:09 the admin sees Pyrkon’s
+          address, its head organizers with their addresses and the suspension; while Pyrkon is
+          active there is no Deletion section, so it cannot be deleted. Suspend asks nothing first,
+          since Restore on the same screen reverses it (ADR 0023), and nobody is emailed.
+        </div>
+      </figure>
+      <figure class="board" id="j16-p-admin-suspended" style="grid-column: 3; grid-row: 1">
+        <figcaption class="t" style="width: 840px">
+          Admin: Pyrkon suspended <code>j16-p-admin-suspended</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 860px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  position: relative;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <small class="wf-muted"><strong>OPOS ADMINISTRATION</strong></small>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">ops@example.com</small><button>Sign out</button>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 6px;
+                    white-space: nowrap;
+                    padding-bottom: 6px;
+                    border-bottom: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <span class="wf-pill accent">Conventions</span
+                  ><span class="wf-pill">Two-factor reset</span><span class="wf-pill">Log</span>
+                </div>
+                <div
+                  style="
+                    width: 100%;
+                    max-width: 680px;
+                    margin-inline: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div>
+                      <h1>Pyrkon</h1>
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <small><code>pyrkon</code></small
+                        ><span
+                          class="wf-pill"
+                          style="border-color: var(--wf-warn); color: var(--wf-warn)"
+                          >Suspended</span
+                        >
+                      </div>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button>
+                      <svg
+                        role="img"
+                        aria-label="Back"
+                        class="wf-icon"
+                        data-icon="arrowLeft"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M5 12l14 0"></path>
+                        <path d="M5 12l6 6"></path>
+                        <path d="M5 12l6 -6"></path>
+                      </svg>
+                      Back to the conventions
+                    </button>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Head organizers</strong
+                    ><small class="wf-muted"
+                      >No email goes to them when the convention is suspended, restored or deleted:
+                      tell them yourself.</small
+                    ><small><strong>Kinga Orlik</strong> · kinga.orlik@example.com</small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Address</strong><label>Address<input value="pyrkon" /></label
+                    ><small class="wf-muted"
+                      >Changing the address breaks every old link to the convention. The address it
+                      leaves is free for another convention at once.</small
+                    >
+                    <div><button disabled>Change the address</button></div>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Suspension</strong
+                    ><small
+                      >Suspended since 18 Jun 2027, 22:10. Its page is not found, and its organizers
+                      see only that it is suspended. Restoring it brings everything back as it
+                      was.</small
+                    >
+                    <div><button class="primary">Restore the convention</button></div>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Deletion</strong
+                    ><small
+                      >Only a suspended convention can be deleted. The deletion is immediate and
+                      permanent.</small
+                    >
+                    <div>
+                      <button style="border-color: var(--wf-warn); color: var(--wf-warn)">
+                        Delete the convention
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  class="wf-box"
+                  style="
+                    position: absolute;
+                    right: 16px;
+                    bottom: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    border-color: var(--wf-ok);
+                  "
+                >
+                  <svg
+                    role="img"
+                    aria-label="Done"
+                    class="wf-icon"
+                    data-icon="check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l5 5l10 -10"></path></svg
+                  ><small>The convention is suspended.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Suspended, two ways out</strong>Pyrkon is suspended at once and the notification
+          says so; its portal now answers page not found and its team sees only the suspended page
+          (bottom row). The admin either restores it or deletes it from here; what the clocks of
+          reservations, forfeits and the day release do meanwhile is not decided yet.
+        </div>
+      </figure>
+      <figure class="board" id="j16-p-admin-restored" style="grid-column: 5; grid-row: 1">
+        <figcaption class="t" style="width: 840px">
+          Admin: Pyrkon restored <code>j16-p-admin-restored</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 760px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  position: relative;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <small class="wf-muted"><strong>OPOS ADMINISTRATION</strong></small>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">ops@example.com</small><button>Sign out</button>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 6px;
+                    white-space: nowrap;
+                    padding-bottom: 6px;
+                    border-bottom: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <span class="wf-pill accent">Conventions</span
+                  ><span class="wf-pill">Two-factor reset</span><span class="wf-pill">Log</span>
+                </div>
+                <div
+                  style="
+                    width: 100%;
+                    max-width: 680px;
+                    margin-inline: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div>
+                      <h1>Pyrkon</h1>
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <small><code>pyrkon</code></small>
+                      </div>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button>
+                      <svg
+                        role="img"
+                        aria-label="Back"
+                        class="wf-icon"
+                        data-icon="arrowLeft"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M5 12l14 0"></path>
+                        <path d="M5 12l6 6"></path>
+                        <path d="M5 12l6 -6"></path>
+                      </svg>
+                      Back to the conventions
+                    </button>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Head organizers</strong
+                    ><small class="wf-muted"
+                      >No email goes to them when the convention is suspended, restored or deleted:
+                      tell them yourself.</small
+                    ><small><strong>Kinga Orlik</strong> · kinga.orlik@example.com</small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Address</strong><label>Address<input value="pyrkon" /></label
+                    ><small class="wf-muted"
+                      >Changing the address breaks every old link to the convention. The address it
+                      leaves is free for another convention at once.</small
+                    >
+                    <div><button disabled>Change the address</button></div>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Suspension</strong
+                    ><small
+                      >A suspended convention is off for everyone but the administrators: its page
+                      is not found, and its organizers see only that it is suspended. Nothing is
+                      removed, no email is sent, and you can restore it here.</small
+                    >
+                    <div><button>Suspend the convention</button></div>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  class="wf-box"
+                  style="
+                    position: absolute;
+                    right: 16px;
+                    bottom: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    border-color: var(--wf-ok);
+                  "
+                >
+                  <svg
+                    role="img"
+                    aria-label="Done"
+                    class="wf-icon"
+                    data-icon="check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l5 5l10 -10"></path></svg
+                  ><small>The convention is restored.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Restored as it was</strong>At 22:41 Restore the convention brings Pyrkon back at
+          once: its portal, the attendees’ schedules and the team’s panel return as they were. The
+          admin tells Kinga Orlik directly, since no email goes to the heads.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-admin-delete" style="grid-column: 5; grid-row: 2">
+        <figcaption class="t" style="width: 840px">
+          Admin: delete Pyrkon for good <code>ab-role-admin-delete</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 620px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  position: relative;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; flex-direction: column; gap: 12px; opacity: 0.35">
+                  <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                    <small class="wf-muted"><strong>OPOS ADMINISTRATION</strong></small>
+                    <div style="flex: 1"></div>
+                    <small class="wf-muted">ops@example.com</small><button>Sign out</button>
+                  </div>
+                  <div
+                    style="
+                      width: 100%;
+                      max-width: 680px;
+                      margin-inline: auto;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    "
+                  >
+                    <h1>Pyrkon</h1>
+                    <span class="wf-pill">Suspended</span>
+                  </div>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    width: 100%;
+                    max-width: 520px;
+                    margin-inline: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 20px;
+                  "
+                >
+                  <h2>Delete the convention Pyrkon?</h2>
+                  <small
+                    >Everything the convention owns goes with it: its team, editions, programme and
+                    likes. The accounts of its organizers and attendees stay. Its address is never
+                    given to another convention. This action cannot be undone.</small
+                  ><label
+                    >Type the address of the convention to confirm: pyrkon<input value="pyrkon"
+                  /></label>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <button>Cancel</button><button class="primary">Delete for good</button>
+                  </div>
+                </div>
+                <div style="width: 100%; max-width: 680px; margin-inline: auto; opacity: 0.35">
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                      padding-top: 10px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <strong>Deletion</strong
+                    ><small
+                      >Only a suspended convention can be deleted. The deletion is immediate and
+                      permanent.</small
+                    >
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Delete only after suspension</strong>Drawn as the other way out of the suspension;
+          in the sample data Pyrkon is restored. The modal names what goes and acts only once the
+          address is typed (ADR 0023, 0031); accounts survive, and Pyrkon’s programme people go with
+          the convention.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-admin-signin-again" style="grid-column: 6; grid-row: 2">
+        <figcaption class="t" style="width: 840px">
+          Admin: sign in again before deleting <code>ab-role-admin-signin-again</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  position: relative;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div
+                  style="
+                    width: 100%;
+                    max-width: 420px;
+                    margin-inline: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding-top: 24px;
+                  "
+                >
+                  <small class="wf-muted"><strong>OPOS ADMINISTRATION</strong></small>
+                  <h1>Sign in to OPOS administration</h1>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 10px">
+                    <label>Email<input value="ops@example.com" /></label
+                    ><label>Password<input type="password" value="" /></label
+                    ><button class="primary">Sign in</button>
+                  </div>
+                  <small class="wf-muted"
+                    >Only OPOS administrators sign in here, with a password and the code of
+                    two-factor authentication.</small
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  class="wf-box"
+                  style="
+                    position: absolute;
+                    right: 16px;
+                    bottom: 16px;
+                    max-width: 360px;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 8px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <svg
+                    role="img"
+                    aria-label="Warning"
+                    class="wf-icon"
+                    data-icon="bell"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"
+                    ></path>
+                    <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path></svg
+                  ><small
+                    >Your sign-in is too old for this action. Sign in again with your password and
+                    the code, then repeat it.</small
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>An old sign-in cannot delete</strong>The admin signed in at 22:05, and a deletion
+          takes a sign-in of the last 5 minutes, so Delete for good leads here with the notification
+          and deletes nothing. After the password and the code the convention page opens again, and
+          the admin repeats the deletion.
+        </div>
+      </figure>
+      <figure class="board" id="j16-p-admin-deleted" style="grid-column: 7; grid-row: 2">
+        <figcaption class="t" style="width: 840px">
+          Admin: the conventions after the deletion <code>j16-p-admin-deleted</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 480px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  position: relative;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <small class="wf-muted"><strong>OPOS ADMINISTRATION</strong></small>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">ops@example.com</small><button>Sign out</button>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 6px;
+                    white-space: nowrap;
+                    padding-bottom: 6px;
+                    border-bottom: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <span class="wf-pill accent">Conventions</span
+                  ><span class="wf-pill">Two-factor reset</span><span class="wf-pill">Log</span>
+                </div>
+                <div
+                  style="
+                    width: 100%;
+                    max-width: 680px;
+                    margin-inline: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div>
+                      <h1>Conventions</h1>
+                      <small>Every convention on the platform, by name.</small>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button class="primary">
+                      <svg
+                        role="img"
+                        aria-label="New"
+                        class="wf-icon"
+                        data-icon="plus"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M12 5l0 14"></path>
+                        <path d="M5 12l14 0"></path>
+                      </svg>
+                      New convention
+                    </button>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                  >
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr)
+                          minmax(0, 1.2fr);
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <small class="wf-muted">Name</small><small class="wf-muted">Address</small
+                      ><small class="wf-muted">Status</small><small class="wf-muted">Created</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr)
+                          minmax(0, 1.2fr);
+                        gap: 8px;
+                        padding: 8px 12px;
+                        align-items: center;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <a href="#" style="text-decoration: underline">Dni Fantastyki</a
+                      ><small><code>dni-fantastyki</code></small
+                      ><span class="wf-pill">Active</span><small>2 Mar 2026, 11:20</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr)
+                          minmax(0, 1.2fr);
+                        gap: 8px;
+                        padding: 8px 12px;
+                        align-items: center;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <a href="#" style="text-decoration: underline">Fantasmagoria</a
+                      ><small><code>fantasmagoria</code></small
+                      ><span class="wf-pill">Active</span><small>20 Jan 2026, 18:05</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns:
+                          minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr)
+                          minmax(0, 1.2fr);
+                        gap: 8px;
+                        padding: 8px 12px;
+                        align-items: center;
+                      "
+                    >
+                      <a href="#" style="text-decoration: underline">Nordcon</a
+                      ><small><code>nordcon</code></small
+                      ><span class="wf-pill">Active</span><small>3 Mar 2025, 09:40</small>
+                    </div>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  class="wf-box"
+                  style="
+                    position: absolute;
+                    right: 16px;
+                    bottom: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    border-color: var(--wf-ok);
+                  "
+                >
+                  <svg
+                    role="img"
+                    aria-label="Done"
+                    class="wf-icon"
+                    data-icon="check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l5 5l10 -10"></path></svg
+                  ><small>The convention Pyrkon is deleted.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Gone for good</strong>At 22:19 the list has no Pyrkon, and the log records Deleted
+          the convention with the admin’s account. The address pyrkon is never given to another
+          convention, and its heads learn of it only from the admin.
+        </div>
+      </figure>
+      <figure class="board" id="j16-p-plan" style="grid-column: 2; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: an attendee’s schedule before <code>j16-p-plan</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 1150px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>My schedule · Pyrkon 2027</h2>
+                <div class="wf-card" style="display: flex; align-items: center; gap: 8px">
+                  <small>Tokens: 1 of 4 left</small>
+                  <div style="flex: 1"></div>
+                  <small>from the Early Bird ticket</small>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap">
+                  <span class="wf-pill accent">Saturday</span
+                  ><span class="wf-pill">Sunday · 1</span>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>14:00 · Sala Literacka 1 · LIT-114</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reservation</span>
+                  </div>
+                  <strong>The future of fantasy: artificial intelligence and literature</strong
+                  ><small>Be at the room by 13:50</small><a href="#">Release · the token returns</a>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>15:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">♡ Liked</span>
+                  </div>
+                  <strong>There is room for everyone in space</strong
+                  ><small>Entry from the queue</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>16:00 · Aula Wielka</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Waiting list · 4</span>
+                  </div>
+                  <strong>Meeting with the guest of honour</strong
+                  ><small>Lottery result · a token is used only if you get a seat</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>17:00 · Aula Wielka · LIT-121</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reservation</span>
+                  </div>
+                  <strong>Revisiting the classics: is old fantasy still relevant?</strong
+                  ><small style="color: var(--wf-warn)"
+                    >Moved · Fri 18:20 · was 16:00, Sala Literacka 1</small
+                  ><small>Be at the room by 16:50</small><a href="#">Release · the token returns</a>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>18:00 · Sala Literacka 1 · LIT-131</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Cancelled · Wed 21:10</span>
+                  </div>
+                  <strong>Polish fantasy abroad</strong
+                  ><small>Reservation released, token returned</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>19:00 · Aula Wielka · LIT-165</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Waiting list · 4</span>
+                  </div>
+                  <strong>Meeting with Tessa Moorland</strong
+                  ><small>Lottery result · a token is used only if you get a seat</small>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Not the admin’s: the attendee</strong>Same as for the attendee of J03, at 21:30
+          before the suspension: two reservations on Saturday, one on Sunday, a liked item and 1 of
+          4 tokens. The admin never sees this screen; while Pyrkon is suspended these items leave
+          the attendee’s schedule, and restored they return as they were.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-suspended-portal" style="grid-column: 3; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: a suspended convention <code>ab-role-suspended-portal</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 520px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    align-items: center;
+                    text-align: center;
+                  "
+                >
+                  <h2>Page not found</h2>
+                  <small>We could not find what you are looking for.</small>
+                </div>
+                <div style="flex: 1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Suspended means not found</strong>Not the admin’s screen: the same attendee
+          reloads at 22:12 and Pyrkon answers like a page that does not exist, with no link to a
+          programme; its items have left every personal schedule. Restored at 22:41, everything
+          returns as it was (PRODUCT.md 4).
+        </div>
+      </figure>
+      <figure class="board" id="j16-p-suspended-panel" style="grid-column: 4; grid-row: 3">
+        <figcaption class="t" style="width: 840px">
+          Pyrkon: the panel of a suspended convention <code>j16-p-suspended-panel</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 420px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+                  padding: 32px;
+                  height: 100%;
+                  box-sizing: border-box;
+                  max-width: 560px;
+                "
+              >
+                <h1>This convention is suspended</h1>
+                <small class="wf-muted">Contact the OPOS administrators to learn more.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Same as for the head</strong>Not the admin’s screen: at 22:15 Kinga Orlik, the
+          head, and every org of the team see only that Pyrkon is suspended, in the panel’s own
+          text; nothing of the programme opens and nothing is lost. No email tells Kinga, so they
+          learn why only from the admin.
+        </div>
+      </figure>
+    </main>
+    <script>
+      ;(function () {
+        var NS = 'http://www.w3.org/2000/svg'
+        function drawAll() {
+          document.querySelectorAll('main.boards.flow').forEach(function (main, mi) {
+            var edges = JSON.parse(main.getAttribute('data-edges') || '[]')
+            function box(el) {
+              var r = el.getBoundingClientRect(),
+                m = main.getBoundingClientRect()
+              return {
+                l: r.left - m.left,
+                t: r.top - m.top,
+                r: r.right - m.left,
+                b: r.bottom - m.top,
+              }
+            }
+            var old = main.querySelector('svg.edges')
+            if (old) old.remove()
+            var svg = document.createElementNS(NS, 'svg')
+            svg.setAttribute('class', 'edges')
+            svg.setAttribute('width', main.scrollWidth)
+            svg.setAttribute('height', main.scrollHeight)
+            var mid = 'ah' + mi
+            svg.innerHTML =
+              '<defs><marker id="' +
+              mid +
+              '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b5b57"/></marker></defs>'
+            main.appendChild(svg)
+            var seen = {}
+            edges.forEach(function (e) {
+              var fa = document.getElementById(e.from),
+                fb = document.getElementById(e.to)
+              if (!fa || !fb) return
+              var a = box(fa.querySelector('.screen')),
+                b = box(fb.querySelector('.screen'))
+              var A = box(fa),
+                B = box(fb)
+              var key = [e.from, e.to].sort().join('|'),
+                k = (seen[key] = (seen[key] || 0) + 1) - 1
+              var off = k * 26,
+                x1,
+                y1,
+                x2,
+                y2,
+                d
+              if (b.l >= a.r - 1 || a.l >= b.r - 1) {
+                var right = b.l >= a.r - 1
+                var top = Math.max(a.t, b.t),
+                  bot = Math.min(a.b, b.b)
+                x1 = right ? a.r : a.l
+                x2 = right ? b.l : b.r
+                if (bot > top) {
+                  y1 = y2 = Math.min(top + 140, (top + bot) / 2) + off
+                } else {
+                  y1 = Math.min(a.t + 140, (a.t + a.b) / 2) + off
+                  y2 = Math.min(b.t + 140, (b.t + b.b) / 2) + off
+                }
+                var mx = (x1 + x2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  mx +
+                  ',' +
+                  y1 +
+                  ' ' +
+                  mx +
+                  ',' +
+                  y2 +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              } else {
+                var down = B.t >= A.b - 1
+                x1 = (a.l + a.r) / 2 + off
+                x2 = (b.l + b.r) / 2 + off
+                y1 = down ? A.b : A.t
+                y2 = down ? B.t : B.b
+                var my = (y1 + y2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  x1 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              }
+              var p = document.createElementNS(NS, 'path')
+              p.setAttribute('d', d)
+              p.setAttribute('marker-end', 'url(#' + mid + ')')
+              svg.appendChild(p)
+              if (e.label) {
+                var t = document.createElementNS(NS, 'text')
+                t.textContent = e.label
+                svg.appendChild(t)
+                var w = t.getComputedTextLength(),
+                  cx = (x1 + x2) / 2,
+                  cy = (y1 + y2) / 2 + k * 24
+                t.setAttribute('x', cx - w / 2)
+                t.setAttribute('y', cy + 4)
+                var r = document.createElementNS(NS, 'rect')
+                r.setAttribute('x', cx - w / 2 - 6)
+                r.setAttribute('y', cy - 10)
+                r.setAttribute('width', w + 12)
+                r.setAttribute('height', 20)
+                r.setAttribute('rx', 10)
+                svg.insertBefore(r, t)
+              }
+            })
+          })
+        }
+        window.addEventListener('load', drawAll)
+        window.addEventListener('resize', drawAll)
+      })()
+    </script>
+  </body>
+</html>

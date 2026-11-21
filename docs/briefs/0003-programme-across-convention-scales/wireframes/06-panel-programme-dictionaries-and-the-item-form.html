@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>6. Panel: programme dictionaries and the item form</title>
+    <link rel="stylesheet" href="wireframes.css" />
+  </head>
+  <body>
+    <header class="page">
+      <h1>6. Panel: programme dictionaries and the item form</h1>
+      <p>
+        OPOS programme module: wireframes for discussion, sample data only. All people shown are
+        invented.
+      </p>
+    </header>
+    <nav class="pages">
+      <a href="index.html">Index</a
+      ><a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+        >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+      ><a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a
+      ><a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+        >3. Portal: my schedule, proposing an item, speaker screen</a
+      ><a href="04-at-the-room-door-volunteer-and-scanner.html"
+        >4. At the room door: volunteer and scanner</a
+      ><a href="05-panel-programme-settings-of-an-edition.html"
+        >5. Panel: programme settings of an edition</a
+      ><a href="06-panel-programme-dictionaries-and-the-item-form.html"
+        >6. Panel: programme dictionaries and the item form</a
+      ><a href="07-panel-building-the-programme.html">7. Panel: building the programme</a
+      ><a href="08-panel-changes-during-the-convention-and-entitlements.html"
+        >8. Panel: changes during the convention and entitlements</a
+      ><a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+        >9. Worldcon: stress test of the model (not for delivery)</a
+      ><a href="10-portal-programme-people-and-guests.html"
+        >10. Portal: programme people and guests</a
+      ><a href="11-portal-changes-now-and-next-rooms-reminders.html"
+        >11. Portal: changes, now and next, rooms, reminders</a
+      ><a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+        >12. Portal: the speaker from acceptance to the day of the item</a
+      ><a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+        >13. Panel: programme team, people, panels and the programme release</a
+      ><a href="14-panel-the-programme-during-the-convention.html"
+        >14. Panel: the programme during the convention</a
+      ><a href="15-panel-head-dictionaries-team-and-programme-status.html"
+        >15. Panel: head, dictionaries, team and programme status</a
+      ><a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+        >16. Portal: sign-ups, lottery, declines and empty states</a
+      ><a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+        >17. Panel: item list, proposals, announcements and re-import</a
+      >
+    </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
+    <main class="boards">
+      <figure class="board" id="ab-small-form">
+        <figcaption class="t" style="width: 840px">
+          Nordcon: item form <code>ab-small-form</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 570px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Nordcon</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Tickets</span><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">head</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <span class="wf-pill accent">Items</span><small>Grid</small><small>People</small
+                    ><small>Changes</small><small>Messages</small><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
+                  </div>
+                  <div style="display: flex; align-items: center">
+                    <h1>New programme item</h1>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Not yet published</span>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                    <label>Title<input value="The beginnings of Polish fantasy" /></label
+                    ><label
+                      >Description<input
+                        value="A talk with discussion: from Żuławski to the first fanzines."
+                    /></label>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(3, minmax(0, 1fr));
+                        gap: 8px;
+                      "
+                    >
+                      <label>Start<input value="Thu 12:00" /></label
+                      ><label>End<input value="Thu 12:50" /></label
+                      ><label>Room<input value="K8 „Falcon Crest Gazette” ▾" /></label>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(3, minmax(0, 1fr));
+                        gap: 8px;
+                      "
+                    >
+                      <label>Track<input value="Talks ▾" /></label
+                      ><label>Content warnings<input value="none ▾" /></label>
+                    </div>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                    <strong>Cast</strong>
+                    <div style="display: flex; gap: 8px; align-items: center">
+                      <span>Tadeusz „Kruk” Lipa</span><span class="wf-pill">Host</span>
+                      <div style="flex: 1"></div>
+                      <a href="#">Add person</a>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <button>Cancel</button><button class="primary">Add item</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Fields from filled dictionaries</strong>Title, description, time, room, track,
+          warnings and cast; with no formats the format stays in the text, as in the booklet. The
+          warnings field shows on a talk because field visibility is edition-wide (Q8), the cost the
+          brief names. A new item stays not yet published until the programme is first published.
+        </div>
+      </figure>
+      <figure class="board" id="ab-dni-rooms">
+        <figcaption class="t" style="width: 840px">
+          Dni Fantastyki: rooms <code>ab-dni-rooms</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 600px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><small>People</small><small>Changes</small><small>Messages</small
+                    ><small>Settings</small><small>Dictionaries</small
+                    ><span class="wf-pill accent">Rooms</span><small>Publication</small>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div>
+                      <small>Programme · Rooms</small>
+                      <h1>Rooms</h1>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <button>Add location</button><button class="primary">Add room</button>
+                  </div>
+                  <div style="display: flex; gap: 6px">
+                    <span class="wf-pill accent">All 39</span
+                    ><span class="wf-pill">Zamek w Leśnicy 22</span
+                    ><span class="wf-pill">Park · free zone 17</span>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: 2fr 1.5fr 1.5fr 1fr 2fr;
+                      gap: 12px 8px;
+                    "
+                  >
+                    <small><strong>Name</strong></small
+                    ><small><strong>Location</strong></small
+                    ><small><strong>Building, floor</strong></small
+                    ><small><strong>Capacity</strong></small
+                    ><small><strong>Accessibility</strong></small> <span>Sala Rycerska</span
+                    ><small>Zamek w Leśnicy</small><small>castle, 2nd floor</small><small>80</small
+                    ><small style="color: var(--wf-warn)">stairs only</small>
+                    <span>Sala Kominkowa</span><small>Zamek w Leśnicy</small
+                    ><small>castle, 1st floor</small><small>50</small
+                    ><small style="color: var(--wf-warn)">stairs only</small> <span>Stół RPG 1</span
+                    ><small>Zamek w Leśnicy</small><small>castle, basement</small><small>6</small
+                    ><small>ramp at the entrance</small> <span>Namiot 2</span
+                    ><small>Zamek w Leśnicy</small><small>moat</small><small>60</small
+                    ><small>step-free</small> <span>Namiot ciszy</span><small>Zamek w Leśnicy</small
+                    ><small>moat</small><small>—</small><small>step-free · quiet space</small>
+                    <span>Scena amfiteatr</span><small>Park Leśnicki</small
+                    ><small>outdoors, by the pond</small><small>—</small
+                    ><small>step-free · no ticket</small>
+                  </div>
+                  <small class="wf-muted">Showing 6 of 39</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Rooms with location and floor</strong>Location, floor, capacity and step-free
+          access: no lift in the castle, ramps into the basement, step-free tents and park. Scena
+          amfiteatr is a second location in the free zone. Capacity is shown with the default entry,
+          free and first come, and feeds likely full and Room full.
+        </div>
+      </figure>
+      <figure class="board" id="ab-dni-form">
+        <figcaption class="t" style="width: 840px">
+          Dni Fantastyki: item form <code>ab-dni-form</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 790px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <span class="wf-pill accent">Items</span><small>Grid</small
+                    ><small>Proposals</small><small>People</small><small>Changes</small
+                    ><small>Messages</small><small>Settings</small><small>Dictionaries</small
+                    ><small>Rooms</small><small>Publication</small>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <h1>Programme item</h1>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Programme team item · guest panel · cast 4 of 5</span>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                    <label>Title<input value="AI in organising conventions" /></label>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(4, minmax(0, 1fr));
+                        gap: 8px;
+                      "
+                    >
+                      <label>Format<input value="Panel discussion ▾" /></label
+                      ><label>Block<input value="Pop culture ▾" /></label
+                      ><label>Theme line<input value="none ▾" /></label
+                      ><label>Language<input value="Polish ▾" /></label
+                      ><label>Start<input value="Sat 14:00" /></label
+                      ><label>Item length<input value="50 min" /></label
+                      ><label>Slot<input value="50 min (single)" /></label
+                      ><label>Room<input value="Sala Rycerska · 2nd floor (80)" /></label
+                      ><label>Age rating<input value="16+ ▾" /></label
+                      ><label>Item code<input value="given at publication" /></label
+                      ><label>Entry<input value="Free entry, first come ▾" /></label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 16px; white-space: nowrap">
+                      <label style="display: flex; gap: 8px"
+                        ><input type="checkbox" /> Guest of honour</label
+                      ><label style="display: flex; gap: 8px"
+                        ><input type="checkbox" checked /> Featured</label
+                      >
+                    </div>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1fr) auto auto auto;
+                      gap: 10px;
+                      align-items: center;
+                    "
+                  >
+                    <strong>Cast</strong><span></span><span></span><a href="#">Add person</a>
+                    <span>Ola Szpak</span><span class="wf-pill">Moderator</span><span></span
+                    ><small>on site</small> <span>Kuba Lis</span
+                    ><span class="wf-pill">Panelist</span><span></span><small>on site</small>
+                    <span>Ewa Kruk</span><span class="wf-pill">Panelist</span
+                    ><span class="wf-pill">Invited 9 Jul</span><small>on site</small>
+                    <span>Tomek Brzoza</span><span class="wf-pill">Panelist</span><span></span
+                    ><span class="wf-pill accent">remote</span>
+                    <small class="wf-muted">1 seat free · open to volunteers</small><span></span
+                    ><span></span><a href="#">See volunteers</a>
+                  </div>
+                  <small style="color: var(--wf-warn)"
+                    >Ola Szpak also co-hosts „Tolkien and mythology” in Sala Kominkowa at 14:00. You
+                    can save despite the conflict.</small
+                  >
+                  <div style="display: flex; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <button>Delete draft…</button><button class="primary">Save</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>A team-made guest panel</strong>Made by the programme team, not from the call;
+          each cast entry has a role, a state and a mode, and the free seat is open to volunteers
+          (Q9). No content-warning field, as that dictionary is empty. A person conflict warns and
+          never blocks.
+        </div>
+      </figure>
+      <figure class="board" id="ab-pyrkon-form">
+        <figcaption class="t" style="width: 840px">
+          Pyrkon: item form, all sections <code>ab-pyrkon-form</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 1080px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write · Literature Zone</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <span class="wf-pill accent">Items</span><small>Grid</small
+                    ><small>Proposals</small><small>People</small><small>Conflicts</small
+                    ><small>Changes</small><small>Messages</small><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <h1>Programme item</h1>
+                    <span class="wf-pill">LIT-114</span>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Not yet published</span>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                    <label
+                      >Title<input
+                        value="The future of fantasy: artificial intelligence and literature"
+                    /></label>
+                    <small>Code · LIT-114 · set by the team, frozen at publication</small>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(4, minmax(0, 1fr));
+                        gap: 8px;
+                      "
+                    >
+                      <label>Start<input value="Sat 14:00" /></label
+                      ><label>End<input value="14:45 · programme hour" /></label
+                      ><label>Room<input value="Sala Literacka 1 · pawilon 7 (60)" /></label
+                      ><label>Zone<input value="Literature Zone" /></label
+                      ><label>Format<input value="Panel discussion" /></label
+                      ><label>Language<input value="Polish" /></label
+                      ><label>Age rating<input value="no rating" /></label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap">
+                      <small>Accessibility:</small><span class="wf-pill accent">PJM</span
+                      ><span class="wf-pill">Low stimulation</span>
+                      <div style="flex: 1"></div>
+                      <label style="display: flex; gap: 6px"
+                        ><input type="checkbox" /> Guest of honour</label
+                      ><label style="display: flex; gap: 6px"
+                        ><input type="checkbox" checked /> Featured</label
+                      >
+                    </div>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: minmax(0, 1fr) 120px 90px 170px;
+                        gap: 8px;
+                        align-items: center;
+                      "
+                    >
+                      <strong>Cast</strong><small><strong>Role</strong></small
+                      ><small><strong>State</strong></small
+                      ><small><strong>Recording · photo consent</strong></small>
+                      <span>Marta Wilk</span><span class="wf-pill">Moderator</span
+                      ><small>confirmed</small><small>recording yes · photo yes</small>
+                      <span>Jan Bór</span><span class="wf-pill">Panelist</span
+                      ><small>confirmed</small><small>recording yes · photo yes</small>
+                      <span>Lena Cis</span><span class="wf-pill">Panelist</span
+                      ><small>invited 30 Apr</small
+                      ><small class="wf-muted">asked on acceptance</small> <span>Irmina Wąs</span
+                      ><span class="wf-pill">PJM interpreter</span><small>confirmed</small
+                      ><small>recording yes · photo yes</small>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <small style="flex: 1; color: var(--wf-warn)"
+                        >Marta Wilk is also in the cast of „The Witcher on screen: three
+                        adaptations” in Aula Wielka at 14:00. You can save despite the
+                        conflict.</small
+                      ><a href="#">Add person</a>
+                    </div>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                    <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap">
+                      <strong>Entry</strong><span class="wf-pill">Open</span
+                      ><span class="wf-pill">Information with a link</span
+                      ><span class="wf-pill accent">Sign-ups</span
+                      ><small class="wf-muted" style="margin-left: auto"
+                        >tokens per person: set in Tickets</small
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(4, minmax(0, 1fr));
+                        gap: 8px;
+                      "
+                    >
+                      <label>Capacity<input value="60 (from the room)" /></label
+                      ><label>Allocation<input value="first come, first served" /></label
+                      ><label>For reservations<input value="50%" /></label
+                      ><label>Forfeit<input value="10 min before" /></label>
+                    </div>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                    <div style="display: flex; align-items: center; gap: 16px; white-space: nowrap">
+                      <strong>Recording and links</strong
+                      ><label style="display: flex; gap: 6px"
+                        ><input type="checkbox" checked /> Recorded</label
+                      ><label style="display: flex; gap: 6px"
+                        ><input type="checkbox" checked /> Streamed</label
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: 110px minmax(0, 1fr) auto;
+                        gap: 8px;
+                        align-items: center;
+                      "
+                    >
+                      <small>Stream</small><input value="https://youtu.be/…" /><small
+                        >shown during</small
+                      >
+                      <small>Recording with PJM</small
+                      ><input value="after editing, within 2 weeks" /><small>shown after</small>
+                    </div>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <strong>For the team</strong
+                      ><small class="wf-muted">not shown in the portal</small>
+                    </div>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                        gap: 8px;
+                      "
+                    >
+                      <label
+                        >Technical needs<input
+                          value="projector, 4 microphones, light on the PJM interpreter" /></label
+                      ><label
+                        >Team note<input
+                          value="Lena Cis arrives on Saturday at 12:00, badge at the box office"
+                      /></label>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <button>Delete draft…</button><button class="primary">Save</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Fields appear with data</strong>Ewa Kruk edits an item of their own zone; sections
+          show because the edition uses them, and with edition scope every zone coordinator sees
+          them all (Q8). Each cast entry carries recording and photo consent, and LIT-114 is frozen
+          at publication. A draft is deleted, asking in a modal; only a published item is cancelled.
+        </div>
+      </figure>
+    </main>
+  </body>
+</html>

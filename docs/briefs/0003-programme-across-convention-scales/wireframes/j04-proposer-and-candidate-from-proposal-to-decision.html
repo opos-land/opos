@@ -1,0 +1,3186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>J04. Proposer and candidate: from proposal to decision</title>
+    <link rel="stylesheet" href="wireframes.css" />
+  </head>
+  <body>
+    <header class="page">
+      <h1>J04. Proposer and candidate: from proposal to decision</h1>
+      <p>
+        A role journey: each row is one person on one convention, left to right in time. An arrow is
+        an action that screen offers or an event that reaches the person; refusals sit under the
+        step where the role tries. The same step on another convention stands in the same column,
+        without an arrow. All people shown are invented.
+      </p>
+    </header>
+    <nav class="pages">
+      <a href="index.html">Index</a
+      ><a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+        >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+      ><a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a
+      ><a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+        >3. Portal: my schedule, proposing an item, speaker screen</a
+      ><a href="04-at-the-room-door-volunteer-and-scanner.html"
+        >4. At the room door: volunteer and scanner</a
+      ><a href="05-panel-programme-settings-of-an-edition.html"
+        >5. Panel: programme settings of an edition</a
+      ><a href="06-panel-programme-dictionaries-and-the-item-form.html"
+        >6. Panel: programme dictionaries and the item form</a
+      ><a href="07-panel-building-the-programme.html">7. Panel: building the programme</a
+      ><a href="08-panel-changes-during-the-convention-and-entitlements.html"
+        >8. Panel: changes during the convention and entitlements</a
+      ><a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+        >9. Worldcon: stress test of the model (not for delivery)</a
+      ><a href="10-portal-programme-people-and-guests.html"
+        >10. Portal: programme people and guests</a
+      ><a href="11-portal-changes-now-and-next-rooms-reminders.html"
+        >11. Portal: changes, now and next, rooms, reminders</a
+      ><a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+        >12. Portal: the speaker from acceptance to the day of the item</a
+      ><a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+        >13. Panel: programme team, people, panels and the programme release</a
+      ><a href="14-panel-the-programme-during-the-convention.html"
+        >14. Panel: the programme during the convention</a
+      ><a href="15-panel-head-dictionaries-team-and-programme-status.html"
+        >15. Panel: head, dictionaries, team and programme status</a
+      ><a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+        >16. Portal: sign-ups, lottery, declines and empty states</a
+      ><a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+        >17. Panel: item list, proposals, announcements and re-import</a
+      >
+    </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
+    <main
+      class="boards flow"
+      data-edges='[{"from": "j04-n-home", "to": "ab-role-no-items", "label": "Account: My items"}, {"from": "j04-f-home", "to": "j04-f-proposal", "label": "Tap Propose an item"}, {"from": "j04-f-proposal", "to": "j04-f-mine", "label": "Tap Send proposal"}, {"from": "j04-f-mine", "to": "j04-f-outcome", "label": "Email: decision, 20 June"}, {"from": "j04-d-home", "to": "j04-d-proposal", "label": "Tap Propose an item"}, {"from": "j04-d-proposal", "to": "j04-d-mine", "label": "Send; 29 Jun: My items"}, {"from": "j04-d-mine", "to": "j04-d-proposal-mine", "label": "Tap the Maps proposal"}, {"from": "j04-d-proposal-mine", "to": "j04-d-withdrawn", "label": "Branch: confirm Withdraw"}, {"from": "j04-d-proposal-mine", "to": "ab-role-proposal-locked", "label": "2 Jul: tap Edit"}, {"from": "j04-d-proposal-mine", "to": "ab-role-proposal-outcome", "label": "Email: decisions, 15 July"}, {"from": "ab-role-proposal-locked", "to": "ab-role-proposal-outcome", "label": "Email: decisions, 15 July"}, {"from": "ab-role-proposal-outcome", "to": "j04-d-confirm", "label": "Tap Confirm on Destiny"}, {"from": "j04-d-confirm", "to": "j04-d-reserve-in", "label": "I confirm; email 28 July"}, {"from": "j04-d-cand-form", "to": "j04-d-cand-mine", "label": "Tap Send candidacy"}, {"from": "j04-d-cand-mine", "to": "j04-d-cand-invited", "label": "Email: invited, 9 July"}, {"from": "j04-d-cand-mine", "to": "j04-d-cand-not", "label": "Email: not invited, 10 July"}, {"from": "j04-d-cand-invited", "to": "j04-d-decline", "label": "Tap I can&#x27;t"}, {"from": "j04-d-decline", "to": "j04-d-cand-declined", "label": "Tap Send answer"}, {"from": "j04-p-home", "to": "j04-p-proposal", "label": "Tap Propose an item"}, {"from": "j04-p-proposal", "to": "j04-p-mine", "label": "Tap Send proposal"}, {"from": "j04-p-mine", "to": "ab-role-call-closed", "label": "12 Apr: Propose another"}, {"from": "j04-p-mine", "to": "j04-p-outcome", "label": "Email: decision, 3 May"}, {"from": "ab-role-call-closed", "to": "j04-p-outcome", "label": "Email: decision, 3 May"}]'
+    >
+      <figure class="board" id="j04-n-home" style="grid-column: 1; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Nordcon: portal before the programme is out <code>j04-n-home</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 670px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Nordcon 2026</h2>
+                  <small>Jastrzębia Góra · 3–6 December</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>The programme comes out on Monday 19 October</strong
+                  ><small>Until then you can see who the guests are.</small>
+                </div>
+                <h3>Guests</h3>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small><strong>Witold Sęk</strong></small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><span class="wf-pill">Guest</span></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small><strong>Iza Kłos</strong></small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><span class="wf-pill">Guest</span></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small><strong>Roman „Skald” Jarzębina</strong></small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><span class="wf-pill">Guest</span></span>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Nordcon is organised by Gdański Klub Fantastyki.</small>
+
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Nordcon: nobody proposes</strong>Lane of Dawid Roszak (invented), signed in on
+          Monday 12 October and wanting to offer a talk. With the call for proposals off, the page
+          has no Propose link anywhere; guests without an account show by name only.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-no-items" style="grid-column: 3; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Nordcon: my items, nothing here <code>ab-role-no-items</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Nordcon 2026</small>
+                </div>
+                <div style="flex: 1"></div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <strong>You have no proposals or items here.</strong
+                  ><small
+                    >Nordcon 2026 takes no proposals in OPOS: its programme team enters every
+                    item.</small
+                  ><small>To offer a talk, write to the organisers.</small
+                  ><a href="#">About Nordcon 2026</a>
+                </div>
+                <div style="flex: 1"></div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>No call, no proposals</strong>My items says why it is empty and where to turn: the
+          organisers, outside OPOS. They cannot send a proposal or put themselves on an item from
+          here.
+        </div>
+      </figure>
+      <figure class="board" id="j04-f-home" style="grid-column: 1; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: portal before the programme is out <code>j04-f-home</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Fantasmagoria 2026</h2>
+                  <small>Gniezno · MOK and II LO · 17–19 July</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <strong>The programme comes out in June</strong
+                  ><small>Until then no programme item is public.</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Call for proposals</strong
+                  ><small>Until Sunday 31 May · decisions by 20 June</small
+                  ><button class="primary">Propose an item</button
+                  ><small class="wf-muted"
+                    >Talks, workshops, contests and more; one call for the whole convention.</small
+                  >
+                </div>
+                <div style="flex: 1"></div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Fantasmagoria: one call</strong>Lane of Ada Jarząb as a proposer (invented),
+          signed in on Tuesday 14 April. The call runs until 31 May with decisions by 20 June; there
+          are no blocks to pick.
+        </div>
+      </figure>
+      <figure class="board" id="j04-f-proposal" style="grid-column: 2; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: propose a programme item <code>j04-f-proposal</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 710px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Fantasmagoria 2026</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>Propose a programme item</h2>
+                <small>Call for proposals until 31 May · answer by email by 20 June</small>
+                <label>Title<input value="Slavic demons in board games" /></label>
+                <div
+                  style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"
+                >
+                  <label>Format<input value="Talk ▾" /></label
+                  ><label>Age<input value="none ▾" /></label>
+                </div>
+                <label
+                  >Description in the programme<input
+                    value="From Kikimora to Leshy: who plays the villain on our tables."
+                /></label>
+                <label
+                  >Note for the programme team<input
+                    value="A screen and room for 3 boxes on a table."
+                /></label>
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span>Co-hosts</span>
+                  <div style="display: flex; gap: 8px">
+                    <input value="email address" style="flex: 1; min-width: 0" /><button>
+                      Invite
+                    </button>
+                  </div>
+                  <small class="wf-muted"
+                    >At most 4 people. A co-host appears on the item once they accept.</small
+                  >
+                </div>
+                <label>Technical needs<input value="projector, HDMI" /></label>
+                <small>A proposal needs an OPOS account.</small>
+                <button class="primary">Send proposal</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Fewer fields, more co-hosts</strong>The form holds only what Fantasmagoria’s
+          dictionaries fill: no block, theme line, length or language. They may invite up to 4
+          co-hosts, and cannot send an idea without a host.
+        </div>
+      </figure>
+      <figure class="board" id="j04-f-mine" style="grid-column: 3; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: my proposal sent <code>j04-f-mine</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Fantasmagoria 2026</small>
+                </div>
+                <h3>Proposals</h3>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 14 April</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Submitted</span>
+                  </div>
+                  <strong>Slavic demons in board games</strong
+                  ><small>Talk · decision by 20 June</small>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <a href="#">Edit until 31 May</a>
+                    <div style="flex: 1"></div>
+                    <a href="#">Withdraw</a>
+                  </div>
+                </div>
+                <small class="wf-muted">You can withdraw a proposal until its decision.</small>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Edit until the close</strong>They edit until 31 May and may withdraw until the
+          decision. The team decides without scores, and they see nothing of its discussion.
+        </div>
+      </figure>
+      <figure class="board" id="j04-f-outcome" style="grid-column: 5; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: decision on my proposal <code>j04-f-outcome</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Fantasmagoria 2026</small>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 14 April</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Accepted</span>
+                  </div>
+                  <strong>Slavic demons in board games</strong
+                  ><small>Sunday 19 July 14:00–14:50 · Sala Warsztatowa · II LO</small
+                  ><small
+                    >Confirm when you are sure. There is no deadline; the team sees who has not
+                    confirmed.</small
+                  >
+                  <div style="display: flex; gap: 8px">
+                    <button class="primary">Confirm</button><button>I can't</button>
+                  </div>
+                </div>
+                <small class="wf-muted"
+                  >Time and room may change; after publication each change is emailed.</small
+                >
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Saturday 20 June</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Accepted, confirm any time</strong>The decision came by 20 June: accepted or not,
+          since Fantasmagoria keeps no reserve list. They confirm whenever they are sure, with no
+          deadline; the time and room are invented.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-home" style="grid-column: 1; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: portal before the programme is out <code>j04-d-home</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 650px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Dni Fantastyki 2026</h2>
+                  <small>Zamek w Leśnicy · 21–23 August</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <strong>The programme comes out on Thursday 6 August</strong
+                  ><small>Until then no programme item is public.</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Call for proposals</strong
+                  ><small>Until Tuesday 30 June · answer by email by 15 July</small
+                  ><button class="primary">Propose an item</button
+                  ><small class="wf-muted">One call for all blocks; you pick the block.</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Guest panels</strong
+                  ><small
+                    >The team is putting together panels with guests. Volunteer for a free seat
+                    until Wednesday 8 July.</small
+                  ><button>Volunteer for a guest panel</button>
+                </div>
+                <div style="flex: 1"></div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Dni Fantastyki: two ways in</strong>Lane of Magda Sowa, proposer, on Tuesday 12
+          May. Before publication the edition page offers Propose an item until 30 June and, with
+          speaker recruitment on, Volunteer for a guest panel until 8 July (Q9).
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-proposal" style="grid-column: 2; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: propose a programme item <code>j04-d-proposal</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 890px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Dni Fantastyki 2026</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>Propose a programme item</h2>
+                <small>Call for proposals until 30 June · answer by email by mid-July</small>
+                <label>Title<input value="Destiny in fantasy sagas" /></label>
+                <div
+                  style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"
+                >
+                  <label>Format<input value="Talk ▾" /></label
+                  ><label>Block<input value="Literature ▾" /></label>
+                </div>
+                <label style="display: flex; align-items: center; gap: 8px"
+                  ><input type="checkbox" checked /> Theme line „The Path of Destiny”</label
+                >
+                <div
+                  style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px"
+                >
+                  <label>Length<input value="50 min ▾" /></label
+                  ><label>Language<input value="Polish ▾" /></label
+                  ><label>Age<input value="12+ ▾" /></label>
+                </div>
+                <label
+                  >Description in the programme<input
+                    value="From Tolkien to Sapkowski: does the hero have a choice?"
+                /></label>
+                <label
+                  >Note for the programme team<input
+                    value="I ran it in 2025, about 40 people. I can cut it to 20 min."
+                /></label>
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span>Co-hosts</span>
+                  <div style="display: flex; gap: 8px">
+                    <input value="email address" style="flex: 1; min-width: 0" /><button>
+                      Invite
+                    </button>
+                  </div>
+                  <small class="wf-muted"
+                    >They get an invitation by email. At most 2 people. A co-host appears on the
+                    item once they accept.</small
+                  >
+                </div>
+                <label>Technical needs<input value="projector, HDMI, microphone" /></label>
+                <label style="display: flex; align-items: center; gap: 8px"
+                  ><input type="checkbox" /> Show my name and profile with the item if it is
+                  accepted</label
+                >
+                <small>A proposal needs an OPOS account.</small>
+                <button class="primary">Send proposal</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Propose while the call is open</strong>Same as for any proposer: block, theme
+          line, length and age show because their dictionaries have entries, content warnings do
+          not. Up to 2 co-hosts get an email invitation; beyond that Invite is disabled.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-mine" style="grid-column: 3; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: my proposals <code>j04-d-mine</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 660px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Dni Fantastyki 2026</small>
+                </div>
+                <h3>Proposals · 3</h3>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 12 May</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Under review</span>
+                  </div>
+                  <strong>Destiny in fantasy sagas</strong
+                  ><small>Literature · Talk · decision by 15 July</small>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <a href="#">Withdraw</a>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 2 June</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Under review</span>
+                  </div>
+                  <strong>Elves in Polish fantasy</strong
+                  ><small>Literature · Talk · decision by 15 July</small>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <a href="#">Withdraw</a>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 28 June</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Submitted</span>
+                  </div>
+                  <strong>Maps of worlds that do not exist</strong
+                  ><small>Pop culture · Talk · decision by 15 July</small>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <a href="#">Withdraw</a>
+                  </div>
+                </div>
+                <small class="wf-muted"
+                  >You can edit a proposal until the call closes on 30 June and withdraw it until
+                  its decision.</small
+                >
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Monday 29 June 09:30</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Every proposal and its state</strong>By 29 June they have three proposals, the
+          later two sent the same way, each with Withdraw until its decision. The assessors’ scores
+          never show here, since proposal selection is team-only.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-proposal-mine" style="grid-column: 4; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: my proposal, edit or withdraw <code>j04-d-proposal-mine</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 670px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My items</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <h2>My proposal</h2>
+                  <div style="flex: 1"></div>
+                  <span class="wf-pill">Submitted</span>
+                </div>
+                <div>
+                  <strong>Maps of worlds that do not exist</strong><br /><small
+                    >Pop culture · Talk · 50 min</small
+                  >
+                </div>
+                <div
+                  class="wf-card"
+                  style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">28 Jun 21:14 · Submitted</small><small></small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">29 Jun 09:40 · You edited the description</small
+                    ><small></small>
+                  </div>
+                  <div style="display: flex; gap: 8px; padding: 8px 12px">
+                    <small style="flex: 1">by 15 July · Decision by email</small><small></small>
+                  </div>
+                </div>
+                <small
+                  >You can edit until the call closes on Tuesday 30 June, 23:59, and withdraw until
+                  the decision.</small
+                >
+                <div style="display: flex; gap: 8px">
+                  <button class="primary">
+                    <svg
+                      role="img"
+                      aria-label="Edit"
+                      class="wf-icon"
+                      data-icon="edit"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M4 20h4l10.5 -10.5a2.8 2.8 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                      <path d="M13.5 6.5l4 4"></path>
+                    </svg>
+                    Edit proposal</button
+                  ><button>Withdraw…</button>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <strong>Withdraw “Maps of worlds that do not exist”?</strong
+                  ><small
+                    >The proposal and its description go, and the team stops assessing it.</small
+                  ><small
+                    >This cannot be undone. Until 30 June you can send it again as a new
+                    proposal.</small
+                  >
+                  <div style="display: flex; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <button>Keep it</button><button class="primary">Withdraw proposal</button>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Edit or withdraw before the close</strong>Until 30 June they edit; Withdraw asks
+          in a modal that names what goes, since no screen brings it back (ADR 0023). They tap Keep
+          it, so their lane goes on to the decision.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-withdrawn" style="grid-column: 4; grid-row: 5">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: proposal withdrawn <code>j04-d-withdrawn</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Dni Fantastyki 2026</small>
+                </div>
+                <div class="wf-box" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small><strong>Withdrawn · 29 June 09:41</strong></small>
+                    <div style="flex: 1"></div>
+                  </div>
+                  <small>Maps of worlds that do not exist. The team no longer sees it.</small>
+                </div>
+                <h3>Proposals · 2</h3>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 12 May</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Under review</span>
+                  </div>
+                  <strong>Destiny in fantasy sagas</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <a href="#">Withdraw</a>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 2 June</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Under review</span>
+                  </div>
+                  <strong>Elves in Polish fantasy</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <a href="#">Withdraw</a>
+                  </div>
+                </div>
+                <a href="#">Propose an item · until 30 June</a>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Withdrawn for good</strong>Had they confirmed the modal, the proposal would leave
+          the team’s list at once and could not come back. Their only way on is a new proposal
+          before 30 June.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-proposal-locked" style="grid-column: 5; grid-row: 5">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: editing closed with the call <code>ab-role-proposal-locked</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My items</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <h2>My proposal</h2>
+                  <div style="flex: 1"></div>
+                  <span class="wf-pill">Submitted</span>
+                </div>
+                <div>
+                  <strong>Maps of worlds that do not exist</strong><br /><small
+                    >Pop culture · Talk · 50 min</small
+                  >
+                </div>
+                <div
+                  class="wf-card"
+                  style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">28 Jun 21:14 · Submitted</small><small></small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">29 Jun 09:40 · You edited the description</small
+                    ><small></small>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      padding: 8px 12px;
+                      border-bottom: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small style="flex: 1">30 Jun · Call closed</small><small></small>
+                  </div>
+                  <div style="display: flex; gap: 8px; padding: 8px 12px">
+                    <small style="flex: 1">by 15 July · Decision by email</small><small></small>
+                  </div>
+                </div>
+                <button disabled style="opacity: 0.5">
+                  <svg
+                    role="img"
+                    aria-label="Edit"
+                    class="wf-icon"
+                    data-icon="edit"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M4 20h4l10.5 -10.5a2.8 2.8 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                    <path d="M13.5 6.5l4 4"></path>
+                  </svg>
+                  Edit proposal
+                </button>
+                <small style="color: var(--wf-warn)"
+                  >Editing closed with the call on Tuesday 30 June, 23:59.</small
+                >
+                <a href="#">Write to the programme team</a>
+                <div><button>Withdraw…</button></div>
+                <small class="wf-muted">You can withdraw until the decision.</small>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Closed: only the team edits</strong>On 2 July Edit is disabled with the date it
+          closed; they may still withdraw until the decision or write to the programme team.
+          Fantasmagoria (31 May) and Pyrkon (10 April) close the same way.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-proposal-outcome" style="grid-column: 5; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: decisions on my proposals <code>ab-role-proposal-outcome</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 720px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Dni Fantastyki 2026</small>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 12 May</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Accepted</span>
+                  </div>
+                  <strong>Destiny in fantasy sagas</strong
+                  ><small>Saturday 12:00–12:50 · Sala Rycerska · 2nd floor</small
+                  ><small style="color: var(--wf-warn)">Confirm by 25 July</small>
+                  <div style="display: flex; gap: 8px">
+                    <button class="primary">Confirm</button><button>I can't</button>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 2 June</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Reserve list</span>
+                  </div>
+                  <strong>Elves in Polish fantasy</strong
+                  ><small
+                    >If a slot opens before the festival, the team asks you to confirm a time. The
+                    list is not ranked.</small
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 28 June</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Not accepted · 15 July</span>
+                  </div>
+                  <strong>Maps of worlds that do not exist</strong
+                  ><small class="wf-muted">Note from the team</small
+                  ><small
+                    >A workshop on drawing fantasy maps already runs in Illustration and comics;
+                    propose your talk there next year.</small
+                  >
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted"
+                  >Time and room may change until the programme is published on 6 August.</small
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Three outcomes, one screen</strong>Accepted, reserve list and not accepted each
+          say what comes next; Dni Fantastyki’s reserve list is not ranked. The team may add a note
+          to a refusal; they never see the scores. They kept Maps of worlds that do not exist rather
+          than withdraw it, so it has a decision too.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-confirm" style="grid-column: 6; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: confirm your item <code>j04-d-confirm</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 630px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Dni Fantastyki 2026</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill accent">My items</span
+                  ><span class="wf-pill">Availability</span><span class="wf-pill">Profile</span>
+                </div>
+                <h2>Confirm your items</h2>
+                <small>Preliminary programme · answer by 25 July</small>
+                <div class="wf-card" style="display: flex; align-items: center; gap: 8px">
+                  <small style="white-space: nowrap">Confirmed: 0 of 1</small>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">Magda Sowa</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Literature</span><span class="wf-pill">Talk</span>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Waiting for you</span>
+                  </div>
+                  <small>Saturday 22 Aug · 12:00–12:50 · Sala Rycerska · 2nd floor</small
+                  ><strong>Destiny in fantasy sagas</strong><small>Cast: Magda Sowa · host</small
+                  ><small style="color: var(--wf-warn)">Answer by 25 July</small>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(2, minmax(0, 1fr));
+                      gap: 8px;
+                    "
+                  >
+                    <button class="primary">I confirm</button
+                    ><button>
+                      I can't
+                      <svg
+                        aria-hidden="true"
+                        class="wf-icon"
+                        data-icon="chevronRight"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M9 6l6 6l-6 6"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <small class="wf-muted"
+                    >“I can't” asks for a reason and another time you could do.</small
+                  >
+                </div>
+                <a href="#">A typo in a name or title? Write to the programme team</a>
+                <div style="flex: 1"></div>
+                <small class="wf-muted"
+                  >Times and rooms may change until the programme is published on 6 August.</small
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Confirm the accepted item</strong>Their one accepted item waits for an answer by
+          25 July, and I can’t asks for a reason. They cannot fix a typo in the title themselves: it
+          goes to the programme team.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-reserve-in" style="grid-column: 7; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: a slot from the reserve list <code>j04-d-reserve-in</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 650px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Dni Fantastyki 2026</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 12 May</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Confirmed · 16 July</span>
+                  </div>
+                  <strong>Destiny in fantasy sagas</strong
+                  ><small>Saturday 12:00–12:50 · Sala Rycerska · 2nd floor</small>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>From the reserve list · 28 July</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Accepted</span>
+                  </div>
+                  <strong>Elves in Polish fantasy</strong
+                  ><small>Saturday 11:00–11:50 · Sala Rycerska · 2nd floor</small
+                  ><small style="color: var(--wf-warn)">Confirm by 4 August</small>
+                  <div style="display: flex; gap: 8px">
+                    <button class="primary">Confirm</button><button>I can't</button>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 28 June</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Not accepted · 15 July</span>
+                  </div>
+                  <strong>Maps of worlds that do not exist</strong>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted"
+                  >Time and room may change until the programme is published on 6 August.</small
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The reserve list moves up</strong>On 28 July a slot opened and the team gave it to
+          Elves in Polish fantasy from the unranked reserve list; they confirm it like the first
+          (the 4 August deadline is invented). Their confirmed item keeps its date.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-cand-form" style="grid-column: 2; grid-row: 6">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: volunteer for a guest panel <code>j04-d-cand-form</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 730px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Dni Fantastyki 2026</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Volunteer for a guest panel</h2>
+                  <small
+                    >Panels the team is putting together · candidacies until Wednesday 8 July</small
+                  >
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Pop culture</span
+                    ><span class="wf-pill">Panel discussion</span>
+                  </div>
+                  <strong>AI in organising conventions</strong
+                  ><small>Saturday 22 August · time and room set by the team</small
+                  ><small>Moderator: Ola Szpak</small>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span>I would like to be</span>
+                  <div style="display: flex; gap: 14px">
+                    <label style="display: flex; align-items: center; gap: 6px"
+                      ><input type="checkbox" checked /> Panelist</label
+                    ><label style="display: flex; align-items: center; gap: 6px"
+                      ><input type="checkbox" checked /> Moderator</label
+                    >
+                  </div>
+                </div>
+                <label
+                  >What I would bring<input
+                    value="For 4 years I have built the volunteer rota of a small convention."
+                /></label>
+                <small class="wf-muted"
+                  >Up to 300 characters. The team reads it; it is not published.</small
+                >
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span>When I can be there</span>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(3, minmax(0, 1fr));
+                      gap: 8px;
+                    "
+                  >
+                    <label>Fri 21<input value="none" /></label
+                    ><label>Sat 22<input value="10:00–18:00" /></label
+                    ><label>Sun 23<input value="10:00–15:00" /></label>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 14px">
+                  <label style="display: flex; align-items: center; gap: 6px"
+                    ><input type="radio" checked /> On site</label
+                  ><label style="display: flex; align-items: center; gap: 6px"
+                    ><input type="radio" /> Remote</label
+                  >
+                </div>
+                <small
+                  >The team decides by 10 July and writes to you. Volunteering does not put you in
+                  the cast.</small
+                >
+                <div style="flex: 1"></div>
+                <button class="primary">Send candidacy</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Volunteer, not cast</strong>Lane of Agata Rój, candidate, on Thursday 2 July,
+          reached from Volunteer for a guest panel on the edition page. Agata offers a role, a pitch
+          and times until 8 July (Q9); the panel’s time and room are the team’s to set.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-cand-mine" style="grid-column: 3; grid-row: 6">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: my candidacy <code>j04-d-cand-mine</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Dni Fantastyki 2026</small>
+                </div>
+                <h3>Candidacies</h3>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Candidacy of 2 July</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Sent</span>
+                  </div>
+                  <strong>AI in organising conventions</strong
+                  ><small>Panelist or moderator · on site</small
+                  ><small>The team decides by 10 July and writes to you.</small>
+                </div>
+                <small class="wf-muted">Volunteering does not put you in the cast.</small>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A candidacy waits</strong>My items shows the candidacy and when the team answers.
+          Agata sees no other candidates and cannot put themselves on the panel.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-cand-invited" style="grid-column: 5; grid-row: 6">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: invited to the panel <code>j04-d-cand-invited</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Dni Fantastyki 2026</small>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Invitation of 9 July</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Panelist · on site</span>
+                  </div>
+                  <strong>AI in organising conventions</strong
+                  ><small>Saturday 14:00–14:50 · Sala Rycerska · 2nd floor</small
+                  ><small>Moderator: Ola Szpak</small
+                  ><small style="color: var(--wf-warn)">Answer by 25 July</small>
+                  <div style="display: flex; gap: 8px">
+                    <button class="primary">Accept</button><button>I can't</button>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Candidacy of 2 July</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Invited</span>
+                  </div>
+                  <strong>AI in organising conventions</strong>
+                </div>
+                <small class="wf-muted"
+                  >Accepting puts you in the cast; the role is the team’s choice.</small
+                >
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Invited with a role</strong>The team invited Agata as a panelist on 9 July, not as
+          the moderator they also offered. Accepting puts them in the cast; I can’t asks for a
+          reason.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-cand-not" style="grid-column: 5; grid-row: 7">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: not invited <code>j04-d-cand-not</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Dni Fantastyki 2026</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Candidacy of 2 July</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Not invited</span>
+                  </div>
+                  <strong>AI in organising conventions</strong
+                  ><small>The team chose the panel on 10 July. Thank you for offering.</small>
+                </div>
+                <small class="wf-muted">Nothing more can be done for this panel.</small>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Not chosen</strong>Had the team not invited Agata, My items would say so on 10
+          July; there is nothing to appeal. A candidacy never turns into a proposal.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-decline" style="grid-column: 6; grid-row: 6">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: after “I can&#x27;t” <code>j04-d-decline</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 790px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>My items</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>I can't take part</h2>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Invitation of 9 July</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Panelist · on site</span>
+                  </div>
+                  <strong>AI in organising conventions</strong
+                  ><small>Saturday 14:00–14:50 · Sala Rycerska · 2nd floor</small>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <span
+                    >Why? <small class="wf-muted">Only the programme team sees this.</small></span
+                  ><label style="display: flex; align-items: center; gap: 6px"
+                    ><input type="radio" checked /> I can't at this time</label
+                  ><label style="display: flex; align-items: center; gap: 6px"
+                    ><input type="radio" /> I can't come that day</label
+                  ><label style="display: flex; align-items: center; gap: 6px"
+                    ><input type="radio" /> The topic is not for me</label
+                  ><label style="display: flex; align-items: center; gap: 6px"
+                    ><input type="radio" /> Something else</label
+                  >
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <span>Another time I could do</span
+                  ><input value="Sat 22 Aug · 10:00–13:00" /><input
+                    value="Sun 23 Aug · 10:00–15:00"
+                  /><a href="#"
+                    ><svg
+                      role="img"
+                      aria-label="Add"
+                      class="wf-icon"
+                      data-icon="plus"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M12 5l0 14"></path>
+                      <path d="M5 12l14 0"></path>
+                    </svg>
+                    Add a time</a
+                  >
+                </div>
+                <label
+                  >Note to the team (optional)<input value="Happy to join a panel next year."
+                /></label>
+                <small
+                  >Your seat goes back to the programme team, who may invite someone else.</small
+                >
+                <small class="wf-muted"
+                  >You can change your answer until the programme is published on Thursday 6
+                  August.</small
+                >
+                <div style="flex: 1"></div>
+                <div style="display: flex; gap: 8px">
+                  <button class="primary">Send answer</button><button>Back</button>
+                </div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Invited, then declined</strong>On 14 July Agata declines with a reason only the
+          team sees and other times they could do. Same as for any invited speaker at Dni
+          Fantastyki.
+        </div>
+      </figure>
+      <figure class="board" id="j04-d-cand-declined" style="grid-column: 7; grid-row: 6">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: my answer sent <code>j04-d-cand-declined</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Dni Fantastyki 2026</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Invitation of 9 July</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Declined · 14 July</span>
+                  </div>
+                  <strong>AI in organising conventions</strong
+                  ><small>Panelist · Saturday 14:00–14:50</small
+                  ><small>You can change your answer until Thursday 6 August.</small>
+                  <div style="display: flex; gap: 8px"><button>Change answer</button></div>
+                </div>
+                <small class="wf-muted"
+                  >The team sees your reason and the times you could do.</small
+                >
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Change until publication</strong>Agata’s answer is kept with its date, and Change
+          answer stays until publication on 6 August. After that only the programme team can put
+          them back.
+        </div>
+      </figure>
+      <figure class="board" id="j04-p-home" style="grid-column: 1; grid-row: 8">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: portal before the programme is out <code>j04-p-home</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Pyrkon 2027</h2>
+                  <small>MTP Poznań · 18–20 June</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <strong>The programme comes out on Friday 14 May</strong
+                  ><small>Until then no programme item is public.</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <strong>Call for proposals</strong
+                  ><small>Until Saturday 10 April, 23:59 · decisions by email by 7 May</small
+                  ><button class="primary">Propose an item</button
+                  ><small class="wf-muted"
+                    >Each zone takes its own proposals. Science Zone takes commissioned programme
+                    only.</small
+                  >
+                </div>
+                <div style="flex: 1"></div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Pyrkon: a call per zone</strong>Lane of Leszek Grot, proposer, on Monday 5 April
+          2027. The call runs until 10 April; each zone decides on its own proposals, and Science
+          Zone takes none.
+        </div>
+      </figure>
+      <figure class="board" id="j04-p-proposal" style="grid-column: 2; grid-row: 8">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: propose a programme item <code>j04-p-proposal</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 780px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Pyrkon 2027</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>Propose a programme item</h2>
+                <small>Call for proposals until 10 April · answer by email by 7 May</small>
+                <label>Zone<input value="Gród Inicjatyw Fanowskich ▾" /></label>
+                <label>Title<input value="Fanzines in the Discord era" /></label>
+                <div style="display: flex; gap: 14px">
+                  <label style="display: flex; align-items: center; gap: 6px"
+                    ><input type="radio" checked /> I host it</label
+                  ><label style="display: flex; align-items: center; gap: 6px"
+                    ><input type="radio" /> An idea without a host</label
+                  >
+                </div>
+                <div
+                  style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px"
+                >
+                  <label>Format<input value="Talk ▾" /></label
+                  ><label>Language<input value="Polish ▾" /></label
+                  ><label>Age<input value="no rating ▾" /></label>
+                </div>
+                <small>Length: 45 min · the programme hour</small>
+                <label
+                  >Description in the programme<input
+                    value="Zines did not die: they moved to servers. What we lost and what we gained."
+                /></label>
+                <label>Accessibility of the item<input value="PJM interpreter wanted ▾" /></label>
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span>Co-hosts</span>
+                  <div style="display: flex; gap: 8px">
+                    <input value="email address" style="flex: 1; min-width: 0" /><button>
+                      Invite
+                    </button>
+                  </div>
+                  <small class="wf-muted">At most 3 people.</small>
+                </div>
+                <small>A proposal needs an OPOS account.</small>
+                <button class="primary">Send proposal</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Zone, host or idea</strong>They pick the zone that will decide and may send an
+          idea without a host instead of hosting it, with up to 3 co-hosts; the length follows the
+          45-minute programme hour. Science Zone is not in the list.
+        </div>
+      </figure>
+      <figure class="board" id="j04-p-mine" style="grid-column: 3; grid-row: 8">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: my proposal sent <code>j04-p-mine</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Pyrkon 2027</small>
+                </div>
+                <h3>Proposals</h3>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 5 April</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Submitted</span>
+                  </div>
+                  <strong>Fanzines in the Discord era</strong
+                  ><small>Gród Inicjatyw Fanowskich · Talk · 45 min</small
+                  ><small>Decision by email by 7 May</small>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <a href="#">Edit until 10 April</a>
+                    <div style="flex: 1"></div>
+                    <a href="#">Withdraw</a>
+                  </div>
+                </div>
+                <a href="#">Propose another item</a>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Waiting for the zone</strong>They can edit until 10 April and withdraw until the
+          decision. How the zone weighs proposals never shows here.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-call-closed" style="grid-column: 4; grid-row: 9">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: the call has closed <code>ab-role-call-closed</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Pyrkon 2027</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <h2>Propose a programme item</h2>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    border-color: var(--wf-warn);
+                  "
+                >
+                  <strong>The call for proposals closed on Saturday 10 April at 23:59.</strong
+                  ><small>Decisions by email by 7 May.</small>
+                </div>
+                <h3>Your proposals · 1</h3>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Leszek Grot</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Submitted</span>
+                  </div>
+                  <strong>Fanzines in the Discord era</strong
+                  ><small>Gród Inicjatyw Fanowskich · Talk · 45 min</small>
+                </div>
+                <small class="wf-muted">Science Zone takes commissioned programme only.</small>
+                <div style="flex: 1"></div>
+                <button class="primary">My items</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A window that has closed</strong>On 12 April Propose another item leads here: the
+          form gives way to its dates and their own proposals, and nothing can be sent. Nordcon has
+          the call off, so its portal has no Propose link at all.
+        </div>
+      </figure>
+      <figure class="board" id="j04-p-outcome" style="grid-column: 5; grid-row: 8">
+        <figcaption class="t" style="width: 300px">
+          Pyrkon: decision on my proposal <code>j04-p-outcome</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Pyrkon 2027</small>
+                </div>
+                <div
+                  class="wf-card"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    border-color: var(--wf-accent);
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Proposal of 5 April</small>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill accent">Reserve list · 1</span>
+                  </div>
+                  <strong>Fanzines in the Discord era</strong
+                  ><small>Gród Inicjatyw Fanowskich · Talk · 45 min</small
+                  ><small
+                    >You are first on the zone’s reserve list. If an accepted item drops out, the
+                    zone asks you before anyone else.</small
+                  >
+                </div>
+                <small class="wf-muted"
+                  >A proposal that is not accepted gets no reason at Pyrkon.</small
+                >
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Monday 3 May 2027</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A ranked reserve list</strong>Pyrkon ranks its reserve list, so they know they are
+          first in Gród Inicjatyw Fanowskich and a free slot there goes to them first. A rejection
+          would carry no reason.
+        </div>
+      </figure>
+    </main>
+    <script>
+      ;(function () {
+        var NS = 'http://www.w3.org/2000/svg'
+        function drawAll() {
+          document.querySelectorAll('main.boards.flow').forEach(function (main, mi) {
+            var edges = JSON.parse(main.getAttribute('data-edges') || '[]')
+            function box(el) {
+              var r = el.getBoundingClientRect(),
+                m = main.getBoundingClientRect()
+              return {
+                l: r.left - m.left,
+                t: r.top - m.top,
+                r: r.right - m.left,
+                b: r.bottom - m.top,
+              }
+            }
+            var old = main.querySelector('svg.edges')
+            if (old) old.remove()
+            var svg = document.createElementNS(NS, 'svg')
+            svg.setAttribute('class', 'edges')
+            svg.setAttribute('width', main.scrollWidth)
+            svg.setAttribute('height', main.scrollHeight)
+            var mid = 'ah' + mi
+            svg.innerHTML =
+              '<defs><marker id="' +
+              mid +
+              '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b5b57"/></marker></defs>'
+            main.appendChild(svg)
+            var seen = {}
+            edges.forEach(function (e) {
+              var fa = document.getElementById(e.from),
+                fb = document.getElementById(e.to)
+              if (!fa || !fb) return
+              var a = box(fa.querySelector('.screen')),
+                b = box(fb.querySelector('.screen'))
+              var A = box(fa),
+                B = box(fb)
+              var key = [e.from, e.to].sort().join('|'),
+                k = (seen[key] = (seen[key] || 0) + 1) - 1
+              var off = k * 26,
+                x1,
+                y1,
+                x2,
+                y2,
+                d
+              if (b.l >= a.r - 1 || a.l >= b.r - 1) {
+                var right = b.l >= a.r - 1
+                var top = Math.max(a.t, b.t),
+                  bot = Math.min(a.b, b.b)
+                x1 = right ? a.r : a.l
+                x2 = right ? b.l : b.r
+                if (bot > top) {
+                  y1 = y2 = Math.min(top + 140, (top + bot) / 2) + off
+                } else {
+                  y1 = Math.min(a.t + 140, (a.t + a.b) / 2) + off
+                  y2 = Math.min(b.t + 140, (b.t + b.b) / 2) + off
+                }
+                var mx = (x1 + x2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  mx +
+                  ',' +
+                  y1 +
+                  ' ' +
+                  mx +
+                  ',' +
+                  y2 +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              } else {
+                var down = B.t >= A.b - 1
+                x1 = (a.l + a.r) / 2 + off
+                x2 = (b.l + b.r) / 2 + off
+                y1 = down ? A.b : A.t
+                y2 = down ? B.t : B.b
+                var my = (y1 + y2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  x1 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              }
+              var p = document.createElementNS(NS, 'path')
+              p.setAttribute('d', d)
+              p.setAttribute('marker-end', 'url(#' + mid + ')')
+              svg.appendChild(p)
+              if (e.label) {
+                var t = document.createElementNS(NS, 'text')
+                t.textContent = e.label
+                svg.appendChild(t)
+                var w = t.getComputedTextLength(),
+                  cx = (x1 + x2) / 2,
+                  cy = (y1 + y2) / 2 + k * 24
+                t.setAttribute('x', cx - w / 2)
+                t.setAttribute('y', cy + 4)
+                var r = document.createElementNS(NS, 'rect')
+                r.setAttribute('x', cx - w / 2 - 6)
+                r.setAttribute('y', cy - 10)
+                r.setAttribute('width', w + 12)
+                r.setAttribute('height', 20)
+                r.setAttribute('rx', 10)
+                svg.insertBefore(r, t)
+              }
+            })
+          })
+        }
+        window.addEventListener('load', drawAll)
+        window.addEventListener('resize', drawAll)
+      })()
+    </script>
+  </body>
+</html>

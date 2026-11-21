@@ -1,0 +1,1659 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>J06. Programme person without an account: claim or stay a name</title>
+    <link rel="stylesheet" href="wireframes.css" />
+  </head>
+  <body>
+    <header class="page">
+      <h1>J06. Programme person without an account: claim or stay a name</h1>
+      <p>
+        A role journey: each row is one person on one convention, left to right in time. An arrow is
+        an action that screen offers or an event that reaches the person; refusals sit under the
+        step where the role tries. The same step on another convention stands in the same column,
+        without an arrow. All people shown are invented.
+      </p>
+    </header>
+    <nav class="pages">
+      <a href="index.html">Index</a
+      ><a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+        >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+      ><a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a
+      ><a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+        >3. Portal: my schedule, proposing an item, speaker screen</a
+      ><a href="04-at-the-room-door-volunteer-and-scanner.html"
+        >4. At the room door: volunteer and scanner</a
+      ><a href="05-panel-programme-settings-of-an-edition.html"
+        >5. Panel: programme settings of an edition</a
+      ><a href="06-panel-programme-dictionaries-and-the-item-form.html"
+        >6. Panel: programme dictionaries and the item form</a
+      ><a href="07-panel-building-the-programme.html">7. Panel: building the programme</a
+      ><a href="08-panel-changes-during-the-convention-and-entitlements.html"
+        >8. Panel: changes during the convention and entitlements</a
+      ><a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+        >9. Worldcon: stress test of the model (not for delivery)</a
+      ><a href="10-portal-programme-people-and-guests.html"
+        >10. Portal: programme people and guests</a
+      ><a href="11-portal-changes-now-and-next-rooms-reminders.html"
+        >11. Portal: changes, now and next, rooms, reminders</a
+      ><a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+        >12. Portal: the speaker from acceptance to the day of the item</a
+      ><a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+        >13. Panel: programme team, people, panels and the programme release</a
+      ><a href="14-panel-the-programme-during-the-convention.html"
+        >14. Panel: the programme during the convention</a
+      ><a href="15-panel-head-dictionaries-team-and-programme-status.html"
+        >15. Panel: head, dictionaries, team and programme status</a
+      ><a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+        >16. Portal: sign-ups, lottery, declines and empty states</a
+      ><a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+        >17. Panel: item list, proposals, announcements and re-import</a
+      >
+    </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
+    <main
+      class="boards flow"
+      data-edges='[{"from": "j06-n-item", "to": "j06-n-person", "label": "Tap the host’s name"}, {"from": "j06-n-person", "to": "j06-n-mine", "label": "Sign in; open My items"}, {"from": "j06-f-item", "to": "j06-f-person", "label": "Tap the host’s name"}, {"from": "j06-f-person", "to": "j06-f-mine", "label": "Sign in; open My items"}, {"from": "j06-d-claim", "to": "j06-d-profile", "label": "Create account and claim"}, {"from": "j06-d-profile", "to": "ab-role-claim-used", "label": "11 Jul: reopen the link"}, {"from": "j06-d-profile", "to": "j06-d-confirm", "label": "Save; 11 Jul: My items"}, {"from": "ab-role-claim-used", "to": "j06-d-confirm", "label": "Tap Sign in"}, {"from": "j06-d-confirm", "to": "j06-d-guest", "label": "Confirm both; 21 Aug"}, {"from": "j06-d-wrong-claim", "to": "ab-role-not-me", "label": "Tap This isn&#x27;t me"}]'
+    >
+      <figure class="board" id="j06-n-item" style="grid-column: 1; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Nordcon: an item by a person without an account <code>j06-n-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <a href="#">Sign in</a>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Talks</span>
+                </div>
+                <h2>Tricity fandom in the 1990s</h2>
+                <small>Saturday 11:00–11:50 · K8 „Falcon Crest Gazette”</small
+                ><small
+                  >Host:
+                  <a href="#" style="text-decoration: underline">Tadeusz „Kruk” Lipa</a></small
+                >
+                <p>Clubs, fanzines and the first conventions of Gdańsk, Gdynia and Sopot.</p>
+                <div style="display: flex; gap: 8px">
+                  <button>♡ Add to my schedule · 12</button>
+                </div>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Nordcon: a name on an item</strong>Lane of Tadeusz „Kruk” Lipa, an entry the team
+          typed without an account; there is no Pyrkon lane, since everyone in Pyrkon’s programme
+          has an account. Signed out, Tadeusz sees their talk like anyone, their name a link.
+        </div>
+      </figure>
+      <figure class="board" id="j06-n-person" style="grid-column: 2; grid-row: 1">
+        <figcaption class="t" style="width: 300px">
+          Nordcon: person without a profile <code>j06-n-person</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 660px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <a href="#">Sign in</a>
+                </div>
+                <div>
+                  <h2>Tadeusz „Kruk” Lipa</h2>
+                  <small>3 items</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <small>Thursday 12:00–12:50 · K8 „Falcon Crest Gazette”</small
+                  ><strong>The beginnings of Polish fantasy</strong
+                  ><small>A talk with discussion: from Żuławski to the first fanzines.</small>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small></small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>♡ 9</small></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <small>Saturday 11:00–11:50 · K8 „Falcon Crest Gazette”</small
+                  ><strong>Tricity fandom in the 1990s</strong
+                  ><small
+                    >Clubs, fanzines and the first conventions of Gdańsk, Gdynia and Sopot.</small
+                  >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small></small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>♡ 12</small></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <small>Sunday 11:00–11:50 · K8 „Falcon Crest Gazette”</small
+                  ><strong>Fantasy clubs in Pomerania</strong
+                  ><small>Who meets where, and how to join.</small>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small></small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>♡ 6</small></span>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Nordcon 2026 · Jastrzębia Góra</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A name, nothing more</strong>Same as for any visitor: the entry shows the display
+          name and the items, with no bio or links until it is claimed. Nordcon sends no claim links
+          (assumed), so the entry stays this way.
+        </div>
+      </figure>
+      <figure class="board" id="j06-n-mine" style="grid-column: 3; grid-row: 2">
+        <figcaption class="t" style="width: 300px">
+          Nordcon: my items, entry not linked <code>j06-n-mine</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Nordcon 2026</small>
+                </div>
+                <div style="flex: 1"></div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <strong>You have no proposals or items here.</strong
+                  ><small
+                    >If the programme team entered you under your name, that entry joins your
+                    account only through a claim link they send by email.</small
+                  ><small>To change or remove the entry, write to the Nordcon organisers.</small
+                  ><a href="#">About Nordcon 2026</a>
+                </div>
+                <div style="flex: 1"></div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Signing up links nothing</strong>Their new account does not take over the entry;
+          only a claim link from the team does, and Nordcon sends none. To change or remove it they
+          write to the organisers (Q5).
+        </div>
+      </figure>
+      <figure class="board" id="j06-f-item" style="grid-column: 1; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: a talk by an imported entry <code>j06-f-item</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Programme</small>
+                  <div style="flex: 1"></div>
+                  <a href="#">Sign in</a>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">Talk</span>
+                </div>
+                <h2>Urban fantasy and mythologies: why such a good match?</h2>
+                <small>Friday 18:00–18:50 · Sala Prelekcyjna · MOK</small
+                ><small>Room access · MOK, step-free</small>
+                <small>Host: <a href="#" style="text-decoration: underline">Klara Jesion</a></small>
+                <p>
+                  Why old gods feel at home in modern cities, from Gaiman to Polish urban fantasy.
+                </p>
+                <div style="display: flex; gap: 8px"><button>♡ Add to my schedule</button></div>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small><strong>Programme</strong></small
+                  ><small class="wf-muted">Now</small><small class="wf-muted">People</small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Fantasmagoria: imported without an address</strong>Lane of Klara Jesion, one of
+          the 3 people the sheet import made into entries without an email address (the description
+          is invented). Signed out, Klara finds their Friday talk like anyone, their name a link.
+        </div>
+      </figure>
+      <figure class="board" id="j06-f-person" style="grid-column: 2; grid-row: 3">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: speaker without a profile <code>j06-f-person</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Speakers</small>
+                  <div style="flex: 1"></div>
+                  <a href="#">Sign in</a>
+                </div>
+                <div>
+                  <h2>Klara Jesion</h2>
+                  <small>Speaker · 1 item</small>
+                </div>
+                <hr />
+                <small class="wf-muted">Friday</small>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Talk</span>
+                  </div>
+                  <small>18:00–18:50 · Sala Prelekcyjna · MOK</small
+                  ><strong>Urban fantasy and mythologies: why such a good match?</strong>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Host</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>♡ Add to my schedule</small></span>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Fantasmagoria 2026 · Gniezno</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small><strong>People</strong></small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A name and one item</strong>Same as for any visitor: their page shows their name
+          and their item, nothing else. No bio or links can appear until the entry is claimed.
+        </div>
+      </figure>
+      <figure class="board" id="j06-f-mine" style="grid-column: 3; grid-row: 4">
+        <figcaption class="t" style="width: 300px">
+          Fantasmagoria: my items, entry not linked <code>j06-f-mine</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2>My items</h2>
+                  <small class="wf-muted">Fantasmagoria 2026</small>
+                </div>
+                <div style="flex: 1"></div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <strong>You have no proposals or items here.</strong
+                  ><small
+                    >An entry the team imported without an email address cannot receive a claim
+                    link.</small
+                  ><small
+                    >Ask the programme team to add your address; they can then send you one.</small
+                  ><a href="#">Write to the programme team</a>
+                </div>
+                <div style="flex: 1"></div>
+
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>No address, no link</strong>No claim link can reach an entry imported without an
+          address, so their account and the entry stay apart. The team can add their address and
+          send a link (Q5).
+        </div>
+      </figure>
+      <figure class="board" id="j06-d-claim" style="grid-column: 1; grid-row: 5">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: claim your guest profile <code>j06-d-claim</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 910px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <a href="#">Sign in</a>
+                </div>
+                <small class="wf-muted">An invitation from the programme team</small>
+                <div>
+                  <h2>Claim your guest profile</h2>
+                  <small>Dni Fantastyki 2026 · Zamek w Leśnicy · 21–23 August</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <strong>Elena Varga</strong
+                    ><span class="wf-pill accent" style="align-self: flex-start"
+                      >Guest of honour</span
+                    >
+                  </div>
+                  <small
+                    >An author of fantasy novels written in English, translated into 14 languages.
+                    First time at Dni Fantastyki.</small
+                  ><small class="wf-muted"
+                    >Prepared by the programme team · the public sees only your name for now</small
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <strong>Your items</strong>
+                  <div style="display: flex; flex-direction: column; gap: 2px">
+                    <small><strong>Author meeting with the guest of honour</strong></small
+                    ><small>Saturday 22 Aug · 16:00–16:50 · Sala Rycerska</small
+                    ><small class="wf-muted"
+                      >Q&amp;A in English · interpreter Zofia Mróz · moderator Nina Jawor</small
+                    >
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 2px;
+                      padding-top: 6px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small><strong>Signing session: Elena Varga</strong></small
+                    ><small>Sunday 23 Aug · 12:00–13:00 · Namiot 2</small>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <small>Invitation for e.varga@example.com · this link works once</small>
+                <button class="primary">Create an account and claim the profile</button>
+                <button>I have an account: sign in</button
+                ><small class="wf-muted"
+                  >Once claimed, you edit the profile and confirm your items. Until then the
+                  programme team keeps it.</small
+                >
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <a href="#">This isn't me</a>
+                  <div style="flex: 1"></div>
+                  <a href="#">Remove this entry</a>
+                </div>
+                <small class="wf-muted">Friday 10 July</small>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Claim, sign in or refuse</strong>Lane of Elena Varga, guest of honour, opening the
+          team’s email of Friday 10 July. Elena creates an account or signs in to claim the entry;
+          the link works once, only for e.varga@example.com (Q5), and Remove this entry asks the
+          team to delete it instead.
+        </div>
+      </figure>
+      <figure class="board" id="j06-d-profile" style="grid-column: 2; grid-row: 5">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: my speaker profile <code>j06-d-profile</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 880px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Dni Fantastyki 2026</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill">My items</span><span class="wf-pill">Availability</span
+                  ><span class="wf-pill accent">Profile</span>
+                </div>
+                <h2>My speaker profile</h2>
+                <label style="display: flex; align-items: center; gap: 8px; white-space: nowrap"
+                  ><input type="checkbox" /> Preview: how attendees see you</label
+                >
+                <label>Display name<input value="Elena Varga" /></label
+                ><small class="wf-muted">Anything: a name, pseudonym, group or title</small>
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <small>Bio</small>
+                  <div class="wf-box">
+                    <small
+                      >Writes a fantasy series in English about cartographers who draw maps of the
+                      future. Translated into 14 languages and published in Poland since 2021. First
+                      time at Dni Fantastyki.</small
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Guest of honour: no word limit</small>
+                    <div style="flex: 1"></div>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <small>Links</small>
+                  <div
+                    class="wf-card"
+                    style="display: flex; flex-direction: column; gap: 0; padding: 0"
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <small>Website</small><small class="wf-muted">Author’s website</small>
+                      <div style="flex: 1"></div>
+                      <svg
+                        role="img"
+                        aria-label="Remove"
+                        class="wf-icon"
+                        data-icon="x"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M18 6l-12 12"></path>
+                        <path d="M6 6l12 12"></path>
+                      </svg>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 8px 12px;
+                        border-bottom: 1.4px solid var(--wf-line);
+                      "
+                    >
+                      <small>Mastodon</small><small class="wf-muted">@evarga</small>
+                      <div style="flex: 1"></div>
+                      <svg
+                        role="img"
+                        aria-label="Remove"
+                        class="wf-icon"
+                        data-icon="x"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M18 6l-12 12"></path>
+                        <path d="M6 6l12 12"></path>
+                      </svg>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px">
+                      <small>Publisher</small><small class="wf-muted">Polish publisher</small>
+                      <div style="flex: 1"></div>
+                      <svg
+                        role="img"
+                        aria-label="Remove"
+                        class="wf-icon"
+                        data-icon="x"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M18 6l-12 12"></path>
+                        <path d="M6 6l12 12"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <a href="#"
+                    ><svg
+                      role="img"
+                      aria-label="Add"
+                      class="wf-icon"
+                      data-icon="plus"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M12 5l0 14"></path>
+                      <path d="M5 12l14 0"></path>
+                    </svg>
+                    Add a link</a
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <small>On your profile in the programme</small
+                  ><small><strong>Author meeting with the guest of honour</strong> · guest</small
+                  ><small><strong>Signing session: Elena Varga</strong> · guest</small>
+                </div>
+                <small class="wf-muted">One profile for every edition of Dni Fantastyki.</small>
+                <div style="flex: 1"></div>
+                <button class="primary">Save profile</button>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Elena’s profile, no word limit</strong>Once claimed Elena edits the display name,
+          bio and links and saves them; a guest of honour’s bio has no word limit. A photo waits for
+          file uploads, and they cannot change their items here.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-claim-used" style="grid-column: 3; grid-row: 6">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: this link has been used <code>ab-role-claim-used</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <a href="#">Sign in</a>
+                </div>
+                <div style="flex: 1"></div>
+                <h2>This link has been used</h2>
+                <p>
+                  The guest profile it opened is already claimed. A link works once, and only for
+                  the address it was sent to.
+                </p>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <small>If you claimed it, sign in.</small><button class="primary">Sign in</button>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <small>If you did not, write to the Dni Fantastyki programme team.</small
+                  ><button>Write to the programme team</button>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Saturday 11 July</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Single use, one address</strong>Opened again the next morning, the link explains
+          itself and shows nothing of the entry (Q5); Sign in is their way on. An expired link or
+          another account gets the same page.
+        </div>
+      </figure>
+      <figure class="board" id="j06-d-confirm" style="grid-column: 3; grid-row: 5">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: confirm your items <code>j06-d-confirm</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 860px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Dni Fantastyki 2026</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                  <span class="wf-pill accent">My items</span
+                  ><span class="wf-pill">Availability</span><span class="wf-pill">Profile</span>
+                </div>
+                <h2>Confirm your items</h2>
+                <small>Preliminary programme · answer by 25 July</small>
+                <div class="wf-card" style="display: flex; align-items: center; gap: 8px">
+                  <small style="white-space: nowrap">Confirmed: 0 of 2</small>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">Elena Varga</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Author meeting</span>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Waiting for you</span>
+                  </div>
+                  <small>Saturday 22 Aug · 16:00–16:50 · Sala Rycerska · 2nd floor</small
+                  ><strong>Author meeting with the guest of honour</strong>
+                  <div style="display: flex; flex-direction: column; gap: 2px">
+                    <small>Cast:</small><small>Elena Varga · guest</small
+                    ><small>Nina Jawor · moderator</small><small>Zofia Mróz · interpreter</small>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(2, minmax(0, 1fr));
+                      gap: 8px;
+                    "
+                  >
+                    <button class="primary">I confirm</button
+                    ><button>
+                      I can't
+                      <svg
+                        aria-hidden="true"
+                        class="wf-icon"
+                        data-icon="chevronRight"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M9 6l6 6l-6 6"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Signing session</span>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Waiting for you</span>
+                  </div>
+                  <small>Sunday 23 Aug · 12:00–13:00 · Namiot 2 · moat</small
+                  ><strong>Signing session: Elena Varga</strong
+                  ><small>Cast: Elena Varga · guest</small>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(2, minmax(0, 1fr));
+                      gap: 8px;
+                    "
+                  >
+                    <button class="primary">I confirm</button
+                    ><button>
+                      I can't
+                      <svg
+                        aria-hidden="true"
+                        class="wf-icon"
+                        data-icon="chevronRight"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M9 6l6 6l-6 6"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <small style="color: var(--wf-warn)">Answer by 25 July</small
+                ><a href="#">A typo in a name or title? Write to the programme team</a>
+                <div style="flex: 1"></div>
+                <small class="wf-muted"
+                  >Times and rooms may change until the programme is published on 6 August.</small
+                >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small><strong>Schedule</strong></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>Confirm both items</strong>Signed in on 11 July, Elena confirms each of their two
+          items or says I can’t, with a reason. Elena cannot change the time, room or cast; the team
+          does.
+        </div>
+      </figure>
+      <figure class="board" id="j06-d-guest" style="grid-column: 4; grid-row: 5">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: guest of honour profile <code>j06-d-guest</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 840px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <svg
+                    role="img"
+                    aria-label="Back"
+                    class="wf-icon"
+                    data-icon="arrowLeft"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l14 0"></path>
+                    <path d="M5 12l6 6"></path>
+                    <path d="M5 12l6 -6"></path></svg
+                  ><small>Guests and people</small>
+                  <div style="flex: 1"></div>
+                  <svg
+                    role="img"
+                    aria-label="Account"
+                    class="wf-icon"
+                    data-icon="user"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                    <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                  </svg>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <h2>Elena Varga</h2>
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill accent">Guest of honour</span
+                    ><span class="wf-pill">Literature</span>
+                  </div>
+                </div>
+                <small class="wf-muted">Bio</small>
+                <p>
+                  Writes a fantasy series in English about cartographers who draw maps of the
+                  future. Translated into 14 languages and published in Poland since 2021. First
+                  time at Dni Fantastyki.
+                </p>
+                <div style="display: flex; gap: 4px 12px; flex-wrap: wrap">
+                  <a href="#">Author's website</a><a href="#">Mastodon</a
+                  ><a href="#">Polish publisher</a>
+                </div>
+                <hr />
+                <strong>Items · 2</strong>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Author meeting</span
+                    ><span class="wf-pill">EN · with interpretation</span>
+                  </div>
+                  <small>Saturday 16:00–16:50 · Sala Rycerska · 2nd floor</small
+                  ><strong>Author meeting with the guest of honour</strong
+                  ><small>Guest · moderator Nina Jawor · interpreter Zofia Mróz</small>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Free entry · first come, first served</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>♡ 296</small></span>
+                  </div>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill">Signing session</span
+                    ><span class="wf-pill">Language-independent</span>
+                  </div>
+                  <small>Sunday 12:00–13:00 · Namiot 2 · moat</small
+                  ><strong>Signing session: Elena Varga</strong><small>Guest</small>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small>Queue in front of the tent</small>
+                    <div style="flex: 1"></div>
+                    <span style="white-space: nowrap"><small>♡ 188</small></span>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <small class="wf-muted">Friday 21 August</small>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small><strong>People</strong></small
+                  ><small class="wf-muted">Changes</small><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>The profile goes public</strong>After publication on 6 August Elena’s bio and
+          links show, with their role on each item. Before the claim the public saw only their name,
+          and a person is never liked, only items (Q18).
+        </div>
+      </figure>
+      <figure class="board" id="j06-d-wrong-claim" style="grid-column: 1; grid-row: 7">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: a claim link at the wrong address <code>j06-d-wrong-claim</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 910px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <a href="#">Sign in</a>
+                </div>
+                <small class="wf-muted">An invitation from the programme team</small>
+                <div>
+                  <h2>Claim your guest profile</h2>
+                  <small>Dni Fantastyki 2026 · Zamek w Leśnicy · 21–23 August</small>
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <strong>Elena Varga</strong
+                    ><span class="wf-pill accent" style="align-self: flex-start"
+                      >Guest of honour</span
+                    >
+                  </div>
+                  <small
+                    >An author of fantasy novels written in English, translated into 14 languages.
+                    First time at Dni Fantastyki.</small
+                  ><small class="wf-muted"
+                    >Prepared by the programme team · the public sees only your name for now</small
+                  >
+                </div>
+                <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                  <strong>Your items</strong>
+                  <div style="display: flex; flex-direction: column; gap: 2px">
+                    <small><strong>Author meeting with the guest of honour</strong></small
+                    ><small>Saturday 22 Aug · 16:00–16:50 · Sala Rycerska</small
+                    ><small class="wf-muted"
+                      >Q&amp;A in English · interpreter Zofia Mróz · moderator Nina Jawor</small
+                    >
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 2px;
+                      padding-top: 6px;
+                      border-top: 1.4px solid var(--wf-line);
+                    "
+                  >
+                    <small><strong>Signing session: Elena Varga</strong></small
+                    ><small>Sunday 23 Aug · 12:00–13:00 · Namiot 2</small>
+                  </div>
+                </div>
+                <div style="flex: 1"></div>
+                <small>Invitation for e.vargas@example.com · this link works once</small
+                ><button class="primary">Create an account and claim the profile</button
+                ><button>I have an account: sign in</button
+                ><small class="wf-muted"
+                  >Once claimed, you edit the profile and confirm your items. Until then the
+                  programme team keeps it.</small
+                >
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <a href="#">This isn't me</a>
+                  <div style="flex: 1"></div>
+                  <a href="#">Remove this entry</a>
+                </div>
+                <small class="wf-muted">Thursday 9 July</small>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A link at the wrong address</strong>Lane of the owner of e.vargas@example.com
+          (invented), where the team mistyped Elena’s address on Thursday 9 July. The page shows
+          only what the team prepared; this person can claim nothing for another address and ends it
+          with This isn’t me.
+        </div>
+      </figure>
+      <figure class="board" id="ab-role-not-me" style="grid-column: 2; grid-row: 7">
+        <figcaption class="t" style="width: 300px">
+          Dni Fantastyki: this isn’t me <code>ab-role-not-me</code>
+        </figcaption>
+        <div class="screen mobile" style="width: 300px; height: 560px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  padding: 16px;
+                  height: 100%;
+                "
+              >
+                <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                  <strong>opos.land</strong>
+                  <div style="flex: 1"></div>
+                  <a href="#">Sign in</a>
+                </div>
+                <div style="flex: 1"></div>
+                <div style="display: flex; justify-content: center">
+                  <svg
+                    role="img"
+                    aria-label="Done"
+                    class="wf-icon"
+                    data-icon="check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="1em"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12l5 5l10 -10"></path>
+                  </svg>
+                </div>
+                <h2 style="text-align: center">Thank you for telling us</h2>
+                <p>
+                  We told the Dni Fantastyki programme team that the invitation reached the wrong
+                  person. The link no longer works.
+                </p>
+                <div class="wf-box" style="display: flex; flex-direction: column; gap: 4px">
+                  <small>Nothing was created for your address.</small>
+                </div>
+                <div style="flex: 1"></div>
+                <div style="flex: 1"></div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    border-top: 1.4px solid var(--wf-line);
+                    padding-top: 8px;
+                    white-space: nowrap;
+                    font-size: 11px;
+                  "
+                >
+                  <small class="wf-muted">Programme</small><small class="wf-muted">Now</small
+                  ><small class="wf-muted">People</small><small class="wf-muted">Changes</small
+                  ><small class="wf-muted">Schedule</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 300px; box-sizing: border-box">
+          <strong>A wrong address ends here</strong>This isn’t me kills the link and flags the entry
+          for the team, without creating an account or keeping the address (Q25). The team then
+          sends a new link to the right address, as Elena’s lane shows.
+        </div>
+      </figure>
+    </main>
+    <script>
+      ;(function () {
+        var NS = 'http://www.w3.org/2000/svg'
+        function drawAll() {
+          document.querySelectorAll('main.boards.flow').forEach(function (main, mi) {
+            var edges = JSON.parse(main.getAttribute('data-edges') || '[]')
+            function box(el) {
+              var r = el.getBoundingClientRect(),
+                m = main.getBoundingClientRect()
+              return {
+                l: r.left - m.left,
+                t: r.top - m.top,
+                r: r.right - m.left,
+                b: r.bottom - m.top,
+              }
+            }
+            var old = main.querySelector('svg.edges')
+            if (old) old.remove()
+            var svg = document.createElementNS(NS, 'svg')
+            svg.setAttribute('class', 'edges')
+            svg.setAttribute('width', main.scrollWidth)
+            svg.setAttribute('height', main.scrollHeight)
+            var mid = 'ah' + mi
+            svg.innerHTML =
+              '<defs><marker id="' +
+              mid +
+              '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b5b57"/></marker></defs>'
+            main.appendChild(svg)
+            var seen = {}
+            edges.forEach(function (e) {
+              var fa = document.getElementById(e.from),
+                fb = document.getElementById(e.to)
+              if (!fa || !fb) return
+              var a = box(fa.querySelector('.screen')),
+                b = box(fb.querySelector('.screen'))
+              var A = box(fa),
+                B = box(fb)
+              var key = [e.from, e.to].sort().join('|'),
+                k = (seen[key] = (seen[key] || 0) + 1) - 1
+              var off = k * 26,
+                x1,
+                y1,
+                x2,
+                y2,
+                d
+              if (b.l >= a.r - 1 || a.l >= b.r - 1) {
+                var right = b.l >= a.r - 1
+                var top = Math.max(a.t, b.t),
+                  bot = Math.min(a.b, b.b)
+                x1 = right ? a.r : a.l
+                x2 = right ? b.l : b.r
+                if (bot > top) {
+                  y1 = y2 = Math.min(top + 140, (top + bot) / 2) + off
+                } else {
+                  y1 = Math.min(a.t + 140, (a.t + a.b) / 2) + off
+                  y2 = Math.min(b.t + 140, (b.t + b.b) / 2) + off
+                }
+                var mx = (x1 + x2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  mx +
+                  ',' +
+                  y1 +
+                  ' ' +
+                  mx +
+                  ',' +
+                  y2 +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              } else {
+                var down = B.t >= A.b - 1
+                x1 = (a.l + a.r) / 2 + off
+                x2 = (b.l + b.r) / 2 + off
+                y1 = down ? A.b : A.t
+                y2 = down ? B.t : B.b
+                var my = (y1 + y2) / 2
+                d =
+                  'M' +
+                  x1 +
+                  ',' +
+                  y1 +
+                  ' C' +
+                  x1 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  my +
+                  ' ' +
+                  x2 +
+                  ',' +
+                  y2
+              }
+              var p = document.createElementNS(NS, 'path')
+              p.setAttribute('d', d)
+              p.setAttribute('marker-end', 'url(#' + mid + ')')
+              svg.appendChild(p)
+              if (e.label) {
+                var t = document.createElementNS(NS, 'text')
+                t.textContent = e.label
+                svg.appendChild(t)
+                var w = t.getComputedTextLength(),
+                  cx = (x1 + x2) / 2,
+                  cy = (y1 + y2) / 2 + k * 24
+                t.setAttribute('x', cx - w / 2)
+                t.setAttribute('y', cy + 4)
+                var r = document.createElementNS(NS, 'rect')
+                r.setAttribute('x', cx - w / 2 - 6)
+                r.setAttribute('y', cy - 10)
+                r.setAttribute('width', w + 12)
+                r.setAttribute('height', 20)
+                r.setAttribute('rx', 10)
+                svg.insertBefore(r, t)
+              }
+            })
+          })
+        }
+        window.addEventListener('load', drawAll)
+        window.addEventListener('resize', drawAll)
+      })()
+    </script>
+  </body>
+</html>

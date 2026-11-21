@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>15. Panel: head, dictionaries, team and programme status</title>
+    <link rel="stylesheet" href="wireframes.css" />
+  </head>
+  <body>
+    <header class="page">
+      <h1>15. Panel: head, dictionaries, team and programme status</h1>
+      <p>
+        OPOS programme module: wireframes for discussion, sample data only. All people shown are
+        invented.
+      </p>
+    </header>
+    <nav class="pages">
+      <a href="index.html">Index</a
+      ><a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+        >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+      ><a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a
+      ><a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+        >3. Portal: my schedule, proposing an item, speaker screen</a
+      ><a href="04-at-the-room-door-volunteer-and-scanner.html"
+        >4. At the room door: volunteer and scanner</a
+      ><a href="05-panel-programme-settings-of-an-edition.html"
+        >5. Panel: programme settings of an edition</a
+      ><a href="06-panel-programme-dictionaries-and-the-item-form.html"
+        >6. Panel: programme dictionaries and the item form</a
+      ><a href="07-panel-building-the-programme.html">7. Panel: building the programme</a
+      ><a href="08-panel-changes-during-the-convention-and-entitlements.html"
+        >8. Panel: changes during the convention and entitlements</a
+      ><a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+        >9. Worldcon: stress test of the model (not for delivery)</a
+      ><a href="10-portal-programme-people-and-guests.html"
+        >10. Portal: programme people and guests</a
+      ><a href="11-portal-changes-now-and-next-rooms-reminders.html"
+        >11. Portal: changes, now and next, rooms, reminders</a
+      ><a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+        >12. Portal: the speaker from acceptance to the day of the item</a
+      ><a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+        >13. Panel: programme team, people, panels and the programme release</a
+      ><a href="14-panel-the-programme-during-the-convention.html"
+        >14. Panel: the programme during the convention</a
+      ><a href="15-panel-head-dictionaries-team-and-programme-status.html"
+        >15. Panel: head, dictionaries, team and programme status</a
+      ><a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+        >16. Portal: sign-ups, lottery, declines and empty states</a
+      ><a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+        >17. Panel: item list, proposals, announcements and re-import</a
+      >
+    </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
+    <main class="boards">
+      <figure class="board" id="ab-dni-dictionaries">
+        <figcaption class="t" style="width: 840px">
+          Dni Fantastyki: the edition&#x27;s programme dictionaries <code>ab-dni-dictionaries</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 1120px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Tickets</span><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">head</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><small>People</small><small>Changes</small><small>Messages</small
+                    ><small>Settings</small><span class="wf-pill accent">Dictionaries</span
+                    ><small>Rooms</small><small>Publication</small>
+                  </div>
+                  <div>
+                    <small>Programme · Dictionaries</small>
+                    <h1>Programme dictionaries</h1>
+                    <small>Dni Fantastyki 2026 · „Szlakiem Przeznaczenia”</small>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: 24px minmax(0, 1.2fr) minmax(0, 2.4fr) minmax(
+                          0,
+                          0.8fr
+                        );
+                      gap: 6px 8px;
+                      align-items: center;
+                    "
+                  >
+                    <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 8px">
+                      <strong>Blocks</strong><span class="wf-pill">7</span>
+                      <div style="flex: 1"></div>
+                      <button>Add block</button>
+                    </div>
+                    <hr style="grid-column: 1 / -1; margin: 0" />
+                    <small>1</small><span>Literature</span
+                    ><small>books, authors, author meetings</small><small>52 items</small>
+                    <small>2</small><span>Pop culture</span
+                    ><small>fandom, trends, organising conventions</small><small>24 items</small>
+                    <small>3</small><span>Science</span><small>science in and around fantasy</small
+                    ><small>26 items</small> <small>4</small><span>Film and series</span
+                    ><small>adaptations, cinema, series</small><small>33 items</small>
+                    <small>5</small><span>Illustration and comics</span
+                    ><small>drawing, comics, covers</small><small>30 items</small> <small>6</small
+                    ><span>Manga and anime</span><small>manga, anime, Japanese culture</small
+                    ><small>38 items</small> <small>7</small><span>Games and multimedia</span
+                    ><small>video games, board games, RPG</small><small>40 items</small>
+                    <hr style="grid-column: 1 / -1; margin: 0" />
+                    <small></small
+                    ><small class="wf-muted" style="grid-column: 2 / 4"
+                      >Outside blocks (free zone)</small
+                    ><small class="wf-muted">125 items</small>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(3, minmax(0, 1fr));
+                      gap: 10px;
+                    "
+                  >
+                    <div
+                      class="wf-card"
+                      style="display: flex; flex-direction: column; gap: 4px; grid-column: span 2"
+                    >
+                      <div style="display: flex; align-items: center; gap: 6px">
+                        <strong>Formats</strong><span class="wf-pill">15</span
+                        ><small class="wf-muted">default length</small>
+                        <div style="flex: 1"></div>
+                        <svg
+                          role="img"
+                          aria-label="Edit"
+                          class="wf-icon"
+                          data-icon="edit"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="1em"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M4 20h4l10.5 -10.5a2.8 2.8 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                          <path d="M13.5 6.5l4 4"></path>
+                        </svg>
+                      </div>
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(2, minmax(0, 1fr));
+                          gap: 2px 14px;
+                        "
+                      >
+                        <small>talk · 50 min</small><small>panel discussion · 50 min</small
+                        ><small>workshop · 50 min, double slot</small>
+                        <small>screening · 110 min</small><small>RPG session · 110 min</small
+                        ><small>contest · 50 min</small> <small>game · 110 min</small
+                        ><small>field game · 110 min</small
+                        ><small>continuous attraction · all day</small>
+                        <small>gamesroom · all day</small><small>exhibition · all day</small
+                        ><small>performance · 50 min</small> <small>tournament · 110 min</small
+                        ><small>author meeting · 50 min</small
+                        ><small>signing session · 60 min</small>
+                      </div>
+                    </div>
+                    <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                      <div style="display: flex; align-items: center; gap: 6px">
+                        <strong>Age scale</strong><span class="wf-pill">7 + none</span>
+                        <div style="flex: 1"></div>
+                        <svg
+                          role="img"
+                          aria-label="Edit"
+                          class="wf-icon"
+                          data-icon="edit"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="1em"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M4 20h4l10.5 -10.5a2.8 2.8 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                          <path d="M13.5 6.5l4 4"></path>
+                        </svg>
+                      </div>
+                      <div style="display: flex; gap: 4px; flex-wrap: wrap">
+                        <span class="wf-chip">B.O. (all ages)</span><span class="wf-chip">7+</span
+                        ><span class="wf-chip">12+</span><span class="wf-chip">13+</span
+                        ><span class="wf-chip">15+</span><span class="wf-chip">16+</span
+                        ><span class="wf-chip">18+</span>
+                      </div>
+                      <small class="wf-muted">and “no rating”, a value of its own</small>
+                    </div>
+                    <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                      <div style="display: flex; align-items: center; gap: 6px">
+                        <strong>Slot</strong><span class="wf-pill">2</span>
+                        <div style="flex: 1"></div>
+                        <svg
+                          role="img"
+                          aria-label="Edit"
+                          class="wf-icon"
+                          data-icon="edit"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="1em"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M4 20h4l10.5 -10.5a2.8 2.8 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                          <path d="M13.5 6.5l4 4"></path>
+                        </svg>
+                      </div>
+                      <div style="display: flex">
+                        <small style="flex: 1">single</small><small>50 min</small>
+                      </div>
+                      <div style="display: flex">
+                        <small style="flex: 1">double</small><small>110 min</small>
+                      </div>
+                    </div>
+                    <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                      <div style="display: flex; align-items: center; gap: 6px">
+                        <strong>Theme line</strong><span class="wf-pill">1</span>
+                        <div style="flex: 1"></div>
+                        <svg
+                          role="img"
+                          aria-label="Edit"
+                          class="wf-icon"
+                          data-icon="edit"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="1em"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M4 20h4l10.5 -10.5a2.8 2.8 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                          <path d="M13.5 6.5l4 4"></path>
+                        </svg>
+                      </div>
+                      <small>„Szlakiem Przeznaczenia” · 2026</small>
+                    </div>
+                    <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                      <div style="display: flex; align-items: center; gap: 6px">
+                        <strong>Languages</strong><span class="wf-pill">3</span>
+                        <div style="flex: 1"></div>
+                        <svg
+                          role="img"
+                          aria-label="Edit"
+                          class="wf-icon"
+                          data-icon="edit"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="1em"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M4 20h4l10.5 -10.5a2.8 2.8 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                          <path d="M13.5 6.5l4 4"></path>
+                        </svg>
+                      </div>
+                      <small>Polish · English · language-independent</small>
+                    </div>
+                    <div
+                      class="wf-card"
+                      style="display: flex; flex-direction: column; gap: 4px; grid-column: span 2"
+                    >
+                      <div style="display: flex; align-items: center; gap: 6px">
+                        <strong>Accessibility features</strong><span class="wf-pill">4</span>
+                        <div style="flex: 1"></div>
+                        <svg
+                          role="img"
+                          aria-label="Edit"
+                          class="wf-icon"
+                          data-icon="edit"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="1em"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M4 20h4l10.5 -10.5a2.8 2.8 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                          <path d="M13.5 6.5l4 4"></path>
+                        </svg>
+                      </div>
+                      <small
+                        >step-free · stairs only · ramp entrance · Namiot ciszy (quiet tent)</small
+                      >
+                    </div>
+                    <div
+                      class="wf-card"
+                      style="display: flex; flex-direction: column; gap: 4px; grid-column: span 3"
+                    >
+                      <div style="display: flex; align-items: center; gap: 6px">
+                        <strong>Entry labels</strong><span class="wf-pill">2</span>
+                        <div style="flex: 1"></div>
+                        <svg
+                          role="img"
+                          aria-label="Edit"
+                          class="wf-icon"
+                          data-icon="edit"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="1em"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M4 20h4l10.5 -10.5a2.8 2.8 0 1 0 -4 -4l-10.5 10.5v4"></path>
+                          <path d="M13.5 6.5l4 4"></path>
+                        </svg>
+                      </div>
+                      <div style="display: flex">
+                        <small style="flex: 1">Free entry · first come</small
+                        ><small class="wf-muted">the edition default</small>
+                      </div>
+                      <div style="display: flex">
+                        <small style="flex: 1"
+                          >Paid partner workshop · sign up with the partner</small
+                        ><small><a href="#">link to the partner's form</a></small>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      border-top: 1.4px solid var(--wf-line);
+                      padding-top: 8px;
+                    "
+                  >
+                    <svg
+                      aria-hidden="true"
+                      class="wf-icon"
+                      data-icon="chevronRight"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M9 6l6 6l-6 6"></path></svg
+                    ><span>Not used (1)</span
+                    ><small class="wf-muted"
+                      >Content warnings · empty, so its field is hidden</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Dictionaries drive the fields</strong>Must for all four conventions, as a tab of
+          the Programme area that the programme permission opens; the sources are DF&#x27;s seven
+          blocks, theme line, age scale and 15 formats. A format carries its default length, the
+          slot is a dictionary of its own, and the age scale keeps B.O. apart from no rating. An
+          empty dictionary hides its field in forms, proposals and portal filters, so DF never sees
+          content warnings; the scope is the edition for now (Q8).
+        </div>
+      </figure>
+      <figure class="board" id="ab-pyrkon-team">
+        <figcaption class="t" style="width: 840px">
+          Pyrkon: team and zones <code>ab-pyrkon-team</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 730px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span>Programme</span><span>Tickets</span
+                  ><span class="wf-pill accent">Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">head</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      width: 100%;
+                      gap: 8px;
+                      white-space: nowrap;
+                    "
+                  >
+                    <h1>Programme team</h1>
+                    <small>Pyrkon 2027 · 37 people · 22 zones</small>
+                    <div style="flex: 1"></div>
+                    <button class="primary">Add person</button>
+                  </div>
+                  <div style="display: flex; gap: 6px; white-space: nowrap">
+                    <span class="wf-pill accent">People</span><span class="wf-pill">Zones</span
+                    ><span class="wf-pill">Permission: all ▾</span>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns:
+                        minmax(0, 0.9fr) minmax(0, 1.3fr) minmax(0, 1.8fr)
+                        minmax(0, 1fr);
+                      gap: 9px 8px;
+                      align-items: center;
+                    "
+                  >
+                    <small><strong>Person</strong></small
+                    ><small><strong>Zones</strong></small
+                    ><small><strong>Permission in 2027</strong></small
+                    ><small><strong>Proposals in their zones</strong></small>
+                    <hr style="grid-column: 1 / -1; margin: 0" />
+                    <span>Agata Rdest</span><small>all 22</small
+                    ><small>programme: write · all zones</small><small>1,204</small>
+                    <span>Ewa Kruk</span><small>Literature Zone</small
+                    ><small>programme: write · Literature Zone</small><small>312 of 1,204</small>
+                    <span>Marta Wilk</span><small>Literature Zone, Gród Inicjatyw Fanowskich</small
+                    ><small>programme: write · Literature Zone, Gród Inicjatyw Fanowskich</small
+                    ><small>378 of 1,204</small> <span>Olek Mrówka</span><small>Science Zone</small
+                    ><small>programme: write · Science Zone</small
+                    ><small>0 · commissioned programme</small> <span>Hanna Pióro</span
+                    ><small>Children's Zone (4–12)</small
+                    ><small>programme: read · whole edition</small><small>41 of 1,204</small>
+                    <span>Wiktor Grom</span><small>RPGralnia</small
+                    ><small>programme: write · RPGralnia</small><small>87 of 1,204</small>
+                  </div>
+                  <small class="wf-muted">and 31 more people</small>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <strong>Zones</strong><span class="wf-pill">22</span
+                      ><small class="wf-muted">people per zone</small>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                      <span class="wf-chip">Literature Zone · 2</span
+                      ><span class="wf-chip">Science Zone · 1</span
+                      ><span class="wf-chip">Gród Inicjatyw Fanowskich · 1</span
+                      ><span class="wf-chip">Film and Series Zone · 2</span
+                      ><span class="wf-chip">Children's Zone (4–12) · 1</span
+                      ><span class="wf-chip">RPGralnia · 3</span
+                      ><span
+                        class="wf-chip"
+                        style="border-color: var(--wf-warn); color: var(--wf-warn)"
+                        >Manga and Anime Zone · nobody</span
+                      ><span class="wf-chip">and 15 more</span>
+                    </div>
+                  </div>
+                  <div class="wf-box" style="display: flex; gap: 8px; align-items: flex-start">
+                    <svg
+                      role="img"
+                      aria-label="Zones"
+                      class="wf-icon"
+                      data-icon="settings"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M10.3 4.3a1 1 0 0 1 1.4 0l.6 .6a1 1 0 0 0 1 .24l.84 -.28a1 1 0 0 1 1.25 .6l.31 .9a1 1 0 0 0 .76 .65l.95 .16a1 1 0 0 1 .84 1.08l-.08 .98a1 1 0 0 0 .48 .9l.82 .52a1 1 0 0 1 .34 1.34l-.49 .86a1 1 0 0 0 0 1l.49 .86a1 1 0 0 1 -.34 1.34l-.82 .52a1 1 0 0 0 -.48 .9l.08 .98a1 1 0 0 1 -.84 1.08l-.95 .16a1 1 0 0 0 -.76 .65l-.31 .9a1 1 0 0 1 -1.25 .6l-.84 -.28a1 1 0 0 0 -1 .24l-.6 .6a1 1 0 0 1 -1.4 0l-.6 -.6a1 1 0 0 0 -1 -.24l-.84 .28a1 1 0 0 1 -1.25 -.6l-.31 -.9a1 1 0 0 0 -.76 -.65l-.95 -.16a1 1 0 0 1 -.84 -1.08l.08 -.98a1 1 0 0 0 -.48 -.9l-.82 -.52a1 1 0 0 1 -.34 -1.34l.49 -.86a1 1 0 0 0 0 -1l-.49 -.86a1 1 0 0 1 .34 -1.34l.82 -.52a1 1 0 0 0 .48 -.9l-.08 -.98a1 1 0 0 1 .84 -1.08l.95 -.16a1 1 0 0 0 .76 -.65l.31 -.9a1 1 0 0 1 1.25 -.6l.84 .28a1 1 0 0 0 1 -.24l.6 -.6z"
+                      ></path>
+                      <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path></svg
+                    ><small style="flex: 1"
+                      >A zone limits what the person may change; reading and conflicts cover the
+                      whole edition. Zones nobody holds, such as Manga and Anime Zone, are changed
+                      by orgs with all zones. Only the head or an org with settings write sets zones
+                      here.</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>A zone is a boundary</strong>Should for Dni Fantastyki and Pyrkon; patterns from
+          Pyrkon&#x27;s section manager, pretalx teams per track and Indico conveners. The boundary
+          is drawn for Pyrkon: programme write is limited to the items, cast and proposals of the
+          person’s zones, and anything edition-wide needs all zones. Only the head or an org with
+          settings write sets zones, never programme write; other conventions keep the filter (Q11).
+        </div>
+      </figure>
+      <figure class="board" id="ab-dni-status">
+        <figcaption class="t" style="width: 840px">
+          Dni Fantastyki: programme status <code>ab-dni-status</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 730px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span class="wf-pill accent">Dashboard</span><span>Programme</span
+                  ><span>Tickets</span><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">head</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      width: 100%;
+                      gap: 8px;
+                      white-space: nowrap;
+                    "
+                  >
+                    <h1>Programme status</h1>
+                    <small>as of 1 August · publication on 6 August</small>
+                    <div style="flex: 1"></div>
+                    <button>Export CSV</button>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(6, minmax(0, 1fr));
+                      gap: 8px;
+                    "
+                  >
+                    <div class="wf-box"><small>Proposals</small><br /><strong>316</strong></div>
+                    <div class="wf-box"><small>Items</small><br /><strong>368</strong></div>
+                    <div class="wf-box">
+                      <small>Confirmed</small><br /><strong>226</strong>
+                      <small>of 243 in blocks</small>
+                    </div>
+                    <div class="wf-box" style="border-color: var(--wf-warn)">
+                      <small>Without a room</small><br /><strong>14</strong>
+                    </div>
+                    <div class="wf-box" style="border-color: var(--wf-warn)">
+                      <small>Warnings</small><br /><strong>1</strong>
+                    </div>
+                    <div class="wf-box">
+                      <small>Programme people</small><br /><strong>142</strong>
+                    </div>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 2fr) repeat(6, minmax(0, 1fr));
+                      gap: 9px 8px;
+                      align-items: end;
+                    "
+                  >
+                    <small><strong>Block</strong></small
+                    ><small><strong>Proposals</strong></small
+                    ><small><strong>Accepted from the call</strong></small
+                    ><small><strong>Items</strong></small
+                    ><small><strong>Confirmed</strong></small
+                    ><small><strong>Without a room</strong></small
+                    ><small><strong>With a warning</strong></small>
+                    <hr style="grid-column: 1 / -1; margin: 0" />
+                    <span>Literature</span><small>78</small><small>38</small><small>52</small
+                    ><small>48</small><small style="color: var(--wf-warn)">3</small
+                    ><small style="color: var(--wf-warn)">1</small> <span>Pop culture</span
+                    ><small>27</small><small>14</small><small>24</small><small>20</small
+                    ><small style="color: var(--wf-warn)">4</small
+                    ><small style="color: var(--wf-warn)">1</small> <span>Science</span
+                    ><small>35</small><small>20</small><small>26</small><small>25</small
+                    ><small>0</small><small>0</small> <span>Film and series</span><small>44</small
+                    ><small>25</small><small>33</small><small>31</small
+                    ><small style="color: var(--wf-warn)">2</small><small>0</small>
+                    <span>Illustration and comics</span><small>31</small><small>18</small
+                    ><small>30</small><small>28</small><small style="color: var(--wf-warn)">1</small
+                    ><small>0</small> <span>Manga and anime</span><small>49</small><small>27</small
+                    ><small>38</small><small>35</small><small style="color: var(--wf-warn)">3</small
+                    ><small>0</small> <span>Games and multimedia</span><small>52</small
+                    ><small>28</small><small>40</small><small>39</small
+                    ><small style="color: var(--wf-warn)">1</small><small>0</small>
+                    <span class="wf-muted">Outside blocks (free zone)</span><small>—</small
+                    ><small>—</small><small>125</small><small>—</small><small>0</small
+                    ><small>0</small>
+                    <hr style="grid-column: 1 / -1; margin: 0" />
+                    <strong>Total</strong><strong>316</strong><strong>170</strong
+                    ><strong>368</strong><strong>226</strong><strong>14</strong
+                    ><small><strong>2 items</strong>, 1 warning</small>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="display: flex; align-items: center; gap: 8px; white-space: nowrap"
+                  >
+                    <strong>Programme people</strong><small>142 · 131 confirmed · 11 not yet</small>
+                    <div style="flex: 1"></div>
+                    <button>Show unconfirmed</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Status by block</strong>Should for Dni Fantastyki and Pyrkon; the pattern is
+          pretalx&#x27;s release warnings. Totals match 368 items and 142 people: 73 block items
+          were made by the team, guests or partners outside the call, and the 125 free-zone items
+          sit outside blocks. The grid had 2 warnings on 9 July and one is left on 1 August, with
+          the same 14 items still without a room.
+        </div>
+      </figure>
+      <figure class="board" id="ab-pyrkon-speaker-rule">
+        <figcaption class="t" style="width: 840px">
+          Pyrkon: speaker rule <code>ab-pyrkon-speaker-rule</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 760px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span
+                  ><span>Tickets</span><span>Access</span><span>Edition settings</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">head</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small><small>Proposals</small
+                    ><span class="wf-pill accent">People</span><small>Conflicts</small
+                    ><small>Changes</small><small>Messages</small><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
+                  </div>
+                  <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                    <div>
+                      <small>Programme · Speaker rule</small>
+                      <h1>Speaker rule</h1>
+                      <small>Pyrkon 2027 · Thursday 17 June</small>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <span class="wf-pill">Read-only · set in Tickets</span>
+                  </div>
+                  <div style="display: flex; align-items: stretch; gap: 10px">
+                    <div
+                      class="wf-box"
+                      style="flex: 1; display: flex; flex-direction: column; gap: 4px"
+                    >
+                      <strong>The programme hands over</strong
+                      ><small
+                        >each person's programme hours, the cast with roles, reserve-list
+                        items</small
+                      >
+                    </div>
+                    <div style="display: flex; align-items: center">
+                      <svg
+                        role="img"
+                        aria-label="Hands over to"
+                        class="wf-icon"
+                        data-icon="arrowRight"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="1em"
+                        height="1em"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M5 12l14 0"></path>
+                        <path d="M13 18l6 -6"></path>
+                        <path d="M13 6l6 6"></path>
+                      </svg>
+                    </div>
+                    <div
+                      class="wf-box"
+                      style="flex: 1; display: flex; flex-direction: column; gap: 4px"
+                    >
+                      <strong>Tickets works out and applies</strong
+                      ><small>the 3-day pass discount and free entry, at the box office</small>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+                      gap: 12px;
+                      flex: 1;
+                      min-height: 0;
+                    "
+                  >
+                    <div
+                      class="wf-card"
+                      style="
+                        display: grid;
+                        grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr) 60px;
+                        gap: 9px 8px;
+                        align-content: start;
+                      "
+                    >
+                      <div style="grid-column: 1 / -1">
+                        <strong>From the programme to Tickets</strong>
+                        <small>1,870 people · programme hour 45 + 5 + 10 min</small>
+                      </div>
+                      <hr style="grid-column: 1 / -1; margin: 0" />
+                      <small><strong>Person</strong></small
+                      ><small><strong>Items and part</strong></small
+                      ><small><strong>Tickets</strong></small> <span>Nina Krawiec</span
+                      ><small>2 talks of 1 h, alone: 50% + 50%</small><strong>100%</strong>
+                      <span>Marta Wilk</span
+                      ><small
+                        >panel with 2 others: 50% ÷ 3 = 16.7%, and a talk for two: 50% ÷ 2 =
+                        25%</small
+                      ><strong>41.7%</strong> <span>Leon Mika</span
+                      ><small>panel with 1 other, remote: 50% ÷ 2 = 25%</small><strong>25%</strong>
+                      <span>Jan Bór</span><small>3 items and 1 cancelled: 50% + 25% + 16.7%</small
+                      ><strong>91.7%</strong> <span>Ida Modrzew</span
+                      ><small>reserve list · talk of 1 h, alone: 50%</small><strong>50%</strong>
+                    </div>
+                    <div class="wf-card" style="display: flex; flex-direction: column; gap: 10px">
+                      <div style="display: flex; align-items: center; gap: 8px">
+                        <svg
+                          role="img"
+                          aria-label="Read-only"
+                          class="wf-icon"
+                          data-icon="lock"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="1em"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path
+                            d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z"
+                          ></path>
+                          <path d="M8 11v-4a4 4 0 1 1 8 0v4"></path>
+                          <path d="M12 16l0 .01"></path></svg
+                        ><strong>Speaker discount in Tickets</strong>
+                      </div>
+                      <div style="display: flex; gap: 8px">
+                        <small style="flex: 1">A programme hour gives</small
+                        ><small>50% of a 3-day pass</small>
+                      </div>
+                      <div style="display: flex; gap: 8px">
+                        <small style="flex: 1">Discounts add up to</small
+                        ><small>at most 100%</small>
+                      </div>
+                      <div style="display: flex; gap: 8px">
+                        <small style="flex: 1">An item's discount</small
+                        ><small>split equally between hosts, interpreters excluded</small>
+                      </div>
+                      <div style="display: flex; gap: 8px">
+                        <small style="flex: 1">Reserve list</small><small>the same</small>
+                      </div>
+                      <div style="display: flex; gap: 8px">
+                        <small style="flex: 1">Cancelled item</small><small>nothing</small>
+                      </div>
+                      <div style="flex: 1"></div>
+                      <small class="wf-muted"
+                        >Tickets works out the discount and applies it at the box office. The
+                        programme hands over only hours and cast.</small
+                      >
+                      <div style="display: flex; gap: 8px">
+                        <div style="flex: 1"></div>
+                        <button>Open in Tickets</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>The rule lives in Tickets</strong>Could, Pyrkon only; the sources are Kapitularz,
+          Pyrkon&#x27;s rules and Arisia. The programme hands over hours and cast and Tickets works
+          out and applies the discount, so the rule shows here read-only, set in Tickets (Q22). A
+          cancelled item earns nothing, which is why Jan Bór gets 91.7%.
+        </div>
+      </figure>
+      <figure class="board" id="ab-small-copy">
+        <figcaption class="t" style="width: 840px">
+          Nordcon: new edition from the previous one <code>ab-small-copy</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 700px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%; box-sizing: border-box">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Nordcon</strong><small>Convention settings ▾</small>
+                  <hr />
+                  <span>General</span><span class="wf-pill accent">Editions</span><span>Team</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">head</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div style="display: flex; align-items: center; width: 100%; gap: 8px">
+                    <div>
+                      <small>Convention settings · Editions</small>
+                      <h1>New edition</h1>
+                    </div>
+                    <div style="flex: 1"></div>
+                    <small>Tuesday 1 September</small>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(4, minmax(0, 1fr));
+                      gap: 8px;
+                    "
+                  >
+                    <label>Name<input value="Nordcon 2026" /></label
+                    ><label>Address<input value="2026" /></label
+                    ><label>Starts<input value="Thu 3 Dec 2026, 10:00" /></label
+                    ><label>Ends<input value="Sun 6 Dec 2026, 18:00" /></label>
+                  </div>
+                  <label style="max-width: 300px">Copy from<input value="Nordcon 2025 ▾" /></label>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+                      gap: 12px;
+                    "
+                  >
+                    <div class="wf-card" style="display: flex; flex-direction: column; gap: 10px">
+                      <strong>What to carry over</strong>
+                      <label style="display: flex; align-items: flex-start; gap: 8px"
+                        ><input type="checkbox" checked />
+                        <span
+                          >Rooms<br /><small
+                            >7 rooms in buildings A and B: Main Street, K8 „Falcon Crest Gazette”,
+                            K6 „Falcon Crest Herald”, Sala RPG1, Sala RPG2, Świątynia Gier,
+                            Saloon/Kawiarenka</small
+                          ></span
+                        ></label
+                      >
+                      <label style="display: flex; align-items: flex-start; gap: 8px"
+                        ><input type="checkbox" checked />
+                        <span
+                          >Dictionaries<br /><small
+                            >tracks 3 (Talks, Games, Films), content warnings 3</small
+                          ></span
+                        ></label
+                      >
+                      <label style="display: flex; align-items: flex-start; gap: 8px"
+                        ><input type="checkbox" checked />
+                        <span
+                          >Programme switches<br /><small
+                            >sign-ups, call for proposals, speaker recruitment, reviews: all
+                            off</small
+                          ></span
+                        ></label
+                      >
+                      <label style="display: flex; align-items: flex-start; gap: 8px"
+                        ><input type="checkbox" checked />
+                        <span
+                          >Printout templates<br /><small>door card A4 · day poster A3</small></span
+                        ></label
+                      >
+                      <small class="wf-muted"
+                        >38 people and 3 groups already belong to Nordcon; nobody is cast in 2026
+                        yet.</small
+                      >
+                    </div>
+                    <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                      <strong>Nordcon 2026 once created</strong>
+                      <div style="display: flex">
+                        <span style="flex: 1">Rooms</span><strong>7</strong>
+                      </div>
+                      <div style="display: flex">
+                        <span style="flex: 1">Dictionaries with entries</span><strong>2</strong>
+                      </div>
+                      <div style="display: flex">
+                        <span style="flex: 1">Programme items</span><strong>0</strong>
+                      </div>
+                      <div style="display: flex">
+                        <span style="flex: 1">Printout templates</span><strong>2, copied</strong>
+                      </div>
+                      <hr />
+                      <small class="wf-muted"
+                        >Not carried over: items, cast, likes, proposals, programme releases and
+                        team permissions of 2025.</small
+                      >
+                      <small class="wf-muted">A new edition starts inactive and unpublished.</small>
+                      <div style="display: flex; gap: 8px">
+                        <div style="flex: 1"></div>
+                        <button>Back to the editions</button
+                        ><button class="primary">Create the edition</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>A new edition from the last</strong>Should for all four conventions; the pattern
+          is Konwencik&#x27;s import from earlier editions. Rooms, dictionaries, the four switches
+          and printout templates carry over one by one, and the preview says what will exist.
+          Programme people stay with the convention, so nothing about them is copied: nobody is cast
+          in 2026 and nobody is emailed; a person hears of 2026 when cast, and no team permission is
+          copied either (Q5).
+        </div>
+      </figure>
+    </main>
+  </body>
+</html>

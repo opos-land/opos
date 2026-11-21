@@ -7,7 +7,7 @@ import { signOut } from '../../auth'
 import { accountOptions } from '../api/account'
 import { DeleteAccount } from '../components/delete-account'
 import { LanguageForm } from '../components/language-form'
-import { ProfileForm } from '../components/profile-form'
+import { NameForm } from '../components/name-form'
 import { ThemeForm } from '../components/theme-form'
 import { TwoFactorCard } from '../components/two-factor-card'
 import { signInMethods } from '../model/sign-in-methods'
@@ -31,7 +31,7 @@ export function AccountPage() {
   return (
     <Page title={<Trans>Your account</Trans>} lead={<Trans>Signed in as {email}</Trans>}>
       <Section title={<Trans>Your name</Trans>}>
-        <ProfileForm account={account.data} />
+        <NameForm account={account.data} />
       </Section>
       <Section title={<Trans>Language</Trans>}>
         <LanguageForm account={account.data} />

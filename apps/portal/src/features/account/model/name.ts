@@ -2,20 +2,20 @@ import { type Account, type UpdateAccount } from '@opos/contract'
 import { z } from 'zod'
 
 /** The names as the form edits them; an empty field clears the name (`PATCH /me`). */
-export const profileSchema = z.object({
+export const nameSchema = z.object({
   firstName: z.string().trim().max(100),
   lastName: z.string().trim().max(100),
 })
 
-export type Profile = z.infer<typeof profileSchema>
+export type Name = z.infer<typeof nameSchema>
 
-export const profileValues = (account: Account): Profile => ({
+export const nameValues = (account: Account): Name => ({
   firstName: account.firstName ?? '',
   lastName: account.lastName ?? '',
 })
 
 /** The body of `PATCH /me` for the edited names: an emptied name is `null`. */
-export const profileUpdate = (profile: Profile): UpdateAccount => ({
-  firstName: profile.firstName.trim() || null,
-  lastName: profile.lastName.trim() || null,
+export const nameUpdate = (name: Name): UpdateAccount => ({
+  firstName: name.firstName.trim() || null,
+  lastName: name.lastName.trim() || null,
 })

@@ -6,13 +6,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { Button, FormField, Input } from '../../../shared/ui'
 import { mergeSavedAccount, updateAccountOptions } from '../api/account'
-import { profileSchema, profileUpdate, profileValues } from '../model/profile'
+import { nameSchema, nameUpdate, nameValues } from '../model/name'
 
 /** The account's first and last name (`PATCH /me`). */
-export function ProfileForm({ account }: { account: Account }) {
+export function NameForm({ account }: { account: Account }) {
   const { t } = useLingui()
   const queryClient = useQueryClient()
-  const form = useForm({ resolver: zodResolver(profileSchema), values: profileValues(account) })
+  const form = useForm({ resolver: zodResolver(nameSchema), values: nameValues(account) })
   const update = useMutation({
     ...updateAccountOptions(),
     meta: { success: msg`Your name is saved.` },
@@ -20,7 +20,7 @@ export function ProfileForm({ account }: { account: Account }) {
   })
   const { errors } = form.formState
 
-  const submit = form.handleSubmit((values) => update.mutate({ body: profileUpdate(values) }))
+  const submit = form.handleSubmit((values) => update.mutate({ body: nameUpdate(values) }))
 
   return (
     <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-4">

@@ -25,6 +25,8 @@ describe('profileValues', () => {
         email: 'anna@example.test',
         firstName: null,
         lastName: 'Nowak',
+        nickname: null,
+        nameOrder: 'nickname-middle' as const,
         locale: null,
         theme: null,
         mfaEnabled: false,

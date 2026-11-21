@@ -156,6 +156,8 @@ const account = (id: string): Account => ({
   email: `${id}@example.test`,
   firstName: null,
   lastName: null,
+  nickname: null,
+  nameOrder: 'nickname-middle' as const,
   locale: null,
   theme: null,
   mfaEnabled: false,

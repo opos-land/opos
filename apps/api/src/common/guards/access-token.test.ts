@@ -82,6 +82,8 @@ describe('meOf', () => {
     email: 'a@b.test',
     firstName: null,
     lastName: null,
+    nickname: null,
+    nameOrder: 'nickname-middle' as const,
     locale: null,
     theme: null,
     mfaEnabled: false,

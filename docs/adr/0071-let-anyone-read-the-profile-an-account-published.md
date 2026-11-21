@@ -80,9 +80,10 @@ The rules, the tables and the routes are in the [spec](../specs/0016-public-prof
 - The avatar is shown on the profile's page, on the account's own pages and to the admin. A page
   that shows it elsewhere, such as the programme, first needs a rule for an account whose profile
   is taken down.
-- The privacy policy names what a profile holds before it ships, and its legal review covers the
-  profiles of minors and the reports
-  ([PRODUCT.md 10](../PRODUCT.md#10-personal-data-and-privacy)).
+- A takedown needs a rule to rest on, so the public profile ships with the platform's terms, which
+  OPOS did not have. They also say that an account is for a person of 16 or older. The privacy
+  policy names what a profile holds, and the legal review of both texts confirms what the spec took
+  from the law ([PRODUCT.md 10](../PRODUCT.md#10-personal-data-and-privacy)).
 - The decision is accepted and not built. Once the spec is implemented, PRODUCT.md 3, 6, 7, 10 and
   11 and ARCHITECTURE.md, Tenant isolation and API conventions, state the rules.
 

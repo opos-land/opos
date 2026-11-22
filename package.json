@@ -42,17 +42,20 @@
     "deploy:output": "node scripts/deploy.mjs output",
     "deploy:secret-set": "node scripts/deploy.mjs secret-set",
     "deploy:secret-get": "node scripts/deploy.mjs secret-get",
+    "deploy:graph": "node scripts/deploy-graph.mjs",
     "infra:init": "node scripts/infra-init.mjs",
     "infra:up": "supabase start && docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml up -d --wait",
     "infra:down": "docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml down && supabase stop",
     "infra:reset": "supabase stop --no-backup && docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml down --volumes && supabase start && docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml up -d --wait && pnpm db:roles"
   },
   "devDependencies": {
+    "@cdktf/hcl2json": "0.21.0",
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
     "eslint": "catalog:",
     "lefthook": "^1.10.10",
     "prettier": "^3.4.2",
-    "turbo": "^2.11.8"
+    "turbo": "^2.11.8",
+    "yaml": "^2.9.1"
   }
 }

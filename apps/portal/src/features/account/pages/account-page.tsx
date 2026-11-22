@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import { Button, ErrorMessage, LoadingView, Page, Section } from '../../../shared/ui'
 import { signOut } from '../../auth'
+import { ProfileSummary } from '../../profile'
 import { accountOptions } from '../api/account'
 import { DeleteAccount } from '../components/delete-account'
 import { LanguageForm } from '../components/language-form'
@@ -13,8 +14,8 @@ import { TwoFactorCard } from '../components/two-factor-card'
 import { signInMethods } from '../model/sign-in-methods'
 
 /**
- * Account settings: the names, the interface language and theme, two-factor authentication,
- * sign-out and deletion.
+ * Account settings: the name, the profile, the interface language and theme, two-factor
+ * authentication, sign-out and deletion.
  */
 export function AccountPage() {
   const { t } = useLingui()
@@ -32,6 +33,9 @@ export function AccountPage() {
     <Page title={<Trans>Your account</Trans>} lead={<Trans>Signed in as {email}</Trans>}>
       <Section title={<Trans>Your name</Trans>}>
         <NameForm account={account.data} />
+      </Section>
+      <Section title={<Trans>Your profile</Trans>}>
+        <ProfileSummary />
       </Section>
       <Section title={<Trans>Language</Trans>}>
         <LanguageForm account={account.data} />

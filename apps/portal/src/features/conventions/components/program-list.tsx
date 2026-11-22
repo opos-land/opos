@@ -1,9 +1,10 @@
-import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans } from '@lingui/react/macro'
 import { type PublicProgramItem } from '@opos/contract'
 import { Link } from 'react-router'
 import { linkClass } from '../../../shared/ui'
 import { useConventionTime } from '../hooks/use-convention-time'
-import { programDays, speakerNames } from '../model/program-days'
+import { programDays } from '../model/program-days'
+import { SpeakerNames } from './speaker-names'
 
 /** An edition's programme, day by day in the convention's zone, in one column. */
 export function ProgramList({
@@ -15,7 +16,6 @@ export function ProgramList({
   timeZone: string
   editionPath: string
 }) {
-  const { i18n } = useLingui()
   const time = useConventionTime(timeZone)
 
   if (items.length === 0) {
@@ -35,7 +35,6 @@ export function ProgramList({
           </h3>
           <ul className="flex flex-col gap-3">
             {dayItems.map((item) => {
-              const names = speakerNames(i18n, item.speakers)
               const count = item.speakers.length
               const likes = item.likeCount
               return (
@@ -46,13 +45,10 @@ export function ProgramList({
                   <Link to={`${editionPath}/program/${item.id}`} className={linkClass}>
                     {item.title}
                   </Link>
-                  {names && (
+                  {count > 0 && (
                     <span className="text-sm">
-                      <Plural
-                        value={count}
-                        one={`Speaker: ${names}`}
-                        other={`Speakers: ${names}`}
-                      />
+                      <Plural value={count} one="Speaker:" other="Speakers:" />{' '}
+                      <SpeakerNames speakers={item.speakers} />
                     </span>
                   )}
                   <span className="text-muted-foreground text-sm">

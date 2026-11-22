@@ -10,6 +10,8 @@ import { AccountPage } from './account-page'
 
 // The page through the real API link and query cache, with only `fetch` stubbed: where the answer
 // of `PATCH /me` lands is the point here, so no call of the feature is replaced.
+// The profile's summary asks for the profile, which is another feature's: it has tests of its own.
+vi.mock('../../profile', () => ({ ProfileSummary: () => null }))
 
 const account = {
   id: 'a',

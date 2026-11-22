@@ -1,7 +1,4 @@
-import { type I18n } from '@lingui/core'
-import { type PublicProgramItem } from '@opos/contract'
 import { toZonedWallTime } from '@opos/i18n'
-import { publicName } from '@opos/i18n/names'
 
 /** Items grouped by the day of the convention's zone, keeping their order. */
 export function programDays<T extends { startsAt: string }>(items: T[], timeZone: string) {
@@ -14,7 +11,3 @@ export function programDays<T extends { startsAt: string }>(items: T[], timeZone
   }
   return days
 }
-
-/** The public names of an item's speakers, in the reader's language; "Anon" for one with no name. */
-export const speakerNames = (i18n: I18n, speakers: PublicProgramItem['speakers']) =>
-  speakers.map((speaker) => publicName(i18n, speaker)).join(', ')

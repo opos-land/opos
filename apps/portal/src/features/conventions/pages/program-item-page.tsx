@@ -1,4 +1,4 @@
-import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
 import { isNotFound } from '../../../shared/lib/errors'
@@ -6,12 +6,11 @@ import { usePageTitle } from '../../../shared/lib/page-title'
 import { ErrorMessage, linkClass, LoadingView, NotFoundView, Page } from '../../../shared/ui'
 import { conventionOptions, editionOptions, programItemOptions } from '../api/conventions'
 import { LikeButton } from '../components/like-button'
+import { SpeakerNames } from '../components/speaker-names'
 import { useConventionTime } from '../hooks/use-convention-time'
-import { speakerNames } from '../model/program-days'
 
 /** One programme item's details and its like; ratings and comments come with the reviews. */
 export function ProgramItemPage() {
-  const { i18n } = useLingui()
   const { tenantSlug = '', editionSlug = '', programItemId = '' } = useParams()
   const convention = useQuery(conventionOptions(tenantSlug))
   const item = useQuery(programItemOptions(tenantSlug, editionSlug, programItemId))
@@ -26,7 +25,6 @@ export function ProgramItemPage() {
   if (convention.isPending || item.isPending) return <LoadingView />
 
   const { title, description, startsAt, endsAt, speakers, likeCount: likes } = item.data
-  const names = speakerNames(i18n, speakers)
   const count = speakers.length
   return (
     <Page
@@ -39,9 +37,10 @@ export function ProgramItemPage() {
         </Link>
       </p>
       {description && <p className="whitespace-pre-line">{description}</p>}
-      {names && (
+      {count > 0 && (
         <p>
-          <Plural value={count} one={`Speaker: ${names}`} other={`Speakers: ${names}`} />
+          <Plural value={count} one="Speaker:" other="Speakers:" />{' '}
+          <SpeakerNames speakers={speakers} />
         </p>
       )}
       <p className="text-muted-foreground text-sm">

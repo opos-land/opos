@@ -25,8 +25,8 @@ msgstr "{0} (required)"
 
 #: src/features/conventions/components/program-list.tsx
 #: src/features/conventions/pages/program-item-page.tsx
-msgid "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
-msgstr "{count, plural, one {Speaker: {names}} other {Speakers: {names}}}"
+msgid "{count, plural, one {Speaker:} other {Speakers:}}"
+msgstr "{count, plural, one {Speaker:} other {Speakers:}}"
 
 #: src/features/shop/components/my-orders.tsx
 msgid "{editionName}, placed {placed}, for {holderName}"
@@ -62,9 +62,29 @@ msgstr "A convention runs its team, editions, programme and ticket sales in the 
 msgid "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
 msgstr "A convention sees the sign-ups for its editions and the orders placed for them. Conventions are isolated from each other: none of them sees another one’s data."
 
+#: src/features/profile/components/avatar-form.tsx
+msgid "A JPEG, PNG or WebP image of up to {MAX_AVATAR_MB} MB. It is shown as a square, cut from the middle."
+msgstr "A JPEG, PNG or WebP image of up to {MAX_AVATAR_MB} MB. It is shown as a square, cut from the middle."
+
 #: src/features/shop/pages/order-link-page.tsx
 msgid "A link to an order works for a limited time. We can send a new one to the email address of the order."
 msgstr "A link to an order works for a limited time. We can send a new one to the email address of the order."
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "A profile and a name are your own. They hold no picture, name or identity of someone else."
+msgstr "A profile and a name are your own. They hold no picture, name or identity of someone else."
+
+#: src/features/profile/components/publication.tsx
+msgid "A profile taken down cannot be published until an administrator restores it."
+msgstr "A profile taken down cannot be published until an administrator restores it."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "A published profile is read by anyone, with no sign-in: your name, your avatar and what the profile holds. Your avatar is public from the moment you upload it, whether or not your profile is published. Your name is shown on your profile and, when you are a speaker, in the programme."
+msgstr "A published profile is read by anyone, with no sign-in: your name, your avatar and what the profile holds. Your avatar is public from the moment you upload it, whether or not your profile is published. Your name is shown on your profile and, when you are a speaker, in the programme."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "A report of a profile: until twelve months after it was closed, or until the account whose profile it was about is deleted."
+msgstr "A report of a profile: until twelve months after it was closed, or until the account whose profile it was about is deleted."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "A review shows your name, or “anonymous” if you choose so; anonymity holds towards everyone, organizers included. Its comment is public or visible only to the speakers of the programme item, as you choose."
@@ -77,6 +97,10 @@ msgstr "A supporter price is a higher price you choose to support the convention
 #: src/features/shop/components/holder-step.tsx
 msgid "A teen brings the guardian’s consent on paper to the convention."
 msgstr "A teen brings the guardian’s consent on paper to the convention."
+
+#: src/features/profile/components/profile-form.tsx
+msgid "About you"
+msgstr "About you"
 
 #: src/features/shop/components/summary-step.tsx
 msgid "Accept this to place the order."
@@ -131,6 +155,30 @@ msgstr "Already ordered."
 msgid "Already ordered. You can order it again."
 msgstr "Already ordered. You can order it again."
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "An account is for a person who is 16 or older. A younger attendee needs no account: a ticket names its holder, whoever ordered it."
+msgstr "An account is for a person who is 16 or older. A younger attendee needs no account: a ticket names its holder, whoever ordered it."
+
+#: src/features/profile/components/profile-form.tsx
+msgid "An address that starts with https://. It is shown as it is, and opens in a new tab."
+msgstr "An address that starts with https://. It is shown as it is, and opens in a new tab."
+
+#: src/features/profile/components/takedown-notice.tsx
+msgid "An administrator took your profile down"
+msgstr "An administrator took your profile down"
+
+#: src/features/profile/components/profile-summary.tsx
+msgid "An administrator took your profile down. See why on its page."
+msgstr "An administrator took your profile down. See why on its page."
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "An avatar is a picture you have the right to show: of yourself, or one whose rights are yours."
+msgstr "An avatar is a picture you have the right to show: of yourself, or one whose rights are yours."
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "An avatar is public from the moment you upload it, whether or not your profile is published."
+msgstr "An avatar is public from the moment you upload it, whether or not your profile is published."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
 msgstr "An invitation to a convention’s team stores nothing until it is accepted: the invited address travels only in the link sent to it."
@@ -143,13 +191,33 @@ msgstr "An organizer will get in touch with you. You do not need to pay again."
 msgid "Analytics"
 msgstr "Analytics"
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "Anyone may report a published profile, from its page. The administrators of OPOS read every report and decide whether the profile stays."
+msgstr "Anyone may report a published profile, from its page. The administrators of OPOS read every report and decide whether the profile stays."
+
 #: src/features/shop/components/summary-step.tsx
 msgid "Apply the code"
 msgstr "Apply the code"
 
+#: src/features/profile/components/takedown-notice.tsx
+msgid "Ask for a review"
+msgstr "Ask for a review"
+
 #: src/features/auth/components/choose-password-form.tsx
 msgid "At least 8 characters."
 msgstr "At least 8 characters."
+
+#: src/features/profile/pages/my-profile-page.tsx
+msgid "Avatar"
+msgstr "Avatar"
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "Avatar file"
+msgstr "Avatar file"
+
+#: src/features/profile/pages/profile-page.tsx
+msgid "Avatar of {name}"
+msgstr "Avatar of {name}"
 
 #: src/features/shop/model/order-status.ts
 msgctxt "the status of an order"
@@ -171,6 +239,10 @@ msgstr "Back to sign-in"
 #: src/features/shop/pages/shop-page.tsx
 msgid "Back to the edition"
 msgstr "Back to the edition"
+
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "Back to the profile"
+msgstr "Back to the profile"
 
 #: src/features/shop/pages/checkout-page.tsx
 msgid "Back to the shop"
@@ -198,8 +270,8 @@ msgid "Buyer"
 msgstr "Buyer"
 
 #: src/features/auth/components/register-form.tsx
-msgid "By creating an account you confirm that you have read the <0>privacy policy</0>."
-msgstr "By creating an account you confirm that you have read the <0>privacy policy</0>."
+msgid "By creating an account you accept the <0>terms</0> and confirm that you have read the <1>privacy policy</1>."
+msgstr "By creating an account you accept the <0>terms</0> and confirm that you have read the <1>privacy policy</1>."
 
 #: src/features/shop/components/holder-step.tsx
 msgid "By the ticket holder’s age on the first day of the edition."
@@ -219,6 +291,14 @@ msgstr "Canceled"
 msgctxt "the status of an order"
 msgid "Canceled"
 msgstr "Canceled"
+
+#: src/features/profile/components/profile-summary.tsx
+msgid "Change your profile"
+msgstr "Change your profile"
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "Change your profile and ask for a review on its page, or write to {CONTACT_EMAIL} and say why."
+msgstr "Change your profile and ask for a review on its page, or write to {CONTACT_EMAIL} and say why."
 
 #: src/features/auth/pages/register-page.tsx
 msgid "Check your inbox"
@@ -247,9 +327,17 @@ msgstr "Choose"
 msgid "Choose {0}"
 msgstr "Choose {0}"
 
+#: src/features/profile/components/avatar-form.tsx
+msgid "Choose a JPEG, PNG or WebP image."
+msgstr "Choose a JPEG, PNG or WebP image."
+
 #: src/features/shop/components/merch-step.tsx
 msgid "Choose a variant first."
 msgstr "Choose a variant first."
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "Choose an image of up to {MAX_AVATAR_MB} MB."
+msgstr "Choose an image of up to {MAX_AVATAR_MB} MB."
 
 #: src/features/shop/pages/checkout-page.tsx
 msgid "Choose at least one add-on or item to order."
@@ -262,6 +350,10 @@ msgstr "Choose which optional tools OPOS may use in this browser. OPOS works the
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Choose your password"
 msgstr "Choose your password"
+
+#: src/features/profile/components/profile-form.tsx
+msgid "City or region"
+msgstr "City or region"
 
 #: src/shared/ui/dialog.tsx
 #: src/shared/ui/toast.tsx
@@ -304,6 +396,10 @@ msgstr "Confirmation link"
 #: src/features/shop/components/summary-step.tsx
 msgid "Consents"
 msgstr "Consents"
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "Contact"
+msgstr "Contact"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/login-page.tsx
@@ -390,6 +486,10 @@ msgstr "Dismiss"
 msgid "Download the guardian consent form"
 msgstr "Download the guardian consent form"
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "Each time they write to you by email: what was done, which rule of these terms it rests on and how to contest it. A person decides, never a program."
+msgstr "Each time they write to you by email: what was done, which rule of these terms it rests on and how to contest it. A person decides, never a program."
+
 #: src/features/auth/components/email-only-form.tsx
 #: src/features/auth/components/register-form.tsx
 #: src/features/auth/components/sign-in-form.tsx
@@ -421,6 +521,14 @@ msgstr "Enter 1 to 100 characters."
 msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
 
+#: src/features/profile/components/profile-form.tsx
+msgid "Enter an address that starts with https://."
+msgstr "Enter an address that starts with https://."
+
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "Enter an email address, or leave the field empty."
+msgstr "Enter an email address, or leave the field empty."
+
 #: src/features/account/components/delete-account.tsx
 #: src/features/account/components/reauthenticate-form.tsx
 msgid "Enter it again to confirm it is you."
@@ -443,7 +551,15 @@ msgstr "Enter the code from your authenticator app to finish signing in."
 msgid "Enter the six digits from your authenticator app."
 msgstr "Enter the six digits from your authenticator app."
 
+#. placeholder {0}: 1000
+#. placeholder {0}: 200
+#: src/features/profile/components/profile-form.tsx
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "Enter up to {0} characters."
+msgstr "Enter up to {0} characters."
+
 #: src/features/account/components/name-form.tsx
+#: src/features/profile/components/profile-form.tsx
 msgid "Enter up to {max} characters."
 msgstr "Enter up to {max} characters."
 
@@ -458,6 +574,10 @@ msgstr "Every price is a gross amount."
 #: src/features/account/components/name-form.tsx
 msgid "Everyone sees you as <0>{shown}</0>: on your profile and, when you are a speaker, in the programme."
 msgstr "Everyone sees you as <0>{shown}</0>: on your profile and, when you are a speaker, in the programme."
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "Everyone stops seeing it at once. To have it back, upload its file again."
+msgstr "Everyone stops seeing it at once. To have it back, upload its file again."
 
 #: src/features/shop/model/order-status.ts
 msgctxt "the status of an order"
@@ -526,6 +646,10 @@ msgstr "Google signed you in to a different account, {email}, so nothing was del
 msgid "How long we keep it"
 msgstr "How long we keep it"
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "How OPOS handles your personal data is in the <0>privacy policy</0>."
+msgstr "How OPOS handles your personal data is in the <0>privacy policy</0>."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "How OPOS handles your personal data."
 msgstr "How OPOS handles your personal data."
@@ -546,6 +670,18 @@ msgstr "If an account uses {sentTo}, we sent it a link to set a new password. Th
 msgid "If this link belonged to an order, a new link is on its way to the email address of that order."
 msgstr "If this link belonged to an order, a new link is on its way to the email address of that order."
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "If you do not agree with a decision"
+msgstr "If you do not agree with a decision"
+
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "If you give an address, we write to it twice: that your report arrived, and what was decided. Only the administrators see it, and it is removed with the report. We keep nothing else about you."
+msgstr "If you give an address, we write to it twice: that your report arrived, and what was decided. Only the administrators see it, and it is removed with the report. We keep nothing else about you."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "If you report a profile: the reason, your note and the email address, if you give one. Only the administrators of OPOS read them."
+msgstr "If you report a profile: the reason, your note and the email address, if you give one. Only the administrators of OPOS read them."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "If you sign in with Google, Google confirms your email address and gives us your name."
 msgstr "If you sign in with Google, Google confirms your email address and gives us your name."
@@ -559,6 +695,11 @@ msgstr "If you turn on two-factor authentication: the secret of your authenticat
 msgid "In your order: {0}"
 msgstr "In your order: {0}"
 
+#: src/features/profile/components/profile-form.tsx
+#: src/features/profile/pages/profile-page.tsx
+msgid "Interests"
+msgstr "Interests"
+
 #: src/features/account/components/language-form.tsx
 msgid "Interface language"
 msgstr "Interface language"
@@ -566,6 +707,10 @@ msgstr "Interface language"
 #: src/features/account/components/theme-form.tsx
 msgid "Interface theme"
 msgstr "Interface theme"
+
+#: src/features/profile/components/takedown-notice.tsx
+msgid "It is not public, your avatar was removed, and the profile cannot be published until an administrator restores it."
+msgstr "It is not public, your avatar was removed, and the profile cannot be published until an administrator restores it."
 
 #: src/features/shop/components/add-ons-step.tsx
 #: src/features/shop/components/merch-step.tsx
@@ -600,6 +745,14 @@ msgstr "Light"
 #: src/features/conventions/components/like-button.tsx
 msgid "Like"
 msgstr "Like"
+
+#: src/features/profile/components/profile-form.tsx
+msgid "Link {number}"
+msgstr "Link {number}"
+
+#: src/features/profile/pages/profile-page.tsx
+msgid "Links"
+msgstr "Links"
 
 #: src/shared/ui/messages.tsx
 msgid "Loading…"
@@ -671,6 +824,10 @@ msgstr "No edition of this convention is active."
 msgid "No place is left."
 msgstr "No place is left."
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "No spam and no advertising."
+msgstr "No spam and no advertising."
+
 #: src/features/consent/components/consent-banner.tsx
 msgid "None of them runs until you allow it. You can change your choice at any time in the privacy settings at the bottom of the page."
 msgstr "None of them runs until you allow it. You can change your choice at any time in the privacy settings at the bottom of the page."
@@ -683,9 +840,17 @@ msgstr "Not paid yet"
 msgid "Not yet on sale"
 msgstr "Not yet on sale"
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "Nothing offensive, hateful or unlawful."
+msgstr "Nothing offensive, hateful or unlawful."
+
 #: src/shared/ui/toast.tsx
 msgid "Notifications"
 msgstr "Notifications"
+
+#: src/features/profile/components/publication.tsx
+msgid "Once published, anyone reads it, with no sign-in: your name, your avatar and what the profile holds. Publish only what <0/> allow."
+msgstr "Once published, anyone reads it, with no sign-in: your name, your avatar and what the profile holds. Publish only what <0/> allow."
 
 #: src/features/auth/pages/register-page.tsx
 msgid "One account for every convention on OPOS."
@@ -826,6 +991,10 @@ msgstr "Picking up merchandise"
 msgid "Placed"
 msgstr "Placed"
 
+#: src/features/profile/components/profile-form.tsx
+msgid "Plain text of up to 500 characters. Links in it are not clickable."
+msgstr "Plain text of up to 500 characters. Links in it are not clickable."
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "Press the button to choose a new password."
 msgstr "Press the button to choose a new password."
@@ -852,6 +1021,14 @@ msgstr "Privacy settings"
 #: src/features/conventions/pages/edition-program-page.tsx
 msgid "Programme"
 msgstr "Programme"
+
+#: src/features/profile/components/profile-form.tsx
+msgid "Pronouns"
+msgstr "Pronouns"
+
+#: src/features/profile/components/publication.tsx
+msgid "Publish the profile"
+msgstr "Publish the profile"
 
 #: src/features/account/components/two-factor-card.tsx
 msgid "QR code for your authenticator app"
@@ -892,6 +1069,10 @@ msgstr "Remove"
 msgid "Remove {name}"
 msgstr "Remove {name}"
 
+#: src/features/profile/components/avatar-form.tsx
+msgid "Remove the avatar"
+msgstr "Remove the avatar"
+
 #: src/features/shop/components/summary-step.tsx
 msgid "Remove the code"
 msgstr "Remove the code"
@@ -904,6 +1085,10 @@ msgstr "Remove the like"
 msgid "Remove the merchandise"
 msgstr "Remove the merchandise"
 
+#: src/features/profile/components/avatar-form.tsx
+msgid "Remove your avatar?"
+msgstr "Remove your avatar?"
+
 #: src/features/shop/components/holder-step.tsx
 msgid "Repeat the email address"
 msgstr "Repeat the email address"
@@ -911,6 +1096,26 @@ msgstr "Repeat the email address"
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Repeat the password"
 msgstr "Repeat the password"
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "Replace the avatar"
+msgstr "Replace the avatar"
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "Replace your avatar?"
+msgstr "Replace your avatar?"
+
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "Report the profile of {name}"
+msgstr "Report the profile of {name}"
+
+#: src/features/profile/pages/profile-page.tsx
+msgid "Report this profile"
+msgstr "Report this profile"
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "Reports"
+msgstr "Reports"
 
 #: src/features/shop/components/my-orders.tsx
 msgid "Resend QR code"
@@ -941,6 +1146,10 @@ msgstr "Save my choice"
 msgid "Save the password"
 msgstr "Save the password"
 
+#: src/features/profile/components/profile-form.tsx
+msgid "Save the profile"
+msgstr "Save the profile"
+
 #: src/features/account/components/two-factor-card.tsx
 msgid "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
 msgstr "Save these ten recovery codes somewhere safe. Each works once, in place of a code from the app, and using one turns two-factor authentication off. They are shown only now."
@@ -961,6 +1170,10 @@ msgstr "Secret: <0>{secret}</0>"
 #: src/features/conventions/components/edition-summary.tsx
 msgid "See the programme"
 msgstr "See the programme"
+
+#: src/features/profile/components/publication.tsx
+msgid "See your profile as everyone does"
+msgstr "See your profile as everyone does"
 
 #: src/features/shop/components/summary-step.tsx
 msgid "Select all required"
@@ -983,6 +1196,10 @@ msgstr "Send the confirmation link again"
 #: src/features/auth/pages/forgot-password-page.tsx
 msgid "Send the link"
 msgstr "Send the link"
+
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "Send the report"
+msgstr "Send the report"
 
 #: src/features/shop/pages/shop-page.tsx
 msgid "Shop"
@@ -1068,6 +1285,23 @@ msgstr "Teen"
 msgid "Teen ({teenFromAge} to {teenUntil})"
 msgstr "Teen ({teenFromAge} to {teenUntil})"
 
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "Tell the administrators of OPOS that this profile should not be here. They read every report."
+msgstr "Tell the administrators of OPOS that this profile should not be here. They read every report."
+
+#: src/app/layout.tsx
+#: src/features/landing/pages/terms-page.tsx
+msgid "Terms"
+msgstr "Terms"
+
+#: src/features/profile/components/takedown-notice.tsx
+msgid "The administrator wrote:"
+msgstr "The administrator wrote:"
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "The avatar shown now goes, and everyone sees the new one at once. To have the old one back, upload its file again."
+msgstr "The avatar shown now goes, and everyone sees the new one at once. To have the old one back, upload its file again."
+
 #: src/features/account/components/language-form.tsx
 msgid "The browser's language"
 msgstr "The browser's language"
@@ -1145,6 +1379,10 @@ msgstr "The QR code of your order will be sent to this address."
 msgid "The QR code will be sent to your account’s address: <0>{accountEmail}</0>"
 msgstr "The QR code will be sent to your account’s address: <0>{accountEmail}</0>"
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "The rules of using OPOS. By creating an account you accept them."
+msgstr "The rules of using OPOS. By creating an account you accept them."
+
 #. placeholder {0}: item.name
 #. placeholder {1}: value.label
 #: src/features/shop/components/merch-step.tsx
@@ -1154,6 +1392,10 @@ msgstr "The size chart of {0}, {1}"
 #: src/features/account/components/theme-form.tsx
 msgid "The system's theme"
 msgstr "The system's theme"
+
+#: src/features/profile/components/terms-link.tsx
+msgid "the terms"
+msgstr "the terms"
 
 #: src/features/shop/components/my-orders.tsx
 msgid "The time to pay for this order has ended. Nothing was charged: start a new order in the shop."
@@ -1184,6 +1426,18 @@ msgstr "There is no programme yet."
 msgid "There was not enough money to pay."
 msgstr "There was not enough money to pay."
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "They change nothing else of what a profile says."
+msgstr "They change nothing else of what a profile says."
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "They may clear the name of an account. You may enter a name again that keeps these rules."
+msgstr "They may clear the name of an account. You may enter a name again that keeps these rules."
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "They may take a profile down: it stops being public, its avatar is removed and it cannot be published until they restore it."
+msgstr "They may take a profile down: it stops being public, its avatar is removed and it cannot be published until they restore it."
+
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
 #: src/shared/ui/irreversible-action.tsx
 msgid "This action cannot be undone."
@@ -1194,6 +1448,7 @@ msgid "This code cannot be used for this order."
 msgstr "This code cannot be used for this order."
 
 #: src/features/account/components/name-form.tsx
+#: src/features/profile/components/profile-form.tsx
 msgid "This field holds a character that cannot be seen. Type it again."
 msgstr "This field holds a character that cannot be seen. Type it again."
 
@@ -1212,6 +1467,10 @@ msgstr "This only tells the convention how many to expect: no place is reserved.
 #: src/features/shop/pages/result-page.tsx
 msgid "This order is closed. If you have questions, contact the convention."
 msgstr "This order is closed. If you have questions, contact the convention."
+
+#: src/features/profile/pages/profile-page.tsx
+msgid "This profile holds nothing yet."
+msgstr "This profile holds nothing yet."
 
 #. placeholder {0}: removed.join(', ')
 #: src/features/shop/pages/checkout-page.tsx
@@ -1313,6 +1572,14 @@ msgstr "Two-factor authentication is on. You enter a code from your authenticato
 msgid "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 msgstr "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 
+#: src/features/profile/components/avatar-form.tsx
+msgid "Upload a picture of yourself, or one you have the right to show."
+msgstr "Upload a picture of yourself, or one you have the right to show."
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "Upload the avatar"
+msgstr "Upload the avatar"
+
 #: src/features/auth/pages/mfa-page.tsx
 msgid "Use a recovery code"
 msgstr "Use a recovery code"
@@ -1382,6 +1649,14 @@ msgstr "We sent the QR code to the email address of the order."
 msgid "We will send you a link to set a new password."
 msgstr "We will send you a link to set a new password."
 
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "What should we know? (optional)"
+msgstr "What should we know? (optional)"
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "What the administrators may do"
+msgstr "What the administrators may do"
+
 #: src/features/shop/components/order-lines.tsx
 #: src/features/shop/pages/order-link-page.tsx
 msgid "What the order holds"
@@ -1398,6 +1673,14 @@ msgstr "What you do on the platform: the editions you sign up for, the programme
 #: src/features/shop/components/summary-step.tsx
 msgid "What you order now joins the QR code of the order {joins}: you show the same code. Its confirmation will be sent to <0>{email}</0>."
 msgstr "What you order now joins the QR code of the order {joins}: you show the same code. Its confirmation will be sent to <0>{email}</0>."
+
+#: src/features/profile/pages/my-profile-page.tsx
+msgid "What you show of yourself to everyone, once you publish it."
+msgstr "What you show of yourself to everyone, once you publish it."
+
+#: src/features/profile/pages/my-profile-page.tsx
+msgid "What your profile holds"
+msgstr "What your profile holds"
 
 #: src/features/conventions/components/edition-summary.tsx
 msgid "When"
@@ -1423,13 +1706,41 @@ msgstr "Where the nickname stands"
 msgid "Who sees it"
 msgstr "Who sees it"
 
+#: src/features/profile/pages/my-profile-page.tsx
+msgid "Who sees your profile"
+msgstr "Who sees your profile"
+
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "Why are you reporting it?"
+msgstr "Why are you reporting it?"
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Why we store it"
 msgstr "Why we store it"
 
+#: src/features/profile/components/publication.tsx
+msgid "Withdraw the profile"
+msgstr "Withdraw the profile"
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "Write to the people who run OPOS at {CONTACT_EMAIL}."
+msgstr "Write to the people who run OPOS at {CONTACT_EMAIL}."
+
 #: src/features/account/components/delete-account.tsx
 msgid "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
 msgstr "You are the last head organizer of a convention, and a convention must keep at least one. In the organizer panel, make another member of that convention’s team a head organizer, then delete your account."
+
+#: src/features/profile/components/takedown-notice.tsx
+msgid "You asked for a review."
+msgstr "You asked for a review."
+
+#: src/features/profile/components/takedown-notice.tsx
+msgid "You asked for a review. An administrator will look at your profile."
+msgstr "You asked for a review. An administrator will look at your profile."
+
+#: src/features/profile/components/takedown-notice.tsx
+msgid "You can change your profile and then ask for a review. If you do not agree with the decision, write to {CONTACT_EMAIL}."
+msgstr "You can change your profile and then ask for a review. If you do not agree with the decision, write to {CONTACT_EMAIL}."
 
 #: src/features/shop/pages/checkout-page.tsx
 msgid "You can order without an account. With an account you find your orders in one place."
@@ -1440,8 +1751,8 @@ msgid "You confirmed it is you again. Delete the account within 5 minutes."
 msgstr "You confirmed it is you again. Delete the account within 5 minutes."
 
 #: src/features/landing/pages/privacy-page.tsx
-msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
-msgstr "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
+msgid "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, your profile with its avatar, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
+msgstr "You delete your account yourself in the account settings, after confirming it is you: with your password or with Google, again. Your sign-in methods, sessions, two-factor authentication with its recovery codes, your profile with its avatar, likes, reviews, edition sign-ups and memberships in convention teams go with it. The last head organizer of a convention hands that role over first, so the convention keeps an owner."
 
 #: src/features/schedule/pages/schedule-page.tsx
 msgid "You have not liked any programme items yet."
@@ -1452,6 +1763,8 @@ msgid "You picked another ticket type. Merchandise it does not offer is removed 
 msgstr "You picked another ticket type. Merchandise it does not offer is removed either way."
 
 #: src/features/account/pages/account-page.tsx
+#: src/features/landing/pages/terms-page.tsx
+#: src/features/profile/pages/my-profile-page.tsx
 msgid "Your account"
 msgstr "Your account"
 
@@ -1464,16 +1777,33 @@ msgid "Your account has been deleted."
 msgstr "Your account has been deleted."
 
 #: src/features/landing/pages/privacy-page.tsx
-msgid "Your account: your first name, last name, email address and the interface language you choose."
-msgstr "Your account: your first name, last name, email address and the interface language you choose."
+msgid "Your account: your first name, your nickname and your last name, your email address and the interface language you choose."
+msgstr "Your account: your first name, your nickname and your last name, your email address and the interface language you choose."
 
 #: src/features/auth/components/choose-password-form.tsx
 msgid "Your address {email} is confirmed. Choose the password you will sign in with."
 msgstr "Your address {email} is confirmed. Choose the password you will sign in with."
 
+#: src/features/profile/components/avatar-form.tsx
+#: src/features/profile/components/profile-summary.tsx
+msgid "Your avatar"
+msgstr "Your avatar"
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "Your avatar is removed."
+msgstr "Your avatar is removed."
+
+#: src/features/profile/components/avatar-form.tsx
+msgid "Your avatar is saved."
+msgstr "Your avatar is saved."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your browser"
 msgstr "Your browser"
+
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "Your email address (optional)"
+msgstr "Your email address (optional)"
 
 #: src/features/account/pages/account-page.tsx
 msgid "Your name"
@@ -1483,9 +1813,17 @@ msgstr "Your name"
 msgid "Your name is saved."
 msgstr "Your name is saved."
 
+#: src/features/landing/pages/terms-page.tsx
+msgid "Your name is shown wherever your account is named to everyone, and your avatar is public from the moment you upload it. Your profile is private until you publish it. What you show there is yours to choose, within these rules:"
+msgstr "Your name is shown wherever your account is named to everyone, and your avatar is public from the moment you upload it. Your profile is private until you publish it. What you show there is yours to choose, within these rules:"
+
 #: src/features/shop/components/holder-step.tsx
 msgid "Your name or nickname"
 msgstr "Your name or nickname"
+
+#: src/features/landing/pages/terms-page.tsx
+msgid "Your name, your avatar and your profile"
+msgstr "Your name, your avatar and your profile"
 
 #: src/features/shop/components/summary-step.tsx
 #: src/features/shop/pages/order-link-page.tsx
@@ -1510,9 +1848,47 @@ msgstr "Your payment arrived, but it could not confirm the order."
 msgid "Your payment is under review"
 msgstr "Your payment is under review"
 
+#: src/features/account/pages/account-page.tsx
+#: src/features/profile/pages/my-profile-page.tsx
+msgid "Your profile"
+msgstr "Your profile"
+
+#: src/features/profile/components/publication.tsx
+msgid "Your profile is private again."
+msgstr "Your profile is private again."
+
+#: src/features/profile/components/profile-summary.tsx
+#: src/features/profile/components/publication.tsx
+msgid "Your profile is private: only you see it."
+msgstr "Your profile is private: only you see it."
+
+#: src/features/profile/components/publication.tsx
+msgid "Your profile is public: anyone reads it, with no sign-in. Withdrawing it keeps everything it holds."
+msgstr "Your profile is public: anyone reads it, with no sign-in. Withdrawing it keeps everything it holds."
+
+#: src/features/profile/components/profile-summary.tsx
+msgid "Your profile is public: anyone reads it."
+msgstr "Your profile is public: anyone reads it."
+
+#: src/features/profile/components/publication.tsx
+msgid "Your profile is public."
+msgstr "Your profile is public."
+
+#: src/features/profile/components/profile-form.tsx
+msgid "Your profile is saved."
+msgstr "Your profile is saved."
+
+#: src/features/landing/pages/privacy-page.tsx
+msgid "Your profile, if you fill it in: a description, pronouns, a city or region, links and interests, and your avatar. The profile is private until you publish it, and you withdraw it whenever you like."
+msgstr "Your profile, if you fill it in: a description, pronouns, a city or region, links and interests, and your avatar. The profile is private until you publish it, and you withdraw it whenever you like."
+
 #: src/features/shop/pages/order-link-page.tsx
 msgid "Your QR code"
 msgstr "Your QR code"
+
+#: src/features/profile/pages/report-profile-page.tsx
+msgid "Your report has reached the administrators. They will look at the profile and decide whether it stays."
+msgstr "Your report has reached the administrators. They will look at the profile and decide whether it stays."
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "Your rights"

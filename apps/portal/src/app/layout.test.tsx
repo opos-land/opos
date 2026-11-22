@@ -72,6 +72,7 @@ describe('Layout', () => {
     const footer = screen.getByRole('contentinfo')
     expect(within(footer).getByRole('button', { name: 'Privacy settings' })).toBeDefined()
     expect(within(footer).getByRole('link', { name: 'Privacy policy' })).toBeDefined()
+    expect(within(footer).getByRole('link', { name: 'Terms' }).getAttribute('href')).toBe('/terms')
   })
 
   it('offers sign-in to a visitor without a session', () => {

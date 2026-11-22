@@ -31,6 +31,8 @@ vi.mock('../../auth', () => ({
   signInWithPassword: vi.fn(),
   GoogleButton: () => <button type="button">Confirm with Google</button>,
 }))
+// The profile's summary has tests of its own.
+vi.mock('../../profile', () => ({ ProfileSummary: () => <p>the summary of the profile</p> }))
 vi.mock('../api/account', () => ({
   mergeSavedAccount: vi.fn(),
   accountOptions: () => ({ queryKey: ['account'], queryFn: () => Promise.resolve(me.current) }),
@@ -165,6 +167,16 @@ describe('AccountPage name', () => {
 
     expect(await screen.findByText('Enter up to 50 characters.')).toBeTruthy()
     expect(update).not.toHaveBeenCalled()
+  })
+})
+
+describe('AccountPage profile', () => {
+  it('shows the profile in a section of its own, below the name', async () => {
+    await openPage()
+
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+    expect(headings.indexOf('Your profile')).toBe(headings.indexOf('Your name') + 1)
+    expect(screen.getByText('the summary of the profile')).toBeTruthy()
   })
 })
 

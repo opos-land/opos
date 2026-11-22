@@ -12,6 +12,7 @@ import {
   startedAttemptSchema,
 } from './checkout'
 import { publicRoute, timestamp } from './common'
+import { publicProfileSchema } from './profiles'
 
 // What a convention's page shows to anyone. A field added here is public at once.
 
@@ -132,6 +133,9 @@ const documentVersion = z.object({
 const merchandiseFile = z.object({
   params: z.object({ slug: z.string(), fileId: z.string(), variant: z.string() }),
 })
+
+const profile = z.object({ params: z.object({ profileId: z.string() }) })
+const avatarFile = z.object({ params: z.object({ fileId: z.string(), variant: z.string() }) })
 
 /** An order a public address names, opened by its result token alone. */
 const order = z.object({
@@ -287,4 +291,24 @@ export const publicContract = {
     })
     .input(programItem)
     .output(publicProgramItemSchema),
+  profile: publicRoute
+    .route({
+      method: 'GET',
+      path: '/public/profiles/{profileId}',
+      summary:
+        'A published profile: the public name of its account, its avatar and what it holds; a profile that is not published is not found; no sign-in',
+    })
+    .input(profile)
+    .output(publicProfileSchema),
+  avatarFile: publicRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/public/avatar-files/{fileId}/{variant}',
+      outputStructure: 'detailed',
+      summary:
+        "A variant of an account's avatar, as an image, whether or not its profile is published; no sign-in",
+    })
+    .input(avatarFile)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
 }

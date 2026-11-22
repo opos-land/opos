@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { accountRoute, timestamp } from './common'
 import { type FileType, uploadedFileSchema } from './files'
+import { nameOrderSchema } from './me'
 import { isPlainLine, plainLine, plainText } from './text'
 
 // The public profile (docs/specs/0016-public-profile.md): what an account shows of itself to
@@ -133,6 +134,22 @@ export const myProfileSchema = profileHeldSchema.extend({
 export type MyProfile = z.infer<typeof myProfileSchema>
 
 export const putAvatarSchema = z.strictObject({ file: uploadedFileSchema })
+
+/**
+ * A published profile as anyone reads it: the parts of its account's public name and their order,
+ * its avatar and what it holds. A field added here is public at once, for every account that
+ * published its profile (docs/adr/0071-let-anyone-read-the-profile-an-account-published.md).
+ */
+export const publicProfileSchema = profileHeldSchema.extend({
+  profileId: z.uuid(),
+  firstName: z.string().nullable(),
+  nickname: z.string().nullable(),
+  lastName: z.string().nullable(),
+  nameOrder: nameOrderSchema,
+  avatar: avatarSchema.nullable(),
+})
+
+export type PublicProfile = z.infer<typeof publicProfileSchema>
 
 export const profileContract = {
   get: accountRoute

@@ -362,6 +362,37 @@ test('the API tests have time for several real sign-ins and for a hook that star
   assert.match(config, /hookTimeout: 30_000/)
 })
 
+test('the API tests run on four workers at most, each a whole API with pools of its own', () => {
+  const config = read('../apps/api/vitest.config.ts')
+  assert.match(config, /const MAX_WORKERS = 4\n/)
+  assert.match(
+    config,
+    /maxWorkers: Math\.max\(1, Math\.min\(MAX_WORKERS, availableParallelism\(\) - 1\)\),/,
+  )
+})
+
+test('the test files that write the admin log run one after another, each in a group of its own', () => {
+  const config = read('../apps/api/vitest.config.ts')
+  const list = /const ADMIN_LOG_TESTS = \[([^\]]*)\]/.exec(config)
+  assert.ok(list, 'the config names the files')
+  const named = [...list[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
+  // An admin of a test is granted the role, which the log records: a file that takes anything
+  // from the admin helpers writes the log
+  const tests = new URL('../apps/api/test/', import.meta.url)
+  const writers = readdirSync(tests)
+    .filter((name) => name.endsWith('.test.ts'))
+    .filter((name) => readFileSync(new URL(name, tests), 'utf8').includes("from './admins'"))
+    .map((name) => `test/${name}`)
+  assert.deepEqual(named.sort(), writers.sort())
+  assert.match(config, /exclude: \[STORAGE_TESTS, \.\.\.ADMIN_LOG_TESTS\],/)
+  assert.match(config, /ADMIN_LOG_TESTS\.map\(\(file, index\) =>/)
+  // A group that included nothing would leave its file out of every project, and the run green
+  assert.match(config, /include: \[file\],/)
+  assert.match(config, /sequence: \{ groupOrder: 2 \+ index \}/)
+  // VITEST_MAX_WORKERS, which the pre-push hook sets, overrides a project's fileParallelism
+  assert.doesNotMatch(config, /fileParallelism:/)
+})
+
 test('the ruleset requires check, e2e and secrets', () => {
   assert.deepEqual(requiredChecks(ruleset).sort(), ['check', 'e2e', 'secrets'])
 })

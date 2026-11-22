@@ -1,6 +1,15 @@
 import { isTimeZone, SUPPORTED_LOCALES } from '@opos/i18n'
 import { z } from 'zod'
 import { adminRoute, timestamp } from './common'
+import { nameOrderSchema } from './me'
+import {
+  avatarSchema,
+  PROFILE_REPORT_REASONS,
+  profileHeldSchema,
+  profileTakedownSchema,
+  TAKEDOWN_REASONS,
+} from './profiles'
+import { plainText } from './text'
 
 // The routes of the admin application (docs/specs/0001-platform-administration.md). Each needs
 // the session of that application, an account holding the admin role with the second factor of its
@@ -97,6 +106,108 @@ export type AdminAction = z.infer<typeof adminActionSchema>
 
 const tenantParams = z.object({ params: z.object({ tenantId: z.uuid() }) })
 
+// The admin's side of the public profile (docs/specs/0016-public-profile.md, T1-T14): the reports
+// of profiles, the takedown of a profile and its restoring, and the clearing of an account's name.
+
+/** The parts of an account's public name, as a list of the admin application shows an account. */
+const publicNameSchema = z.object({
+  firstName: z.string().nullable(),
+  nickname: z.string().nullable(),
+  lastName: z.string().nullable(),
+  nameOrder: nameOrderSchema,
+})
+
+/** A report of a profile as the admin reads it: only here does anyone read what a report says. */
+export const adminProfileReportSchema = z.object({
+  id: z.uuid(),
+  /** The account of the reported profile. */
+  accountId: z.uuid(),
+  reason: z.enum(PROFILE_REPORT_REASONS),
+  note: z.string().nullable(),
+  /** The address of who sent it, when they gave one. */
+  email: z.string().nullable(),
+  createdAt: timestamp,
+  closedAt: timestamp.nullable(),
+})
+
+export type AdminProfileReport = z.infer<typeof adminProfileReportSchema>
+
+/** A row of the list of reports: the report, and the public name of the account it is about. */
+export const listedProfileReportSchema = adminProfileReportSchema.extend({
+  account: publicNameSchema,
+})
+
+export type ListedProfileReport = z.infer<typeof listedProfileReportSchema>
+
+export const profileReportStates = ['open', 'closed'] as const
+
+/**
+ * A profile as the admin sees it: as it is now, with no history of what it held. An account with
+ * no profile yet shows an empty one, so that its name can be read and cleared.
+ */
+export const adminProfileSchema = profileHeldSchema.extend(publicNameSchema.shape).extend({
+  accountId: z.uuid(),
+  email: z.string(),
+  /** What the address of the profile's page holds, while the profile is published. */
+  profileId: z.uuid().nullable(),
+  published: z.boolean(),
+  avatar: avatarSchema.nullable(),
+  takedown: profileTakedownSchema.nullable(),
+  /** The reports of the profile, the newest first. */
+  reports: z.array(adminProfileReportSchema),
+})
+
+export type AdminProfile = z.infer<typeof adminProfileSchema>
+
+/** A row of the list of profiles taken down. */
+export const takenDownProfileSchema = publicNameSchema.extend({
+  accountId: z.uuid(),
+  email: z.string(),
+  avatar: avatarSchema.nullable(),
+  takenDownAt: timestamp,
+  reason: z.enum(TAKEDOWN_REASONS),
+  /** When the account asked for a review, if it did. */
+  reviewRequestedAt: timestamp.nullable(),
+})
+
+export type TakenDownProfile = z.infer<typeof takenDownProfileSchema>
+
+/** A takedown: its reason, a rule of the platform's terms, and a sentence for the account. */
+export const takeDownProfileSchema = z.strictObject({
+  reason: z.enum(TAKEDOWN_REASONS),
+  note: plainText(500).optional(),
+})
+
+export type TakeDownProfile = z.infer<typeof takeDownProfileSchema>
+
+export const clearAccountNameSchema = z.strictObject({ reason: z.enum(TAKEDOWN_REASONS) })
+
+export const findAccountSchema = z.strictObject({ email: z.email().max(320) })
+
+/**
+ * What an action about a profile answers: the profile as the action left it, and whether the
+ * email that tells the account went out. `emailSent` is null when nothing changed, so none was
+ * due.
+ */
+export const moderatedProfileSchema = z.object({
+  profile: adminProfileSchema,
+  emailSent: z.boolean().nullable(),
+})
+
+export type ModeratedProfile = z.infer<typeof moderatedProfileSchema>
+
+/**
+ * A closed report, and whether who sent it was told: null when the report gave no address, or was
+ * closed already.
+ */
+export const closedProfileReportSchema = z.object({
+  report: adminProfileReportSchema,
+  emailSent: z.boolean().nullable(),
+})
+
+const reportParams = z.object({ params: z.object({ reportId: z.uuid() }) })
+const accountParams = z.object({ params: z.object({ accountId: z.uuid() }) })
+
 export const adminContract = {
   tenants: adminRoute
     .route({ method: 'GET', path: '/admin/tenants', summary: 'Every tenant, by name' })
@@ -178,4 +289,91 @@ export const adminContract = {
       }),
     )
     .output(z.array(adminActionSchema)),
+  profileReports: adminRoute
+    .route({
+      method: 'GET',
+      path: '/admin/profile-reports',
+      summary: 'The reports of profiles, the open ones or the closed ones, newest first',
+    })
+    .input(
+      z.object({
+        query: z
+          .object({
+            state: z.enum(profileReportStates).default('open'),
+            /** Reports older than this one, by its identifier: the next page. */
+            before: z.uuid().optional(),
+            limit: z.coerce.number().int().min(1).max(100).default(50),
+          })
+          .strict(),
+      }),
+    )
+    .output(z.array(listedProfileReportSchema)),
+  profileReport: adminRoute
+    .route({
+      method: 'GET',
+      path: '/admin/profile-reports/{reportId}',
+      summary: 'A report of a profile',
+    })
+    .input(reportParams)
+    .output(adminProfileReportSchema),
+  closeProfileReport: adminRoute
+    .route({
+      method: 'POST',
+      path: '/admin/profile-reports/{reportId}/close',
+      summary:
+        'Close a report and leave its profile as it is; who sent it is told when they gave an address',
+    })
+    .input(reportParams)
+    .output(closedProfileReportSchema),
+  takenDownProfiles: adminRoute
+    .route({
+      method: 'GET',
+      path: '/admin/profiles',
+      summary: 'The profiles taken down, those asking for a review first',
+    })
+    .output(z.array(takenDownProfileSchema)),
+  findAccount: adminRoute
+    .route({
+      method: 'POST',
+      path: '/admin/accounts/find',
+      summary:
+        'The identifier of the account an email address names; refused with account.not-found',
+    })
+    .input(z.object({ body: findAccountSchema }))
+    .output(z.object({ accountId: z.uuid() })),
+  profile: adminRoute
+    .route({
+      method: 'GET',
+      path: '/admin/profiles/{accountId}',
+      summary:
+        'The profile of an account as it is now, with its reports; an empty one for an account with none',
+    })
+    .input(accountParams)
+    .output(adminProfileSchema),
+  takeDownProfile: adminRoute
+    .route({
+      method: 'POST',
+      path: '/admin/profiles/{accountId}/take-down',
+      summary:
+        'Take a profile down: it is withdrawn and cannot be published, its avatar goes and its open reports are closed; the account is told why',
+    })
+    .input(accountParams.extend({ body: takeDownProfileSchema }))
+    .output(moderatedProfileSchema),
+  restoreProfile: adminRoute
+    .route({
+      method: 'POST',
+      path: '/admin/profiles/{accountId}/restore',
+      summary: 'Restore a profile taken down: its account may publish it again',
+    })
+    .input(accountParams)
+    .output(moderatedProfileSchema),
+  clearAccountName: adminRoute
+    .route({
+      method: 'POST',
+      path: '/admin/accounts/{accountId}/clear-name',
+      summary:
+        "Clear an account's first name, nickname and last name; the account is told why and may enter a name again",
+    })
+    .input(accountParams.extend({ body: clearAccountNameSchema }))
+    .output(moderatedProfileSchema),
 }

@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common'
 import { AuthModule } from '../auth/auth.module'
 import { MailModule } from '../mail/mail.module'
+import { ProfilesModule } from '../profiles/profiles.module'
 import { AdminController } from './admin.controller'
 import { AdminDbService } from './admin-db.service'
+import { AdminProfilesDb } from './admin-profiles.db'
+import { ProfileModerationService } from './profile-moderation.service'
 import { AdminGuard } from './require-admin.decorator'
 import { TwoFactorResetService } from './two-factor-reset.service'
 
@@ -12,8 +15,14 @@ import { TwoFactorResetService } from './two-factor-reset.service'
  * other module reaches the role.
  */
 @Module({
-  imports: [AuthModule, MailModule],
+  imports: [AuthModule, MailModule, ProfilesModule],
   controllers: [AdminController],
-  providers: [AdminDbService, AdminGuard, TwoFactorResetService],
+  providers: [
+    AdminDbService,
+    AdminProfilesDb,
+    AdminGuard,
+    TwoFactorResetService,
+    ProfileModerationService,
+  ],
 })
 export class AdminModule {}

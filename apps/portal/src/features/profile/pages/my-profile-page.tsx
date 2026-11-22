@@ -2,9 +2,8 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { usePageTitle } from '../../../shared/lib/page-title'
-import { useSession } from '../../../shared/lib/session'
 import { ErrorMessage, linkClass, LoadingView, Page, Section } from '../../../shared/ui'
-import { myProfileOptions } from '../api/profile'
+import { accountOptions, myProfileOptions } from '../api/profile'
 import { AvatarForm } from '../components/avatar-form'
 import { ProfileForm } from '../components/profile-form'
 import { Publication } from '../components/publication'
@@ -19,11 +18,13 @@ import { TakedownNotice } from '../components/takedown-notice'
 export function MyProfilePage() {
   const { t } = useLingui()
   usePageTitle(t`Your profile`)
-  const account = useSession((state) => state.account)
+  // The name the initials come from, as the account's page last saved it.
+  const account = useQuery(accountOptions())
   const profile = useQuery(myProfileOptions())
 
-  if (profile.isPending || !account) return <LoadingView />
   if (profile.isError) return <ErrorMessage error={profile.error} />
+  if (account.isError) return <ErrorMessage error={account.error} />
+  if (profile.isPending || account.isPending) return <LoadingView />
 
   return (
     <Page
@@ -37,7 +38,7 @@ export function MyProfilePage() {
       </p>
       {profile.data.takedown && <TakedownNotice takedown={profile.data.takedown} />}
       <Section title={<Trans>Avatar</Trans>}>
-        <AvatarForm profile={profile.data} name={account} />
+        <AvatarForm profile={profile.data} name={account.data} />
       </Section>
       <Section title={<Trans>What your profile holds</Trans>}>
         <ProfileForm profile={profile.data} />

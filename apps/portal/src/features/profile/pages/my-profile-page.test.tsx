@@ -53,11 +53,9 @@ const api = vi.hoisted(() => ({
   requestReview: vi.fn(),
 }))
 
-vi.mock('../../../shared/lib/session', () => ({
-  useSession: (select: (session: { account: typeof state.account }) => unknown) =>
-    select({ account: state.account }),
-}))
 vi.mock('../api/profile', () => ({
+  // The account as `GET /me` answers it: a name saved on the account's page is in it at once.
+  accountOptions: () => ({ queryKey: ['me'], queryFn: () => Promise.resolve(state.account) }),
   myProfileOptions: () => ({
     queryKey: ['profile'],
     queryFn: () => Promise.resolve(state.profile),

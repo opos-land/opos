@@ -2,9 +2,8 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { MY_PROFILE_PATH } from '../../../shared/config/routes'
-import { useSession } from '../../../shared/lib/session'
 import { ErrorMessage, linkClass } from '../../../shared/ui'
-import { myProfileOptions } from '../api/profile'
+import { accountOptions, myProfileOptions } from '../api/profile'
 import { AccountAvatar } from './account-avatar'
 
 /**
@@ -14,17 +13,17 @@ import { AccountAvatar } from './account-avatar'
  */
 export function ProfileSummary() {
   const { t } = useLingui()
-  const account = useSession((state) => state.account)
+  const account = useQuery(accountOptions())
   const profile = useQuery(myProfileOptions())
 
   if (profile.isError) return <ErrorMessage error={profile.error} />
-  if (profile.isPending || !account) return null
+  if (profile.isPending || !account.data) return null
 
   const { avatar, published, takedown } = profile.data
   return (
     <>
       <div className="flex items-center gap-4">
-        <AccountAvatar avatar={avatar} name={account} alt={t`Your avatar`} variant="small" />
+        <AccountAvatar avatar={avatar} name={account.data} alt={t`Your avatar`} variant="small" />
         <p className="text-sm">
           {takedown ? (
             <Trans>An administrator took your profile down. See why on its page.</Trans>

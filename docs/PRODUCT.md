@@ -93,7 +93,7 @@ a ticket; what the scene calls accreditation is the ticket.
 | **variant**                   | a buyable option of a merchandise item, with its own stock                                         |
 | **size chart**                | a picture of the measurements of a merchandise item's sizes                                        |
 | **pre-order deadline**        | the moment until which a variant may sell without a stock limit                                    |
-| **ticket holder**             | the person a ticket is issued to, named in its order                                               |
+| **ticket holder**             | the person a ticket is issued to, named in its order when its buyer names them                     |
 | **age band**                  | child, teen or adult: a ticket holder's age on the edition's first day                             |
 | **guardian consent**          | a guardian's written consent for a teen, brought on paper to the edition                           |
 | **custom field**              | a short text an edition asks a ticket holder for, never anything sensitive                         |
@@ -311,6 +311,7 @@ one ticket holder, with its add-ons and merchandise, or merchandise alone.
 | Paying                        | an order is paid only when its payment provider confirms the payment to OPOS; the buyer's return to the shop is never proof of it; an order with nothing to pay is paid at once                                                                       |
 | A payment that does not match | another amount than the total never pays the order: it needs review by an org; a payment an order no longer needs is refused where the provider can, and the buyer is told where the money is                                                         |
 | A paid order                  | has one QR code, sent with its confirmation, and an order link that opens it without a sign-in; a visitor's order under the confirmed email of an account becomes that account's                                                                      |
+| Naming the ticket holder      | a name or nickname is the buyer's to give or leave out: an order is its buyer's by its email address, and one with no name is sold and scanned like any other ([0076](adr/0076-let-a-buyer-leave-the-ticket-holders-name-out.md))                     |
 | The order's data              | the ticket holder's name, age band, answers and consents, each consent with the exact document version and the time, are the convention's: kept with the order, never on the account                                                                  |
 | What an order keeps           | its prices, whatever the catalog does later; what it names is hidden and never deleted, and a capacity or a stock is never set below what orders hold                                                                                                 |
 | Emails                        | a fixed text with the convention's name, in the recipient's language or the convention's for an address with no account, listed on the order and sent again after a failed send; what a sent one said is kept, without its QR code and its order link |
@@ -427,12 +428,13 @@ and in Poznań.
 
 ## 10. Personal data and privacy
 
-OPOS stores an attendee's name, email address and activity, and what the account put on its
-profile; payment details stay with the payment provider. With an order it stores what the convention needs of its ticket holder: a name or
-nickname, an age band, the answers to the edition's custom fields, the consents accepted and the
-buyer's email address. Of a payment it keeps the amount, the time and the provider's number of the
-transaction, and nothing of a card or a bank account. Of an email of an order it keeps what the
-email said as it went out, for as long as the order, without the QR code and the order link.
+OPOS stores an attendee's name, email address and activity, and what the account put on its profile;
+payment details stay with the payment provider. With an order it stores what the convention needs of
+its ticket holder: a name or nickname when the buyer gives one, an age band, the answers to the
+edition's custom fields, the consents accepted and the buyer's email address. Of a payment it keeps
+the amount, the time and the provider's number of the transaction, and nothing of a card or a bank
+account. Of an email of an order it keeps what the email said as it went out, for as long as the
+order, without the QR code and the order link.
 
 **Account deletion is self-service**, after a fresh sign-in, and takes likes, reviews, memberships
 and registrations with it, and the profile, its avatar and the reports of it. Orders stay as the convention's sales records; a last head hands the

@@ -48,7 +48,7 @@ describe('the names of what a profile holds', () => {
 
     expect(Object.keys(reportReasonNames)).toEqual(['identity', 'offensive', 'spam', 'other'])
     expect(en._(reportReasonNames['identity']!)).toBe('Someone else’s picture or identity')
-    expect(pl._(reportReasonNames['identity']!)).toBe('Cudze zdjęcie lub tożsamość')
+    expect(pl._(reportReasonNames['identity']!)).toBe('Cudze zdjęcie lub cudza tożsamość')
     expect(pl._(reportReasonNames['other']!)).toBe('Inny powód')
   })
 

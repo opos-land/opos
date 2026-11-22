@@ -862,7 +862,7 @@ msgstr "Ktoś poprosił o nowy link do zamówienia {number} w sklepie konwentu {
 
 #: src/profiles.ts
 msgid "Someone else’s picture or identity"
-msgstr "Cudze zdjęcie lub tożsamość"
+msgstr "Cudze zdjęcie lub cudza tożsamość"
 
 #: src/errors.ts
 msgid "Something in your order is no longer available. Check your order and try again."
@@ -1483,7 +1483,7 @@ msgstr "Dołączono cię do zespołu organizatorów konwentu {tenantName}"
 
 #: src/emails.ts
 msgid "Your avatar was removed when the profile was taken down. You can upload one again."
-msgstr "Twój awatar został usunięty przy zdjęciu profilu. Możesz wysłać nowy."
+msgstr "Twój awatar został usunięty, gdy profil został zdjęty. Możesz wgrać nowy."
 
 #: src/order-emails.ts
 msgid "Your order"

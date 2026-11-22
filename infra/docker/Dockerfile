@@ -87,8 +87,10 @@ COPY --from=prune-db /repo/out/full/ ./
 COPY infra/docker/tools.sh /usr/local/bin/tools
 WORKDIR /repo/packages/db
 USER node
-# Healthy once the roles, the migrations and the verification passed: the API waits for it
-HEALTHCHECK --interval=5s --timeout=3s --start-period=120s --retries=3 \
+# Healthy once the roles, the migrations, the verification and any seed passed: the API waits for
+# it. A failed check counts only after the start period, which leaves the seed its time; the first
+# check that passes ends it
+HEALTHCHECK --interval=5s --timeout=3s --start-period=600s --retries=3 \
   CMD ["test", "-f", "/tmp/ready"]
 CMD ["tools"]
 

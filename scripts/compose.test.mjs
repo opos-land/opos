@@ -2,8 +2,12 @@
 // to the tools container alone: the API reaches the database only through its runtime roles
 // (docs/ARCHITECTURE.md, Tenant isolation).
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, it } from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 const compose = readFileSync(new URL('../infra/docker/compose.yaml', import.meta.url), 'utf8')
 const local = readFileSync(new URL('../infra/local/compose.yaml', import.meta.url), 'utf8')
@@ -109,6 +113,18 @@ const BUCKET_KEY = /^S3_(ACCESS_KEY_ID|SECRET_ACCESS_KEY)$/
 
 const MIGRATION_ONLY = /^(DATABASE_MIGRATION_URL|OPOS_\w+_PASSWORD)$/
 
+/** What the seed reads beside the postgres URL (packages/db/src/seed.ts). */
+const SEED_VARIABLES = [
+  'SUPABASE_URL',
+  'SUPABASE_SECRET_KEY',
+  'PAYMENT_CREDENTIALS_KEY',
+  'S3_ENDPOINT',
+  'S3_REGION',
+  'S3_BUCKET',
+  'S3_ACCESS_KEY_ID',
+  'S3_SECRET_ACCESS_KEY',
+]
+
 describe('the compose file of a deployment', () => {
   const services = environments(compose)
 
@@ -154,13 +170,25 @@ describe('the compose file of a deployment', () => {
     assert.deepEqual(exposed(unexposed).api, [])
   })
 
-  // docs/specs/0012-file-storage.md, W2, and docs/specs/0013-image-variants.md, I3
-  it("gives the bucket's key to the API alone, and imgproxy's key to the API and imgproxy alone", () => {
+  // The seed of a deployment that seeds runs in the tools, after the database steps: it reaches
+  // Supabase Auth, seals with the API's key and puts its demo files into the bucket
+  // (docs/adr/0045-let-the-seed-put-its-demo-files-into-the-bucket.md)
+  it('hands the tools the switch of the seed and what the seed reaches', () => {
+    assert.match(service(compose, 'tools'), /^ {6}OPOS_SEED: \$\{OPOS_SEED:-false\}$/m)
+    for (const variable of SEED_VARIABLES) {
+      assert.ok(services.tools.includes(variable), variable)
+    }
+  })
+
+  // docs/specs/0012-file-storage.md, W2, and docs/specs/0013-image-variants.md, I3; the tools hold
+  // the bucket's key for the seed of Dev, a deployment the seed alone runs in
+  // (docs/adr/0045-let-the-seed-put-its-demo-files-into-the-bucket.md)
+  it("gives the bucket's key to the API and the tools alone, and imgproxy's key to the API and imgproxy alone", () => {
     for (const variable of ['S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'IMGPROXY_KEY']) {
       assert.ok(services.api.includes(variable), variable)
     }
     for (const [name, variables] of Object.entries(services)) {
-      if (name !== 'api') {
+      if (name !== 'api' && name !== 'tools') {
         assert.deepEqual(
           variables.filter((variable) => BUCKET_KEY.test(variable)),
           [],
@@ -199,6 +227,64 @@ describe('the compose file of a deployment', () => {
   it('catches a setting of imgproxy the deployment drops', () => {
     const dropped = compose.replace("      IMGPROXY_STRIP_METADATA: 'true'\n", '')
     assert.notDeepEqual(imgproxySettings(dropped), imgproxySettings(local))
+  })
+})
+
+/**
+ * Runs the tools' entrypoint with pnpm, touch and sleep replaced by fakes that log their call, the
+ * pnpm script named `fail` failing; returns the exit status and the calls in order.
+ */
+function runTools({ seed, fail } = {}) {
+  const dir = mkdtempSync(join(tmpdir(), 'tools-'))
+  const log = join(dir, 'log')
+  for (const name of ['pnpm', 'touch', 'sleep']) {
+    const fake = join(dir, name)
+    writeFileSync(
+      fake,
+      `#!/bin/sh\necho "${name} $*" >> "$LOG"\n[ "${name} $*" != "pnpm run $FAIL" ]\n`,
+    )
+    chmodSync(fake, 0o755)
+  }
+  const env = { PATH: `${dir}:${process.env.PATH}`, LOG: log, FAIL: fail ?? '' }
+  if (seed !== undefined) env.OPOS_SEED = seed
+  const { status } = spawnSync('sh', [fileURLToPath(TOOLS)], { env })
+  const calls = existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n') : []
+  rmSync(dir, { recursive: true })
+  return { status, calls }
+}
+
+const TOOLS = new URL('../infra/docker/tools.sh', import.meta.url)
+const STEPS = ['pnpm run db:roles', 'pnpm run db:migrate', 'pnpm run db:verify']
+const READY = ['touch /tmp/ready', 'sleep infinity']
+
+describe('the database steps of a deployment', () => {
+  it('runs the roles, the migrations and the verification, then is ready', () => {
+    assert.deepEqual(runTools({ seed: 'false' }), { status: 0, calls: [...STEPS, ...READY] })
+  })
+
+  it('seeds after the verification and before it is ready, when the deployment seeds', () => {
+    assert.deepEqual(runTools({ seed: 'true' }), {
+      status: 0,
+      calls: [...STEPS, 'pnpm run db:seed', ...READY],
+    })
+  })
+
+  it('seeds nothing where the switch is not set', () => {
+    assert.deepEqual(runTools(), { status: 0, calls: [...STEPS, ...READY] })
+  })
+
+  it('refuses a switch that is neither true nor false', () => {
+    const { status, calls } = runTools({ seed: 'yes' })
+    assert.notEqual(status, 0)
+    assert.deepEqual(calls, [])
+  })
+
+  it('never gets ready once a step failed, the seed included', () => {
+    for (const fail of ['db:migrate', 'db:seed']) {
+      const { status, calls } = runTools({ seed: 'true', fail })
+      assert.notEqual(status, 0, fail)
+      assert.equal(calls.at(-1), `pnpm run ${fail}`, fail)
+    }
   })
 })
 

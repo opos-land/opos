@@ -202,12 +202,18 @@ Coolify, built on the server from the head of `develop`
 - **A change of configuration**, such as a variable or a rotated secret, is applied and deploys the
   head of `develop` again with it.
 - **A change of Supabase Auth's settings:** [SUPABASE.md](SUPABASE.md#changes).
+- **Demo data.** While `deployment.seed` in `env.yaml` is `true`, every deployment runs the seed
+  after the verification and before the API starts: each release writes the demo rows and the demo
+  accounts' passwords back as the seed has them, and a failed seed fails the deployment. A release
+  cannot choose otherwise, as Coolify's webhook takes a commit and nothing else: set it to `false`
+  and apply to leave Dev's data alone, and seed once by hand with `pnpm db:seed` in the tools
+  container.
 - **Admins.** `pnpm db:admin:grant` and `pnpm db:admin:revoke` run in the tools container, from
   Coolify's terminal.
 
 | Check, after the first deployment               | Expect                                                           |
 | ----------------------------------------------- | ---------------------------------------------------------------- |
-| the tools container's log                       | the roles, the migrations and the verification passed            |
+| the tools container's log                       | the roles, the migrations, the verification and the seed passed  |
 | `https://api.dev.opos.land/health`              | `200`, without basic auth                                        |
 | the portal, the panel and the admin application | basic auth, then the application                                 |
 | a sign-up on the portal                         | the confirmation mail in `https://mail.dev.opos.land`            |

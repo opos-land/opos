@@ -1,7 +1,13 @@
 import { setupI18n } from '@lingui/core'
 import { describe, expect, it } from 'vitest'
 import { activateLocale } from './catalog'
-import { interestNames, nameRules, profileRules, reportReasonNames } from './profiles'
+import {
+  interestNames,
+  nameRules,
+  profileRules,
+  reportReasonNames,
+  takedownFacts,
+} from './profiles'
 
 const said = async (locale: 'en' | 'pl') => {
   const i18n = setupI18n()
@@ -55,5 +61,25 @@ describe('the names of what a profile holds', () => {
         expect(pl._(rule)).toMatch(/regulamin/i)
       }
     }
+  })
+})
+
+// T5: the email to the account and the page where it changes its profile say the same.
+describe('what a takedown says of how it was decided', () => {
+  it('says whether a report came first, and that a person decided', async () => {
+    const [en, pl] = await Promise.all([said('en'), said('pl')])
+
+    expect(en._(takedownFacts.afterReport)).toBe(
+      'The decision followed a report someone sent about your profile.',
+    )
+    expect(en._(takedownFacts.ownInitiative)).toBe(
+      'The decision was made on the administrators’ own initiative, with no report.',
+    )
+    expect(en._(takedownFacts.byAPerson)).toBe(
+      'The decision was made by a person, an administrator, and not by a program.',
+    )
+    expect(pl._(takedownFacts.byAPerson)).toBe(
+      'Decyzję podjął człowiek, administrator, a nie program.',
+    )
   })
 })

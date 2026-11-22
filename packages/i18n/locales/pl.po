@@ -955,15 +955,15 @@ msgstr "Zapłacona kwota, {paid}, różni się od kwoty zamówienia, {total}."
 msgid "The code is wrong, has expired or was already used. Check it and try again."
 msgstr "Kod jest nieprawidłowy, wygasł lub został już użyty. Sprawdź go i spróbuj ponownie."
 
-#: src/emails.ts
+#: src/profiles.ts
 msgid "The decision followed a report someone sent about your profile."
 msgstr "Decyzję poprzedziło zgłoszenie twojego profilu."
 
-#: src/emails.ts
+#: src/profiles.ts
 msgid "The decision was made by a person, an administrator, and not by a program."
 msgstr "Decyzję podjął człowiek, administrator, a nie program."
 
-#: src/emails.ts
+#: src/profiles.ts
 msgid "The decision was made on the administrators’ own initiative, with no report."
 msgstr "Decyzję podjęli administratorzy z własnej inicjatywy, bez zgłoszenia."
 

@@ -1,6 +1,6 @@
 import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
-import { nameRules, profileRules } from './profiles'
+import { nameRules, profileRules, takedownFacts } from './profiles'
 
 // The content of the emails the API renders in the recipient's locale: Supabase Auth's, sent when
 // the send-email hook calls it, and the organizer invitations.
@@ -121,8 +121,6 @@ export const profileReportOutcomeEmail = (
         note: msg`If you do not agree with this decision, write to ${contact} and say why.`,
       }
 
-const decidedByAPerson = msg`The decision was made by a person, an administrator, and not by a program.`
-
 /** To the account: its profile was taken down. `note` is the admin's sentence, when one was written. */
 export const profileTakenDownEmail = (takedown: {
   reason: string
@@ -134,10 +132,8 @@ export const profileTakenDownEmail = (takedown: {
   body: msg`An administrator of OPOS took your profile down. It is no longer public, your avatar was removed, and the profile cannot be published until an administrator restores it.`,
   details: [
     ...(profileRules[takedown.reason] ? [profileRules[takedown.reason]!] : []),
-    takedown.afterReport
-      ? msg`The decision followed a report someone sent about your profile.`
-      : msg`The decision was made on the administrators’ own initiative, with no report.`,
-    decidedByAPerson,
+    takedown.afterReport ? takedownFacts.afterReport : takedownFacts.ownInitiative,
+    takedownFacts.byAPerson,
   ],
   ...(takedown.note
     ? { quoteIntroduction: msg`The administrator wrote:`, quote: takedown.note }
@@ -156,6 +152,9 @@ export const profileRestoredEmail: NoticeContent = {
 export const nameClearedEmail = (cleared: { reason: string; contact: string }): NoticeContent => ({
   subject: msg`The name of your account was cleared`,
   body: msg`An administrator of OPOS cleared the name of your account: your first name, nickname and last name. Until you enter a name again, others see you as “Anon”.`,
-  details: [...(nameRules[cleared.reason] ? [nameRules[cleared.reason]!] : []), decidedByAPerson],
+  details: [
+    ...(nameRules[cleared.reason] ? [nameRules[cleared.reason]!] : []),
+    takedownFacts.byAPerson,
+  ],
   note: msg`You can enter your name again in your account settings. If you do not agree with the decision, write to ${cleared.contact}.`,
 })

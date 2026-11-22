@@ -47,3 +47,13 @@ export const nameRules: Record<string, MessageDescriptor> = {
   offensive: msg`It was cleared because the terms of OPOS do not allow an offensive, hateful or unlawful name.`,
   spam: msg`It was cleared because the terms of OPOS do not allow spam or advertising in a name.`,
 }
+
+/**
+ * What a takedown says of how it was decided: whether a report came first, and that a person
+ * decided. The email to the account and the page where it changes its profile say the same.
+ */
+export const takedownFacts = {
+  afterReport: msg`The decision followed a report someone sent about your profile.`,
+  ownInitiative: msg`The decision was made on the administrators’ own initiative, with no report.`,
+  byAPerson: msg`The decision was made by a person, an administrator, and not by a program.`,
+}

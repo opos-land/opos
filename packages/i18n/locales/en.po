@@ -955,15 +955,15 @@ msgstr "The amount paid, {paid}, differs from the total of the order, {total}."
 msgid "The code is wrong, has expired or was already used. Check it and try again."
 msgstr "The code is wrong, has expired or was already used. Check it and try again."
 
-#: src/emails.ts
+#: src/profiles.ts
 msgid "The decision followed a report someone sent about your profile."
 msgstr "The decision followed a report someone sent about your profile."
 
-#: src/emails.ts
+#: src/profiles.ts
 msgid "The decision was made by a person, an administrator, and not by a program."
 msgstr "The decision was made by a person, an administrator, and not by a program."
 
-#: src/emails.ts
+#: src/profiles.ts
 msgid "The decision was made on the administrators’ own initiative, with no report."
 msgstr "The decision was made on the administrators’ own initiative, with no report."
 

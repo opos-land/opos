@@ -81,6 +81,7 @@ export const orders = pgTable(
     status: orderStatus().notNull(),
     /** The buyer's address, in lower case; empty for a manual order. */
     email: text(),
+    /** The ticket holder's name or nickname, as it was given; empty for none. */
     holderName: text().notNull(),
     /** Empty for a merch-only order, which has no ticket holder to place in a band. */
     ageBand: ageBand(),
@@ -133,11 +134,8 @@ export const orders = pgTable(
     check('orders_number', sql`${t.number} ~ '^[2-9A-HJKMNP-Z]{10}$'`),
     check('orders_total', sql`${t.totalMinor} >= 0`),
     check('orders_currency', sql`${t.currency} = 'PLN'`),
-    // An order of the shop is somebody's; a manual order asks for no name.
-    check(
-      'orders_holder_name',
-      sql`char_length(${t.holderName}) <= 200 and (${t.manualReason} is not null or char_length(btrim(${t.holderName})) >= 1)`,
-    ),
+    // Nobody has to be named: an order with no name holds an empty one.
+    check('orders_holder_name', sql`char_length(${t.holderName}) <= 200`),
     // No cascade: a code an order used is ended, never deleted.
     foreignKey({
       name: 'orders_discount_code_fk',

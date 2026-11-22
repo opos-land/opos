@@ -283,6 +283,21 @@ describe('the avatar', () => {
     expect(await keysOf(account.id, second.avatar!.fileId)).toHaveLength(2)
   })
 
+  it('takes uploads sent at once one after another: each is answered and one avatar stays', async () => {
+    const { account, agent } = await someone()
+
+    const answers = await Promise.all(
+      Array.from({ length: 4 }, () => agent.put('/me/profile/avatar').send({ file: picture() })),
+    )
+
+    expect(answers.map((res) => res.status)).toEqual([200, 200, 200, 200])
+    const rows = await fileRows(account.id)
+    expect(rows).toHaveLength(1)
+    expect((await agent.get('/me/profile')).body).toMatchObject({
+      avatar: { fileId: rows[0]!.id },
+    })
+  })
+
   it('is removed, and removing none changes nothing', async () => {
     const { account, agent } = await someone()
     const kept = (await agent.put('/me/profile/avatar').send({ file: picture() }).expect(200))

@@ -83,7 +83,7 @@ export class MyProfileRepository {
    * The row of the account, made on the first change of its profile, locked until the
    * transaction ends: a takedown that lands meanwhile waits, and the next change sees it.
    */
-  private async lock() {
+  async lock() {
     const tx = this.context.accountTx()
     const accountId = this.accountId()
     // The statement names its one column: the row takes its public identifier from the database,

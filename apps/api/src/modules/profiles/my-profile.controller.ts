@@ -47,13 +47,16 @@ export class MyProfileController {
   /**
    * The new avatar takes the place of the old in one transaction: the old pointer and its file
    * go, the file just received is kept and pointed at. The old file's objects leave the bucket
-   * after the commit, and a rollback keeps the avatar the account had.
+   * after the commit, and a rollback keeps the avatar the account had. The profile's row is held
+   * before the pointer is touched, as a takedown holds it: two uploads sent at once follow each
+   * other, and an upload and a takedown wait for one another in one order.
    */
   @Implement(contract.profile.putAvatar)
   @TakesFile(AVATAR_KIND)
   putAvatar() {
     return implement(contract.profile.putAvatar).handler(() =>
       this.change(async () => {
+        await this.profiles.lock()
         await this.releaseAvatar()
         const kept = await this.files.keep({ ...this.files.received(), name: AVATAR_LABEL })
         await this.profiles.setAvatar(kept.id)

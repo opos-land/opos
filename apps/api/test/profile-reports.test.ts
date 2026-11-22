@@ -12,7 +12,7 @@ import {
 } from '../src/modules/profiles/profile-reports.service'
 import { createApp } from './app'
 import { bindApi, createAccount, deleteCreatedAccounts, signedInAgent, testEmail } from './auth'
-import { asPostgres, objectKeys, upload } from './files'
+import { asPostgres, objectKeys, upload, whilePostgresHolds } from './files'
 import { deleteMail, waitForMail } from './mailpit'
 import { png } from './pictures'
 
@@ -233,6 +233,45 @@ describe('POST /public/profiles/{profileId}/reports', () => {
     `)
     await report(profileId).expect(204)
     expect(await reportsOf(account.id)).toHaveLength(MAX_OPEN_PROFILE_REPORTS + 1)
+  })
+
+  it('keeps no report that arrives while its profile is being taken down', async () => {
+    const { account, profileId } = await published()
+    const email = reporter()
+
+    // The takedown holds the profile's row and has not committed when the report arrives; the
+    // report waits for it, and then finds a profile that is not public.
+    const sent = await whilePostgresHolds(
+      sql`
+        update account_profiles
+        set published_at = null, taken_down_at = now(), taken_down_reason = 'spam',
+          taken_down_after_report = false
+        where account_id = ${account.id}
+      `,
+      async () => {
+        const answer = report(profileId, { reason: 'spam', email }).then((res) => res.status)
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        // Wrapped: the takedown commits while the report still waits for it.
+        return { answer }
+      },
+    )
+
+    expect(await sent.answer).toBe(404)
+    expect(await reportsOf(account.id)).toEqual([])
+    expect(await noMail(email)).toBe(true)
+  })
+
+  it('keeps no more than the limit of reports sent at once', async () => {
+    const { account, profileId } = await published()
+    await asPostgres(sql`
+      insert into profile_reports (account_id, reason)
+      select ${account.id}, 'spam' from generate_series(1, ${MAX_OPEN_PROFILE_REPORTS - 1})
+    `)
+
+    const answers = await Promise.all(Array.from({ length: 5 }, () => report(profileId)))
+
+    expect(answers.map((res) => res.status)).toEqual([204, 204, 204, 204, 204])
+    expect(await reportsOf(account.id)).toHaveLength(MAX_OPEN_PROFILE_REPORTS)
   })
 
   it('is sent only so often from one address', async () => {

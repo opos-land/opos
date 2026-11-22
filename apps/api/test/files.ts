@@ -80,6 +80,16 @@ export const point = (table: 'convention' | 'edition' | 'account', fileId: strin
 /** Runs SQL as postgres, for rows a test sets up outside the API. */
 export const asPostgres = (query: ReturnType<typeof sql>) => db.execute(query)
 
+/**
+ * Runs `during` inside a transaction of postgres that has run `first` and not yet committed, for
+ * what the API does while another writer holds a row.
+ */
+export const whilePostgresHolds = <T>(first: ReturnType<typeof sql>, during: () => Promise<T>) =>
+  db.transaction(async (tx) => {
+    await tx.execute(first)
+    return during()
+  })
+
 /** The bucket, as the tests look into it. */
 const bucket = new S3Client({
   endpoint: env.S3_ENDPOINT,

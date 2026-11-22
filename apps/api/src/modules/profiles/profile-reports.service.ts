@@ -30,42 +30,44 @@ export class ProfileReportsRepository {
   constructor(@Inject(APP_DB) private readonly db: Database) {}
 
   /**
-   * Keeps a report of the published profile a public identifier names, in one statement: whether
-   * the profile is there, whether it has room for another open report and the report itself. A
-   * profile that is not published is not found, as its page is not; one that holds its limit of
-   * open reports keeps none, and the caller answers as if it had. The language is kept with the
-   * email address alone: it is the language the address is answered in.
+   * Keeps a report of the published profile a public identifier names. A profile that is not
+   * published is not found, as its page is not; one that holds its limit of open reports keeps
+   * none, and the caller answers as if it had. The language is kept with the email address alone:
+   * it is the language the address is answered in.
+   *
+   * The profile's row is held first, in a transaction of two statements. A report that arrives
+   * during a takedown waits for it and then finds no published profile, so none is added behind
+   * the back of the takedown that closes them; and reports of one profile sent at once follow
+   * each other, each counting the open ones the one before it kept.
    */
   async add(
     publicId: string,
     report: ReportProfile,
     locale: Locale,
   ): Promise<'kept' | 'full' | 'not-found'> {
-    const [row] = await this.db.execute<{ found: number; kept: number }>(sql`
-      with target as (
+    return this.db.transaction(async (tx) => {
+      const [target] = await tx.execute<{ account_id: string }>(sql`
         select account_id from account_profiles
         where public_id = ${publicId}::uuid and published_at is not null
-      ), kept as (
+        for update
+      `)
+      if (!target) return 'not-found'
+      const kept = await tx.execute(sql`
         insert into profile_reports (account_id, reason, note, email, locale)
         select
-          target.account_id,
+          ${target.account_id}::uuid,
           ${report.reason}::profile_report_reason,
           ${report.note ?? null}::text,
           ${report.email ?? null}::text,
           ${report.email ? locale : null}::text
-        from target
         where (
           select count(*) from profile_reports reported
-          where reported.account_id = target.account_id and reported.closed_at is null
+          where reported.account_id = ${target.account_id}::uuid and reported.closed_at is null
         ) < ${MAX_OPEN_PROFILE_REPORTS}
         returning 1
-      )
-      select
-        (select count(*) from target)::int as found,
-        (select count(*) from kept)::int as kept
-    `)
-    if (!row?.found) return 'not-found'
-    return row.kept ? 'kept' : 'full'
+      `)
+      return kept.length > 0 ? 'kept' : 'full'
+    })
   }
 
   /** Removes every report closed more than twelve months ago (R9) and answers how many went. */

@@ -101,6 +101,14 @@ export class TenantFactory {
     return row!.id
   }
 
+  /** Names an account a speaker of a programme item, as the panel does by its email address. */
+  async addSpeaker(tenantId: string, programItemId: string, accountId: string) {
+    await this.db.execute(sql`
+      insert into program_item_speakers (tenant_id, program_item_id, account_id)
+      values (${tenantId}, ${programItemId}, ${accountId})
+    `)
+  }
+
   /** An org membership; returns its id. */
   async addOrg(tenantId: string, accountId: string, input: OrgInput = {}) {
     const expiresAt = input.expired ? sql`now() - interval '1 day'` : null

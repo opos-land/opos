@@ -150,7 +150,7 @@ describe('sendWithDeadline', () => {
   it('gives up at the deadline on a server that answers every step in time but slowly', async () => {
     // Every reply comes well within socketTimeout, so only the overall deadline stops the send.
     const server = await plaintextServer(300)
-    const started = Date.now()
+    const started = performance.now()
 
     await expect(
       sendWithDeadline(options(server.port), 'opos@example.test', message, 800),
@@ -160,7 +160,7 @@ describe('sendWithDeadline', () => {
     })
 
     // A send that ran its course takes 1.5 s: five replies, 300 ms each.
-    expect(Date.now() - started).toBeLessThan(1_400)
+    expect(performance.now() - started).toBeLessThan(1_400)
     await expect.poll(() => server.state.closed).toBe(true)
     expect(server.commands).not.toContain('DATA')
     expect(server.commands).not.toContain('<message>')

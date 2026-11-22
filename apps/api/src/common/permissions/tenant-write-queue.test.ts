@@ -79,10 +79,10 @@ describe('TenantWriteQueue', () => {
       .run('a', () => Promise.reject(new Error('handler failed')))
       .catch((error: unknown) => error)
 
-    const started = Date.now()
+    const started = performance.now()
     await queue.run('a', async () => {})
     // Well inside the 1000 ms a write would wait behind a turn that was never given back.
-    expect(Date.now() - started).toBeLessThan(500)
+    expect(performance.now() - started).toBeLessThan(500)
   })
 
   it('lets the next write start as soon as the running one gives its turn back', async () => {
@@ -107,10 +107,10 @@ describe('TenantWriteQueue', () => {
     const log: string[] = []
 
     void queue.run('a', () => new Promise<never>(() => {}))
-    const started = Date.now()
+    const started = performance.now()
     await queue.run('a', write(log, 'next', 10))
 
     expect(log).toEqual(['next start', 'next end'])
-    expect(Date.now() - started).toBeGreaterThanOrEqual(50)
+    expect(performance.now() - started).toBeGreaterThanOrEqual(50)
   })
 })

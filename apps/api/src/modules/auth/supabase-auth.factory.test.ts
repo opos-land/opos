@@ -189,11 +189,11 @@ describe('SupabaseAuthFactory', () => {
         Promise.reject(new TypeError('fetch failed', { cause: new Error('ECONNREFUSED') })),
       )
       vi.stubGlobal('fetch', fetchStub)
-      const started = Date.now()
+      const started = performance.now()
 
       const { error } = await refresh()
 
-      expect(Date.now() - started).toBeLessThan(10_000)
+      expect(performance.now() - started).toBeLessThan(10_000)
       expect(fetchStub).toHaveBeenCalledTimes(1)
       expect(error?.status).toBeGreaterThanOrEqual(500)
       expect(isAuthRetryableFetchError(error)).toBe(false)

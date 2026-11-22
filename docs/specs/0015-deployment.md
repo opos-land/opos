@@ -9,7 +9,8 @@
   [0037](../adr/0037-share-a-turborepo-remote-cache-that-only-develop-and-main-write.md),
   [0038](../adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md),
   [0069](../adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md),
-  [0070](../adr/0070-run-the-deploy-commands-as-node-scripts.md)
+  [0070](../adr/0070-run-the-deploy-commands-as-node-scripts.md),
+  [0071](../adr/0071-release-dev-from-ci-through-a-signed-webhook.md)
 
 ## Goal
 
@@ -39,7 +40,7 @@ Every rule is the team's.
 | C2  | An administrator of the Scaleway organisation makes what an environment needs from the organisation: the projects but the environment's own, the operators' group and its members, and the keys the API holds.                                                                    |
 | C3  | An operator, a member of the group, applies everything else, with rights in the environment's two projects alone, through a key of their own that expires the same day.                                                                                                           |
 | C4  | Every apply shows its plans and asks before it applies them; what it applies is exactly what it showed. Without a unit named, it goes in rounds: each plans the units still waiting, asks once and applies those that planned, until every unit is applied or a round plans none. |
-| C5  | A release is CI's: once the checks of a push to `develop` passed, Dev runs the head of `develop`. OpenTofu owns the configuration of a deployment and never which commit it runs.                                                                                                 |
+| C5  | A release is CI's: once the checks of a push to `develop` passed, Dev runs the commit they passed. OpenTofu owns the configuration of a deployment and never which commit it runs.                                                                                                |
 
 ### Secrets
 
@@ -127,8 +128,8 @@ a profile of scw kept outside the person's own configuration.
   environment's project, and Object Storage in the files project; nothing of the organisation.
 - The API's Scaleway keys: one may send mail in the environment's project, the other read, write
   and delete objects in the files project; neither changes a setting.
-- CI holds a Coolify token that deploys and reads in Dev's project alone, and the cache's tokens; it
-  never reaches Scaleway.
+- CI holds the secret of the application's webhook, which deploys a commit of the repository and
+  changes nothing, and the cache's tokens; it never reaches Coolify's API or Scaleway.
 
 ## Tests
 

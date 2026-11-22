@@ -120,6 +120,7 @@ variable "secrets" {
     files_secret_key         = string
     imgproxy_key             = string
     imgproxy_salt            = string
+    release_webhook_secret   = string
   })
 }
 

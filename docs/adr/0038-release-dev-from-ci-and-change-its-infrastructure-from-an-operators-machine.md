@@ -1,6 +1,6 @@
 # 0038. Release Dev from CI and change its infrastructure from an operator's machine
 
-- Status: Accepted
+- Status: Superseded by [0071](0071-release-dev-from-ci-through-a-signed-webhook.md)
 - Date: 2026-11-13
 
 ## Context

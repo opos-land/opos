@@ -4,6 +4,6 @@ output "urls" {
 }
 
 output "application_uuid" {
-  description = "The application in Coolify, which CI releases"
+  description = "The application in Coolify"
   value       = coolify_application.this.uuid
 }

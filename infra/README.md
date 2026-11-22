@@ -188,24 +188,26 @@ Coolify, built on the server from the head of `develop`
   keeps the domain's records for a deployment that sends.
 - **Basic auth.** Every service but the API asks for the user `opos` and the value of the secret
   `basic-auth-password`: `mise run deploy:secret-get dev basic-auth-password`. Rotate it by raising its number in `env.yaml` and applying.
-- **A release.** Once the checks of a push to `develop` passed, the `release` job of CI asks Coolify
-  to deploy and follows it
-  ([0038](../docs/adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md)).
-  A rollback is a revert on `develop`.
+- **A release.** Once the checks of a push to `develop` passed, the `release` job of CI sends
+  Coolify's webhook of the application a push of its commit, signed with the secret
+  `release-webhook-secret`, and Coolify deploys that commit
+  ([0071](../docs/adr/0071-release-dev-from-ci-through-a-signed-webhook.md)). The job ends once
+  Coolify has queued the deployment; how the deployment ends is in Coolify. A rollback is a revert
+  on `develop`.
 - **A change of configuration**, such as a variable or a rotated secret, is applied and deploys the
   head of `develop` again with it.
 - **A change of Supabase Auth's settings:** [SUPABASE.md](SUPABASE.md#changes).
 - **Admins.** `pnpm db:admin:grant` and `pnpm db:admin:revoke` run in the tools container, from
   Coolify's terminal.
 
-| Check, after the first deployment               | Expect                                                |
-| ----------------------------------------------- | ----------------------------------------------------- |
-| the tools container's log                       | the roles, the migrations and the verification passed |
-| `https://api.dev.opos.land/health`              | `200`, without basic auth                             |
-| the portal, the panel and the admin application | basic auth, then the application                      |
-| a sign-up on the portal                         | the confirmation mail in `https://mail.dev.opos.land` |
-| the imgproxy container in Coolify               | healthy                                               |
-| the `release` job of a push to `develop`        | "Released", and the commit running in Coolify         |
+| Check, after the first deployment               | Expect                                                           |
+| ----------------------------------------------- | ---------------------------------------------------------------- |
+| the tools container's log                       | the roles, the migrations and the verification passed            |
+| `https://api.dev.opos.land/health`              | `200`, without basic auth                                        |
+| the portal, the panel and the admin application | basic auth, then the application                                 |
+| a sign-up on the portal                         | the confirmation mail in `https://mail.dev.opos.land`            |
+| the imgproxy container in Coolify               | healthy                                                          |
+| the `release` job of a push to `develop`        | "Coolify queued deployment", then the commit finished in Coolify |
 
 The API reaches the project over its direct connection, which on a Free project is IPv6 alone
 ([0039](../docs/adr/0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md)). If the

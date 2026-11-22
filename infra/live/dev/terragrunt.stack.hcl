@@ -125,9 +125,10 @@ unit "deployment" {
     mail_from       = local.mail.from
     generated       = local.generated
 
-    # The secret holding each value, named after its key but for the two other units make: the
-    # supabase unit the secret key's, the shared unit smtp-password. Derived rather than written
-    # out, which a scanner would take for passwords
+    # The secret holding each value, named after its key but for those other units make, the
+    # supabase unit the secret key's and the shared unit smtp-password and the bucket's key, and
+    # the release's, which the github unit also reads. Derived rather than written out, which a
+    # scanner would take for passwords
     secrets = merge(
       {
         for key in [
@@ -147,6 +148,8 @@ unit "deployment" {
         supabase_secret_key = local.supabase.secret_key_secret
         smtp_password       = local.mail.smtp_secret
         files_secret_key    = local.files.key_secret
+        # Coolify's webhook takes a push to the application signed with it: CI's release
+        release_webhook_secret = local.deployment.webhook_secret
       },
     )
   }
@@ -236,10 +239,11 @@ unit "github" {
         secrets   = { TURBO_TOKEN = local.cache.token_ro_secret }
         variables = { TURBO_API = "https://${local.cache.host_ro}" }
       }
-      # The release job: the token deploys and reads in Dev's project alone
+      # The release job: the secret signs a push to Coolify's webhook of the deployment's
+      # application, which deploys a commit on it and changes nothing of it
       "dev" = {
         branches = [local.deployment.branch]
-        secrets  = { COOLIFY_TOKEN = local.deployment.release_token_secret }
+        secrets  = { COOLIFY_WEBHOOK_SECRET = local.deployment.webhook_secret }
         variables = {
           COOLIFY_URL = trimsuffix(local.env.coolify.endpoint, "/")
         }
@@ -259,13 +263,12 @@ unit "github" {
       paths = [unit.secrets.path]
     }
 
-    # The application the release job deploys
+    # The address the release job names as the environment's
     dependency "deployment" {
       config_path = unit.deployment.path
 
       mock_outputs = {
-        application_uuid = "mock-application"
-        urls             = { portal = "https://mock.invalid" }
+        urls = { portal = "https://mock.invalid" }
       }
       mock_outputs_allowed_terraform_commands = get_env("DEPLOY_EXACT_PLAN", "") == "true" ? ["init", "validate"] : ["init", "validate", "plan"]
     }
@@ -273,8 +276,7 @@ unit "github" {
     inputs = {
       environment_variables = {
         "dev" = {
-          COOLIFY_APPLICATION = dependency.deployment.outputs.application_uuid
-          DEPLOYMENT_URL      = dependency.deployment.outputs.urls.portal
+          DEPLOYMENT_URL = dependency.deployment.outputs.urls.portal
         }
       }
     }

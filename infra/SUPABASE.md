@@ -24,7 +24,10 @@ for Dev; another environment follows them with its own names. They are step 6 of
 
 The `supabase` unit reaches the Management API with a personal access token, read from Secret
 Manager on an operator's machine for the length of a run. Nothing deployed uses it: when it expires,
-Dev keeps running, and only the unit's plan and apply fail until a new one is entered.
+Dev keeps running, and only the unit's plan and apply fail until a new one is entered. A token
+scoped to one project lasts days, so expect a new one before most applies: `deploy:plan` and
+`deploy:apply` try it before planning, when they reach the unit, and stop first if Supabase no
+longer knows it.
 
 Under your account, Access Tokens, make a token scoped to Dev's project alone, with an expiry, and
 with these permissions and no others:

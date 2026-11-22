@@ -849,8 +849,8 @@ msgid "Notifications"
 msgstr "Notifications"
 
 #: src/features/profile/components/publication.tsx
-msgid "Once published, anyone reads it, with no sign-in: your name, your avatar and what the profile holds. Publish only what <0/> allow."
-msgstr "Once published, anyone reads it, with no sign-in: your name, your avatar and what the profile holds. Publish only what <0/> allow."
+msgid "Once published, anyone reads it, with no sign-in: your name, your avatar and what the profile holds. Publish only what <0>the terms</0> allow."
+msgstr "Once published, anyone reads it, with no sign-in: your name, your avatar and what the profile holds. Publish only what <0>the terms</0> allow."
 
 #: src/features/auth/pages/register-page.tsx
 msgid "One account for every convention on OPOS."
@@ -1393,10 +1393,6 @@ msgstr "The size chart of {0}, {1}"
 msgid "The system's theme"
 msgstr "The system's theme"
 
-#: src/features/profile/components/terms-link.tsx
-msgid "the terms"
-msgstr "the terms"
-
 #: src/features/shop/components/my-orders.tsx
 msgid "The time to pay for this order has ended. Nothing was charged: start a new order in the shop."
 msgstr "The time to pay for this order has ended. Nothing was charged: start a new order in the shop."
@@ -1574,8 +1570,8 @@ msgid "Under the GDPR you have the right to access your data, to correct it, to 
 msgstr "Under the GDPR you have the right to access your data, to correct it, to have it deleted, to restrict or object to its processing, and to lodge a complaint with the supervisory authority; in Poland that is the President of the Personal Data Protection Office (UODO). You correct your name and delete your account yourself, in the account settings."
 
 #: src/features/profile/components/avatar-form.tsx
-msgid "Upload a picture of yourself, or one you have the right to show."
-msgstr "Upload a picture of yourself, or one you have the right to show."
+msgid "Upload a picture of yourself, or one you have the right to show: <0>the terms</0> say what an avatar may not be."
+msgstr "Upload a picture of yourself, or one you have the right to show: <0>the terms</0> say what an avatar may not be."
 
 #: src/features/profile/components/avatar-form.tsx
 msgid "Upload the avatar"

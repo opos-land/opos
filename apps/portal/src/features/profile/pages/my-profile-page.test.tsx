@@ -201,12 +201,17 @@ describe('MyProfilePage: publishing', () => {
     expect(screen.queryByRole('button', { name: 'Publish the profile' })).toBeNull()
   })
 
-  it('links the terms where a profile is published', async () => {
+  // M4: where a profile is published and where an avatar is uploaded.
+  it('links the terms where a profile is published and where an avatar is uploaded', async () => {
     await openPage()
 
-    const links = screen.getAllByRole('link', { name: 'the terms' })
-    expect(links.length).toBeGreaterThan(0)
-    for (const link of links) expect(link.getAttribute('href')).toBe('/terms')
+    const sections = ['Who sees your profile', 'Avatar'].map((title) =>
+      screen.getByRole('region', { name: title }),
+    )
+    for (const section of sections) {
+      const link = within(section).getByRole('link', { name: 'the terms' })
+      expect(link.getAttribute('href')).toBe('/terms')
+    }
   })
 })
 
@@ -225,7 +230,7 @@ describe('MyProfilePage: the avatar', () => {
       ),
     ).toBeTruthy()
     expect(
-      screen.getByText('Upload a picture of yourself, or one you have the right to show.'),
+      screen.getByText(/Upload a picture of yourself, or one you have the right to show/),
     ).toBeTruthy()
   })
 

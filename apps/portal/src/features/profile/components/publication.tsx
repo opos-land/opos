@@ -3,10 +3,9 @@ import { Trans } from '@lingui/react/macro'
 import { type MyProfile } from '@opos/contract'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router'
-import { profilePath } from '../../../shared/config/routes'
+import { profilePath, TERMS_PATH } from '../../../shared/config/routes'
 import { Button, linkClass } from '../../../shared/ui'
 import { myProfileOptions, publishProfileOptions, withdrawProfileOptions } from '../api/profile'
-import { TermsLink } from './terms-link'
 
 /**
  * Whether the profile is public, and the way to change that
@@ -68,7 +67,11 @@ export function Publication({ profile }: { profile: MyProfile }) {
       <p className="text-sm">
         <Trans>
           Once published, anyone reads it, with no sign-in: your name, your avatar and what the
-          profile holds. Publish only what <TermsLink /> allow.
+          profile holds. Publish only what{' '}
+          <Link to={TERMS_PATH} className={linkClass}>
+            the terms
+          </Link>{' '}
+          allow.
         </Trans>
       </p>
       <Button

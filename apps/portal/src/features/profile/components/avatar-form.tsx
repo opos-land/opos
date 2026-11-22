@@ -4,9 +4,11 @@ import { type MyProfile } from '@opos/contract'
 import { type NameParts } from '@opos/i18n/names'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Link } from 'react-router'
+import { TERMS_PATH } from '../../../shared/config/routes'
 import { toUpload } from '../../../shared/lib/file-upload'
 import { notifyFailure } from '../../../shared/lib/notify'
-import { Button, FormField, Input, IrreversibleAction } from '../../../shared/ui'
+import { Button, FormField, Input, IrreversibleAction, linkClass } from '../../../shared/ui'
 import { myProfileOptions, putAvatarOptions, removeAvatarOptions } from '../api/profile'
 import { AVATAR_ACCEPT, isAvatarFile, MAX_AVATAR_MB } from '../model/avatar'
 import { AccountAvatar } from './account-avatar'
@@ -78,7 +80,13 @@ export function AvatarForm({ profile, name }: { profile: MyProfile; name: NamePa
         </Trans>
       </p>
       <p className="text-sm">
-        <Trans>Upload a picture of yourself, or one you have the right to show.</Trans>
+        <Trans>
+          Upload a picture of yourself, or one you have the right to show:{' '}
+          <Link to={TERMS_PATH} className={linkClass}>
+            the terms
+          </Link>{' '}
+          say what an avatar may not be.
+        </Trans>
       </p>
       <FormField
         label={t`Avatar file`}

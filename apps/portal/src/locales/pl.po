@@ -849,8 +849,8 @@ msgid "Notifications"
 msgstr "Powiadomienia"
 
 #: src/features/profile/components/publication.tsx
-msgid "Once published, anyone reads it, with no sign-in: your name, your avatar and what the profile holds. Publish only what <0/> allow."
-msgstr "Po opublikowaniu czyta go każdy, bez logowania: twoją nazwę, twój awatar i to, co profil zawiera. Publikuj tylko to, na co pozwala <0/>."
+msgid "Once published, anyone reads it, with no sign-in: your name, your avatar and what the profile holds. Publish only what <0>the terms</0> allow."
+msgstr "Po opublikowaniu czyta go każdy, bez logowania: twoją nazwę publiczną, twój awatar i to, co profil zawiera. Publikuj tylko to, na co pozwala <0>regulamin</0>."
 
 #: src/features/auth/pages/register-page.tsx
 msgid "One account for every convention on OPOS."
@@ -1393,10 +1393,6 @@ msgstr "Tabela rozmiarów: {0}, {1}"
 msgid "The system's theme"
 msgstr "Motyw systemu"
 
-#: src/features/profile/components/terms-link.tsx
-msgid "the terms"
-msgstr "regulamin"
-
 #: src/features/shop/components/my-orders.tsx
 msgid "The time to pay for this order has ended. Nothing was charged: start a new order in the shop."
 msgstr "Czas na opłacenie tego zamówienia minął. Nie pobrano żadnych pieniędzy: złóż nowe zamówienie w sklepie."
@@ -1574,8 +1570,8 @@ msgid "Under the GDPR you have the right to access your data, to correct it, to 
 msgstr "Na podstawie RODO masz prawo dostępu do swoich danych, ich sprostowania, usunięcia, ograniczenia przetwarzania lub wniesienia sprzeciwu wobec niego, a także prawo wniesienia skargi do organu nadzorczego; w Polsce jest nim Prezes Urzędu Ochrony Danych Osobowych (UODO). Imię i nazwisko poprawiasz, a konto usuwasz samodzielnie w ustawieniach konta."
 
 #: src/features/profile/components/avatar-form.tsx
-msgid "Upload a picture of yourself, or one you have the right to show."
-msgstr "Wyślij swoje zdjęcie albo takie, które masz prawo pokazać."
+msgid "Upload a picture of yourself, or one you have the right to show: <0>the terms</0> say what an avatar may not be."
+msgstr "Wgraj swoje zdjęcie albo takie, które masz prawo pokazać: <0>regulamin</0> mówi, czym awatar nie może być."
 
 #: src/features/profile/components/avatar-form.tsx
 msgid "Upload the avatar"

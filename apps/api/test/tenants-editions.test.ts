@@ -1179,14 +1179,14 @@ describe('concurrency', () => {
       const expected = await tenantState(s.t.id)
       const holder = await openTransaction()
       await lockTenantWrites(holder.sql, s.t)
-      const started = Date.now()
+      const started = performance.now()
       try {
         const res = await send(s, writes['tenants.update']!(s))
         expect(res.status).toBe(503)
         expect(res.body).toMatchObject({ code: 'request.busy' })
         expect(res.headers['retry-after']).toBe('1')
-        expect(Date.now() - started).toBeGreaterThanOrEqual(TENANT_WRITE_LOCK_TIMEOUT_MS)
-        expect(Date.now() - started).toBeLessThan(TENANT_WRITE_LOCK_TIMEOUT_MS + 2000)
+        expect(performance.now() - started).toBeGreaterThanOrEqual(TENANT_WRITE_LOCK_TIMEOUT_MS)
+        expect(performance.now() - started).toBeLessThan(TENANT_WRITE_LOCK_TIMEOUT_MS + 2000)
       } finally {
         await holder.commit()
       }

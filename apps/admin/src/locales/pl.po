@@ -13,7 +13,7 @@ msgstr "Konwent zaczyna się od pierwszego głównego organizatora, który buduj
 
 #: src/features/profiles/pages/profile-page.tsx
 msgid "A name stands wherever the account is named to everyone, in the programme too, whether or not the profile is public. Clearing it blocks nothing: the account may enter a name again."
-msgstr "Nazwa pokazuje się wszędzie tam, gdzie konto jest nazwane publicznie, także w programie, niezależnie od tego, czy profil jest publiczny. Wyczyszczenie niczego nie blokuje: konto może wpisać nazwę ponownie."
+msgstr "Nazwa pokazuje się wszędzie tam, gdzie konto jest pokazywane wszystkim, także w programie, niezależnie od tego, czy profil jest publiczny. Wyczyszczenie niczego nie blokuje: konto może wpisać nazwę ponownie."
 
 #: src/features/profiles/pages/profile-page.tsx
 msgid "A profile taken down is not public and cannot be published until you restore it. Its account keeps changing it and may ask for a review."
@@ -500,7 +500,7 @@ msgstr "Przywrócono profil"
 
 #: src/features/profiles/components/take-down-profile.tsx
 msgid "Restoring does not bring the avatar back."
-msgstr "Przywrócenie nie przywraca awatara."
+msgstr "Przywrócenie profilu nie przywraca awatara."
 
 #: src/features/profiles/pages/profile-page.tsx
 msgid "Restoring lets the account publish the profile again. Nothing becomes public by the restoring alone, and the account gets an email that says so."
@@ -589,7 +589,7 @@ msgstr "Zdjąć profil konta {name}?"
 
 #: src/features/profiles/pages/profile-page.tsx
 msgid "Takedown"
-msgstr "Zdjęcie profilu"
+msgstr "Zdejmowanie profilu"
 
 #. The state of a profile an admin took down
 #: src/features/profiles/pages/profile-page.tsx
@@ -668,11 +668,11 @@ msgstr "Motyw interfejsu został zapisany."
 
 #: src/features/profiles/components/clear-name.tsx
 msgid "The name is cleared, and the account got an email that says why."
-msgstr "Nazwa jest wyczyszczona, a konto dostało e-mail z powodem."
+msgstr "Nazwa została wyczyszczona, a konto dostało e-mail z powodem."
 
 #: src/features/profiles/components/clear-name.tsx
 msgid "The name is cleared, but the email to the account could not be sent. Tell the person yourself."
-msgstr "Nazwa jest wyczyszczona, ale e-maila do konta nie udało się wysłać. Powiadom tę osobę samodzielnie."
+msgstr "Nazwa została wyczyszczona, ale e-maila do konta nie udało się wysłać. Poinformuj tę osobę samodzielnie."
 
 #: src/features/profiles/pages/profile-page.tsx
 msgid "The profile holds nothing."
@@ -680,19 +680,19 @@ msgstr "Profil nic nie zawiera."
 
 #: src/features/profiles/components/restore-profile.tsx
 msgid "The profile is restored, and the account got an email that says so."
-msgstr "Profil jest przywrócony, a konto dostało e-mail z tą informacją."
+msgstr "Profil został przywrócony, a konto dostało e-mail z tą informacją."
 
 #: src/features/profiles/components/restore-profile.tsx
 msgid "The profile is restored, but the email to the account could not be sent. Tell the person yourself."
-msgstr "Profil jest przywrócony, ale e-maila do konta nie udało się wysłać. Powiadom tę osobę samodzielnie."
+msgstr "Profil został przywrócony, ale e-maila do konta nie udało się wysłać. Poinformuj tę osobę samodzielnie."
 
 #: src/features/profiles/components/take-down-profile.tsx
 msgid "The profile is taken down, and the account got an email that says why."
-msgstr "Profil jest zdjęty, a konto dostało e-mail z powodem."
+msgstr "Profil został zdjęty, a konto dostało e-mail z powodem."
 
 #: src/features/profiles/components/take-down-profile.tsx
 msgid "The profile is taken down, but the email to the account could not be sent. Tell the person yourself."
-msgstr "Profil jest zdjęty, ale e-maila do konta nie udało się wysłać. Powiadom tę osobę samodzielnie."
+msgstr "Profil został zdjęty, ale e-maila do konta nie udało się wysłać. Poinformuj tę osobę samodzielnie."
 
 #: src/features/profiles/pages/profile-report-page.tsx
 msgid "The profile stays as it is. Who sent the report is told so, when they gave an address. A closed report is not opened again."
@@ -720,15 +720,15 @@ msgstr "Zgłoszenie nie zawiera notatki."
 
 #: src/features/profiles/pages/profile-report-page.tsx
 msgid "The report is closed, and who sent it was told."
-msgstr "Zgłoszenie jest zamknięte, a zgłaszający został powiadomiony."
+msgstr "Zgłoszenie zostało zamknięte, a zgłaszający został powiadomiony."
 
 #: src/features/profiles/pages/profile-report-page.tsx
 msgid "The report is closed, but the email to who sent it could not be sent."
-msgstr "Zgłoszenie jest zamknięte, ale e-maila do zgłaszającego nie udało się wysłać."
+msgstr "Zgłoszenie zostało zamknięte, ale e-maila do zgłaszającego nie udało się wysłać."
 
 #: src/features/profiles/pages/profile-report-page.tsx
 msgid "The report is closed."
-msgstr "Zgłoszenie jest zamknięte."
+msgstr "Zgłoszenie zostało zamknięte."
 
 #: src/features/accounts/pages/two-factor-reset-page.tsx
 msgid "The reset removes the account’s authenticator and its unused recovery codes, and the account gets an email that says so. An administrator’s account is never reset here: its role is taken away first, on the server."

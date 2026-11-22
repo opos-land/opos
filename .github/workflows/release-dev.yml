@@ -47,4 +47,7 @@ jobs:
   release:
     if: github.ref == 'refs/heads/develop'
     needs: [checks]
-    uses: ./.github/workflows/coolify-release.yml
+    # The called job reads the webhook secret of its environment only when the caller passes its
+    # secrets on
+    uses: ./.github/workflows/_coolify-release.yml
+    secrets: inherit

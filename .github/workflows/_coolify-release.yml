@@ -1,4 +1,4 @@
-name: coolify-release
+name: _coolify-release
 
 # Dev runs the head of develop: this workflow sends Coolify a push of the commit its caller checked,
 # signed with the application's webhook secret, and Coolify builds that commit on the server, runs
@@ -7,7 +7,9 @@ name: coolify-release
 # ends. A run releases only while its commit is still the head; a newer push releases itself
 # (docs/adr/0075-release-dev-from-ci-through-a-signed-webhook.md). The environment dev admits
 # develop alone; OpenTofu writes its secret and variables. ci.yml calls it once the checks of a push
-# passed, release-dev.yml when started by hand.
+# passed, release-dev.yml when started by hand, each with secrets: inherit, without which the
+# environment's secret arrives empty and Coolify refuses the push. The underscore keeps it apart
+# in the list of workflows: it runs only when called.
 on:
   workflow_call:
 

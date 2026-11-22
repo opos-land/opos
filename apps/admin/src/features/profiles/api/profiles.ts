@@ -10,10 +10,17 @@ export const adminKey = () => accountApi.admin.key()
 // opening of a screen reads it again and the admin judges a profile as it is now.
 const READ_AGAIN = { staleTime: 0 }
 
-/** The reports of profiles, open or closed, newest first. */
+const REPORTS_PAGE = 50
+
+/**
+ * The reports of profiles, open or closed, newest first, a page at a time: a flood of reports is
+ * longer than one page, and the older ones stay within reach.
+ */
 export const profileReportsOptions = (state: 'open' | 'closed') =>
-  accountApi.admin.profileReports.queryOptions({
-    input: { query: { state, limit: 100 } },
+  accountApi.admin.profileReports.infiniteOptions({
+    input: (before: string | undefined) => ({ query: { state, limit: REPORTS_PAGE, before } }),
+    initialPageParam: undefined,
+    getNextPageParam: (page) => (page.length < REPORTS_PAGE ? undefined : page.at(-1)?.id),
     ...READ_AGAIN,
   })
 

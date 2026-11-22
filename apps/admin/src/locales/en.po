@@ -533,6 +533,10 @@ msgstr "Show"
 msgid "Show older entries"
 msgstr "Show older entries"
 
+#: src/features/profiles/pages/profile-reports-page.tsx
+msgid "Show older reports"
+msgstr "Show older reports"
+
 #: src/features/auth/components/sign-in-form.tsx
 #: src/features/auth/pages/login-page.tsx
 msgid "Sign in"

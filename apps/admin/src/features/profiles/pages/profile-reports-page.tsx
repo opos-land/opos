@@ -2,10 +2,11 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { type profileReportStates } from '@opos/contract'
 import { publicName } from '@opos/i18n/names'
 import { reportReasonNames } from '@opos/i18n/profiles'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
+  Button,
   ErrorMessage,
   FormField,
   LinkRow,
@@ -28,13 +29,15 @@ type State = (typeof profileReportStates)[number]
 
 /**
  * `/profile-reports`: the reports of profiles, the open ones first shown and the closed ones when
- * asked, the newest on top. A row opens its report (docs/specs/0016-public-profile.md, T1).
+ * asked, the newest on top and the older ones a page at a time. A row opens its report
+ * (docs/specs/0016-public-profile.md, T1).
  */
 export function ProfileReportsPage() {
   const { t, i18n } = useLingui()
   usePageTitle(t`Profile reports`)
   const [state, setState] = useState<State>('open')
-  const reports = useQuery(profileReportsOptions(state))
+  const reports = useInfiniteQuery(profileReportsOptions(state))
+  const listed = reports.data?.pages.flat() ?? []
 
   return (
     <main className="py-6">
@@ -60,7 +63,7 @@ export function ProfileReportsPage() {
         <LoadingView />
       ) : reports.isError ? (
         <ErrorMessage error={reports.error} />
-      ) : reports.data.length === 0 ? (
+      ) : listed.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           {state === 'open' ? (
             <Trans>No report is open.</Trans>
@@ -90,7 +93,7 @@ export function ProfileReportsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reports.data.map((report) => (
+            {listed.map((report) => (
               <LinkRow key={report.id} to={`/profile-reports/${report.id}`}>
                 <TableCell>
                   <RowLink to={`/profile-reports/${report.id}`}>
@@ -105,6 +108,16 @@ export function ProfileReportsPage() {
             ))}
           </TableBody>
         </Table>
+      )}
+      {reports.hasNextPage && (
+        <Button
+          variant="outline"
+          className="mt-4"
+          disabled={reports.isFetchingNextPage}
+          onClick={() => void reports.fetchNextPage()}
+        >
+          <Trans>Show older reports</Trans>
+        </Button>
       )}
     </main>
   )

@@ -13,6 +13,19 @@ describe('the reads of profiles and their reports', () => {
   it.each([
     ['the open reports', profileReportsOptions('open')],
     ['the closed reports', profileReportsOptions('closed')],
+  ])('never count %s as fresh, and read them a page at a time', (_name, options) => {
+    expect(options.staleTime).toBe(0)
+    expect(options.initialPageParam).toBeUndefined()
+    const page = (length: number) =>
+      Array.from({ length }, (_, index) => ({ id: `r-${index}` })) as Parameters<
+        typeof options.getNextPageParam
+      >[0]
+    // A full page may have an older one behind it, asked for by its last report; a short one has none.
+    expect(options.getNextPageParam(page(50))).toBe('r-49')
+    expect(options.getNextPageParam(page(49))).toBeUndefined()
+  })
+
+  it.each([
     ['a report', profileReportOptions('00000000-0000-4000-8000-000000000001')],
     ['the profiles taken down', takenDownProfilesOptions()],
     ['a profile', adminProfileOptions('00000000-0000-4000-8000-000000000002')],

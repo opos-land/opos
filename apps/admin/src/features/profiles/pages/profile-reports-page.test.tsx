@@ -8,12 +8,16 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProfileReportsPage } from './profile-reports-page'
 
-const load = vi.fn<(state: string) => Promise<unknown>>()
+const load = vi.fn<(state: string, before?: string) => Promise<ListedProfileReport[]>>()
 
 vi.mock('../api/profiles', () => ({
   profileReportsOptions: (state: string) => ({
     queryKey: ['admin', 'profile-reports', state],
-    queryFn: () => load(state),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) => load(state, pageParam),
+    initialPageParam: undefined,
+    // Two reports a page here, where the application asks for fifty.
+    getNextPageParam: (page: ListedProfileReport[]) =>
+      page.length < 2 ? undefined : page.at(-1)?.id,
     retry: false,
   }),
 }))
@@ -81,7 +85,7 @@ describe('ProfileReportsPage', () => {
       expect(found).toHaveLength(2)
       return found
     })
-    expect(load).toHaveBeenCalledWith('open')
+    expect(load).toHaveBeenCalledWith('open', undefined)
     expect(within(first!).getByRole('link', { name: 'Anna “Lisek” Nowak' })).toBeTruthy()
     expect(within(first!).getByText('Someone else’s picture or identity')).toBeTruthy()
     expect(within(first!).getByText('Not her picture.')).toBeTruthy()
@@ -106,7 +110,25 @@ describe('ProfileReportsPage', () => {
     await user.selectOptions(screen.getByLabelText('Show'), 'closed')
 
     expect(await screen.findByRole('link', { name: 'Anna “Lisek” Nowak' })).toBeTruthy()
-    expect(load).toHaveBeenLastCalledWith('closed')
+    expect(load).toHaveBeenLastCalledWith('closed', undefined)
+  })
+
+  // A flood of reports is longer than one page: the older ones stay within reach.
+  it('reads on, a page at a time, while there are older reports', async () => {
+    load
+      .mockResolvedValueOnce([report({ id: 'r-4' }), report({ id: 'r-3' })])
+      .mockResolvedValueOnce([report({ id: 'r-2' })])
+    const user = renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Show older reports' }))
+
+    await vi.waitFor(() => expect(rows()).toHaveLength(3))
+    expect(load.mock.calls).toEqual([
+      ['open', undefined],
+      ['open', 'r-3'],
+    ])
+    // The last page was short: nothing older is left.
+    expect(screen.queryByRole('button', { name: 'Show older reports' })).toBeNull()
   })
 
   it('says that no report is open instead of an empty table', async () => {

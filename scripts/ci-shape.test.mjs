@@ -386,3 +386,20 @@ test('the BFF boundary check runs in a Claude Code hook and in lefthook pre-comm
   assert.ok(commands('PostToolUseFailure', 'Bash').some((command) => boundary.test(command)))
   assert.match(read('../lefthook.yml'), /run: node scripts\/bff-boundary\.mjs \{staged_files\}/)
 })
+
+test('a unit puts off reading a generated secret it reads anew, or whose number rose, until the apply', () => {
+  // A plan reads a secret the secrets unit has not written yet, or its version before a rotation,
+  // unless a change planned beside the read puts it off
+  const stack = read('../infra/live/dev/terragrunt.stack.hcl')
+  for (const unit of ['deployment', 'github']) {
+    const body = new RegExp(`^unit "${unit}" \\{\\n([\\s\\S]*?)^\\}$`, 'm').exec(stack)?.[1]
+    assert.match(body ?? '', /^ {4}generated += local\.generated$/m, unit)
+  }
+  assert.match(stack, /^ {2}generated += try\(local\.env\.secrets\.generated, \{\}\)$/m)
+  for (const module of ['deployment', 'github-actions']) {
+    const main = read(`../infra/modules/${module}/main.tf`)
+    assert.match(main, /if contains\(keys\(var\.generated\), name\)/, module)
+    const data = /^data "scaleway_secret_version" "this" \{\n([\s\S]*?)^\}$/m.exec(main)?.[1]
+    assert.match(data ?? '', /depends_on = \[terraform_data\.produced\]/, module)
+  }
+})

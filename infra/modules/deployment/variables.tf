@@ -123,6 +123,12 @@ variable "secrets" {
   })
 }
 
+variable "generated" {
+  description = "The number of each generated secret of the environment, raised to replace its value"
+  type        = map(number)
+  default     = {}
+}
+
 variable "produced" {
   description = "A marker per value another unit writes into its secret, which changes with the value; never the value"
   type        = map(string)

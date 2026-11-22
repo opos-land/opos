@@ -10,6 +10,10 @@ locals {
   supabase   = local.env.supabase
   deployment = local.env.deployment
 
+  # The number of each generated secret: a unit that reads one puts off its read until the apply
+  # when the number is new or raised
+  generated = try(local.env.secrets.generated, {})
+
   # The addresses of the deployment's services (docs/adr/0034-address-dev-under-dev-opos-land-in-a-dns-zone-of-its-own.md)
   site = local.env.dns.zone
 }
@@ -22,7 +26,7 @@ unit "secrets" {
     # The environment's own secrets sit at the root of its project, beside the state's passphrase
     path      = "/"
     entered   = try(local.env.secrets.entered, [])
-    generated = try(local.env.secrets.generated, {})
+    generated = local.generated
   }
 }
 
@@ -119,6 +123,7 @@ unit "deployment" {
     catch_mail      = local.deployment.catch_mail
     supabase_ref    = local.supabase.ref
     mail_from       = local.mail.from
+    generated       = local.generated
 
     # The secret holding each value, named after its key but for the two other units make: the
     # supabase unit the secret key's, the shared unit smtp-password. Derived rather than written
@@ -244,6 +249,8 @@ unit "github" {
     secrets = {
       TURBO_REMOTE_CACHE_SIGNATURE_KEY = local.cache.signature_key_secret
     }
+
+    generated = local.generated
   }
 
   autoinclude {

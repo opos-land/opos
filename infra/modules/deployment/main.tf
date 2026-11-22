@@ -56,11 +56,15 @@ resource "coolify_application" "this" {
   instant_deploy         = false
 }
 
-# The markers of the values other units write. A new, changed or mocked marker has a change
-# planned here, which puts off reading the secrets until the apply, once those units have written
-# them; otherwise the secrets are read during the plan.
+# The markers of the values other units write, and the number of each generated secret read here.
+# A new, changed or mocked marker has a change planned here, which puts off reading the secrets
+# until the apply, once those units have written them; otherwise the secrets are read during the
+# plan, which fails on a secret the secrets unit has not made yet and reads a rotated one's version
+# before it.
 resource "terraform_data" "produced" {
-  input = var.produced
+  input = merge(var.produced, {
+    for name in values(var.secrets) : name => tostring(var.generated[name]) if contains(keys(var.generated), name)
+  })
 }
 
 # The values pass through this unit's encrypted state on their way to Coolify

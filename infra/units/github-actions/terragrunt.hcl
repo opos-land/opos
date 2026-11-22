@@ -1,6 +1,6 @@
 # What CI reads in GitHub: environments with their branches, secrets and variables, and repository
-# secrets. Values: owner, repository, environments, secrets. Variables from other units' outputs,
-# environment_variables, come from the stack.
+# secrets. Values: owner, repository, environments, secrets, generated. Variables from other units'
+# outputs, environment_variables, come from the stack.
 
 include "root" {
   path = find_in_parent_folders("root.hcl")
@@ -27,4 +27,5 @@ inputs = {
   repository   = values.repository
   environments = values.environments
   secrets      = values.secrets
+  generated    = values.generated
 }

@@ -354,6 +354,18 @@ describe('account_avatars', () => {
     ).rejects.toThrow(/account_avatars_pkey/)
   })
 
+  // An avatar is read by its file's identifier alone, on a route anyone calls: the constraint
+  // that says a file is one avatar is also the index that finds it.
+  it('is found by its file through a unique index', async () => {
+    const constraints = await migrator<{ contype: string; columns: string }[]>`
+      select contype, pg_get_constraintdef(oid) as columns from pg_constraint
+      where conname = 'account_avatars_file_unique'
+        and conrelid = 'public.account_avatars'::regclass
+    `
+
+    expect(constraints).toEqual([{ contype: 'u', columns: 'UNIQUE (file_id)' }])
+  })
+
   it('needs a profile, and goes with its file', async () => {
     const [user, bare] = await Promise.all([profile(), createUser()])
     const file = await fileOf(user.id)

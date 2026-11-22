@@ -1,4 +1,4 @@
-import { foreignKey, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { foreignKey, pgTable, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { accountFiles } from './account-files'
 import { accountProfiles } from './account-profiles'
 
@@ -15,6 +15,8 @@ export const accountAvatars = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    // A file is one avatar, and this is the index a read by the file's identifier alone uses.
+    unique('account_avatars_file_unique').on(t.fileId),
     foreignKey({
       name: 'account_avatars_profile_fk',
       columns: [t.accountId],

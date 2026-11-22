@@ -11,6 +11,7 @@ import { healthContract } from './health'
 import { invitationsContract } from './invitations'
 import { meContract } from './me'
 import { ordersContract } from './orders'
+import { profileContract } from './profiles'
 import { programContract } from './program'
 import { publicContract } from './public'
 import { salesContract } from './sales'
@@ -23,6 +24,7 @@ export const contract = {
   health: healthContract,
   auth: authContract,
   me: meContract,
+  profile: profileContract,
   tenants: tenantsContract,
   branding: brandingContract,
   editions: editionsContract,
@@ -64,6 +66,7 @@ export * from './health'
 export * from './invitations'
 export * from './me'
 export * from './orders'
+export * from './profiles'
 export * from './program'
 export * from './public'
 export * from './sales'

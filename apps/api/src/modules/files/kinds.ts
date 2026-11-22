@@ -1,4 +1,5 @@
 import {
+  type AvatarVariant,
   DOCUMENT_TYPES,
   FILE_TYPES,
   type FileType,
@@ -8,10 +9,13 @@ import {
   MAX_FILE_SIZE,
   MAX_LOGO_SIZE,
   MAX_MERCHANDISE_IMAGE_SIZE,
+  MAX_PROFILE_AVATAR_SIZE,
   MERCHANDISE_IMAGE_TYPES,
   type MerchandiseImageVariant,
+  PROFILE_AVATAR_TYPES,
 } from '@opos/contract'
 import {
+  accountAvatars,
   addOnPictures,
   editionDocumentVersions,
   merchandiseItemPictures,
@@ -161,6 +165,20 @@ export const FILE_KINDS: readonly FileKind[] = [
     pointer: addOnPictures.fileId,
     variants: merchandiseVariants,
   },
+  // An account's avatar (docs/specs/0016-public-profile.md): for everyone from its upload, a
+  // square cut from the middle of the picture; large on a profile's page, which a page shows
+  // first, small in a list.
+  {
+    name: 'profile-avatar',
+    owner: 'account',
+    types: PROFILE_AVATAR_TYPES,
+    maxSize: MAX_PROFILE_AVATAR_SIZE,
+    pointer: accountAvatars.fileId,
+    variants: {
+      large: { width: 320, height: 320, fit: 'cover', withUpload: true },
+      small: { width: 96, height: 96, fit: 'cover' },
+    } satisfies Record<AvatarVariant, VariantDeclaration>,
+  },
 ]
 
 /** The kind of a convention's logo. */
@@ -175,3 +193,6 @@ export const SIZE_CHART_KIND = 'merchandise-size-chart'
 
 /** The kind of the picture of an add-on. */
 export const ADD_ON_PICTURE_KIND = 'add-on-picture'
+
+/** The kind of an account's avatar. */
+export const AVATAR_KIND = 'profile-avatar'

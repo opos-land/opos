@@ -127,6 +127,10 @@ msgid "An administrator of OPOS took your profile down. It is no longer public, 
 msgstr "An administrator of OPOS took your profile down. It is no longer public, your avatar was removed, and the profile cannot be published until an administrator restores it."
 
 #: src/errors.ts
+msgid "An administrator took this profile down. It cannot be published until it is restored."
+msgstr "An administrator took this profile down. It cannot be published until it is restored."
+
+#: src/errors.ts
 msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
 msgstr "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
 
@@ -1234,6 +1238,10 @@ msgstr "This pairing code does not work: it was already used or it expired. Ask 
 #: src/errors.ts
 msgid "This person is already in the team. Change their membership on the team screen."
 msgstr "This person is already in the team. Change their membership on the team screen."
+
+#: src/errors.ts
+msgid "This profile is not taken down, so there is nothing to review."
+msgstr "This profile is not taken down, so there is nothing to review."
 
 #: src/errors.ts
 msgid "This QR code is not valid."

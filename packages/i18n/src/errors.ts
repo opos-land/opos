@@ -27,6 +27,8 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'tenant.has-orders': msg`This convention has orders, which are kept for at least five years. It cannot be deleted.`,
   'tenant.slug-retired': msg`This address belonged to a deleted convention and cannot be used again.`,
   'account.is-admin': msg`This account belongs to an administrator. The administrator role has to be taken away first.`,
+  'profile.taken-down': msg`An administrator took this profile down. It cannot be published until it is restored.`,
+  'profile.not-taken-down': msg`This profile is not taken down, so there is nothing to review.`,
   'admin.mfa-not-enabled': msg`An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again.`,
   'admin.grant-outdated': msg`The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again.`,
   'membership.last-head': msg`A convention must keep at least one head organizer. Make someone else a head organizer first.`,

@@ -46,6 +46,7 @@ import { FilesModule } from './modules/files/files.module'
 import { FILE_KINDS, type FileKind } from './modules/files/kinds'
 import { HealthModule } from './modules/health/health.module'
 import { PaymentsModule } from './modules/payments/payments.module'
+import { ProfilesModule } from './modules/profiles/profiles.module'
 import { ProgramModule } from './modules/program/program.module'
 import { PublicModule } from './modules/public/public.module'
 import { ShopModule } from './modules/shop/shop.module'
@@ -81,6 +82,7 @@ export class AppModule implements NestModule, OnModuleInit, OnModuleDestroy {
         PaymentsModule,
         HealthModule,
         MeModule,
+        ProfilesModule,
         AuthModule,
         TenantsModule,
         BrandingModule,

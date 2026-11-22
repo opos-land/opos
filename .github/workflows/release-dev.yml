@@ -1,0 +1,50 @@
+name: release-dev
+
+# Dev's release started by hand, for the head of develop: when ci's release did not reach Dev, such
+# as after Coolify failed a build or an operator applied another ref, or to deploy the head again. It
+# releases only a commit whose push ci checked and passed, and only while it is still the head,
+# through the same signed push as ci (docs/ARCHITECTURE.md, Environments).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # The jobs ci's release waits for, in the latest attempt of ci's run of the push of this commit
+  checks:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: require ci's checks of the head of develop
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+          REQUIRED: check e2e images secrets
+        run: |
+          run=$(gh api "repos/$REPOSITORY/actions/workflows/ci.yml/runs?event=push&branch=develop&head_sha=$COMMIT&per_page=1" \
+            --jq '.workflow_runs[0].id // empty')
+          if [ -z "$run" ]; then
+            echo "::error::ci has no run of a push to develop at $COMMIT"
+            exit 1
+          fi
+          passed=$(gh api "repos/$REPOSITORY/actions/runs/$run/jobs?filter=latest&per_page=100" \
+            --jq '[.jobs[] | select(.conclusion == "success") | .name]')
+          for name in $REQUIRED; do
+            if ! jq -e --arg name "$name" 'index($name) != null' <<<"$passed" >/dev/null; then
+              echo "::error::$name has not passed in ci's run $run of $COMMIT"
+              exit 1
+            fi
+          done
+          echo "ci's run $run passed $REQUIRED at $COMMIT"
+
+  release:
+    if: github.ref == 'refs/heads/develop'
+    needs: [checks]
+    uses: ./.github/workflows/coolify-release.yml

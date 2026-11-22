@@ -89,7 +89,7 @@ Read from the code on 2026-11-22. None of it is built yet, and none of it depend
 ### Release from CI
 
 - **Today:** Dev releases through a signed webhook to Coolify:
-  [ADR 0071 Release Dev from CI through a signed webhook](../adr/0071-release-dev-from-ci-through-a-signed-webhook.md).
+  [ADR 0071 Release Dev from CI through a signed webhook](../adr/0075-release-dev-from-ci-through-a-signed-webhook.md).
 - **Before production:** CI signs in to the platform. On GCP through Workload Identity Federation,
   with no stored key; on Kapsule through a cluster credential stored in GitHub, or an agent in the
   cluster that pulls.

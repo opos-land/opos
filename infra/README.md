@@ -194,6 +194,10 @@ Coolify, built on the server from the head of `develop`
   ([0075](../docs/adr/0075-release-dev-from-ci-through-a-signed-webhook.md)). The job ends once
   Coolify has queued the deployment; how the deployment ends is in Coolify. A rollback is a revert
   on `develop`.
+- **A release by hand.** When Dev missed the head of `develop`, as after a failed build in Coolify
+  or an apply with `--ref` and one without it, run the `release-dev` workflow on `develop`
+  (`gh workflow run release-dev.yml --ref develop`, or Actions, "Run workflow"). It releases the
+  head once CI's checks of its push passed, and refuses it otherwise.
 - **A change of configuration**, such as a variable or a rotated secret, is applied and deploys the
   head of `develop` again with it.
 - **A change of Supabase Auth's settings:** [SUPABASE.md](SUPABASE.md#changes).

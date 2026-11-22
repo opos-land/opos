@@ -472,7 +472,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - A release comes from CI: once the checks of a push to `develop` passed, Dev deploys the commit
   they passed, through a push to Coolify's webhook signed with a secret that can deploy and change
   nothing; CI never reaches Coolify's API
-  ([0075](adr/0075-release-dev-from-ci-through-a-signed-webhook.md)).
+  ([0075](adr/0075-release-dev-from-ci-through-a-signed-webhook.md)). Started by hand, the
+  `release-dev` workflow releases the head of `develop` the same way, once CI's checks of its push
+  passed, and no other commit.
 - Secrets belong to one environment each and are never committed. A deployed environment keeps each
   in the Secret Manager of its own Scaleway project. An operator signs in with a key of their own
   that expires the same day; CI never reaches Scaleway, and OpenTofu copies what it uses into
@@ -547,7 +549,8 @@ on high advisories).
   with the three jobs green ([protect-main.json](../.github/rulesets/protect-main.json);
   [0017](adr/0017-integrate-on-develop-and-release-through-main.md)).
 - A workflow reads the repository only, pins every action by a full commit hash, and passes
-  `${{ github.* }}` to a `run` step only through `env`
+  `${{ github.* }}` to a `run` step only through `env`; the one job that reads more reads the
+  repository's Actions runs, for `release-dev`
   ([ci-shape.test.mjs](../scripts/ci-shape.test.mjs)). No workflow signs in to a cloud: the
   secrets it reads are those OpenTofu writes into GitHub
   ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).

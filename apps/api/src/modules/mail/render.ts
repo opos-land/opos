@@ -55,20 +55,35 @@ ${validity === null ? '' : `<p style="margin:0 0 8px">${escapeHtml(validity)}</p
   return { subject, text, html }
 }
 
-/** A notice without a link, in the locale active on `i18n`: the same two parts and layout. */
+/**
+ * A notice without a link, in the locale active on `i18n`: the same two parts and layout. Its
+ * further paragraphs follow the body in their order, then the sentence a person wrote, under the
+ * words that introduce it: as it was written, every line of it quoted and every character escaped.
+ */
 export function renderNoticeEmail(i18n: I18n, content: NoticeContent): RenderedEmail {
   const subject = i18n._(content.subject)
-  const body = i18n._(content.body)
+  const paragraphs = [content.body, ...(content.details ?? [])].map((part) => i18n._(part))
   const note = i18n._(content.note)
+  const quoted = content.quote?.split(/\r?\n/) ?? []
+  const introduction =
+    content.quote && content.quoteIntroduction ? i18n._(content.quoteIntroduction) : undefined
 
-  const text = [body, note, 'OPOS'].join('\n\n')
+  const quoteText =
+    quoted.length > 0
+      ? [[introduction, ...quoted.map((line) => `> ${line}`)].filter(Boolean).join('\n')]
+      : []
+  const text = [...paragraphs, ...quoteText, note, 'OPOS'].join('\n\n')
+  const quoteHtml =
+    quoted.length > 0
+      ? `${introduction ? `<p style="margin:0 0 8px">${escapeHtml(introduction)}</p>\n` : ''}<blockquote style="margin:0 0 24px;padding:0 0 0 16px;border-left:3px solid #cccccc">${quoted.map(escapeHtml).join('<br>')}</blockquote>\n`
+      : ''
   const html = `<!doctype html>
 <html lang="${escapeHtml(i18n.locale)}">
 <head><meta charset="utf-8"><title>${escapeHtml(subject)}</title></head>
 <body style="margin:0;padding:24px;background:#ffffff;color:#1a1a1a;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5">
 <div style="max-width:560px;margin:0 auto">
-<p style="margin:0 0 24px">${escapeHtml(body)}</p>
-<p style="margin:0 0 24px;font-size:14px">${escapeHtml(note)}</p>
+${paragraphs.map((paragraph) => `<p style="margin:0 0 24px">${escapeHtml(paragraph)}</p>`).join('\n')}
+${quoteHtml}<p style="margin:0 0 24px;font-size:14px">${escapeHtml(note)}</p>
 <p style="margin:0;font-size:14px">OPOS</p>
 </div>
 </body>

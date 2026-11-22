@@ -4,6 +4,12 @@ import { TwoFactorResetPage } from '../features/accounts'
 import { LoginPage, MfaGate, MfaPage, RequireSession } from '../features/auth'
 import { ConventionPage, ConventionsPage, NewConventionPage } from '../features/conventions'
 import { LogPage } from '../features/log'
+import {
+  ProfilePage,
+  ProfileReportPage,
+  ProfileReportsPage,
+  TakenDownProfilesPage,
+} from '../features/profiles'
 import { AccountTheme } from '../features/theme'
 import { useSession } from '../shared/lib/session'
 import { NotFoundView } from '../shared/ui'
@@ -54,6 +60,10 @@ export const router = createBrowserRouter([
           { path: '/conventions/new', element: <NewConventionPage /> },
           { path: '/conventions/:conventionId', element: <ConventionPage /> },
           { path: '/two-factor-reset', element: <TwoFactorResetPage /> },
+          { path: '/profile-reports', element: <ProfileReportsPage /> },
+          { path: '/profile-reports/:reportId', element: <ProfileReportPage /> },
+          { path: '/profiles', element: <TakenDownProfilesPage /> },
+          { path: '/profiles/:accountId', element: <ProfilePage /> },
           { path: '/log', element: <LogPage /> },
           { path: '*', element: <NotFoundView /> },
         ],

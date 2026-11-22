@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { type EditionListPeriod, type ListedEdition } from '@opos/contract'
+import { type EditionListPeriod, type ListedEdition, type PublicProfile } from '@opos/contract'
 import {
+  accountAvatars,
   accountFiles,
+  accountProfiles,
+  accounts,
   editionMemberships,
   editions,
   editionShops,
@@ -159,6 +162,52 @@ export class GlobalDbService {
             : null,
       },
     }))
+  }
+
+  /**
+   * A published profile by its public identifier, for anyone: the parts of its account's public
+   * name, what the profile holds and the file of its avatar. Bound by the account's own
+   * publication (docs/adr/0071-let-anyone-read-the-profile-an-account-published.md): a profile
+   * that is withdrawn or taken down, which the database never holds as published, is not found,
+   * and neither the account's identifier nor its email address is read. What it answers is the
+   * schema of its route: a field added there is public at once.
+   */
+  async publishedProfile(publicId: string): Promise<PublicProfile | undefined> {
+    const [row] = await this.db
+      .select({
+        profileId: accountProfiles.publicId,
+        firstName: accounts.firstName,
+        nickname: accounts.nickname,
+        lastName: accounts.lastName,
+        nameOrder: accounts.nameOrder,
+        avatarFileId: accountAvatars.fileId,
+        description: accountProfiles.description,
+        pronouns: accountProfiles.pronouns,
+        city: accountProfiles.city,
+        links: accountProfiles.links,
+        interests: accountProfiles.interests,
+      })
+      .from(accountProfiles)
+      .innerJoin(accounts, eq(accounts.id, accountProfiles.accountId))
+      .leftJoin(accountAvatars, eq(accountAvatars.accountId, accountProfiles.accountId))
+      .where(and(eq(accountProfiles.publicId, publicId), isNotNull(accountProfiles.publishedAt)))
+    if (!row) return undefined
+    const { avatarFileId, ...profile } = row
+    return { ...profile, avatar: avatarFileId ? { fileId: avatarFileId } : null }
+  }
+
+  /**
+   * The account whose avatar a file is now, for anyone who has the file's identifier: an avatar is
+   * public from its upload, whether or not its profile is published. It answers the owner of the
+   * file to the storage alone, and nothing of the account to the caller; a file no avatar points
+   * at, a replaced or a removed one among them, is not found.
+   */
+  async avatarOwner(fileId: string): Promise<string | undefined> {
+    const [row] = await this.db
+      .select({ accountId: accountAvatars.accountId })
+      .from(accountAvatars)
+      .where(eq(accountAvatars.fileId, fileId))
+    return row?.accountId
   }
 
   /**

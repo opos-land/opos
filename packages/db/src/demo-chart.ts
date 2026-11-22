@@ -1,6 +1,7 @@
 import { crc32, deflateSync } from 'node:zlib'
 
-// The size chart of a demo item in the seed: an empty table drawn by this code. No image file
+// The pictures of the seed's demo data: the size chart of a demo item, an empty table, and the
+// avatar of a demo profile, a disc on a plain ground, both drawn by this code. No image file
 // enters the repository, and nothing here was drawn by a person or generated as a picture
 // (docs/PRODUCT.md, 8. Design and public image).
 
@@ -38,16 +39,39 @@ export function demoChart(rows: number, columns: number) {
       raw.set(colour, y * (width * 3 + 1) + 1 + x * 3)
     }
   }
+  return { bytes: png(width, height, raw), width, height }
+}
+
+/** The bytes of a PNG of eight bits a channel, RGB, from its rows of pixels. */
+function png(width: number, height: number, raw: Buffer) {
   const header = Buffer.alloc(13)
   header.writeUInt32BE(width, 0)
   header.writeUInt32BE(height, 4)
   header[8] = 8
   header[9] = 2
-  const bytes = Buffer.concat([
+  return Buffer.concat([
     SIGNATURE,
     chunk('IHDR', header),
     chunk('IDAT', deflateSync(raw)),
     chunk('IEND', Buffer.alloc(0)),
   ])
-  return { bytes, width, height }
+}
+
+const AVATAR = { side: 256, radius: 92, ground: [225, 225, 225], disc: [60, 60, 60] } as const
+
+/**
+ * A square PNG of a disc in the middle of a plain ground: what stands for a picture of a person
+ * in the demo, and shows where a square is cut from. The same bytes every time.
+ */
+export function demoAvatar() {
+  const { side, radius, ground, disc } = AVATAR
+  const raw = Buffer.alloc((side * 3 + 1) * side)
+  const middle = (side - 1) / 2
+  for (let y = 0; y < side; y += 1) {
+    for (let x = 0; x < side; x += 1) {
+      const inside = (x - middle) ** 2 + (y - middle) ** 2 <= radius ** 2
+      raw.set(inside ? disc : ground, y * (side * 3 + 1) + 1 + x * 3)
+    }
+  }
+  return { bytes: png(side, side, raw), width: side, height: side }
 }

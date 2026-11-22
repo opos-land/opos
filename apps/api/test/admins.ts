@@ -1,4 +1,11 @@
-import { grantAdmin, migrationDb, migrationUrl, revokeAdmin } from '@opos/db'
+import {
+  type AdminActionEntry,
+  grantAdmin,
+  migrationDb,
+  migrationUrl,
+  recordAdminAction,
+  revokeAdmin,
+} from '@opos/db'
 import { sql } from 'drizzle-orm'
 import { createAccount, mintToken, originOf } from './auth'
 import { addVerifiedFactor } from './tenants'
@@ -22,6 +29,9 @@ export async function adminAccount(metadata: Record<string, string> = {}) {
 export const grant = (email: string) => grantAdmin(db, email)
 
 export const revoke = (email: string) => revokeAdmin(db, email)
+
+/** An entry of the log as an action would leave it, for the entries no route of the test makes. */
+export const logAction = (entry: AdminActionEntry) => recordAdminAction(db, entry)
 
 /** Removes every factor of the account, as turning two-factor authentication off does. */
 export const removeFactors = (accountId: string) =>

@@ -23,6 +23,8 @@ export const errorCodes = [
   'account.not-found',
   'account.unconfirmed',
   'account.is-admin',
+  'profile.taken-down',
+  'profile.not-taken-down',
   'admin.mfa-not-enabled',
   'admin.grant-outdated',
   'membership.last-head',

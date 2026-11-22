@@ -219,11 +219,48 @@ describe('PATCH /me', () => {
     expect((await me().use(session(token))).body).toMatchObject({ theme: null })
   })
 
+  // docs/specs/0016-public-profile.md, N1 and N2.
+  it('starts an account with no nickname and the nickname between the names', async () => {
+    const other = await createAccount({ first_name: 'Jan' })
+
+    const res = await me()
+      .use(session(await signIn(other.email)))
+      .expect(200)
+
+    expect(res.body).toMatchObject({ nickname: null, nameOrder: 'nickname-middle' })
+  })
+
+  it('changes the nickname and the order of the name, and clears the nickname with null', async () => {
+    const res = await patch({ nickname: '  Lisek ', nameOrder: 'nickname-last' }).expect(200)
+
+    expect(res.body).toMatchObject({ nickname: 'Lisek', nameOrder: 'nickname-last' })
+    expect((await me().use(session(token))).body).toMatchObject({
+      nickname: 'Lisek',
+      nameOrder: 'nickname-last',
+    })
+
+    const cleared = await patch({ nickname: null, nameOrder: 'nickname-middle' }).expect(200)
+    expect(cleared.body).toMatchObject({ nickname: null, nameOrder: 'nickname-middle' })
+  })
+
   it.each([
     [{ theme: 'blue' }, 'theme'],
     [{ locale: 'cs' }, 'locale'],
     [{ firstName: '' }, 'firstName'],
     [{ email: 'other@example.test' }, 'email'],
+    [{ nickname: '' }, 'nickname'],
+    [{ nickname: 'x'.repeat(51) }, 'nickname'],
+    [{ nameOrder: 'nickname-first' }, 'nameOrder'],
+    // N7: no control character and none that turns the direction of the text.
+    [{ nickname: 'Li\u202Esek' }, 'nickname'],
+    [{ firstName: 'Ew\u0007a' }, 'firstName'],
+    [{ lastName: 'No\u200Fwak' }, 'lastName'],
+    [{ nickname: 'Li\u2067sek' }, 'nickname'],
+    [{ nickname: 'Li\u061Csek' }, 'nickname'],
+    [{ nickname: 'Li\u200Esek' }, 'nickname'],
+    [{ nickname: 'Li\u202Asek' }, 'nickname'],
+    [{ nickname: 'Li\u2066sek' }, 'nickname'],
+    [{ nickname: 'Li\u2069sek' }, 'nickname'],
   ])('refuses %o', async (body, field) => {
     const res = await patch(body).expect(400)
 

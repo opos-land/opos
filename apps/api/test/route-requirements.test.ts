@@ -58,6 +58,10 @@ const publicRoutes = [
   'public.edition',
   'public.programItems',
   'public.programItem',
+  // A published profile and an avatar are for everyone (docs/specs/0016-public-profile.md).
+  'public.profile',
+  'public.avatarFile',
+  'public.reportProfile',
   // An order link opens with its token alone (docs/specs/0009-buyer-self-service.md).
   'orderLinks.open',
   'orderLinks.renew',

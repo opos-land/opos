@@ -247,6 +247,26 @@ describe('recordAdminAction', () => {
     ).toEqual([{ subject_account_id: tenant.headId }])
   })
 
+  // docs/specs/0016-public-profile.md, T12.
+  it.each([
+    'profile-report.close',
+    'profile.take-down',
+    'profile.restore',
+    'account.clear-name',
+  ] as const)('records %s of an admin on an account', async (action) => {
+    const [adminAccountId, subject] = await Promise.all([actor(), createAdminCandidate()])
+    const accountId = subject.id
+
+    await recordAdminAction(asAdmin, { action, adminAccountId, accountId })
+
+    expect(
+      await migrator`
+        select action, admin_account_id, subject_tenant_id from admin_actions
+        where subject_account_id = ${accountId}
+      `,
+    ).toEqual([{ action, admin_account_id: adminAccountId, subject_tenant_id: null }])
+  })
+
   it('rolls back with the transaction of its caller', async () => {
     const [adminAccountId, tenant] = await Promise.all([actor(), createTenant()])
 
@@ -326,6 +346,21 @@ describe('recordAdminAction', () => {
       'a withdrawal that names no admin, forged the same way',
       { action: 'admin.revoke', accountId: true },
       'admin_actions_scripts_only',
+    ],
+    [
+      'a takedown of a profile that names a tenant',
+      { action: 'profile.take-down', adminAccountId: true, tenant: true, accountId: true },
+      'admin_actions_subject_matches_action',
+    ],
+    [
+      'a cleared name that names no account',
+      { action: 'account.clear-name', adminAccountId: true },
+      'admin_actions_subject_matches_action',
+    ],
+    [
+      'a closed report that names no admin',
+      { action: 'profile-report.close', accountId: true },
+      'admin_actions_script_or_admin',
     ],
     [
       'an action of the admin application that names no admin',

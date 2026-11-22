@@ -449,6 +449,55 @@
       "when": 1795203112297,
       "tag": "0063_order_email_text_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1795303772367,
+      "tag": "0064_accounts_nickname",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1795303777840,
+      "tag": "0065_accounts_nickname_privileges",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1795304744612,
+      "tag": "0066_plain_names_of_new_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1795304929792,
+      "tag": "0067_admin_action_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1795305333349,
+      "tag": "0068_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1795305352823,
+      "tag": "0069_profiles_privileges",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1795310875025,
+      "tag": "0070_account_avatars_file_unique",
+      "breakpoints": true
     }
   ]
 }

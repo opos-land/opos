@@ -12,6 +12,8 @@ import {
   startedAttemptSchema,
 } from './checkout'
 import { publicRoute, timestamp } from './common'
+import { nameOrderSchema } from './me'
+import { publicProfileSchema, reportProfileSchema } from './profiles'
 
 // What a convention's page shows to anyone. A field added here is public at once.
 
@@ -104,15 +106,28 @@ export const editionListSchema = z.object({
 
 export type EditionList = z.infer<typeof editionListSchema>
 
+/**
+ * A speaker as the programme shows it to anyone: the parts of its public name and their order,
+ * and the identifier of its profile while that is published (docs/specs/0016-public-profile.md,
+ * N5 and P11). Never the account's own identifier or its email address.
+ */
+export const publicSpeakerSchema = z.object({
+  firstName: z.string().nullable(),
+  nickname: z.string().nullable(),
+  lastName: z.string().nullable(),
+  nameOrder: nameOrderSchema,
+  profileId: z.uuid().nullable(),
+})
+
+export type PublicSpeaker = z.infer<typeof publicSpeakerSchema>
+
 export const publicProgramItemSchema = z.object({
   id: z.uuid(),
   title: z.string(),
   description: z.string().nullable(),
   startsAt: timestamp,
   endsAt: timestamp,
-  speakers: z.array(
-    z.object({ firstName: z.string().nullable(), lastName: z.string().nullable() }),
-  ),
+  speakers: z.array(publicSpeakerSchema),
   likeCount: z.number().int().nonnegative(),
 })
 
@@ -132,6 +147,9 @@ const documentVersion = z.object({
 const merchandiseFile = z.object({
   params: z.object({ slug: z.string(), fileId: z.string(), variant: z.string() }),
 })
+
+const profile = z.object({ params: z.object({ profileId: z.string() }) })
+const avatarFile = z.object({ params: z.object({ fileId: z.string(), variant: z.string() }) })
 
 /** An order a public address names, opened by its result token alone. */
 const order = z.object({
@@ -287,4 +305,38 @@ export const publicContract = {
     })
     .input(programItem)
     .output(publicProgramItemSchema),
+  profile: publicRoute
+    .route({
+      method: 'GET',
+      path: '/public/profiles/{profileId}',
+      summary:
+        'A published profile: the public name of its account, its avatar and what it holds; a profile that is not published is not found; no sign-in',
+    })
+    .input(profile)
+    .output(publicProfileSchema),
+  avatarFile: publicRoute
+    .meta({ servesFile: true })
+    .route({
+      method: 'GET',
+      path: '/public/avatar-files/{fileId}/{variant}',
+      outputStructure: 'detailed',
+      summary:
+        "A variant of an account's avatar, as an image, whether or not its profile is published; no sign-in",
+    })
+    .input(avatarFile)
+    .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+  reportProfile: publicRoute
+    .route({
+      method: 'POST',
+      path: '/public/profiles/{profileId}/reports',
+      successStatus: 204,
+      summary:
+        'Report a published profile, with a reason and, when the sender chooses, a note and an email address to answer; a profile that is not published is not found; no sign-in',
+    })
+    .input(
+      profile.extend({
+        body: reportProfileSchema,
+        headers: z.object({ 'accept-language': z.string().max(200).optional() }),
+      }),
+    ),
 }

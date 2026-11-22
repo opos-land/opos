@@ -278,6 +278,147 @@ describe('db:seed run twice', () => {
   })
 })
 
+// The demo of the public profile (docs/specs/0016-public-profile.md, Seed): a name with a nickname
+// in each order, a published profile with an avatar, one never published, one taken down that
+// asks for a review, and the reports of the published one.
+describe('db:seed profiles', () => {
+  const env = (name: string) => process.env[name]!
+  const bucket = new S3Client({
+    endpoint: env('S3_ENDPOINT'),
+    region: env('S3_REGION'),
+    credentials: {
+      accessKeyId: env('S3_ACCESS_KEY_ID'),
+      secretAccessKey: env('S3_SECRET_ACCESS_KEY'),
+    },
+    forcePathStyle: true,
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
+  })
+  const profileOf = async (email: string) =>
+    (
+      await migrator`
+        select p.*, a.id as account, a.nickname, a.name_order, v.file_id
+        from accounts a
+        left join account_profiles p on p.account_id = a.id
+        left join account_avatars v on v.account_id = a.id
+        where a.email = ${email}
+      `
+    )[0]!
+
+  it(
+    'gives demo accounts a nickname, between the names and after them',
+    { timeout: 120_000 },
+    async () => {
+      expect(runSeed('local').status).toBe(0)
+
+      expect(await profileOf('speaker@example.com')).toMatchObject({
+        nickname: 'Mazurek',
+        name_order: 'nickname-middle',
+      })
+      expect(await profileOf('attendee@example.com')).toMatchObject({
+        nickname: 'Jasiek',
+        name_order: 'nickname-last',
+      })
+      expect(await profileOf('head@convention-a.test')).toMatchObject({ nickname: null })
+    },
+  )
+
+  it(
+    'publishes a profile with every field set and an avatar whose master lies in the bucket',
+    { timeout: 120_000 },
+    async () => {
+      expect(runSeed('local').status).toBe(0)
+      const speaker = await profileOf('speaker@example.com')
+
+      expect(speaker.published_at).not.toBeNull()
+      expect(speaker.taken_down_at).toBeNull()
+      for (const field of ['description', 'pronouns', 'city']) expect(speaker[field]).toBeTruthy()
+      expect((speaker.links as string[]).length).toBeGreaterThan(0)
+      expect((speaker.interests as string[]).length).toBeGreaterThan(0)
+      const [file] = await migrator`
+      select kind, name, content_type, width, height, sha256 from account_files
+      where id = ${speaker.file_id as string}
+    `
+      expect(file).toMatchObject({
+        kind: 'profile-avatar',
+        name: 'avatar',
+        content_type: 'image/png',
+      })
+      expect(file!.width).toBe(file!.height)
+      const answer = await bucket.send(
+        new GetObjectCommand({
+          Bucket: env('S3_BUCKET'),
+          Key: `accounts/${speaker.account as string}/${speaker.file_id as string}/master`,
+        }),
+      )
+      const master = Buffer.from(await answer.Body!.transformToByteArray())
+      expect(createHash('sha256').update(master).digest('hex')).toBe(file!.sha256)
+    },
+  )
+
+  it(
+    'keeps one profile private, and one taken down that asks for a review',
+    { timeout: 120_000 },
+    async () => {
+      expect(runSeed('local').status).toBe(0)
+
+      expect(await profileOf('attendee@example.com')).toMatchObject({
+        published_at: null,
+        taken_down_at: null,
+        file_id: null,
+      })
+      const down = await profileOf('multi@example.com')
+      expect(down).toMatchObject({ published_at: null, taken_down_reason: 'spam' })
+      expect(down.taken_down_at).not.toBeNull()
+      expect(down.taken_down_note).toBeTruthy()
+      expect(down.review_requested_at).not.toBeNull()
+    },
+  )
+
+  it(
+    'reports the published profile twice, once with an address, and not again on the next run',
+    { timeout: 120_000 },
+    async () => {
+      expect(runSeed('local').status).toBe(0)
+      const speaker = await profileOf('speaker@example.com')
+      const reports = () => migrator<{ answered: boolean; closed_at: Date | null }[]>`
+        select email is not null as answered, closed_at
+        from profile_reports where account_id = ${speaker.account as string}
+      `
+      const first = await reports()
+
+      expect(first).toHaveLength(2)
+      expect(first.map((report) => report.answered).sort()).toEqual([false, true])
+      expect(first.every((report) => report.closed_at === null)).toBe(true)
+
+      expect(runSeed('local').status).toBe(0)
+      expect(await reports()).toHaveLength(2)
+    },
+  )
+
+  it(
+    'sets a demo profile again as the list says, whatever was done to it since',
+    { timeout: 120_000 },
+    async () => {
+      expect(runSeed('local').status).toBe(0)
+      const speaker = await profileOf('speaker@example.com')
+      await migrator`
+      update account_profiles set published_at = null, city = 'Elsewhere'
+      where account_id = ${speaker.account as string}
+    `
+
+      expect(runSeed('local').status).toBe(0)
+
+      const again = await profileOf('speaker@example.com')
+      expect(again.published_at).not.toBeNull()
+      expect(again.city).toBe(speaker.city)
+      // The identifier of its page stays: a link to the demo profile keeps working.
+      expect(again.public_id).toBe(speaker.public_id)
+      expect(again.file_id).toBe(speaker.file_id)
+    },
+  )
+})
+
 // A demo account reads the applications in Polish whatever language its browser asks for, and
 // a run of the seed sets that again for an account whose language somebody changed.
 describe('db:seed accounts', () => {

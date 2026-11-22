@@ -34,8 +34,15 @@ export function PrivacyPage() {
         <Points>
           <li>
             <Trans>
-              Your account: your first name, last name, email address and the interface language you
-              choose.
+              Your account: your first name, your nickname and your last name, your email address
+              and the interface language you choose.
+            </Trans>
+          </li>
+          <li>
+            <Trans>
+              Your profile, if you fill it in: a description, pronouns, a city or region, links and
+              interests, and your avatar. The profile is private until you publish it, and you
+              withdraw it whenever you like.
             </Trans>
           </li>
           <li>
@@ -101,6 +108,20 @@ export function PrivacyPage() {
           </li>
           <li>
             <Trans>
+              A published profile is read by anyone, with no sign-in: your name, your avatar and
+              what the profile holds. Your avatar is public from the moment you upload it, whether
+              or not your profile is published. Your name is shown on your profile and, when you are
+              a speaker, in the programme.
+            </Trans>
+          </li>
+          <li>
+            <Trans>
+              If you report a profile: the reason, your note and the email address, if you give one.
+              Only the administrators of OPOS read them.
+            </Trans>
+          </li>
+          <li>
+            <Trans>
               If you sign in with Google, Google confirms your email address and gives us your name.
             </Trans>
           </li>
@@ -129,6 +150,12 @@ export function PrivacyPage() {
           </li>
           <li>
             <Trans>
+              A report of a profile: until twelve months after it was closed, or until the account
+              whose profile it was about is deleted.
+            </Trans>
+          </li>
+          <li>
+            <Trans>
               Orders are the conventions’ sales records: they stay after the account with the same
               address is deleted.
             </Trans>
@@ -153,9 +180,9 @@ export function PrivacyPage() {
           <Trans>
             You delete your account yourself in the account settings, after confirming it is you:
             with your password or with Google, again. Your sign-in methods, sessions, two-factor
-            authentication with its recovery codes, likes, reviews, edition sign-ups and memberships
-            in convention teams go with it. The last head organizer of a convention hands that role
-            over first, so the convention keeps an owner.
+            authentication with its recovery codes, your profile with its avatar, likes, reviews,
+            edition sign-ups and memberships in convention teams go with it. The last head organizer
+            of a convention hands that role over first, so the convention keeps an owner.
           </Trans>
         </p>
       </Part>

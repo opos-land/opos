@@ -97,6 +97,14 @@ export class AdminDbService implements OnApplicationShutdown {
   }
 
   /**
+   * The connection of opos_admin, for the other database service of this module alone
+   * (AdminProfilesDb): the module exports neither, so no other module reaches the role.
+   */
+  get connection(): Database {
+    return this.db
+  }
+
+  /**
    * The grant of the admin role the account holds, if any: whether the account has two-factor
    * authentication on, and whether the grant still names that factor. The role holds only with
    * the second factor it was granted with.

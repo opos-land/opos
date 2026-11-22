@@ -3,10 +3,13 @@ import { DeleteObjectsCommand, PutObjectCommand, S3Client } from '@aws-sdk/clien
 import { and, eq, isNotNull, isNull, notInArray, sql } from 'drizzle-orm'
 import { grantAdmin } from './admins'
 import { migrationDb } from './client'
-import { demoChart } from './demo-chart'
+import { demoAvatar, demoChart } from './demo-chart'
 import { demoPdf } from './demo-pdf'
 import { migrationUrl, reachableUrl } from './migration-url'
 import {
+  accountAvatars,
+  accountFiles,
+  accountProfiles,
   accountRecoveryCodes,
   accounts,
   addOns,
@@ -35,6 +38,7 @@ import {
   orders,
   paymentAttempts,
   paymentProviderAccounts,
+  profileReports,
   programItemLikes,
   programItems,
   programItemSpeakers,
@@ -66,7 +70,26 @@ interface SeedAccount {
   email: string
   firstName: string
   lastName: string
+  /** The nickname of the public name, and where it stands; between the names when left out. */
+  nickname?: string
+  nameOrder?: 'nickname-middle' | 'nickname-last'
   theme?: 'light' | 'dark'
+}
+
+/** The profile of a demo account (docs/specs/0016-public-profile.md, Seed). */
+interface SeedProfile {
+  email: string
+  published?: boolean
+  avatar?: boolean
+  description?: string
+  pronouns?: string
+  city?: string
+  links?: string[]
+  interests?: (typeof accountProfiles.$inferInsert)['interests']
+  /** Taken down by an admin, with the reason and the sentence for the account. */
+  takenDown?: { reason: 'identity' | 'offensive' | 'spam'; note: string; reviewRequested: boolean }
+  /** The reports of the profile, added once: a run that finds a report adds none. */
+  reports?: { reason: 'identity' | 'offensive' | 'spam' | 'other'; note?: string; email?: string }[]
 }
 
 interface SeedMember {
@@ -316,10 +339,56 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'gate@convention-a.test', firstName: 'Ola', lastName: 'Kruk' },
   { email: 'head@convention-b.test', firstName: 'Jana', lastName: 'Novak' },
   { email: 'head@convention-c.test', firstName: 'Igor', lastName: 'Bielik' },
-  { email: 'speaker@example.com', firstName: 'Kasia', lastName: 'Mazur' },
-  { email: 'attendee@example.com', firstName: 'Jan', lastName: 'Kowal' },
+  { email: 'speaker@example.com', firstName: 'Kasia', lastName: 'Mazur', nickname: 'Mazurek' },
+  {
+    email: 'attendee@example.com',
+    firstName: 'Jan',
+    lastName: 'Kowal',
+    nickname: 'Jasiek',
+    nameOrder: 'nickname-last',
+  },
   { email: 'mfa@example.com', firstName: 'Maria', lastName: 'Zielinska' },
   { email: 'multi@example.com', firstName: 'Olga', lastName: 'Duda' },
+]
+
+// The demo of the public profile: one published with every field set and an avatar, which a
+// visitor reaches from the programme and which was reported twice; one its account never
+// published; and one an admin took down, whose account asks for a review.
+const PROFILES: SeedProfile[] = [
+  {
+    email: 'speaker@example.com',
+    published: true,
+    avatar: true,
+    description: 'Game master and LARP writer.\nRuns one-shots for newcomers at every convention.',
+    pronouns: 'she/her',
+    city: 'Gdynia',
+    links: ['https://example.com/kasia', 'https://example.org/one-shots'],
+    interests: ['tabletop-rpg', 'larp', 'literature'],
+    reports: [
+      {
+        reason: 'spam',
+        note: 'A demo report that gave an address.',
+        email: 'reporter@example.com',
+      },
+      { reason: 'other' },
+    ],
+  },
+  {
+    email: 'attendee@example.com',
+    description: 'Board games and fantasy novels.',
+    city: 'Krakow',
+    interests: ['board-games', 'literature'],
+  },
+  {
+    email: 'multi@example.com',
+    description: 'Hand-made dice, shipped anywhere.',
+    links: ['https://example.com/dice'],
+    takenDown: {
+      reason: 'spam',
+      note: 'A profile is not a place for advertising.',
+      reviewRequested: true,
+    },
+  },
 ]
 
 // The accounts with two-factor authentication: a TOTP factor enrolled and verified
@@ -865,6 +934,10 @@ const DOCUMENT_FILE_KIND = 'edition-document'
 const SIZE_CHART_FILE_KIND = 'merchandise-size-chart'
 /** The sizes the API makes of a size chart's master, each an object beside it. */
 const CHART_SIZES = ['small', 'large']
+/** The kind the API declares for an account's avatar, the label it keeps one under, and its sizes. */
+const AVATAR_FILE_KIND = 'profile-avatar'
+const AVATAR_LABEL = 'avatar'
+const AVATAR_SIZES = ['large', 'small']
 
 /**
  * Where the API's storage reads an edition's file that is no image: under its tenant and the
@@ -935,6 +1008,8 @@ async function ensureAccount(account: SeedAccount) {
     .set({
       firstName: account.firstName,
       lastName: account.lastName,
+      nickname: account.nickname ?? null,
+      nameOrder: account.nameOrder ?? 'nickname-middle',
       locale: DEMO_LOCALE,
       theme: account.theme ?? null,
     })
@@ -1244,8 +1319,20 @@ async function seedTenant(spec: SeedTenant) {
     }
   })
 
-  // The rows are committed: the bucket gets the files they point at. A file already there is put
-  // again with the same bytes, so a bucket that lost one gets it back.
+  // The rows are committed: the bucket gets the files they point at.
+  await putObjects(objects)
+
+  // A demo tenant is suspended or not as the list says, whatever an admin did to it since.
+  await (spec.suspended ? suspendTenant(db, tenantId) : restoreTenant(db, tenantId))
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * Puts the objects of rows that are committed. A file already there is put again with the same
+ * bytes, so a bucket that lost one gets it back.
+ */
+async function putObjects(objects: PendingObject[]) {
   for (const { key, bytes, type, stale = [] } of objects) {
     await bucket.send(
       new PutObjectCommand({
@@ -1264,12 +1351,103 @@ async function seedTenant(spec: SeedTenant) {
       )
     }
   }
-
-  // A demo tenant is suspended or not as the list says, whatever an admin did to it since.
-  await (spec.suspended ? suspendTenant(db, tenantId) : restoreTenant(db, tenantId))
 }
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+/**
+ * The profile of a demo account, as the list says whatever was done to it since: what it holds,
+ * whether it is published or taken down, and its avatar. The identifier of its page is the
+ * database's and stays, so a link to a demo profile keeps working across runs. Its reports are
+ * added once.
+ */
+async function seedProfile(profile: SeedProfile) {
+  const id = await accountId(profile.email)
+  const down = profile.takenDown
+  const objects = await db.transaction(async (tx) => {
+    await tx.insert(accountProfiles).values({ accountId: id }).onConflictDoNothing()
+    await tx
+      .update(accountProfiles)
+      .set({
+        description: profile.description ?? null,
+        pronouns: profile.pronouns ?? null,
+        city: profile.city ?? null,
+        links: profile.links ?? [],
+        interests: profile.interests ?? [],
+        // The moment a profile was published or taken down stays the one of its first run.
+        publishedAt:
+          profile.published && !down ? sql`coalesce(${accountProfiles.publishedAt}, now())` : null,
+        takenDownAt: down ? sql`coalesce(${accountProfiles.takenDownAt}, now())` : null,
+        takenDownReason: down?.reason ?? null,
+        takenDownNote: down?.note ?? null,
+        takenDownAfterReport: down ? false : null,
+        reviewRequestedAt: down?.reviewRequested
+          ? sql`coalesce(${accountProfiles.reviewRequestedAt}, now())`
+          : null,
+      })
+      .where(eq(accountProfiles.accountId, id))
+
+    const [reported] = await tx
+      .select({ id: profileReports.id })
+      .from(profileReports)
+      .where(eq(profileReports.accountId, id))
+      .limit(1)
+    if (!reported && profile.reports?.length) {
+      await tx.insert(profileReports).values(
+        profile.reports.map((report) => ({
+          accountId: id,
+          reason: report.reason,
+          note: report.note ?? null,
+          email: report.email ?? null,
+          // The language its emails are written in goes with the address alone.
+          locale: report.email ? DEMO_LOCALE : null,
+        })),
+      )
+    }
+    return profile.avatar ? [await seedAvatar(tx, id)] : []
+  })
+  await putObjects(objects)
+}
+
+/**
+ * The avatar of a demo profile: a disc drawn by code, kept as the master the API makes its sizes
+ * from, under the label the API keeps an avatar under.
+ */
+async function seedAvatar(tx: Tx, accountId: string): Promise<PendingObject> {
+  const avatar = demoAvatar()
+  const file = {
+    contentType: 'image/png',
+    size: avatar.bytes.length,
+    sha256: createHash('sha256').update(avatar.bytes).digest('hex'),
+    name: AVATAR_LABEL,
+    width: avatar.width,
+    height: avatar.height,
+  }
+  const [held] = await tx
+    .select({ fileId: accountAvatars.fileId, sha256: accountFiles.sha256 })
+    .from(accountAvatars)
+    .innerJoin(accountFiles, eq(accountFiles.id, accountAvatars.fileId))
+    .where(eq(accountAvatars.accountId, accountId))
+  let fileId = held?.fileId
+  // The API keeps the sizes it made of a master: those of a master drawn anew go with it.
+  const redrawn = held !== undefined && held.sha256 !== file.sha256
+  if (fileId) {
+    // The seed owns its demo files: an avatar drawn anew since the last run is the file's new bytes.
+    await tx.update(accountFiles).set(file).where(eq(accountFiles.id, fileId))
+  } else {
+    const [kept] = await tx
+      .insert(accountFiles)
+      .values({ accountId, kind: AVATAR_FILE_KIND, ...file })
+      .returning({ id: accountFiles.id })
+    fileId = kept!.id
+    await tx.insert(accountAvatars).values({ accountId, fileId })
+  }
+  const key = `accounts/${accountId}/${fileId}/master`
+  return {
+    key,
+    bytes: avatar.bytes,
+    type: 'image/png',
+    stale: redrawn ? AVATAR_SIZES.map((size) => key.replace(/master$/, size)) : [],
+  }
+}
 
 /**
  * The seller's details and the provider account of a demo convention. The account is kept while
@@ -2207,6 +2385,7 @@ try {
     await ensureAdmin(ADMIN.email)
   }
   for (const tenant of TENANTS) await seedTenant(tenant)
+  for (const profile of PROFILES) await seedProfile(profile)
   console.log(
     `Seeded ${TENANTS.length} tenants and ${seeded.length} accounts; password ${DEV_PASSWORD}.`,
   )

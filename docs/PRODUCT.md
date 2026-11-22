@@ -105,6 +105,11 @@ a ticket; what the scene calls accreditation is the ticket.
 | **order link**                | an emailed link that opens one order without a sign-in                                             |
 | **manual order**              | a sale made outside the shop, recorded by an org: at a desk, by invoice or complimentary           |
 | **discount code**             | a code a buyer enters at checkout to lower the price of an order, down to free entry               |
+| **profile**                   | what an account shows of itself to everyone once it publishes it                                   |
+| **public name**               | an account's first name, nickname and last name in the order it chose; "Anon" with none            |
+| **avatar**                    | an account's picture, public from its upload                                                       |
+| **profile report**            | a notice from anyone that a published profile should not be there                                  |
+| **platform's terms**          | the rules of using OPOS that an account accepts when it is created                                 |
 
 The roles are not exclusive: one account can be a head, an org, an attendee and a speaker, each in a
 different convention.
@@ -190,6 +195,7 @@ convention sends up to 20 an hour.
 | `opos.land`                                    | the portal: the editions of every convention, coming and past             | yes |
 | `opos.land/conventions/<convention>`           | a convention's page: its active edition, its other editions, sign-up      | yes |
 | `opos.land/conventions/<convention>/<edition>` | an edition's page: when and where it takes place, its programme, its shop | yes |
+| `opos.land/profiles/<profile>`                 | a profile its account published                                           | yes |
 | `panel.opos.land`                              | the panel; the scanner at `/scanner`                                      | yes |
 | `api.opos.land`                                | the API; public documentation at `/docs`                                  | yes |
 | `<convention>.opos.land`, a custom domain      | the public convention website                                             | no  |
@@ -222,7 +228,7 @@ its owner's rules and is built one [spec](specs/README.md) at a time.
 | --------- | ------------------------------------------------------------ | --- |
 | programme | programme items, speakers, likes, personal schedule, reviews | yes |
 | tickets   | ticket sales, checking tickets at the venue                  | yes |
-| profile   | the user's account and "my conventions"                      | yes |
+| profile   | the user's account, its public profile and "my conventions"  | yes |
 | CMS       | the public convention website                                | no  |
 | booths    | exhibitor booths, at the venue and virtual                   | no  |
 | friends   | connections between users                                    | no  |
@@ -237,6 +243,19 @@ set by the programme's domain owner. Any shape keeps these rules:
 | ---------- | ------------------------------------------------------------------ |
 | Belongs to | a programme item; goes with the item and with its author's account |
 | Organizers | act on it with the programme permission of the item's edition      |
+
+**The public profile.** An account shows who it is: a public name, an avatar, and a profile it may
+publish, on a page of its own in the portal that a speaker's name in the programme leads to. The
+rules are the domain owner's:
+
+| Rule        | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public name | a first name, a nickname and a last name, each optional, in the order the account chose; with none, "Anon". It stands wherever the account is named to everyone, a speaker in the programme too. The panel and the admin application show the first and the last name with the email address                                                                                                                                                                                                                                           |
+| Profile     | a description, pronouns, a city or region, links and interests from the platform's list, each optional and shown as written; never an email address, an age or anything the account did                                                                                                                                                                                                                                                                                                                                                |
+| Publication | private until its account publishes it, and withdrawn at any time with what it holds kept. Anyone reads a published profile, with no sign-in, at an address whose random identifier never changes and is not the account's; search engines are asked to leave it out. A withdrawn, a taken-down and an unknown profile answer alike ([0071](adr/0071-let-anyone-read-the-profile-an-account-published.md))                                                                                                                             |
+| Avatar      | one picture, the account's own to upload, replace and remove, of itself or one it may show; public from its upload, whether or not the profile is published. An account with none is shown by its initials                                                                                                                                                                                                                                                                                                                             |
+| Report      | anyone reports a published profile, with no sign-in: a reason, and a note and an email address when the sender gives them. Who gave an address is told that the report arrived and what came of it, in a fixed text. A closed report is removed twelve months after its closing ([0073](adr/0073-take-a-profile-report-from-anyone-and-answer-who-left-an-address.md))                                                                                                                                                                 |
+| Takedown    | the admin takes a profile down under a rule of the platform's terms: it stops being public, cannot be published and loses its avatar, and its account is told what was done, why, that a person decided and how to contest it. The account changes the profile and asks for a review; a restored profile is published by its account alone. The admin changes nothing a profile says, and clears a name that breaks the terms, which blocks nothing ([0074](adr/0074-take-a-profile-down-with-a-reason-and-change-nothing-it-says.md)) |
 
 **Tickets.** What is sold, on what terms, and how tickets reach the buyer and are checked are set by
 the domain owner of tickets. Any shape keeps these rules:
@@ -253,14 +272,14 @@ provider account, and its seller's details, the legal entity a buyer's contract 
 address buyers write to. It sells in one currency, PLN. Each edition holds its legal documents and
 its consents, and opens a shop of its own.
 
-| Rule                 | Value                                                                                                                                                                             |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Opening              | needs the provider account ready to sell, the seller's details complete, and a published version of the edition's shop terms and privacy policy; a refusal names what is missing  |
-| While a shop is open | the account stays connected and ready to sell, the details stay complete, and the last document standing for the shop terms or the privacy policy is neither hidden nor deleted   |
-| Publication          | an edition is published without an open shop, and a shop may open before its edition is published; buyers reach the shop only while both hold                                     |
-| Documents            | published as PDF versions that never change: a correction is a new version, and a published version stays readable by its link for as long as the convention is on the platform   |
-| Consents             | their wording, and which of them a buyer must accept, are the convention's own: OPOS ships no legal text and requires no consent by itself; a consent links one document for good |
-| Limits               | 30 documents an edition, 50 versions a document, 20 consents an edition; 20 checks of credentials with the provider a convention an hour                                          |
+| Rule                 | Value                                                                                                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Opening              | needs the provider account ready to sell, the seller's details complete, and a published version of the edition's shop terms and privacy policy; a refusal names what is missing                       |
+| While a shop is open | the account stays connected and ready to sell, the details stay complete, and the last document standing for the shop terms or the privacy policy is neither hidden nor deleted                        |
+| Publication          | an edition is published without an open shop, and a shop may open before its edition is published; buyers reach the shop only while both hold                                                          |
+| Documents            | published as PDF versions that never change: a correction is a new version, and a published version stays readable by its link for as long as the convention is on the platform                        |
+| Consents             | their wording, and which of them a buyer must accept, are the convention's own: OPOS ships no legal text of a shop and requires no consent of a buyer by itself; a consent links one document for good |
+| Limits               | 30 documents an edition, 50 versions a document, 20 consents an edition; 20 checks of credentials with the provider a convention an hour                                                               |
 
 **The catalog.** Each edition sets what it sells and on what terms: ticket types, add-ons,
 merchandise, and what it asks of a ticket holder. Every price is a gross amount in the
@@ -408,20 +427,27 @@ and in Poznań.
 
 ## 10. Personal data and privacy
 
-OPOS stores an attendee's name, email address and activity; payment details stay with the payment
-provider. With an order it stores what the convention needs of its ticket holder: a name or
+OPOS stores an attendee's name, email address and activity, and what the account put on its
+profile; payment details stay with the payment provider. With an order it stores what the convention needs of its ticket holder: a name or
 nickname, an age band, the answers to the edition's custom fields, the consents accepted and the
 buyer's email address. Of a payment it keeps the amount, the time and the provider's number of the
 transaction, and nothing of a card or a bank account. Of an email of an order it keeps what the
 email said as it went out, for as long as the order, without the QR code and the order link.
 
 **Account deletion is self-service**, after a fresh sign-in, and takes likes, reviews, memberships
-and registrations with it. Orders stay as the convention's sales records; a last head hands the
+and registrations with it, and the profile, its avatar and the reports of it. Orders stay as the convention's sales records; a last head hands the
 role over first.
 
 **Orders are kept for at least five years** from the end of their edition, as the convention's
 sales records. Nothing purges them, so an edition that has an order is not deleted, and neither is
 its convention.
+
+**Creating an account accepts the platform's terms**: registration says so and links them beside
+the privacy policy, and no box is ticked. They say what a name and a profile may not hold, how a
+profile is reported and taken down, and how a decision is contested. **An account is for a person
+of 16 or older**; nothing asks for an age and none is kept, and a younger attendee needs no
+account, since a ticket names its holder whoever ordered it
+([0072](adr/0072-ship-the-platforms-terms-and-accept-them-by-creating-an-account.md)).
 
 A password is set only after the email address is confirmed. A link from an email acts only when
 the button on its page is pressed. An email address leads to an account only once confirmed.
@@ -456,7 +482,7 @@ other tool the portal does not strictly need, allowed or refused per category in
 and withdrawn as easily from the footer; with no tracker, no banner shows. The panel, which shows
 attendees' data, and the admin application run none
 ([0026](adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)). **The privacy policy
-ships with the MVP**, after a legal review, in every
+and the platform's terms ship with the MVP**, after a legal review, in every
 interface language.
 
 ---
@@ -476,7 +502,9 @@ interface language.
 - Tickets and merchandise sold to the convention's own account and checked at the venue; discount
   codes, down to free entry; sales made outside the shop recorded as manual orders; attendee
   registrations
-- Account deletion; a privacy policy linked from registration
+- The public profile: a public name with a nickname, an avatar, a profile an account publishes,
+  its reports and its takedown by the admin
+- Account deletion; a privacy policy and the platform's terms linked from registration
 - File uploads, as far as a feature's spec asks for them
 - A portal for phone browsers; the designer's interface, with no AI-generated graphics
 - Demo data; hosting and Supabase in the EU, with backups and a Dev environment
@@ -492,6 +520,8 @@ interface language.
 - Localized portal paths; content translations with a language switcher on the public website
 - Czech, Slovak, German; other currencies, payment methods and providers; more sign-in providers
 - Our own address during Google sign-in; changing an email address, confirmed by both addresses
-- Searching and filtering the list of editions, speaker profiles, rooms, block schedule
+- Searching and filtering the list of editions, rooms, block schedule
+- A speaker's programme items on its profile, an avatar beside a speaker in the programme, an
+  address the account chooses for its profile, searching the profiles
 - Custom roles, an audit log of team changes
 - The remaining GDPR obligations: record of processing, data export, log retention

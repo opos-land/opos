@@ -100,6 +100,8 @@ describe('InvitationPage', () => {
         email: 'invitee@x.test',
         firstName: null,
         lastName: null,
+        nickname: null,
+        nameOrder: 'nickname-middle' as const,
         locale: null,
         theme: null,
         mfaEnabled: true,

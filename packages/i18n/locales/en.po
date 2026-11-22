@@ -7,6 +7,11 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#. A nickname in quotation marks, beside a first or a last name: Anna “Lisek” Nowak
+#: src/names.ts
+msgid "“{nickname}”"
+msgstr "“{nickname}”"
+
 #: src/order-emails.ts
 msgid "{editionName} starts soon: your QR code"
 msgstr "{editionName} starts soon: your QR code"
@@ -109,6 +114,22 @@ msgstr "An account with this email address already exists."
 msgid "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
 msgstr "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
 
+#: src/emails.ts
+msgid "An administrator of OPOS cleared the name of your account: your first name, nickname and last name. Until you enter a name again, others see you as “Anon”."
+msgstr "An administrator of OPOS cleared the name of your account: your first name, nickname and last name. Until you enter a name again, others see you as “Anon”."
+
+#: src/emails.ts
+msgid "An administrator of OPOS restored your profile. It is not public yet: publish it on the profile page of your account when you are ready."
+msgstr "An administrator of OPOS restored your profile. It is not public yet: publish it on the profile page of your account when you are ready."
+
+#: src/emails.ts
+msgid "An administrator of OPOS took your profile down. It is no longer public, your avatar was removed, and the profile cannot be published until an administrator restores it."
+msgstr "An administrator of OPOS took your profile down. It is no longer public, your avatar was removed, and the profile cannot be published until an administrator restores it."
+
+#: src/errors.ts
+msgid "An administrator took this profile down. It cannot be published until it is restored."
+msgstr "An administrator took this profile down. It cannot be published until it is restored."
+
 #: src/errors.ts
 msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
 msgstr "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
@@ -149,9 +170,18 @@ msgstr "An organizer of {conventionName} swapped a variant of the merchandise in
 msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 msgstr "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
 
+#. The public name of an account that gave no first name, nickname or last name
+#: src/names.ts
+msgid "Anon"
+msgstr "Anon"
+
 #: src/errors.ts
 msgid "Another discount code of this edition already has this text. Choose another."
 msgstr "Another discount code of this edition already has this text. Choose another."
+
+#: src/profiles.ts
+msgid "Another reason"
+msgstr "Another reason"
 
 #: src/errors.ts
 msgid "Another scanner of this edition already has this name. Choose another."
@@ -168,6 +198,12 @@ msgctxt "glossary"
 msgid "attendee"
 msgstr "attendee"
 
+#. Glossary term: avatar (an account's picture)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "avatar"
+msgstr "avatar"
+
 #: src/exports.ts
 msgctxt "export value"
 msgid "Awaiting payment"
@@ -177,6 +213,10 @@ msgstr "Awaiting payment"
 msgctxt "production numbers"
 msgid "Awaiting payment"
 msgstr "Awaiting payment"
+
+#: src/profiles.ts
+msgid "Board games"
+msgstr "Board games"
 
 #. Glossary term: booth
 #: src/glossary.ts
@@ -195,6 +235,10 @@ msgctxt "export value"
 msgid "Canceled"
 msgstr "Canceled"
 
+#: src/profiles.ts
+msgid "Card games"
+msgstr "Card games"
+
 #: src/errors.ts
 msgid "Check the data you entered."
 msgstr "Check the data you entered."
@@ -207,6 +251,10 @@ msgstr "Child"
 #: src/errors.ts
 msgid "Choose a time zone from the list."
 msgstr "Choose a time zone from the list."
+
+#: src/profiles.ts
+msgid "Comics"
+msgstr "Comics"
 
 #: src/exports.ts
 msgctxt "export column"
@@ -270,6 +318,14 @@ msgstr "convention"
 msgctxt "glossary"
 msgid "core"
 msgstr "core"
+
+#: src/profiles.ts
+msgid "Cosplay"
+msgstr "Cosplay"
+
+#: src/profiles.ts
+msgid "Crafts"
+msgstr "Crafts"
 
 #: src/exports.ts
 msgctxt "export column"
@@ -343,6 +399,10 @@ msgstr "Failed"
 msgid "Files are temporarily unavailable. Try again in a moment."
 msgstr "Files are temporarily unavailable. Try again in a moment."
 
+#: src/profiles.ts
+msgid "Film and television"
+msgstr "Film and television"
+
 #. Glossary term: guardian consent (a guardian's written consent for a teen)
 #: src/glossary.ts
 msgctxt "glossary"
@@ -407,12 +467,20 @@ msgid "If you did not do this, change your password right away and turn two-fact
 msgstr "If you did not do this, change your password right away and turn two-factor authentication on again."
 
 #: src/emails.ts
+msgid "If you do not agree with this decision, write to {contact} and say why."
+msgstr "If you do not agree with this decision, write to {contact} and say why."
+
+#: src/emails.ts
 msgid "If you do not expect this invitation, ignore this message."
 msgstr "If you do not expect this invitation, ignore this message."
 
 #: src/emails.ts
 msgid "If you do not expect this, contact the head organizer of the convention."
 msgstr "If you do not expect this, contact the head organizer of the convention."
+
+#: src/emails.ts
+msgid "If you have a question about this decision, write to {contact}."
+msgstr "If you have a question about this decision, write to {contact}."
 
 #: src/order-emails.ts
 msgid "If you have questions about the order or its payment, write to {contactEmail}."
@@ -430,17 +498,53 @@ msgstr "Images are temporarily unavailable. Try again in a moment."
 msgid "Invitation to the organizing team of {tenantName}"
 msgstr "Invitation to the organizing team of {tenantName}"
 
+#: src/profiles.ts
+msgid "It was cleared because the terms of OPOS do not allow an account to carry the name or the identity of someone else."
+msgstr "It was cleared because the terms of OPOS do not allow an account to carry the name or the identity of someone else."
+
+#: src/profiles.ts
+msgid "It was cleared because the terms of OPOS do not allow an offensive, hateful or unlawful name."
+msgstr "It was cleared because the terms of OPOS do not allow an offensive, hateful or unlawful name."
+
+#: src/profiles.ts
+msgid "It was cleared because the terms of OPOS do not allow spam or advertising in a name."
+msgstr "It was cleared because the terms of OPOS do not allow spam or advertising in a name."
+
+#: src/profiles.ts
+msgid "It was taken down because the terms of OPOS do not allow a profile to show a picture, a name or an identity of someone else."
+msgstr "It was taken down because the terms of OPOS do not allow a profile to show a picture, a name or an identity of someone else."
+
+#: src/profiles.ts
+msgid "It was taken down because the terms of OPOS do not allow offensive, hateful or unlawful content in a profile."
+msgstr "It was taken down because the terms of OPOS do not allow offensive, hateful or unlawful content in a profile."
+
+#: src/profiles.ts
+msgid "It was taken down because the terms of OPOS do not allow spam or advertising in a profile."
+msgstr "It was taken down because the terms of OPOS do not allow spam or advertising in a profile."
+
 #. Glossary term: locale
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "language"
 msgstr "language"
 
+#: src/profiles.ts
+msgid "LARP"
+msgstr "LARP"
+
 #. Glossary term: like (noun)
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "like"
 msgstr "like"
+
+#: src/profiles.ts
+msgid "Literature"
+msgstr "Literature"
+
+#: src/profiles.ts
+msgid "Manga and anime"
+msgstr "Manga and anime"
 
 #. Glossary term: manual order (a sale made outside the shop, recorded by an org)
 #: src/glossary.ts
@@ -466,6 +570,10 @@ msgstr "Merchandise item"
 msgctxt "export column"
 msgid "Merchandise item"
 msgstr "Merchandise item"
+
+#: src/profiles.ts
+msgid "Miniature wargames"
+msgstr "Miniature wargames"
 
 #. Glossary term: module
 #: src/glossary.ts
@@ -508,6 +616,10 @@ msgstr "Nothing can be added to this order: you buy more only for your own paid 
 #: src/order-emails.ts
 msgid "Nothing else of the order changed, and your QR code stays the same."
 msgstr "Nothing else of the order changed, and your QR code stays the same."
+
+#: src/profiles.ts
+msgid "Offensive or unlawful content"
+msgstr "Offensive or unlawful content"
 
 #: src/errors.ts
 msgid "Only a head organizer can edit or remove another head organizer."
@@ -639,6 +751,18 @@ msgctxt "glossary"
 msgid "price tier"
 msgstr "price tier"
 
+#. Glossary term: profile (what an account shows of itself to everyone)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "profile"
+msgstr "profile"
+
+#. Glossary term: profile report (a notice that a profile should not be there)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "profile report"
+msgstr "profile report"
+
 #. Glossary term: programme item
 #: src/glossary.ts
 msgctxt "glossary"
@@ -649,6 +773,12 @@ msgstr "programme item"
 msgctxt "export column"
 msgid "Provider"
 msgstr "Provider"
+
+#. Glossary term: public name (first name, nickname and last name in the chosen order)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "public name"
+msgstr "public name"
 
 #. Glossary term: QR code (what a paid order is found by at the edition)
 #: src/glossary.ts
@@ -730,6 +860,10 @@ msgstr "size chart"
 msgid "Someone asked for a new link to the order {number} for {conventionName}. It opens the order without a sign-in, so keep it to yourself."
 msgstr "Someone asked for a new link to the order {number} for {conventionName}. It opens the order without a sign-in, so keep it to yourself."
 
+#: src/profiles.ts
+msgid "Someone else’s picture or identity"
+msgstr "Someone else’s picture or identity"
+
 #: src/errors.ts
 msgid "Something in your order is no longer available. Check your order and try again."
 msgstr "Something in your order is no longer available. Check your order and try again."
@@ -737,6 +871,10 @@ msgstr "Something in your order is no longer available. Check your order and try
 #: src/errors.ts
 msgid "Something went wrong. Try again."
 msgstr "Something went wrong. Try again."
+
+#: src/profiles.ts
+msgid "Spam or advertising"
+msgstr "Spam or advertising"
 
 #. Glossary term: speaker
 #: src/glossary.ts
@@ -770,10 +908,20 @@ msgctxt "glossary"
 msgid "suspended"
 msgstr "suspended"
 
+#: src/profiles.ts
+msgid "Tabletop role-playing games"
+msgstr "Tabletop role-playing games"
+
 #: src/exports.ts
 msgctxt "export value"
 msgid "Teen"
 msgstr "Teen"
+
+#. Glossary term: platform's terms (the rules of using OPOS an account accepts)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "terms"
+msgstr "terms"
 
 #: src/order-emails.ts
 msgid "Thank you. Your order {number} for {conventionName} is paid."
@@ -787,6 +935,18 @@ msgstr "The account with this email address has not been confirmed yet."
 msgid "The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters."
 msgstr "The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters."
 
+#: src/emails.ts
+msgid "The administrator wrote:"
+msgstr "The administrator wrote:"
+
+#: src/emails.ts
+msgid "The administrators looked at the profile you reported on OPOS and found nothing in it against the terms. It stays as it is."
+msgstr "The administrators looked at the profile you reported on OPOS and found nothing in it against the terms. It stays as it is."
+
+#: src/emails.ts
+msgid "The administrators looked at the profile you reported on OPOS and took it down. It is no longer public."
+msgstr "The administrators looked at the profile you reported on OPOS and took it down. It is no longer public."
+
 #: src/order-emails.ts
 msgid "The amount paid, {paid}, differs from the total of the order, {total}."
 msgstr "The amount paid, {paid}, differs from the total of the order, {total}."
@@ -794,6 +954,18 @@ msgstr "The amount paid, {paid}, differs from the total of the order, {total}."
 #: src/errors.ts
 msgid "The code is wrong, has expired or was already used. Check it and try again."
 msgstr "The code is wrong, has expired or was already used. Check it and try again."
+
+#: src/profiles.ts
+msgid "The decision followed a report someone sent about your profile."
+msgstr "The decision followed a report someone sent about your profile."
+
+#: src/profiles.ts
+msgid "The decision was made by a person, an administrator, and not by a program."
+msgstr "The decision was made by a person, an administrator, and not by a program."
+
+#: src/profiles.ts
+msgid "The decision was made on the administrators’ own initiative, with no report."
+msgstr "The decision was made on the administrators’ own initiative, with no report."
 
 #: src/errors.ts
 msgid "The link has expired. Ask for a new one."
@@ -818,6 +990,10 @@ msgstr "The money is with the convention. Return it to the buyer at the payment 
 #: src/order-emails.ts
 msgid "The money is with the convention. The order waits for an organizer to settle it."
 msgstr "The money is with the convention. The order waits for an organizer to settle it."
+
+#: src/emails.ts
+msgid "The name of your account was cleared"
+msgstr "The name of your account was cleared"
 
 #: src/errors.ts
 msgid "The new password must differ from the current one."
@@ -862,6 +1038,14 @@ msgstr "The payment provider's number of the transaction: {reference}"
 #: src/errors.ts
 msgid "The production numbers are ready once the pre-order deadline has passed."
 msgstr "The production numbers are ready once the pre-order deadline has passed."
+
+#: src/emails.ts
+msgid "The profile you reported stays"
+msgstr "The profile you reported stays"
+
+#: src/emails.ts
+msgid "The profile you reported was taken down"
+msgstr "The profile you reported was taken down"
 
 #: src/order-emails.ts
 msgid "The QR code of the order {number}"
@@ -1056,6 +1240,10 @@ msgid "This person is already in the team. Change their membership on the team s
 msgstr "This person is already in the team. Change their membership on the team screen."
 
 #: src/errors.ts
+msgid "This profile is not taken down, so there is nothing to review."
+msgstr "This profile is not taken down, so there is nothing to review."
+
+#: src/errors.ts
 msgid "This QR code is not valid."
 msgstr "This QR code is not valid."
 
@@ -1189,6 +1377,10 @@ msgctxt "glossary"
 msgid "venue"
 msgstr "venue"
 
+#: src/profiles.ts
+msgid "Video games"
+msgstr "Video games"
+
 #: src/errors.ts
 msgid "We could not confirm that you are not a robot. Try again."
 msgstr "We could not confirm that you are not a robot. Try again."
@@ -1208,6 +1400,14 @@ msgstr "We received a request to change the email address of your OPOS account f
 #: src/emails.ts
 msgid "We received a request to reset the password of your OPOS account. Set a new password with the link below."
 msgstr "We received a request to reset the password of your OPOS account. Set a new password with the link below."
+
+#: src/emails.ts
+msgid "We received your report of a profile"
+msgstr "We received your report of a profile"
+
+#: src/emails.ts
+msgid "We will write to this address once more, to say what was decided. If you sent no report, ignore this message."
+msgstr "We will write to this address once more, to say what was decided. If you sent no report, ignore this message."
 
 #: src/order-emails.ts
 msgid "With questions, write to {contactEmail}."
@@ -1238,6 +1438,16 @@ msgstr "You are now a member of the organizing team of {tenantName} in OPOS. Ope
 #: src/order-emails.ts
 msgid "You can also write to {contactEmail}."
 msgstr "You can also write to {contactEmail}."
+
+#. placeholder {0}: takedown.contact
+#: src/emails.ts
+msgid "You can change your profile and then ask for a review on the profile page of your account. If you do not agree with the decision, write to {0}."
+msgstr "You can change your profile and then ask for a review on the profile page of your account. If you do not agree with the decision, write to {0}."
+
+#. placeholder {0}: cleared.contact
+#: src/emails.ts
+msgid "You can enter your name again in your account settings. If you do not agree with the decision, write to {0}."
+msgstr "You can enter your name again in your account settings. If you do not agree with the decision, write to {0}."
 
 #: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
@@ -1270,6 +1480,10 @@ msgstr "You have been invited to the organizing team of {tenantName} in OPOS. Ac
 #: src/emails.ts
 msgid "You have joined the organizing team of {tenantName}"
 msgstr "You have joined the organizing team of {tenantName}"
+
+#: src/emails.ts
+msgid "Your avatar was removed when the profile was taken down. You can upload one again."
+msgstr "Your avatar was removed when the profile was taken down. You can upload one again."
 
 #: src/order-emails.ts
 msgid "Your order"
@@ -1307,9 +1521,21 @@ msgstr "Your payment for the order {number} for {conventionName} arrived, but it
 msgid "Your payment for the order {number} is under review"
 msgstr "Your payment for the order {number} is under review"
 
+#: src/emails.ts
+msgid "Your profile can be published again"
+msgstr "Your profile can be published again"
+
+#: src/emails.ts
+msgid "Your profile was taken down"
+msgstr "Your profile was taken down"
+
 #: src/order-emails.ts
 msgid "Your QR code"
 msgstr "Your QR code"
+
+#: src/emails.ts
+msgid "Your report of a profile on OPOS has reached the administrators. They will look at the profile and decide whether it stays."
+msgstr "Your report of a profile on OPOS has reached the administrators. They will look at the profile and decide whether it stays."
 
 #: src/errors.ts
 msgid "Your session has ended. Sign in again."

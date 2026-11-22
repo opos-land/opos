@@ -34,6 +34,8 @@ const account = {
   email: 'jan@example.test',
   firstName: 'Jan',
   lastName: 'Kowal',
+  nickname: null,
+  nameOrder: 'nickname-middle' as const,
   locale: null,
   theme: null,
   mfaEnabled: false,

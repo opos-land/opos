@@ -85,6 +85,23 @@ export const globalReads = [
   'account_files.account_id',
   'account_files.kind',
   'account_files.created_at',
+  // A published profile, read by anyone: the parts of the public name, what the profile holds and
+  // the pointer at the avatar. Never an email address, and nothing a takedown says.
+  'accounts.id',
+  'accounts.first_name',
+  'accounts.last_name',
+  'accounts.nickname',
+  'accounts.name_order',
+  'account_profiles.account_id',
+  'account_profiles.public_id',
+  'account_profiles.published_at',
+  'account_profiles.description',
+  'account_profiles.pronouns',
+  'account_profiles.city',
+  'account_profiles.links',
+  'account_profiles.interests',
+  'account_avatars.account_id',
+  'account_avatars.file_id',
 ]
 
 /**
@@ -109,6 +126,8 @@ export const adminReads = [
   'accounts.email',
   'accounts.first_name',
   'accounts.last_name',
+  'accounts.nickname',
+  'accounts.name_order',
   'accounts.email_confirmed_at',
   'accounts.locale',
   'accounts.mfa_enabled_at',
@@ -124,12 +143,40 @@ export const adminReads = [
   'admin_actions.tenant_slug',
   'admin_actions.subject_account_id',
   'admin_actions.created_at',
+  'account_profiles.account_id',
+  'account_profiles.public_id',
+  'account_profiles.published_at',
+  'account_profiles.taken_down_at',
+  'account_profiles.taken_down_reason',
+  'account_profiles.taken_down_note',
+  'account_profiles.taken_down_after_report',
+  'account_profiles.review_requested_at',
+  'account_profiles.description',
+  'account_profiles.pronouns',
+  'account_profiles.city',
+  'account_profiles.links',
+  'account_profiles.interests',
+  'account_profiles.created_at',
+  'account_profiles.updated_at',
+  'account_avatars.account_id',
+  'account_avatars.file_id',
+  'account_avatars.created_at',
+  'profile_reports.id',
+  'profile_reports.account_id',
+  'profile_reports.reason',
+  'profile_reports.note',
+  'profile_reports.email',
+  'profile_reports.locale',
+  'profile_reports.created_at',
+  'profile_reports.closed_at',
 ]
 export const adminWrites = [
   'tenants INSERT',
   'tenants DELETE',
   'tenant_memberships INSERT',
   'account_recovery_codes DELETE',
+  // A takedown removes the profile's avatar.
+  'account_avatars DELETE',
 ]
 /** An entry of the log takes its identifier and its time from the database, never from the role. */
 export const adminInserts = [
@@ -139,7 +186,22 @@ export const adminInserts = [
   'admin_actions.tenant_slug',
   'admin_actions.subject_account_id',
 ]
-export const adminUpdates = ['tenants.slug', 'tenants.suspended_at']
+export const adminUpdates = [
+  'tenants.slug',
+  'tenants.suspended_at',
+  // Clearing an account's name.
+  'accounts.first_name',
+  'accounts.last_name',
+  'accounts.nickname',
+  // Taking a profile down and restoring it; never what a profile says.
+  'account_profiles.published_at',
+  'account_profiles.taken_down_at',
+  'account_profiles.taken_down_reason',
+  'account_profiles.taken_down_note',
+  'account_profiles.taken_down_after_report',
+  'account_profiles.review_requested_at',
+  'profile_reports.closed_at',
+]
 
 /**
  * The tables of the admin application. opos_app and opos_app_global hold nothing on them, a read
@@ -148,7 +210,43 @@ export const adminUpdates = ['tenants.slug', 'tenants.suspended_at']
 const adminTables = ['admins', 'admin_actions', 'retired_tenant_slugs']
 
 /** The public tables outside tenant isolation. */
-const globalTables = ['accounts', 'account_recovery_codes', 'account_files', ...adminTables]
+const globalTables = [
+  'accounts',
+  'account_recovery_codes',
+  'account_files',
+  'account_profiles',
+  'account_avatars',
+  'profile_reports',
+  ...adminTables,
+]
+
+/**
+ * The columns opos_app inserts where the database or another role gives the others, so the role
+ * holds no insert on the whole table: a profile takes its public identifier from the database and
+ * what a takedown sets from the admin, and a report its identifier and its times.
+ */
+export const appInserts = [
+  'account_profiles.account_id',
+  'account_profiles.description',
+  'account_profiles.pronouns',
+  'account_profiles.city',
+  'account_profiles.links',
+  'account_profiles.interests',
+  'account_profiles.published_at',
+  'profile_reports.account_id',
+  'profile_reports.reason',
+  'profile_reports.note',
+  'profile_reports.email',
+  'profile_reports.locale',
+]
+
+/**
+ * The tables opos_app reads by column alone, and the columns it reads there. Of a report of a
+ * profile the API reads which profile it is of and whether it is closed, to count the open ones
+ * and to remove an old one, and nothing a report says.
+ */
+const appColumnReadTables = ['profile_reports']
+export const appColumnReads = ['profile_reports.account_id', 'profile_reports.closed_at']
 
 /**
  * The triggers OPOS attaches to the tables of the auth schema: table, then trigger,
@@ -181,8 +279,17 @@ const appUpdates = [
   'account_recovery_codes.used_at',
   'accounts.first_name',
   'accounts.last_name',
+  'accounts.nickname',
+  'accounts.name_order',
   'accounts.locale',
   'accounts.theme',
+  'account_profiles.description',
+  'account_profiles.pronouns',
+  'account_profiles.city',
+  'account_profiles.links',
+  'account_profiles.interests',
+  'account_profiles.published_at',
+  'account_profiles.review_requested_at',
   'tenants.name',
   'tenants.default_locale',
   'tenants.timezone',
@@ -519,6 +626,9 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     ['discount_code_merchandise_items', 'DELETE'],
     ['account_files', 'INSERT'],
     ['account_files', 'DELETE'],
+    ['account_avatars', 'INSERT'],
+    ['account_avatars', 'DELETE'],
+    ['profile_reports', 'DELETE'],
   ].map((pair) => pair.join(' '))
   const overGranted = await sql<{ role: string; table: string; privilege: string }[]>`
     select r.role, c.relname as table, p.privilege
@@ -535,6 +645,8 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
         or (r.role = 'opos_app' and p.privilege in ('INSERT', 'DELETE')
           and not (c.relname || ' ' || p.privilege) = any(${appWrites}))
         or (r.role = 'opos_app' and c.relname = any(${adminTables}))
+        or (r.role = 'opos_app' and p.privilege = 'SELECT'
+          and c.relname = any(${appColumnReadTables}))
         or (r.role = 'opos_admin'
           and p.privilege in ('SELECT', 'UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'))
         or (r.role = 'opos_admin' and p.privilege in ('INSERT', 'DELETE')
@@ -568,7 +680,11 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
           or not (c.relname || '.' || a.attname) = any(${globalReads})))
         or (r.role = 'opos_app' and p.privilege = 'REFERENCES')
         or (r.role = 'opos_app' and p.privilege = 'INSERT'
-          and not (c.relname || ' INSERT') = any(${appWrites}))
+          and not (c.relname || ' INSERT') = any(${appWrites})
+          and not (c.relname || '.' || a.attname) = any(${appInserts}))
+        or (r.role = 'opos_app' and p.privilege = 'SELECT'
+          and c.relname = any(${appColumnReadTables})
+          and not (c.relname || '.' || a.attname) = any(${appColumnReads}))
         or (r.role = 'opos_app' and p.privilege = 'UPDATE'
           and not (c.relname || '.' || a.attname) = any(${appUpdates}))
         or (r.role = 'opos_app' and c.relname = any(${adminTables}))

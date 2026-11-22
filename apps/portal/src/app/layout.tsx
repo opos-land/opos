@@ -4,7 +4,7 @@ import { AccountLocale } from '../features/account'
 import { MFA_PATH, MfaGate, mfaPath, mfaReturnFor } from '../features/auth'
 import { ConsentBanner, ConsentSettingsLink } from '../features/consent'
 import { AccountTheme, ThemeToggle } from '../features/theme'
-import { PRIVACY_PATH } from '../shared/config/routes'
+import { PRIVACY_PATH, TERMS_PATH } from '../shared/config/routes'
 import { useSession } from '../shared/lib/session'
 import { linkClass } from '../shared/ui'
 
@@ -69,6 +69,9 @@ export function Layout() {
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <ConsentSettingsLink />
+            <Link to={TERMS_PATH} className={linkClass}>
+              <Trans>Terms</Trans>
+            </Link>
             <Link to={PRIVACY_PATH} className={linkClass}>
               <Trans>Privacy policy</Trans>
             </Link>

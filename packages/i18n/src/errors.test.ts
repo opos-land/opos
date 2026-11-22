@@ -292,6 +292,28 @@ describe('errorMessage', () => {
     )
   })
 
+  // docs/specs/0016-public-profile.md: publishing a profile taken down, and asking for a review of
+  // one that is not.
+  it.each([
+    [
+      'profile.taken-down',
+      'An administrator took this profile down. It cannot be published until it is restored.',
+      'Administrator zdjął ten profil. Nie da się go opublikować, dopóki nie zostanie przywrócony.',
+    ],
+    [
+      'profile.not-taken-down',
+      'This profile is not taken down, so there is nothing to review.',
+      'Ten profil nie jest zdjęty, więc nie ma czego sprawdzać.',
+    ],
+  ])('says why %s refused a change of a profile', async (code, en, pl) => {
+    const i18n = setupI18n()
+
+    await activateLocale(i18n, 'en')
+    expect(i18n._(errorMessage(code))).toBe(en)
+    await activateLocale(i18n, 'pl')
+    expect(i18n._(errorMessage(code))).toBe(pl)
+  })
+
   it('falls back to the generic message for an unknown code', () => {
     expect(errorMessage('no.such-code')).toBe(unknownError)
   })

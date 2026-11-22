@@ -156,6 +156,31 @@ export const glossary = {
     context: 'glossary',
     comment: 'Glossary term: discount code (a code a buyer enters to lower the price of an order)',
   }),
+  profile: msg({
+    message: 'profile',
+    context: 'glossary',
+    comment: 'Glossary term: profile (what an account shows of itself to everyone)',
+  }),
+  publicName: msg({
+    message: 'public name',
+    context: 'glossary',
+    comment: 'Glossary term: public name (first name, nickname and last name in the chosen order)',
+  }),
+  avatar: msg({
+    message: 'avatar',
+    context: 'glossary',
+    comment: "Glossary term: avatar (an account's picture)",
+  }),
+  profileReport: msg({
+    message: 'profile report',
+    context: 'glossary',
+    comment: 'Glossary term: profile report (a notice that a profile should not be there)',
+  }),
+  platformTerms: msg({
+    message: 'terms',
+    context: 'glossary',
+    comment: "Glossary term: platform's terms (the rules of using OPOS an account accepts)",
+  }),
 }
 
 export type GlossaryTerm = keyof typeof glossary

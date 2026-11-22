@@ -17,6 +17,8 @@ const account = {
   email: 'a@x.test',
   firstName: null,
   lastName: null,
+  nickname: null,
+  nameOrder: 'nickname-middle' as const,
   locale: null,
   theme: null,
   mfaEnabled: false,

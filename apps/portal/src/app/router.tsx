@@ -14,7 +14,8 @@ import {
   EditionProgramPage,
   ProgramItemPage,
 } from '../features/conventions'
-import { LandingPage, PrivacyPage } from '../features/landing'
+import { LandingPage, PrivacyPage, TermsPage } from '../features/landing'
+import { MyProfilePage, ProfilePage, ReportProfilePage } from '../features/profile'
 import { SchedulePage } from '../features/schedule'
 import { CheckoutPage, OrderLinkPage, ResultPage, ShopPage } from '../features/shop'
 import { NotFoundView } from '../shared/ui'
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <LandingPage /> },
       { path: '/privacy', element: <PrivacyPage /> },
+      { path: '/terms', element: <TermsPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/auth/confirm', element: <ConfirmPage /> },
@@ -40,6 +42,16 @@ export const router = createBrowserRouter([
           </RequireSession>
         ),
       },
+      {
+        path: '/account/profile',
+        element: (
+          <RequireSession>
+            <MyProfilePage />
+          </RequireSession>
+        ),
+      },
+      { path: '/profiles/:profileId', element: <ProfilePage /> },
+      { path: '/profiles/:profileId/report', element: <ReportProfilePage /> },
       {
         path: '/schedule',
         element: (

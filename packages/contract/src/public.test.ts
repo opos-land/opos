@@ -14,10 +14,16 @@ import {
 
 // What leaves the API without sign-in: a field added here is public at once.
 describe('the public schemas', () => {
-  it('give a speaker names alone', () => {
+  it('give a speaker its public name and the identifier of its profile alone', () => {
     const speaker = publicProgramItemSchema.shape.speakers.element
 
-    expect(Object.keys(speaker.shape).sort()).toEqual(['firstName', 'lastName'])
+    expect(Object.keys(speaker.shape).sort()).toEqual([
+      'firstName',
+      'lastName',
+      'nameOrder',
+      'nickname',
+      'profileId',
+    ])
   })
 
   it('drop any other field of a speaker on the way out', () => {
@@ -27,11 +33,29 @@ describe('the public schemas', () => {
       description: null,
       startsAt: '2027-06-01T09:00:00Z',
       endsAt: '2027-06-01T10:00:00Z',
-      speakers: [{ firstName: 'Kasia', lastName: 'Mazur', email: 'kasia@example.test' }],
+      speakers: [
+        {
+          firstName: 'Kasia',
+          nickname: null,
+          lastName: 'Mazur',
+          nameOrder: 'nickname-middle',
+          profileId: null,
+          email: 'kasia@example.test',
+          accountId: '0e0d8f7e-8a3c-4b5e-9f60-1b2c3d4e5f61',
+        },
+      ],
       likeCount: 0,
     })
 
-    expect(item.speakers).toEqual([{ firstName: 'Kasia', lastName: 'Mazur' }])
+    expect(item.speakers).toEqual([
+      {
+        firstName: 'Kasia',
+        nickname: null,
+        lastName: 'Mazur',
+        nameOrder: 'nickname-middle',
+        profileId: null,
+      },
+    ])
   })
 
   it('name the fields of a convention and an edition', () => {

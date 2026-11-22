@@ -311,8 +311,10 @@ export class FilesService {
    * the context, an edition's in the edition the route's path names, an account's of the session's
    * account. A public route, which admits nobody to a tenant and so has none in its context, names
    * the tenant itself as `tenantId`, from the lookup of the address and never from a request's
-   * input. A file of another owner is not found before the bucket is asked. Another account's
-   * file is read through a tenant row that points at it, which no feature needs yet.
+   * input. A file of another owner is not found before the bucket is asked. A feature that shows
+   * an account to everyone names that account as `accountId`, from the feature's own row that
+   * points at the file and never from a request's input
+   * (docs/adr/0071-let-anyone-read-the-profile-an-account-published.md).
    */
   async open(
     kindName: string,
@@ -321,7 +323,8 @@ export class FilesService {
       variant,
       editionId,
       tenantId,
-    }: { variant?: string; editionId?: string; tenantId?: string } = {},
+      accountId,
+    }: { variant?: string; editionId?: string; tenantId?: string; accountId?: string } = {},
   ): Promise<OpenedFile> {
     this.outsideTransactions('open')
     const kind = this.kind(kindName)
@@ -334,7 +337,7 @@ export class FilesService {
     let row: { name: string; contentType: string; size: number; sha256: string } | undefined
     let ownerId: string
     if (!OWNERS[kind.owner].inTenant) {
-      ownerId = this.context.account().id
+      ownerId = accountId ?? this.context.account().id
       ;[row] = await this.db
         .select({
           name: accountFiles.name,

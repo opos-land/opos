@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { programDays, speakerNames } from './program-days'
+import { programDays } from './program-days'
 
 const at = (startsAt: string) => ({ startsAt })
 
@@ -26,20 +26,5 @@ describe('programDays', () => {
 
   it('has no days without items', () => {
     expect(programDays([], 'Europe/Warsaw')).toEqual([])
-  })
-})
-
-describe('speakerNames', () => {
-  it('joins the names of every speaker', () => {
-    expect(
-      speakerNames([
-        { firstName: 'Kasia', lastName: 'Mazur' },
-        { firstName: 'Jan', lastName: null },
-      ]),
-    ).toBe('Kasia Mazur, Jan')
-  })
-
-  it('is empty without speakers', () => {
-    expect(speakerNames([])).toBe('')
   })
 })

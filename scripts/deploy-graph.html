@@ -33,7 +33,7 @@
         --kind-endpoint: #2b8a3e;
         --kind-resource: #e8590c;
         --kind-secrets: #a61e4d;
-        --kind-browser: #495057;
+        --kind-internet: #495057;
         --kind-unit: #3b5bdb;
         color-scheme: light;
       }
@@ -62,7 +62,7 @@
           --kind-endpoint: #69db7c;
           --kind-resource: #ffa94d;
           --kind-secrets: #f06595;
-          --kind-browser: #adb5bd;
+          --kind-internet: #adb5bd;
           --kind-unit: #7c93f5;
           color-scheme: dark;
         }
@@ -223,8 +223,8 @@
       .node.secrets {
         --kind: var(--kind-secrets);
       }
-      .node.browser {
-        --kind: var(--kind-browser);
+      .node.internet {
+        --kind: var(--kind-internet);
       }
       .node:hover rect.box,
       .node:focus-visible rect.box {
@@ -1242,7 +1242,7 @@
                 'into what holds them',
               ]
             default:
-              return [node.label, 'visitors', '', '']
+              return [node.label, 'anyone reaching', 'a public host', '']
           }
         }
         const nodes = model.nodes.map((node) => ({
@@ -1619,7 +1619,15 @@
               linked,
             ]
           }
-          return [head, h('p', { class: 'muted' }, 'Visitors, from the internet.'), linked]
+          return [
+            head,
+            h(
+              'p',
+              { class: 'muted' },
+              'Anyone on the internet reaching a public host: visitors, CI runs, anything else. The code does not tell who calls which host; a resource that points at one, as a CI variable does, shows its own link.',
+            ),
+            linked,
+          ]
         }
 
         function edgePanel(edge) {

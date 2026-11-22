@@ -346,7 +346,7 @@ describe('the deployment', () => {
     assert.deepEqual(
       deployment.nodes.map((candidate) => candidate.id),
       [
-        'browser',
+        'internet',
         'resource:ci:github',
         'resource:ci:supabase',
         'secrets',
@@ -433,9 +433,9 @@ describe('the deployment', () => {
       via.map((entry) => entry.name).join(' '),
     ])
     assert.deepEqual(links, [
-      ['browser > app:web', 'request', 'https://web.example.org'],
-      ['browser > app:api', 'request', 'https://example.org'],
-      ['browser > ci:store', 'request', 'https://store.example.org:3000'],
+      ['internet > app:web', 'request', 'https://web.example.org'],
+      ['internet > app:api', 'request', 'https://example.org'],
+      ['internet > ci:store', 'request', 'https://store.example.org:3000'],
       ['app:web > app:api', 'names', 'build API'],
       ['app:api > endpoint:db.example.com', 'request', 'DATABASE_URL'],
       ['app:api > endpoint:scaleway_tem_domain.this.smtp_host', 'request', 'SMTP_HOST'],
@@ -462,11 +462,11 @@ describe('the deployment', () => {
       ['ci:store > secrets', 'secret', 'ci-token'],
       ['resource:ci:github > secrets', 'secret', 'ci-token'],
     ])
-    assert.ok(deployment.layout.nodes['app:api'].x > deployment.layout.nodes.browser.x)
+    assert.ok(deployment.layout.nodes['app:api'].x > deployment.layout.nodes.internet.x)
     // Who calls in on the left, the containers by their connections, what they rely on right
     const column = (id) => deployment.layout.nodes[id].column
     assert.deepEqual(
-      ['browser', 'resource:ci:github', 'app:worker', 'app:web', 'app:api', 'app:cache'].map(
+      ['internet', 'resource:ci:github', 'app:worker', 'app:web', 'app:api', 'app:cache'].map(
         column,
       ),
       [0, 0, 1, 1, 2, 3],
@@ -493,7 +493,7 @@ describe('the deployment', () => {
     const { deployment } = await readStack(join(ROOT, 'infra/live/dev'), { root: ROOT })
     const ids = deployment.nodes.map((node) => node.id)
     for (const id of [
-      'browser',
+      'internet',
       'deployment:api',
       'deployment:tools',
       'deployment:imgproxy',
@@ -509,7 +509,7 @@ describe('the deployment', () => {
       deployment.links.find((candidate) => candidate.from === from && candidate.to === to)
     assert.ok(link('deployment:api', 'deployment:imgproxy'))
     assert.ok(link('deployment:tools', 'deployment:api'))
-    assert.ok(link('browser', 'deployment:portal'))
+    assert.ok(link('internet', 'deployment:portal'))
     const database = deployment.links.find(
       (candidate) =>
         candidate.from === 'deployment:api' && /^endpoint:db\..*\.supabase\.co$/.test(candidate.to),

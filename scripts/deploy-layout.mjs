@@ -426,7 +426,8 @@ export function readDeployment(units, { root }) {
   }
 
   for (const container of containers) {
-    if (container.url) link('browser', container.id, 'request', container.url, container.host)
+    // Anyone on the internet reaches a public host: the code tells nothing of who does
+    if (container.url) link('internet', container.id, 'request', container.url, container.host)
   }
   for (const container of containers) {
     const entries = [
@@ -516,7 +517,7 @@ export function readDeployment(units, { root }) {
   }
 
   const nodes = [
-    ...(containers.length > 0 ? [{ id: 'browser', kind: 'browser', label: 'Browser' }] : []),
+    ...(containers.length > 0 ? [{ id: 'internet', kind: 'internet', label: 'Internet' }] : []),
     ...holders.values(),
     ...(secretNames.length > 0
       ? [{ id: 'secrets', kind: 'secrets', label: 'Secrets', names: secretNames }]
@@ -546,7 +547,7 @@ export function readDeployment(units, { root }) {
   const columns = new Map(
     nodes.map((node) => {
       if (node.kind === 'container') return [node.id, 1 + inner[node.id].column]
-      if (['browser', 'resource'].includes(node.kind)) return [node.id, 0]
+      if (['internet', 'resource'].includes(node.kind)) return [node.id, 0]
       return [node.id, Number.MAX_SAFE_INTEGER]
     }),
   )

@@ -133,6 +133,17 @@ describe('the orders of an account on a convention’s page', () => {
     expect(within(await item('NEWEST2222')).getByText('Awaiting payment')).toBeDefined()
   })
 
+  // Nobody has to be named: an order with no name says its edition and its day alone.
+  it('name the ticket holder of an order only when it has one', async () => {
+    api.list.mockResolvedValue([order('NAMED22222'), order('NAMELESS22', { holderName: '' })])
+    view()
+
+    const named = within(await item('NAMED22222')).getByText(/Convention A 2027/)
+    expect(named.textContent).toMatch(/, for Ada Lovelace$/)
+    const nameless = within(await item('NAMELESS22')).getByText(/Convention A 2027/)
+    expect(nameless.textContent).toMatch(/^Convention A 2027, placed [^,]+(, \d{4})?$/)
+  })
+
   // U2: a paid order offers "Resend QR code" and "Buy more".
   it('offer a paid order its QR code again, and more for the same ticket', async () => {
     api.list.mockResolvedValue([order('PAD2222222')])

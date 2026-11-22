@@ -83,6 +83,13 @@ export const emptyDraft = (ticketTypeId: string | null): Draft => ({
 export const ticketTypeOf = (offer: Offer, draft: Pick<Draft, 'ticketTypeId'>) =>
   offer.ticketTypes.find((type) => type.id === draft.ticketTypeId)
 
+/**
+ * The age band a checkout of the ticket type starts with: the adult one, as most ticket holders
+ * are adults, or none where the ticket type is not sold to them and the buyer has to choose.
+ */
+const startingAgeBand = (offer: Offer, ticketTypeId: string | null): Draft['ageBand'] =>
+  ticketTypeOf(offer, { ticketTypeId })?.ageBands.includes('adult') ? 'adult' : null
+
 /** What decides the offer of a checkout: its ticket type, or the order it adds to. */
 type Offered = Pick<Draft, 'ticketTypeId'> & Partial<Pick<Draft, 'extending'>>
 
@@ -190,7 +197,8 @@ export const answerField = (fieldId: string) => `answer:${fieldId}`
  * The fields of the first step that do not hold, each with what is wrong. `accountEmail` is the
  * signed-in buyer's, null for a visitor: an account's email is not asked, but one the provider's
  * module cannot take cannot pay through it, and the buyer is stopped before the order is placed.
- * An order of merchandise alone asks no age band and no custom field.
+ * An order of merchandise alone asks no age band and no custom field. The name is never one of
+ * them: nobody has to be named.
  */
 export function holderIssues(
   offer: Offer,
@@ -199,7 +207,6 @@ export function holderIssues(
 ): Record<string, FieldIssue> {
   const signedIn = accountEmail !== null
   const issues: Record<string, FieldIssue> = {}
-  if (draft.holderName.trim() === '') issues.holderName = 'required'
   const type = ticketTypeOf(offer, draft)
   if (draft.ticketTypeId !== null) {
     if (draft.ageBand === null) issues.ageBand = 'required'
@@ -247,6 +254,7 @@ export function summaryIssues(offer: Offer, draft: Draft, totalMinor: number) {
 /**
  * The checkout with another ticket type: the add-ons the new one does not offer are removed and
  * named, and the merchandise is kept, as far as the new one offers it, when the buyer says so.
+ * The age band chosen stays, and a checkout that had none starts with the new ticket type's.
  */
 export function withTicketType(
   offer: Offer,
@@ -265,7 +273,8 @@ export function withTicketType(
       ...draft,
       ticketTypeId,
       supporterPriceMinor: sameType ? draft.supporterPriceMinor : null,
-      ageBand: ticketTypeId === null ? null : draft.ageBand,
+      ageBand:
+        ticketTypeId === null ? null : (draft.ageBand ?? startingAgeBand(offer, ticketTypeId)),
       addOnIds: draft.addOnIds.filter((id) => addOns.has(id)),
       items: keepMerchandise ? draft.items.filter((item) => variants.has(item.variantId)) : [],
       step: 'holder',
@@ -278,10 +287,11 @@ export function withTicketType(
 
 /**
  * How a checkout begins on its page: with what the tab kept, or empty for the ticket type the
- * address asks for (`null` for merchandise alone, `undefined` for nothing asked). A signed-in
- * buyer's name is filled in where none was typed. Another ticket type than the kept checkout is
- * for takes its place at once, unless merchandise was chosen: the buyer then says whether to
- * keep it (`ask`).
+ * address asks for (`null` for merchandise alone, `undefined` for nothing asked). A new one starts
+ * with the adult age band where its ticket type is sold to adults. A signed-in buyer's name is
+ * filled in where none was typed, on the first step alone: a buyer who went on with no name left
+ * it out. Another ticket type than the kept checkout is for takes its place at once, unless
+ * merchandise was chosen: the buyer then says whether to keep it (`ask`).
  */
 export function beginCheckout(
   offer: Offer,
@@ -290,10 +300,15 @@ export function beginCheckout(
   accountName: string,
 ): { draft: Draft | null; removedAddOns: string[]; ask: boolean } {
   const named = (draft: Draft): Draft =>
-    draft.holderName === '' && accountName !== '' ? { ...draft, holderName: accountName } : draft
+    draft.step === 'holder' && draft.holderName === '' && accountName !== ''
+      ? { ...draft, holderName: accountName }
+      : draft
   if (!kept) {
     return {
-      draft: wanted === undefined ? null : named(emptyDraft(wanted)),
+      draft:
+        wanted === undefined
+          ? null
+          : named({ ...emptyDraft(wanted), ageBand: startingAgeBand(offer, wanted) }),
       removedAddOns: [],
       ask: false,
     }

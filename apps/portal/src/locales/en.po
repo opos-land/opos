@@ -29,6 +29,10 @@ msgid "{count, plural, one {Speaker:} other {Speakers:}}"
 msgstr "{count, plural, one {Speaker:} other {Speakers:}}"
 
 #: src/features/shop/components/my-orders.tsx
+msgid "{editionName}, placed {placed}"
+msgstr "{editionName}, placed {placed}"
+
+#: src/features/shop/components/my-orders.tsx
 msgid "{editionName}, placed {placed}, for {holderName}"
 msgstr "{editionName}, placed {placed}, for {holderName}"
 
@@ -1491,8 +1495,8 @@ msgid "Ticket holder"
 msgstr "Ticket holder"
 
 #: src/features/shop/components/holder-step.tsx
-msgid "Ticket holder’s name or nickname"
-msgstr "Ticket holder’s name or nickname"
+msgid "Ticket holder’s name or nickname (optional)"
+msgstr "Ticket holder’s name or nickname (optional)"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
@@ -1815,8 +1819,8 @@ msgid "Your name is shown wherever your account is named to everyone, and your a
 msgstr "Your name is shown wherever your account is named to everyone, and your avatar is public from the moment you upload it. Your profile is private until you publish it. What you show there is yours to choose, within these rules:"
 
 #: src/features/shop/components/holder-step.tsx
-msgid "Your name or nickname"
-msgstr "Your name or nickname"
+msgid "Your name or nickname (optional)"
+msgstr "Your name or nickname (optional)"
 
 #: src/features/landing/pages/terms-page.tsx
 msgid "Your name, your avatar and your profile"

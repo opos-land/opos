@@ -214,9 +214,9 @@ describe('the ticket holder step', () => {
     expect(holderIssues(offer(), filled(), null)).toEqual({})
   })
 
-  it('asks for the name, the age band, the email twice and each required field', () => {
+  // Nobody has to be named: the name is the one field of the step that may stay empty.
+  it('asks for the age band, the email twice and each required field, and never for the name', () => {
     expect(holderIssues(offer(), emptyDraft(standard!), null)).toEqual({
-      holderName: 'required',
       ageBand: 'required',
       email: 'required',
       emailConfirmation: 'required',
@@ -258,10 +258,9 @@ describe('the ticket holder step', () => {
     })
   })
 
-  // A merch-only order asks for the buyer's name and email: never an age band or a field.
-  it('asks an order of merchandise alone for the name and the email only', () => {
+  // A merch-only order asks for the buyer's email: never an age band or a field.
+  it('asks an order of merchandise alone for the email only', () => {
     expect(holderIssues(offer(), emptyDraft(null), null)).toEqual({
-      holderName: 'required',
       email: 'required',
       emailConfirmation: 'required',
     })
@@ -328,10 +327,22 @@ describe('another ticket type', () => {
   })
 })
 
+describe('the age band of another ticket type', () => {
+  it('is the adult one after merchandise alone, the one already chosen otherwise, and none without a ticket', () => {
+    const alone = { ...emptyDraft(null), holderName: 'Ada' }
+
+    expect(withTicketType(offer(), alone, standard!, true).draft.ageBand).toBe('adult')
+    expect(
+      withTicketType(offer(), filled({ ageBand: 'teen' }), supporter!, true).draft.ageBand,
+    ).toBe('teen')
+    expect(withTicketType(offer(), filled(), null, true).draft.ageBand).toBeNull()
+  })
+})
+
 describe('the start of a checkout', () => {
-  it('is empty for the ticket type asked for, with the account\u2019s name filled in', () => {
+  it('is empty for the ticket type asked for, with the account\u2019s name filled in and the adult age band chosen', () => {
     expect(beginCheckout(offer(), null, standard, 'Jan Kowal')).toEqual({
-      draft: { ...emptyDraft(standard!), holderName: 'Jan Kowal' },
+      draft: { ...emptyDraft(standard!), holderName: 'Jan Kowal', ageBand: 'adult' },
       removedAddOns: [],
       ask: false,
     })
@@ -349,6 +360,21 @@ describe('the start of a checkout', () => {
     expect(
       beginCheckout(offer(), filled({ holderName: '' }), standard, 'Jan Kowal').draft?.holderName,
     ).toBe('Jan Kowal')
+  })
+
+  // A buyer who went on with no name left it out: nothing fills it in behind their back.
+  it('leaves a name empty once the buyer went past the first step without one', () => {
+    const kept = filled({ holderName: '', step: 'summary' })
+
+    expect(beginCheckout(offer(), kept, standard, 'Jan Kowal').draft).toEqual(kept)
+  })
+
+  // Most ticket holders are adults; a ticket type not sold to them leaves the choice open.
+  it('chooses no age band for a ticket type not sold to adults', () => {
+    const [first, ...rest] = offer().ticketTypes
+    const young = offer({ ticketTypes: [{ ...first!, ageBands: ['child', 'teen'] }, ...rest] })
+
+    expect(beginCheckout(young, null, standard, '').draft?.ageBand).toBeNull()
   })
 
   it('moves to another ticket type at once when no merchandise was chosen, naming what it removed', () => {

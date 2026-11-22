@@ -1,8 +1,11 @@
 # Public profile
 
-- Status: Accepted
+- Status: Implemented
 - Domain owner: the domain owner of profile ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
-- Decisions: [0071](../adr/0071-let-anyone-read-the-profile-an-account-published.md)
+- Decisions: [0071](../adr/0071-let-anyone-read-the-profile-an-account-published.md),
+  [0072](../adr/0072-ship-the-platforms-terms-and-accept-them-by-creating-an-account.md),
+  [0073](../adr/0073-take-a-profile-report-from-anyone-and-answer-who-left-an-address.md),
+  [0074](../adr/0074-take-a-profile-down-with-a-reason-and-change-nothing-it-says.md)
 
 ## Goal
 

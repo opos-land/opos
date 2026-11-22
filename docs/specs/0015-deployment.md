@@ -9,7 +9,8 @@
   [0037](../adr/0037-share-a-turborepo-remote-cache-that-only-develop-and-main-write.md),
   [0038](../adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md),
   [0069](../adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md),
-  [0070](../adr/0070-run-the-deploy-commands-as-node-scripts.md)
+  [0070](../adr/0070-run-the-deploy-commands-as-node-scripts.md),
+  [0071](../adr/0071-release-dev-from-ci-through-a-signed-webhook.md)
 
 ## Goal
 
@@ -33,13 +34,13 @@ Every rule is the team's.
 
 ### Who changes what
 
-| #   | Rule                                                                                                                                                                                                                     |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| C1  | The infrastructure changes only through the deploy commands, from a person's machine, under their own Scaleway identity. No workflow applies, and an agent never runs a command that applies, destroys or sets a secret. |
-| C2  | An administrator of the Scaleway organisation makes what an environment needs from the organisation: the projects but the environment's own, the operators' group and its members, and the keys the API holds.           |
-| C3  | An operator, a member of the group, applies everything else, with rights in the environment's two projects alone, through a key of their own that expires the same day.                                                  |
-| C4  | Every apply shows its plans and asks once; what it applies is exactly what it showed.                                                                                                                                    |
-| C5  | A release is CI's: once the checks of a push to `develop` passed, Dev runs the head of `develop`. OpenTofu owns the configuration of a deployment and never which commit it runs.                                        |
+| #   | Rule                                                                                                                                                                                                                                                                              |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | The infrastructure changes only through the deploy commands, from a person's machine, under their own Scaleway identity. No workflow applies, and an agent never runs a command that applies, destroys or sets a secret.                                                          |
+| C2  | An administrator of the Scaleway organisation makes what an environment needs from the organisation: the projects but the environment's own, the operators' group and its members, and the keys the API holds.                                                                    |
+| C3  | An operator, a member of the group, applies everything else, with rights in the environment's two projects alone, through a key of their own that expires the same day.                                                                                                           |
+| C4  | Every apply shows its plans and asks before it applies them; what it applies is exactly what it showed. Without a unit named, it goes in rounds: each plans the units still waiting, asks once and applies those that planned, until every unit is applied or a round plans none. |
+| C5  | A release is CI's: once the checks of a push to `develop` passed, Dev runs the commit they passed. OpenTofu owns the configuration of a deployment and never which commit it runs.                                                                                                |
 
 ### Secrets
 
@@ -61,12 +62,12 @@ Every rule is the team's.
 
 ### The deploy commands
 
-| #   | Rule                                                                                                                                                                     |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| K1  | Every deploy command is a root script that runs a Node script, with a mise task of the same name; the tools it drives, OpenTofu, Terragrunt, scw and gh, come from mise. |
-| K2  | A command that changes something prints the change before it runs it, and stops at the first failure, a failed listing included.                                         |
-| K3  | The bootstrap, the grant and the sign-in are safe to run again.                                                                                                          |
-| K4  | No shell script runs on an operator's machine; the scripts inside an image stay where their image has no Node.                                                           |
+| #   | Rule                                                                                                                                                                                                                                                                 |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| K1  | Every deploy command is a root script that runs a Node script, with a mise task of the same name; the tools it drives, OpenTofu, Terragrunt, scw and gh, come from mise.                                                                                             |
+| K2  | A command that changes something prints the change before it runs it, and stops at the first failure, a failed listing included. A plan or an apply that reaches the `supabase` unit first tries its access token, and stops before planning if Supabase refuses it. |
+| K3  | The bootstrap, the grant and the sign-in are safe to run again.                                                                                                                                                                                                      |
+| K4  | No shell script runs on an operator's machine; the scripts inside an image stay where their image has no Node.                                                                                                                                                       |
 
 ## Shape
 
@@ -103,17 +104,17 @@ domain.
 
 Each runs as `mise run deploy:<name>` or `pnpm deploy:<name>`, through `scripts/deploy.mjs`.
 
-| Command      | Who           | Does                                                                                              |
-| ------------ | ------------- | ------------------------------------------------------------------------------------------------- |
-| `bootstrap`  | administrator | the state's bucket and passphrase, the files project, the domain                                  |
-| `grant`      | administrator | puts people into the operators' group, or `--revoke` takes them out                               |
-| `login`      | operator      | signs in to Scaleway, with a key of the environment's project for 12 hours, and to GitHub         |
-| `plan`       | operator      | plans every unit but `shared`, or one; `--save` keeps exact plans                                 |
-| `apply`      | operator      | plans, asks once, applies those plans; `--saved`, `--no-plan`; `--ref` runs another branch or tag |
-| `destroy`    | operator      | destroys one unit after showing its plan                                                          |
-| `output`     | operator      | prints the units' outputs                                                                         |
-| `secret-set` | operator      | stores an entered value, read without echo, and disables the version before it                    |
-| `secret-get` | operator      | prints a secret's value alone                                                                     |
+| Command      | Who           | Does                                                                                                    |
+| ------------ | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `bootstrap`  | administrator | the state's bucket and passphrase, the files project, the domain                                        |
+| `grant`      | administrator | puts people into the operators' group, or `--revoke` takes them out                                     |
+| `login`      | operator      | signs in to Scaleway, with a key of the environment's project for 12 hours, and to GitHub               |
+| `plan`       | operator      | plans every unit but `shared`, or one; `--save` keeps exact plans                                       |
+| `apply`      | operator      | plans, asks, applies those plans, in rounds; `--saved`, `--no-plan`; `--ref` runs another branch or tag |
+| `destroy`    | operator      | destroys one unit after showing its plan                                                                |
+| `output`     | operator      | prints the units' outputs                                                                               |
+| `secret-set` | operator      | stores an entered value, read without echo, and disables the version before it                          |
+| `secret-get` | operator      | prints a secret's value alone                                                                           |
 
 The same script is OpenTofu's external key provider: it hands over the state's passphrase for the
 length of a run. Every command but the bootstrap and the grant runs under the operator's own key, in
@@ -127,18 +128,20 @@ a profile of scw kept outside the person's own configuration.
   environment's project, and Object Storage in the files project; nothing of the organisation.
 - The API's Scaleway keys: one may send mail in the environment's project, the other read, write
   and delete objects in the files project; neither changes a setting.
-- CI holds a Coolify token that deploys and reads in Dev's project alone, and the cache's tokens; it
-  never reaches Scaleway.
+- CI holds the secret of the application's webhook, which deploys a commit of the repository and
+  changes nothing, and the cache's tokens; it never reaches Coolify's API or Scaleway.
 
 ## Tests
 
 On every run, without signing in:
 
-- `scripts/deploy.test.mjs`, against fakes of scw, Terragrunt and gh: each command's arguments and
-  order; the bootstrap and the grant run twice change nothing the second time; a secret only ever
-  on a command's input, never in its arguments; a failed listing stops a command; an apply applies
-  only after one yes, and only the plans it showed; the key provider speaks OpenTofu's protocol and
-  hands no decryption key when only encrypting.
+- `scripts/deploy.test.mjs`, against fakes of scw, Terragrunt, gh and the APIs of Secret Manager
+  and Supabase: each command's arguments and order; the bootstrap and the grant run twice change
+  nothing the second time; a secret only ever in a request's body, never in a command's arguments
+  or input; a failed listing stops a command; a refused Supabase token stops a plan before it
+  starts; an apply applies only after a yes, and only the plans it showed, a round at a time while
+  units wait for others; the key provider speaks OpenTofu's protocol and hands no decryption key
+  when only encrypting.
 - `scripts/compose.test.mjs`: the services and their ports; the `postgres` URL to the tools alone;
   the bucket's key to the API alone; imgproxy's key to the API and imgproxy alone; imgproxy's image
   and settings those of the local stack.

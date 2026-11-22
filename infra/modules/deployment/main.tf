@@ -51,16 +51,23 @@ resource "coolify_application" "this" {
 
   autogenerate_domain    = false
   is_force_https_enabled = true
-  # CI releases, once the checks passed; a push alone deploys nothing
-  is_auto_deploy_enabled = false
-  instant_deploy         = false
+  # CI releases, once the checks passed, by a push to Coolify's webhook of the application signed
+  # with this secret; the webhook takes a push only while auto deploy is on. The repository sends
+  # Coolify nothing, so a push alone deploys nothing
+  is_auto_deploy_enabled       = true
+  manual_webhook_secret_github = local.secret.release_webhook_secret
+  instant_deploy               = false
 }
 
-# The markers of the values other units write. A new, changed or mocked marker has a change
-# planned here, which puts off reading the secrets until the apply, once those units have written
-# them; otherwise the secrets are read during the plan.
+# The markers of the values other units write, and the number of each generated secret read here.
+# A new, changed or mocked marker has a change planned here, which puts off reading the secrets
+# until the apply, once those units have written them; otherwise the secrets are read during the
+# plan, which fails on a secret the secrets unit has not made yet and reads a rotated one's version
+# before it.
 resource "terraform_data" "produced" {
-  input = var.produced
+  input = merge(var.produced, {
+    for name in values(var.secrets) : name => tostring(var.generated[name]) if contains(keys(var.generated), name)
+  })
 }
 
 # The values pass through this unit's encrypted state on their way to Coolify

@@ -26,25 +26,25 @@ apply. An agent never runs a
 command that changes anything, bootstrap, grant, revoke, apply, secret-set or destroy, nor
 secret-get, which prints a secret.
 
-| Command                                                 | Does                                                                                                                                                                                                                                                                      |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **On your machine, without signing in**                 |                                                                                                                                                                                                                                                                           |
-| `mise run deploy:check`                                 | checks the format and validates every unit                                                                                                                                                                                                                                |
-| `mise run deploy:images`                                | builds the images as the server does and tries the API and the frontends; CI's `images` job runs it on every run                                                                                                                                                          |
-| `mise run deploy:lock`                                  | rewrites the modules' provider lock files after a provider's version changed                                                                                                                                                                                              |
-| **Signed in**                                           |                                                                                                                                                                                                                                                                           |
-| `mise run deploy:login <environment>`                   | signs you in to Scaleway and GitHub, unless you are; the key lasts 12 hours                                                                                                                                                                                               |
-| `mise run deploy:plan <environment> [unit]`             | shows what an apply would change; `--save` plans as an apply does and keeps the plans                                                                                                                                                                                     |
-| `mise run deploy:apply <environment> [unit]`            | plans, asks once and applies those plans; `--saved` applies the plans `deploy:plan --save` kept; `--no-plan` asks once and applies with no plan shown; `--ref <ref>` deploys that branch or tag instead of env.yaml's, and CI releases nothing, until an apply without it |
-| `mise run deploy:output <environment> [unit]`           | prints the units' outputs                                                                                                                                                                                                                                                 |
-| `mise run deploy:secret-set <environment> <name>`       | reads a secret's value without echo and stores it                                                                                                                                                                                                                         |
-| `mise run deploy:secret-get <environment> <name>`       | prints a secret's current value, and only it, for a password manager or the clipboard                                                                                                                                                                                     |
-| `mise run deploy:destroy <environment> <unit>`          | destroys one unit, after showing its plan and asking                                                                                                                                                                                                                      |
-| **As an administrator of the Scaleway organisation**    |                                                                                                                                                                                                                                                                           |
-| `mise run deploy:bootstrap <environment>`               | makes the state's bucket and passphrase and the project of the bucket of uploaded files, and registers the domain                                                                                                                                                         |
-| `mise run deploy:apply <environment> shared`            | makes the group of the people who run the commands, with its rights                                                                                                                                                                                                       |
-| `mise run deploy:grant <environment> <email>...`        | puts people into that group                                                                                                                                                                                                                                               |
-| `mise run deploy:grant:revoke <environment> <email>...` | takes people out of it                                                                                                                                                                                                                                                    |
+| Command                                                 | Does                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **On your machine, without signing in**                 |                                                                                                                                                                                                                                                                                                                              |
+| `mise run deploy:check`                                 | checks the format and validates every unit                                                                                                                                                                                                                                                                                   |
+| `mise run deploy:images`                                | builds the images as the server does and tries the API and the frontends; CI's `images` job runs it on every run                                                                                                                                                                                                             |
+| `mise run deploy:lock`                                  | rewrites the modules' provider lock files after a provider's version changed                                                                                                                                                                                                                                                 |
+| **Signed in**                                           |                                                                                                                                                                                                                                                                                                                              |
+| `mise run deploy:login <environment>`                   | signs you in to Scaleway and GitHub, unless you are; the key lasts 12 hours                                                                                                                                                                                                                                                  |
+| `mise run deploy:plan <environment> [unit]`             | shows what an apply would change; `--save` plans as an apply does and keeps the plans                                                                                                                                                                                                                                        |
+| `mise run deploy:apply <environment> [unit]`            | plans, asks and applies those plans, in rounds while some units wait for others to be applied; `--saved` applies the plans `deploy:plan --save` kept; `--no-plan` asks once and applies with no plan shown; `--ref <ref>` deploys that branch or tag instead of env.yaml's, and CI's releases fail until an apply without it |
+| `mise run deploy:output <environment> [unit]`           | prints the units' outputs                                                                                                                                                                                                                                                                                                    |
+| `mise run deploy:secret-set <environment> <name>`       | reads a secret's value without echo and stores it                                                                                                                                                                                                                                                                            |
+| `mise run deploy:secret-get <environment> <name>`       | prints a secret's current value, and only it, for a password manager or the clipboard                                                                                                                                                                                                                                        |
+| `mise run deploy:destroy <environment> <unit>`          | destroys one unit, after showing its plan and asking                                                                                                                                                                                                                                                                         |
+| **As an administrator of the Scaleway organisation**    |                                                                                                                                                                                                                                                                                                                              |
+| `mise run deploy:bootstrap <environment>`               | makes the state's bucket and passphrase and the project of the bucket of uploaded files, and registers the domain                                                                                                                                                                                                            |
+| `mise run deploy:apply <environment> shared`            | makes the group of the people who run the commands, with its rights                                                                                                                                                                                                                                                          |
+| `mise run deploy:grant <environment> <email>...`        | puts people into that group                                                                                                                                                                                                                                                                                                  |
+| `mise run deploy:grant:revoke <environment> <email>...` | takes people out of it                                                                                                                                                                                                                                                                                                       |
 
 Without a unit, plan and apply run every unit but `shared`, which needs the organisation's
 administrator rights.
@@ -120,10 +120,12 @@ The steps for Dev; another environment follows them with its own names.
 8. Apply the rest. The `github` unit needs your GitHub account to administer the repository. The
    `mail` unit waits until Scaleway has validated the domain's records, up to an hour.
 
-   An apply plans the units, asks once and applies exactly those plans. A plan for an apply takes
-   no mocked outputs, so a unit plans only once the units it reads are applied. The first time,
-   apply with no plan shown: one answer, then each unit plans and applies after the units it reads.
-   The owner of the Coolify server runs it, with their own token
+   An apply plans the units, asks and applies exactly those plans. A plan for an apply takes no
+   mocked outputs, so a unit plans only once the units it reads are applied: without a unit named,
+   the apply goes in rounds, each planning the units still waiting, asking once and applying those
+   that planned, until every unit is applied. With no plan shown (`--no-plan`), one answer covers
+   every unit, each planned and applied after the units it reads. The first time, the owner of the
+   Coolify server runs the apply, with their own token
    ([COOLIFY.md](COOLIFY.md#the-tokens)): Coolify lets nobody else create its services.
 
    ```sh
@@ -132,7 +134,7 @@ The steps for Dev; another environment follows them with its own names.
 
    The `files` and `deployment` units stop if an administrator has not applied `shared` since
    step 4, which writes `smtp-password` and `files-secret-key` and lets the operators keep the
-   bucket. From then on one `mise run deploy:apply dev` applies every unit.
+   bucket: a round then plans nothing, and the apply stops there.
    `deploy:plan` alone mocks what is not applied yet, to preview the whole stack.
 
    The `deployment` unit deploys once and waits for it: Coolify reads the compose file, the tools
@@ -186,24 +188,26 @@ Coolify, built on the server from the head of `develop`
   keeps the domain's records for a deployment that sends.
 - **Basic auth.** Every service but the API asks for the user `opos` and the value of the secret
   `basic-auth-password`: `mise run deploy:secret-get dev basic-auth-password`. Rotate it by raising its number in `env.yaml` and applying.
-- **A release.** Once the checks of a push to `develop` passed, the `release` job of CI asks Coolify
-  to deploy and follows it
-  ([0038](../docs/adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md)).
-  A rollback is a revert on `develop`.
+- **A release.** Once the checks of a push to `develop` passed, the `release` job of CI sends
+  Coolify's webhook of the application a push of its commit, signed with the secret
+  `release-webhook-secret`, and Coolify deploys that commit
+  ([0071](../docs/adr/0071-release-dev-from-ci-through-a-signed-webhook.md)). The job ends once
+  Coolify has queued the deployment; how the deployment ends is in Coolify. A rollback is a revert
+  on `develop`.
 - **A change of configuration**, such as a variable or a rotated secret, is applied and deploys the
   head of `develop` again with it.
 - **A change of Supabase Auth's settings:** [SUPABASE.md](SUPABASE.md#changes).
 - **Admins.** `pnpm db:admin:grant` and `pnpm db:admin:revoke` run in the tools container, from
   Coolify's terminal.
 
-| Check, after the first deployment               | Expect                                                |
-| ----------------------------------------------- | ----------------------------------------------------- |
-| the tools container's log                       | the roles, the migrations and the verification passed |
-| `https://api.dev.opos.land/health`              | `200`, without basic auth                             |
-| the portal, the panel and the admin application | basic auth, then the application                      |
-| a sign-up on the portal                         | the confirmation mail in `https://mail.dev.opos.land` |
-| the imgproxy container in Coolify               | healthy                                               |
-| the `release` job of a push to `develop`        | "Released", and the commit running in Coolify         |
+| Check, after the first deployment               | Expect                                                           |
+| ----------------------------------------------- | ---------------------------------------------------------------- |
+| the tools container's log                       | the roles, the migrations and the verification passed            |
+| `https://api.dev.opos.land/health`              | `200`, without basic auth                                        |
+| the portal, the panel and the admin application | basic auth, then the application                                 |
+| a sign-up on the portal                         | the confirmation mail in `https://mail.dev.opos.land`            |
+| the imgproxy container in Coolify               | healthy                                                          |
+| the `release` job of a push to `develop`        | "Coolify queued deployment", then the commit finished in Coolify |
 
 The API reaches the project over its direct connection, which on a Free project is IPv6 alone
 ([0039](../docs/adr/0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md)). If the

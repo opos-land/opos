@@ -1,8 +1,8 @@
 # One deployment of the environment on the Coolify server, with its hosts. Values: zone, name,
 # project_uuid, server_uuid, ipv4, ipv6 (optional), repository, branch, loaded_services, catch_mail,
-# supabase_ref, mail_from, secrets. The relay, smtp_host, smtp_port and smtp_user, comes from the
-# stack's mail unit, files from its files and shared units, and produced, the markers of the
-# secrets other units write, from theirs.
+# supabase_ref, mail_from, secrets, generated. The relay, smtp_host, smtp_port and smtp_user,
+# comes from the stack's mail unit, files from its files and shared units, and produced, the
+# markers of the secrets other units write, from theirs.
 
 include "root" {
   path = find_in_parent_folders("root.hcl")
@@ -31,5 +31,6 @@ inputs = {
   catch_mail           = values.catch_mail
   supabase_ref         = values.supabase_ref
   secrets              = values.secrets
+  generated            = values.generated
   mail_from            = values.mail_from
 }

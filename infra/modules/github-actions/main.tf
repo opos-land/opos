@@ -63,6 +63,14 @@ resource "github_repository_environment_deployment_policy" "this" {
   branch_pattern = each.value.branch
 }
 
+# The number of each generated secret read here. A new or raised one has a change planned here,
+# which puts off reading the secrets until the apply, once the secrets unit has written them;
+# otherwise they are read during the plan, which fails on a secret not made yet and reads a rotated
+# one's version before it.
+resource "terraform_data" "produced" {
+  input = { for name in local.secret_names : name => tostring(var.generated[name]) if contains(keys(var.generated), name) }
+}
+
 data "scaleway_secret_version" "this" {
   for_each = local.secret_names
 
@@ -70,6 +78,8 @@ data "scaleway_secret_version" "this" {
   region      = var.region
   secret_name = each.key
   revision    = "latest_enabled"
+
+  depends_on = [terraform_data.produced]
 }
 
 resource "github_actions_environment_secret" "this" {

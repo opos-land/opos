@@ -386,3 +386,65 @@ test('the BFF boundary check runs in a Claude Code hook and in lefthook pre-comm
   assert.ok(commands('PostToolUseFailure', 'Bash').some((command) => boundary.test(command)))
   assert.match(read('../lefthook.yml'), /run: node scripts\/bff-boundary\.mjs \{staged_files\}/)
 })
+
+// Coolify's API answers only the addresses its allowlist names, which leaves out GitHub's runners;
+// its webhook does not, and takes only a push signed with the application's own secret
+// (docs/adr/0071-release-dev-from-ci-through-a-signed-webhook.md)
+test('the release job sends Coolify a signed push and holds no token of its API', () => {
+  const release = job('release')
+  assert.match(release, /"\$COOLIFY_URL\/webhooks\/source\/github\/events\/manual"/)
+  assert.match(release, /X-GitHub-Event: push/)
+  assert.match(release, /X-Hub-Signature-256: sha256=\$signature/)
+  assert.match(
+    release,
+    /^ {10}COOLIFY_WEBHOOK_SECRET: \$\{\{ secrets\.COOLIFY_WEBHOOK_SECRET \}\}$/m,
+  )
+  assert.doesNotMatch(release, /api\/v1|COOLIFY_TOKEN|COOLIFY_APPLICATION|Authorization/)
+})
+
+test('the release job pins the commit its checks passed and signs it without the secret in argv', () => {
+  const release = job('release')
+  assert.match(release, /^ {10}COMMIT: \$\{\{ github\.sha \}\}$/m)
+  assert.match(release, /after: \$commit/)
+  // The key comes from the environment, never a command line another process could read
+  assert.match(release, /os\.environ\["COOLIFY_WEBHOOK_SECRET"\]/)
+  assert.doesNotMatch(release, /-hmac|hexkey|\$COOLIFY_WEBHOOK_SECRET/)
+})
+
+test('the release job fails on a failed pipe and on any reply but a queued deployment', () => {
+  const release = job('release')
+  // bash named as the shell runs with pipefail; the default shell does not
+  assert.match(release, /^ {8}shell: bash$/m)
+  assert.match(release, /select\(\.status == "success"\)/)
+  assert.match(release, /::error::Coolify queued no deployment/)
+})
+
+test('OpenTofu gives the release job the webhook secret, and the application takes its pushes', () => {
+  const stack = read('../infra/live/dev/terragrunt.stack.hcl')
+  assert.match(stack, /secrets += \{ COOLIFY_WEBHOOK_SECRET = local\.deployment\.webhook_secret \}/)
+  assert.doesNotMatch(stack, /COOLIFY_TOKEN|COOLIFY_APPLICATION|release_token/)
+  const env = read('../infra/live/dev/env.yaml')
+  assert.match(env, /^ {2}webhook_secret: release-webhook-secret$/m)
+  assert.match(env, /^ {4}release-webhook-secret: 1$/m)
+  assert.doesNotMatch(env, /coolify-release-token/)
+  const deployment = read('../infra/modules/deployment/main.tf')
+  assert.match(deployment, /manual_webhook_secret_github = local\.secret\.release_webhook_secret/)
+  assert.match(deployment, /is_auto_deploy_enabled += true/)
+})
+
+test('a unit puts off reading a generated secret it reads anew, or whose number rose, until the apply', () => {
+  // A plan reads a secret the secrets unit has not written yet, or its version before a rotation,
+  // unless a change planned beside the read puts it off
+  const stack = read('../infra/live/dev/terragrunt.stack.hcl')
+  for (const unit of ['deployment', 'github']) {
+    const body = new RegExp(`^unit "${unit}" \\{\\n([\\s\\S]*?)^\\}$`, 'm').exec(stack)?.[1]
+    assert.match(body ?? '', /^ {4}generated += local\.generated$/m, unit)
+  }
+  assert.match(stack, /^ {2}generated += try\(local\.env\.secrets\.generated, \{\}\)$/m)
+  for (const module of ['deployment', 'github-actions']) {
+    const main = read(`../infra/modules/${module}/main.tf`)
+    assert.match(main, /if contains\(keys\(var\.generated\), name\)/, module)
+    const data = /^data "scaleway_secret_version" "this" \{\n([\s\S]*?)^\}$/m.exec(main)?.[1]
+    assert.match(data ?? '', /depends_on = \[terraform_data\.produced\]/, module)
+  }
+})

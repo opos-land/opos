@@ -120,7 +120,14 @@ variable "secrets" {
     files_secret_key         = string
     imgproxy_key             = string
     imgproxy_salt            = string
+    release_webhook_secret   = string
   })
+}
+
+variable "generated" {
+  description = "The number of each generated secret of the environment, raised to replace its value"
+  type        = map(number)
+  default     = {}
 }
 
 variable "produced" {

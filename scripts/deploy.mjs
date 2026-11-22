@@ -121,9 +121,10 @@ export const newPassphrase = () => randomBytes(48).toString('base64')
 
 /**
  * Runs `args`, a command and its arguments. `run(file, args, { env, input, capture })` returns
- * `{ status, stdout }`; `ask(question, { hidden })` an answer; `fs` has `exists`, `read`, `write`
- * and `remove`; `trace` shows a change before it runs, `log` what was made, `write` what a command
- * prints as its output alone.
+ * `{ status, stdout }`; `request` is `fetch`, for Secret Manager's and Supabase's APIs;
+ * `ask(question, { hidden })` an answer; `fs` has `exists`, `read`, `write` and `remove`; `trace`
+ * shows a change before it runs, `log` what was made, `write` what a command prints as its output
+ * alone.
  */
 export async function deploy({
   args = process.argv.slice(2),
@@ -131,6 +132,8 @@ export async function deploy({
   env = process.env,
   fs = nodeFs,
   run = nodeRun,
+  /* node:coverage ignore next */
+  request = (url, options) => fetch(url, options),
   ask = nodeAsk,
   random = newPassphrase,
   now = Date.now,
@@ -142,6 +145,8 @@ export async function deploy({
   trace = console.error,
 } = {}) {
   const [command, ...rest] = args
+  // The tools as given, for where a helper of a command takes the name run
+  const runTool = run
 
   /** The settings of an environment; it stops for one that has none. */
   function environment(name) {
@@ -177,7 +182,66 @@ export async function deploy({
       trace(`+ scw ${words.join(' ')}`)
       return read(words, input)
     }
-    return { read, change }
+    // A new version of a secret, its value in the body of a request to Secret Manager's API with
+    // the profile's own key: scw takes a value from a file alone, and Node hands a child its input
+    // on a socket, which Linux does not open as /dev/stdin
+    const store = async (secretId, region, value, { disablePrevious }) => {
+      const key = run('scw', ['config', 'get', 'secret-key'], { env: vars })
+      if (key.status !== 0) throw failure('scw config get secret-key failed', key.status)
+      const path = `secret-manager/v1beta1/regions/${region}/secrets/${secretId}/versions`
+      trace(`+ POST ${path}${disablePrevious ? ' disable_previous' : ''}`)
+      return request(`https://api.scaleway.com/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': key.stdout.trim() },
+        body: JSON.stringify({
+          data: Buffer.from(value).toString('base64'),
+          disable_previous: disablePrevious,
+        }),
+      })
+    }
+    return { read, change, store }
+  }
+
+  /**
+   * Stops before a plan or an apply reaches the supabase unit when Supabase no longer knows the
+   * access token it reads (infra/SUPABASE.md, The access token): the token lasts days, and its
+   * provider fails only midway through a run. Any answer but 401 lets the run go on; the token is
+   * read for this request alone.
+   */
+  async function trySupabaseToken(settings, vars) {
+    const ref = settings.get('supabase', 'ref')
+    const secret = settings.get('supabase', 'token_secret')
+    if (!ref || !secret) return
+    const enter = `mise run deploy:secret-set ${settings.name} ${secret}`
+    const tool = scw(vars)
+    const id = secretId(settings, tool, secret)
+    let token
+    try {
+      const { data } = tool.read([
+        'secret',
+        'version',
+        'access',
+        `secret-id=${id}`,
+        'revision=latest_enabled',
+        `region=${settings.region}`,
+      ])
+      token = Buffer.from(data, 'base64').toString()
+    } catch {
+      throw failure(`${secret} holds no value: ${enter}`)
+    }
+    let response
+    try {
+      response = await request(`https://api.supabase.com/v1/projects/${ref}/health?services=auth`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch (error) {
+      throw failure(`Supabase could not be reached to try the access token: ${error.message}`)
+    }
+    if (response.status === 401) {
+      throw failure(
+        `the Supabase access token in ${secret} has lapsed or was revoked: make a new one (infra/SUPABASE.md, The access token) and store it with ${enter}`,
+      )
+    }
   }
 
   /** A tool that has the terminal; its failure stops the command with its status. */
@@ -292,7 +356,7 @@ export async function deploy({
       if (!zone || !filesProject) {
         throw failure(`${relative(root, settings.path)} names no dns zone or no files project`, 2)
       }
-      const { read, change } = scw(env)
+      const { read, change, store } = scw(env)
       const inProject = [`project-id=${projectId}`, `region=${region}`]
 
       // The names infra/root.hcl and the state's key provider derive from the project. The bucket
@@ -333,17 +397,10 @@ export async function deploy({
         read(['secret', 'version', 'list', `secret-id=${passphraseId}`, `region=${region}`])
           .length === 0
       ) {
-        change(
-          [
-            'secret',
-            'version',
-            'create',
-            `secret-id=${passphraseId}`,
-            'data=@/dev/stdin',
-            `region=${region}`,
-          ],
-          random(),
-        )
+        const response = await store(passphraseId, region, random(), { disablePrevious: false })
+        if (!response.ok) {
+          throw failure(`Secret Manager refused the state's passphrase (${response.status})`)
+        }
       }
       log(`state passphrase: ${passphrase}`)
 
@@ -479,9 +536,9 @@ export async function deploy({
       )
     },
 
-    // Stores a new value of a secret whose value a person enters, read without echo and handed to
-    // scw on its input: never an argument, a file or the shell's history. The version before it is
-    // disabled.
+    // Stores a new value of a secret whose value a person enters, read without echo and sent to
+    // Secret Manager in a request's body: never an argument, a file or the shell's history. The
+    // version before it is disabled.
     async 'secret-set'() {
       if (rest.length !== 2) throw usage('pnpm deploy:secret-set <environment> <name>')
       const [name, secret] = rest
@@ -494,18 +551,10 @@ export async function deploy({
         )
       const value = await ask(`The value of ${secret}: `, { hidden: true })
       if (!value) throw failure(`nothing entered; ${secret} is unchanged`)
-      tool.change(
-        [
-          'secret',
-          'version',
-          'create',
-          `secret-id=${id}`,
-          'data=@/dev/stdin',
-          'disable-previous=true',
-          `region=${settings.region}`,
-        ],
-        value,
-      )
+      const response = await tool.store(id, settings.region, value, { disablePrevious: true })
+      if (!response.ok) {
+        throw failure(`Secret Manager refused a new version of ${secret} (${response.status})`)
+      }
       log(`${secret} has a new value; apply the units that read it`)
     },
 
@@ -591,17 +640,19 @@ export async function deploy({
       ...(values.ref ? { DEPLOY_REF: values.ref } : {}),
     }
     const filter = unit ?? '!shared'
+    if (!unit || unit === 'supabase') await trySupabaseToken(settings, vars)
     const plans = join(settings.live, '.terragrunt-plans')
     const withUnit = unit ? `${unit} ` : ''
-    const run = (words, extra = {}) =>
-      interactive(
-        'terragrunt',
-        ['stack', 'run', '--working-dir', settings.live, '--filter', filter, ...words],
-        {
-          ...vars,
-          ...extra,
-        },
-      )
+    const stackRun = (filters, words) => [
+      'stack',
+      'run',
+      '--working-dir',
+      settings.live,
+      ...filters.flatMap((one) => ['--filter', one]),
+      ...words,
+    ]
+    const run = (words, extra = {}, filters = [filter]) =>
+      interactive('terragrunt', stackRun(filters, words), { ...vars, ...extra })
 
     const planExact = () => {
       fs.remove(plans)
@@ -614,7 +665,7 @@ export async function deploy({
         )
       }
     }
-    // The one answer of an apply: Terragrunt asks nothing more
+    // The one answer of an apply, or of a round of one: Terragrunt asks nothing more
     const confirm = async (question) => {
       if (!/^(y|Y|yes)$/.test(await ask(question))) throw failure('Nothing applied.')
     }
@@ -632,18 +683,62 @@ export async function deploy({
       await confirm(`Apply ${target} with no plan shown first? [y/N] `)
       return run(['--', 'apply'], { TG_NON_INTERACTIVE: 'true' })
     }
-    if (values.saved) {
-      if (!fs.exists(plans)) {
-        throw failure(`No plans are kept: mise run deploy:plan ${name} ${withUnit}--save first`)
-      }
-    } else {
-      planExact()
-    }
-    await confirm(`Apply the plans above to ${target}? [y/N] `)
     // A unit without a kept plan would otherwise be planned and approved here unseen: OpenTofu asks
     // for it instead. A kept plan applies without asking.
-    run(['--out-dir', plans, '--', 'apply'], { TG_NO_AUTO_APPROVE: 'true' })
-    fs.remove(plans)
+    const applyKept = (filters) =>
+      run(['--out-dir', plans, '--', 'apply'], { TG_NO_AUTO_APPROVE: 'true' }, filters)
+    if (values.saved || unit) {
+      if (values.saved && !fs.exists(plans)) {
+        throw failure(`No plans are kept: mise run deploy:plan ${name} ${withUnit}--save first`)
+      }
+      if (!values.saved) planExact()
+      await confirm(`Apply the plans above to ${target}? [y/N] `)
+      applyKept([filter])
+      fs.remove(plans)
+      return
+    }
+    // Every unit but shared, in rounds: an exact plan takes no mocked output, so a unit whose
+    // dependencies are not applied yet cannot plan before them. Each round plans every unit still
+    // waiting and goes on past those that fail, shows the plans, asks once and applies exactly the
+    // plans it showed; the next round plans those that waited, with the outputs just applied. A
+    // round that plans nothing stops the apply.
+    const units = [
+      ...fs.read(join(settings.live, 'terragrunt.stack.hcl')).matchAll(/^unit "([^"]+)"/gm),
+    ]
+      .map((match) => match[1])
+      .filter((one) => one !== 'shared')
+    let waiting = units
+    for (;;) {
+      const filters = waiting === units ? [filter] : waiting
+      fs.remove(plans)
+      // A unit that failed is told apart by the plan it did not keep, not by the status
+      runTool(
+        'terragrunt',
+        stackRun(filters, ['--queue-ignore-errors', '--out-dir', plans, '--', 'plan']),
+        {
+          env: { ...vars, DEPLOY_EXACT_PLAN: 'true' },
+          capture: false,
+        },
+      )
+      const planned = waiting.filter((one) =>
+        fs.exists(join(plans, '.terragrunt-stack', one, 'tfplan.tfplan')),
+      )
+      const later = waiting.filter((one) => !planned.includes(one))
+      if (planned.length === 0) {
+        throw failure(
+          `No unit planned: see the errors above. A unit that reads shared plans once an administrator applied it: mise run deploy:apply ${name} shared`,
+        )
+      }
+      const every = planned.length === units.length
+      if (later.length > 0) log(`Planned once those are applied: ${later.join(', ')}`)
+      await confirm(
+        `Apply the plans above to ${every ? name : `${name} (${planned.join(', ')})`}? [y/N] `,
+      )
+      applyKept(every ? [filter] : planned)
+      fs.remove(plans)
+      if (later.length === 0) return
+      waiting = later
+    }
   }
 
   if (!Object.hasOwn(commands, command ?? ''))

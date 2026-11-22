@@ -47,9 +47,11 @@ resource "scaleway_object_bucket_acl" "this" {
   acl        = "private"
 }
 
-# Every object is encrypted at rest under a key of its own that Scaleway manages (SSE-ONE)
+# Every object is encrypted at rest under a key of its own that Scaleway manages (SSE-ONE). By its
+# name: the provider puts a regional id into the request's path as it stands, fr-par%2F<bucket>,
+# and Scaleway refuses the signature
 resource "scaleway_object_bucket_server_side_encryption_configuration" "this" {
-  bucket     = scaleway_object_bucket.this.id
+  bucket     = scaleway_object_bucket.this.name
   project_id = var.files_project_id
   region     = var.region
 

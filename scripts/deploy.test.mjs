@@ -10,6 +10,10 @@ const ROOT = '/repo'
 const LIVE = `${ROOT}/infra/live/dev`
 const SETTINGS = `${LIVE}/env.yaml`
 const PLANS = `${LIVE}/.terragrunt-plans`
+const STACK = `${LIVE}/terragrunt.stack.hcl`
+const UNITS = ['secrets', 'cache', 'mail', 'files', 'supabase', 'deployment', 'github', 'shared']
+const STACK_HCL = UNITS.map((unit) => `unit "${unit}" {\n  path = "${unit}"\n}\n`).join('\n')
+const planned = (unit) => `${PLANS}/.terragrunt-stack/${unit}/tfplan.tfplan`
 const PROJECT_ID = '11111111-1111-1111-1111-111111111111'
 const FILES_ID = '22222222-2222-2222-2222-222222222222'
 const PASSPHRASE = 'p'.repeat(64)
@@ -56,6 +60,10 @@ function fakeTools(state = {}) {
     stored: {},
     ghSignedIn: true,
     status: {},
+    // The status each HTTP API answers with, by the start of its address
+    http: {},
+    // The units each exact plan of an apply's rounds plans, in turn; every one it is given when unset
+    rounds: undefined,
     ...state,
   }
   world.buckets = new Set(world.buckets)
@@ -139,18 +147,43 @@ function fakeTools(state = {}) {
     const failing = Object.keys(world.status).find((prefix) => line.startsWith(prefix))
     if (failing) return { status: world.status[failing], stdout: '' }
     if (file === 'scw') return scw(args)
-    if (file === 'terragrunt') return { status: 0, stdout: '' }
+    if (file === 'terragrunt') {
+      // An exact plan keeps a plan per unit it planned, where the apply finds it
+      if (args.at(-1) === 'plan' && args.includes('--out-dir') && world.keep) {
+        const filters = args.flatMap((arg, idx) => (args[idx - 1] === '--filter' ? [arg] : []))
+        const given = filters.includes('!shared')
+          ? UNITS.filter((unit) => unit !== 'shared')
+          : filters
+        const plans = world.rounds ? (world.rounds.shift() ?? []) : given
+        for (const unit of given.filter((name) => plans.includes(name))) world.keep(planned(unit))
+        return { status: plans.length < given.length ? 1 : 0, stdout: '' }
+      }
+      return { status: 0, stdout: '' }
+    }
     if (file === 'gh')
       return { status: args[1] === 'status' && !world.ghSignedIn ? 1 : 0, stdout: '' }
     throw new Error(`unexpected ${line}`)
   }
-  return { run, calls, world }
+  // Secret Manager's API and Supabase's Management API
+  const requests = []
+  const request = async (url, options = {}) => {
+    requests.push({ url, ...options, body: options.body && JSON.parse(options.body) })
+    const answering = Object.keys(world.http).find((prefix) => url.startsWith(prefix))
+    const status = answering ? world.http[answering] : 200
+    if (status === 'unreachable') throw new TypeError('fetch failed')
+    if (status === 200 && options.method === 'POST' && url.endsWith('/versions')) world.versions++
+    return { ok: status === 200, status, json: async () => ({}) }
+  }
+  return { run, calls, world, request, requests }
 }
 
 async function call(
   args,
-  { tools = fakeTools(), files = { [SETTINGS]: ENV_YAML }, answers = [] } = {},
+  { tools = fakeTools(), files = { [SETTINGS]: ENV_YAML, [STACK]: STACK_HCL }, answers = [] } = {},
 ) {
+  tools.world.keep = (path) => {
+    files[path] = ''
+  }
   const out = []
   const traced = []
   const written = []
@@ -168,10 +201,13 @@ async function call(
       },
       remove: (path) => {
         removed.push(path)
-        delete files[path]
+        for (const name of Object.keys(files)) {
+          if (name === path || name.startsWith(`${path}/`)) delete files[name]
+        }
       },
     },
     run: tools.run,
+    request: tools.request,
     ask: async (question, options) => {
       asked.push({ question, hidden: options?.hidden ?? false })
       return answers.shift() ?? ''
@@ -352,7 +388,6 @@ describe('bootstrap', () => {
     assert.deepEqual(scwChanges(calls), [
       'object bucket create',
       'secret secret create',
-      'secret version create',
       'account project create',
       'domain external-domain register',
     ])
@@ -364,10 +399,25 @@ describe('bootstrap', () => {
     assert.ok(
       lines(calls, 'scw').some((line) => /^secret secret create .*protected=true/.test(line)),
     )
-    // The passphrase reaches scw on its standard input, never as an argument
-    const version = calls.find(({ args }) => args.slice(0, 3).join(' ') === 'secret version create')
-    assert.equal(version.input, PASSPHRASE)
-    assert.ok(calls.every(({ args }) => !args.some((arg) => arg.includes(PASSPHRASE))))
+    // The passphrase reaches Secret Manager in a request's body, never as an argument
+    assert.deepEqual(tools.requests, [
+      {
+        url: 'https://api.scaleway.com/secret-manager/v1beta1/regions/fr-par/secrets/passphrase-id/versions',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': 'operator-secret' },
+        body: { data: Buffer.from(PASSPHRASE).toString('base64'), disable_previous: false },
+      },
+    ])
+    assert.ok(
+      calls.every(
+        ({ args, input }) => !args.some((arg) => arg.includes(PASSPHRASE)) && input === undefined,
+      ),
+    )
+    assert.ok(
+      traced.includes(
+        '+ POST secret-manager/v1beta1/regions/fr-par/secrets/passphrase-id/versions',
+      ),
+    )
     assert.ok(
       lines(calls, 'scw').some((line) =>
         line.startsWith('account project create name=dev-opos-land-files '),
@@ -380,8 +430,24 @@ describe('bootstrap', () => {
     assert.equal(world.versions, 1)
     assert.match(out, /_scaleway-challenge\.dev TXT the-token/)
     assert.match(out, /files project: dev-opos-land-files, 2{8}-/)
-    assert.equal(traced.length, scwChanges(calls).length)
-    for (const line of traced) assert.match(line, /^\+ scw /)
+    // Every change shows before it runs: each of scw, and the passphrase's request
+    assert.equal(traced.length, scwChanges(calls).length + tools.requests.length)
+    for (const line of traced) assert.match(line, /^\+ (scw |POST )/)
+  })
+
+  it('stops when Secret Manager refuses the passphrase, or the key to send it with is missing', async () => {
+    await assert.rejects(
+      call(['bootstrap', 'dev'], {
+        tools: fakeTools({ http: { 'https://api.scaleway.com': 403 } }),
+      }),
+      /Secret Manager refused the state's passphrase \(403\)/,
+    )
+    const keyless = fakeTools({ status: { 'scw config get secret-key': 1 } })
+    await assert.rejects(
+      call(['bootstrap', 'dev'], { tools: keyless }),
+      /scw config get secret-key failed/,
+    )
+    assert.deepEqual(keyless.requests, [])
   })
 
   it('changes nothing but the bucket versioning when everything is there', async () => {
@@ -555,8 +621,67 @@ describe('plan', () => {
   })
 })
 
+describe("Supabase's access token", () => {
+  const files = () => ({
+    [SETTINGS]: `${ENV_YAML}\nsupabase:\n  ref: the-ref\n  token_secret: supabase-access-token\n`,
+  })
+  const tools = (state = {}) =>
+    fakeTools({
+      secrets: [{ id: 'supabase-token-id', name: 'supabase-access-token' }],
+      stored: { 'supabase-token-id': 'the-supabase-token' },
+      ...state,
+    })
+  const HEALTH = 'https://api.supabase.com/v1/projects/the-ref/health?services=auth'
+
+  it('is tried before a plan or an apply that reaches the supabase unit', async () => {
+    for (const args of [
+      ['plan', 'dev'],
+      ['plan', 'dev', 'supabase'],
+      ['apply', 'dev', '--no-plan'],
+    ]) {
+      const fake = tools()
+      await call(args, { tools: fake, files: files(), answers: ['y'] })
+      assert.deepEqual(
+        fake.requests.map(({ url, headers }) => [url, headers.Authorization]),
+        [[HEALTH, 'Bearer the-supabase-token']],
+        args.join(' '),
+      )
+      assert.ok(lines(fake.calls, 'terragrunt').length > 0, args.join(' '))
+    }
+    const other = tools()
+    await call(['plan', 'dev', 'files'], { tools: other, files: files() })
+    assert.deepEqual(other.requests, [])
+  })
+
+  it('stops before any plan when Supabase refuses the token or it holds no value', async () => {
+    const refused = tools({ http: { 'https://api.supabase.com': 401 } })
+    await assert.rejects(
+      call(['apply', 'dev'], { tools: refused, files: files(), answers: ['y'] }),
+      /the Supabase access token in supabase-access-token has lapsed or was revoked: make a new one \(infra\/SUPABASE\.md, The access token\) and store it with mise run deploy:secret-set dev supabase-access-token/,
+    )
+    assert.deepEqual(lines(refused.calls, 'terragrunt'), [])
+
+    const empty = tools({ status: { 'scw secret version access': 1 } })
+    await assert.rejects(
+      call(['plan', 'dev'], { tools: empty, files: files() }),
+      /supabase-access-token holds no value: mise run deploy:secret-set dev supabase-access-token/,
+    )
+    const unreachable = tools({ http: { 'https://api.supabase.com': 'unreachable' } })
+    await assert.rejects(
+      call(['plan', 'dev'], { tools: unreachable, files: files() }),
+      /Supabase could not be reached to try the access token/,
+    )
+  })
+
+  it('lets a token through that Supabase knows, whatever else it answers', async () => {
+    const forbidden = tools({ http: { 'https://api.supabase.com': 403 } })
+    await call(['plan', 'dev'], { tools: forbidden, files: files() })
+    assert.ok(lines(forbidden.calls, 'terragrunt').length > 0)
+  })
+})
+
 describe('apply', () => {
-  it('plans, asks once, then applies exactly those plans', async () => {
+  it('plans one unit, asks once, then applies exactly that plan', async () => {
     const { tools, asked, removed } = await call(['apply', 'dev', 'files'], { answers: ['y'] })
     assert.deepEqual(lines(tools.calls, 'terragrunt'), [
       `stack run --working-dir ${LIVE} --filter files --out-dir ${PLANS} -- plan`,
@@ -569,6 +694,63 @@ describe('apply', () => {
       { question: 'Apply the plans above to dev (files)? [y/N] ', hidden: false },
     ])
     assert.deepEqual(removed, [PLANS, PLANS])
+  })
+
+  it('plans every unit, asks once and applies those plans when every unit plans', async () => {
+    const { tools, asked } = await call(['apply', 'dev'], { answers: ['y'] })
+    assert.deepEqual(lines(tools.calls, 'terragrunt'), [
+      `stack run --working-dir ${LIVE} --filter !shared --queue-ignore-errors --out-dir ${PLANS} -- plan`,
+      `stack run --working-dir ${LIVE} --filter !shared --out-dir ${PLANS} -- apply`,
+    ])
+    assert.deepEqual(asked, [{ question: 'Apply the plans above to dev? [y/N] ', hidden: false }])
+  })
+
+  it('applies the units that planned, then plans and applies those that waited for them', async () => {
+    const tools = fakeTools({
+      rounds: [['secrets', 'cache', 'mail', 'files', 'supabase'], ['deployment'], ['github']],
+    })
+    const { asked, out } = await call(['apply', 'dev'], { tools, answers: ['y', 'y', 'y'] })
+    const exact = `--queue-ignore-errors --out-dir ${PLANS} -- plan`
+    assert.deepEqual(lines(tools.calls, 'terragrunt'), [
+      `stack run --working-dir ${LIVE} --filter !shared ${exact}`,
+      `stack run --working-dir ${LIVE} --filter secrets --filter cache --filter mail --filter files --filter supabase --out-dir ${PLANS} -- apply`,
+      `stack run --working-dir ${LIVE} --filter deployment --filter github ${exact}`,
+      `stack run --working-dir ${LIVE} --filter deployment --out-dir ${PLANS} -- apply`,
+      `stack run --working-dir ${LIVE} --filter github ${exact}`,
+      `stack run --working-dir ${LIVE} --filter github --out-dir ${PLANS} -- apply`,
+    ])
+    assert.deepEqual(
+      asked.map(({ question }) => question),
+      [
+        'Apply the plans above to dev (secrets, cache, mail, files, supabase)? [y/N] ',
+        'Apply the plans above to dev (deployment)? [y/N] ',
+        'Apply the plans above to dev (github)? [y/N] ',
+      ],
+    )
+    assert.match(out, /Planned once those are applied: deployment, github/)
+    assert.match(out, /Planned once those are applied: github/)
+  })
+
+  it('stops when a round plans no unit, and applies nothing more without a yes', async () => {
+    const stuck = fakeTools({ rounds: [['secrets'], []] })
+    await assert.rejects(
+      call(['apply', 'dev'], { tools: stuck, answers: ['y'] }),
+      /No unit planned: see the errors above\. A unit that reads shared plans once an administrator applied it: mise run deploy:apply dev shared/,
+    )
+    assert.equal(
+      lines(stuck.calls, 'terragrunt').filter((line) => line.endsWith('apply')).length,
+      1,
+    )
+
+    const declined = fakeTools({ rounds: [['secrets'], ['deployment']] })
+    await assert.rejects(
+      call(['apply', 'dev'], { tools: declined, answers: ['y', 'n'] }),
+      /Nothing applied/,
+    )
+    assert.equal(
+      lines(declined.calls, 'terragrunt').filter((line) => line.endsWith('apply')).length,
+      1,
+    )
   })
 
   it('applies nothing without a yes', async () => {
@@ -644,24 +826,43 @@ describe('destroy and output', () => {
 describe('secret-set', () => {
   const secrets = [{ id: 'token-id', name: 'coolify-api-token' }]
 
-  it('stores the value it reads without echo on the input of scw alone', async () => {
+  it("stores the value it reads without echo in the body of a request to Secret Manager's API alone", async () => {
     const tools = fakeTools({ secrets })
-    const { asked, out } = await call(['secret-set', 'dev', 'coolify-api-token'], {
+    const { asked, out, traced } = await call(['secret-set', 'dev', 'coolify-api-token'], {
       tools,
       answers: ['the-token-value'],
     })
     assert.deepEqual(asked, [{ question: 'The value of coolify-api-token: ', hidden: true }])
-    const version = tools.calls.find(
-      ({ args }) => args.slice(0, 3).join(' ') === 'secret version create',
+    // scw takes a value from a file alone, and Linux opens no socket, Node's input of a child, as one
+    assert.deepEqual(tools.requests, [
+      {
+        url: 'https://api.scaleway.com/secret-manager/v1beta1/regions/fr-par/secrets/token-id/versions',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': 'operator-secret' },
+        body: { data: Buffer.from('the-token-value').toString('base64'), disable_previous: true },
+      },
+    ])
+    assert.deepEqual(scwChanges(tools.calls), [])
+    const key = tools.calls.find(({ args }) => args.join(' ') === 'config get secret-key')
+    assert.equal(key.env.SCW_PROFILE, 'opos-land-dev')
+    assert.ok(
+      tools.calls.every(
+        ({ args, input }) =>
+          !args.some((arg) => arg.includes('the-token-value')) && input === undefined,
+      ),
     )
-    assert.equal(
-      version.args.join(' '),
-      'secret version create secret-id=token-id data=@/dev/stdin disable-previous=true region=fr-par -o json',
-    )
-    assert.equal(version.input, 'the-token-value')
-    assert.equal(version.env.SCW_PROFILE, 'opos-land-dev')
-    assert.ok(tools.calls.every(({ args }) => !args.some((arg) => arg.includes('the-token-value'))))
+    assert.deepEqual(traced, [
+      '+ POST secret-manager/v1beta1/regions/fr-par/secrets/token-id/versions disable_previous',
+    ])
     assert.match(out, /coolify-api-token has a new value; apply the units that read it/)
+  })
+
+  it('stops when Secret Manager refuses the version', async () => {
+    const tools = fakeTools({ secrets, http: { 'https://api.scaleway.com': 403 } })
+    await assert.rejects(
+      call(['secret-set', 'dev', 'coolify-api-token'], { tools, answers: ['the-token-value'] }),
+      /Secret Manager refused a new version of coolify-api-token \(403\)/,
+    )
   })
 
   it('changes nothing for an empty value or a secret the project lacks', async () => {

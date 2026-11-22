@@ -171,7 +171,7 @@ run = "pnpm deploy:plan"
 raw = true
 
 ["deploy:apply"]
-description = "Plan an environment, ask once, then apply exactly those plans; --saved applies the plans of deploy:plan --save, --no-plan applies in order without showing a plan, --ref <ref> deploys another branch or tag until an apply without it; run by an operator, never by an agent: <environment> [unit]"
+description = "Plan an environment, ask, then apply exactly those plans, in rounds while units wait for others to be applied; --saved applies the plans of deploy:plan --save, --no-plan applies in order without showing a plan, --ref <ref> deploys another branch or tag until an apply without it; run by an operator, never by an agent: <environment> [unit]"
 run = "pnpm deploy:apply"
 raw = true
 
@@ -205,6 +205,9 @@ run = "infra/docker/check.sh"
 
 ["deploy:check"]
 description = "Check the format of the infrastructure code and validate every unit against its providers and its module's lock file; needs no sign-in"
+# A cache of its own: a unit initialised without its backend in the deploy commands' cache stays so,
+# and their next plan fails on "Backend initialization required"
+env = { TG_DOWNLOAD_DIR = "{{config_root}}/infra/.terragrunt-cache/check" }
 run = [
   "tofu fmt -check -recursive infra",
   "terragrunt hcl fmt --check --working-dir infra",

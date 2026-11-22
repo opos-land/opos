@@ -13,19 +13,19 @@ Ask the owner of the server to make Dev's project, `opos-dev`, and to set API ac
 
 ## The tokens
 
-Create Coolify's two API tokens and enter them. Under Keys & Tokens, API Tokens, select New token,
-with access to Dev's project alone and an expiry of at most a year; before one lapses, enter a new
-token the same way.
-
-| Secret                  | Permissions                                           | Used by                      |
-| ----------------------- | ----------------------------------------------------- | ---------------------------- |
-| `coolify-api-token`     | `read`, `read:sensitive`, `write`, `delete`, `deploy` | OpenTofu, on your machine    |
-| `coolify-release-token` | `read`, `deploy`                                      | the release job, from GitHub |
+Create Coolify's API token for OpenTofu and enter it. Under Keys & Tokens, API Tokens, select New
+token, with access to Dev's project alone, the permissions `read`, `read:sensitive`, `write`,
+`delete` and `deploy`, and an expiry of at most a year; before it lapses, enter a new token the same
+way.
 
 ```sh
 mise run deploy:secret-set dev coolify-api-token
-mise run deploy:secret-set dev coolify-release-token
 ```
+
+CI holds no token: Coolify's API answers only the addresses its allowlist names. The release job
+signs a push to the application's webhook with `release-webhook-secret`, which OpenTofu generates,
+sets on the application and copies into GitHub
+([0071](../docs/adr/0071-release-dev-from-ci-through-a-signed-webhook.md)).
 
 Coolify creates a resource on the server it runs on only for an admin of the server's team, with a
 token that reaches every project there. So the owner of the server runs each apply that creates a

@@ -1329,10 +1329,6 @@ async function seedTenant(spec: SeedTenant) {
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /**
- * The seller's details and the provider account of a demo convention. The account is kept while
- * its credentials open to the demo ones: its row is replaced, never changed, so a rerun leaves it.
- */
-/**
  * Puts the objects of rows that are committed. A file already there is put again with the same
  * bytes, so a bucket that lost one gets it back.
  */
@@ -1453,6 +1449,10 @@ async function seedAvatar(tx: Tx, accountId: string): Promise<PendingObject> {
   }
 }
 
+/**
+ * The seller's details and the provider account of a demo convention. The account is kept while
+ * its credentials open to the demo ones: its row is replaced, never changed, so a rerun leaves it.
+ */
 async function seedShop(tx: Tx, tenantId: string, shop: SeedShop) {
   const { credentials, ...seller } = shop
   await tx

@@ -6,6 +6,8 @@ import {
   invitationEmail,
   joinedTeamEmail,
   mfaDisabledEmail,
+  profileRestoredEmail,
+  profileTakenDownEmail,
   recoveryEmail,
   signupEmail,
 } from '@opos/i18n/emails'
@@ -95,6 +97,67 @@ describe('renderNoticeEmail', () => {
     expect(email.text).toContain('Jeśli to nie ty, natychmiast zmień hasło')
     expect(email.text).toContain('na twoim koncie OPOS')
     expect(email.html).toContain('lang="pl"')
+  })
+
+  // docs/specs/0016-public-profile.md, T5: the further paragraphs of a notice in their order, and
+  // the admin's sentence as it was written, which is the one text of a notice a person wrote.
+  it('adds the further paragraphs in their order, then a quoted sentence as it was written', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'en')
+    const email = renderNoticeEmail(
+      i18n,
+      profileTakenDownEmail({
+        reason: 'spam',
+        afterReport: true,
+        note: 'See <b>rule</b> 3 & "more"',
+        contact: 'contact@example.test',
+      }),
+    )
+
+    const parts = [
+      'An administrator of OPOS took your profile down.',
+      'do not allow spam or advertising in a profile',
+      'The decision followed a report',
+      'by a person, an administrator, and not by a program',
+      'The administrator wrote:',
+      'See <b>rule</b> 3 & "more"',
+      'ask for a review',
+    ]
+    const places = parts.map((part) => email.text.indexOf(part))
+    expect(places.every((place) => place >= 0)).toBe(true)
+    expect(places).toEqual([...places].sort((a, b) => a - b))
+    expect(email.text.endsWith('\n\nOPOS')).toBe(true)
+    expect(email.text).toContain('The administrator wrote:\n> See <b>rule</b> 3 & "more"')
+    expect(email.html).toContain('See &lt;b&gt;rule&lt;/b&gt; 3 &amp; &quot;more&quot;')
+    expect(email.html).not.toContain('<b>rule</b>')
+    expect(email.html).toContain('<blockquote')
+    expect(email.html).not.toContain('href=')
+  })
+
+  it('keeps the lines of a quoted sentence apart, each as a quoted line', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'en')
+    const email = renderNoticeEmail(
+      i18n,
+      profileTakenDownEmail({
+        reason: 'spam',
+        afterReport: false,
+        note: 'First.\nSecond.',
+        contact: 'contact@example.test',
+      }),
+    )
+
+    expect(email.text).toContain('> First.\n> Second.')
+    expect(email.html).toContain('First.<br>Second.')
+  })
+
+  it('renders a notice with no further paragraph and no quote as before', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'en')
+    const email = renderNoticeEmail(i18n, profileRestoredEmail)
+
+    expect(email.text.split('\n\n')).toHaveLength(3)
+    expect(email.html).not.toContain('<blockquote')
   })
 })
 

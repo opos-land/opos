@@ -191,7 +191,7 @@ Coolify, built on the server from the head of `develop`
 - **A release.** Once the checks of a push to `develop` passed, the `release` job of CI sends
   Coolify's webhook of the application a push of its commit, signed with the secret
   `release-webhook-secret`, and Coolify deploys that commit
-  ([0071](../docs/adr/0071-release-dev-from-ci-through-a-signed-webhook.md)). The job ends once
+  ([0075](../docs/adr/0075-release-dev-from-ci-through-a-signed-webhook.md)). The job ends once
   Coolify has queued the deployment; how the deployment ends is in Coolify. A rollback is a revert
   on `develop`.
 - **A change of configuration**, such as a variable or a rotated secret, is applied and deploys the

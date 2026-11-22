@@ -389,7 +389,7 @@ test('the BFF boundary check runs in a Claude Code hook and in lefthook pre-comm
 
 // Coolify's API answers only the addresses its allowlist names, which leaves out GitHub's runners;
 // its webhook does not, and takes only a push signed with the application's own secret
-// (docs/adr/0071-release-dev-from-ci-through-a-signed-webhook.md)
+// (docs/adr/0075-release-dev-from-ci-through-a-signed-webhook.md)
 test('the release job sends Coolify a signed push and holds no token of its API', () => {
   const release = job('release')
   assert.match(release, /"\$COOLIFY_URL\/webhooks\/source\/github\/events\/manual"/)

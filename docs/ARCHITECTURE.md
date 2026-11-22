@@ -472,7 +472,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - A release comes from CI: once the checks of a push to `develop` passed, Dev deploys the commit
   they passed, through a push to Coolify's webhook signed with a secret that can deploy and change
   nothing; CI never reaches Coolify's API
-  ([0071](adr/0071-release-dev-from-ci-through-a-signed-webhook.md)).
+  ([0075](adr/0075-release-dev-from-ci-through-a-signed-webhook.md)).
 - Secrets belong to one environment each and are never committed. A deployed environment keeps each
   in the Secret Manager of its own Scaleway project. An operator signs in with a key of their own
   that expires the same day; CI never reaches Scaleway, and OpenTofu copies what it uses into

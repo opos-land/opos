@@ -25,7 +25,7 @@ mise run deploy:secret-set dev coolify-api-token
 CI holds no token: Coolify's API answers only the addresses its allowlist names. The release job
 signs a push to the application's webhook with `release-webhook-secret`, which OpenTofu generates,
 sets on the application and copies into GitHub
-([0071](../docs/adr/0071-release-dev-from-ci-through-a-signed-webhook.md)).
+([0075](../docs/adr/0075-release-dev-from-ci-through-a-signed-webhook.md)).
 
 Coolify creates a resource on the server it runs on only for an admin of the server's team, with a
 token that reaches every project there. So the owner of the server runs each apply that creates a

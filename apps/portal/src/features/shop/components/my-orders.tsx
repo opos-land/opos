@@ -109,9 +109,16 @@ function OrderRow({
         <span className="text-sm font-medium">{i18n._(ORDER_STATUS_LABELS[order.status])}</span>
       </div>
       <p className="text-muted-foreground text-sm">
-        <Trans>
-          {editionName}, placed {placed}, for {holderName}
-        </Trans>
+        {/* Nobody has to be named: an order with no name says its edition and its day alone. */}
+        {holderName === '' ? (
+          <Trans>
+            {editionName}, placed {placed}
+          </Trans>
+        ) : (
+          <Trans>
+            {editionName}, placed {placed}, for {holderName}
+          </Trans>
+        )}
       </p>
       <OrderLines lines={order.lines} totalMinor={order.totalMinor} currency={order.currency} />
       {order.status === 'paid' && (

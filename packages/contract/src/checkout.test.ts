@@ -544,8 +544,15 @@ describe('placing an order', () => {
     })
   })
 
+  // Nobody has to be named: a name left out or blank is an empty one.
+  it('takes an order with no name of the ticket holder', () => {
+    for (const holderName of [undefined, '', '   ']) {
+      expect(placeOrderSchema.parse({ ...order, holderName })).toMatchObject({ holderName: '' })
+    }
+  })
+
   it.each([
-    ['no name of the ticket holder', { holderName: ' ' }],
+    ['a name of the ticket holder over 200 characters', { holderName: 'n'.repeat(201) }],
     ['no word on the age band', { ageBand: undefined }],
     ['no total', { expectedTotalMinor: undefined }],
     ['no token of the bot check', { botCheckToken: '' }],

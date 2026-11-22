@@ -35,11 +35,15 @@ const step = (page: Page, name: string) =>
   expect(page.getByRole('heading', { name, level: 2 })).toBeVisible()
 const next = (page: Page) => page.getByRole('button', { name: 'Next' }).click()
 
-/** The first step as a visitor fills it. */
-async function fillHolder(page: Page, email: string, ageBand = 'adult') {
+/**
+ * The first step as a visitor fills it. With no age band named, the adult one the step starts
+ * with stays.
+ */
+async function fillHolder(page: Page, email: string, ageBand?: string) {
   await page.getByRole('button', { name: 'Continue without an account' }).click()
   await page.getByLabel('Ticket holder’s name or nickname').fill('Ada Lovelace')
-  await page.getByLabel('Age band').selectOption(ageBand)
+  if (ageBand) await page.getByLabel('Age band').selectOption(ageBand)
+  else await expect(page.getByLabel('Age band')).toHaveValue('adult')
   await page.getByLabel('Email address', { exact: true }).fill(email)
   await page.getByLabel('Repeat the email address').fill(email)
   await page.getByLabel('City you travel from').fill('Poznań')
@@ -160,7 +164,8 @@ test('an order of merchandise alone', { tag: '@mobile' }, async ({ page, account
   // Never an age band or a custom field.
   await expect(page.getByLabel('Age band')).toBeHidden()
   await expect(page.getByLabel('City you travel from')).toBeHidden()
-  await page.getByLabel('Your name or nickname').fill('Ada')
+  // Nobody has to be named: the field says so, and stays empty.
+  await expect(page.getByLabel('Your name or nickname (optional)')).toHaveValue('')
   await page.getByLabel('Email address', { exact: true }).fill(email)
   await page.getByLabel('Repeat the email address').fill(email)
   await expectAccessible(page)
@@ -184,7 +189,7 @@ test('an order of merchandise alone', { tag: '@mobile' }, async ({ page, account
   await atProvider(page, 'Pay')
 
   await expect(page.getByRole('heading', { name: 'Paid', level: 1 })).toBeVisible()
-  expect(await tenants.orders(tenant.id)).toMatchObject([{ status: 'paid' }])
+  expect(await tenants.orders(tenant.id)).toMatchObject([{ status: 'paid', holderName: '' }])
 })
 
 test(

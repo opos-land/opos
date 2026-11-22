@@ -145,7 +145,7 @@ describe('orders', () => {
     ['a number with a character mistaken for another', { number: 'O000000001' }, /orders_number/],
     ['a total below zero', { total_minor: -1 }, /orders_total/],
     ['another currency', { currency: 'EUR' }, /orders_currency/],
-    ['a blank holder', { holder_name: ' ' }, /orders_holder_name/],
+    ['a holder over 200 characters', { holder_name: 'n'.repeat(201) }, /orders_holder_name/],
     ['an age band OPOS does not know', { age_band: 'senior' }, /age_band/],
     ['an email that is no address', { email: 'buyer' }, /orders_email/],
     ['an email not written in lower case', { email: 'Buyer@Example.test' }, /orders_email/],
@@ -707,15 +707,16 @@ describe('what the application role changes of an order', () => {
     await expect(order(at, { decline_reason: '' })).rejects.toThrow(/orders_decline_reason/)
   })
 
-  // A manual order asks for no name (M4); an order of the shop is always somebody's.
-  it('takes a manual order with no name, and no order of the shop without one', async () => {
+  // Nobody has to be named: a manual order asks for no name (M4), and a buyer of the shop gives
+  // one only when they want to.
+  it('takes an order with no name, of the shop and manual alike', async () => {
     const at = await place()
     const manual = { status: 'paid-manual', email: null, manual_reason: 'desk', hold_ends_at: null }
 
     await order(at, { ...manual, holder_name: '' })
     await order(at, { ...manual, holder_name: 'Ada' })
-    await expect(order(at, { holder_name: '' })).rejects.toThrow(/orders_holder_name/)
-    await expect(order(at, { holder_name: '  ' })).rejects.toThrow(/orders_holder_name/)
+    await order(at, { holder_name: '' })
+    await order(at, { holder_name: '', age_band: null })
     await expect(order(at, { ...manual, holder_name: 'n'.repeat(201) })).rejects.toThrow(
       /orders_holder_name/,
     )

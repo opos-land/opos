@@ -48,7 +48,8 @@ function useIssueText() {
  * The first step (docs/specs/0004-checkout-and-orders.md, C4-C9, C18): what the ticket type
  * gives, then the ticket holder's name and age band, a visitor's email typed twice, and the
  * edition's custom fields. An order of merchandise alone asks for the buyer's name and email
- * only. No field shows an error before the buyer tried to go on.
+ * only. The name may stay empty, and says so. No field shows an error before the buyer tried to
+ * go on.
  */
 export function HolderStep({
   offer,
@@ -134,12 +135,11 @@ export function HolderStep({
       <FormField
         label={
           merchOnly ? (
-            <Trans>Your name or nickname</Trans>
+            <Trans>Your name or nickname (optional)</Trans>
           ) : (
-            <Trans>Ticket holder’s name or nickname</Trans>
+            <Trans>Ticket holder’s name or nickname (optional)</Trans>
           )
         }
-        error={issueText(issues.holderName, 'other')}
       >
         {(control) => (
           <Input

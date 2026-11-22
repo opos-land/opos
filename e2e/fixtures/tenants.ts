@@ -422,10 +422,12 @@ export class TenantFactory {
       ...(await this.db.execute<{
         status: string
         email: string
+        holderName: string
         accountId: string | null
         totalMinor: number
       }>(sql`
-        select o.status, o.email, a.account_id as "accountId", o.total_minor as "totalMinor"
+        select o.status, o.email, o.holder_name as "holderName", a.account_id as "accountId",
+          o.total_minor as "totalMinor"
         from orders o left join order_accounts a on a.order_id = o.id
         where o.tenant_id = ${tenantId} order by o.placed_at
       `)),

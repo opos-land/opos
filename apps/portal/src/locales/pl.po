@@ -29,6 +29,10 @@ msgid "{count, plural, one {Speaker:} other {Speakers:}}"
 msgstr "{count, plural, one {Prelegent:} few {Prelegenci:} many {Prelegenci:} other {Prelegenci:}}"
 
 #: src/features/shop/components/my-orders.tsx
+msgid "{editionName}, placed {placed}"
+msgstr "{editionName}, złożone {placed}"
+
+#: src/features/shop/components/my-orders.tsx
 msgid "{editionName}, placed {placed}, for {holderName}"
 msgstr "{editionName}, złożone {placed}, dla: {holderName}"
 
@@ -1491,8 +1495,8 @@ msgid "Ticket holder"
 msgstr "Posiadacz akredytacji"
 
 #: src/features/shop/components/holder-step.tsx
-msgid "Ticket holder’s name or nickname"
-msgstr "Imię i nazwisko albo pseudonim posiadacza akredytacji"
+msgid "Ticket holder’s name or nickname (optional)"
+msgstr "Imię i nazwisko albo pseudonim posiadacza akredytacji (opcjonalnie)"
 
 #: src/features/landing/pages/privacy-page.tsx
 msgid "To run your account and sign you in; to let conventions sell you tickets, send them to you and check them at the venue; to keep your edition sign-ups, your personal schedule and your reviews; and to send the emails your account needs: address confirmation, password reset, the notice that two-factor authentication is turned off, tickets and invitations to a convention’s team."
@@ -1815,8 +1819,8 @@ msgid "Your name is shown wherever your account is named to everyone, and your a
 msgstr "Twoja nazwa publiczna pokazuje się wszędzie tam, gdzie twoje konto jest pokazywane wszystkim, a awatar jest publiczny od chwili wgrania. Profil jest prywatny, dopóki go nie opublikujesz. To, co w nim pokazujesz, zależy od ciebie, w granicach tych zasad:"
 
 #: src/features/shop/components/holder-step.tsx
-msgid "Your name or nickname"
-msgstr "Twoje imię i nazwisko albo pseudonim"
+msgid "Your name or nickname (optional)"
+msgstr "Twoje imię i nazwisko albo pseudonim (opcjonalnie)"
 
 #: src/features/landing/pages/terms-page.tsx
 msgid "Your name, your avatar and your profile"

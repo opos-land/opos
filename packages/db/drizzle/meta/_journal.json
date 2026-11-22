@@ -498,6 +498,13 @@
       "when": 1795310875025,
       "tag": "0070_account_avatars_file_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1795361713818,
+      "tag": "0071_optional_holder_name",
+      "breakpoints": true
     }
   ]
 }

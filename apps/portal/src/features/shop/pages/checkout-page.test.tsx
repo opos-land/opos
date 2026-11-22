@@ -177,10 +177,9 @@ describe('CheckoutPage', () => {
     expect(screen.queryByText('Fill in this field.')).toBeNull()
     press('Next')
 
-    expect((await screen.findAllByText('Fill in this field.')).length).toBe(5)
-    await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByLabelText(/name or nickname/)),
-    )
+    // The name may stay empty, and the adult age band is chosen from the start.
+    expect((await screen.findAllByText('Fill in this field.')).length).toBe(3)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Email address')))
     // Still on the first step.
     expect(screen.getByRole('heading', { name: 'Ticket holder', level: 2 })).toBeDefined()
 
@@ -191,6 +190,23 @@ describe('CheckoutPage', () => {
     type('City you travel from', 'Poznań')
     press('Next')
     expect(await screen.findByText('Emails do not match.')).toBeDefined()
+  })
+
+  // Nobody has to be named, and most ticket holders are adults: the email alone is typed.
+  it('marks the name as optional, starts with the adult age band and goes on with no name', async () => {
+    view()
+    await stepHeading('Ticket holder')
+    press('Continue without an account')
+
+    expect(screen.getByLabelText('Ticket holder’s name or nickname (optional)')).toBeDefined()
+    expect(screen.getByLabelText<HTMLSelectElement>('Age band').value).toBe('adult')
+    type('Email address', 'ada@example.test')
+    type('Repeat the email address', 'ada@example.test')
+    type('City you travel from', 'Poznań')
+    press('Next')
+
+    await stepHeading('Add-ons')
+    expect(loadDraft('convention-a', '2027')).toMatchObject({ holderName: '', ageBand: 'adult' })
   })
 
   it('tells a child and a teen what their age band asks for', async () => {
@@ -630,7 +646,8 @@ describe('CheckoutPage', () => {
     // Never an age band or a custom field.
     expect(screen.queryByLabelText('Age band')).toBeNull()
     expect(screen.queryByLabelText('City you travel from')).toBeNull()
-    type(/name or nickname/, 'Ada')
+    // The buyer's name may stay empty too.
+    expect(screen.getByLabelText('Your name or nickname (optional)')).toBeDefined()
     type('Email address', 'ada@example.test')
     type('Repeat the email address', 'ada@example.test')
     press('Next')

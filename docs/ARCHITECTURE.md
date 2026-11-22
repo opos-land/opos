@@ -472,7 +472,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   which turbo hashes, and [mise-tasks.test.mjs](../scripts/mise-tasks.test.mjs) keeps both lists
   equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). The
   deploy commands are root scripts too, one Node script tested like the others, driving tools that
-  come from mise; no shell script runs on an operator's machine
+  come from mise, beside `deploy:graph`, which only reads the checkout; no shell script runs on an
+  operator's machine
   ([0070](adr/0070-run-the-deploy-commands-as-node-scripts.md)). `deploy:check`, `deploy:images`
   and `deploy:lock` alone are mise tasks with no root script: they only run those tools.
 - The infrastructure lives in [infra](../infra/README.md): an environment is one directory with

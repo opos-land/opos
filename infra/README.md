@@ -19,7 +19,7 @@ The deployed environments, described in OpenTofu units that Terragrunt runs. The
 
 ## Commands
 
-Each runs [scripts/deploy.mjs](../scripts/deploy.mjs), also as `pnpm deploy:<name>` where mise's
+Each runs [scripts/deploy.mjs](../scripts/deploy.mjs), deploy:graph [scripts/deploy-graph.mjs](../scripts/deploy-graph.mjs), also as `pnpm deploy:<name>` where mise's
 tools are on the path, and mise installs every tool it drives
 ([0070](../docs/adr/0070-run-the-deploy-commands-as-node-scripts.md)). Read the plan before every
 apply. An agent never runs a
@@ -32,6 +32,7 @@ secret-get, which prints a secret.
 | `mise run deploy:check`                                 | checks the format and validates every unit                                                                                                                                                                                                                                                                                   |
 | `mise run deploy:images`                                | builds the images as the server does and tries the API and the frontends; CI's `images` job runs it on every run                                                                                                                                                                                                             |
 | `mise run deploy:lock`                                  | rewrites the modules' provider lock files after a provider's version changed                                                                                                                                                                                                                                                 |
+| `mise run deploy:graph <environment>`                   | writes `infra/live/<environment>/.terragrunt-graph.html`, a page of the stack to open in a browser: its units and apply order, the outputs each passes to another, their values resolved from env.yaml, their modules, and the wiring mistakes it finds                                                                      |
 | **Signed in**                                           |                                                                                                                                                                                                                                                                                                                              |
 | `mise run deploy:login <environment>`                   | signs you in to Scaleway and GitHub, unless you are; the key lasts 12 hours                                                                                                                                                                                                                                                  |
 | `mise run deploy:plan <environment> [unit]`             | shows what an apply would change; `--save` plans as an apply does and keeps the plans                                                                                                                                                                                                                                        |

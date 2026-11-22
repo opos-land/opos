@@ -66,13 +66,13 @@ Row-level multitenancy under RLS, not only a `where` in code
 `tenant_id` (never only an `edition_id`), a composite foreign key to its parent's `(id, tenant_id)`
 and an index starting with `tenant_id`.
 
-| Role                                    | May                                                                                                                               | Used by                                                                                                         |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `postgres`                              | owns the OPOS tables; `BYPASSRLS`, not a superuser                                                                                | migrations, `db:*` scripts, the seed, the backup; never the running API                                         |
-| `opos_app`                              | `select`; `insert`, `delete` and per-column `update` only where the API writes; bypasses nothing, owns nothing, member of no role | the API                                                                                                         |
-| `opos_app_global`                       | `BYPASSRLS`; `select` on the columns the cross-tenant queries read, nothing else                                                  | `GlobalDbService` alone                                                                                         |
-| `opos_admin`                            | `BYPASSRLS`; only what the admin routes read and write, its reads by column                                                       | `AdminDbService` alone ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
-| `anon`, `authenticated`, `service_role` | nothing in `public`                                                                                                               | nobody                                                                                                          |
+| Role                                    | May                                                                                                                               | Used by                                                                                                                               |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `postgres`                              | owns the OPOS tables; `BYPASSRLS`, not a superuser                                                                                | migrations, `db:*` scripts, the seed, the backup; never the running API                                                               |
+| `opos_app`                              | `select`; `insert`, `delete` and per-column `update` only where the API writes; bypasses nothing, owns nothing, member of no role | the API                                                                                                                               |
+| `opos_app_global`                       | `BYPASSRLS`; `select` on the columns the cross-tenant queries read, nothing else                                                  | `GlobalDbService` alone                                                                                                               |
+| `opos_admin`                            | `BYPASSRLS`; only what the admin routes read and write, its reads by column                                                       | `AdminDbService` and `AdminProfilesDb` alone ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
+| `anon`, `authenticated`, `service_role` | nothing in `public`                                                                                                               | nobody                                                                                                                                |
 
 `pnpm db:roles` ([roles.ts](../packages/db/src/roles.ts)) sets the runtime roles up with their
 timeouts and strips Supabase's default grants; it runs on every new database, after a change to it
@@ -91,8 +91,9 @@ and after every restore.
   holds for every way in (`403` `tenant.suspended`;
   [0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
 - **Global tables.** `accounts`, `account_recovery_codes`, `account_files`, `account_profiles`,
-  `account_avatars` and `profile_reports` have no RLS: column privileges limit them, and the API reaches there only the account a verified token, a fresh
-  session or a signed hook names; the sweep alone removes an account's file nothing points at.
+  `account_avatars` and `profile_reports` have no RLS: column privileges limit them, and the API
+  reaches there only the account a verified token, a fresh session or a signed hook names; the
+  sweep alone removes an account's file nothing points at.
   Another account is read only in a tenant transaction, through a tenant table, by a confirmed
   email behind a write permission and a rate limit of the tenant, or by the confirmed email of
   an order as it is paid and of the recipient of an order's email as it is written, for its
@@ -104,7 +105,9 @@ and after every restore.
   whose profile was reported or taken down, or by its email address for a new tenant's first
   head, for a reset of two-factor authentication and for its profile.
   `opos_app` never sets the identifier of a profile's page or what a takedown sets, and reads
-  nothing a report says; an avatar is a row added and removed, never changed.
+  nothing a report says; an avatar is a row added and removed, never changed. A change of a
+  profile, of its avatar or of its reports holds the profile's row first, as a takedown does, so
+  that neither overtakes the other.
   The admin's tables are global too, and `opos_app` and `opos_app_global` hold nothing on them:
   `admins` is written by `postgres` alone, each grant bound to the one verified factor its account
   holds; `admin_actions` only grows, each entry dated by the database, a grant and a withdrawal
@@ -114,41 +117,43 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query                                  | Bound                                                                                                                                                                                  |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| a tenant by slug                       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                                          |
-| `GET /me/memberships`                  | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                                            |
-| `GET /me/schedule`                     | the session's own likes; published editions only, of tenants not suspended                                                                                                             |
-| `GET /public/editions`                 | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                                           |
-| `DELETE /me`                           | the session's account; answers only whether it is a tenant's last head                                                                                                                 |
-| the sweep of files                     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                                               |
-| a payment attempt by its identifier    | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds                                       |
-| the orders whose hold ended            | the API's own job; identifiers alone, of tenants not suspended                                                                                                                         |
-| the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                                         |
-| a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction                         |
-| an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                                           |
-| the editions whose reminder may be due | the API's own job; identifiers and the tenant's time zone alone, of published editions of tenants not suspended                                                                        |
-| a published profile by its identifier  | the account's own publication: the public name and what the profile's page shows, of a profile published and not taken down; to the API alone, whose profile it is, for a report of it |
-| whose avatar a file is                 | the avatar is public from its upload; it answers the account to the API alone, which then serves the file                                                                              |
+| Query                                  | Bound                                                                                                                                                           |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| a tenant by slug                       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                   |
+| `GET /me/memberships`                  | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                     |
+| `GET /me/schedule`                     | the session's own likes; published editions only, of tenants not suspended                                                                                      |
+| `GET /public/editions`                 | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                    |
+| `DELETE /me`                           | the session's account; answers only whether it is a tenant's last head                                                                                          |
+| the sweep of files                     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                        |
+| a payment attempt by its identifier    | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds                |
+| the orders whose hold ended            | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
+| the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
+| a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction  |
+| an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                    |
+| the editions whose reminder may be due | the API's own job; identifiers and the tenant's time zone alone, of published editions of tenants not suspended                                                 |
+| a published profile by its identifier  | the account's own publication: the public name and what the profile's page shows, of a profile published and not taken down, and nothing that names the account |
+| whose avatar a file is                 | the avatar is public from its upload; it answers the account to the API alone, which then serves the file                                                       |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
-proved (a signature, a link or device token), the API's own job, or publication: an edition's, for what anyone already reads one convention at a
-time ([0043](adr/0043-list-every-published-edition-on-the-portals-home-page.md)), or an account's
-own, of its profile and its avatar
+proved (a signature, a link or device token), the API's own job, or publication: an edition's,
+for what anyone already reads one convention at a time
+([0043](adr/0043-list-every-published-edition-on-the-portals-home-page.md)), or an account's own,
+of its profile and its avatar
 ([0071](adr/0071-let-anyone-read-the-profile-an-account-published.md)); it joins this table
 and puts its columns into `globalReads` of [verify.ts](../packages/db/src/verify.ts). What a query
 bound by publication answers is the schema of its route: a field added there is public at once,
-for every convention.
+for every convention, or for every account that published its profile.
 
 **The admin routes** read and write across tenants on `opos_admin`, only in
-[AdminDbService](../apps/api/src/modules/admin/admin-db.service.ts) and only behind
-`@RequireAdmin`: their bound is the admin role of the session's account. They never open a tenant
-transaction, read nothing of a tenant's team but its heads and nothing of its editions or
-programme, and write each change with its entry of the log in one transaction. Of a profile they
-read what it shows, its state and its reports, and write a takedown, a restoring, a closed report
-and a cleared name, never what a profile says
-([0074](adr/0074-take-a-profile-down-with-a-reason-and-change-nothing-it-says.md)). What the role may
-reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of verify.ts.
+[AdminDbService](../apps/api/src/modules/admin/admin-db.service.ts) and in
+[AdminProfilesDb](../apps/api/src/modules/admin/admin-profiles.db.ts), which takes its connection
+from it, and only behind `@RequireAdmin`: their bound is the admin role of the session's account.
+They never open a tenant transaction, read nothing of a tenant's team but its heads and nothing
+of its editions or programme, and write each change with its entry of the log in one transaction.
+Of a profile they read what it shows, its state and its reports, and write a takedown, a
+restoring, a closed report and a cleared name, never what a profile says
+([0074](adr/0074-take-a-profile-down-with-a-reason-and-change-nothing-it-says.md)). What the role
+may reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of verify.ts.
 
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an

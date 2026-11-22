@@ -362,6 +362,15 @@ test('the API tests have time for several real sign-ins and for a hook that star
   assert.match(config, /hookTimeout: 30_000/)
 })
 
+test('the API tests run on four workers at most, each a whole API with pools of its own', () => {
+  const config = read('../apps/api/vitest.config.ts')
+  assert.match(config, /const MAX_WORKERS = 4\n/)
+  assert.match(
+    config,
+    /maxWorkers: Math\.max\(1, Math\.min\(MAX_WORKERS, availableParallelism\(\) - 1\)\),/,
+  )
+})
+
 test('the ruleset requires check, e2e and secrets', () => {
   assert.deepEqual(requiredChecks(ruleset).sort(), ['check', 'e2e', 'secrets'])
 })

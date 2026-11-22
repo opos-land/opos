@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { after, describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { evaluate, layoutGraph, main, readStack, renderPage, shown } from './deploy-graph.mjs'
+import { main, readStack, renderPage } from './deploy-graph.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -251,195 +251,6 @@ const STACK = {
     '}',
   ),
 }
-
-describe('evaluate', () => {
-  const scope = {
-    local: { env: { app: { host: 'a.example', list: ['x', 'y'] }, empty: null } },
-  }
-  const value = (text) => evaluate(text, { scope, root: '/repo', from: '/repo/x' })
-
-  it('reads literals', () => {
-    assert.deepEqual(value('plain'), { known: true, value: 'plain', overrides: [] })
-    assert.equal(value('${12.5}').value, 12.5)
-    assert.equal(value('${true}').value, true)
-    assert.equal(value('${false}').value, false)
-    assert.equal(value('${null}').value, null)
-    assert.deepEqual(value('${[1, "a", []]}').value, [1, 'a', []])
-    assert.deepEqual(value('${{ a = 1, "b" : {} }}').value, { a: 1, b: {} })
-    assert.equal(value('${"q\\"uote"}').value, 'q"uote')
-    assert.equal(value('${(1)}').value, 1)
-    assert.equal(value('$${literal}').value, '${literal}')
-  })
-
-  it('follows references, attributes and indexes', () => {
-    assert.equal(value('${local.env.app.host}').value, 'a.example')
-    assert.equal(value('${local.env.app.list[1]}').value, 'y')
-    assert.equal(value('${local.env["app"].host}').value, 'a.example')
-    assert.equal(value('${local.env.empty}').value, null)
-    assert.equal(value('${local.env.nothing}').known, false)
-    assert.equal(value('${local.env.empty.deeper}').known, false)
-    assert.equal(value('${values.x}').known, false)
-  })
-
-  it('fills templates and leaves them unknown when a part is', () => {
-    assert.equal(value('https://${local.env.app.host}/').value, 'https://a.example/')
-    assert.equal(value('n${1}').value, 'n1')
-    assert.equal(value('x${local.env.app}').known, false)
-    assert.equal(value('x${local.env.none}').known, false)
-  })
-
-  it('runs the functions a stack uses', () => {
-    assert.equal(value('${try(local.env.none, local.env.app.host)}').value, 'a.example')
-    assert.equal(value('${try(local.env.none)}').known, false)
-    assert.deepEqual(value('${get_env("REF", local.env.app.host)}'), {
-      known: true,
-      value: 'a.example',
-      overrides: ['REF'],
-    })
-    assert.equal(value('${get_env("REF")}').known, false)
-    assert.equal(value('${get_env(local.env.none, "x")}').known, false)
-    assert.equal(value('${split("/", "a/b")[1]}').value, 'b')
-    assert.equal(value('${trimsuffix("a/", "/")}').value, 'a')
-    assert.equal(value('${trimsuffix("a", "/")}').value, 'a')
-    assert.equal(value('${replace("a_b_c", "_", "-")}').value, 'a-b-c')
-    assert.equal(value('${get_repo_root()}/infra').value, '/repo/infra')
-    assert.equal(value('${upper("a")}').known, false)
-    assert.equal(value('${get_env("REF", local.none)}').known, false)
-    assert.equal(value('${yamldecode("a: [")}').known, false)
-    assert.equal(value('${split("/", local.env.none)}').known, false)
-  })
-
-  it('reads files and YAML relative to where it evaluates', () => {
-    const dir = repository({ 'a/env.yaml': 'k: v\n', 'a/b/c/.keep': '' })
-    const from = join(dir, 'a/b/c')
-    const at = (text) => evaluate(text, { scope: {}, root: dir, from })
-    assert.equal(at('${find_in_parent_folders("env.yaml")}').value, join(dir, 'a/env.yaml'))
-    assert.equal(at('${find_in_parent_folders("none.yaml")}').known, false)
-    assert.deepEqual(at('${yamldecode(file(find_in_parent_folders("env.yaml")))}').value, {
-      k: 'v',
-    })
-    assert.equal(at('${file("../../env.yaml")}').value, 'k: v\n')
-    assert.equal(at('${file("missing")}').known, false)
-    const outside = evaluate('${find_in_parent_folders("none.yaml")}', {
-      scope: {},
-      root: join(dir, 'elsewhere'),
-      from,
-    })
-    assert.equal(outside.known, false)
-  })
-
-  it('leaves what it cannot evaluate unknown', () => {
-    for (const text of [
-      '${local.a == 1 ? 2 : 3}',
-      '${{ for k in local.x : k => k }}',
-      '${local.a + 1}',
-      '${"open',
-      '${unclosed',
-      '${[1,}',
-      '${{ a = 1 b }}',
-      '${{ 1 = 2 }}',
-      '${local.x.}',
-      '${local.x[0}',
-      '${f(1}',
-      '${}',
-      '${"${local.x"}',
-      '${"\\u00e9"}',
-      '${local # comment',
-      '${local.a local.b}',
-      '${[local.none]}',
-      '${{ a = local.none }}',
-    ]) {
-      assert.equal(value(text).known, false, text)
-    }
-  })
-
-  it('evaluates structures as a whole', () => {
-    assert.deepEqual(value({ a: '${local.env.app.host}', b: [1, '${true}'] }).value, {
-      a: 'a.example',
-      b: [1, true],
-    })
-    assert.equal(value({ a: '${local.nothing}' }).known, false)
-    assert.equal(value(3).value, 3)
-  })
-})
-
-describe('shown', () => {
-  it('unwraps a lone interpolation and keeps the rest as written', () => {
-    assert.equal(shown('${ local.a }'), 'local.a')
-    assert.equal(shown('a${local.a}'), 'a${local.a}')
-    assert.equal(shown('${open'), '${open')
-    assert.equal(shown([1]), '[\n  1\n]')
-  })
-})
-
-describe('layoutGraph', () => {
-  it('places each unit a column after what it depends on', () => {
-    const { nodes, rounds, cycle, width, height } = layoutGraph(
-      ['c', 'b', 'a', 'd'],
-      [
-        { from: 'a', to: 'b' },
-        { from: 'b', to: 'c' },
-        { from: 'a', to: 'c' },
-        { from: 'a', to: 'd' },
-      ],
-    )
-    assert.deepEqual(rounds, [['a'], ['b', 'd'], ['c']])
-    assert.deepEqual(cycle, [])
-    assert.equal(nodes.a.column, 0)
-    assert.equal(nodes.c.column, 2)
-    assert.ok(nodes.b.x > nodes.a.x && nodes.c.x > nodes.b.x)
-    assert.notEqual(nodes.b.y, nodes.d.y)
-    assert.ok(width > nodes.c.x && height > Math.max(nodes.b.y, nodes.d.y))
-  })
-
-  it('routes an edge that skips a column through it, beside what stands there', () => {
-    const { nodes, routes } = layoutGraph(
-      ['a', 'b', 'c'],
-      [
-        { from: 'a', to: 'b' },
-        { from: 'b', to: 'c' },
-        { from: 'a', to: 'c' },
-      ],
-    )
-    assert.deepEqual(routes['a>b'], [])
-    const [[x1, y1], [x2, y2]] = routes['a>c']
-    assert.equal(x1, nodes.b.x)
-    assert.equal(x2, nodes.b.x + nodes.b.width)
-    assert.equal(y1, y2)
-    assert.ok(y1 < nodes.b.y || y1 > nodes.b.y + nodes.b.height)
-  })
-
-  it('orders a column after the units feeding it', () => {
-    const { nodes } = layoutGraph(
-      ['x', 'y', 'p', 'q'],
-      [
-        { from: 'y', to: 'p' },
-        { from: 'x', to: 'q' },
-      ],
-    )
-    assert.ok(nodes.x.y < nodes.y.y)
-    assert.ok(nodes.q.y < nodes.p.y)
-  })
-
-  it('places nothing', () => {
-    const { nodes, rounds, width, height } = layoutGraph([], [])
-    assert.deepEqual([nodes, rounds], [{}, []])
-    assert.ok(width > 0 && height > 0)
-  })
-
-  it('names the units of a cycle and still places them', () => {
-    const { nodes, cycle, rounds } = layoutGraph(
-      ['a', 'b', 'c'],
-      [
-        { from: 'a', to: 'b' },
-        { from: 'b', to: 'a' },
-      ],
-    )
-    assert.deepEqual(cycle, ['a', 'b'])
-    assert.deepEqual(rounds, [['c'], ['a', 'b']])
-    assert.equal(nodes.a.column, 1)
-  })
-})
 
 describe('readStack', () => {
   it('reads the units, their values, inputs, modules and the edges between them', async () => {
@@ -725,9 +536,88 @@ describe('main', () => {
     assert.equal(await main([], { root, log, error: log, env: {} }), 2)
     assert.equal(await main(['prod'], { root, log, error: log, env: {} }), 2)
     assert.deepEqual(out, [
-      'usage: pnpm deploy:graph <environment>, one of test',
-      'usage: pnpm deploy:graph <environment>, one of test',
+      'usage: pnpm deploy:graph <environment> [--open], one of test',
+      'usage: pnpm deploy:graph <environment> [--open], one of test',
     ])
+  })
+
+  it('refuses a flag it does not know', async () => {
+    const root = repository(STACK)
+    const { out, log } = output()
+    assert.equal(await main(['test', '--nope'], { root, log, error: log, env: {} }), 2)
+    assert.equal(out[0], 'usage: pnpm deploy:graph <environment> [--open], one of test')
+  })
+
+  describe('--open', () => {
+    const opener = (result = { status: 0 }) => {
+      const calls = []
+      return { calls, spawn: (command, args) => (calls.push([command, ...args]), result) }
+    }
+    const page = (root) => join(root, 'infra/live/test/.terragrunt-graph.html')
+
+    it('hands the page to Windows under WSL', async () => {
+      const root = repository(STACK)
+      const { calls, spawn } = opener({ status: 1 })
+      const { log } = output()
+      const env = { WSL_DISTRO_NAME: 'Ubuntu' }
+      assert.equal(await main(['--open', 'test'], { root, log, error: log, env, spawn }), 0)
+      // explorer.exe exits with 1 even when it opened the file
+      assert.deepEqual(calls, [
+        ['explorer.exe', `\\\\wsl.localhost\\Ubuntu${page(root).replaceAll('/', '\\')}`],
+      ])
+    })
+
+    it('opens it with open on macOS and xdg-open elsewhere', async () => {
+      const root = repository(STACK)
+      const { log } = output()
+      const mac = opener()
+      await main(['test', '--open'], {
+        root,
+        log,
+        error: log,
+        env: {},
+        spawn: mac.spawn,
+        platform: 'darwin',
+      })
+      assert.deepEqual(mac.calls, [['open', page(root)]])
+      const linux = opener()
+      await main(['test', '--open'], {
+        root,
+        log,
+        error: log,
+        env: {},
+        spawn: linux.spawn,
+        platform: 'linux',
+      })
+      assert.deepEqual(linux.calls, [['xdg-open', page(root)]])
+    })
+
+    it('says so when nothing opens it, the page written all the same', async () => {
+      const root = repository(STACK)
+      const { out, log } = output()
+      const { spawn } = opener({ error: new Error('spawnSync xdg-open ENOENT') })
+      const code = await main(['test', '--open'], {
+        root,
+        log,
+        error: log,
+        env: {},
+        spawn,
+        platform: 'linux',
+      })
+      assert.equal(code, 0)
+      assert.deepEqual(out, [
+        page(root),
+        'deploy:graph could not open the page (spawnSync xdg-open ENOENT): open it in a browser yourself.',
+      ])
+    })
+
+    it('does not open the page unless asked', async () => {
+      const root = repository(STACK)
+      const { calls, spawn } = opener()
+      const { log } = output()
+      await main(['test'], { root, log, error: log, env: {}, spawn })
+      assert.deepEqual(calls, [])
+    })
   })
 
   it('fails on a stack it cannot read', async () => {

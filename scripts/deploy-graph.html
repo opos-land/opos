@@ -1,6 +1,8 @@
 <!doctype html>
 <!-- The page of pnpm deploy:graph (scripts/deploy-graph.mjs), which puts an environment's stack in
-     place of the marker in the data script below. It loads nothing from anywhere else. -->
+     place of the marker in the data script below. It loads nothing from anywhere else. Two views
+     of one stack: the deployment (what runs where, scripts/deploy-layout.mjs) and the code (its
+     units, their modules and what passes between them). -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -26,6 +28,13 @@
         --warn: #b45309;
         --warn-soft: #fef3e2;
         --match: #7048e8;
+        --secret: #a61e4d;
+        --kind-container: #3b5bdb;
+        --kind-endpoint: #2b8a3e;
+        --kind-resource: #e8590c;
+        --kind-secrets: #a61e4d;
+        --kind-browser: #495057;
+        --kind-unit: #3b5bdb;
         color-scheme: light;
       }
       @media (prefers-color-scheme: dark) {
@@ -48,6 +57,13 @@
           --warn: #f0a742;
           --warn-soft: #3a2a12;
           --match: #a98bff;
+          --secret: #f06595;
+          --kind-container: #7c93f5;
+          --kind-endpoint: #69db7c;
+          --kind-resource: #ffa94d;
+          --kind-secrets: #f06595;
+          --kind-browser: #adb5bd;
+          --kind-unit: #7c93f5;
           color-scheme: dark;
         }
       }
@@ -96,8 +112,23 @@
       header .spacer {
         flex: 1;
       }
+      .views {
+        display: inline-flex;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .views button {
+        border: 0;
+        border-radius: 0;
+        background: var(--panel);
+      }
+      .views button[aria-pressed='true'] {
+        background: var(--accent);
+        color: #fff;
+      }
       input[type='search'] {
-        width: min(320px, 100%);
+        width: min(300px, 100%);
         padding: 6px 10px;
         border: 1px solid var(--border);
         border-radius: 8px;
@@ -121,6 +152,11 @@
       button:hover,
       label.toggle:hover {
         border-color: var(--faint);
+      }
+      #toggles {
+        display: inline-flex;
+        gap: 6px;
+        flex-wrap: wrap;
       }
       main {
         flex: 1;
@@ -162,17 +198,36 @@
       }
 
       /* The graph */
-      .node rect {
+      .node rect.box {
         fill: var(--panel);
         stroke: var(--border);
         stroke-width: 1.5;
       }
+      .node rect.stripe {
+        fill: var(--kind);
+      }
       .node {
         cursor: pointer;
         outline: none;
+        --kind: var(--kind-unit);
       }
-      .node:hover rect,
-      .node:focus-visible rect {
+      .node.container {
+        --kind: var(--kind-container);
+      }
+      .node.endpoint {
+        --kind: var(--kind-endpoint);
+      }
+      .node.resource {
+        --kind: var(--kind-resource);
+      }
+      .node.secrets {
+        --kind: var(--kind-secrets);
+      }
+      .node.browser {
+        --kind: var(--kind-browser);
+      }
+      .node:hover rect.box,
+      .node:focus-visible rect.box {
         stroke: var(--faint);
       }
       .node .name {
@@ -184,34 +239,30 @@
         font-size: 11.5px;
         fill: var(--muted);
       }
-      .node .count {
-        font-size: 11.5px;
-        fill: var(--muted);
-      }
       .node .warn {
         font-size: 11.5px;
         fill: var(--warn);
         font-weight: 600;
       }
-      .node.selected rect {
+      .node.selected rect.box {
         stroke: var(--accent);
         stroke-width: 2.5;
         fill: var(--accent-soft);
       }
-      .node.up rect {
+      .node.up rect.box {
         stroke: var(--up);
         fill: var(--up-soft);
       }
-      .node.down rect {
+      .node.down rect.box {
         stroke: var(--down);
         fill: var(--down-soft);
       }
-      .node.match rect {
+      .node.match rect.box {
         stroke: var(--match);
         stroke-width: 2.5;
       }
       .dim {
-        opacity: 0.25;
+        opacity: 0.22;
       }
       .edge path.line {
         fill: none;
@@ -224,9 +275,22 @@
         stroke-width: 14;
         cursor: pointer;
       }
-      .edge.order path.line {
+      .edge.order path.line,
+      .edge.names path.line {
         stroke-dasharray: 5 4;
         stroke-width: 1.2;
+      }
+      .edge.config path.line {
+        stroke-dasharray: 8 3;
+        stroke-width: 1.4;
+      }
+      .edge.secret path.line {
+        stroke: var(--secret);
+        stroke-dasharray: 2 3;
+        stroke-width: 1.2;
+      }
+      .edge.internal path.line {
+        stroke-width: 2;
       }
       .edge.up path.line {
         stroke: var(--up);
@@ -241,11 +305,11 @@
         stroke: var(--accent);
         stroke-width: 2.6;
       }
+      .hidden {
+        display: none;
+      }
       .edge-label {
         cursor: pointer;
-      }
-      .edge-label.hidden {
-        display: none;
       }
       .edge-label rect {
         fill: var(--panel);
@@ -254,9 +318,6 @@
       .edge-label text {
         font-size: 11px;
         fill: var(--muted);
-      }
-      .edge.hidden {
-        display: none;
       }
       marker path {
         fill: var(--edge);
@@ -338,6 +399,11 @@
         color: var(--accent);
         border-color: var(--accent);
       }
+      .tag.secret {
+        color: var(--secret);
+        border-color: var(--secret);
+        white-space: normal;
+      }
       .warnings {
         background: var(--warn-soft);
         border: 1px solid var(--warn);
@@ -357,7 +423,6 @@
         cursor: pointer;
         font-weight: 600;
         padding: 6px 0;
-        list-style-position: outside;
       }
       details > summary .count {
         color: var(--faint);
@@ -368,6 +433,9 @@
         width: 100%;
         border-collapse: collapse;
         table-layout: fixed;
+      }
+      table.auto {
+        table-layout: auto;
       }
       td,
       th {
@@ -381,9 +449,6 @@
         font-weight: 600;
         color: var(--muted);
         font-size: 12px;
-      }
-      table.auto {
-        table-layout: auto;
       }
       td.key {
         width: 38%;
@@ -430,7 +495,6 @@
         border-radius: 4px;
         border: 2px solid;
       }
-      a.link,
       button.link {
         color: var(--accent);
         background: none;
@@ -441,6 +505,9 @@
         text-decoration: underline;
         text-underline-offset: 2px;
       }
+      a {
+        color: var(--accent);
+      }
       .back {
         margin-bottom: 10px;
       }
@@ -450,18 +517,17 @@
     <header>
       <h1 id="title">Stack</h1>
       <span class="file mono" id="file"></span>
+      <span class="views" role="group" aria-label="View">
+        <button id="view-deployment" aria-pressed="true">Deployment</button>
+        <button id="view-code" aria-pressed="false">Code</button>
+      </span>
       <span class="spacer"></span>
-      <input
-        id="search"
-        type="search"
-        placeholder="Search units, resources, variables, values  ( / )"
-        aria-label="Search the stack"
-      />
-      <label class="toggle"><input id="order" type="checkbox" checked /> Order-only edges</label>
+      <input id="search" type="search" placeholder="Search  ( / )" aria-label="Search the view" />
+      <span id="toggles"></span>
     </header>
     <main>
       <div id="graph">
-        <svg id="svg" role="img" aria-label="The units of the stack and their dependencies">
+        <svg id="svg" role="img" aria-label="The graph of the view">
           <defs>
             <marker
               id="arrow"
@@ -493,9 +559,6 @@
       'use strict'
       const stack = JSON.parse(document.getElementById('stack').textContent)
       const SVG = 'http://www.w3.org/2000/svg'
-      const units = new Map(stack.units.map((unit) => [unit.name, unit]))
-      const layout = stack.layout.nodes
-      const state = { selected: null, query: '', order: true }
 
       document.title = `${stack.environment} stack`
       document.getElementById('title').textContent = `Stack: ${stack.environment}`
@@ -524,8 +587,6 @@
       }
       const format = (value) => (typeof value === 'string' ? value : JSON.stringify(value, null, 2))
       const plural = (count, word, many = `${word}s`) => `${count} ${count === 1 ? word : many}`
-      const unitChip = (name, kind) =>
-        h('button', { class: `chip ${kind ?? ''}`, onclick: () => select({ unit: name }) }, name)
       const tag = (text, kind = '') => h('span', { class: `tag ${kind}` }, text)
       const section = (title, count, open, ...body) =>
         h(
@@ -534,16 +595,1083 @@
           h('summary', {}, title, count === null ? null : h('span', { class: 'count' }, count)),
           ...body,
         )
-      const resourceCount = (unit) =>
-        unit.module ? unit.module.resources.filter((r) => r.kind === 'resource').length : 0
+      const back = () =>
+        h(
+          'div',
+          { class: 'back' },
+          h('button', { class: 'link', onclick: () => select(null) }, '← Overview'),
+        )
+      // A comment's lines joined into its paragraphs, which blank lines separate
+      const paragraphs = (text, kind = '') =>
+        text
+          .split(/\n\s*\n/)
+          .map((paragraph) => h('p', { class: kind }, paragraph.replace(/\s*\n\s*/g, ' ')))
+      // An expression written over several lines, without the indentation of the file it came from
+      function dedent(text) {
+        const [head, ...rest] = text.split('\n')
+        const indents = rest
+          .filter((line) => line.trim())
+          .map((line) => line.match(/^ */)[0].length)
+        const cut = Math.min(...indents, Infinity)
+        return [head, ...rest.map((line) => line.slice(Math.max(0, cut - 2)))].join('\n')
+      }
+      // A value with what only a run knows (‹…›) set apart
+      function marked(text) {
+        return String(text)
+          .split(/(‹[^›]*›)/)
+          .filter(Boolean)
+          .map((part) =>
+            part.startsWith('‹')
+              ? tag(part.slice(1, -1), /secret /.test(part) ? 'secret' : '')
+              : part,
+          )
+      }
+      function lineSample(dash, color = 'var(--edge)') {
+        const line = s('line', { x1: 0, y1: 5, x2: 30, y2: 5, stroke: color, 'stroke-width': 2 })
+        if (dash) line.setAttribute('stroke-dasharray', dash)
+        return s('svg', { width: 30, height: 10, 'aria-hidden': 'true' }, line)
+      }
+      const swatch = (color, soft) =>
+        h('span', {
+          class: 'swatch',
+          style: `border-color: var(${color}); background: var(${soft})`,
+        })
+
+      // ----- the views ---------------------------------------------------------------------------
+      // Each view gives its nodes (id, kind, lines of text, warning), its edges (from, to, kind, a
+      // label, a title), the layout, its toggles, and what the panel shows.
+      const code = codeView()
+      const deployment = deploymentView()
+      const views = { code, deployment }
+      const state = {
+        view: stack.deployment.nodes.length ? 'deployment' : 'code',
+        selected: null,
+        query: '',
+        shown: {},
+      }
+      for (const view of Object.values(views)) {
+        for (const toggle of view.toggles) state.shown[toggle.kind] = toggle.on
+      }
+      const current = () => views[state.view]
+
+      function codeView() {
+        const units = new Map(stack.units.map((unit) => [unit.name, unit]))
+        const resourceCount = (unit) =>
+          unit.module ? unit.module.resources.filter((r) => r.kind === 'resource').length : 0
+        const nodes = stack.units.map((unit) => {
+          const data = unit.module
+            ? unit.module.resources.filter((r) => r.kind !== 'resource').length
+            : 0
+          return {
+            id: unit.name,
+            kind: 'unit',
+            lines: [
+              unit.name,
+              unit.module ? unit.module.path.replace(/^infra\/modules\//, 'module ') : unit.source,
+              unit.module ? unit.module.providers.map((p) => p.name).join(' · ') : '',
+              unit.module
+                ? `${plural(resourceCount(unit), 'resource')}${data ? ` · ${data} data` : ''}`
+                : 'module outside this repository',
+            ],
+            warn: unit.warnings.length ? plural(unit.warnings.length, 'warning') : null,
+          }
+        })
+        const edges = stack.edges.map((edge) => ({
+          ...edge,
+          label: edge.kind === 'data' ? String(edge.outputs.length) : null,
+          title:
+            edge.kind === 'data'
+              ? `${edge.to} reads from ${edge.from}: ${edge.outputs.map((o) => `${o.output} → ${o.input}`).join(', ')}`
+              : `${edge.to} is applied after ${edge.from}, reading none of its outputs`,
+        }))
+        const unitChip = (name, kind) =>
+          h('button', { class: `chip ${kind ?? ''}`, onclick: () => select({ node: name }) }, name)
+
+        function matches(id, query) {
+          const unit = units.get(id)
+          const found = []
+          const test = (text, what) => {
+            if (String(text).toLowerCase().includes(query)) found.push(what)
+          }
+          test(unit.name, 'name')
+          test(unit.source, 'unit source')
+          for (const value of unit.values)
+            test(
+              `${value.key} ${value.known ? format(value.value) : value.expression}`,
+              `value ${value.key}`,
+            )
+          for (const input of unit.inputs) test(input.name, `input ${input.name}`)
+          if (unit.module) {
+            test(unit.module.path, 'module')
+            for (const r of unit.module.resources) test(r.address, r.address)
+            for (const v of unit.module.variables) test(v.name, `variable ${v.name}`)
+            for (const o of unit.module.outputs) test(o.name, `output ${o.name}`)
+            for (const p of unit.module.providers) test(p.source, `provider ${p.source}`)
+          }
+          return [...new Set(found)]
+        }
+
+        function valueCell(entry) {
+          if (entry.known) {
+            return h(
+              'td',
+              { title: entry.expression },
+              h('pre', {}, format(entry.value)),
+              entry.overrides.map((name) => [' ', tag(`${name} overrides`, 'accent')]),
+            )
+          }
+          return h('td', {}, h('pre', {}, dedent(entry.expression)), tag('computed at run'))
+        }
+
+        function overview() {
+          const warnings = stack.units.filter((unit) => unit.warnings.length)
+          const resources = stack.units.reduce((sum, unit) => sum + resourceCount(unit), 0)
+          return [
+            h('h2', {}, `${stack.environment}: the code`),
+            h(
+              'p',
+              { class: 'muted' },
+              `${plural(stack.units.length, 'unit')}, ${plural(stack.edges.length, 'dependency', 'dependencies')}, ${plural(resources, 'resource')}. `,
+              'Read from the checkout alone: values that need a run, such as other units’ outputs and secrets, are shown as written.',
+            ),
+            stack.cycle.length
+              ? h(
+                  'div',
+                  { class: 'warnings' },
+                  h('strong', {}, 'Dependency cycle: '),
+                  stack.cycle.join(', '),
+                  '. Terragrunt refuses to run these units.',
+                )
+              : null,
+            h('h3', {}, 'Apply order'),
+            h(
+              'p',
+              { class: 'muted' },
+              'Each round runs once the rounds before it are applied; a destroy runs them backwards.',
+            ),
+            h(
+              'ol',
+              { class: 'rounds' },
+              stack.rounds.map((round) =>
+                h(
+                  'li',
+                  {},
+                  h(
+                    'span',
+                    { class: 'chips' },
+                    round.map((name) => unitChip(name)),
+                  ),
+                ),
+              ),
+            ),
+            warnings.length
+              ? [
+                  h('h3', {}, 'Warnings'),
+                  h(
+                    'ul',
+                    { class: 'plain' },
+                    warnings.map((unit) =>
+                      h(
+                        'li',
+                        {},
+                        unitChip(unit.name),
+                        h(
+                          'ul',
+                          {},
+                          unit.warnings.map((warning) => h('li', {}, warning)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]
+              : null,
+            h('h3', {}, 'Legend'),
+            h(
+              'div',
+              { class: 'legend' },
+              lineSample(null),
+              h('span', {}, 'A solid line passes outputs; its number counts them.'),
+              lineSample('5 4'),
+              h('span', {}, 'A dashed line only orders: the unit waits, reading nothing.'),
+              swatch('--up', '--up-soft'),
+              h('span', {}, 'What the selected unit waits for, directly or not.'),
+              swatch('--down', '--down-soft'),
+              h('span', {}, 'What a change of the selected unit can reach.'),
+            ),
+          ]
+        }
+
+        function nodePanel(id) {
+          const unit = units.get(id)
+          const up = reach(id, 'up')
+          const down = reach(id, 'down')
+          const incoming = stack.edges.filter((edge) => edge.to === unit.name)
+          const outgoing = stack.edges.filter((edge) => edge.from === unit.name)
+          const module = unit.module
+          const describe = (label, text) =>
+            text ? h('div', {}, h('h3', {}, label), paragraphs(text)) : null
+          const mock = (o) =>
+            o.mock === null ? h('span', { class: 'faint' }, 'none') : h('code', {}, format(o.mock))
+          return [
+            back(),
+            h('h2', {}, unit.name),
+            h(
+              'p',
+              { class: 'muted mono' },
+              unit.source,
+              module ? ` → ${module.path}` : unit.moduleSource ? ` → ${unit.moduleSource}` : '',
+            ),
+            module
+              ? h(
+                  'div',
+                  { class: 'chips' },
+                  module.providers.map((p) =>
+                    h('span', { class: 'chip' }, `${p.source} ${p.version ?? ''}`),
+                  ),
+                )
+              : null,
+            unit.warnings.length
+              ? h(
+                  'div',
+                  { class: 'warnings' },
+                  h('strong', {}, plural(unit.warnings.length, 'warning')),
+                  h(
+                    'ul',
+                    {},
+                    unit.warnings.map((warning) => h('li', {}, warning)),
+                  ),
+                )
+              : null,
+            describe('In the stack', unit.description),
+            describe('The unit', unit.unitDescription),
+            describe('The module', module?.description),
+            h('h3', {}, 'Blast radius'),
+            h(
+              'p',
+              {},
+              up.size
+                ? [
+                    `Waits for ${plural(up.size, 'unit')}: `,
+                    h(
+                      'span',
+                      { class: 'chips' },
+                      [...up].map((n) => unitChip(n, 'up')),
+                    ),
+                  ]
+                : h('span', { class: 'muted' }, 'Waits for nothing: it runs in the first round.'),
+            ),
+            h(
+              'p',
+              {},
+              down.size
+                ? [
+                    `A change can reach ${plural(down.size, 'unit')}: `,
+                    h(
+                      'span',
+                      { class: 'chips' },
+                      [...down].map((n) => unitChip(n, 'down')),
+                    ),
+                  ]
+                : h('span', { class: 'muted' }, 'Nothing depends on it.'),
+            ),
+            section(
+              'Reads from',
+              incoming.length,
+              true,
+              incoming.length
+                ? h(
+                    'table',
+                    { class: 'auto' },
+                    h(
+                      'tr',
+                      {},
+                      h('th', {}, 'Unit'),
+                      h('th', {}, 'Output → input'),
+                      h('th', {}, 'Mock'),
+                    ),
+                    incoming.flatMap((edge) =>
+                      edge.outputs.length
+                        ? edge.outputs.map((o, index) =>
+                            h(
+                              'tr',
+                              {},
+                              h('td', {}, index === 0 ? unitChip(edge.from, 'up') : null),
+                              h('td', { class: 'mono' }, `${o.output} → ${o.input}`),
+                              h('td', {}, mock(o)),
+                            ),
+                          )
+                        : [
+                            h(
+                              'tr',
+                              {},
+                              h('td', {}, unitChip(edge.from, 'up')),
+                              h('td', { colspan: 2, class: 'muted' }, 'order only'),
+                            ),
+                          ],
+                    ),
+                  )
+                : h('p', { class: 'muted' }, 'No other unit.'),
+            ),
+            section(
+              'Read by',
+              outgoing.length,
+              true,
+              outgoing.length
+                ? h(
+                    'table',
+                    {},
+                    h('tr', {}, h('th', {}, 'Unit'), h('th', {}, 'Output → input')),
+                    outgoing.flatMap((edge) =>
+                      edge.outputs.length
+                        ? edge.outputs.map((o, index) =>
+                            h(
+                              'tr',
+                              {},
+                              h('td', {}, index === 0 ? unitChip(edge.to, 'down') : null),
+                              h('td', { class: 'mono' }, `${o.output} → ${o.input}`),
+                            ),
+                          )
+                        : [
+                            h(
+                              'tr',
+                              {},
+                              h('td', {}, unitChip(edge.to, 'down')),
+                              h('td', { class: 'muted' }, 'order only'),
+                            ),
+                          ],
+                    ),
+                  )
+                : h('p', { class: 'muted' }, 'No other unit.'),
+            ),
+            section(
+              'Values from the stack',
+              unit.values.length,
+              true,
+              unit.values.length
+                ? h(
+                    'table',
+                    {},
+                    unit.values.map((entry) =>
+                      h('tr', {}, h('td', { class: 'key mono' }, entry.key), valueCell(entry)),
+                    ),
+                  )
+                : h('p', { class: 'muted' }, 'None.'),
+            ),
+            section(
+              'Inputs to the module',
+              unit.inputs.length,
+              false,
+              h(
+                'table',
+                {},
+                unit.inputs.map((input) =>
+                  h(
+                    'tr',
+                    {},
+                    h(
+                      'td',
+                      { class: 'key' },
+                      h('span', { class: 'mono' }, input.name),
+                      ' ',
+                      tag(input.from),
+                    ),
+                    input.outputs.length
+                      ? h(
+                          'td',
+                          {},
+                          input.outputs.map((o) =>
+                            h(
+                              'div',
+                              { class: 'mono' },
+                              `${o.input} ← `,
+                              unitChip(o.unit, 'up'),
+                              `.${o.output}`,
+                            ),
+                          ),
+                        )
+                      : valueCell(input),
+                  ),
+                ),
+              ),
+            ),
+            module
+              ? [
+                  section(
+                    'Resources',
+                    module.resources.length,
+                    true,
+                    h(
+                      'ul',
+                      { class: 'plain' },
+                      module.resources.map((r) =>
+                        h(
+                          'li',
+                          {},
+                          h('span', { class: 'mono' }, r.address),
+                          r.repeat ? [' ', h('span', { class: 'faint mono' }, r.repeat)] : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                  section(
+                    'Variables',
+                    module.variables.length,
+                    false,
+                    h(
+                      'table',
+                      {},
+                      module.variables.map((v) =>
+                        h(
+                          'tr',
+                          {},
+                          h(
+                            'td',
+                            { class: 'key' },
+                            h('div', { class: 'mono' }, v.name),
+                            v.type ? h('div', { class: 'faint mono' }, v.type) : null,
+                          ),
+                          h(
+                            'td',
+                            {},
+                            v.description ? h('div', {}, v.description) : null,
+                            h(
+                              'div',
+                              { class: 'chips' },
+                              v.setBy
+                                ? tag(`set by ${v.setBy}`)
+                                : v.required
+                                  ? tag('not set', 'warn')
+                                  : tag('default'),
+                              v.default !== null ? tag(`default ${v.default}`) : null,
+                              v.sensitive ? tag('sensitive') : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  section(
+                    'Outputs',
+                    module.outputs.length,
+                    true,
+                    module.outputs.length
+                      ? h(
+                          'table',
+                          {},
+                          module.outputs.map((o) =>
+                            h(
+                              'tr',
+                              {},
+                              h(
+                                'td',
+                                { class: 'key' },
+                                h('span', { class: 'mono' }, o.name),
+                                o.sensitive ? [' ', tag('sensitive')] : null,
+                              ),
+                              h(
+                                'td',
+                                {},
+                                o.description ? h('div', {}, o.description) : null,
+                                o.consumers.length
+                                  ? h(
+                                      'div',
+                                      { class: 'chips' },
+                                      o.consumers.map((c) =>
+                                        h(
+                                          'span',
+                                          {},
+                                          unitChip(c.unit, 'down'),
+                                          h('span', { class: 'mono faint' }, ` .${c.input}`),
+                                        ),
+                                      ),
+                                    )
+                                  : h('div', { class: 'faint' }, 'Read by no unit of the stack.'),
+                              ),
+                            ),
+                          ),
+                        )
+                      : h('p', { class: 'muted' }, 'None.'),
+                  ),
+                ]
+              : null,
+            section(
+              'Includes',
+              unit.includes.length,
+              false,
+              unit.includes.length
+                ? unit.includes.map((include) =>
+                    h(
+                      'div',
+                      {},
+                      h(
+                        'p',
+                        {},
+                        h('strong', {}, include.name),
+                        ' ',
+                        h('span', { class: 'mono muted' }, include.file),
+                      ),
+                      include.inputs.length
+                        ? h(
+                            'p',
+                            { class: 'muted' },
+                            'Inputs: ',
+                            include.inputs.map((i) => [h('code', {}, i), ' ']),
+                          )
+                        : null,
+                      include.generates.length
+                        ? h(
+                            'p',
+                            { class: 'muted' },
+                            'Generates: ',
+                            include.generates.map((g) => [h('code', {}, g), ' ']),
+                          )
+                        : null,
+                      include.description ? paragraphs(include.description, 'faint') : null,
+                    ),
+                  )
+                : h('p', { class: 'muted' }, 'None.'),
+            ),
+          ]
+        }
+
+        function edgePanel(edge) {
+          return [
+            back(),
+            h('h2', {}, unitChip(edge.from, 'up'), ' → ', unitChip(edge.to, 'down')),
+            edge.kind === 'data'
+              ? [
+                  h(
+                    'p',
+                    { class: 'muted' },
+                    `${edge.to} reads ${plural(edge.outputs.length, 'output')} of ${edge.from}, and is applied after it.`,
+                  ),
+                  h(
+                    'table',
+                    { class: 'auto' },
+                    h(
+                      'tr',
+                      {},
+                      h('th', {}, 'Output'),
+                      h('th', {}, 'Input'),
+                      h('th', {}, 'Mock while unapplied'),
+                    ),
+                    edge.outputs.map((o) =>
+                      h(
+                        'tr',
+                        {},
+                        h('td', { class: 'mono' }, o.output),
+                        h('td', { class: 'mono' }, o.input),
+                        h(
+                          'td',
+                          {},
+                          o.mock === null
+                            ? h('span', { class: 'faint' }, 'none')
+                            : h('code', {}, format(o.mock)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]
+              : h(
+                  'p',
+                  { class: 'muted' },
+                  `${edge.to} is applied after ${edge.from} and reads none of its outputs: it waits for what ${edge.from} writes elsewhere, such as secrets.`,
+                ),
+          ]
+        }
+
+        return {
+          nodes,
+          edges,
+          layout: stack.layout,
+          toggles: [{ kind: 'order', label: 'Order-only edges', on: true }],
+          matches,
+          overview,
+          nodePanel,
+          edgePanel,
+          hint: 'Click a unit or a line. Drag to pan, scroll to zoom, Esc to go back, / to search.',
+        }
+      }
+
+      function deploymentView() {
+        const model = stack.deployment
+        const byId = new Map(model.nodes.map((node) => [node.id, node]))
+        const KIND = {
+          request: 'connects to',
+          internal: 'connects inside the deployment to',
+          names: 'names the address of',
+          config: 'points at',
+          secret: 'holds secrets from',
+          order: 'starts before',
+        }
+        const linesOf = (node) => {
+          switch (node.kind) {
+            case 'container':
+              return [
+                node.label,
+                node.host ?? 'no host: inside the deployment',
+                node.group,
+                [
+                  node.image
+                    ? node.image.replace(/@sha256:.*/, '')
+                    : `build ${node.build?.target ?? ''}`,
+                  node.ports.length ? `:${node.ports.join(', :')}` : '',
+                ]
+                  .filter(Boolean)
+                  .join(' '),
+              ]
+            case 'endpoint':
+              return [
+                node.label,
+                node.provider ? `the ${node.provider} API` : 'outside the deployment',
+                node.ports.length ? `port ${node.ports.join(', ')}` : '',
+                '',
+              ]
+            case 'resource':
+              return [
+                node.label,
+                `unit ${node.unit}`,
+                plural(node.resources.length, 'resource'),
+                node.secrets.length ? plural(node.secrets.length, 'secret') : '',
+              ]
+            case 'secrets':
+              return [
+                node.label,
+                plural(node.names.length, 'secret'),
+                'read at apply and written',
+                'into what holds them',
+              ]
+            default:
+              return [node.label, 'visitors', '', '']
+          }
+        }
+        const nodes = model.nodes.map((node) => ({
+          id: node.id,
+          kind: node.kind,
+          lines: linesOf(node),
+          warn: null,
+        }))
+        const edges = model.links.map((link) => ({
+          ...link,
+          label:
+            ['request', 'internal'].includes(link.kind) && link.via.length > 1
+              ? String(link.via.length)
+              : null,
+          title: `${byId.get(link.from).label} ${KIND[link.kind]} ${byId.get(link.to).label}: ${link.via.map((v) => v.name).join(', ')}`,
+        }))
+        const nodeChip = (id, kind) =>
+          h(
+            'button',
+            { class: `chip ${kind ?? ''}`, onclick: () => select({ node: id }) },
+            byId.get(id).label,
+          )
+
+        function matches(id, query) {
+          const node = byId.get(id)
+          const found = []
+          const test = (text, what) => {
+            if (
+              String(text ?? '')
+                .toLowerCase()
+                .includes(query)
+            )
+              found.push(what)
+          }
+          test(node.label, 'name')
+          test(node.host, 'host')
+          test(node.group, 'group')
+          test(node.image, 'image')
+          for (const entry of node.env ?? []) test(`${entry.name} ${entry.value}`, entry.name)
+          for (const name of node.secrets ?? node.names ?? []) test(name, `secret ${name}`)
+          for (const name of node.resources ?? []) test(name, name)
+          for (const link of model.links.filter((l) => l.from === id || l.to === id))
+            for (const via of link.via) test(`${via.name} ${via.value ?? ''}`, via.name)
+          return [...new Set(found)]
+        }
+
+        const linksTable = (links, side) =>
+          links.length
+            ? h(
+                'table',
+                {},
+                links.flatMap((link) =>
+                  link.via.map((via, index) =>
+                    h(
+                      'tr',
+                      {},
+                      h(
+                        'td',
+                        { class: 'key' },
+                        index === 0
+                          ? [
+                              nodeChip(link[side], side === 'from' ? 'up' : 'down'),
+                              ' ',
+                              tag(link.kind),
+                            ]
+                          : null,
+                      ),
+                      h(
+                        'td',
+                        {},
+                        h('div', { class: 'mono' }, via.name),
+                        via.value === null
+                          ? null
+                          : h('div', { class: 'mono faint' }, marked(via.value)),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : h('p', { class: 'muted' }, 'Nothing.')
+
+        function overview() {
+          const containers = model.nodes.filter((node) => node.kind === 'container')
+          const groups = [...new Set(containers.map((node) => node.group))]
+          return [
+            h('h2', {}, `${stack.environment}: the deployment`),
+            h(
+              'p',
+              { class: 'muted' },
+              `${plural(containers.length, 'container')} on ${plural(model.server.length, 'server')}. `,
+              'Read from the code alone: the compose files, the units’ modules evaluated with their inputs, and env.yaml. What is running may differ; a value only a run knows is set apart, ',
+              tag('like this'),
+              '.',
+            ),
+            model.warnings.length
+              ? h(
+                  'div',
+                  { class: 'warnings' },
+                  h(
+                    'ul',
+                    {},
+                    model.warnings.map((warning) => h('li', {}, warning)),
+                  ),
+                )
+              : null,
+            model.server.map((server) =>
+              h(
+                'div',
+                {},
+                h('h3', {}, 'Server'),
+                h('p', {}, 'Coolify server ', h('code', {}, server.uuid)),
+                server.addresses.length
+                  ? h(
+                      'p',
+                      { class: 'muted' },
+                      'At ',
+                      server.addresses.map((a) => [h('code', {}, a), ' ']),
+                    )
+                  : null,
+                server.api
+                  ? h('p', { class: 'muted' }, 'Run through Coolify at ', h('code', {}, server.api))
+                  : null,
+              ),
+            ),
+            groups.map((group) => [
+              h('h3', {}, group),
+              h(
+                'div',
+                { class: 'chips' },
+                containers.filter((node) => node.group === group).map((node) => nodeChip(node.id)),
+              ),
+            ]),
+            h('h3', {}, 'Outside the deployment'),
+            h(
+              'div',
+              { class: 'chips' },
+              model.nodes
+                .filter((node) => ['endpoint', 'resource', 'secrets'].includes(node.kind))
+                .map((node) => nodeChip(node.id)),
+            ),
+            h('h3', {}, 'Legend'),
+            h(
+              'div',
+              { class: 'legend' },
+              lineSample(null),
+              h(
+                'span',
+                {},
+                'Connects: an address in its environment, its number counting the variables.',
+              ),
+              lineSample('8 3'),
+              h(
+                'span',
+                {},
+                'Points at: a resource outside, such as a CI variable or an auth hook, holds the address.',
+              ),
+              lineSample('5 4'),
+              h('span', {}, 'Names an address, or starts before another container.'),
+              lineSample('2 3', 'var(--secret)'),
+              h('span', {}, 'Holds secrets, read from the secret store at apply.'),
+              swatch('--up', '--up-soft'),
+              h('span', {}, 'What reaches the selected part, directly or not.'),
+              swatch('--down', '--down-soft'),
+              h('span', {}, 'What the selected part reaches.'),
+            ),
+          ]
+        }
+
+        function nodePanel(id) {
+          const node = byId.get(id)
+          const incoming = model.links.filter((link) => link.to === id)
+          const outgoing = model.links.filter((link) => link.from === id)
+          const head = [back(), h('h2', {}, node.label)]
+          const linked = [
+            section('Reached from', incoming.length, true, linksTable(incoming, 'from')),
+            section('Reaches', outgoing.length, true, linksTable(outgoing, 'to')),
+          ]
+          if (node.kind === 'container') {
+            return [
+              head,
+              h(
+                'p',
+                { class: 'muted' },
+                node.group,
+                ', unit ',
+                h('button', { class: 'link', onclick: () => goto('code', node.unit) }, node.unit),
+              ),
+              node.url
+                ? h(
+                    'p',
+                    {},
+                    h('a', { href: node.url, target: '_blank', rel: 'noopener' }, node.url),
+                  )
+                : h('p', { class: 'muted' }, 'No host: reached only inside the deployment.'),
+              node.records.length
+                ? h(
+                    'p',
+                    { class: 'muted' },
+                    'DNS: ',
+                    node.records.map((r) => [h('code', {}, `${r.type} ${r.data}`), ' ']),
+                  )
+                : null,
+              h(
+                'table',
+                {},
+                h(
+                  'tr',
+                  {},
+                  h('td', { class: 'key muted' }, node.image ? 'Image' : 'Built'),
+                  h(
+                    'td',
+                    { class: 'mono' },
+                    node.image ?? `target ${node.build?.target ?? '(default)'}`,
+                  ),
+                ),
+                node.build && Object.keys(node.build.args).length
+                  ? h(
+                      'tr',
+                      {},
+                      h('td', { class: 'key muted' }, 'Build arguments'),
+                      h(
+                        'td',
+                        {},
+                        Object.entries(node.build.args).map(([k, v]) =>
+                          h('div', { class: 'mono' }, `${k} = `, marked(v)),
+                        ),
+                      ),
+                    )
+                  : null,
+                h(
+                  'tr',
+                  {},
+                  h('td', { class: 'key muted' }, 'Ports'),
+                  h('td', { class: 'mono' }, node.ports.join(', ') || 'none exposed'),
+                ),
+                Object.keys(node.dependsOn).length
+                  ? h(
+                      'tr',
+                      {},
+                      h('td', { class: 'key muted' }, 'Starts after'),
+                      h(
+                        'td',
+                        {},
+                        Object.entries(node.dependsOn).map(([name, condition]) =>
+                          h('div', { class: 'mono' }, `${name} (${condition})`),
+                        ),
+                      ),
+                    )
+                  : null,
+                node.volumes.length
+                  ? h(
+                      'tr',
+                      {},
+                      h('td', { class: 'key muted' }, 'Volumes'),
+                      h('td', { class: 'mono' }, node.volumes.join(', ')),
+                    )
+                  : null,
+                h(
+                  'tr',
+                  {},
+                  h('td', { class: 'key muted' }, 'Health check'),
+                  h('td', {}, node.health ? 'yes' : 'none'),
+                ),
+                h(
+                  'tr',
+                  {},
+                  h('td', { class: 'key muted' }, 'Server'),
+                  h('td', { class: 'mono' }, node.server ?? 'not named'),
+                ),
+              ),
+              linked,
+              node.secrets.length
+                ? section(
+                    'Secrets',
+                    node.secrets.length,
+                    false,
+                    h(
+                      'div',
+                      { class: 'chips' },
+                      node.secrets.map((name) => tag(name, 'secret')),
+                    ),
+                  )
+                : null,
+              section(
+                'Environment',
+                node.env.length,
+                false,
+                h(
+                  'table',
+                  {},
+                  node.env.map((entry) =>
+                    h(
+                      'tr',
+                      {},
+                      h('td', { class: 'key mono' }, entry.name),
+                      h(
+                        'td',
+                        {},
+                        h('div', { class: 'mono' }, marked(entry.value)),
+                        entry.from.length
+                          ? h(
+                              'div',
+                              { class: 'faint' },
+                              'set by the unit as ',
+                              entry.from.join(', '),
+                            )
+                          : h('div', { class: 'faint' }, 'written in the compose file'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ]
+          }
+          if (node.kind === 'resource') {
+            return [
+              head,
+              h(
+                'p',
+                { class: 'muted' },
+                'Resources of the ',
+                node.label,
+                ' provider in the unit ',
+                h('button', { class: 'link', onclick: () => goto('code', node.unit) }, node.unit),
+                ' that name an address or hold a secret.',
+              ),
+              h(
+                'ul',
+                { class: 'plain' },
+                node.resources.map((name) => h('li', { class: 'mono' }, name)),
+              ),
+              linked,
+              node.secrets.length
+                ? section(
+                    'Secrets',
+                    node.secrets.length,
+                    false,
+                    h(
+                      'div',
+                      { class: 'chips' },
+                      node.secrets.map((name) => tag(name, 'secret')),
+                    ),
+                  )
+                : null,
+            ]
+          }
+          if (node.kind === 'secrets') {
+            return [
+              head,
+              h(
+                'p',
+                { class: 'muted' },
+                'Secrets read from the secret store when a unit is applied, and written into what holds them.',
+              ),
+              h(
+                'div',
+                { class: 'chips' },
+                node.names.map((name) => tag(name, 'secret')),
+              ),
+              linked,
+            ]
+          }
+          if (node.kind === 'endpoint') {
+            return [
+              head,
+              h(
+                'p',
+                { class: 'muted' },
+                node.provider
+                  ? `The API of the ${node.provider} provider.`
+                  : 'Outside the deployment.',
+                node.ports.length ? ` Port ${node.ports.join(', ')}.` : '',
+              ),
+              linked,
+            ]
+          }
+          return [head, h('p', { class: 'muted' }, 'Visitors, from the internet.'), linked]
+        }
+
+        function edgePanel(edge) {
+          return [
+            back(),
+            h('h2', {}, nodeChip(edge.from, 'up'), ' → ', nodeChip(edge.to, 'down')),
+            h(
+              'p',
+              { class: 'muted' },
+              `${byId.get(edge.from).label} ${KIND[edge.kind]} ${byId.get(edge.to).label}.`,
+            ),
+            h(
+              'table',
+              {},
+              edge.via.map((via) =>
+                h(
+                  'tr',
+                  {},
+                  h('td', { class: 'key mono' }, via.name),
+                  h('td', { class: 'mono' }, via.value === null ? '' : marked(via.value)),
+                ),
+              ),
+            ),
+          ]
+        }
+
+        return {
+          nodes,
+          edges,
+          layout: model.layout,
+          toggles: [
+            { kind: 'names', label: 'Named addresses', on: false },
+            { kind: 'secret', label: 'Secrets', on: false },
+            { kind: 'order', label: 'Start order', on: true },
+          ],
+          matches,
+          overview,
+          nodePanel,
+          edgePanel,
+          hint: 'Click a part or a line. Drag to pan, scroll to zoom, Esc to go back, / to search.',
+        }
+      }
 
       // ----- relations ---------------------------------------------------------------------------
+      const edgeId = (edge) => `${edge.from}>${edge.to}`
+      const visible = (edge) => !(edge.kind in state.shown) || state.shown[edge.kind]
       function reach(start, direction) {
         const seen = new Set()
         const queue = [start]
         while (queue.length) {
           const name = queue.shift()
-          for (const edge of stack.edges) {
+          for (const edge of current().edges.filter(visible)) {
             const [from, to] = direction === 'down' ? [edge.from, edge.to] : [edge.to, edge.from]
             if (from === name && !seen.has(to) && to !== start) {
               seen.add(to)
@@ -553,60 +1681,27 @@
         }
         return seen
       }
-      const edgeId = (edge) => `${edge.from}>${edge.to}`
-
-      // ----- search ------------------------------------------------------------------------------
-      function matchesOf(unit, query) {
-        if (!query) return []
-        const found = []
-        const test = (text, what) => {
-          if (String(text).toLowerCase().includes(query)) found.push(what)
-        }
-        test(unit.name, 'name')
-        test(unit.source, 'unit source')
-        for (const value of unit.values)
-          test(
-            `${value.key} ${value.known ? format(value.value) : value.expression}`,
-            `value ${value.key}`,
-          )
-        for (const input of unit.inputs) test(input.name, `input ${input.name}`)
-        if (unit.module) {
-          test(unit.module.path, 'module')
-          for (const r of unit.module.resources) test(r.address, r.address)
-          for (const v of unit.module.variables) test(v.name, `variable ${v.name}`)
-          for (const o of unit.module.outputs) test(o.name, `output ${o.name}`)
-          for (const p of unit.module.providers) test(p.source, `provider ${p.source}`)
-        }
-        return [...new Set(found)]
-      }
 
       // ----- the graph ---------------------------------------------------------------------------
       const viewport = document.getElementById('viewport')
-      const nodeElements = new Map()
-      const edgeElements = new Map()
-      const labelElements = new Map()
+      const elements = { nodes: new Map(), edges: new Map(), labels: new Map() }
 
-      const routes = stack.layout.routes
-      // The points an edge passes through: out of its unit, through the slots of the columns it
-      // skips, into the other unit
-      function ports() {
-        // Spread the ends of the edges along a unit's side, in the order of where they head
-        const outgoing = new Map()
-        const incoming = new Map()
-        for (const edge of stack.edges) {
-          if (!outgoing.has(edge.from)) outgoing.set(edge.from, [])
-          if (!incoming.has(edge.to)) incoming.set(edge.to, [])
-          outgoing.get(edge.from).push(edge)
-          incoming.get(edge.to).push(edge)
-        }
-        const centreY = (box) => box.y + box.height / 2
-        const nextY = (edge) => routes[edgeId(edge)][0]?.[1] ?? centreY(layout[edge.to])
-        const previousY = (edge) => routes[edgeId(edge)].at(-1)?.[1] ?? centreY(layout[edge.from])
+      function drawGraph(view) {
+        viewport.replaceChildren()
+        for (const map of Object.values(elements)) map.clear()
+        const layout = view.layout.nodes
+        const routes = view.layout.routes
+        // Spread the ends of the edges along a node's side, in the order of where they head
         const at = new Map()
-        const spread = (map, position, end) => {
-          for (const [name, list] of map) {
+        const spread = (key, position, end) => {
+          const groups = new Map()
+          for (const edge of view.edges) {
+            if (!groups.has(edge[key])) groups.set(edge[key], [])
+            groups.get(edge[key]).push(edge)
+          }
+          for (const [id, list] of groups) {
             list.sort((a, b) => position(a) - position(b))
-            const box = layout[name]
+            const box = layout[id]
             list.forEach((edge, index) => {
               at.set(
                 `${edgeId(edge)}:${end}`,
@@ -615,140 +1710,128 @@
             })
           }
         }
-        spread(outgoing, nextY, 'from')
-        spread(incoming, previousY, 'to')
-        return at
-      }
+        const centreY = (box) => box.y + box.height / 2
+        spread(
+          'from',
+          (edge) => (routes[edgeId(edge)] ?? [])[0]?.[1] ?? centreY(layout[edge.to]),
+          'from',
+        )
+        spread(
+          'to',
+          (edge) => (routes[edgeId(edge)] ?? []).at(-1)?.[1] ?? centreY(layout[edge.from]),
+          'to',
+        )
 
-      function pathOf(points) {
-        // Curves between columns, straight runs through a slot
-        let d = `M ${points[0][0]} ${points[0][1]}`
-        for (let index = 1; index < points.length; index++) {
-          const [ax, ay] = points[index - 1]
-          const [bx, by] = points[index]
-          if (ay === by) {
-            d += ` L ${bx} ${by}`
-          } else {
-            const bend = Math.max(30, (bx - ax) / 2)
-            d += ` C ${ax + bend} ${ay}, ${bx - bend} ${by}, ${bx} ${by}`
+        const pathOf = (points) => {
+          let d = `M ${points[0][0]} ${points[0][1]}`
+          for (let index = 1; index < points.length; index++) {
+            const [ax, ay] = points[index - 1]
+            const [bx, by] = points[index]
+            if (ay === by) {
+              d += ` L ${bx} ${by}`
+            } else {
+              const bend = Math.max(30, Math.abs(bx - ax) / 2)
+              d += ` C ${ax + bend} ${ay}, ${bx - bend} ${by}, ${bx} ${by}`
+            }
           }
+          return d
         }
-        return d
-      }
 
-      function drawGraph() {
-        const at = ports()
         const edgeLayer = s('g')
-        const labelLayer = s('g')
         const nodeLayer = s('g')
-        for (const edge of stack.edges) {
+        const labelLayer = s('g')
+        for (const edge of view.edges) {
           const a = layout[edge.from]
           const b = layout[edge.to]
           const points = [
             [a.x + a.width, at.get(`${edgeId(edge)}:from`)],
-            ...routes[edgeId(edge)],
+            ...(routes[edgeId(edge)] ?? []),
             [b.x - 2, at.get(`${edgeId(edge)}:to`)],
           ]
           const d = pathOf(points)
           const title = s('title')
-          title.textContent =
-            edge.kind === 'data'
-              ? `${edge.to} reads from ${edge.from}: ${edge.outputs.map((o) => `${o.output} → ${o.input}`).join(', ')}`
-              : `${edge.to} is applied after ${edge.from}, reading none of its outputs`
+          title.textContent = edge.title
           const group = s(
             'g',
-            { class: `edge ${edge.kind}`, 'data-edge': edgeId(edge) },
+            { class: `edge ${edge.kind}` },
             title,
             s('path', { class: 'line', d, 'marker-end': 'url(#arrow)' }),
             s('path', { class: 'hit', d }),
           )
-          if (edge.kind === 'data') {
-            // The count of outputs just before the arrow, on the last curve
+          group.addEventListener('click', (event) => {
+            event.stopPropagation()
+            select({ edge: edgeId(edge) })
+          })
+          edgeLayer.append(group)
+          elements.edges.set(edgeId(edge), group)
+          if (edge.label) {
             const [ax, ay] = points.at(-2)
             const [bx, by] = points.at(-1)
             const mx = bx - Math.min(46, (bx - ax) * 0.35)
             const my = ay + (by - ay) * 0.93
-            const text = String(edge.outputs.length)
-            const width = 10 + text.length * 7
+            const width = 10 + edge.label.length * 7
             const label = s(
               'g',
-              {
-                class: 'edge-label',
-                'data-edge': edgeId(edge),
-                transform: `translate(${mx - width / 2} ${my - 9})`,
-              },
+              { class: 'edge-label', transform: `translate(${mx - width / 2} ${my - 9})` },
               s('rect', { width, height: 18, rx: 9 }),
-              s('text', { x: width / 2, y: 13, 'text-anchor': 'middle' }, text),
+              s('text', { x: width / 2, y: 13, 'text-anchor': 'middle' }, edge.label),
             )
             label.addEventListener('click', (event) => {
               event.stopPropagation()
               select({ edge: edgeId(edge) })
             })
             labelLayer.append(label)
-            labelElements.set(edgeId(edge), label)
+            elements.labels.set(edgeId(edge), label)
           }
-          group.addEventListener('click', (event) => {
-            event.stopPropagation()
-            select({ edge: edgeId(edge) })
-          })
-          edgeLayer.append(group)
-          edgeElements.set(edgeId(edge), group)
         }
-        for (const unit of stack.units) {
-          const box = layout[unit.name]
-          const providers = unit.module ? unit.module.providers.map((p) => p.name).join(' · ') : ''
-          const resources = resourceCount(unit)
-          const data = unit.module
-            ? unit.module.resources.filter((r) => r.kind !== 'resource').length
-            : 0
-          const counts = unit.module
-            ? `${plural(resources, 'resource')}${data ? ` · ${data} data` : ''}`
-            : 'module outside this repository'
-          const sub = unit.module
-            ? unit.module.path.replace(/^infra\/modules\//, 'module ')
-            : unit.source
+        for (const node of view.nodes) {
+          const box = layout[node.id]
+          const [name, ...rest] = node.lines
           const children = [
-            s('rect', { width: box.width, height: box.height, rx: 10 }),
-            s('text', { class: 'name', x: 14, y: 24 }, unit.name),
-            s('text', { class: 'sub', x: 14, y: 42 }, sub),
-            s('text', { class: 'sub', x: 14, y: 59 }, providers),
-            s('text', { class: 'count', x: 14, y: 78 }, counts),
+            s('rect', { class: 'box', width: box.width, height: box.height, rx: 10 }),
+            s('rect', { class: 'stripe', width: 4, height: box.height - 20, x: 0, y: 10, rx: 2 }),
+            s('title', {}, node.lines.filter(Boolean).join('\n')),
+            s('text', { class: 'name', x: 14, y: 24 }, clip(name, 26)),
+            ...rest.map((line, index) =>
+              s('text', { class: 'sub', x: 14, y: 42 + index * 17 }, clip(line, 32)),
+            ),
           ]
-          if (unit.warnings.length) {
+          if (node.warn) {
             children.push(
               s(
                 'text',
                 { class: 'warn', x: box.width - 12, y: 24, 'text-anchor': 'end' },
-                plural(unit.warnings.length, 'warning'),
+                node.warn,
               ),
             )
           }
           const group = s(
             'g',
             {
-              class: 'node',
+              class: `node ${node.kind}`,
               transform: `translate(${box.x} ${box.y})`,
               tabindex: '0',
               role: 'button',
-              'aria-label': `Unit ${unit.name}`,
+              'aria-label': name,
             },
             ...children,
           )
           group.addEventListener('click', (event) => {
             event.stopPropagation()
-            select({ unit: unit.name })
+            select({ node: node.id })
           })
           group.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault()
-              select({ unit: unit.name })
+              select({ node: node.id })
             }
           })
           nodeLayer.append(group)
-          nodeElements.set(unit.name, group)
+          elements.nodes.set(node.id, group)
         }
         viewport.append(edgeLayer, nodeLayer, labelLayer)
       }
+      const clip = (text, length) => (text.length > length ? `${text.slice(0, length - 1)}…` : text)
 
       // ----- pan and zoom ------------------------------------------------------------------------
       const graph = document.getElementById('graph')
@@ -758,10 +1841,11 @@
         viewport.setAttribute('transform', `translate(${view.x} ${view.y}) scale(${view.k})`)
       function fit() {
         const { width, height } = svg.getBoundingClientRect()
-        const k = Math.min(width / stack.layout.width, height / stack.layout.height, 1.4)
-        view.k = k > 0 ? k : 1
-        view.x = (width - stack.layout.width * view.k) / 2
-        view.y = (height - stack.layout.height * view.k) / 2
+        const { layout } = current()
+        const k = Math.min(width / layout.width, height / layout.height, 1.4)
+        view.k = k > 0 && Number.isFinite(k) ? k : 1
+        view.x = (width - layout.width * view.k) / 2
+        view.y = (height - layout.height * view.k) / 2
         apply()
       }
       function zoom(factor, cx, cy) {
@@ -814,50 +1898,60 @@
       document.getElementById('fit').addEventListener('click', fit)
       window.addEventListener('resize', fit)
 
-      // ----- selection and highlighting ----------------------------------------------------------
+      // ----- selection, views and highlighting ---------------------------------------------------
+      function writeHash() {
+        const parameters = new URLSearchParams({ view: state.view })
+        if (state.selected?.node) parameters.set('node', state.selected.node)
+        if (state.selected?.edge) parameters.set('edge', state.selected.edge)
+        history.replaceState(null, '', `#${parameters}`)
+      }
       function select(selection) {
         state.selected = selection
-        const hash = selection?.unit
-          ? `#unit=${encodeURIComponent(selection.unit)}`
-          : selection?.edge
-            ? `#edge=${encodeURIComponent(selection.edge)}`
-            : ' '
-        history.replaceState(null, '', hash === ' ' ? location.pathname + location.search : hash)
+        writeHash()
         render()
+      }
+      function goto(name, node = null) {
+        state.view = name
+        state.selected = node ? { node } : null
+        state.query = ''
+        search.value = ''
+        setup()
       }
 
       function highlight() {
-        const selected = state.selected?.unit ?? null
+        const view = current()
+        const selected = state.selected?.node ?? null
         const up = selected ? reach(selected, 'up') : new Set()
         const down = selected ? reach(selected, 'down') : new Set()
         const query = state.query
         const matching = new Set(
-          stack.units.filter((unit) => matchesOf(unit, query).length).map((unit) => unit.name),
+          view.nodes
+            .filter((node) => query && view.matches(node.id, query).length)
+            .map((node) => node.id),
         )
-        for (const [name, element] of nodeElements) {
-          element.classList.toggle('selected', name === selected)
-          element.classList.toggle('up', up.has(name))
-          element.classList.toggle('down', down.has(name))
-          element.classList.toggle('match', Boolean(query) && matching.has(name))
-          const outside = selected && name !== selected && !up.has(name) && !down.has(name)
-          const unmatched = query && !matching.has(name)
-          element.classList.toggle('dim', Boolean(outside || unmatched))
+        for (const [id, element] of elements.nodes) {
+          element.classList.toggle('selected', id === selected)
+          element.classList.toggle('up', up.has(id))
+          element.classList.toggle('down', down.has(id))
+          element.classList.toggle('match', matching.has(id))
+          const outside = selected && id !== selected && !up.has(id) && !down.has(id)
+          element.classList.toggle('dim', Boolean(outside || (query && !matching.has(id))))
         }
-        for (const edge of stack.edges) {
-          const element = edgeElements.get(edgeId(edge))
+        for (const edge of view.edges) {
+          const element = elements.edges.get(edgeId(edge))
           const upward = selected && up.has(edge.from) && (up.has(edge.to) || edge.to === selected)
           const downward =
             selected && down.has(edge.to) && (down.has(edge.from) || edge.from === selected)
           element.classList.toggle('up', Boolean(upward))
           element.classList.toggle('down', Boolean(downward))
           element.classList.toggle('selected', state.selected?.edge === edgeId(edge))
-          element.classList.toggle('hidden', !state.order && edge.kind === 'order')
+          element.classList.toggle('hidden', !visible(edge))
           const quiet =
             (selected && !upward && !downward) ||
             (query && !(matching.has(edge.from) && matching.has(edge.to))) ||
             (state.selected?.edge && state.selected.edge !== edgeId(edge))
           element.classList.toggle('dim', Boolean(quiet))
-          const label = labelElements.get(edgeId(edge))
+          const label = elements.labels.get(edgeId(edge))
           if (label) {
             for (const name of ['dim', 'hidden'])
               label.classList.toggle(name, element.classList.contains(name))
@@ -865,582 +1959,99 @@
         }
       }
 
-      // ----- the panel ---------------------------------------------------------------------------
       const panel = document.getElementById('panel')
-
-      function overview() {
-        const warnings = stack.units.filter((unit) => unit.warnings.length)
-        const resources = stack.units.reduce((sum, unit) => sum + resourceCount(unit), 0)
-        const query = state.query
-        const matches = query
-          ? stack.units
-              .map((unit) => [unit, matchesOf(unit, query)])
-              .filter(([, found]) => found.length)
-          : []
-        return [
-          h('h2', {}, stack.environment),
-          h(
-            'p',
-            { class: 'muted' },
-            `${plural(stack.units.length, 'unit')}, ${plural(stack.edges.length, 'dependency', 'dependencies')}, ${plural(resources, 'resource')}. `,
-            'Read from the checkout alone: values that need a run, such as other units’ outputs and secrets, are shown as written.',
-          ),
-          query
-            ? [
-                h('h3', {}, `Matches for “${query}”`),
-                matches.length
-                  ? h(
-                      'ul',
-                      { class: 'plain' },
-                      matches.map(([unit, found]) =>
-                        h(
-                          'li',
-                          {},
-                          unitChip(unit.name),
-                          ' ',
-                          h(
-                            'span',
-                            { class: 'muted' },
-                            found.slice(0, 6).join(', ') +
-                              (found.length > 6 ? ` and ${found.length - 6} more` : ''),
-                          ),
-                        ),
-                      ),
-                    )
-                  : h('p', { class: 'muted' }, 'Nothing matches.'),
-              ]
-            : null,
-          stack.cycle.length
-            ? h(
-                'div',
-                { class: 'warnings' },
-                h('strong', {}, 'Dependency cycle: '),
-                stack.cycle.join(', '),
-                '. Terragrunt refuses to run these units.',
-              )
-            : null,
-          h('h3', {}, 'Apply order'),
-          h(
-            'p',
-            { class: 'muted' },
-            'Each round runs once the rounds before it are applied; a destroy runs them backwards.',
-          ),
-          h(
-            'ol',
-            { class: 'rounds' },
-            stack.rounds.map((round) =>
-              h(
-                'li',
-                {},
-                h(
-                  'span',
-                  { class: 'chips' },
-                  round.map((name) => unitChip(name)),
-                ),
-              ),
-            ),
-          ),
-          warnings.length
-            ? [
-                h('h3', {}, 'Warnings'),
-                h(
-                  'ul',
-                  { class: 'plain' },
-                  warnings.map((unit) =>
-                    h(
-                      'li',
-                      {},
-                      unitChip(unit.name),
-                      h(
-                        'ul',
-                        {},
-                        unit.warnings.map((warning) => h('li', {}, warning)),
-                      ),
-                    ),
-                  ),
-                ),
-              ]
-            : null,
-          h('h3', {}, 'Legend'),
-          h(
-            'div',
-            { class: 'legend' },
-            lineSample(null),
-            h('span', {}, 'A solid line passes outputs; its number counts them.'),
-            lineSample('5 4'),
-            h('span', {}, 'A dashed line only orders: the unit waits, reading nothing.'),
-            h('span', {
-              class: 'swatch',
-              style: 'border-color: var(--up); background: var(--up-soft)',
-            }),
-            h('span', {}, 'What the selected unit waits for, directly or not.'),
-            h('span', {
-              class: 'swatch',
-              style: 'border-color: var(--down); background: var(--down-soft)',
-            }),
-            h('span', {}, 'What a change of the selected unit can reach.'),
-          ),
-          h(
-            'p',
-            { class: 'faint' },
-            'Click a unit or a line. Drag to pan, scroll to zoom, Esc to go back, / to search.',
-          ),
-        ]
-      }
-
-      function lineSample(dash) {
-        const line = s('line', {
-          x1: 0,
-          y1: 5,
-          x2: 30,
-          y2: 5,
-          stroke: 'var(--edge)',
-          'stroke-width': 2,
-        })
-        if (dash) line.setAttribute('stroke-dasharray', dash)
-        return s('svg', { width: 30, height: 10, 'aria-hidden': 'true' }, line)
-      }
-
-      // A comment's lines joined into its paragraphs, which blank lines separate
-      const paragraphs = (text, kind = '') =>
-        text
-          .split(/\n\s*\n/)
-          .map((paragraph) => h('p', { class: kind }, paragraph.replace(/\s*\n\s*/g, ' ')))
-
-      // An expression written over several lines, without the indentation of the file it came from
-      function dedent(text) {
-        const [head, ...rest] = text.split('\n')
-        const indents = rest
-          .filter((line) => line.trim())
-          .map((line) => line.match(/^ */)[0].length)
-        const cut = Math.min(...indents, Infinity)
-        return [head, ...rest.map((line) => line.slice(Math.max(0, cut - 2)))].join('\n')
-      }
-
-      function valueCell(entry) {
-        if (entry.known) {
-          return h(
-            'td',
-            { title: entry.expression },
-            h('pre', {}, format(entry.value)),
-            entry.overrides.map((name) => [' ', tag(`${name} overrides`, 'accent')]),
-          )
-        }
-        return h('td', {}, h('pre', {}, dedent(entry.expression)), tag('computed at run'))
-      }
-
-      function unitPanel(unit) {
-        const up = reach(unit.name, 'up')
-        const down = reach(unit.name, 'down')
-        const incoming = stack.edges.filter((edge) => edge.to === unit.name)
-        const outgoing = stack.edges.filter((edge) => edge.from === unit.name)
-        const module = unit.module
-        const describe = (label, text) =>
-          text ? h('div', {}, h('h3', {}, label), paragraphs(text)) : null
-        return [
-          h(
-            'div',
-            { class: 'back' },
-            h('button', { class: 'link', onclick: () => select(null) }, '← Overview'),
-          ),
-          h('h2', {}, unit.name),
-          h(
-            'p',
-            { class: 'muted mono' },
-            unit.source,
-            module ? ` → ${module.path}` : unit.moduleSource ? ` → ${unit.moduleSource}` : '',
-          ),
-          module
-            ? h(
-                'div',
-                { class: 'chips' },
-                module.providers.map((p) =>
-                  h('span', { class: 'chip' }, `${p.source} ${p.version ?? ''}`),
-                ),
-              )
-            : null,
-          unit.warnings.length
-            ? h(
-                'div',
-                { class: 'warnings' },
-                h('strong', {}, plural(unit.warnings.length, 'warning')),
-                h(
-                  'ul',
-                  {},
-                  unit.warnings.map((warning) => h('li', {}, warning)),
-                ),
-              )
-            : null,
-          describe('In the stack', unit.description),
-          describe('The unit', unit.unitDescription),
-          describe('The module', module?.description),
-          h('h3', {}, 'Blast radius'),
-          h(
-            'p',
-            {},
-            up.size
-              ? [
-                  `Waits for ${plural(up.size, 'unit')}: `,
-                  h(
-                    'span',
-                    { class: 'chips' },
-                    [...up].map((n) => unitChip(n, 'up')),
-                  ),
-                ]
-              : h('span', { class: 'muted' }, 'Waits for nothing: it runs in the first round.'),
-          ),
-          h(
-            'p',
-            {},
-            down.size
-              ? [
-                  `A change can reach ${plural(down.size, 'unit')}: `,
-                  h(
-                    'span',
-                    { class: 'chips' },
-                    [...down].map((n) => unitChip(n, 'down')),
-                  ),
-                ]
-              : h('span', { class: 'muted' }, 'Nothing depends on it.'),
-          ),
-
-          section(
-            'Reads from',
-            incoming.length,
-            true,
-            incoming.length
-              ? h(
-                  'table',
-                  { class: 'auto' },
-                  h(
-                    'tr',
-                    {},
-                    h('th', {}, 'Unit'),
-                    h('th', {}, 'Output → input'),
-                    h('th', {}, 'Mock'),
-                  ),
-                  incoming.flatMap((edge) =>
-                    edge.outputs.length
-                      ? edge.outputs.map((o, index) =>
-                          h(
-                            'tr',
-                            {},
-                            h('td', {}, index === 0 ? unitChip(edge.from, 'up') : null),
-                            h('td', { class: 'mono' }, `${o.output} → ${o.input}`),
-                            h(
-                              'td',
-                              {},
-                              o.mock === null
-                                ? h('span', { class: 'faint' }, 'none')
-                                : h('code', {}, format(o.mock)),
-                            ),
-                          ),
-                        )
-                      : [
-                          h(
-                            'tr',
-                            {},
-                            h('td', {}, unitChip(edge.from, 'up')),
-                            h('td', { colspan: 2, class: 'muted' }, 'order only'),
-                          ),
-                        ],
-                  ),
-                )
-              : h('p', { class: 'muted' }, 'No other unit.'),
-          ),
-          section(
-            'Read by',
-            outgoing.length,
-            true,
-            outgoing.length
-              ? h(
-                  'table',
-                  {},
-                  h('tr', {}, h('th', {}, 'Unit'), h('th', {}, 'Output → input')),
-                  outgoing.flatMap((edge) =>
-                    edge.outputs.length
-                      ? edge.outputs.map((o, index) =>
-                          h(
-                            'tr',
-                            {},
-                            h('td', {}, index === 0 ? unitChip(edge.to, 'down') : null),
-                            h('td', { class: 'mono' }, `${o.output} → ${o.input}`),
-                          ),
-                        )
-                      : [
-                          h(
-                            'tr',
-                            {},
-                            h('td', {}, unitChip(edge.to, 'down')),
-                            h('td', { class: 'muted' }, 'order only'),
-                          ),
-                        ],
-                  ),
-                )
-              : h('p', { class: 'muted' }, 'No other unit.'),
-          ),
-          section(
-            'Values from the stack',
-            unit.values.length,
-            true,
-            unit.values.length
-              ? h(
-                  'table',
-                  {},
-                  unit.values.map((entry) =>
-                    h('tr', {}, h('td', { class: 'key mono' }, entry.key), valueCell(entry)),
-                  ),
-                )
-              : h('p', { class: 'muted' }, 'None.'),
-          ),
-          section(
-            'Inputs to the module',
-            unit.inputs.length,
-            false,
-            h(
-              'table',
-              {},
-              unit.inputs.map((input) =>
-                h(
-                  'tr',
-                  {},
-                  h(
-                    'td',
-                    { class: 'key' },
-                    h('span', { class: 'mono' }, input.name),
-                    ' ',
-                    tag(input.from),
-                  ),
-                  input.outputs.length
-                    ? h(
-                        'td',
-                        {},
-                        input.outputs.map((o) =>
-                          h(
-                            'div',
-                            { class: 'mono' },
-                            `${o.input} ← `,
-                            unitChip(o.unit, 'up'),
-                            `.${o.output}`,
-                          ),
-                        ),
-                      )
-                    : valueCell(input),
-                ),
-              ),
-            ),
-          ),
-          module
-            ? [
-                section(
-                  'Resources',
-                  module.resources.length,
-                  true,
-                  h(
-                    'ul',
-                    { class: 'plain' },
-                    module.resources.map((r) =>
-                      h(
-                        'li',
-                        {},
-                        h('span', { class: 'mono' }, r.address),
-                        r.repeat ? [' ', h('span', { class: 'faint mono' }, r.repeat)] : null,
-                      ),
-                    ),
-                  ),
-                ),
-                section(
-                  'Variables',
-                  module.variables.length,
-                  false,
-                  h(
-                    'table',
-                    {},
-                    module.variables.map((v) =>
-                      h(
-                        'tr',
-                        {},
-                        h(
-                          'td',
-                          { class: 'key' },
-                          h('div', { class: 'mono' }, v.name),
-                          v.type ? h('div', { class: 'faint mono' }, v.type) : null,
-                        ),
-                        h(
-                          'td',
-                          {},
-                          v.description ? h('div', {}, v.description) : null,
-                          h(
-                            'div',
-                            { class: 'chips' },
-                            v.setBy
-                              ? tag(`set by ${v.setBy}`)
-                              : v.required
-                                ? tag('not set', 'warn')
-                                : tag('default'),
-                            v.default !== null ? tag(`default ${v.default}`) : null,
-                            v.sensitive ? tag('sensitive') : null,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                section(
-                  'Outputs',
-                  module.outputs.length,
-                  true,
-                  module.outputs.length
-                    ? h(
-                        'table',
-                        {},
-                        module.outputs.map((o) =>
-                          h(
-                            'tr',
-                            {},
-                            h(
-                              'td',
-                              { class: 'key' },
-                              h('span', { class: 'mono' }, o.name),
-                              o.sensitive ? [' ', tag('sensitive')] : null,
-                            ),
-                            h(
-                              'td',
-                              {},
-                              o.description ? h('div', {}, o.description) : null,
-                              o.consumers.length
-                                ? h(
-                                    'div',
-                                    { class: 'chips' },
-                                    o.consumers.map((c) =>
-                                      h(
-                                        'span',
-                                        {},
-                                        unitChip(c.unit, 'down'),
-                                        h('span', { class: 'mono faint' }, ` .${c.input}`),
-                                      ),
-                                    ),
-                                  )
-                                : h('div', { class: 'faint' }, 'Read by no unit of the stack.'),
-                            ),
-                          ),
-                        ),
-                      )
-                    : h('p', { class: 'muted' }, 'None.'),
-                ),
-              ]
-            : null,
-          section(
-            'Includes',
-            unit.includes.length,
-            false,
-            unit.includes.length
-              ? unit.includes.map((include) =>
-                  h(
-                    'div',
-                    {},
-                    h(
-                      'p',
-                      {},
-                      h('strong', {}, include.name),
-                      ' ',
-                      h('span', { class: 'mono muted' }, include.file),
-                    ),
-                    include.inputs.length
-                      ? h(
-                          'p',
-                          { class: 'muted' },
-                          'Inputs: ',
-                          include.inputs.map((i) => [h('code', {}, i), ' ']),
-                        )
-                      : null,
-                    include.generates.length
-                      ? h(
-                          'p',
-                          { class: 'muted' },
-                          'Generates: ',
-                          include.generates.map((g) => [h('code', {}, g), ' ']),
-                        )
-                      : null,
-                    include.description ? paragraphs(include.description, 'faint') : null,
-                  ),
-                )
-              : h('p', { class: 'muted' }, 'None.'),
-          ),
-        ]
-      }
-
-      function edgePanel(id) {
-        const edge = stack.edges.find((candidate) => edgeId(candidate) === id)
-        if (!edge) return overview()
-        return [
-          h(
-            'div',
-            { class: 'back' },
-            h('button', { class: 'link', onclick: () => select(null) }, '← Overview'),
-          ),
-          h('h2', {}, unitChip(edge.from, 'up'), ' → ', unitChip(edge.to, 'down')),
-          edge.kind === 'data'
-            ? [
-                h(
-                  'p',
-                  { class: 'muted' },
-                  `${edge.to} reads ${plural(edge.outputs.length, 'output')} of ${edge.from}, and is applied after it.`,
-                ),
-                h(
-                  'table',
-                  {},
-                  h(
-                    'tr',
-                    {},
-                    h('th', {}, 'Output'),
-                    h('th', {}, 'Input'),
-                    h('th', {}, 'Mock while unapplied'),
-                  ),
-                  edge.outputs.map((o) =>
-                    h(
-                      'tr',
-                      {},
-                      h('td', { class: 'mono' }, o.output),
-                      h('td', { class: 'mono' }, o.input),
-                      h(
-                        'td',
-                        {},
-                        o.mock === null
-                          ? h('span', { class: 'faint' }, 'none')
-                          : h('code', {}, format(o.mock)),
-                      ),
-                    ),
-                  ),
-                ),
-              ]
-            : h(
-                'p',
-                { class: 'muted' },
-                `${edge.to} is applied after ${edge.from} and reads none of its outputs: it waits for what ${edge.from} writes elsewhere, such as secrets.`,
-              ),
-        ]
-      }
-
       function render() {
+        const view = current()
         highlight()
         const selected = state.selected
+        const edge = selected?.edge
+          ? view.edges.find((candidate) => edgeId(candidate) === selected.edge)
+          : null
         let content
-        if (selected?.unit && units.has(selected.unit))
-          content = unitPanel(units.get(selected.unit))
-        else if (selected?.edge) content = edgePanel(selected.edge)
-        else content = overview()
+        if (selected?.node && view.nodes.some((node) => node.id === selected.node))
+          content = view.nodePanel(selected.node)
+        else if (edge) content = view.edgePanel(edge)
+        else {
+          const query = state.query
+          const found = query
+            ? view.nodes
+                .map((node) => [node, view.matches(node.id, query)])
+                .filter(([, list]) => list.length)
+            : []
+          content = [
+            query
+              ? [
+                  h('h3', {}, `Matches for “${query}”`),
+                  found.length
+                    ? h(
+                        'ul',
+                        { class: 'plain' },
+                        found.map(([node, list]) =>
+                          h(
+                            'li',
+                            {},
+                            h(
+                              'button',
+                              { class: 'chip', onclick: () => select({ node: node.id }) },
+                              node.lines[0],
+                            ),
+                            ' ',
+                            h(
+                              'span',
+                              { class: 'muted' },
+                              list.slice(0, 6).join(', ') +
+                                (list.length > 6 ? ` and ${list.length - 6} more` : ''),
+                            ),
+                          ),
+                        ),
+                      )
+                    : h('p', { class: 'muted' }, 'Nothing matches.'),
+                ]
+              : null,
+            view.overview(),
+            h('p', { class: 'faint' }, view.hint),
+          ]
+        }
         panel.replaceChildren(...[content].flat(Infinity).filter(Boolean))
       }
 
       // ----- start -------------------------------------------------------------------------------
       const search = document.getElementById('search')
+      const toggles = document.getElementById('toggles')
+      function setup() {
+        for (const [name, view] of Object.entries(views)) {
+          document
+            .getElementById(`view-${name}`)
+            .setAttribute('aria-pressed', String(name === state.view))
+          document.getElementById(`view-${name}`).disabled = view.nodes.length === 0
+        }
+        toggles.replaceChildren(
+          ...current().toggles.map((toggle) =>
+            h(
+              'label',
+              { class: 'toggle' },
+              h('input', {
+                type: 'checkbox',
+                checked: state.shown[toggle.kind],
+                onchange: (event) => {
+                  state.shown[toggle.kind] = event.target.checked
+                  render()
+                },
+              }),
+              toggle.label,
+            ),
+          ),
+        )
+        drawGraph(current())
+        fit()
+        writeHash()
+        render()
+      }
+      for (const name of Object.keys(views)) {
+        document.getElementById(`view-${name}`).addEventListener('click', () => goto(name))
+      }
       search.addEventListener('input', () => {
         state.query = search.value.trim().toLowerCase()
-        render()
-      })
-      document.getElementById('order').addEventListener('change', (event) => {
-        state.order = event.target.checked
         render()
       })
       document.addEventListener('keydown', (event) => {
@@ -1458,15 +2069,11 @@
         }
       })
 
-      drawGraph()
-      fit()
       const hash = new URLSearchParams(location.hash.slice(1))
-      state.selected = hash.get('unit')
-        ? { unit: hash.get('unit') }
-        : hash.get('edge')
-          ? { edge: hash.get('edge') }
-          : null
-      render()
+      if (views[hash.get('view')]) state.view = hash.get('view')
+      if (hash.get('node')) state.selected = { node: hash.get('node') }
+      else if (hash.get('edge')) state.selected = { edge: hash.get('edge') }
+      setup()
     </script>
   </body>
 </html>

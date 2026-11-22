@@ -196,7 +196,7 @@ run = "pnpm deploy:secret-get"
 raw = true
 
 ["deploy:graph"]
-description = "Write a page of an environment's stack to open in a browser: its units, what passes between them, their values, inputs, modules and the mistakes in their wiring; needs no sign-in: <environment>"
+description = "Write a page of an environment's stack to open in a browser: the deployment, what runs where and what each part reaches, and the code, its units, what passes between them and the mistakes in their wiring; read from the checkout, needs no sign-in; --open opens it in the default browser: <environment> [--open]"
 run = "pnpm deploy:graph"
 
 ["deploy:lock"]

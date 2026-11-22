@@ -5,6 +5,7 @@ import {
   PROFILE_REPORT_REASONS,
   profileContentSchema,
   profileLinkSchema,
+  reportProfileSchema,
   TAKEDOWN_REASONS,
 } from './profiles'
 import { plainText } from './text'
@@ -122,5 +123,30 @@ describe('profileContentSchema', () => {
     ['something a profile does not hold', { yearOfBirth: 1990 }],
   ])('refuses %s', (_name, change) => {
     expect(profileContentSchema.safeParse({ ...content, ...change }).success).toBe(false)
+  })
+})
+
+// R2 and R3.
+describe('reportProfileSchema', () => {
+  it('takes a reason alone, and a note and an email address with it', () => {
+    expect(reportProfileSchema.parse({ reason: 'other' })).toEqual({ reason: 'other' })
+    expect(
+      reportProfileSchema.parse({
+        reason: 'identity',
+        note: ' Not her picture. ',
+        email: ' someone@example.test ',
+      }),
+    ).toEqual({ reason: 'identity', note: 'Not her picture.', email: 'someone@example.test' })
+  })
+
+  it.each([
+    ['no reason', {}],
+    ['a reason the platform does not list', { reason: 'boring' }],
+    ['a note over 1000 characters', { reason: 'spam', note: 'x'.repeat(1001) }],
+    ['an empty note, which is none', { reason: 'spam', note: ' ' }],
+    ['what is no email address', { reason: 'spam', email: 'someone' }],
+    ['something a report does not hold', { reason: 'spam', name: 'Jan' }],
+  ])('refuses %s', (_name, report) => {
+    expect(reportProfileSchema.safeParse(report).success).toBe(false)
   })
 })

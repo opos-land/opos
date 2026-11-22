@@ -13,7 +13,7 @@ import {
 } from './checkout'
 import { publicRoute, timestamp } from './common'
 import { nameOrderSchema } from './me'
-import { publicProfileSchema } from './profiles'
+import { publicProfileSchema, reportProfileSchema } from './profiles'
 
 // What a convention's page shows to anyone. A field added here is public at once.
 
@@ -325,4 +325,18 @@ export const publicContract = {
     })
     .input(avatarFile)
     .output(z.object({ headers: z.record(z.string(), z.string()), body: z.instanceof(Blob) })),
+  reportProfile: publicRoute
+    .route({
+      method: 'POST',
+      path: '/public/profiles/{profileId}/reports',
+      successStatus: 204,
+      summary:
+        'Report a published profile, with a reason and, when the sender chooses, a note and an email address to answer; a profile that is not published is not found; no sign-in',
+    })
+    .input(
+      profile.extend({
+        body: reportProfileSchema,
+        headers: z.object({ 'accept-language': z.string().max(200).optional() }),
+      }),
+    ),
 }

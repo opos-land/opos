@@ -47,6 +47,8 @@ export const ROUTE_RATE_LIMITS = {
   scannerScans: { limit: 6000, ttl: 3_600_000 },
   /** `POST /scanner/hand-outs`, per scanner. */
   scannerHandOuts: { limit: 6000, ttl: 3_600_000 },
+  /** A report of a profile, per client address: each one may be an email to an address it names. */
+  profileReports: { limit: 10, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS

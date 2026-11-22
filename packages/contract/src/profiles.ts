@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { emailSchema } from './auth'
 import { accountRoute, timestamp } from './common'
 import { type FileType, uploadedFileSchema } from './files'
 import { nameOrderSchema } from './me'
@@ -208,3 +209,15 @@ export const profileContract = {
     })
     .output(myProfileSchema),
 }
+
+/**
+ * A report of a published profile, from anyone (R2, R3): one reason, and the note and the email
+ * address of who sends it when they choose to give them. Nothing else of the sender is taken.
+ */
+export const reportProfileSchema = z.strictObject({
+  reason: z.enum(PROFILE_REPORT_REASONS),
+  note: plainText(1000).optional(),
+  email: emailSchema.optional(),
+})
+
+export type ReportProfile = z.infer<typeof reportProfileSchema>

@@ -121,6 +121,7 @@ unit "deployment" {
     branch          = get_env("DEPLOY_REF", local.deployment.branch)
     loaded_services = local.deployment.loaded_services
     catch_mail      = local.deployment.catch_mail
+    seed            = local.deployment.seed
     supabase_ref    = local.supabase.ref
     mail_from       = local.mail.from
     generated       = local.generated

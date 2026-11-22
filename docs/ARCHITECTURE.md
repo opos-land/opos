@@ -481,7 +481,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   GitHub, a value only some branches may use into an environment that admits those branches alone
   ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
 - The seed refuses production, and production data never leaves it
-  ([PRODUCT.md](PRODUCT.md#10-personal-data-and-privacy)).
+  ([PRODUCT.md](PRODUCT.md#10-personal-data-and-privacy)). Dev's deployment runs it on every
+  release while its `env.yaml` says so, in the tools container after the verification and before
+  the API starts, so Dev's demo data is the seed's again after each release.
 - Supabase Auth settings live in [config.toml](../supabase/config.toml) for the local stack and in
   [infra/modules/supabase](../infra/modules/supabase) for a deployed project, never in a dashboard
   alone; [supabase-auth.test.mjs](../scripts/supabase-auth.test.mjs) keeps the two equal. A deployed

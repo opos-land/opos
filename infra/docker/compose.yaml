@@ -9,9 +9,10 @@
 #   docker compose --project-directory . -f infra/docker/compose.yaml config
 
 services:
-  # The roles, the migrations and the verification, then healthy; the API waits for it. It stays
-  # up as the place where the admin's scripts run, and is the one container with the postgres URL.
-  # Never restarted: a failed step fails the deployment instead of running again.
+  # The roles, the migrations and the verification, then, where OPOS_SEED is true, the seed; then
+  # healthy, and the API waits for it. It stays up as the place where the admin's scripts and the
+  # seed run, and is the one container with the postgres URL. Never restarted: a failed step fails
+  # the deployment instead of running again.
   tools:
     build:
       context: .
@@ -20,10 +21,22 @@ services:
     restart: 'no'
     environment:
       OPOS_ENV: ${OPOS_ENV:?}
+      OPOS_SEED: ${OPOS_SEED:-false}
       DATABASE_MIGRATION_URL: ${DATABASE_MIGRATION_URL:?}
       OPOS_APP_PASSWORD: ${OPOS_APP_PASSWORD:?}
       OPOS_APP_GLOBAL_PASSWORD: ${OPOS_APP_GLOBAL_PASSWORD:?}
       OPOS_ADMIN_PASSWORD: ${OPOS_ADMIN_PASSWORD:?}
+      # What the seed reaches beside the database: Supabase Auth for the demo accounts, the API's
+      # key to seal the demo payment account with, and the bucket for the demo files
+      # (docs/adr/0045-let-the-seed-put-its-demo-files-into-the-bucket.md)
+      SUPABASE_URL: ${SUPABASE_URL:?}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:?}
+      PAYMENT_CREDENTIALS_KEY: ${PAYMENT_CREDENTIALS_KEY:?}
+      S3_ENDPOINT: ${S3_ENDPOINT:?}
+      S3_REGION: ${S3_REGION:?}
+      S3_BUCKET: ${S3_BUCKET:?}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?}
 
   api:
     build:

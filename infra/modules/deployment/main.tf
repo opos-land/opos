@@ -101,6 +101,8 @@ locals {
 
   environment = merge(local.smtp, {
     OPOS_ENV = "dev"
+    # The tools run the seed after the database steps; the seed refuses any OPOS_ENV but dev
+    OPOS_SEED = tostring(var.seed)
 
     DATABASE_MIGRATION_URL   = "postgres://postgres:${urlencode(local.secret.supabase_db_password)}@${local.database}"
     DATABASE_URL             = "postgres://opos_app:${urlencode(local.secret.opos_app_password)}@${local.database}"

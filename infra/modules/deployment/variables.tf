@@ -64,6 +64,11 @@ variable "catch_mail" {
   type        = bool
 }
 
+variable "seed" {
+  description = "Whether every deployment runs the seed after the database steps, which brings the demo data back to the seed's"
+  type        = bool
+}
+
 variable "supabase_ref" {
   description = "The reference of the deployment's Supabase project"
   type        = string

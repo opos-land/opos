@@ -227,6 +227,7 @@ export class AdminProfilesDb {
       nickname: row.nickname,
       lastName: row.lastName,
       nameOrder: row.nameOrder,
+      exists: row.publicId !== null,
       profileId: row.publishedAt ? row.publicId : null,
       published: row.publishedAt !== null,
       avatar: row.avatarFileId ? { fileId: row.avatarFileId } : null,

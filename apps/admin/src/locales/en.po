@@ -334,6 +334,11 @@ msgstr "No convention has been created yet."
 msgid "No email goes to them when the convention is suspended, restored or deleted: tell them yourself."
 msgstr "No email goes to them when the convention is suspended, restored or deleted: tell them yourself."
 
+#. The state of an account that never changed its profile or uploaded an avatar
+#: src/features/profiles/pages/profile-page.tsx
+msgid "No profile"
+msgstr "No profile"
+
 #: src/features/profiles/pages/taken-down-profiles-page.tsx
 msgid "No profile is taken down."
 msgstr "No profile is taken down."
@@ -732,6 +737,10 @@ msgstr "This account does not hold the administrator role"
 #: src/features/profiles/pages/profile-page.tsx
 msgid "This account has no part of a name."
 msgstr "This account has no part of a name."
+
+#: src/features/profiles/pages/profile-page.tsx
+msgid "This account has no profile yet, so there is nothing to take down."
+msgstr "This account has no profile yet, so there is nothing to take down."
 
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.

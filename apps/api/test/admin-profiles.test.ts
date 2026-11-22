@@ -248,6 +248,7 @@ describe('GET /admin/profiles/{accountId}', () => {
       nickname: null,
       lastName: 'Nowak',
       nameOrder: 'nickname-middle',
+      exists: true,
       profileId,
       published: true,
       avatar: mine.avatar,
@@ -265,6 +266,8 @@ describe('GET /admin/profiles/{accountId}', () => {
     expect(res.body).toMatchObject({
       accountId: account.id,
       email: account.email,
+      // Nothing to take down or to restore: the application offers neither.
+      exists: false,
       profileId: null,
       published: false,
       avatar: null,
@@ -275,6 +278,18 @@ describe('GET /admin/profiles/{accountId}', () => {
       reports: [],
     })
     expect((await asAdmin(api().get(`/admin/profiles/${randomUUID()}`))).status).toBe(404)
+  })
+
+  it('says that an account has a profile from its first change of it, published or not', async () => {
+    const { account, agent } = await someone()
+    await agent
+      .put('/me/profile')
+      .send({ ...held, city: 'Gdynia' })
+      .expect(200)
+
+    const res = await asAdmin(api().get(`/admin/profiles/${account.id}`)).expect(200)
+
+    expect(res.body).toMatchObject({ exists: true, published: false, city: 'Gdynia' })
   })
 })
 

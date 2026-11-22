@@ -148,6 +148,11 @@ export const profileReportStates = ['open', 'closed'] as const
 export const adminProfileSchema = profileHeldSchema.extend(publicNameSchema.shape).extend({
   accountId: z.uuid(),
   email: z.string(),
+  /**
+   * Whether the account has a profile at all: it has none until it first changes one or uploads
+   * an avatar, and a profile that is not there is neither taken down nor restored.
+   */
+  exists: z.boolean(),
   /** What the address of the profile's page holds, while the profile is published. */
   profileId: z.uuid().nullable(),
   published: z.boolean(),

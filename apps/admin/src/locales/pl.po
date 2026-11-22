@@ -334,6 +334,11 @@ msgstr "Nie utworzono jeszcze żadnego konwentu."
 msgid "No email goes to them when the convention is suspended, restored or deleted: tell them yourself."
 msgstr "Przy zawieszeniu, przywróceniu ani usunięciu konwentu nie dostają żadnego e-maila: poinformuj ich samodzielnie."
 
+#. The state of an account that never changed its profile or uploaded an avatar
+#: src/features/profiles/pages/profile-page.tsx
+msgid "No profile"
+msgstr "Brak profilu"
+
 #: src/features/profiles/pages/taken-down-profiles-page.tsx
 msgid "No profile is taken down."
 msgstr "Żaden profil nie jest zdjęty."
@@ -732,6 +737,10 @@ msgstr "To konto nie ma roli administratora"
 #: src/features/profiles/pages/profile-page.tsx
 msgid "This account has no part of a name."
 msgstr "To konto nie ma żadnej części nazwy."
+
+#: src/features/profiles/pages/profile-page.tsx
+msgid "This account has no profile yet, so there is nothing to take down."
+msgstr "To konto nie ma jeszcze profilu, więc nie ma czego zdejmować."
 
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.
 #. Follows what the action does, in the modal that confirms it; 'This action' is the action confirmed.

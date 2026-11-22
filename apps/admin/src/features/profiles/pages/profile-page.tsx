@@ -79,9 +79,15 @@ export function ProfilePage() {
               <Badge>
                 <Trans comment="The state of a profile its account published">Published</Trans>
               </Badge>
-            ) : (
+            ) : data.exists ? (
               <Badge variant="secondary">
                 <Trans comment="The state of a profile its account did not publish">Private</Trans>
+              </Badge>
+            ) : (
+              <Badge variant="secondary">
+                <Trans comment="The state of an account that never changed its profile or uploaded an avatar">
+                  No profile
+                </Trans>
               </Badge>
             )}
             {takedown?.reviewRequested && (
@@ -211,7 +217,7 @@ export function ProfilePage() {
             </p>
             <RestoreProfile profile={data} />
           </div>
-        ) : (
+        ) : data.exists ? (
           <div className="flex flex-col items-start gap-4">
             <p className="text-sm">
               <Trans>
@@ -221,6 +227,10 @@ export function ProfilePage() {
             </p>
             <TakeDownProfile profile={data} name={name} />
           </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            <Trans>This account has no profile yet, so there is nothing to take down.</Trans>
+          </p>
         )}
       </Section>
 

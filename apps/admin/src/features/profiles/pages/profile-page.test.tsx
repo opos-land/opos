@@ -33,6 +33,7 @@ const profile = (override: Partial<AdminProfile> = {}): AdminProfile => ({
   nickname: 'Lisek',
   lastName: 'Nowak',
   nameOrder: 'nickname-middle',
+  exists: true,
   profileId: 'p-1',
   published: true,
   avatar: { fileId: 'file-1' },
@@ -210,6 +211,38 @@ describe('ProfilePage', () => {
     expect(screen.queryByRole('button', { name: 'Clear the name' })).toBeNull()
     expect(screen.getByText('This account has no part of a name.')).toBeTruthy()
     expect(screen.getByText('Nobody reported this profile.')).toBeTruthy()
+  })
+
+  // An account opened by its email address may never have touched its profile: nothing is there
+  // to take down, and the API would answer that it found none.
+  it('offers no takedown of an account that has no profile, and still clears its name', async () => {
+    load.mockResolvedValue(
+      profile({
+        exists: false,
+        profileId: null,
+        published: false,
+        avatar: null,
+        description: null,
+        pronouns: null,
+        city: null,
+        links: [],
+        interests: [],
+        reports: [],
+      }),
+    )
+    renderPage()
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Anna “Lisek” Nowak' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByText('This account has no profile yet, so there is nothing to take down.'),
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Take the profile down' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Restore the profile' })).toBeNull()
+    expect(screen.queryByText('Private')).toBeNull()
+    expect(screen.getByText('No profile')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Clear the name' })).toBeTruthy()
   })
 
   it('shows the not-found screen for an identifier that names no account', async () => {

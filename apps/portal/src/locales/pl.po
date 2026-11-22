@@ -1449,6 +1449,7 @@ msgstr "Tego kodu nie można użyć w tym zamówieniu."
 
 #: src/features/account/components/name-form.tsx
 #: src/features/profile/components/profile-form.tsx
+#: src/features/profile/pages/report-profile-page.tsx
 msgid "This field holds a character that cannot be seen. Type it again."
 msgstr "To pole zawiera znak, którego nie widać. Wpisz je od nowa."
 

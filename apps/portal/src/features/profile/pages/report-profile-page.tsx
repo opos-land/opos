@@ -24,6 +24,7 @@ import {
   Textarea,
 } from '../../../shared/ui'
 import { publicProfileOptions, reportProfileOptions } from '../api/profile'
+import { fieldProblem } from '../model/profile-form'
 import { emptyReport, reportBody, reportFormSchema } from '../model/report-form'
 
 /**
@@ -101,7 +102,11 @@ export function ReportProfilePage() {
         </FormField>
         <FormField
           label={t`What should we know? (optional)`}
-          error={errors.note && t`Enter up to ${1000} characters.`}
+          error={
+            fieldProblem(errors.note) === 'too-long'
+              ? t`Enter up to ${1000} characters.`
+              : errors.note && t`This field holds a character that cannot be seen. Type it again.`
+          }
         >
           {(control) => <Textarea {...control} {...form.register('note')} rows={4} />}
         </FormField>

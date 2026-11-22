@@ -147,6 +147,20 @@ describe('ReportProfilePage', () => {
     expect(api.report).not.toHaveBeenCalled()
   })
 
+  it('tells a note that holds a hidden character from one that is too long', async () => {
+    const user = await openPage()
+
+    await user.click(screen.getByLabelText('What should we know? (optional)'))
+    await user.paste('Copied\tfrom a table.')
+    await user.click(screen.getByRole('button', { name: 'Send the report' }))
+
+    expect(
+      await screen.findByText('This field holds a character that cannot be seen. Type it again.'),
+    ).toBeTruthy()
+    expect(screen.queryByText('Enter up to 1000 characters.')).toBeNull()
+    expect(api.report).not.toHaveBeenCalled()
+  })
+
   it('shows a profile that is not public as a page that is not there', async () => {
     api.profile.mockRejectedValue(new ORPCError('request.not-found', { status: 404 }))
     render(

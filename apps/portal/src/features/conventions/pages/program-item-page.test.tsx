@@ -26,7 +26,15 @@ const panel = {
   description: 'Coastlines and rivers.',
   startsAt: '2027-06-02T08:00:00.000Z',
   endsAt: '2027-06-02T09:00:00.000Z',
-  speakers: [{ firstName: 'Kasia', lastName: 'Mazur' }],
+  speakers: [
+    {
+      firstName: 'Kasia',
+      nickname: null,
+      lastName: 'Mazur',
+      nameOrder: 'nickname-middle' as const,
+      profileId: null,
+    },
+  ],
   likeCount: 1,
 }
 
@@ -122,13 +130,14 @@ describe('ProgramItemPage', () => {
     api.item.mockResolvedValue({
       ...panel,
       speakers: [
-        { firstName: 'Kasia', lastName: 'Mazur' },
-        { firstName: 'Jan', lastName: 'Kowal' },
+        ...panel.speakers,
+        { ...panel.speakers[0]!, firstName: 'Jan', nickname: 'Kowal', lastName: null },
+        { ...panel.speakers[0]!, firstName: null, lastName: null },
       ],
     })
     view()
 
-    expect(await screen.findByText('Speakers: Kasia Mazur, Jan Kowal')).toBeDefined()
+    expect(await screen.findByText('Speakers: Kasia Mazur, Jan “Kowal”, Anon')).toBeDefined()
   })
 
   it('shows the not-found screen for an unknown item', async () => {

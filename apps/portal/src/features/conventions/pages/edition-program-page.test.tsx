@@ -23,7 +23,15 @@ const item = (id: string, startsAt: string, likeCount = 0) => ({
   description: null,
   startsAt,
   endsAt: new Date(new Date(startsAt).getTime() + 3_600_000).toISOString(),
-  speakers: [{ firstName: 'Kasia', lastName: 'Mazur' }],
+  speakers: [
+    {
+      firstName: 'Kasia',
+      nickname: null,
+      lastName: 'Mazur',
+      nameOrder: 'nickname-middle' as const,
+      profileId: null,
+    },
+  ],
   likeCount,
 })
 

@@ -12,6 +12,7 @@ import {
   startedAttemptSchema,
 } from './checkout'
 import { publicRoute, timestamp } from './common'
+import { nameOrderSchema } from './me'
 import { publicProfileSchema } from './profiles'
 
 // What a convention's page shows to anyone. A field added here is public at once.
@@ -105,15 +106,28 @@ export const editionListSchema = z.object({
 
 export type EditionList = z.infer<typeof editionListSchema>
 
+/**
+ * A speaker as the programme shows it to anyone: the parts of its public name and their order,
+ * and the identifier of its profile while that is published (docs/specs/0016-public-profile.md,
+ * N5 and P11). Never the account's own identifier or its email address.
+ */
+export const publicSpeakerSchema = z.object({
+  firstName: z.string().nullable(),
+  nickname: z.string().nullable(),
+  lastName: z.string().nullable(),
+  nameOrder: nameOrderSchema,
+  profileId: z.uuid().nullable(),
+})
+
+export type PublicSpeaker = z.infer<typeof publicSpeakerSchema>
+
 export const publicProgramItemSchema = z.object({
   id: z.uuid(),
   title: z.string(),
   description: z.string().nullable(),
   startsAt: timestamp,
   endsAt: timestamp,
-  speakers: z.array(
-    z.object({ firstName: z.string().nullable(), lastName: z.string().nullable() }),
-  ),
+  speakers: z.array(publicSpeakerSchema),
   likeCount: z.number().int().nonnegative(),
 })
 

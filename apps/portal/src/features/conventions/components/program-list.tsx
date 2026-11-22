@@ -1,4 +1,4 @@
-import { Plural, Trans } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { type PublicProgramItem } from '@opos/contract'
 import { Link } from 'react-router'
 import { linkClass } from '../../../shared/ui'
@@ -15,6 +15,7 @@ export function ProgramList({
   timeZone: string
   editionPath: string
 }) {
+  const { i18n } = useLingui()
   const time = useConventionTime(timeZone)
 
   if (items.length === 0) {
@@ -34,7 +35,7 @@ export function ProgramList({
           </h3>
           <ul className="flex flex-col gap-3">
             {dayItems.map((item) => {
-              const names = speakerNames(item.speakers)
+              const names = speakerNames(i18n, item.speakers)
               const count = item.speakers.length
               const likes = item.likeCount
               return (

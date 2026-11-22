@@ -1,5 +1,11 @@
+import { setupI18n } from '@lingui/core'
+import { type PublicProgramItem } from '@opos/contract'
 import { describe, expect, it } from 'vitest'
 import { programDays, speakerNames } from './program-days'
+
+type Speaker = PublicProgramItem['speakers'][number]
+
+const i18n = setupI18n({ locale: 'en', messages: { en: {} } })
 
 const at = (startsAt: string) => ({ startsAt })
 
@@ -29,17 +35,37 @@ describe('programDays', () => {
   })
 })
 
+// docs/specs/0016-public-profile.md, N5: a speaker is shown by its public name.
 describe('speakerNames', () => {
-  it('joins the names of every speaker', () => {
+  const speaker = (name: Partial<Speaker>): Speaker => ({
+    firstName: null,
+    nickname: null,
+    lastName: null,
+    nameOrder: 'nickname-middle',
+    profileId: null,
+    ...name,
+  })
+
+  it('joins the public names of every speaker', () => {
     expect(
-      speakerNames([
-        { firstName: 'Kasia', lastName: 'Mazur' },
-        { firstName: 'Jan', lastName: null },
+      speakerNames(i18n, [
+        speaker({ firstName: 'Kasia', nickname: 'Mazurek', lastName: 'Mazur' }),
+        speaker({ firstName: 'Jan' }),
+        speaker({
+          firstName: 'Ola',
+          nickname: 'Sowa',
+          lastName: 'Lis',
+          nameOrder: 'nickname-last',
+        }),
       ]),
-    ).toBe('Kasia Mazur, Jan')
+    ).toBe('Kasia “Mazurek” Mazur, Jan, Ola Lis “Sowa”')
+  })
+
+  it('names a speaker with no part of a name Anon', () => {
+    expect(speakerNames(i18n, [speaker({}), speaker({ nickname: 'Sowa' })])).toBe('Anon, Sowa')
   })
 
   it('is empty without speakers', () => {
-    expect(speakerNames([])).toBe('')
+    expect(speakerNames(i18n, [])).toBe('')
   })
 })

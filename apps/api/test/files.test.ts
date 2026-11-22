@@ -50,8 +50,8 @@ import { addEdition, deleteCreatedTenants, restore, suspend, tenantWithHead } fr
 
 // File storage and image variants against the local Versity Gateway and imgproxy, through the
 // service and the kinds declared for the tests (docs/specs/0012-file-storage.md,
-// docs/specs/0013-image-variants.md). One file, run after every other (vitest.config.ts), so that
-// the sweep never runs beside another test's upload.
+// docs/specs/0013-image-variants.md). One file, run with no other beside it (vitest.config.ts), so
+// that the sweep never runs beside another test's upload.
 
 const kinds = Object.values(KINDS)
 const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')

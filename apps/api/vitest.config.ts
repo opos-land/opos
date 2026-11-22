@@ -42,9 +42,9 @@ export default defineConfig({
     maxWorkers: Math.max(1, Math.min(MAX_WORKERS, availableParallelism() - 1)),
     // The tests of file storage sweep the whole bucket as if a day had passed, which would take
     // the bytes of an upload another test is in the middle of: they run once the others are done.
-    // The files of the admin log follow, one after another. Each has a group of its own rather
-    // than a project with `fileParallelism` off, which VITEST_MAX_WORKERS of the pre-push hook
-    // would turn back on: the order of the groups holds whatever the workers.
+    // The files of the admin log run after them, one at a time. Each has a group of its own
+    // rather than a project with `fileParallelism` off, which VITEST_MAX_WORKERS of the pre-push
+    // hook would turn back on: two groups never run at once, whatever the workers.
     projects: [
       {
         extends: true,

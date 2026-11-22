@@ -386,6 +386,8 @@ test('the test files that write the admin log run one after another, each in a g
   assert.deepEqual(named.sort(), writers.sort())
   assert.match(config, /exclude: \[STORAGE_TESTS, \.\.\.ADMIN_LOG_TESTS\],/)
   assert.match(config, /ADMIN_LOG_TESTS\.map\(\(file, index\) =>/)
+  // A group that included nothing would leave its file out of every project, and the run green
+  assert.match(config, /include: \[file\],/)
   assert.match(config, /sequence: \{ groupOrder: 2 \+ index \}/)
   // VITEST_MAX_WORKERS, which the pre-push hook sets, overrides a project's fileParallelism
   assert.doesNotMatch(config, /fileParallelism:/)

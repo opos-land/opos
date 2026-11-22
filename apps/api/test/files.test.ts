@@ -1,14 +1,16 @@
 import { createHash } from 'node:crypto'
-import { Body, Controller, Get, Module, Param, Post } from '@nestjs/common'
+import { Body, Controller, Get, Module, Param, Post, UseGuards } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { contract, type ContractMeta } from '@opos/contract'
 import { type AnyContractRouter, isContractProcedure } from '@orpc/contract'
 import { sql } from 'drizzle-orm'
+import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TenantContextService } from '../src/common/als/tenant-context.service'
 import { GlobalDbService } from '../src/common/database/global-db.service'
 import { RequireTenant } from '../src/common/decorators/require-tenant.decorator'
 import { ApiError } from '../src/common/errors/api-error'
+import { JwtAuthGuard } from '../src/common/guards/jwt-auth.guard'
 import { FilesService } from '../src/modules/files/files.service'
 import { FILE_KINDS } from '../src/modules/files/kinds'
 import { fileKey } from '../src/modules/files/owners'
@@ -81,6 +83,18 @@ class FilesTestController {
       tenant: this.context.tenant().id,
       inTransaction: TenantContextService.peek()?.tx !== undefined,
     }
+  }
+
+  /** An account route: behind its own guard, with no tenant (docs/specs/0016-public-profile.md). */
+  @Post('avatar')
+  @UseGuards(JwtAuthGuard)
+  @TakesFile(KINDS.avatar.name)
+  async addAvatar(@Body() _body: unknown) {
+    const store = TenantContextService.peek()
+    const inTransactionBefore = store?.tx !== undefined || store?.accountTx !== undefined
+    const received = this.files.received()
+    const file = await this.context.accountTransaction(() => this.files.keep(received))
+    return { file, owner: received.ownerId, inTransactionBefore }
   }
 }
 
@@ -342,6 +356,42 @@ describe("an account's file", () => {
     ).toBe(true)
     expect(await objectKeys(fileKey('account', owner.id, file.id))).toEqual([])
   })
+
+  // docs/adr/0071-let-anyone-read-the-profile-an-account-published.md: a feature that shows an
+  // account to everyone names the account, from its own row and never from the request.
+  it('is opened by its own account, and by anyone once the feature names its account', async () => {
+    const [owner, other] = await Promise.all([createAccount(), createAccount()])
+    const received = await asAccount(context, owner.id, () =>
+      files.receive(KINDS.avatar.name, upload(png(40, 20), 'image/png', 'me.png')),
+    )
+    const file = await asAccount(context, owner.id, () =>
+      context.accountTransaction(() => files.keep(received)),
+    )
+    const small = { variant: 'small' }
+
+    const own = await asAccount(context, owner.id, () =>
+      files.open(KINDS.avatar.name, file.id, small),
+    )
+    expect(own.type).toBe('image/webp')
+    expect(
+      await code(asAccount(context, other.id, () => files.open(KINDS.avatar.name, file.id, small))),
+    ).toBe('request.not-found')
+
+    // No session at all, as on a public route.
+    const anyone = await context.run(
+      () => files.open(KINDS.avatar.name, file.id, { ...small, accountId: owner.id }),
+      '127.0.0.1',
+    )
+    expect(anyone.sha256).toBe(own.sha256)
+    expect(
+      await code(
+        context.run(
+          () => files.open(KINDS.avatar.name, file.id, { ...small, accountId: other.id }),
+          '127.0.0.1',
+        ),
+      ),
+    ).toBe('request.not-found')
+  })
 })
 
 describe('releasing', () => {
@@ -435,6 +485,54 @@ describe('a route that takes or serves a file', () => {
     expect(gif.status).toBe(422)
     expect(gif.body).toMatchObject({ code: 'file.type-refused' })
     const missing = await send({ name: 'x.pdf', type: 'application/pdf' })
+    expect(missing.status).toBe(400)
+    expect(missing.body).toMatchObject({ code: 'request.invalid', params: { field: 'file' } })
+  })
+
+  it("receives the file of an account route for the session's account, outside every transaction", async () => {
+    bindApi(routes.getHttpServer())
+    const owner = await createAccount()
+    const agent = await signedInAgent('portal', owner.email)
+
+    const response = await agent
+      .post('/files-test/avatar')
+      .send({ file: upload(png(40, 20), 'image/png', 'me.png') })
+
+    expect(response.status).toBe(201)
+    expect(response.body).toMatchObject({
+      file: { name: 'me.png', type: 'image/png', width: 40, height: 20 },
+      owner: owner.id,
+      inTransactionBefore: false,
+    })
+    const { file } = response.body as { file: { id: string } }
+    expect(await objectKeys(fileKey('account', owner.id, file.id))).toEqual([
+      `${fileKey('account', owner.id, file.id)}master`,
+    ])
+  })
+
+  it('takes no file of an account route without a session, and receives nothing', async () => {
+    const before = await objectKeys('accounts/')
+
+    const response = await request(routes.getHttpServer())
+      .post('/files-test/avatar')
+      .send({ file: upload(png(40, 20), 'image/png') })
+
+    expect(response.status).toBe(401)
+    expect(await objectKeys('accounts/')).toEqual(before)
+  })
+
+  it('answers an account route as a tenant route does for a refused type and a malformed file', async () => {
+    bindApi(routes.getHttpServer())
+    const agent = await signedInAgent('portal', (await createAccount()).email)
+    const send = (file: unknown) => agent.post('/files-test/avatar').send({ file })
+
+    const gif = await send({ name: 'x.gif', type: 'image/gif', data: 'R0lG' })
+    expect(gif.status).toBe(422)
+    expect(gif.body).toMatchObject({ code: 'file.type-refused' })
+    const jpeg = await send(upload(png(4, 4), 'image/jpeg'))
+    expect(jpeg.status).toBe(422)
+    expect(jpeg.body).toMatchObject({ code: 'file.type-refused' })
+    const missing = await send({ name: 'x.png', type: 'image/png' })
     expect(missing.status).toBe(400)
     expect(missing.body).toMatchObject({ code: 'request.invalid', params: { field: 'file' } })
   })

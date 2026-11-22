@@ -13,7 +13,9 @@ export interface TakesFileOptions {
  * A tenant route at `write` that takes a file of `kind` in the `field` of its JSON body: after its
  * requirement is judged, the file is received outside every transaction, then the route's own
  * transaction keeps it through FilesService.keep(FilesService.received())
- * (docs/specs/0012-file-storage.md). Its contract route carries `takesFile`.
+ * (docs/specs/0012-file-storage.md). An account route, behind JwtAuthGuard and with no tenant,
+ * takes a file of an account's kind the same way, and keeps it in
+ * TenantContextService.accountTransaction. Its contract route carries `takesFile`.
  */
 export const TakesFile = (kind: string, field = 'file'): MethodDecorator =>
   SetMetadata(TAKES_FILE, { kind, field } satisfies TakesFileOptions)

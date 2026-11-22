@@ -42,7 +42,8 @@ interface HttpRequest {
  * For a route marked with @RequireTenant or @RequireEdition: resolves the tenant
  * from X-Tenant-Slug, opens its transaction, loads the membership, checks the permission, runs the
  * handler and commits unless it failed; TenantContextService then sends oRPC's held response.
- * Other routes ignore the header.
+ * Other routes ignore the header. An account route marked with @TakesFile gets its file received
+ * here too, for the session's account, before its handler runs.
  */
 @Injectable()
 export class TenantTransactionInterceptor implements NestInterceptor {
@@ -60,12 +61,15 @@ export class TenantTransactionInterceptor implements NestInterceptor {
       TENANT_REQUIREMENT,
       [ctx.getHandler(), ctx.getClass()],
     )
-    if (!requirement) return next.handle() as Observable<unknown>
-
+    const takesFile = this.reflector.get<TakesFileOptions | undefined>(TAKES_FILE, ctx.getHandler())
     const http = ctx.switchToHttp()
     const request = http.getRequest<HttpRequest>()
+    if (!requirement) {
+      if (!takesFile) return next.handle() as Observable<unknown>
+      return from(this.takeForAccount(takesFile, request, next))
+    }
+
     const response = http.getResponse<{ statusCode: number }>()
-    const takesFile = this.reflector.get<TakesFileOptions | undefined>(TAKES_FILE, ctx.getHandler())
     const servesFile = this.reflector.get<boolean | undefined>(SERVES_FILE, ctx.getHandler())
     const prepares = this.reflector.get<Type<Preparation> | undefined>(PREPARES, ctx.getHandler())
     const callsOut = this.reflector.get<boolean | undefined>(CALLS_OUT, ctx.getHandler())
@@ -184,6 +188,22 @@ export class TenantTransactionInterceptor implements NestInterceptor {
     // of credentials.
     if (files.prepares) await prepare(files.prepares)
     return this.queue.run(tenant.id, (release) => run(release))
+  }
+
+  /**
+   * An account route that takes a file: behind its own guard, with no tenant. The file is received
+   * for the session's account, outside every transaction; the handler keeps it in a transaction of
+   * the account (TenantContextService.accountTransaction). A kind of a tenant is refused by the
+   * storage, which finds no tenant to receive it for.
+   */
+  private async takeForAccount(
+    takesFile: TakesFileOptions,
+    request: HttpRequest,
+    next: CallHandler,
+  ) {
+    if (!TenantContextService.store().account) throw unauthenticated()
+    await this.receive(takesFile, request)
+    return lastValueFrom(next.handle() as Observable<unknown>, { defaultValue: undefined })
   }
 
   /**

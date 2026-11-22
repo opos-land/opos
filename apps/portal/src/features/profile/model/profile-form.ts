@@ -39,13 +39,17 @@ export const profileFormValues = (profile: MyProfile): ProfileForm => ({
   interests: profile.interests,
 })
 
-/** The body of `PUT /me/profile`: an emptied field is nothing, and only the filled-in links go. */
+/**
+ * The body of `PUT /me/profile`: an emptied field is nothing, only the filled-in links go, and the
+ * interests go in the order of the platform's list, so a profile shows them in one order whatever
+ * order they were ticked in.
+ */
 export const profileFormContent = (form: ProfileForm): ProfileContent => ({
   description: form.description.trim() || null,
   pronouns: form.pronouns.trim() || null,
   city: form.city.trim() || null,
   links: form.links.map((link) => link.trim()).filter(Boolean),
-  interests: form.interests,
+  interests: PROFILE_INTERESTS.filter((interest) => form.interests.includes(interest)),
 })
 
 /**

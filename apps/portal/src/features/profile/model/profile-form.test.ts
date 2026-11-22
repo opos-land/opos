@@ -72,6 +72,13 @@ describe('profileFormContent', () => {
       interests: ['larp', 'cosplay'],
     })
   })
+
+  it("sends the interests in the order of the platform's list, whatever order they were ticked in", () => {
+    expect(
+      profileFormContent({ ...empty, interests: ['crafts', 'literature', 'tabletop-rpg', 'larp'] })
+        .interests,
+    ).toEqual(['tabletop-rpg', 'larp', 'literature', 'crafts'])
+  })
 })
 
 describe('profileFormSchema', () => {

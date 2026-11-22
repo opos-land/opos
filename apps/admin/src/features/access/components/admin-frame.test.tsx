@@ -85,7 +85,7 @@ describe('AdminNavigation', () => {
       .filter((link) => link.getAttribute('aria-current') === 'page')
       .map((link) => link.textContent)
 
-  it('leads to the conventions, the two-factor reset and the log', () => {
+  it('leads to the conventions, the two-factor reset, the profile reports, the profiles and the log', () => {
     renderFrame('/')
 
     expect(
@@ -93,6 +93,8 @@ describe('AdminNavigation', () => {
     ).toEqual([
       ['Conventions', '/'],
       ['Two-factor reset', '/two-factor-reset'],
+      ['Profile reports', '/profile-reports'],
+      ['Profiles', '/profiles'],
       ['Log', '/log'],
     ])
   })
@@ -102,6 +104,10 @@ describe('AdminNavigation', () => {
     ['/conventions/new', 'Conventions'],
     ['/conventions/00000000-0000-4000-8000-00000000000a', 'Conventions'],
     ['/two-factor-reset', 'Two-factor reset'],
+    ['/profile-reports', 'Profile reports'],
+    ['/profile-reports/00000000-0000-4000-8000-00000000000a', 'Profile reports'],
+    ['/profiles', 'Profiles'],
+    ['/profiles/00000000-0000-4000-8000-00000000000a', 'Profiles'],
     ['/log', 'Log'],
   ])('marks the screen the admin is on at %s', (path, label) => {
     renderFrame(path)

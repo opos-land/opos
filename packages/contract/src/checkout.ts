@@ -448,11 +448,12 @@ export const ORDER_NUMBER_LENGTH = 10
 /**
  * What placing an order takes beside its buyer's address: the cart, the ticket holder's data, the
  * consents accepted, the total the buyer saw and the token of the bot check. An order with no
- * ticket has no age band and answers no custom field; its `holderName` is the buyer's own.
+ * ticket has no age band and answers no custom field; its `holderName` is the buyer's own. Nobody
+ * has to be named: a name left out is an empty one.
  */
 const placeOrderFields = {
   cart: cartSchema,
-  holderName: z.string().trim().min(1).max(200),
+  holderName: z.string().trim().max(200).default(''),
   ageBand: z.enum(AGE_BANDS).nullable(),
   customFieldAnswers: z
     .array(

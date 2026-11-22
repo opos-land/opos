@@ -246,6 +246,17 @@ describe('a placed order', () => {
     }
   })
 
+  // Nobody has to be named: the address is all an order needs of its buyer.
+  it('is placed with no name of the ticket holder, left out or blank', async () => {
+    const s = await shop()
+
+    await s.place({ holderName: undefined }).expect(201)
+    await s.place({ holderName: '   ' }).expect(201)
+
+    expect(await s.orders()).toMatchObject([{ holder_name: '' }, { holder_name: '' }])
+    await s.place({ holderName: 'n'.repeat(201) }).expect(400)
+  })
+
   it('has a number of its own each time', async () => {
     const s = await shop()
     const numbers = new Set<string>()

@@ -154,7 +154,7 @@ jobs:
   # server, runs the database steps and starts it. Coolify's API answers only the addresses its
   # allowlist names, which leaves out GitHub's runners, so the job sees the deployment queued and
   # Coolify shows how it ends. A run releases only while its commit is still the head; a newer push
-  # releases itself (docs/adr/0071-release-dev-from-ci-through-a-signed-webhook.md). The environment
+  # releases itself (docs/adr/0075-release-dev-from-ci-through-a-signed-webhook.md). The environment
   # dev admits develop alone; OpenTofu writes its secret and variables.
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'

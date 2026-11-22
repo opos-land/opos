@@ -10,7 +10,7 @@
   [0038](../adr/0038-release-dev-from-ci-and-change-its-infrastructure-from-an-operators-machine.md),
   [0069](../adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md),
   [0070](../adr/0070-run-the-deploy-commands-as-node-scripts.md),
-  [0071](../adr/0071-release-dev-from-ci-through-a-signed-webhook.md)
+  [0075](../adr/0075-release-dev-from-ci-through-a-signed-webhook.md)
 
 ## Goal
 

@@ -1,6 +1,6 @@
 import { inflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
-import { demoChart } from './demo-chart'
+import { demoAvatar, demoChart } from './demo-chart'
 
 /** The chunks of a PNG, by type. */
 function chunks(bytes: Buffer) {
@@ -54,5 +54,43 @@ describe('a demo size chart', () => {
   it('gives the same bytes for the same table, and other bytes for another', () => {
     expect(demoChart(4, 3).bytes.equals(chart.bytes)).toBe(true)
     expect(demoChart(5, 3).bytes.equals(chart.bytes)).toBe(false)
+  })
+})
+
+// The avatar of a demo profile (docs/specs/0016-public-profile.md, Seed).
+describe('a demo avatar', () => {
+  const avatar = demoAvatar()
+  const parts = chunks(avatar.bytes)
+  const header = parts.find((part) => part.type === 'IHDR')!.data
+
+  it('is a square PNG of the size it says, in plain colour without alpha', () => {
+    expect(avatar.bytes.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    )
+    expect(avatar.width).toBe(avatar.height)
+    expect([header.readUInt32BE(0), header.readUInt32BE(4)]).toEqual([avatar.width, avatar.height])
+    expect([header[8], header[9]]).toEqual([8, 2])
+  })
+
+  it('draws a disc in the middle of its ground: two colours and no more', () => {
+    const pixels = inflateSync(parts.find((part) => part.type === 'IDAT')!.data)
+    const row = avatar.width * 3 + 1
+    const at = (x: number, y: number) => [
+      ...pixels.subarray(y * row + 1 + x * 3, y * row + 4 + x * 3),
+    ]
+    const middle = Math.floor(avatar.width / 2)
+
+    expect(pixels.length).toBe(row * avatar.height)
+    expect(at(middle, middle)).not.toEqual(at(0, 0))
+    expect(at(avatar.width - 1, avatar.height - 1)).toEqual(at(0, 0))
+    const colours = new Set<string>()
+    for (let y = 0; y < avatar.height; y += 1) {
+      for (let x = 0; x < avatar.width; x += 1) colours.add(at(x, y).join(','))
+    }
+    expect(colours.size).toBe(2)
+  })
+
+  it('gives the same bytes every time, so a second run of the seed draws nothing anew', () => {
+    expect(demoAvatar().bytes.equals(avatar.bytes)).toBe(true)
   })
 })

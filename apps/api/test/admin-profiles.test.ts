@@ -298,6 +298,18 @@ describe('POST /admin/accounts/find', () => {
     expect(res.status).toBe(404)
     expect(res.body).toMatchObject({ code: 'account.not-found' })
   })
+
+  // An address leads to an account only once confirmed: whoever signed up under someone else's
+  // address is not reached by it, and no email about that account goes to the address.
+  it('opens no account whose email address is not confirmed', async () => {
+    const stranger = await createAccount({ first_name: 'Not' }, { confirmed: false })
+
+    const res = await find(stranger.email)
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject({ code: 'account.unconfirmed' })
+    expect(JSON.stringify(res.body)).not.toContain(stranger.id)
+  })
 })
 
 describe('taking a profile down', () => {

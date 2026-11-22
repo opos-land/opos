@@ -337,7 +337,7 @@ export const adminContract = {
       method: 'POST',
       path: '/admin/accounts/find',
       summary:
-        'The identifier of the account an email address names; refused with account.not-found',
+        'The identifier of the account a confirmed email address names; refused with account.not-found or account.unconfirmed',
     })
     .input(z.object({ body: findAccountSchema }))
     .output(z.object({ accountId: z.uuid() })),

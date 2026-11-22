@@ -171,13 +171,20 @@ export class AdminProfilesDb {
     }))
   }
 
-  /** The account a confirmed or unconfirmed email address names, by its identifier alone. */
+  /**
+   * The account an email address names, by its identifier alone. As in every lookup by email, the
+   * address leads to an account only once confirmed: an account someone made under another
+   * person's address is not opened by it, and no email about it goes to that person.
+   */
   async findAccount(address: string): Promise<string> {
     const [account] = await this.db
-      .select({ id: accounts.id })
+      .select({ id: accounts.id, emailConfirmedAt: accounts.emailConfirmedAt })
       .from(accounts)
       .where(eq(accounts.email, address.trim().toLowerCase()))
     if (!account) throw new ApiError(404, 'account.not-found', 'No account uses this email address')
+    if (!account.emailConfirmedAt) {
+      throw new ApiError(409, 'account.unconfirmed', 'The email address is not confirmed')
+    }
     return account.id
   }
 

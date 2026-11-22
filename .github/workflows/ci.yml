@@ -150,11 +150,14 @@ jobs:
       - run: infra/docker/check.sh
 
   # Dev runs the head of develop once its checks passed, through a push signed for Coolify
-  # (coolify-release.yml); release-dev.yml does the same by hand
+  # (_coolify-release.yml); release-dev.yml does the same by hand
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     needs: [check, e2e, images, secrets]
-    uses: ./.github/workflows/coolify-release.yml
+    # The called job reads the webhook secret of its environment only when the caller passes its
+    # secrets on
+    uses: ./.github/workflows/_coolify-release.yml
+    secrets: inherit
 
   # Secrets in the tree and in the whole history, and dependencies with a known high advisory.
   secrets:

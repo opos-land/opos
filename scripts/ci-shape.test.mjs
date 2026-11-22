@@ -7,7 +7,7 @@ import { test } from 'node:test'
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8')
 const ci = read('../.github/workflows/ci.yml')
 // The signed push to Coolify, which ci.yml and release-dev.yml call
-const coolifyRelease = read('../.github/workflows/coolify-release.yml')
+const coolifyRelease = read('../.github/workflows/_coolify-release.yml')
 // Dev's release started by hand
 const releaseDev = read('../.github/workflows/release-dev.yml')
 const workflows = Object.fromEntries(
@@ -50,8 +50,8 @@ function requiredChecks(rules) {
 
 test('every workflow reads the repository and nothing more', () => {
   assert.deepEqual(Object.keys(workflows).sort(), [
+    '_coolify-release.yml',
     'ci.yml',
-    'coolify-release.yml',
     'release-dev.yml',
   ])
   for (const [name, workflow] of Object.entries(workflows)) {
@@ -61,6 +61,17 @@ test('every workflow reads the repository and nothing more', () => {
   // No job of ci widens it: the remote cache comes from the secrets of an environment, not a
   // sign-in; and the job that calls the release grants the called workflow nothing more
   for (const workflow of [ci, coolifyRelease]) assert.doesNotMatch(workflow, /^ {4}permissions:/m)
+})
+
+// GitHub's list of workflows shows their names: each is its file's, and one that only another
+// workflow calls, which nobody runs from the list, starts with an underscore
+test('every workflow is named after its file, one only called with an underscore', () => {
+  for (const [file, workflow] of Object.entries(workflows)) {
+    const name = /^name: (\S+)$/m.exec(workflow)?.[1]
+    assert.equal(`${name}.yml`, file, file)
+    const onlyCalled = /^on:\n {2}workflow_call:\n\n/m.test(workflow)
+    assert.equal(name.startsWith('_'), onlyCalled, file)
+  }
 })
 
 test('every action is pinned by a full commit hash', () => {
@@ -491,6 +502,11 @@ const needs = (text) => {
   return list[1].split(',').map((name) => name.trim())
 }
 
+// A called workflow gets no secret its caller does not pass, the secrets of the environment its
+// job names included: without inherit the webhook secret arrives empty and Coolify refuses the push
+const CALLS_THE_RELEASE =
+  /^ {4}uses: \.\/\.github\/workflows\/_coolify-release\.yml\n {4}secrets: inherit$/m
+
 test('ci releases a push to develop once its checks passed, through the signed push', () => {
   const release = job('release')
   assert.match(
@@ -498,7 +514,7 @@ test('ci releases a push to develop once its checks passed, through the signed p
     /^ {4}if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/develop'$/m,
   )
   assert.deepEqual(needs(release).sort(), ['check', 'e2e', 'images', 'secrets'])
-  assert.match(release, /^ {4}uses: \.\/\.github\/workflows\/coolify-release\.yml$/m)
+  assert.match(release, CALLS_THE_RELEASE)
   assert.doesNotMatch(release, /steps:|COOLIFY_/)
 })
 
@@ -528,7 +544,7 @@ test("release-dev releases the head only once ci's checks of its push passed", (
 
   const release = job('release', releaseDev)
   assert.deepEqual(needs(release), ['checks'])
-  assert.match(release, /^ {4}uses: \.\/\.github\/workflows\/coolify-release\.yml$/m)
+  assert.match(release, CALLS_THE_RELEASE)
   assert.doesNotMatch(release, /^ {4}permissions:/m)
 })
 

@@ -1,11 +1,20 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
-// The shape of the CI workflow and of the ruleset, read as text: the workflow is YAML and the root
-// has no YAML parser, so the checks are regular expressions over the file.
+// The shape of the workflows and of the ruleset, read as text: a workflow is YAML and the root has
+// no YAML parser, so the checks are regular expressions over the file.
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8')
 const ci = read('../.github/workflows/ci.yml')
+// The signed push to Coolify, which ci.yml and release-dev.yml call
+const coolifyRelease = read('../.github/workflows/coolify-release.yml')
+// Dev's release started by hand
+const releaseDev = read('../.github/workflows/release-dev.yml')
+const workflows = Object.fromEntries(
+  readdirSync(new URL('../.github/workflows/', import.meta.url))
+    .filter((name) => /\.ya?ml$/.test(name))
+    .map((name) => [name, read(`../.github/workflows/${name}`)]),
+)
 const ruleset = JSON.parse(read('../.github/rulesets/protect-main.json'))
 
 /** The text of every `run:` step: the one-line form and the block scalar. */
@@ -39,23 +48,38 @@ function requiredChecks(rules) {
     .flatMap((rule) => rule.parameters.required_status_checks.map((check) => check.context))
 }
 
-test('the workflow reads the repository and nothing more', () => {
-  assert.match(ci, /^permissions:\n {2}contents: read$/m)
-  // No job widens it: the remote cache comes from the secrets of an environment, not a sign-in
-  assert.doesNotMatch(ci, /^ {4}permissions:/m)
-  assert.doesNotMatch(ci, /id-token/)
+test('every workflow reads the repository and nothing more', () => {
+  assert.deepEqual(Object.keys(workflows).sort(), [
+    'ci.yml',
+    'coolify-release.yml',
+    'release-dev.yml',
+  ])
+  for (const [name, workflow] of Object.entries(workflows)) {
+    assert.match(workflow, /^permissions:\n {2}contents: read\n\n/m, name)
+    assert.doesNotMatch(workflow, /id-token|: write$/m, name)
+  }
+  // No job of ci widens it: the remote cache comes from the secrets of an environment, not a
+  // sign-in; and the job that calls the release grants the called workflow nothing more
+  for (const workflow of [ci, coolifyRelease]) assert.doesNotMatch(workflow, /^ {4}permissions:/m)
 })
 
 test('every action is pinned by a full commit hash', () => {
-  const uses = [...ci.matchAll(/uses: (\S+)/g)]
-  assert.ok(uses.length > 0)
-  for (const use of uses) assert.match(use[1], /@[0-9a-f]{40}$/)
+  for (const [name, workflow] of Object.entries(workflows)) {
+    for (const use of workflow.matchAll(/uses: (\S+)/g)) {
+      // A workflow of this repository, called at the commit that calls it
+      if (use[1].startsWith('./.github/workflows/')) continue
+      assert.match(use[1], /@[0-9a-f]{40}$/, name)
+    }
+  }
+  assert.ok([...ci.matchAll(/uses: (\S+)@/g)].length > 0)
 })
 
 test('no run step interpolates event data', () => {
-  const blocks = runBlocks(ci)
-  assert.ok(blocks.length > 0)
-  for (const block of blocks) assert.doesNotMatch(block, /\$\{\{\s*github\./)
+  for (const [name, workflow] of Object.entries(workflows)) {
+    const blocks = runBlocks(workflow)
+    assert.ok(blocks.length > 0, name)
+    for (const block of blocks) assert.doesNotMatch(block, /\$\{\{\s*github\./, name)
+  }
 })
 
 test('the run block reader follows block scalars, folded or not', () => {
@@ -196,11 +220,11 @@ test('no allowlist covers a path beyond the files the hits are in', () => {
   }
 })
 
-/** The text of one job: from its name to the next job at the same depth. */
-const job = (name) => {
-  const start = ci.search(new RegExp(`^ {2}${name}:$`, 'm'))
+/** The text of one job of a workflow, ci by default: from its name to the next job at the same depth. */
+const job = (name, workflow = ci) => {
+  const start = workflow.search(new RegExp(`^ {2}${name}:$`, 'm'))
   assert.notEqual(start, -1, name)
-  const rest = ci.slice(start + 1)
+  const rest = workflow.slice(start + 1)
   const end = rest.search(/^ {2}\S/m)
   return end === -1 ? rest : rest.slice(0, end)
 }
@@ -304,7 +328,9 @@ test('every step that runs turbo tasks gets the remote cache of its environment,
 })
 
 test('no run step holds a secret', () => {
-  for (const block of runBlocks(ci)) assert.doesNotMatch(block, /secrets\./)
+  for (const [name, workflow] of Object.entries(workflows)) {
+    for (const block of runBlocks(workflow)) assert.doesNotMatch(block, /secrets\./, name)
+  }
 })
 
 test('turbo signs what it stores in the remote cache and verifies what it takes from it', () => {
@@ -391,7 +417,7 @@ test('the BFF boundary check runs in a Claude Code hook and in lefthook pre-comm
 // its webhook does not, and takes only a push signed with the application's own secret
 // (docs/adr/0075-release-dev-from-ci-through-a-signed-webhook.md)
 test('the release job sends Coolify a signed push and holds no token of its API', () => {
-  const release = job('release')
+  const release = job('release', coolifyRelease)
   assert.match(release, /"\$COOLIFY_URL\/webhooks\/source\/github\/events\/manual"/)
   assert.match(release, /X-GitHub-Event: push/)
   assert.match(release, /X-Hub-Signature-256: sha256=\$signature/)
@@ -403,7 +429,7 @@ test('the release job sends Coolify a signed push and holds no token of its API'
 })
 
 test('the release job pins the commit its checks passed and signs it without the secret in argv', () => {
-  const release = job('release')
+  const release = job('release', coolifyRelease)
   assert.match(release, /^ {10}COMMIT: \$\{\{ github\.sha \}\}$/m)
   assert.match(release, /after: \$commit/)
   // The key comes from the environment, never a command line another process could read
@@ -412,11 +438,67 @@ test('the release job pins the commit its checks passed and signs it without the
 })
 
 test('the release job fails on a failed pipe and on any reply but a queued deployment', () => {
-  const release = job('release')
+  const release = job('release', coolifyRelease)
   // bash named as the shell runs with pipefail; the default shell does not
   assert.match(release, /^ {8}shell: bash$/m)
   assert.match(release, /select\(\.status == "success"\)/)
   assert.match(release, /::error::Coolify queued no deployment/)
+})
+
+test('the signed push is a workflow only other workflows call, in the environment dev', () => {
+  assert.match(coolifyRelease, /^on:\n {2}workflow_call:\n\n/m)
+  assert.doesNotMatch(coolifyRelease, /workflow_dispatch|^ {2}push:|pull_request/m)
+  assert.match(job('release', coolifyRelease), /^ {4}environment:\n {6}name: dev$/m)
+  // Only the head of the branch is released; a newer push releases itself
+  assert.match(job('release', coolifyRelease), /git\/ref\/heads\/\$BRANCH/)
+})
+
+/** The jobs a job waits for, as written in its `needs: [...]`. */
+const needs = (text) => {
+  const list = /^ {4}needs: \[([^\]]*)\]$/m.exec(text)
+  assert.ok(list, 'the job names what it waits for')
+  return list[1].split(',').map((name) => name.trim())
+}
+
+test('ci releases a push to develop once its checks passed, through the signed push', () => {
+  const release = job('release')
+  assert.match(
+    release,
+    /^ {4}if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/develop'$/m,
+  )
+  assert.deepEqual(needs(release).sort(), ['check', 'e2e', 'images', 'secrets'])
+  assert.match(release, /^ {4}uses: \.\/\.github\/workflows\/coolify-release\.yml$/m)
+  assert.doesNotMatch(release, /steps:|COOLIFY_/)
+})
+
+test('release-dev runs only by hand, and only on develop', () => {
+  assert.match(releaseDev, /^on:\n {2}workflow_dispatch:\n\n/m)
+  assert.doesNotMatch(releaseDev, /^ {2}(push|pull_request|schedule|workflow_call):/m)
+  for (const name of ['checks', 'release']) {
+    assert.match(job(name, releaseDev), /^ {4}if: github\.ref == 'refs\/heads\/develop'$/m, name)
+  }
+})
+
+// A release names a commit whose checks passed (docs/adr/0075-release-dev-from-ci-through-a-signed-webhook.md)
+test("release-dev releases the head only once ci's checks of its push passed", () => {
+  const checks = job('checks', releaseDev)
+  // Reading the runs of the repository is the one permission beyond its contents
+  assert.match(checks, /^ {4}permissions:\n {6}actions: read\n {6}contents: read\n {4}\S/m)
+  assert.match(checks, /^ {10}COMMIT: \$\{\{ github\.sha \}\}$/m)
+  assert.match(
+    checks,
+    /actions\/workflows\/ci\.yml\/runs\?event=push&branch=develop&head_sha=\$COMMIT/,
+  )
+  assert.match(checks, /jobs\?filter=latest/)
+  const required = /^ {10}REQUIRED: (.+)$/m.exec(checks)
+  assert.ok(required, 'the checks name the jobs they require')
+  assert.deepEqual(required[1].split(' ').sort(), needs(job('release')).sort())
+  assert.match(checks, /::error::/)
+
+  const release = job('release', releaseDev)
+  assert.deepEqual(needs(release), ['checks'])
+  assert.match(release, /^ {4}uses: \.\/\.github\/workflows\/coolify-release\.yml$/m)
+  assert.doesNotMatch(release, /^ {4}permissions:/m)
 })
 
 test('OpenTofu gives the release job the webhook secret, and the application takes its pushes', () => {

@@ -190,6 +190,13 @@ test('mise.lock holds a checksum of every tool of mise.toml for every platform',
   }
 })
 
+test('lefthook scans the staged changes for secrets before a commit', () => {
+  assert.match(
+    read('../lefthook.yml'),
+    /run: gitleaks git --pre-commit --staged --redact --no-banner/,
+  )
+})
+
 test('gitleaks keeps its default rules', () => {
   const gitleaks = read('../.gitleaks.toml')
   assert.match(gitleaks, /\[extend\]\s*\n\s*useDefault = true/)

@@ -550,7 +550,9 @@ tenant and accounts and only reads the seed.
 three jobs: `check` (format, typecheck, lint, the tests, the tests-first, migration, database and
 catalog checks, the BFF boundary over the built bundles), `e2e`, and `secrets` (gitleaks over the
 whole history of the checked commit, a PR's merge or a push, and over no other branch; `pnpm audit`
-on high advisories).
+on high advisories). lefthook `pre-commit` runs the same gitleaks over the staged changes, so a
+secret is stopped before it enters a commit
+([0078](adr/0078-scan-the-staged-changes-for-secrets-before-a-commit.md)).
 
 - PRs target `develop`, where CI blocks nothing. `main` changes only through a PR from `develop`
   with the three jobs green ([protect-main.json](../.github/rulesets/protect-main.json);

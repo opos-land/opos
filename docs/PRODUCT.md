@@ -300,22 +300,23 @@ convention's currency.
 **Checkout and orders.** A buyer orders in the edition's shop while the edition is published and
 its shop is open: a visitor under an email address typed twice, an account under its own, with no
 place in the convention's team. An order is one checkout with its payment: at most one ticket, for
-one ticket holder, with its add-ons and merchandise, or merchandise alone.
+one ticket holder, with its add-ons and merchandise, or merchandise alone
+([0083](adr/0083-hold-at-most-one-ticket-in-an-order.md)).
 
-| Rule                          | Value                                                                                                                                                                                                                                                 |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The shop                      | shows what is on sale with its price in force, or the org's "sales closed" message; it never shows how much is left, but "Sold out" and the places left of an add-on below its threshold                                                              |
-| Placing                       | the API enforces every rule the shop displays; an order needs a passed bot check, every required consent and, for a teen, the acknowledgement that the guardian's consent is brought on paper                                                         |
-| The total                     | an order is placed at the total the buyer saw or not at all: a different one is shown and confirmed first; a tier or a sale window that ended less than 30 minutes before still holds for a buyer whose total rests on it                             |
-| The hold                      | a placed order awaits payment and holds its stock and capacity for 30 minutes; a payment attempt starts only within the hold, and a payment made counts whenever its confirmation comes                                                               |
-| Paying                        | an order is paid only when its payment provider confirms the payment to OPOS; the buyer's return to the shop is never proof of it; an order with nothing to pay is paid at once                                                                       |
-| A payment that does not match | another amount than the total never pays the order: it needs review by an org; a payment an order no longer needs is refused where the provider can, and the buyer is told where the money is                                                         |
-| A paid order                  | has one QR code, sent with its confirmation, and an order link that opens it without a sign-in; a visitor's order under the confirmed email of an account becomes that account's                                                                      |
-| Naming the ticket holder      | a name or nickname is the buyer's to give or leave out: an order is its buyer's by its email address, and one with no name is sold and scanned like any other ([0076](adr/0076-let-a-buyer-leave-the-ticket-holders-name-out.md))                     |
-| The order's data              | the ticket holder's name, age band, answers and consents, each consent with the exact document version and the time, are the convention's: kept with the order, never on the account                                                                  |
-| What an order keeps           | its prices, whatever the catalog does later; what it names is hidden and never deleted, and a capacity or a stock is never set below what orders hold                                                                                                 |
-| Emails                        | a fixed text with the convention's name, in the recipient's language or the convention's for an address with no account, listed on the order and sent again after a failed send; what a sent one said is kept, without its QR code and its order link |
-| Limits                        | three orders awaiting payment an email address in an edition; the result page of an order opens for 24 hours, in the browser that placed it                                                                                                           |
+| Rule                          | Value                                                                                                                                                                                                                                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The shop                      | shows what is on sale with its price in force, or the org's "sales closed" message; it never shows how much is left, but "Sold out" and the places left of an add-on below its threshold                                                                                                                 |
+| Placing                       | the API enforces every rule the shop displays; an order needs a passed bot check, every required consent and, for a teen, the acknowledgement that the guardian's consent is brought on paper                                                                                                            |
+| The total                     | an order is placed at the total the buyer saw or not at all: a different one is shown and confirmed first; a tier or a sale window that ended less than 30 minutes before still holds for a buyer whose total rests on it                                                                                |
+| The hold                      | a placed order awaits payment and holds its stock and capacity for 30 minutes; a payment attempt starts only within the hold, and a payment made counts whenever its confirmation comes                                                                                                                  |
+| Paying                        | an order is paid only when its payment provider confirms the payment to OPOS; the buyer's return to the shop is never proof of it; an order with nothing to pay is paid at once                                                                                                                          |
+| A payment that does not match | another amount than the total never pays the order: it needs review by an org; a payment an order no longer needs is refused where the provider can, and the buyer is told where the money is ([0081](adr/0081-take-ticket-payments-into-the-conventions-account-and-review-one-that-does-not-match.md)) |
+| A paid order                  | has one QR code, sent with its confirmation, and an order link that opens it without a sign-in; a visitor's order under the confirmed email of an account becomes that account's                                                                                                                         |
+| Naming the ticket holder      | a name or nickname is the buyer's to give or leave out: an order is its buyer's by its email address, and one with no name is sold and scanned like any other ([0076](adr/0076-let-a-buyer-leave-the-ticket-holders-name-out.md))                                                                        |
+| The order's data              | the ticket holder's name, age band, answers and consents, each consent with the exact document version and the time, are the convention's: kept with the order, never on the account                                                                                                                     |
+| What an order keeps           | its prices, whatever the catalog does later; what it names is hidden and never deleted, and a capacity or a stock is never set below what orders hold                                                                                                                                                    |
+| Emails                        | a fixed text with the convention's name, in the recipient's language or the convention's for an address with no account, listed on the order and sent again after a failed send; what a sent one said is kept, without its QR code and its order link                                                    |
+| Limits                        | three orders awaiting payment an email address in an edition; the result page of an order opens for 24 hours, in the browser that placed it                                                                                                                                                              |
 
 **Discount codes.** An org with tickets write access to an edition sets its discount codes, and
 with read access sees each code's uses against its limit
@@ -407,7 +408,8 @@ OPOS's public image matters as much as its features.
   and real copy.
 - **Every screen names itself** in the browser tab: the screen, then its edition or convention.
 - **The shop is for everyone**: its pages and the buyer's pages meet WCAG 2.1 AA, and the whole
-  checkout works on a screen 360 px wide.
+  checkout works on a screen 360 px wide
+  ([0084](adr/0084-meet-wcag-2-1-aa-on-the-shops-and-the-buyers-pages.md)).
 - **Light and dark**: every screen offers a toggle between a light and a dark theme. A signed-in
   account keeps its choice on the account, on every device; a visitor's stays in the browser. With
   no choice, the interface follows the system's theme.
@@ -442,7 +444,7 @@ role over first.
 
 **Orders are kept for at least five years** from the end of their edition, as the convention's
 sales records. Nothing purges them, so an edition that has an order is not deleted, and neither is
-its convention.
+its convention ([0082](adr/0082-keep-orders-for-at-least-five-years-from-the-end-of-their-edition.md)).
 
 **Creating an account accepts the platform's terms**: registration says so and links them beside
 the privacy policy, and no box is ticked. They say what a name and a profile may not hold, how a
@@ -501,7 +503,8 @@ interface language.
 - The list of every convention's published editions on the portal's home page; an edition's page
   with its venue and the convention's logo
 - The programme with speakers on the edition's programme page, likes, personal schedule, reviews
-- Tickets and merchandise sold to the convention's own account and checked at the venue; discount
+- Tickets and merchandise ([0085](adr/0085-sell-merchandise-in-the-mvp.md)) sold to the
+  convention's own account and checked at the venue; discount
   codes, down to free entry; sales made outside the shop recorded as manual orders; attendee
   registrations
 - The public profile: a public name with a nickname, an avatar, a profile an account publishes,

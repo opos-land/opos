@@ -1,6 +1,6 @@
 # 0010. Send ticket payments to the convention's own provider account
 
-- Status: Accepted
+- Status: Superseded by [0081](0081-take-ticket-payments-into-the-conventions-account-and-review-one-that-does-not-match.md)
 - Date: 2026-10-22
 - Rationale: reconstructed, to confirm
 

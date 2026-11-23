@@ -188,7 +188,7 @@ and in the script together.
 **Gates.** [.claude/hooks/migration-reminder.mjs](.claude/hooks/migration-reminder.mjs) hands the
 rules of a migration as context after it is edited. The permissions in
 [.claude/settings.json](.claude/settings.json) deny reading the real `.env` files and the Supabase
-signing keys (the `.env.example` templates stay readable) and running `deploy:secret-get`, which
+signing keys (the `.env.example` templates stay readable) and running `deploy:secret:get`, which
 prints a secret, and ask the user before an edit of the
 settings, `.claude/agents`, `.claude/hooks`, `scripts/tests-first.mjs`, `scripts/check-migrations.mjs`,
 `scripts/bff-boundary.mjs`, `lefthook.yml`, `.github/workflows` or `.github/rulesets`.

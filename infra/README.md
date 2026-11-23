@@ -24,8 +24,8 @@ The deploy commands run [scripts/deploy.mjs](../scripts/deploy.mjs) and `infra:g
 tools are on the path, and mise installs every tool they drive
 ([0070](../docs/adr/0070-run-the-deploy-commands-as-node-scripts.md)). Read the plan before every
 apply. An agent never runs a
-command that changes anything, bootstrap, grant, revoke, apply, secret-set or destroy, nor
-secret-get, which prints a secret.
+command that changes anything, bootstrap, access:grant, access:revoke, apply, import, secret:set
+or destroy, nor secret:get, which prints a secret.
 
 | Command                                                      | Does                                                                                                                                                                                                                                                                                                                                                                    |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -39,15 +39,15 @@ secret-get, which prints a secret.
 | `mise run deploy:plan <environment> [unit]`                  | shows what an apply would change; `--save` plans as an apply does and keeps the plans                                                                                                                                                                                                                                                                                   |
 | `mise run deploy:apply <environment> [unit]`                 | plans, asks and applies those plans, in rounds while some units wait for others to be applied; `--saved` applies the plans `deploy:plan --save` kept; `--no-plan` asks once and applies with no plan shown; `--ref <ref>` deploys that branch or tag instead of env.yaml's, and CI's releases fail until an apply without it                                            |
 | `mise run deploy:output <environment> [unit]`                | prints the units' outputs                                                                                                                                                                                                                                                                                                                                               |
-| `mise run deploy:secret-set <environment> <name>`            | reads a secret's value without echo and stores it                                                                                                                                                                                                                                                                                                                       |
-| `mise run deploy:secret-get <environment> <name>`            | prints a secret's current value, and only it, for a password manager or the clipboard                                                                                                                                                                                                                                                                                   |
+| `mise run deploy:secret:set <environment> <name>`            | reads a secret's value without echo and stores it                                                                                                                                                                                                                                                                                                                       |
+| `mise run deploy:secret:get <environment> <name>`            | prints a secret's current value, and only it, for a password manager or the clipboard                                                                                                                                                                                                                                                                                   |
 | `mise run deploy:destroy <environment> <unit>`               | destroys one unit, after showing its plan and asking                                                                                                                                                                                                                                                                                                                    |
 | `mise run deploy:import <environment> <unit> <address> <id>` | hidden; takes an object that exists but no state holds into a unit's state, as a variable Coolify made from the compose file's default before the unit wrote it, which the apply then fails to create with a 409                                                                                                                                                        |
 | **As an administrator of the Scaleway organisation**         |                                                                                                                                                                                                                                                                                                                                                                         |
 | `mise run deploy:bootstrap <environment>`                    | makes the state's bucket and passphrase and the project of the bucket of uploaded files, and registers the domain                                                                                                                                                                                                                                                       |
 | `mise run deploy:apply <environment> shared`                 | makes the group of the people who run the commands, with its rights                                                                                                                                                                                                                                                                                                     |
-| `mise run deploy:grant <environment> <email>...`             | puts people into that group                                                                                                                                                                                                                                                                                                                                             |
-| `mise run deploy:grant:revoke <environment> <email>...`      | takes people out of it                                                                                                                                                                                                                                                                                                                                                  |
+| `mise run deploy:access:grant <environment> <email>...`      | puts people into that group                                                                                                                                                                                                                                                                                                                                             |
+| `mise run deploy:access:revoke <environment> <email>...`     | takes people out of it                                                                                                                                                                                                                                                                                                                                                  |
 
 Without a unit, plan and apply run every unit but `shared`, which needs the organisation's
 administrator rights.
@@ -99,11 +99,11 @@ The steps for Dev; another environment follows them with its own names.
    mise run deploy:login dev
    mise run deploy:plan dev shared
    mise run deploy:apply dev shared
-   mise run deploy:grant dev <email>...
+   mise run deploy:access:grant dev <email>...
    ```
 
-   Run the grant again to add someone, and `mise run deploy:grant:revoke dev <email>...` to take
-   someone out.
+   Run `access:grant` again to add someone, and `mise run deploy:access:revoke dev <email>...` to
+   take someone out.
 
    The shared unit also makes the key the API sends mail with, straight into the secret
    `smtp-password`, and the API's key of the bucket of uploaded files, which may use its objects and
@@ -190,7 +190,7 @@ Coolify, built on the server from the head of `develop`
   (`deployment.catch_mail` in `env.yaml`), whose inbox is at its address. The `mail` unit still
   keeps the domain's records for a deployment that sends.
 - **Basic auth.** Every service but the API asks for the user `opos` and the value of the secret
-  `basic-auth-password`: `mise run deploy:secret-get dev basic-auth-password`. Rotate it by raising its number in `env.yaml` and applying.
+  `basic-auth-password`: `mise run deploy:secret:get dev basic-auth-password`. Rotate it by raising its number in `env.yaml` and applying.
 - **A release.** Once the checks of a push to `develop` passed, the `release` job of CI sends
   Coolify's webhook of the application a push of its commit, signed with the secret
   `release-webhook-secret`, and Coolify deploys that commit
@@ -242,9 +242,9 @@ secrets:
 ```
 
 - **Add a secret:** add its name, then `mise run deploy:apply dev secrets`. Enter the value of an
-  entered one with `mise run deploy:secret-set dev <name>`.
+  entered one with `mise run deploy:secret:set dev <name>`.
 - **Rotate an entered secret:** issue a new value where it comes from, enter it with
-  `mise run deploy:secret-set dev <name>`, apply, then revoke the old value.
+  `mise run deploy:secret:set dev <name>`, apply, then revoke the old value.
 - **Rotate a generated secret:** raise its number, then apply.
 
 An apply carries a new value to every place it is copied to: Coolify's variables and GitHub's

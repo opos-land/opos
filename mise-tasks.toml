@@ -178,14 +178,14 @@ description = "Make an environment's state bucket and passphrase and register it
 run = "pnpm deploy:bootstrap"
 raw = true
 
-["deploy:grant"]
+["deploy:access:grant"]
 description = "Let people run an environment's deploy commands: <environment> <email>..."
-run = "pnpm deploy:grant"
+run = "pnpm deploy:access:grant"
 raw = true
 
-["deploy:grant:revoke"]
+["deploy:access:revoke"]
 description = "Stop people from running an environment's deploy commands: <environment> <email>..."
-run = "pnpm deploy:grant:revoke"
+run = "pnpm deploy:access:revoke"
 raw = true
 
 ["deploy:plan"]
@@ -214,12 +214,12 @@ description = "Print the outputs of an environment's units: <environment> [unit]
 run = "pnpm deploy:output"
 raw = true
 
-["deploy:secret-set"]
+["deploy:secret:set"]
 description = "Enter the value of a secret a third party issued, without echo: <environment> <name>"
-run = "pnpm deploy:secret-set"
+run = "pnpm deploy:secret:set"
 raw = true
 
-["deploy:secret-get"]
+["deploy:secret:get"]
 description = "Print the current value of one of an environment's secrets: <environment> <name>"
-run = "pnpm deploy:secret-get"
+run = "pnpm deploy:secret:get"
 raw = true

@@ -12,7 +12,7 @@ for Dev; another environment follows them with its own names. They are step 6 of
 1. Make Dev's project, Free, in the EU, and enter the database password it is made with:
 
    ```sh
-   mise run deploy:secret-set dev supabase-db-password
+   mise run deploy:secret:set dev supabase-db-password
    ```
 
 2. Database, Settings: turn off the automatic RLS of new tables (the migrations set RLS).
@@ -44,7 +44,7 @@ The names are those of the Management API's reference, which lists the permissio
 needs. Enter the token, and enter a new one the same way before it lapses:
 
 ```sh
-mise run deploy:secret-set dev supabase-access-token
+mise run deploy:secret:set dev supabase-access-token
 ```
 
 ## Google
@@ -68,8 +68,8 @@ manages it.
 3. Enter the client:
 
    ```sh
-   mise run deploy:secret-set dev google-client-id
-   mise run deploy:secret-set dev google-client-secret
+   mise run deploy:secret:set dev google-client-id
+   mise run deploy:secret:set dev google-client-secret
    ```
 
 To replace the secret, add a new one to the client, enter it, apply the `supabase` unit, and only

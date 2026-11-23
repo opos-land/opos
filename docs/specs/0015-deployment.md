@@ -66,7 +66,7 @@ Every rule is the team's.
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | K1  | Every deploy command is a root script that runs a Node script, with a mise task of the same name; the tools it drives, OpenTofu, Terragrunt, scw and gh, come from mise.                                                                                             |
 | K2  | A command that changes something prints the change before it runs it, and stops at the first failure, a failed listing included. A plan or an apply that reaches the `supabase` unit first tries its access token, and stops before planning if Supabase refuses it. |
-| K3  | The bootstrap, the grant and the sign-in are safe to run again.                                                                                                                                                                                                      |
+| K3  | The bootstrap, `access:*` and the sign-in are safe to run again.                                                                                                                                                                                                     |
 | K4  | No shell script runs on an operator's machine; the scripts inside an image stay where their image has no Node.                                                                                                                                                       |
 
 ## Shape
@@ -104,20 +104,21 @@ domain.
 
 Each runs as `mise run deploy:<name>` or `pnpm deploy:<name>`, through `scripts/deploy.mjs`.
 
-| Command      | Who           | Does                                                                                                    |
-| ------------ | ------------- | ------------------------------------------------------------------------------------------------------- |
-| `bootstrap`  | administrator | the state's bucket and passphrase, the files project, the domain                                        |
-| `grant`      | administrator | puts people into the operators' group, or `--revoke` takes them out                                     |
-| `login`      | operator      | signs in to Scaleway, with a key of the environment's project for 12 hours, and to GitHub               |
-| `plan`       | operator      | plans every unit but `shared`, or one; `--save` keeps exact plans                                       |
-| `apply`      | operator      | plans, asks, applies those plans, in rounds; `--saved`, `--no-plan`; `--ref` runs another branch or tag |
-| `destroy`    | operator      | destroys one unit after showing its plan                                                                |
-| `output`     | operator      | prints the units' outputs                                                                               |
-| `secret-set` | operator      | stores an entered value, read without echo, and disables the version before it                          |
-| `secret-get` | operator      | prints a secret's value alone                                                                           |
+| Command         | Who           | Does                                                                                                    |
+| --------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `bootstrap`     | administrator | the state's bucket and passphrase, the files project, the domain                                        |
+| `access:grant`  | administrator | puts people into the operators' group                                                                   |
+| `access:revoke` | administrator | takes people out of it                                                                                  |
+| `login`         | operator      | signs in to Scaleway, with a key of the environment's project for 12 hours, and to GitHub               |
+| `plan`          | operator      | plans every unit but `shared`, or one; `--save` keeps exact plans                                       |
+| `apply`         | operator      | plans, asks, applies those plans, in rounds; `--saved`, `--no-plan`; `--ref` runs another branch or tag |
+| `destroy`       | operator      | destroys one unit after showing its plan                                                                |
+| `output`        | operator      | prints the units' outputs                                                                               |
+| `secret:set`    | operator      | stores an entered value, read without echo, and disables the version before it                          |
+| `secret:get`    | operator      | prints a secret's value alone                                                                           |
 
 The same script is OpenTofu's external key provider: it hands over the state's passphrase for the
-length of a run. Every command but the bootstrap and the grant runs under the operator's own key, in
+length of a run. Every command but the bootstrap and `access:*` runs under the operator's own key, in
 a profile of scw kept outside the person's own configuration.
 
 ## Tenant isolation and permissions
@@ -136,7 +137,7 @@ a profile of scw kept outside the person's own configuration.
 On every run, without signing in:
 
 - `scripts/deploy.test.mjs`, against fakes of scw, Terragrunt, gh and the APIs of Secret Manager
-  and Supabase: each command's arguments and order; the bootstrap and the grant run twice change
+  and Supabase: each command's arguments and order; the bootstrap and `access:grant` run twice change
   nothing the second time; a secret only ever in a request's body, never in a command's arguments
   or input; a failed listing stops a command; a refused Supabase token stops a plan before it
   starts; an apply applies only after a yes, and only the plans it showed, a round at a time while

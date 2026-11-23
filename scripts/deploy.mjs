@@ -25,7 +25,7 @@ import { parseArgs } from 'node:util'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const COMMANDS =
-  'bootstrap, grant, login, plan, apply, destroy, import, output, secret-set, secret-get, state-passphrase'
+  'bootstrap, access:grant, access:revoke, login, plan, apply, destroy, import, output, secret:set, secret:get, state-passphrase'
 
 /** An error that names its exit status: 2 for a usage, a tool's own status for its failure. */
 const failure = (message, exitCode = 1) => Object.assign(new Error(message), { exitCode })
@@ -212,7 +212,7 @@ export async function deploy({
     const ref = settings.get('supabase', 'ref')
     const secret = settings.get('supabase', 'token_secret')
     if (!ref || !secret) return
-    const enter = `mise run deploy:secret-set ${settings.name} ${secret}`
+    const enter = `pnpm deploy:secret:set ${settings.name} ${secret}`
     const tool = scw(vars)
     const id = secretId(settings, tool, secret)
     let token
@@ -265,7 +265,7 @@ export async function deploy({
     const accessKey = run('scw', ['config', 'get', 'access-key'], { env: vars })
     if (accessKey.status !== 0 || accessKey.stdout.trim() === '') {
       throw failure(
-        `scw has no profile ${settings.project}: mise run deploy:login ${settings.name} first`,
+        `scw has no profile ${settings.project}: pnpm deploy:login ${settings.name} first`,
       )
     }
     const secretKey = run('scw', ['config', 'get', 'secret-key'], { env: vars })
@@ -459,53 +459,13 @@ export async function deploy({
       log(`  ${label} NS ns0.dom.scw.cloud`)
       log(`  ${label} NS ns1.dom.scw.cloud`)
       log(
-        `next: mise run deploy:login ${settings.name}, mise run deploy:apply ${settings.name} shared, then`,
+        `next: pnpm deploy:login ${settings.name}, pnpm deploy:apply ${settings.name} shared, then`,
       )
-      log(`mise run deploy:grant ${settings.name} <email>... for each operator`)
+      log(`pnpm deploy:access:grant ${settings.name} <email>... for each operator`)
     },
 
-    // Lets people run the deploy commands of an environment, or stops them: puts them into its
-    // operators' group or takes them out of it. The shared unit makes the group and leaves its
-    // members alone, so that who they are stays out of the repository. Run by an administrator, with
-    // their own profile; each person is a member of the organisation. Safe to run again.
-    async grant() {
-      const { values, positionals } = parseArgs({
-        args: rest,
-        options: { revoke: { type: 'boolean', default: false } },
-        allowPositionals: true,
-      })
-      if (positionals.length < 2)
-        throw usage('pnpm deploy:grant [--revoke] <environment> <email>...')
-      const [name, ...emails] = positionals
-      const settings = environment(name)
-      const { read, change } = scw(env)
-
-      // The name the shared unit gives the group
-      const groupName = `${settings.project}-operators`
-      const group = read(['iam', 'group', 'list', `name=${groupName}`]).find(
-        (candidate) => candidate.name === groupName,
-      )
-      if (!group) throw failure(`no group ${groupName}: first mise run deploy:apply ${name} shared`)
-
-      // Every person is found before anyone changes
-      const users = read(['iam', 'user', 'list'])
-      const people = emails.map((email) => {
-        const user = users.find((candidate) => candidate.email === email)
-        if (!user) throw failure(`${email} is not a member of the organisation`)
-        return { email, id: user.id }
-      })
-      for (const { email, id } of people) {
-        if (values.revoke) {
-          if ((group.user_ids ?? []).includes(id)) {
-            change(['iam', 'group', 'remove-member', `group-id=${group.id}`, `user-id=${id}`])
-          }
-          log(`${email} can no longer run the deploy commands in ${settings.project}`)
-        } else {
-          change(['iam', 'group', 'add-members', `group-id=${group.id}`, `user-ids.0=${id}`])
-          log(`${email} can run the deploy commands in ${settings.project}`)
-        }
-      }
-    },
+    'access:grant': () => access('grant'),
+    'access:revoke': () => access('revoke'),
 
     plan: () => stack('plan'),
     apply: () => stack('apply'),
@@ -570,8 +530,8 @@ export async function deploy({
     // Stores a new value of a secret whose value a person enters, read without echo and sent to
     // Secret Manager in a request's body: never an argument, a file or the shell's history. The
     // version before it is disabled.
-    async 'secret-set'() {
-      if (rest.length !== 2) throw usage('pnpm deploy:secret-set <environment> <name>')
+    async 'secret:set'() {
+      if (rest.length !== 2) throw usage('pnpm deploy:secret:set <environment> <name>')
       const [name, secret] = rest
       const settings = environment(name)
       const tool = scw(operator(settings))
@@ -592,8 +552,8 @@ export async function deploy({
     // Prints the current value of a secret, entered or generated: exactly the value, so that it
     // pipes into a password manager or the clipboard, and a line break after it only on a
     // terminal. It changes nothing.
-    async 'secret-get'() {
-      if (rest.length !== 2) throw usage('pnpm deploy:secret-get <environment> <name>')
+    async 'secret:get'() {
+      if (rest.length !== 2) throw usage('pnpm deploy:secret:get <environment> <name>')
       const [name, secret] = rest
       const settings = environment(name)
       const tool = scw(operator(settings))
@@ -638,6 +598,44 @@ export async function deploy({
       if (meta !== 'null') keys.decryption_key = data
       write(JSON.stringify({ keys, meta: { external_data: {} } }))
     },
+  }
+
+  // Lets people run the deploy commands of an environment, or stops them: puts them into its
+  // operators' group or takes them out of it. The shared unit makes the group and leaves its
+  // members alone, so that who they are stays out of the repository. Run by an administrator, with
+  // their own profile; each person is a member of the organisation. Safe to run again.
+  function access(way) {
+    const { positionals } = parseArgs({ args: rest, allowPositionals: true })
+    if (positionals.length < 2) throw usage(`pnpm deploy:access:${way} <environment> <email>...`)
+    const [name, ...emails] = positionals
+    const settings = environment(name)
+    const { read, change } = scw(env)
+
+    // The name the shared unit gives the group
+    const groupName = `${settings.project}-operators`
+    const group = read(['iam', 'group', 'list', `name=${groupName}`]).find(
+      (candidate) => candidate.name === groupName,
+    )
+    if (!group) throw failure(`no group ${groupName}: first pnpm deploy:apply ${name} shared`)
+
+    // Every person is found before anyone changes
+    const users = read(['iam', 'user', 'list'])
+    const people = emails.map((email) => {
+      const user = users.find((candidate) => candidate.email === email)
+      if (!user) throw failure(`${email} is not a member of the organisation`)
+      return { email, id: user.id }
+    })
+    for (const { email, id } of people) {
+      if (way === 'revoke') {
+        if ((group.user_ids ?? []).includes(id)) {
+          change(['iam', 'group', 'remove-member', `group-id=${group.id}`, `user-id=${id}`])
+        }
+        log(`${email} can no longer run the deploy commands in ${settings.project}`)
+      } else {
+        change(['iam', 'group', 'add-members', `group-id=${group.id}`, `user-ids.0=${id}`])
+        log(`${email} can run the deploy commands in ${settings.project}`)
+      }
+    }
   }
 
   // plan and apply. A plan meant for an apply allows no mocked dependency outputs
@@ -691,7 +689,7 @@ export async function deploy({
         run(['--out-dir', plans, '--', 'plan'], { DEPLOY_EXACT_PLAN: 'true' })
       } catch (error) {
         throw failure(
-          `A unit did not plan. If its dependencies are not applied yet, apply them first by name: mise run deploy:apply ${name} <unit>`,
+          `A unit did not plan. If its dependencies are not applied yet, apply them first by name: pnpm deploy:apply ${name} <unit>`,
           error.exitCode,
         )
       }
@@ -704,7 +702,7 @@ export async function deploy({
     if (mode === 'plan') {
       if (!values.save) return run(['--', 'plan'])
       planExact()
-      log(`The plans are kept for mise run deploy:apply ${name} ${withUnit}--saved`)
+      log(`The plans are kept for pnpm deploy:apply ${name} ${withUnit}--saved`)
       return
     }
     const target = `${name}${unit ? ` (${unit})` : ''}`
@@ -720,7 +718,7 @@ export async function deploy({
       run(['--out-dir', plans, '--', 'apply'], { TG_NO_AUTO_APPROVE: 'true' }, filters)
     if (values.saved || unit) {
       if (values.saved && !fs.exists(plans)) {
-        throw failure(`No plans are kept: mise run deploy:plan ${name} ${withUnit}--save first`)
+        throw failure(`No plans are kept: pnpm deploy:plan ${name} ${withUnit}--save first`)
       }
       if (!values.saved) planExact()
       await confirm(`Apply the plans above to ${target}? [y/N] `)
@@ -757,7 +755,7 @@ export async function deploy({
       const later = waiting.filter((one) => !planned.includes(one))
       if (planned.length === 0) {
         throw failure(
-          `No unit planned: see the errors above. A unit that reads shared plans once an administrator applied it: mise run deploy:apply ${name} shared`,
+          `No unit planned: see the errors above. A unit that reads shared plans once an administrator applied it: pnpm deploy:apply ${name} shared`,
         )
       }
       const every = planned.length === units.length

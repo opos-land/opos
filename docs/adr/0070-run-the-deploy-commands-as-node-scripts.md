@@ -42,4 +42,4 @@ The rest of 0035 stands.
 - `pnpm deploy:<name>` runs without `mise run` only where mise's tools are on the path, as in a
   shell where mise is active.
 - A change of a deploy command is a change of the `scripts` area, which a test leads.
-- The permissions of an agent deny `deploy:secret-get` in its pnpm, mise and Node forms.
+- The permissions of an agent deny `deploy:secret:get` in its pnpm, mise and Node forms.

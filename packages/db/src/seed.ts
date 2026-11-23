@@ -59,6 +59,7 @@ import {
   discountCodeTicketTypes,
 } from './schema'
 import { open, orderQrCodeOf, providerAccountOf, seal, sealingKey } from './sealed'
+import { listSeed } from './seed-list'
 import { createTenant, restoreTenant, suspendTenant } from './tenants'
 import { totp } from './totp'
 
@@ -871,6 +872,21 @@ const TENANTS: SeedTenant[] = [
     team: [],
   },
 ]
+
+// `pnpm db:seed --list` prints the data above and stops before it needs the environment.
+if (process.argv.includes('--list')) {
+  console.log(
+    listSeed({
+      password: DEV_PASSWORD,
+      accounts: ACCOUNTS,
+      admin: ADMIN,
+      twoFactor: [MFA_EMAIL],
+      profiles: PROFILES,
+      tenants: TENANTS,
+    }),
+  )
+  process.exit(0)
+}
 
 if (process.env.OPOS_ENV !== 'local' && process.env.OPOS_ENV !== 'dev') {
   console.error('The seed runs where OPOS_ENV is local or dev.')

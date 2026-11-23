@@ -1,6 +1,6 @@
 # 0040. Number the specs in the order they arrive
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-17
 
 ## Context

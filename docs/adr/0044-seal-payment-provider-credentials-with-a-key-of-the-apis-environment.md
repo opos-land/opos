@@ -1,6 +1,6 @@
 # 0044. Seal payment provider credentials with a key of the API's environment
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-19
 
 ## Context

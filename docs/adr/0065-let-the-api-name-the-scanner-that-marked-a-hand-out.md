@@ -1,6 +1,6 @@
 # 0065. Let the API name the scanner that marked a hand-out
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

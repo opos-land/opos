@@ -1,6 +1,6 @@
 # 0058. Let the API change the variant an order line names
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

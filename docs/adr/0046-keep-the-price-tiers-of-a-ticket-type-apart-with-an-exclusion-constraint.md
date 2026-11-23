@@ -1,6 +1,6 @@
 # 0046. Keep the price tiers of a ticket type apart with an exclusion constraint
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-19
 
 ## Context

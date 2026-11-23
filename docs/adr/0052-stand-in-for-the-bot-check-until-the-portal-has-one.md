@@ -1,6 +1,6 @@
 # 0052. Stand in for the bot check until the portal has one
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

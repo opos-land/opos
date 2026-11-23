@@ -1,6 +1,6 @@
 # Checkout and orders
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), F1–F8, Payments, P1 and the requirements they
   lean on

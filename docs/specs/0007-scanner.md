@@ -1,6 +1,6 @@
 # Scanner
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B6.1–B6.4
 - Decisions: [0059](../adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md),

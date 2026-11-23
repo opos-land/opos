@@ -1,6 +1,6 @@
 # Shop setup
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B1.4 and the requirements it leans on
 - Decisions: [0044](../adr/0044-seal-payment-provider-credentials-with-a-key-of-the-apis-environment.md),

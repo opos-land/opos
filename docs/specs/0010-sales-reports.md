@@ -1,6 +1,6 @@
 # Sales reports
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B7 and BR-16
 - Decisions: none of its own; what the owner still has to confirm is among its

@@ -1,6 +1,6 @@
 # Przelewy24
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), "What the shop asks of a provider's module",
   and [0002](../briefs/0002-convention-shop-review.md); read against Przelewy24's REST

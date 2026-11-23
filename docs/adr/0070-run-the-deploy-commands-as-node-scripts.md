@@ -1,6 +1,6 @@
 # 0070. Run the deploy commands as Node scripts
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

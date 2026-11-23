@@ -1,6 +1,6 @@
 # 0054. Take the first payments through Przelewy24
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

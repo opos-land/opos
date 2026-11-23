@@ -1,6 +1,6 @@
 # 0061. Lower a price with a discount code, and give free entry with one of 100%
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

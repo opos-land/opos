@@ -1,6 +1,6 @@
 # 0057. Search an order's QR code by a hash the panel makes
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

@@ -1,6 +1,6 @@
 # Order management
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B4, P2, B5.3 and B6.5
 - Decisions: [0055](../adr/0055-record-a-sale-made-outside-the-shop-as-a-manual-order.md),

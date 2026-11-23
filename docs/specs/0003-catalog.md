@@ -1,6 +1,6 @@
 # Catalog
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B2 and the requirements it leans on
 - Decisions:

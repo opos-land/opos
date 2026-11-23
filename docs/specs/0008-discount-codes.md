@@ -1,6 +1,6 @@
 # Discount codes
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B3 and BR-04
 - Decisions: [0061](../adr/0061-lower-a-price-with-a-discount-code-and-give-free-entry-with-one-of-100-percent.md)

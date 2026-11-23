@@ -1,6 +1,6 @@
 # File storage
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the team: the file storage is part of the core
 - Decisions: [0041](../adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md),
   [0069](../adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md)

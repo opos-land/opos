@@ -188,7 +188,7 @@ case in [verify.test.ts](../packages/db/test/verify.test.ts);
 | 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                                       | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                                                                                    |
 | 13  | A tenant is deleted only while suspended                                                                                    | the statement that deletes it judges the suspension itself                                                                                                                                                                                    |
 | 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants                  | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since                                                               |
-| 15  | An order holds at most one ticket                                                                                           | a partial unique index                                                                                                                                                                                                                        |
+| 15  | An order holds at most one ticket                                                                                           | a partial unique index ([0083](adr/0083-hold-at-most-one-ticket-in-an-order.md))                                                                                                                                                              |
 | 16  | What an order names is never deleted from under it: its edition, what it sold, what its ticket holder answered and accepted | foreign keys that do not cascade ([0048](adr/0048-keep-what-an-order-names-with-foreign-keys-that-do-not-cascade.md))                                                                                                                         |
 
 Invariant 7 belongs to a [module not built yet](#modules-waiting-for-their-domain-owner);
@@ -600,7 +600,7 @@ steps of [adding a feature](#adding-a-feature).
 | attendee registrations | invariant 7                                                                                     |
 
 - **Payments.** The money goes to the convention's own provider account
-  ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)). Of a payment OPOS
+  ([0081](adr/0081-take-ticket-payments-into-the-conventions-account-and-review-one-that-does-not-match.md)). Of a payment OPOS
   keeps what the provider's module gives for the orgs, the amount, the time and the provider's
   number of the transaction, and nothing of a card or a bank account; provider credentials are
   sealed with a key of the API's environment for their tenant and provider, never returned,

@@ -1,6 +1,6 @@
 # 0041. Keep uploaded files in an S3 bucket behind the API
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-18
 
 ## Context

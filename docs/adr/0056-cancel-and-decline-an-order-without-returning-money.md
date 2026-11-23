@@ -1,6 +1,6 @@
 # 0056. Cancel and decline an order without returning money
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

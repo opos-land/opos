@@ -1,6 +1,6 @@
 # 0053. Lock the rows that carry a limit in one fixed order
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

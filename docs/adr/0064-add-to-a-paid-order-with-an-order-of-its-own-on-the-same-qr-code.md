@@ -1,6 +1,6 @@
 # 0064. Add to a paid order with an order of its own, on the same QR code
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

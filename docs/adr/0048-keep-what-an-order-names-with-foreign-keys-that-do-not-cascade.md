@@ -1,6 +1,6 @@
 # 0048. Keep what an order names with foreign keys that do not cascade
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

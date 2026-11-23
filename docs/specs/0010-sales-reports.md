@@ -1,6 +1,6 @@
 # Sales reports
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), B7 and BR-16
 - Decisions: none of its own; what the owner still has to confirm is among its
@@ -30,15 +30,15 @@ domain owner to confirm.
 
 ### The exports
 
-| #   | Rule                                                                                                                                                                                                          | Brief                                       |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| E1  | An org exports three lists of an edition as spreadsheet files: the ticket holders, the merchandise pick list and the payments.                                                                                | B7.2                                        |
-| E2  | The ticket holder list has, for each order with a ticket: the order's number and status, the ticket holder's name and age band, the ticket type, the add-ons, the custom field answers and the order's email. | B7.2; the columns are new                   |
-| E3  | The merchandise pick list has, for each order holding merchandise: the order's number, the name on it, each item with its variant and quantity, and whether it was handed out.                                | B7.2; the columns are new                   |
-| E4  | The payments list has, for each payment attempt: the order's number, the amount, when it was paid, where the money is, and what the provider's module keeps of it.                                            | B7.2, the contract with a provider's module |
-| E5  | An export, like the dashboard, needs tickets read access to the edition.                                                                                                                                      | B7.2                                        |
-| E6  | A date in a file is in the convention's time zone, and an amount is a number with its currency in a column beside it.                                                                                         | new                                         |
-| E7  | A text a buyer typed never runs as a formula in a spreadsheet: a cell that begins with `=`, `+`, `-`, `@`, a tab or a carriage return is written with a leading apostrophe.                                   | new                                         |
+| #   | Rule                                                                                                                                                                                                                              | Brief                                       |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| E1  | An org exports three lists of an edition as spreadsheet files: the ticket holders, the merchandise pick list and the payments.                                                                                                    | B7.2                                        |
+| E2  | The ticket holder list has, for each order with a ticket: the order's number and status, when it was placed, the ticket holder's name and age band, the ticket type, the add-ons, the custom field answers and the order's email. | B7.2; the columns are new                   |
+| E3  | The merchandise pick list has, for each order holding merchandise: the order's number, the name on it, each item with its variant and quantity, and when it was handed out, empty while it is not.                                | B7.2; the columns are new                   |
+| E4  | The payments list has, for each payment attempt: the order's number, the amount, when it was paid, where the money is, and what the provider's module keeps of it.                                                                | B7.2, the contract with a provider's module |
+| E5  | An export, like the dashboard, needs tickets read access to the edition.                                                                                                                                                          | B7.2                                        |
+| E6  | A date in a file is in the convention's time zone, and an amount is a number with its currency in a column beside it.                                                                                                             | new                                         |
+| E7  | A text a buyer typed never runs as a formula in a spreadsheet: a cell that begins with `=`, `+`, `-`, `@`, a tab or a carriage return is written with a leading apostrophe.                                                       | new                                         |
 
 ## Shape
 

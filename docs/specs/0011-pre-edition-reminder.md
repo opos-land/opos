@@ -1,6 +1,6 @@
 # Pre-edition reminder
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), the "Pre-edition reminder" email
 - Decisions: none of its own; what the owner still has to confirm is among its

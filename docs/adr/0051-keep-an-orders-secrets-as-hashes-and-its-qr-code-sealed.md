@@ -1,6 +1,6 @@
 # 0051. Keep an order's secrets as hashes, and its QR code sealed
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

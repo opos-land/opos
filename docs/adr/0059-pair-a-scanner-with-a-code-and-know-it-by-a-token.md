@@ -1,6 +1,6 @@
 # 0059. Pair a scanner with a code and know it by a token
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

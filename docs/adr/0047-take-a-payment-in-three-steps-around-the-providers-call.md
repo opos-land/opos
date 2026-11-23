@@ -1,6 +1,6 @@
 # 0047. Take a payment in three steps around the provider's call
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

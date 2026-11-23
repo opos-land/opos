@@ -1,6 +1,6 @@
 # 0060. Read and draw QR codes in the panel's browser
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

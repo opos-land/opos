@@ -1,6 +1,6 @@
 # 0055. Record a sale made outside the shop as a manual order
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

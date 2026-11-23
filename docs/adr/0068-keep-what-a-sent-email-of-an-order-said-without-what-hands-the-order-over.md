@@ -1,6 +1,6 @@
 # 0068. Keep what a sent email of an order said, without what hands the order over
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

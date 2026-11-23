@@ -1,6 +1,6 @@
 # 0049. Send the emails of an order from an outbox in the database
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

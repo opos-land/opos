@@ -1,6 +1,6 @@
 # 0042. Keep a cleaned master of an image and make its variants in imgproxy
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-18
 
 ## Context

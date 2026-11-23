@@ -1,6 +1,6 @@
 # Buyer self-service
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the domain owner of tickets ([CONTRIBUTORS.md](../../CONTRIBUTORS.md))
 - Brief: [0001](../briefs/0001-convention-shop.md), F9 and P1.7
 - Decisions: [0063](../adr/0063-open-an-order-link-by-a-token-after-the-hash-found-across-tenants.md)

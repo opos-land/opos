@@ -1,6 +1,6 @@
 # 0063. Open an order link by a token after the #, found across tenants by its hash
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

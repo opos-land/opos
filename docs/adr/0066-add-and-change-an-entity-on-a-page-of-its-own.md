@@ -1,6 +1,6 @@
 # 0066. Add and change an entity on a page of its own
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

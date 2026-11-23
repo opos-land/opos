@@ -1,6 +1,6 @@
 # 0076. Let a buyer leave the ticket holder's name out
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-22
 
 ## Context

@@ -1,6 +1,6 @@
 # Deployment
 
-- Status: Draft
+- Status: Accepted
 - Domain owner: the team: the deployment is part of the platform, not of a module
 - Decisions: [0033](../adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md),
   [0034](../adr/0034-address-dev-under-dev-opos-land-in-a-dns-zone-of-its-own.md),

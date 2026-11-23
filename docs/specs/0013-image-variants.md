@@ -1,6 +1,6 @@
 # Image variants
 
-- Status: Draft
+- Status: Implemented
 - Domain owner: the team: image variants are part of the core
 - Decisions:
   [0042](../adr/0042-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md)

@@ -1,6 +1,6 @@
 # 0067. List entities in a table whose row opens the entity's page
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

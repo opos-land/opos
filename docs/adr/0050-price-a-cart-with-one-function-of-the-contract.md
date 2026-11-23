@@ -1,6 +1,6 @@
 # 0050. Price a cart with one function of the contract
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

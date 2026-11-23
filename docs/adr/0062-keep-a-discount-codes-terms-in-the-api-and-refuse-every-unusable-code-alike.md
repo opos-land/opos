@@ -1,6 +1,6 @@
 # 0062. Keep a discount code's terms in the API, and refuse every unusable code alike
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 
 ## Context

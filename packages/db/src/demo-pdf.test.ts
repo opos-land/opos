@@ -45,7 +45,33 @@ describe('a demo PDF', () => {
     expect(demoPdf('Shop terms', ['A']).equals(demoPdf('Privacy policy', ['A']))).toBe(false)
   })
 
+  it('shows the Polish letters, each as a byte its font names by the glyph', () => {
+    const polish = demoPdf('Zażółć gęślą jaźń', ['ĄĆĘŁŃÓŚŹŻ']).toString('latin1')
+    const font =
+      /\/Encoding << \/BaseEncoding \/WinAnsiEncoding \/Differences \[(\d+) ([^\]]+)\] >>/.exec(
+        polish,
+      )!
+    const glyphs = font[2]!
+      .trim()
+      .split(/\s+/)
+      .map((name) => name.slice(1))
+    const glyph = (code: string) => glyphs[parseInt(code, 8) - Number(font[1])]
+    const shown = (line: string) =>
+      line.replace(/\\(\d{3})/g, (_, code: string) =>
+        parseInt(code, 8) === 0o363 ? 'ó' : parseInt(code, 8) === 0o323 ? 'Ó' : `[${glyph(code)}]`,
+      )
+
+    // Every byte of the file is ASCII: the letters beyond it are written by their codes.
+    expect([...polish].every((letter) => letter.charCodeAt(0) < 0x80)).toBe(true)
+    const [title, line] = [...polish.matchAll(/Td \((.*)\) Tj/g)].map((match) => shown(match[1]!))
+    expect(title).toBe(
+      'Za[zdotaccent]ó[lslash][cacute] g[eogonek][sacute]l[aogonek] ja[zacute][nacute]',
+    )
+    expect(line).toBe('[Aogonek][Cacute][Eogonek][Lslash][Nacute]Ó[Sacute][Zacute][Zdotaccent]')
+  })
+
   it('refuses text outside the letters its font holds', () => {
-    expect(() => demoPdf('Zażółć', [])).toThrow(/ASCII/)
+    expect(() => demoPdf('Ж', [])).toThrow(/letters/)
+    expect(() => demoPdf('A', ['€'])).toThrow(/letters/)
   })
 })

@@ -1,7 +1,9 @@
+import { createHash } from 'node:crypto'
 import { crc32, deflateSync } from 'node:zlib'
 
-// The pictures of the seed's demo data: the size chart of a demo item, an empty table, and the
-// avatar of a demo profile, a disc on a plain ground, both drawn by this code. No image file
+// The pictures of the seed's demo data: the size chart of a demo item, an empty table; the avatar
+// of a demo profile, a disc on a plain ground; and the pictures of demo merchandise, add-ons and
+// logos, a figure on a plain ground. All are drawn by this code. No image file
 // enters the repository, and nothing here was drawn by a person or generated as a picture
 // (docs/PRODUCT.md, 8. Design and public image).
 
@@ -57,21 +59,78 @@ function png(width: number, height: number, raw: Buffer) {
   ])
 }
 
-const AVATAR = { side: 256, radius: 92, ground: [225, 225, 225], disc: [60, 60, 60] } as const
+/** A ground and the figure drawn on it, in pairs that read together. */
+const PALETTE = [
+  { ground: [226, 232, 240], figure: [51, 65, 85] },
+  { ground: [254, 243, 199], figure: [180, 83, 9] },
+  { ground: [220, 252, 231], figure: [21, 128, 61] },
+  { ground: [224, 231, 255], figure: [67, 56, 202] },
+  { ground: [252, 231, 243], figure: [190, 24, 93] },
+  { ground: [204, 251, 241], figure: [15, 118, 110] },
+] as const
+
+const FIGURES = ['disc', 'square', 'diamond', 'ring'] as const
+type Figure = (typeof FIGURES)[number]
+
+/** The colours and the figure a name gives: the same name, the same choice. */
+function lookOf(name: string) {
+  const hash = createHash('sha256').update(name).digest()
+  return { ...PALETTE[hash[0]! % PALETTE.length]!, shape: FIGURES[hash[1]! % FIGURES.length]! }
+}
+
+/** Whether a point, measured from the middle, lies on a figure of the radius. */
+function onFigure(figure: Figure, dx: number, dy: number, radius: number) {
+  switch (figure) {
+    case 'disc':
+      return dx ** 2 + dy ** 2 <= radius ** 2
+    case 'square':
+      return Math.abs(dx) <= radius * 0.8 && Math.abs(dy) <= radius * 0.8
+    case 'diamond':
+      return Math.abs(dx) + Math.abs(dy) <= radius
+    case 'ring': {
+      const distance = dx ** 2 + dy ** 2
+      return distance <= radius ** 2 && distance >= (radius * 0.6) ** 2
+    }
+  }
+}
+
+/** A PNG of a figure in the middle of a plain ground, of the colours given. */
+function draw(
+  width: number,
+  height: number,
+  look: { ground: readonly number[]; figure: readonly number[]; shape: Figure },
+  radius: number,
+) {
+  const raw = Buffer.alloc((width * 3 + 1) * height)
+  const middle = { x: (width - 1) / 2, y: (height - 1) / 2 }
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const inside = onFigure(look.shape, x - middle.x, y - middle.y, radius)
+      raw.set(inside ? look.figure : look.ground, y * (width * 3 + 1) + 1 + x * 3)
+    }
+  }
+  return { bytes: png(width, height, raw), width, height }
+}
+
+/**
+ * A PNG of the size asked for: a figure in the middle of a plain ground, its shape and colours
+ * taken from the name. What stands for a photograph in the demo, and shows how a picture of these
+ * proportions is fitted. The same name and size give the same bytes.
+ */
+export function demoPicture(name: string, width: number, height: number) {
+  return draw(width, height, lookOf(name), Math.min(width, height) * 0.3)
+}
+
+const AVATAR = {
+  side: 256,
+  radius: 92,
+  look: { ground: [225, 225, 225], figure: [60, 60, 60], shape: 'disc' },
+} as const
 
 /**
  * A square PNG of a disc in the middle of a plain ground: what stands for a picture of a person
  * in the demo, and shows where a square is cut from. The same bytes every time.
  */
 export function demoAvatar() {
-  const { side, radius, ground, disc } = AVATAR
-  const raw = Buffer.alloc((side * 3 + 1) * side)
-  const middle = (side - 1) / 2
-  for (let y = 0; y < side; y += 1) {
-    for (let x = 0; x < side; x += 1) {
-      const inside = (x - middle) ** 2 + (y - middle) ** 2 <= radius ** 2
-      raw.set(inside ? disc : ground, y * (side * 3 + 1) + 1 + x * 3)
-    }
-  }
-  return { bytes: png(side, side, raw), width: side, height: side }
+  return draw(AVATAR.side, AVATAR.side, AVATAR.look, AVATAR.radius)
 }

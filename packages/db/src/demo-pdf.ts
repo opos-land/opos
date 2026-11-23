@@ -1,9 +1,50 @@
-/** A text of the page as the format writes it: its own marks escaped. */
-const literal = (text: string) => {
-  if (!/^[\x20-\x7e]*$/.test(text))
-    throw new Error(`A demo PDF holds printable ASCII alone: ${text}`)
-  return text.replace(/[\\()]/g, '\\$&')
-}
+/**
+ * The Polish letters WinAnsi lacks, given the codes 1 to 16 by the font's own differences, so a
+ * demo document reads in Polish.
+ */
+const POLISH = [
+  ['ą', 'aogonek'],
+  ['ć', 'cacute'],
+  ['ę', 'eogonek'],
+  ['ł', 'lslash'],
+  ['ń', 'nacute'],
+  ['ś', 'sacute'],
+  ['ź', 'zacute'],
+  ['ż', 'zdotaccent'],
+  ['Ą', 'Aogonek'],
+  ['Ć', 'Cacute'],
+  ['Ę', 'Eogonek'],
+  ['Ł', 'Lslash'],
+  ['Ń', 'Nacute'],
+  ['Ś', 'Sacute'],
+  ['Ź', 'Zacute'],
+  ['Ż', 'Zdotaccent'],
+] as const
+
+/** The code of each letter beyond ASCII the page writes, Polish typography's marks among them. */
+const CODES = new Map<string, number>([
+  ...POLISH.map(([letter], index) => [letter, index + 1] as const),
+  ['ó', 0xf3],
+  ['Ó', 0xd3],
+  ['–', 0x96],
+  ['„', 0x84],
+  ['”', 0x94],
+])
+
+const FONT = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /BaseEncoding /WinAnsiEncoding /Differences [1 ${POLISH.map(([, glyph]) => `/${glyph}`).join(' ')}] >> >>`
+
+/** A text of the page as the format writes it: its own marks escaped, a letter beyond ASCII by its code. */
+const literal = (text: string) =>
+  [...text]
+    .map((letter) => {
+      if (/^[\x20-\x7e]$/.test(letter)) return letter.replace(/[\\()]/g, '\\$&')
+      const code = CODES.get(letter)
+      if (code === undefined) {
+        throw new Error(`A demo PDF holds ASCII and the Polish letters alone: ${text}`)
+      }
+      return `\\${code.toString(8).padStart(3, '0')}`
+    })
+    .join('')
 
 /**
  * A one-page PDF of a title and lines of text, in a font every reader has: the file of a demo
@@ -21,7 +62,7 @@ export function demoPdf(title: string, lines: readonly string[]): Buffer {
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
     `<< /Length ${Buffer.byteLength(page, 'latin1')} >>\nstream\n${page}\nendstream`,
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    FONT,
   ]
   let file = '%PDF-1.4\n'
   const offsets: number[] = []

@@ -52,7 +52,7 @@ test.describe('signing in to the admin application', () => {
 
     await expect(page.getByRole('heading', { name: 'Two-factor authentication' })).toBeVisible()
     // Nothing of the platform shows before the code.
-    await expect(page.getByRole('link', { name: 'Convention A', exact: true })).toBeHidden()
+    await expect(page.getByRole('link', { name: 'Konwent A', exact: true })).toBeHidden()
     await page.getByLabel('Code', { exact: true }).fill('000000')
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByRole('alert')).toContainText('The code is wrong')
@@ -61,7 +61,7 @@ test.describe('signing in to the admin application', () => {
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByRole('heading', { name: 'Conventions', level: 1 })).toBeVisible()
     // The seed's conventions, the suspended one marked.
-    await expect(page.getByRole('link', { name: 'Convention A', exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Konwent A', exact: true })).toBeVisible()
     await expect(page.getByRole('row').filter({ hasText: 'convention-c' })).toContainText(
       'Suspended',
     )

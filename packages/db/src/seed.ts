@@ -1,9 +1,10 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { DeleteObjectsCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { and, eq, isNotNull, isNull, notInArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull, like, notInArray, or, sql } from 'drizzle-orm'
+import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import { grantAdmin } from './admins'
 import { migrationDb } from './client'
-import { demoAvatar, demoChart } from './demo-chart'
+import { demoAvatar, demoChart, demoPicture } from './demo-chart'
 import { demoPdf } from './demo-pdf'
 import { migrationUrl, reachableUrl } from './migration-url'
 import {
@@ -12,6 +13,7 @@ import {
   accountProfiles,
   accountRecoveryCodes,
   accounts,
+  addOnPictures,
   addOns,
   admins,
   editionConsents,
@@ -21,6 +23,7 @@ import {
   editionMemberships,
   editions,
   editionShops,
+  merchandiseItemPictures,
   merchandiseItems,
   merchandiseOptionAxes,
   merchandiseOptionValues,
@@ -45,6 +48,7 @@ import {
   retiredTenantSlugs,
   shopSellers,
   scannerDevices,
+  tenantLogos,
   tenantMemberships,
   tenants,
   ticketTypeAddOns,
@@ -59,6 +63,21 @@ import {
   discountCodeTicketTypes,
 } from './schema'
 import { open, orderQrCodeOf, providerAccountOf, seal, sealingKey } from './sealed'
+import {
+  FORMER_ADD_ON_NAMES,
+  FORMER_AXIS_NAMES,
+  FORMER_CONSENT_TEXTS,
+  FORMER_CUSTOM_FIELD_LABELS,
+  FORMER_EMAIL_SUBJECTS,
+  FORMER_HOLDER_NAMES,
+  FORMER_MERCHANDISE_ITEM_NAMES,
+  FORMER_ORDER_NOTES,
+  FORMER_PROGRAM_ITEM_TITLES,
+  FORMER_REPORT_NOTES,
+  FORMER_SCANNER_NAMES,
+  FORMER_TICKET_TYPE_NAMES,
+  FORMER_VALUE_LABELS,
+} from './seed-former'
 import { listSeed } from './seed-list'
 import { createTenant, restoreTenant, suspendTenant } from './tenants'
 import { totp } from './totp'
@@ -149,6 +168,17 @@ interface SeedTicketType {
   items?: string[]
 }
 
+/** The size of a demo picture, which the seed draws from its name in these proportions. */
+interface SeedPictureSize {
+  width: number
+  height: number
+}
+
+/** A demo picture of a merchandise item: its name, which is also its file's, and its size. */
+interface SeedPicture extends SeedPictureSize {
+  name: string
+}
+
 interface SeedAddOn {
   name: string
   description: string
@@ -156,6 +186,8 @@ interface SeedAddOn {
   kind: (typeof addOns.kind.enumValues)[number]
   capacity?: number
   placesLeftThreshold?: number
+  /** Its picture, drawn from its name. */
+  picture?: SeedPictureSize
 }
 
 interface SeedMerchandise {
@@ -164,6 +196,8 @@ interface SeedMerchandise {
   amountMinor: number
   perOrderLimit: number
   picturesIllustrative?: boolean
+  /** Its pictures in their order, each drawn from its name. */
+  pictures?: SeedPicture[]
   /** Left out, the item is sold as its one variant, with this stock; null while unlimited. */
   stock?: number | null
   /** Its axes with the labels of their values; `sizeCharts` gives each value a demo chart. */
@@ -298,6 +332,8 @@ interface SeedTenant {
   headEmail: string
   /** Suspended by the admin: off for everyone else, with everything it owns kept. */
   suspended?: boolean
+  /** Its logo, drawn from its name. */
+  logo?: SeedPictureSize
   /** Left out, the convention has set nothing of its shop. */
   shop?: SeedShop
   editions: SeedEdition[]
@@ -332,13 +368,13 @@ const ACCOUNTS: SeedAccount[] = [
   { email: 'settings@convention-a.test', firstName: 'Ewa', lastName: 'Wilk' },
   {
     email: 'viewer@convention-a.test',
-    firstName: 'Tom',
-    lastName: 'Baker',
+    firstName: 'Tomasz',
+    lastName: 'Piekarski',
     theme: 'dark',
   },
   { email: 'expired@convention-a.test', firstName: 'Marek', lastName: 'Sowa' },
   { email: 'gate@convention-a.test', firstName: 'Ola', lastName: 'Kruk' },
-  { email: 'head@convention-b.test', firstName: 'Jana', lastName: 'Novak' },
+  { email: 'head@convention-b.test', firstName: 'Joanna', lastName: 'Nowicka' },
   { email: 'head@convention-c.test', firstName: 'Igor', lastName: 'Bielik' },
   { email: 'speaker@example.com', firstName: 'Kasia', lastName: 'Mazur', nickname: 'Mazurek' },
   {
@@ -348,7 +384,7 @@ const ACCOUNTS: SeedAccount[] = [
     nickname: 'Jasiek',
     nameOrder: 'nickname-last',
   },
-  { email: 'mfa@example.com', firstName: 'Maria', lastName: 'Zielinska' },
+  { email: 'mfa@example.com', firstName: 'Maria', lastName: 'Zielińska' },
   { email: 'multi@example.com', firstName: 'Olga', lastName: 'Duda' },
 ]
 
@@ -360,15 +396,16 @@ const PROFILES: SeedProfile[] = [
     email: 'speaker@example.com',
     published: true,
     avatar: true,
-    description: 'Game master and LARP writer.\nRuns one-shots for newcomers at every convention.',
-    pronouns: 'she/her',
+    description:
+      'Mistrzyni gry i autorka larpów.\nNa każdym konwencie prowadzi jednostrzały dla nowych graczy.',
+    pronouns: 'ona/jej',
     city: 'Gdynia',
     links: ['https://example.com/kasia', 'https://example.org/one-shots'],
     interests: ['tabletop-rpg', 'larp', 'literature'],
     reports: [
       {
         reason: 'spam',
-        note: 'A demo report that gave an address.',
+        note: 'Zgłoszenie demonstracyjne, które podało adres.',
         email: 'reporter@example.com',
       },
       { reason: 'other' },
@@ -376,17 +413,17 @@ const PROFILES: SeedProfile[] = [
   },
   {
     email: 'attendee@example.com',
-    description: 'Board games and fantasy novels.',
-    city: 'Krakow',
+    description: 'Gry planszowe i powieści fantasy.',
+    city: 'Kraków',
     interests: ['board-games', 'literature'],
   },
   {
     email: 'multi@example.com',
-    description: 'Hand-made dice, shipped anywhere.',
+    description: 'Ręcznie robione kości, wysyłka wszędzie.',
     links: ['https://example.com/dice'],
     takenDown: {
       reason: 'spam',
-      note: 'A profile is not a place for advertising.',
+      note: 'Profil nie jest miejscem na reklamę.',
       reviewRequested: true,
     },
   },
@@ -411,8 +448,8 @@ const demoDocument = (kind: DocumentKind, title: string): SeedDocument => ({
   kind,
   title,
   lines: [
-    'This is a demo document of a demo convention.',
-    'It stands in for a text the convention writes itself and binds nobody.',
+    'To jest dokument demonstracyjny konwentu demonstracyjnego.',
+    'Zastępuje tekst, który konwent pisze sam, i nikogo nie wiąże.',
   ],
 })
 
@@ -425,60 +462,67 @@ const DEMO_CATALOG: SeedCatalog = {
   guardianConsentFormUrl: 'https://convention-a.test/guardian-consent.pdf',
   preorderEndsDaysBefore: 21,
   merchOnly: true,
-  salesClosedMessage: 'Sales are closed for now. See you at the convention.',
+  salesClosedMessage: 'Sprzedaż jest na razie zamknięta. Do zobaczenia na konwencie.',
   pickupInformation:
-    'Pick up your merchandise at the merchandise desk in the main hall, on every day of the convention from 10:00 to 18:00. Show the QR code of your order.',
-  openingHours: 'The convention is open on every day from 10:00 to 20:00; the gate opens at 9:30.',
+    'Gadżety odbierzesz na stoisku z gadżetami w hali głównej, każdego dnia konwentu od 10:00 do 18:00. Pokaż kod QR zamówienia.',
+  openingHours: 'Konwent jest otwarty codziennie od 10:00 do 20:00; wejście otwieramy o 9:30.',
   reminderDaysBefore: 3,
   customFields: [
-    { label: 'City you travel from', isRequired: false },
-    { label: 'Favourite fandom', isRequired: false },
+    { label: 'Miasto, z którego przyjeżdżasz', isRequired: false },
+    { label: 'Ulubiony fandom', isRequired: false },
   ],
   addOns: [
     {
-      name: 'Miniature painting workshop',
-      description: 'Two hours with a painter, brushes and paints included.',
+      name: 'Warsztaty malowania figurek',
+      description: 'Dwie godziny z malarzem; pędzle i farby w cenie.',
       amountMinor: 4000,
       kind: 'limited',
       capacity: 40,
       placesLeftThreshold: 10,
+      picture: { width: 1200, height: 800 },
     },
     {
-      name: 'Sleeping room',
-      description: 'A place on the floor of the sleeping room. Bring a mat and a sleeping bag.',
+      name: 'Sala noclegowa',
+      description: 'Miejsce na podłodze sali noclegowej. Weź karimatę i śpiwór.',
       amountMinor: 0,
       kind: 'headcount',
     },
   ],
   items: [
     {
-      name: 'T-shirt',
-      description: 'Cotton T-shirt with the print of this edition.',
+      name: 'Koszulka',
+      description: 'Bawełniana koszulka z nadrukiem tej edycji.',
       amountMinor: 8000,
       perOrderLimit: 5,
       picturesIllustrative: true,
+      pictures: [
+        { name: 'Koszulka – przód', width: 1200, height: 1200 },
+        { name: 'Koszulka – tył', width: 1200, height: 1200 },
+        { name: 'Koszulka – nadruk', width: 1600, height: 1000 },
+      ],
       axes: [
-        { name: 'Cut', values: ["Women's", "Men's"], sizeCharts: true },
-        { name: 'Size', values: SIZES },
+        { name: 'Krój', values: ['Damski', 'Męski'], sizeCharts: true },
+        { name: 'Rozmiar', values: SIZES },
       ],
       variants: [
-        ...SIZES.map((size) => ({ values: ["Women's", size], stock: size === 'XL' ? 0 : null })),
-        ...SIZES.slice(1).map((size) => ({ values: ["Men's", size], stock: null })),
+        ...SIZES.map((size) => ({ values: ['Damski', size], stock: size === 'XL' ? 0 : null })),
+        ...SIZES.slice(1).map((size) => ({ values: ['Męski', size], stock: null })),
       ],
     },
     {
-      name: 'Enamel pin',
-      description: 'Hard enamel pin, 3 cm.',
+      name: 'Przypinka',
+      description: 'Twarda emaliowana przypinka, 3 cm.',
       amountMinor: 1500,
       perOrderLimit: 10,
+      pictures: [{ name: 'Przypinka', width: 800, height: 1000 }],
       stock: 200,
     },
   ],
   ticketTypes: [
     {
-      name: 'Standard',
-      shortDescription: 'All three days of the convention.',
-      longDescription: 'Entry to every programme item, the games room and the exhibitors.',
+      name: 'Standardowy',
+      shortDescription: 'Wszystkie trzy dni konwentu.',
+      longDescription: 'Wstęp na każdy punkt programu, do sali gier i na stoiska wystawców.',
       capacity: 800,
       ageBands: ['child', 'teen', 'adult'],
       tiers: [
@@ -486,21 +530,25 @@ const DEMO_CATALOG: SeedCatalog = {
         { amountMinor: 15000, from: 14, until: 'end' },
       ],
       supporterPrices: [20000, 30000],
-      perks: ['A badge with your name'],
-      addOns: ['Miniature painting workshop', 'Sleeping room'],
-      items: ['T-shirt', 'Enamel pin'],
+      perks: ['Identyfikator z twoim imieniem'],
+      addOns: ['Warsztaty malowania figurek', 'Sala noclegowa'],
+      items: ['Koszulka', 'Przypinka'],
     },
     {
-      name: 'Supporter',
-      shortDescription: 'All three days, and your name among the supporters.',
-      longDescription: 'Everything the standard one gives, with the supporter perks.',
+      name: 'Wspierający',
+      shortDescription: 'Wszystkie trzy dni i twoje imię wśród wspierających.',
+      longDescription: 'Wszystko, co daje standardowy, oraz bonusy dla wspierających.',
       capacity: 100,
       ageBands: ['adult'],
       discountsExcluded: true,
       tiers: [{ amountMinor: 40000, from: -90, until: 'end' }],
-      perks: ['A badge with your name', 'A supporter pin', 'Your name in the programme book'],
-      addOns: ['Sleeping room'],
-      items: ['T-shirt', 'Enamel pin'],
+      perks: [
+        'Identyfikator z twoim imieniem',
+        'Przypinka wspierającego',
+        'Twoje imię w informatorze',
+      ],
+      addOns: ['Sala noclegowa'],
+      items: ['Koszulka', 'Przypinka'],
     },
   ],
 }
@@ -513,9 +561,9 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMPAYWAT2',
     status: 'awaiting-payment',
     email: 'waiting@example.com',
-    holderName: 'Demo Waiting',
+    holderName: 'Demo Czekający',
     ageBand: 'adult',
-    ticketType: 'Standard',
+    ticketType: 'Standardowy',
     attempts: [{ status: 'started' }],
     placedDaysAgo: 0,
   },
@@ -525,11 +573,11 @@ const DEMO_ORDERS: SeedOrder[] = [
     email: 'attendee@example.com',
     holderName: 'Jan Kowal',
     ageBand: 'adult',
-    ticketType: 'Standard',
-    addOns: ['Miniature painting workshop', 'Sleeping room'],
+    ticketType: 'Standardowy',
+    addOns: ['Warsztaty malowania figurek', 'Sala noclegowa'],
     items: [
-      { name: 'T-shirt', values: ["Men's", 'M'], quantity: 1 },
-      { name: 'Enamel pin', quantity: 2 },
+      { name: 'Koszulka', values: ['Męski', 'M'], quantity: 1 },
+      { name: 'Przypinka', quantity: 2 },
     ],
     account: 'attendee@example.com',
     // Paid twice: the second payment was one the order no longer needed, and was refused.
@@ -546,7 +594,7 @@ const DEMO_ORDERS: SeedOrder[] = [
     email: 'attendee@example.com',
     holderName: 'Jan Kowal',
     ageBand: null,
-    items: [{ name: 'Enamel pin', quantity: 1 }],
+    items: [{ name: 'Przypinka', quantity: 1 }],
     account: 'attendee@example.com',
     extends: 'DEMPAD2222',
     attempts: [{ status: 'paid' }],
@@ -557,9 +605,9 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMTEEN222',
     status: 'paid',
     email: 'guardian@example.com',
-    holderName: 'Demo Teen',
+    holderName: 'Demo Nastolatek',
     ageBand: 'teen',
-    ticketType: 'Standard',
+    ticketType: 'Standardowy',
     attempts: [{ status: 'failed', failureReason: 'wrong-code' }, { status: 'paid' }],
     emails: ['order-confirmation'],
     link: 'expired',
@@ -569,9 +617,9 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMMERCH22',
     status: 'paid',
     email: 'merch@example.com',
-    holderName: 'Demo Merch',
+    holderName: 'Demo Gadżety',
     ageBand: null,
-    items: [{ name: 'Enamel pin', quantity: 3 }],
+    items: [{ name: 'Przypinka', quantity: 3 }],
     attempts: [{ status: 'paid' }],
     emails: ['order-confirmation'],
     placedDaysAgo: 4,
@@ -582,9 +630,9 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMGUEST22',
     status: 'paid',
     email: 'guest@example.com',
-    holderName: 'Demo Guest of Honour',
+    holderName: 'Demo Gość Honorowy',
     ageBand: 'adult',
-    ticketType: 'Standard',
+    ticketType: 'Standardowy',
     discountCode: 'guest100',
     emails: ['order-confirmation'],
     placedDaysAgo: 6,
@@ -593,9 +641,9 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMFAN2222',
     status: 'paid',
     email: 'first-fan@example.com',
-    holderName: 'Demo First Fan',
+    holderName: 'Demo Pierwszy Fan',
     ageBand: 'adult',
-    ticketType: 'Standard',
+    ticketType: 'Standardowy',
     attempts: [{ status: 'paid' }],
     discountCode: 'firstfan',
     emails: ['order-confirmation'],
@@ -605,30 +653,30 @@ const DEMO_ORDERS: SeedOrder[] = [
   {
     number: 'DEMMANUA22',
     status: 'paid-manual',
-    holderName: 'Demo Guest',
+    holderName: 'Demo Gość',
     ageBand: 'adult',
-    ticketType: 'Standard',
+    ticketType: 'Standardowy',
     manualReason: 'desk',
-    note: 'Paid in cash at the desk.',
+    note: 'Zapłacono gotówką w kasie.',
     placedDaysAgo: 3,
   },
   {
     number: 'DEMNVCE222',
     status: 'paid-manual',
-    holderName: 'Demo Company',
+    holderName: 'Demo Firma',
     ageBand: 'adult',
-    ticketType: 'Standard',
-    items: [{ name: 'Enamel pin', quantity: 5 }],
+    ticketType: 'Standardowy',
+    items: [{ name: 'Przypinka', quantity: 5 }],
     manualReason: 'invoice',
-    note: 'Invoice 7/2026.',
+    note: 'Faktura 7/2026.',
     placedDaysAgo: 2,
   },
   {
     number: 'DEMCMPMT22',
     status: 'paid-manual',
-    holderName: 'Demo Volunteer',
+    holderName: 'Demo Wolontariusz',
     ageBand: 'adult',
-    ticketType: 'Standard',
+    ticketType: 'Standardowy',
     manualReason: 'complimentary',
     placedDaysAgo: 2,
   },
@@ -638,9 +686,9 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMCHANGE2',
     status: 'paid',
     email: 'new-address@example.com',
-    holderName: 'Demo Changed',
+    holderName: 'Demo Zmieniony',
     ageBand: 'adult',
-    ticketType: 'Standard',
+    ticketType: 'Standardowy',
     attempts: [{ status: 'paid' }],
     emails: ['order-confirmation', 'order-email-changed'],
     emailChanged: true,
@@ -650,9 +698,9 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMEXPRD22',
     status: 'expired',
     email: 'late@example.com',
-    holderName: 'Demo Late',
+    holderName: 'Demo Spóźniony',
     ageBand: 'adult',
-    ticketType: 'Standard',
+    ticketType: 'Standardowy',
     attempts: [{ status: 'failed', failureReason: 'canceled' }],
     emails: ['order-expired'],
     placedDaysAgo: 3,
@@ -661,10 +709,10 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMREVEW22',
     status: 'needs-review',
     email: 'review@example.com',
-    holderName: 'Demo Review',
+    holderName: 'Demo Do Wyjaśnienia',
     ageBand: 'adult',
-    ticketType: 'Standard',
-    addOns: ['Sleeping room'],
+    ticketType: 'Standardowy',
+    addOns: ['Sala noclegowa'],
     attempts: [{ status: 'paid', paidAmountMinor: 10000 }],
     emails: ['payment-under-review'],
     placedDaysAgo: 2,
@@ -673,9 +721,9 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMDECNE22',
     status: 'declined',
     email: 'declined@example.com',
-    holderName: 'Demo Declined',
+    holderName: 'Demo Odrzucony',
     ageBand: 'adult',
-    ticketType: 'Standard',
+    ticketType: 'Standardowy',
     attempts: [{ status: 'paid', paidAmountMinor: 100 }],
     emails: ['payment-under-review'],
     placedDaysAgo: 8,
@@ -684,9 +732,9 @@ const DEMO_ORDERS: SeedOrder[] = [
     number: 'DEMCANCE22',
     status: 'canceled',
     email: 'canceled@example.com',
-    holderName: 'Demo Canceled',
+    holderName: 'Demo Anulowany',
     ageBand: 'adult',
-    ticketType: 'Supporter',
+    ticketType: 'Wspierający',
     attempts: [{ status: 'paid' }],
     emails: ['order-confirmation'],
     placedDaysAgo: 9,
@@ -696,13 +744,14 @@ const DEMO_ORDERS: SeedOrder[] = [
 const TENANTS: SeedTenant[] = [
   {
     slug: 'convention-a',
-    name: 'Convention A',
+    name: 'Konwent A',
+    logo: { width: 480, height: 240 },
     defaultLocale: 'pl',
     timezone: 'Europe/Warsaw',
     headEmail: 'head@convention-a.test',
     // Ready to sell: the seller's details complete, and an account of the fake provider.
     shop: {
-      sellerName: 'Convention A Foundation',
+      sellerName: 'Fundacja Konwentu A',
       sellerAddress: 'ul. Przykładowa 1, 61-001 Poznań',
       sellerRegistrationNumber: 'KRS 0000000000',
       contactEmail: 'shop@convention-a.test',
@@ -711,93 +760,95 @@ const TENANTS: SeedTenant[] = [
     editions: [
       {
         slug: '2025',
-        name: 'Convention A 2025',
+        name: 'Konwent A 2025',
         startsAt: new Date('2025-06-13T08:00:00Z'),
         endsAt: new Date('2025-06-15T18:00:00Z'),
         isActive: false,
         isPublished: true,
-        venueName: 'Old Brewery Hall',
+        venueName: 'Hala Starego Browaru',
         venueAddress: 'ul. Przykładowa 12',
         venueCity: 'Poznań',
         program: [
-          { title: 'Opening ceremony' },
+          { title: 'Ceremonia otwarcia' },
           {
-            title: 'Worldbuilding from scratch',
-            description: 'Geography, history and belief, in the order a new world needs them.',
+            title: 'Budowanie świata od zera',
+            description:
+              'Geografia, historia i wierzenia – w kolejności, w jakiej potrzebuje ich nowy świat.',
             speakers: ['speaker@example.com'],
           },
-          { title: 'A history of tabletop role-playing' },
-          { title: 'Costume armour workshop' },
+          { title: 'Historia gier fabularnych' },
+          { title: 'Warsztaty zbroi kostiumowej' },
           {
-            title: 'Writing villains people remember',
-            description: 'What a good antagonist wants, and why the reader half agrees.',
+            title: 'Złoczyńcy, których się pamięta',
+            description:
+              'Czego chce dobry antagonista i dlaczego czytelnik po części przyznaje mu rację.',
             speakers: ['speaker@example.com'],
           },
-          { title: 'Board game design clinic' },
-          { title: 'Folklore in modern fantasy' },
-          { title: 'Closing ceremony' },
+          { title: 'Poradnia projektowania gier planszowych' },
+          { title: 'Folklor we współczesnej fantastyce' },
+          { title: 'Ceremonia zamknięcia' },
         ],
         // Closed, and not ready to open: it has its shop terms and no privacy policy.
         shop: {
           open: false,
-          documents: [demoDocument('shop-terms', 'Shop terms 2025')],
+          documents: [demoDocument('shop-terms', 'Regulamin sklepu 2025')],
           consents: [],
         },
       },
       {
         slug: '2026',
-        name: 'Convention A 2026',
+        name: 'Konwent A 2026',
         ...upcoming(2),
         isActive: true,
         isPublished: true,
-        venueName: 'Exhibition Grounds, Hall 3',
+        venueName: 'Tereny Targowe, hala 3',
         venueAddress: 'ul. Przykładowa 40',
         venueCity: 'Poznań',
         program: [
-          { title: 'Opening ceremony' },
+          { title: 'Ceremonia otwarcia' },
           {
-            title: 'Maps for imaginary worlds',
-            description: 'Coastlines, rivers and borders that look as if they grew there.',
+            title: 'Mapy wymyślonych światów',
+            description: 'Wybrzeża, rzeki i granice, które wyglądają, jakby tam wyrosły.',
             likedBy: ['attendee@example.com'],
           },
-          { title: 'Running your first campaign', likedBy: ['attendee@example.com'] },
-          { title: 'Prop making on a budget' },
-          { title: 'Magic systems that hold together', likedBy: ['attendee@example.com'] },
-          { title: 'Miniature painting basics' },
-          { title: 'Dragons across cultures' },
-          { title: 'Live action role-play safety' },
-          { title: 'Translating fantasy fiction' },
-          { title: 'Speed painting contest' },
-          { title: 'An evening of fantasy music' },
-          { title: 'Closing ceremony' },
+          { title: 'Prowadzenie pierwszej kampanii', likedBy: ['attendee@example.com'] },
+          { title: 'Rekwizyty małym kosztem' },
+          { title: 'Spójne systemy magii', likedBy: ['attendee@example.com'] },
+          { title: 'Podstawy malowania figurek' },
+          { title: 'Smoki w różnych kulturach' },
+          { title: 'Bezpieczeństwo na larpach' },
+          { title: 'Przekład literatury fantastycznej' },
+          { title: 'Konkurs szybkiego malowania' },
+          { title: 'Wieczór muzyki fantasy' },
+          { title: 'Ceremonia zamknięcia' },
         ],
         // Open: every condition of opening holds.
         shop: {
           open: true,
           faqUrl: 'https://convention-a.test/faq',
           documents: [
-            demoDocument('shop-terms', 'Shop terms'),
-            demoDocument('privacy-policy', 'Privacy policy'),
-            demoDocument('edition-rules', 'Convention rules'),
+            demoDocument('shop-terms', 'Regulamin sklepu'),
+            demoDocument('privacy-policy', 'Polityka prywatności'),
+            demoDocument('edition-rules', 'Regulamin konwentu'),
           ],
           consents: [
-            { text: 'I accept the shop terms.', isRequired: true, document: 'shop-terms' },
+            { text: 'Akceptuję regulamin sklepu.', isRequired: true, document: 'shop-terms' },
             {
-              text: 'I have read the privacy policy.',
+              text: 'Znam politykę prywatności.',
               isRequired: true,
               document: 'privacy-policy',
             },
-            { text: 'I want to receive news of the convention by email.', isRequired: false },
+            { text: 'Chcę dostawać e-mailem wiadomości o konwencie.', isRequired: false },
           ],
           catalog: DEMO_CATALOG,
           discountCodes: [
-            { code: 'early10', percent: 10, ticketTypes: ['Standard'] },
-            { code: 'merch20', amountMinor: 2000, items: ['T-shirt'] },
-            { code: 'guest100', percent: 100, ticketTypes: ['Standard'] },
-            { code: 'firstfan', percent: 15, usageLimit: 1, ticketTypes: ['Standard'] },
+            { code: 'early10', percent: 10, ticketTypes: ['Standardowy'] },
+            { code: 'merch20', amountMinor: 2000, items: ['Koszulka'] },
+            { code: 'guest100', percent: 100, ticketTypes: ['Standardowy'] },
+            { code: 'firstfan', percent: 15, usageLimit: 1, ticketTypes: ['Standardowy'] },
           ],
           orders: DEMO_ORDERS,
-          scanners: [{ name: 'Main gate' }, { name: 'Merchandise desk', revoked: true }],
+          scanners: [{ name: 'Główne wejście' }, { name: 'Stoisko z gadżetami', revoked: true }],
         },
       },
     ],
@@ -821,25 +872,26 @@ const TENANTS: SeedTenant[] = [
   },
   {
     slug: 'convention-b',
-    name: 'Convention B',
+    name: 'Konwent B',
+    logo: { width: 320, height: 320 },
     defaultLocale: 'en',
     timezone: 'Europe/Prague',
     headEmail: 'head@convention-b.test',
     editions: [
       {
         slug: '2026',
-        name: 'Convention B 2026',
+        name: 'Konwent B 2026',
         ...upcoming(1),
         isActive: true,
         isPublished: true,
-        venueName: 'Riverside Community Centre',
+        venueName: 'Dom Kultury nad Rzeką',
         venueAddress: 'Vzorová 7',
         venueCity: 'Praha',
         program: [
-          { title: 'Welcome talk' },
-          { title: 'An introduction to live role-play' },
-          { title: 'Fantasy cartography' },
-          { title: 'Closing panel' },
+          { title: 'Powitanie' },
+          { title: 'Wprowadzenie do larpów' },
+          { title: 'Kartografia fantasy' },
+          { title: 'Panel zamykający' },
         ],
       },
     ],
@@ -847,7 +899,7 @@ const TENANTS: SeedTenant[] = [
   },
   {
     slug: 'convention-c',
-    name: 'Convention C',
+    name: 'Konwent C',
     defaultLocale: 'pl',
     timezone: 'Europe/Warsaw',
     headEmail: 'head@convention-c.test',
@@ -855,17 +907,17 @@ const TENANTS: SeedTenant[] = [
     editions: [
       {
         slug: '2026',
-        name: 'Convention C 2026',
+        name: 'Konwent C 2026',
         ...upcoming(1),
         isActive: true,
         isPublished: true,
-        venueName: 'Student Union',
+        venueName: 'Klub Studencki',
         venueAddress: 'ul. Przykładowa 3',
         venueCity: 'Wrocław',
         program: [
-          { title: 'Welcome talk' },
-          { title: 'Heraldry for invented kingdoms', likedBy: ['attendee@example.com'] },
-          { title: 'Closing panel' },
+          { title: 'Powitanie' },
+          { title: 'Heraldyka wymyślonych królestw', likedBy: ['attendee@example.com'] },
+          { title: 'Panel zamykający' },
         ],
       },
     ],
@@ -950,6 +1002,11 @@ const DOCUMENT_FILE_KIND = 'edition-document'
 const SIZE_CHART_FILE_KIND = 'merchandise-size-chart'
 /** The sizes the API makes of a size chart's master, each an object beside it. */
 const CHART_SIZES = ['small', 'large']
+/** The kinds the API declares for the pictures the seed draws from a name, and their sizes. */
+const MERCHANDISE_PICTURE_FILE_KIND = 'merchandise-picture'
+const ADD_ON_PICTURE_FILE_KIND = 'add-on-picture'
+const LOGO_FILE_KIND = 'convention-logo'
+const PICTURE_SIZES = ['small', 'large']
 /** The kind the API declares for an account's avatar, the label it keeps one under, and its sizes. */
 const AVATAR_FILE_KIND = 'profile-avatar'
 const AVATAR_LABEL = 'avatar'
@@ -1161,6 +1218,11 @@ async function seedTenant(spec: SeedTenant) {
 
   const objects: PendingObject[] = []
   await db.transaction(async (tx) => {
+    await renameFormerDemoData(
+      tx,
+      tenantId,
+      spec.editions.flatMap((edition) => (edition.shop?.orders ?? []).map((order) => order.number)),
+    )
     await tx
       .update(tenants)
       .set({ name: spec.name, defaultLocale: spec.defaultLocale, timezone: spec.timezone })
@@ -1226,6 +1288,7 @@ async function seedTenant(spec: SeedTenant) {
       }
     }
 
+    if (spec.logo) objects.push(...(await seedLogo(tx, tenantId, spec.name, spec.logo)))
     if (spec.shop) await seedShop(tx, tenantId, spec.shop)
     for (const edition of spec.editions) {
       if (!edition.shop) continue
@@ -1345,6 +1408,54 @@ async function seedTenant(spec: SeedTenant) {
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /**
+ * Renames the rows of a demo tenant an English run of the seed left to their Polish names
+ * (seed-former.ts), and empties the English text of its demo orders' emails, which the run then
+ * writes anew. A row whose text a demo changed since is left as it is.
+ */
+async function renameFormerDemoData(tx: Tx, tenantId: string, orderNumbers: string[]) {
+  const rename = async <T extends PgTable & { tenantId: PgColumn }>(
+    table: T,
+    field: keyof T['$inferInsert'] & keyof T,
+    names: Record<string, string>,
+  ) => {
+    for (const [former, polish] of Object.entries(names)) {
+      await tx
+        .update(table)
+        .set({ [field]: polish } as Partial<T['$inferInsert']>)
+        .where(and(eq(table.tenantId, tenantId), eq(table[field] as PgColumn, former)))
+    }
+  }
+  await rename(programItems, 'title', FORMER_PROGRAM_ITEM_TITLES)
+  await rename(ticketTypes, 'name', FORMER_TICKET_TYPE_NAMES)
+  await rename(addOns, 'name', FORMER_ADD_ON_NAMES)
+  await rename(merchandiseItems, 'name', FORMER_MERCHANDISE_ITEM_NAMES)
+  await rename(merchandiseOptionAxes, 'name', FORMER_AXIS_NAMES)
+  await rename(merchandiseOptionValues, 'label', FORMER_VALUE_LABELS)
+  await rename(editionCustomFields, 'label', FORMER_CUSTOM_FIELD_LABELS)
+  await rename(editionConsents, 'text', FORMER_CONSENT_TEXTS)
+  await rename(scannerDevices, 'name', FORMER_SCANNER_NAMES)
+  await rename(orders, 'holderName', FORMER_HOLDER_NAMES)
+  await rename(orders, 'note', FORMER_ORDER_NOTES)
+  if (orderNumbers.length === 0) return
+  await tx
+    .update(orderEmails)
+    .set({ subject: null, body: null })
+    .where(
+      and(
+        eq(orderEmails.tenantId, tenantId),
+        inArray(
+          orderEmails.orderId,
+          tx
+            .select({ id: orders.id })
+            .from(orders)
+            .where(and(eq(orders.tenantId, tenantId), inArray(orders.number, orderNumbers))),
+        ),
+        or(...FORMER_EMAIL_SUBJECTS.map((subject) => like(orderEmails.subject, subject))),
+      ),
+    )
+}
+
+/**
  * Puts the objects of rows that are committed. A file already there is put again with the same
  * bytes, so a bucket that lost one gets it back.
  */
@@ -1401,6 +1512,12 @@ async function seedProfile(profile: SeedProfile) {
       })
       .where(eq(accountProfiles.accountId, id))
 
+    for (const [former, polish] of Object.entries(FORMER_REPORT_NOTES)) {
+      await tx
+        .update(profileReports)
+        .set({ note: polish })
+        .where(and(eq(profileReports.accountId, id), eq(profileReports.note, former)))
+    }
     const [reported] = await tx
       .select({ id: profileReports.id })
       .from(profileReports)
@@ -1688,6 +1805,31 @@ async function seedCatalog(
           .values({ ...at, name: addOn.name, ...values })
           .returning({ id: addOns.id })
     addOnIds.set(addOn.name, saved!.id)
+    if (addOn.picture) {
+      const [held] = await tx
+        .select({
+          fileId: addOnPictures.fileId,
+          sha256: uploadedFiles.sha256,
+          name: uploadedFiles.name,
+        })
+        .from(addOnPictures)
+        .innerJoin(uploadedFiles, eq(uploadedFiles.id, addOnPictures.fileId))
+        .where(eq(addOnPictures.addOnId, saved!.id))
+      // A picture an org put in place of the demo one is the org's, and stays.
+      if (!held || held.name === `${addOn.name}.png`) {
+        const kept = await keepPicture(
+          tx,
+          at,
+          ADD_ON_PICTURE_FILE_KIND,
+          { name: addOn.name, ...addOn.picture },
+          held,
+        )
+        if (!held) {
+          await tx.insert(addOnPictures).values({ ...at, addOnId: saved!.id, fileId: kept.fileId })
+        }
+        objects.push(kept.object)
+      }
+    }
   }
 
   const itemIds = new Map<string, string>()
@@ -1715,6 +1857,7 @@ async function seedCatalog(
           .values({ ...at, name: item.name, ...values })
           .returning({ id: merchandiseItems.id })
     itemIds.set(item.name, saved!.id)
+    objects.push(...(await seedItemPictures(tx, { ...at, merchandiseItemId: saved!.id }, item)))
     objects.push(...(await seedVariants(tx, { ...at, merchandiseItemId: saved!.id }, item)))
   }
 
@@ -1875,16 +2018,17 @@ async function seedOrderLink(
 /**
  * What a demo email said, as the outbox keeps the text of one it sent: without the QR code and
  * the token of the order link, which only its recipient sees. The seed sends nothing, so the text
- * is a short one of its own, after the wording of the real email.
+ * is a short one of its own, after the wording of the real email in Polish, the language of every
+ * demo account.
  */
 function demoEmailText(
   kind: (typeof orderEmails.kind.enumValues)[number],
   { number, conventionName }: { number: string; conventionName: string },
 ): { subject: string; body: string } {
   const handedOver = [
-    'YOUR QR CODE',
-    `The QR code of the order ${number}: […]`,
-    'See your order: https://portal.example/order#[…]',
+    'TWÓJ KOD QR',
+    `Kod QR zamówienia ${number}: […]`,
+    'Zobacz zamówienie: https://portal.example/order#[…]',
   ]
   const said = (subject: string, ...paragraphs: string[]) => ({
     subject,
@@ -1893,31 +2037,31 @@ function demoEmailText(
   switch (kind) {
     case 'order-confirmation':
       return said(
-        `Your order ${number} for ${conventionName} is paid`,
-        `Thank you. Your order ${number} for ${conventionName} is paid.`,
+        `Twoje zamówienie ${number} w sklepie konwentu ${conventionName} jest opłacone`,
+        `Dziękujemy. Twoje zamówienie ${number} w sklepie konwentu ${conventionName} jest opłacone.`,
         ...handedOver,
       )
     case 'order-email-changed':
       return said(
-        `Your order ${number} for ${conventionName} is now under this email address`,
-        `An organizer of ${conventionName} moved the order ${number} to this email address.`,
+        `Twoje zamówienie ${number} w sklepie konwentu ${conventionName} jest teraz przypisane do tego adresu e-mail`,
+        `Organizator konwentu ${conventionName} przeniósł zamówienie ${number} na ten adres e-mail.`,
         ...handedOver,
       )
     case 'order-expired':
       return said(
-        `Your order ${number} for ${conventionName} has expired`,
-        `Your order ${number} for ${conventionName} was not paid in time and has expired. Nothing was charged.`,
+        `Twoje zamówienie ${number} w sklepie konwentu ${conventionName} wygasło`,
+        `Twoje zamówienie ${number} w sklepie konwentu ${conventionName} nie zostało opłacone na czas i wygasło. Nie pobrano żadnych pieniędzy.`,
       )
     case 'payment-under-review':
       return said(
-        `Your payment for the order ${number} is under review`,
-        `Your payment for the order ${number} for ${conventionName} arrived, but it could not confirm the order, so an organizer has to look at it.`,
-        `An organizer of ${conventionName} will get in touch with you. You do not need to pay again.`,
+        `Twoja płatność za zamówienie ${number} jest wyjaśniana`,
+        `Twoja płatność za zamówienie ${number} w sklepie konwentu ${conventionName} dotarła, ale nie udało się nią potwierdzić zamówienia, więc musi je sprawdzić organizator.`,
+        `Organizator konwentu ${conventionName} skontaktuje się z tobą. Nie musisz płacić ponownie.`,
       )
     case 'payment-not-needed':
       return said(
-        `A payment arrived that your order ${number} does not need`,
-        `A payment arrived for your order ${number} for ${conventionName}, which was not waiting for one any more. It changes nothing of the order.`,
+        `Wpłynęła płatność, której twoje zamówienie ${number} nie potrzebuje`,
+        `Do twojego zamówienia ${number} w sklepie konwentu ${conventionName} wpłynęła płatność, na którą zamówienie już nie czekało. Niczego w zamówieniu to nie zmienia.`,
       )
     default:
       throw new Error(`No demo text for the email ${kind}`)
@@ -2353,7 +2497,7 @@ async function seedSizeChart(
     contentType: 'image/png',
     size: chart.bytes.length,
     sha256: createHash('sha256').update(chart.bytes).digest('hex'),
-    name: `Size chart - ${label}.png`,
+    name: `Tabela rozmiarów – ${label}.png`,
     width: chart.width,
     height: chart.height,
   }
@@ -2389,6 +2533,115 @@ async function seedSizeChart(
     bytes: chart.bytes,
     type: 'image/png',
     stale: redrawn ? CHART_SIZES.map((size) => key.replace(/master$/, size)) : [],
+  }
+}
+
+/**
+ * The pictures of a demo item, each found by the name of its file: one the item lacks is added
+ * after those it has, and one an org added stays.
+ */
+async function seedItemPictures(
+  tx: Tx,
+  of: { tenantId: string; editionId: string; merchandiseItemId: string },
+  item: SeedMerchandise,
+): Promise<PendingObject[]> {
+  const objects: PendingObject[] = []
+  for (const picture of item.pictures ?? []) {
+    const [held] = await tx
+      .select({ fileId: merchandiseItemPictures.fileId, sha256: uploadedFiles.sha256 })
+      .from(merchandiseItemPictures)
+      .innerJoin(uploadedFiles, eq(uploadedFiles.id, merchandiseItemPictures.fileId))
+      .where(
+        and(
+          eq(merchandiseItemPictures.merchandiseItemId, of.merchandiseItemId),
+          eq(uploadedFiles.name, `${picture.name}.png`),
+        ),
+      )
+    const kept = await keepPicture(tx, of, MERCHANDISE_PICTURE_FILE_KIND, picture, held)
+    if (!held) {
+      const [last] = await tx
+        .select({ position: sql<number>`coalesce(max(${merchandiseItemPictures.position}), 0)` })
+        .from(merchandiseItemPictures)
+        .where(eq(merchandiseItemPictures.merchandiseItemId, of.merchandiseItemId))
+      await tx
+        .insert(merchandiseItemPictures)
+        .values({ ...of, fileId: kept.fileId, position: last!.position + 1 })
+    }
+    objects.push(kept.object)
+  }
+  return objects
+}
+
+/**
+ * The logo of a demo convention, drawn from its name. A logo an org put in place of the demo one
+ * is the org's, and stays.
+ */
+async function seedLogo(
+  tx: Tx,
+  tenantId: string,
+  name: string,
+  size: SeedPictureSize,
+): Promise<PendingObject[]> {
+  const [held] = await tx
+    .select({ fileId: tenantLogos.fileId, sha256: uploadedFiles.sha256, name: uploadedFiles.name })
+    .from(tenantLogos)
+    .innerJoin(uploadedFiles, eq(uploadedFiles.id, tenantLogos.fileId))
+    .where(eq(tenantLogos.tenantId, tenantId))
+  if (held && held.name !== `${name}.png`) return []
+  const kept = await keepPicture(
+    tx,
+    { tenantId, editionId: null },
+    LOGO_FILE_KIND,
+    { name, ...size },
+    held,
+  )
+  if (!held) await tx.insert(tenantLogos).values({ tenantId, fileId: kept.fileId })
+  return [kept.object]
+}
+
+/**
+ * A picture of a demo convention or of one of its editions, drawn by code from its name and kept
+ * as the master the API makes its sizes from. The file a feature's row points at already gets the
+ * bytes drawn now; without one, a file is kept for the row the caller adds.
+ */
+async function keepPicture(
+  tx: Tx,
+  at: { tenantId: string; editionId: string | null },
+  kind: string,
+  picture: SeedPicture,
+  held: { fileId: string; sha256: string } | undefined,
+): Promise<{ fileId: string; object: PendingObject }> {
+  const drawn = demoPicture(picture.name, picture.width, picture.height)
+  const file = {
+    contentType: 'image/png',
+    size: drawn.bytes.length,
+    sha256: createHash('sha256').update(drawn.bytes).digest('hex'),
+    name: `${picture.name}.png`,
+    width: drawn.width,
+    height: drawn.height,
+  }
+  let fileId = held?.fileId
+  // The API keeps the sizes it made of a master: those of a master drawn anew go with it.
+  const redrawn = held !== undefined && held.sha256 !== file.sha256
+  if (fileId) {
+    // The seed owns its demo files: a picture drawn anew since the last run is the file's new bytes.
+    await tx.update(uploadedFiles).set(file).where(eq(uploadedFiles.id, fileId))
+  } else {
+    const [kept] = await tx
+      .insert(uploadedFiles)
+      .values({ ...at, kind, ...file })
+      .returning({ id: uploadedFiles.id })
+    fileId = kept!.id
+  }
+  const key = masterObjectKey(at.tenantId, fileId)
+  return {
+    fileId,
+    object: {
+      key,
+      bytes: drawn.bytes,
+      type: 'image/png',
+      stale: redrawn ? PICTURE_SIZES.map((size) => key.replace(/master$/, size)) : [],
+    },
   }
 }
 

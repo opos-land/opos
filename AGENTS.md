@@ -76,7 +76,9 @@ covers is asked of its owner, not invented.
 - **English everywhere** — documents, code, comments (`//`, `/* */`, `#`, `--`, JSDoc, TODO,
   including `lefthook.yml`, compose files, SQL migrations and `.env.example`), identifiers, route
   paths, source messages, branches and commits. The only Polish in the repository is the `pl`
-  translation catalog and the renderings a brief quotes. No emoji.
+  translation catalog, the demo data of the seed, its identifiers aside
+  ([0080](docs/adr/0080-write-the-seeds-demo-data-in-polish.md)), and the renderings a brief
+  quotes. No emoji.
 - The documents and the specs state the target state only: no change history, no alternatives, no
   "why" chapters; those belong in a decision record. A short operational instruction is fine.
 - Tables where the content has structure, spaced into aligned columns: every cell padded to its

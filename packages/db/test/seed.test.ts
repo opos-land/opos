@@ -50,9 +50,7 @@ describe('db:seed', { timeout: 30_000 }, () => {
     expect(result.stdout).toMatch(
       /^ {2}head@convention-a\.test +Anna Nowak +head of convention-a$/m,
     )
-    expect(result.stdout).toMatch(
-      /^ {2}convention-c +Convention C +pl, Europe\/Warsaw +suspended$/m,
-    )
+    expect(result.stdout).toMatch(/^ {2}convention-c +Konwent C +pl, Europe\/Warsaw +suspended$/m)
   })
 
   it('ignores the old flag on production', () => {
@@ -628,7 +626,7 @@ describe('db:seed shop', () => {
       expect([...types]).toEqual([
         // Two price tiers and supporter prices.
         expect.objectContaining({
-          name: 'Standard',
+          name: 'Standardowy',
           allows_child: true,
           discounts_excluded: false,
           tiers: 2,
@@ -638,7 +636,7 @@ describe('db:seed shop', () => {
         }),
         // For adults only, and excluded from discounts.
         expect.objectContaining({
-          name: 'Supporter',
+          name: 'Wspierający',
           allows_child: false,
           allows_teen: false,
           allows_adult: true,
@@ -676,8 +674,8 @@ describe('db:seed shop', () => {
       `
       expect([...items]).toEqual([
         // Two cuts by four sizes are eight combinations, of which seven exist.
-        { name: 'T-shirt', axes: 2, values: 6, variants: 7, sold_out: 1, size_charts: 2 },
-        { name: 'Enamel pin', axes: 0, values: 0, variants: 1, sold_out: 0, size_charts: 0 },
+        { name: 'Koszulka', axes: 2, values: 6, variants: 7, sold_out: 1, size_charts: 2 },
+        { name: 'Przypinka', axes: 0, values: 0, variants: 1, sold_out: 0, size_charts: 0 },
       ])
 
       const [shop] = await migrator`
@@ -700,8 +698,8 @@ describe('db:seed shop', () => {
       expect(fields).toHaveLength(2)
       // Both are optional: the demo checkout asks a ticket holder for nothing it could do without.
       expect(fields.map((field) => [field.label, field.is_required])).toEqual([
-        ['City you travel from', false],
-        ['Favourite fandom', false],
+        ['Miasto, z którego przyjeżdżasz', false],
+        ['Ulubiony fandom', false],
       ])
     },
   )
@@ -832,13 +830,13 @@ describe('db:seed shop', () => {
       const kept = await pictures()
 
       expect(kept.map((file) => [file.owner, file.kind, file.name])).toEqual([
-        ['T-shirt', 'merchandise-picture', 'T-shirt - front.png'],
-        ['T-shirt', 'merchandise-picture', 'T-shirt - back.png'],
-        ['T-shirt', 'merchandise-picture', 'T-shirt - print.png'],
-        ['Enamel pin', 'merchandise-picture', 'Enamel pin.png'],
-        ['Miniature painting workshop', 'add-on-picture', 'Miniature painting workshop.png'],
-        ['convention-a', 'convention-logo', 'Convention A.png'],
-        ['convention-b', 'convention-logo', 'Convention B.png'],
+        ['Koszulka', 'merchandise-picture', 'Koszulka – przód.png'],
+        ['Koszulka', 'merchandise-picture', 'Koszulka – tył.png'],
+        ['Koszulka', 'merchandise-picture', 'Koszulka – nadruk.png'],
+        ['Przypinka', 'merchandise-picture', 'Przypinka.png'],
+        ['Warsztaty malowania figurek', 'add-on-picture', 'Warsztaty malowania figurek.png'],
+        ['convention-a', 'convention-logo', 'Konwent A.png'],
+        ['convention-b', 'convention-logo', 'Konwent B.png'],
       ])
       // An edition's picture lies under its edition, a logo under its convention alone.
       expect(
@@ -1006,7 +1004,7 @@ describe('db:seed shop', () => {
         select pickup_information, opening_hours, reminder_days_before
         from edition_shops where edition_id = ${edition}
       `
-      expect(shop!.pickup_information).toMatch(/merchandise desk/)
+      expect(shop!.pickup_information).toMatch(/stoisku z gadżetami/)
       // And when it is open, with a reminder three days before it starts
       // (docs/specs/0011-pre-edition-reminder.md).
       expect(shop!.opening_hours).toMatch(/10:00/)
@@ -1066,8 +1064,8 @@ describe('db:seed shop', () => {
       `
       expect(confirmations.length).toBeGreaterThan(0)
       for (const said of confirmations) {
-        expect(said.subject).toMatch(/^Your order \S+ for .+ is paid$/)
-        expect(said.body).toContain('The QR code of the order')
+        expect(said.subject).toMatch(/^Twoje zamówienie \S+ w sklepie konwentu .+ jest opłacone$/)
+        expect(said.body).toContain('Kod QR zamówienia')
         expect(said.body).toMatch(/\/order#\[…\]/)
         expect(said.body).not.toMatch(/[A-Z2-7]{32}/)
       }
@@ -1184,9 +1182,15 @@ describe('db:seed shop', () => {
       from scanner_devices where edition_id = ${edition} order by name
     `
       expect(scanners).toEqual([
-        { name: 'Main gate', revoked: false, paired: true, enabled: true, pairing_open: false },
         {
-          name: 'Merchandise desk',
+          name: 'Główne wejście',
+          revoked: false,
+          paired: true,
+          enabled: true,
+          pairing_open: false,
+        },
+        {
+          name: 'Stoisko z gadżetami',
           revoked: true,
           paired: true,
           enabled: true,
@@ -1210,8 +1214,86 @@ describe('db:seed shop', () => {
         { holder_name: 'Changed by a demo' },
       ])
     } finally {
-      await migrator`update orders set holder_name = 'Demo Declined' where id = ${order!.id}`
+      await migrator`update orders set holder_name = 'Demo Odrzucony' where id = ${order!.id}`
     }
+  })
+
+  // The demo data was English before it turned Polish
+  // (docs/adr/0080-write-the-seeds-demo-data-in-polish.md): a run over the rows an English run left
+  // renames them, so a database seeded before holds one demo and not two.
+  it('renames the rows an English run left, adding none', { timeout: 120_000 }, async () => {
+    expect(runSeed('local').status).toBe(0)
+    const a = await tenantId('convention-a')
+    const edition = await editionId(a, '2026')
+    const [confirmation] = await migrator<{ id: string; number: string }[]>`
+      select e.id, o.number from order_emails e join orders o on o.id = e.order_id
+      where e.edition_id = ${edition} and e.kind = 'order-confirmation' limit 1
+    `
+    const english = [
+      ['program_items', 'title', 'Ceremonia otwarcia', 'Opening ceremony'],
+      ['ticket_types', 'name', 'Standardowy', 'Standard'],
+      ['add_ons', 'name', 'Sala noclegowa', 'Sleeping room'],
+      ['merchandise_items', 'name', 'Koszulka', 'T-shirt'],
+      ['merchandise_option_axes', 'name', 'Krój', 'Cut'],
+      ['merchandise_option_values', 'label', 'Damski', "Women's"],
+      ['edition_custom_fields', 'label', 'Ulubiony fandom', 'Favourite fandom'],
+      ['edition_consents', 'text', 'Akceptuję regulamin sklepu.', 'I accept the shop terms.'],
+      ['scanner_devices', 'name', 'Główne wejście', 'Main gate'],
+      ['orders', 'holder_name', 'Demo Odrzucony', 'Demo Declined'],
+      ['orders', 'note', 'Faktura 7/2026.', 'Invoice 7/2026.'],
+      ['uploaded_files', 'name', 'Koszulka – przód.png', 'T-shirt - front.png'],
+    ] as const
+    const counts = async () =>
+      Promise.all(
+        english.map(
+          async ([table]) =>
+            (
+              await migrator<{ rows: number }[]>`
+                select count(*)::int as rows from ${migrator(table)} where tenant_id = ${a}
+              `
+            )[0]!.rows,
+        ),
+      )
+    const before = await counts()
+    for (const [table, column, polish, former] of english) {
+      await migrator`
+        update ${migrator(table)} set ${migrator(column)} = ${former}
+        where tenant_id = ${a} and ${migrator(column)} = ${polish}
+      `
+    }
+    await migrator`
+      update order_emails set subject = ${`Your order ${confirmation!.number} for Convention A is paid`},
+        body = 'Thank you.'
+      where id = ${confirmation!.id}
+    `
+    await migrator`
+      update profile_reports set note = 'A demo report that gave an address.'
+      where note = 'Zgłoszenie demonstracyjne, które podało adres.'
+    `
+
+    const run = runSeed('local')
+    expect(run.status, run.stderr).toBe(0)
+
+    expect(await counts()).toEqual(before)
+    for (const [table, column, polish, former] of english) {
+      const [left] = await migrator<{ polish: number; former: number }[]>`
+        select count(*) filter (where ${migrator(column)} = ${polish})::int as polish,
+          count(*) filter (where ${migrator(column)} = ${former})::int as former
+        from ${migrator(table)} where tenant_id = ${a}
+      `
+      expect({ table, ...left }).toMatchObject({ table, former: 0 })
+      expect(left!.polish).toBeGreaterThan(0)
+    }
+    expect(await migrator`select subject from order_emails where id = ${confirmation!.id}`).toEqual(
+      [
+        {
+          subject: `Twoje zamówienie ${confirmation!.number} w sklepie konwentu Konwent A jest opłacone`,
+        },
+      ],
+    )
+    expect(
+      await migrator`select note from profile_reports where note = 'A demo report that gave an address.'`,
+    ).toHaveLength(0)
   })
 
   it('sets nothing of a shop for convention B', { timeout: 120_000 }, async () => {

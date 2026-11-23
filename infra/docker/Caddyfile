@@ -31,6 +31,8 @@
 		Strict-Transport-Security "max-age=63072000"
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
+		# The commit the deployment built, which web.sh sets
+		X-Opos-Commit "{$OPOS_COMMIT}"
 		-Server
 	}
 

@@ -15,4 +15,15 @@ fi
 unset BASIC_AUTH_PASSWORD
 export BASIC_AUTH
 
+# The commit Coolify deployed, for the X-Opos-Commit header; Caddy puts it into the Caddyfile as
+# text, so it is a commit's name or nothing
+OPOS_COMMIT=${OPOS_COMMIT:-unknown}
+case "$OPOS_COMMIT" in
+  *[!A-Za-z0-9._-]*)
+    echo "OPOS_COMMIT is no commit: $OPOS_COMMIT" >&2
+    exit 1
+    ;;
+esac
+export OPOS_COMMIT
+
 exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile

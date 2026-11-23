@@ -12,6 +12,8 @@ cd "$(dirname "$0")/../.."
 api_url=https://opos-control.invalid
 name=opos-images-check-portal
 guarded=opos-images-check-guarded
+password=opos-check-password
+commit=0123456789abcdef0123456789abcdef01234567
 
 build() {
   docker build --quiet -f infra/docker/Dockerfile "$@" . >/dev/null
@@ -36,7 +38,7 @@ fi
 echo "Asking the portal for a route"
 docker run --rm -d --name "$name" -p 127.0.0.1:39080:8080 opos-portal:check >/dev/null
 docker run --rm -d --name "$guarded" -p 127.0.0.1:39081:8080 \
-  -e BASIC_AUTH_PASSWORD=opos-check-password opos-admin:check >/dev/null
+  -e BASIC_AUTH_PASSWORD="$password" -e OPOS_COMMIT="$commit" opos-admin:check >/dev/null
 trap 'docker stop "$name" "$guarded" >/dev/null' EXIT
 for port in 39080 39081; do
   for _ in $(seq 30); do
@@ -50,7 +52,7 @@ headers=$(curl -fsS -D - -o /dev/null http://127.0.0.1:39080/conventions/any/pro
 expect() {
   if ! grep -qi "$1" <<<"$headers"; then
     echo "$headers" >&2
-    echo "The portal's answer lacks: $1" >&2
+    echo "The answer lacks: $1" >&2
     exit 1
   fi
 }
@@ -58,6 +60,8 @@ expect "content-type: text/html"
 expect "content-security-policy: .*connect-src 'self' $api_url"
 expect "strict-transport-security:"
 expect "x-content-type-options: nosniff"
+# The portal runs without a commit, as a build outside a deployment does
+expect "x-opos-commit: unknown"
 
 status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:39080/assets/missing.js)
 if [ "$status" != 404 ]; then
@@ -75,7 +79,7 @@ for check in \
   "401 http://127.0.0.1:39081/assets/missing.js" \
   "200 http://127.0.0.1:39081/healthz" \
   "401 -u opos:wrong http://127.0.0.1:39081/" \
-  "200 -u opos:opos-check-password http://127.0.0.1:39081/"; do
+  "200 -u opos:$password http://127.0.0.1:39081/"; do
   expected=${check%% *}
   # shellcheck disable=SC2086
   actual=$(answer ${check#* })
@@ -84,6 +88,17 @@ for check in \
     exit 1
   fi
 done
+# The commit a deployment hands over. Caddy answers a request without basic auth with its 401
+# alone, none of the Caddyfile's headers on it
+headers=$(curl -fsS -D - -o /dev/null -u "opos:$password" http://127.0.0.1:39081/)
+expect "x-opos-commit: $commit"
+
+# A value that is no commit's name stops the application before Caddy reads it
+if docker run --rm -e OPOS_COMMIT='x" y' opos-portal:check >/dev/null 2>&1; then
+  echo "The portal started with a commit that is no commit's name" >&2
+  exit 1
+fi
+
 # Caddy's own environment, not the container's, which an exec inherits. Caddy holds a capability,
 # which leaves its environment to a privileged root alone; the hash proves the read saw it.
 if ! environ=$(docker exec --privileged -u 0 "$guarded" sh -c "tr '\\0' '\\n' </proc/1/environ") ||
@@ -96,4 +111,4 @@ if grep -q '^BASIC_AUTH_PASSWORD=' <<<"$environ"; then
   exit 1
 fi
 
-echo "The images build, the api resolves its imports and the frontends serve their routes, behind basic auth when asked"
+echo "The images build, the api resolves its imports and the frontends serve their routes with their commit, behind basic auth when asked"

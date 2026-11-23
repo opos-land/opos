@@ -3,7 +3,7 @@
   "globalDependencies": [
     "supabase/config.toml",
     "supabase/.env.example",
-    "scripts/infra-init.mjs",
+    "scripts/stack-init.mjs",
     "mise.toml"
   ],
   "globalPassThroughEnv": ["VITEST_MAX_WORKERS"],

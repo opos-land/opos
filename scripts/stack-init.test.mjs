@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { fillEnvFile, initInfra, nodeExec, nodeFs } from './infra-init.mjs'
+import { fillEnvFile, initStack, nodeExec, nodeFs } from './stack-init.mjs'
 
 const ROOT = '/repo'
 const at = (path) => `${ROOT}/${path}`
@@ -71,7 +71,7 @@ const STORAGE_UP =
 const GEN_KEY = 'supabase gen signing-key --algorithm ES256 --append'
 const KEY = '[{"kid":"local","alg":"ES256"}]\n'
 
-/** In-memory files and a recorded list of events, for `initInfra`. */
+/** In-memory files and a recorded list of events, for `initStack`. */
 function setup({ env = {}, files = {}, status = STATUS, templates = TEMPLATES } = {}) {
   const store = new Map(
     Object.entries({ ...templates, ...files }).map(([path, text]) => [at(path), text]),
@@ -105,7 +105,7 @@ function setup({ env = {}, files = {}, status = STATUS, templates = TEMPLATES } 
     events.push(`warn ${line}`)
     warnings.push(line)
   }
-  const run = () => initInfra({ exec, fs, env, root: ROOT, warn })
+  const run = () => initStack({ exec, fs, env, root: ROOT, warn })
   const text = (path) => store.get(at(path))
   const value = (path, key) => new RegExp(`^${key}=(.*)$`, 'm').exec(text(path))?.[1]
   return { run, store, events, snapshots, text, value, warnings }
@@ -191,7 +191,7 @@ test('fillEnvFile gives the same bytes when run again on its own output', () => 
   assert.equal(fillEnvFile(template, once, { A: 'other', B: 'other' }), once)
 })
 
-test('initInfra refuses OPOS_ENV dev or production and touches nothing', async () => {
+test('initStack refuses OPOS_ENV dev or production and touches nothing', async () => {
   for (const OPOS_ENV of ['dev', 'production']) {
     const ctx = setup({ env: { OPOS_ENV } })
     await assert.rejects(ctx.run(), /local/)
@@ -199,18 +199,18 @@ test('initInfra refuses OPOS_ENV dev or production and touches nothing', async (
   }
 })
 
-test('initInfra runs where OPOS_ENV is local or unset', async () => {
+test('initStack runs where OPOS_ENV is local or unset', async () => {
   await setup({ env: { OPOS_ENV: 'local' } }).run()
   await setup({ env: {} }).run()
 })
 
-test('initInfra names the file a missing template would have been', async () => {
+test('initStack names the file a missing template would have been', async () => {
   const templates = { ...TEMPLATES }
   delete templates['supabase/.env.example']
   await assert.rejects(setup({ templates }).run(), /supabase\/\.env\.example/)
 })
 
-test('initInfra writes every .env from its template with OPOS_ENV local', async () => {
+test('initStack writes every .env from its template with OPOS_ENV local', async () => {
   const ctx = setup()
   await ctx.run()
   assert.equal(ctx.value('apps/api/.env', 'OPOS_ENV'), 'local')
@@ -222,7 +222,7 @@ test('initInfra writes every .env from its template with OPOS_ENV local', async 
   assert.equal(ctx.value('supabase/.env', 'SITE_URL'), 'http://opos.localhost:5174')
 })
 
-test('initInfra writes the same hook secret to supabase and the API', async () => {
+test('initStack writes the same hook secret to supabase and the API', async () => {
   const ctx = setup()
   await ctx.run()
   const secret = ctx.value('supabase/.env', 'SEND_EMAIL_HOOK_SECRET')
@@ -231,7 +231,7 @@ test('initInfra writes the same hook secret to supabase and the API', async () =
   assert.equal(ctx.value('apps/api/.env', 'SEND_EMAIL_HOOK_SECRET'), secret)
 })
 
-test('initInfra gives supabase the hook secret the API already holds', async () => {
+test('initStack gives supabase the hook secret the API already holds', async () => {
   const kept = `v1,whsec_${Buffer.alloc(32, 7).toString('base64')}`
   const ctx = setup({ files: { 'apps/api/.env': `SEND_EMAIL_HOOK_SECRET=${kept}\n` } })
   await ctx.run()
@@ -239,14 +239,14 @@ test('initInfra gives supabase the hook secret the API already holds', async () 
   assert.equal(ctx.value('apps/api/.env', 'SEND_EMAIL_HOOK_SECRET'), kept)
 })
 
-test('initInfra gives the API the hook secret supabase already holds', async () => {
+test('initStack gives the API the hook secret supabase already holds', async () => {
   const kept = `v1,whsec_${Buffer.alloc(32, 9).toString('base64')}`
   const ctx = setup({ files: { 'supabase/.env': `SEND_EMAIL_HOOK_SECRET=${kept}\n` } })
   await ctx.run()
   assert.equal(ctx.value('apps/api/.env', 'SEND_EMAIL_HOOK_SECRET'), kept)
 })
 
-test('initInfra gives the API and the seed one key for the payment credentials, and keeps it', async () => {
+test('initStack gives the API and the seed one key for the payment credentials, and keeps it', async () => {
   const ctx = setup()
   await ctx.run()
   const key = ctx.value('apps/api/.env', 'PAYMENT_CREDENTIALS_KEY')
@@ -262,7 +262,7 @@ test('initInfra gives the API and the seed one key for the payment credentials, 
   assert.equal(kept.value('packages/db/.env', 'PAYMENT_CREDENTIALS_KEY'), 'mine')
 })
 
-test('initInfra generates distinct secrets and builds the database URLs from the passwords', async () => {
+test('initStack generates distinct secrets and builds the database URLs from the passwords', async () => {
   const ctx = setup()
   await ctx.run()
   const invite = ctx.value('apps/api/.env', 'INVITE_SECRET')
@@ -285,13 +285,13 @@ test('initInfra generates distinct secrets and builds the database URLs from the
   )
 })
 
-test('initInfra builds the database URLs on the port the developer moved the database to', async () => {
+test('initStack builds the database URLs on the port the developer moved the database to', async () => {
   const ctx = setup({ env: { SUPABASE_DB_PORT: '25432' } })
   await ctx.run()
   assert.match(ctx.value('apps/api/.env', 'DATABASE_URL'), /@127\.0\.0\.1:25432\/postgres$/)
 })
 
-test('initInfra builds the database URLs from passwords already in packages/db/.env', async () => {
+test('initStack builds the database URLs from passwords already in packages/db/.env', async () => {
   const ctx = setup({
     files: { 'packages/db/.env': 'OPOS_APP_PASSWORD=aa\nOPOS_APP_GLOBAL_PASSWORD=bb\n' },
   })
@@ -307,7 +307,7 @@ test('initInfra builds the database URLs from passwords already in packages/db/.
   )
 })
 
-test('initInfra never overwrites a value already set', async () => {
+test('initStack never overwrites a value already set', async () => {
   const ctx = setup({
     files: { 'apps/api/.env': 'INVITE_SECRET=mine\nSUPABASE_SECRET_KEY=mine\nEXTRA=1\n' },
   })
@@ -317,7 +317,7 @@ test('initInfra never overwrites a value already set', async () => {
   assert.equal(ctx.value('apps/api/.env', 'EXTRA'), '1')
 })
 
-test('initInfra runs in order: env files, secrets, signing key, start, status, storage, roles', async () => {
+test('initStack runs in order: env files, secrets, signing key, start, status, storage, roles', async () => {
   const ctx = setup()
   await ctx.run()
   assert.deepEqual(
@@ -352,7 +352,7 @@ test('initInfra runs in order: env files, secrets, signing key, start, status, s
   assert.equal(ctx.events.at(-1), 'exec pnpm db:roles')
 })
 
-test('initInfra generates the keys of the bucket and the image server, distinct from each other', async () => {
+test('initStack generates the keys of the bucket and the image server, distinct from each other', async () => {
   const ctx = setup()
   await ctx.run()
   const value = (key) => ctx.value('apps/api/.env', key)
@@ -366,7 +366,7 @@ test('initInfra generates the keys of the bucket and the image server, distinct 
   assert.equal(value('IMGPROXY_BUCKET_ENDPOINT'), 'http://s3:7070')
 })
 
-test('initInfra keeps the keys of the bucket and the image server already set', async () => {
+test('initStack keeps the keys of the bucket and the image server already set', async () => {
   const ctx = setup({
     files: {
       'apps/api/.env':
@@ -380,7 +380,7 @@ test('initInfra keeps the keys of the bucket and the image server already set', 
   assert.equal(ctx.value('apps/api/.env', 'IMGPROXY_SALT'), 'cd')
 })
 
-test('initInfra gives the seed the bucket of the API, under the same key', async () => {
+test('initStack gives the seed the bucket of the API, under the same key', async () => {
   const ctx = setup({ env: { OPOS_S3_PORT: '24330' } })
   await ctx.run()
   // The seed puts the demo edition's legal documents where the API reads them.
@@ -400,7 +400,7 @@ test('initInfra gives the seed the bucket of the API, under the same key', async
   assert.equal(kept.value('packages/db/.env', 'S3_SECRET_ACCESS_KEY'), 'mine')
 })
 
-test('initInfra addresses the bucket and the image server on their ports, moved or not', async () => {
+test('initStack addresses the bucket and the image server on their ports, moved or not', async () => {
   const ctx = setup()
   await ctx.run()
   assert.equal(ctx.value('apps/api/.env', 'S3_ENDPOINT'), 'http://127.0.0.1:54330')
@@ -412,7 +412,7 @@ test('initInfra addresses the bucket and the image server on their ports, moved 
   assert.equal(moved.value('apps/api/.env', 'IMGPROXY_URL'), 'http://127.0.0.1:24331')
 })
 
-test('initInfra starts the bucket and the image server once apps/api/.env holds their keys', async () => {
+test('initStack starts the bucket and the image server once apps/api/.env holds their keys', async () => {
   const ctx = setup()
   await ctx.run()
   const api = ctx.snapshots[STORAGE_UP].files.get(at('apps/api/.env'))
@@ -420,25 +420,25 @@ test('initInfra starts the bucket and the image server once apps/api/.env holds 
   assert.match(api, /^IMGPROXY_SALT=[0-9a-f]{64}$/m)
 })
 
-test('infra:up, infra:down and infra:reset run the containers infra:init starts', () => {
+test('stack:up, stack:down and stack:reset run the containers stack:init starts', () => {
   const { scripts } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   const compose = STORAGE_UP.replace(/ up -d --wait$/, '')
-  assert.equal(scripts['infra:up'], `supabase start && ${STORAGE_UP}`)
-  assert.equal(scripts['infra:down'], `${compose} down && supabase stop`)
+  assert.equal(scripts['stack:up'], `supabase start && ${STORAGE_UP}`)
+  assert.equal(scripts['stack:down'], `${compose} down && supabase stop`)
   assert.equal(
-    scripts['infra:reset'],
+    scripts['stack:reset'],
     `supabase stop --no-backup && ${compose} down --volumes && supabase start && ${STORAGE_UP} && pnpm db:roles`,
   )
 })
 
-test('initInfra creates the signing key file when it is missing', async () => {
+test('initStack creates the signing key file when it is missing', async () => {
   const ctx = setup()
   await ctx.run()
   assert.equal(ctx.text(SIGNING_KEYS), KEY)
   assert.ok(ctx.events.includes(`write ${SIGNING_KEYS}`))
 })
 
-test('initInfra keeps a signing key already there', async () => {
+test('initStack keeps a signing key already there', async () => {
   const mine = '[{"kid":"mine"}]\n'
   const ctx = setup({ files: { [SIGNING_KEYS]: mine } })
   await ctx.run()
@@ -447,7 +447,7 @@ test('initInfra keeps a signing key already there', async () => {
   assert.ok(!ctx.events.includes(`write ${SIGNING_KEYS}`))
 })
 
-test('initInfra generates a key when an earlier run left the file empty', async () => {
+test('initStack generates a key when an earlier run left the file empty', async () => {
   const ctx = setup({ files: { [SIGNING_KEYS]: ' []\n' } })
   await ctx.run()
   assert.equal(ctx.text(SIGNING_KEYS), KEY)
@@ -464,7 +464,7 @@ test('config.toml names the signing key file, which git and prettier never see',
   assert.match(read('../.prettierignore'), /^supabase\/signing_keys\.json$/m)
 })
 
-test('initInfra runs the CLI in the repository root with the caller environment', async () => {
+test('initStack runs the CLI in the repository root with the caller environment', async () => {
   const ctx = setup({ env: { SUPABASE_DB_PORT: '25432' } })
   await ctx.run()
   for (const { options } of Object.values(ctx.snapshots)) {
@@ -473,7 +473,7 @@ test('initInfra runs the CLI in the repository root with the caller environment'
   }
 })
 
-test('initInfra writes the keys and addresses status reports to the API and packages/db', async () => {
+test('initStack writes the keys and addresses status reports to the API and packages/db', async () => {
   const ctx = setup()
   await ctx.run()
   for (const file of ['apps/api/.env', 'packages/db/.env']) {
@@ -486,12 +486,12 @@ test('initInfra writes the keys and addresses status reports to the API and pack
   }
 })
 
-test('initInfra stops when status does not report a key it needs', async () => {
+test('initStack stops when status does not report a key it needs', async () => {
   const status = 'API_URL="http://127.0.0.1:54321"\nDB_URL="postgresql://x"\n'
   await assert.rejects(setup({ status }).run(), /SECRET_KEY/)
 })
 
-test('initInfra never runs supabase link and writes no project id or access token', async () => {
+test('initStack never runs supabase link and writes no project id or access token', async () => {
   const ctx = setup({ env: { SUPABASE_PROJECT_ID: 'zzprojectzz', SUPABASE_ACCESS_TOKEN: 'sbp_x' } })
   await ctx.run()
   for (const event of ctx.events) assert.doesNotMatch(event, /\blink\b/)
@@ -514,7 +514,7 @@ test('a second run changes nothing', async () => {
 })
 
 test('nodeFs reads, writes and checks files', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'infra-init-'))
+  const dir = mkdtempSync(join(tmpdir(), 'stack-init-'))
   try {
     const file = join(dir, 'a.env')
     assert.equal(nodeFs.exists(file), false)
@@ -531,14 +531,14 @@ test('nodeFs reads, writes and checks files', () => {
 })
 
 test('nodeExec returns what the command printed, in the given directory and environment', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'infra-init-'))
+  const dir = mkdtempSync(join(tmpdir(), 'stack-init-'))
   try {
     const out = await nodeExec(
       process.execPath,
       ['-e', 'console.log(process.cwd() + "|" + process.env.INFRA_INIT_PROBE)'],
       { cwd: dir, env: { ...process.env, INFRA_INIT_PROBE: 'yes' } },
     )
-    assert.match(out, /infra-init-.*\|yes\n$/)
+    assert.match(out, /stack-init-.*\|yes\n$/)
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -553,7 +553,7 @@ test('nodeExec rejects when the command fails or does not exist', async () => {
   await assert.rejects(nodeExec('opos-no-such-command-xyz', [], options), /ENOENT/)
 })
 
-test('initInfra leaves the comments, export lines and unknown keys of an existing .env', async () => {
+test('initStack leaves the comments, export lines and unknown keys of an existing .env', async () => {
   const mine = '# LEGACY=abc\nexport MINE=2\n  INDENTED=3\nINVITE_SECRET=mine\n'
   const ctx = setup({ files: { 'apps/api/.env': mine } })
   await ctx.run()
@@ -561,7 +561,7 @@ test('initInfra leaves the comments, export lines and unknown keys of an existin
   assert.equal(ctx.value('apps/api/.env', 'INVITE_SECRET'), 'mine')
 })
 
-test('initInfra does not rewrite an .env that has nothing to fill', async () => {
+test('initStack does not rewrite an .env that has nothing to fill', async () => {
   const ctx = setup()
   await ctx.run()
   ctx.events.length = 0
@@ -574,7 +574,7 @@ test('initInfra does not rewrite an .env that has nothing to fill', async () => 
   ])
 })
 
-test('initInfra warns about an address that differs from the template, naming no value', async () => {
+test('initStack warns about an address that differs from the template, naming no value', async () => {
   const ctx = setup({
     files: {
       'apps/api/.env': 'PANEL_URL=http://panel.old.example:1\n',
@@ -587,13 +587,13 @@ test('initInfra warns about an address that differs from the template, naming no
   ])
 })
 
-test('initInfra does not warn about an address that is empty or equal to the template', async () => {
+test('initStack does not warn about an address that is empty or equal to the template', async () => {
   const ctx = setup({ files: { 'apps/api/.env': 'PANEL_URL=\nAPI_URL=\n' } })
   await ctx.run()
   assert.deepEqual(ctx.warnings, [])
 })
 
-test('initInfra warns about a database URL on another port than the stack reports, naming no value', async () => {
+test('initStack warns about a database URL on another port than the stack reports, naming no value', async () => {
   const ctx = setup({
     files: {
       'apps/api/.env': [
@@ -607,7 +607,7 @@ test('initInfra warns about a database URL on another port than the stack report
   })
   await ctx.run()
   const advice =
-    'on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm infra:init'
+    'on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm stack:init'
   assert.deepEqual(ctx.warnings, [
     `apps/api/.env: DATABASE_URL is ${advice}`,
     `apps/api/.env: DATABASE_MIGRATION_URL is ${advice}`,
@@ -618,7 +618,7 @@ test('initInfra warns about a database URL on another port than the stack report
   }
 })
 
-test('initInfra warns before it runs db:roles, which a stale URL makes fail', async () => {
+test('initStack warns before it runs db:roles, which a stale URL makes fail', async () => {
   const ctx = setup({
     files: { 'packages/db/.env': 'DATABASE_MIGRATION_URL=postgres://x:y@127.0.0.1:5432/opos\n' },
   })
@@ -628,7 +628,7 @@ test('initInfra warns before it runs db:roles, which a stale URL makes fail', as
   assert.ok(warned < ctx.events.indexOf('exec pnpm db:roles'))
 })
 
-test('initInfra does not warn about a database URL the file does not hold', async () => {
+test('initStack does not warn about a database URL the file does not hold', async () => {
   const ctx = setup({
     templates: {
       ...TEMPLATES,
@@ -642,7 +642,7 @@ test('initInfra does not warn about a database URL the file does not hold', asyn
   assert.deepEqual(ctx.warnings, [])
 })
 
-test('initInfra does not warn about the database URLs it wrote, or a moved port the stack reports', async () => {
+test('initStack does not warn about the database URLs it wrote, or a moved port the stack reports', async () => {
   const fresh = setup()
   await fresh.run()
   await fresh.run()
@@ -659,7 +659,7 @@ test('initInfra does not warn about the database URLs it wrote, or a moved port 
   )
 })
 
-test('initInfra refuses two different hook secrets, naming the key and no value', async () => {
+test('initStack refuses two different hook secrets, naming the key and no value', async () => {
   const ctx = setup({
     files: {
       'supabase/.env': 'SEND_EMAIL_HOOK_SECRET=v1,whsec_AAAA\n',
@@ -674,7 +674,7 @@ test('initInfra refuses two different hook secrets, naming the key and no value'
   assert.deepEqual(ctx.events, [])
 })
 
-test('initInfra accepts the same hook secret in both files', async () => {
+test('initStack accepts the same hook secret in both files', async () => {
   const same = `v1,whsec_${Buffer.alloc(32, 5).toString('base64')}`
   const ctx = setup({
     files: {
@@ -724,7 +724,7 @@ test('nodeExec prints what a failed command wrote to stdout only when asked to',
   }
 })
 
-test('initInfra asks for the output of db:roles on failure and of no other command', async () => {
+test('initStack asks for the output of db:roles on failure and of no other command', async () => {
   const ctx = setup()
   await ctx.run()
   assert.equal(ctx.snapshots['pnpm db:roles'].options.showOutputOnFailure, true)

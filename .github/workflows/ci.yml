@@ -64,7 +64,7 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
       - run: pnpm i18n:check
       # The .env files, the signing key, the CLI's local stack and the roles
-      - run: pnpm infra:init
+      - run: pnpm stack:init
       - run: pnpm db:migrate
       - run: pnpm db:verify
       # The second run fails where a constraint refuses a row; packages/db/test/seed.test.ts holds
@@ -128,7 +128,7 @@ jobs:
       # The applications' dev addresses
       - run: echo '127.0.0.1 api.opos.localhost panel.opos.localhost admin.opos.localhost opos.localhost' | sudo tee -a /etc/hosts
       # The .env files, the signing key, the CLI's local stack and the roles
-      - run: pnpm infra:init
+      - run: pnpm stack:init
       - run: pnpm db:migrate
       - run: pnpm db:seed
       - run: pnpm --filter @opos/e2e exec playwright install --with-deps chromium

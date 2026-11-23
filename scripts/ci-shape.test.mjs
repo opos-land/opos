@@ -286,10 +286,10 @@ const job = (name, workflow = ci) => {
   return end === -1 ? rest : rest.slice(0, end)
 }
 
-test('check and e2e set up the stack with infra:init, before the database steps', () => {
+test('check and e2e set up the stack with stack:init, before the database steps', () => {
   for (const name of ['check', 'e2e']) {
     const steps = job(name)
-    const init = steps.indexOf('- run: pnpm infra:init')
+    const init = steps.indexOf('- run: pnpm stack:init')
     assert.notEqual(init, -1, name)
     assert.ok(init < steps.indexOf('- run: pnpm db:migrate'), name)
     assert.ok(init < steps.indexOf('pnpm db:seed'), name)
@@ -300,7 +300,7 @@ test('no job starts the stack through compose', () => {
   assert.doesNotMatch(ci, /docker compose/)
 })
 
-test('the built api starts from the .env that infra:init wrote', () => {
+test('the built api starts from the .env that stack:init wrote', () => {
   assert.match(job('check'), /node --env-file=apps\/api\/\.env apps\/api\/dist\/main\.js/)
   assert.doesNotMatch(ci, /--env-file=apps\/api\/\.env\.example/)
 })

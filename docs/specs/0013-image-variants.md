@@ -83,7 +83,7 @@ under a file's key as that file's, and removes a variant no kind declares.
 ### The image server
 
 imgproxy runs as one container, its image pinned by its digest, beside the API in every
-environment; `pnpm infra:up` starts it on the local stack, and the `check` and `e2e` jobs of CI
+environment; `pnpm stack:up` starts it on the local stack, and the `check` and `e2e` jobs of CI
 start it the same way. It is configured to:
 
 | Setting                | Value                                                                                                |
@@ -97,7 +97,7 @@ start it the same way. It is configured to:
 The size, the fit and the format of what it makes come with each signed request: the API builds
 them from a kind's declaration, never from a request's input. The API's environment holds the
 image server's address, key and salt, named in its `.env.example` and filled locally by
-`pnpm infra:init`. The address the image server reads from is signed by the API with the bucket's
+`pnpm stack:init`. The address the image server reads from is signed by the API with the bucket's
 key, for one read and 60 seconds.
 
 ### Routes and screens

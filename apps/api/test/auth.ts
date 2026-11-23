@@ -13,11 +13,11 @@ const env = loadEnv()
 const auth = authUrl(env)
 export const TEST_PASSWORD = 'test-password-123'
 
-/** The stack's own signing key, which pnpm infra:init wrote and Supabase Auth signs with. */
+/** The stack's own signing key, which pnpm stack:init wrote and Supabase Auth signs with. */
 const [localKey] = JSON.parse(
   readFileSync(new URL('../../../supabase/signing_keys.json', import.meta.url), 'utf8'),
 ) as JWK[]
-if (!localKey?.kid) throw new Error('supabase/signing_keys.json holds no key; run pnpm infra:init')
+if (!localKey?.kid) throw new Error('supabase/signing_keys.json holds no key; run pnpm stack:init')
 const localKid = localKey.kid
 // The file's key names `verify` too, which WebCrypto refuses on a private key.
 const signingKey = (await importJWK({ ...localKey, key_ops: ['sign'] }, 'ES256')) as CryptoKey

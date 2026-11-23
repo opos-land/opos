@@ -90,7 +90,7 @@ function databaseHosts(url: string): string[] {
  */
 export function migrationUrl(env: NodeJS.ProcessEnv = process.env): string {
   const url = env.DATABASE_MIGRATION_URL?.trim()
-  if (!url) throw new Error('DATABASE_MIGRATION_URL is not set; run pnpm infra:init')
+  if (!url) throw new Error('DATABASE_MIGRATION_URL is not set; run pnpm stack:init')
   // postgres.js cuts the authority at its first @ and `new URL` at its last: with two, the guard and
   // the clients could read different hosts. The sentence repeats no part of the URL.
   const authority = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]*)/i.exec(url)?.[1] ?? ''

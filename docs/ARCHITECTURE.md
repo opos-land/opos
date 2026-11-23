@@ -451,7 +451,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   ([0069](adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
   the local stack and CI run Versity Gateway as the bucket and imgproxy in containers beside
   Supabase's, which
-  `pnpm infra:init` and `pnpm infra:up` start ([compose.yaml](../infra/local/compose.yaml)). Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
+  `pnpm stack:init` and `pnpm stack:up` start ([compose.yaml](../infra/local/compose.yaml)). Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
   through Scaleway's Transactional Email, from its own domain
   ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
 - Dev and production are not deployed yet. Dev runs in a project of its own on a shared Coolify
@@ -502,7 +502,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   name in [mise-tasks.toml](../mise-tasks.toml) runs it and says what it does, so `mise tasks` lists
   the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,
   which turbo hashes, and [mise-tasks.test.mjs](../scripts/mise-tasks.test.mjs) keeps both lists
-  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). The
+  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). A
+  command's prefix names what it acts on, `stack` the local stack, `infra` the code in `infra/`
+  without a sign-in and `deploy` a deployed environment, and the command has one name in its root
+  script, its task, its script's file, its messages and the documents
+  ([0079](adr/0079-name-the-root-commands-by-what-they-act-on.md)). The
   deploy commands are root scripts too, one Node script tested like the others, driving tools that
   come from mise, beside `deploy:graph`, which only reads the checkout; no shell script runs on an
   operator's machine
@@ -523,7 +527,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `build` and `test`; side effects such as `db:*` are never cached; runtime variables stay out of
   the hash; the schema and API suites never share the stack at once.
 - No `.env` at the root: each application, `packages/db` and `supabase/` keep their own beside a
-  committed `.env.example` naming every variable, secrets empty; `pnpm infra:init` fills them, and
+  committed `.env.example` naming every variable, secrets empty; `pnpm stack:init` fills them, and
   the API validates its own on start ([env.ts](../apps/api/src/config/env.ts)).
 - The local stack publishes its ports on every interface: bind the container engine to `127.0.0.1`.
 
@@ -763,7 +767,7 @@ the code ([AGENTS.md](../AGENTS.md#tests-first)); **Enforced by** is what refuse
 ### A migration applied or in conflict
 
 Drizzle applies a migration only when its journal timestamp is newer than the last applied and
-compares no text: an edit of an applied migration, before it is merged, takes `pnpm infra:reset`,
+compares no text: an edit of an applied migration, before it is merged, takes `pnpm stack:reset`,
 `pnpm db:migrate` and `pnpm db:seed`. On a conflict in `packages/db/drizzle/meta/_journal.json`,
 take `origin/develop`'s `packages/db/drizzle/meta`, generate yours again under the same names with
 the hand-written SQL restored, and run `node scripts/check-migrations.mjs --base origin/develop`.

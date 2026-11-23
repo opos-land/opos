@@ -24,7 +24,7 @@ anything.
 - The seed puts the files of its demo rows into the bucket itself, after the transaction that
   wrote the rows, under the keys the API's storage reads. A file already there is put again, so a
   bucket that lost one gets it back.
-- For that the seed holds the bucket's address and key, on `local` and `dev`. `pnpm infra:init`
+- For that the seed holds the bucket's address and key, on `local` and `dev`. `pnpm stack:init`
   gives `packages/db` the key it gave the API. Production, which the seed refuses, keeps the key
   with the API alone.
 - A demo file is made by code, the same bytes on every run: a document from its text, an image

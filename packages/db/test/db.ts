@@ -13,7 +13,7 @@ export const url = (user: string, password: string) => {
 
 const required = (name: string) => {
   const value = process.env[name]
-  if (!value) throw new Error(`${name} is missing from packages/db/.env; run pnpm infra:init`)
+  if (!value) throw new Error(`${name} is missing from packages/db/.env; run pnpm stack:init`)
   return value
 }
 

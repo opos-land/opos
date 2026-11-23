@@ -33,7 +33,7 @@ pre-commit:
     - name: gitleaks
       run: gitleaks git --pre-commit --staged --redact --no-banner
 
-# The API tests need the local stack: pnpm infra:init once in a new checkout, then pnpm infra:up
+# The API tests need the local stack: pnpm stack:init once in a new checkout, then pnpm stack:up
 pre-push:
   jobs:
     # Four tasks of four test workers by default, 16 in all: vitest otherwise starts one per core

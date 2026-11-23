@@ -29,7 +29,7 @@ run = "pnpm lint"
 raw = true
 
 [test]
-description = "Run the tests of every package; the API and database suites need the local stack (infra:up)"
+description = "Run the tests of every package; the API and database suites need the local stack (stack:up)"
 run = "pnpm test"
 raw = true
 
@@ -118,24 +118,24 @@ description = "Check that every file is formatted with Prettier and every Markdo
 run = "pnpm format:check"
 raw = true
 
-["infra:init"]
+["stack:init"]
 description = "Set up the local stack once per checkout: .env files, keys, containers and database roles"
-run = "pnpm infra:init"
+run = "pnpm stack:init"
 raw = true
 
-["infra:up"]
+["stack:up"]
 description = "Start the local Supabase stack, the bucket and the image server"
-run = "pnpm infra:up"
+run = "pnpm stack:up"
 raw = true
 
-["infra:down"]
+["stack:down"]
 description = "Stop the local Supabase stack, the bucket and the image server, keeping their data"
-run = "pnpm infra:down"
+run = "pnpm stack:down"
 raw = true
 
-["infra:reset"]
+["stack:reset"]
 description = "Wipe the local stack's data, start it again and set the database roles"
-run = "pnpm infra:reset"
+run = "pnpm stack:reset"
 raw = true
 
 # The deploy commands: root scripts that run scripts/deploy.mjs, which takes the arguments and flags
